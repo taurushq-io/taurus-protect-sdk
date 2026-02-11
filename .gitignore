@@ -37,5 +37,33 @@ build/
 ### CodeGen ###
 .codegen
 
+### Python ###
+.venv
+__pycache__/
+*.pyc
+.coverage
+*.egg-info/
+
 ### Decrypted files ###
 *.dec
+
+### Typescript ###
+dist/
+node_modules/
+taurus-protect-sdk-typescript/node_modules
+
+### Secrets and credentials ###
+*api*key*
+*.secret
+*credentials*
+.env*
+*.pem
+*.key
+!*.pub.pem
+test.properties
+
+### AI ###
+#.claude
+#CLAUDE.md
+settings.local.json
+.claude/tasks/

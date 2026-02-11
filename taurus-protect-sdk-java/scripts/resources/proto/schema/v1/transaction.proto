@@ -1,0 +1,272 @@
+syntax = "proto3";
+package tgvalidatord;
+
+import "currency.proto";
+import "score.proto";
+import "request.proto";
+import "wallet.proto";
+
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+message AddressInfo {
+  string address = 1;
+  string label = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Label of the address if it is known to Taurus-PROTECT (i.e. if it's an internal or a whitelisted address)";}];
+  string container = 3;
+  string customerId = 4;
+  string amount = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";}];
+  string amountMainUnit = 6;
+  string type = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The type of the transaction element (one of source or destination)";}];
+  uint64 idx = 8;
+  uint64 internalAddressId = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "ID of the internal address, if the address is an internal one. Otherwise this field is left empty (or 0)";}];
+  uint64 whitelistedAddressId = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "ID of the whitelisted address, if the address is an whitelisted one. Otherwise this field is left empty (or 0)";}];
+  repeated TransactionScore scores = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Transaction scores related to this address (only for destinations). Up to one score per [KYT provider, score type].";}];
+}
+
+message Transaction {
+  uint64 id = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "A unique identifier for the transaction";
+    }
+  ];
+  string direction = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The direction of the transaction (e.g. `incoming`, `outgoing`)";
+    }
+  ];
+  string currency = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The symbol or unique id of the currency the transaction used (e.g. `ETH`)";
+    }
+  ];
+  repeated AddressInfo sources = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The addresses that sent currency for this transaction.";
+    }
+  ];
+  repeated AddressInfo destinations = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The addresses that received currency for this transaction.";
+    }
+  ];
+  string amount = 6 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";
+    }
+  ];
+  string amountMainUnit = 7 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Amount in the main currency unit (e.g. A BTC transaction will use the BTC value here instead of SAT)";
+    }
+  ];
+  string fee = 8 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The fee associated with the transaction if there is one. In the smallest currency unit.";
+    }
+  ];
+  string feeMainUnit = 9 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The fee associated with the transaction if there is one. In the main currency unit. ";
+    }
+  ];
+  string hash = 10 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The hash of the transaction as returned by the chain.";
+    }
+  ];
+  uint64 block = 11 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The block number associated with the transaction.";
+    }
+  ];
+  google.protobuf.Timestamp receptionDate = 12 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "When the transaction was received by the blockchain.";
+    }
+  ];
+  google.protobuf.Timestamp confirmationDate = 13 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "When the transaction was fully confirmed.";
+    }
+  ];
+  string transactionId = 14 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "An id for the transaction.";
+    }
+  ];
+  string type = 15 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The type of transaction occurring (e.g. `burn`, `approve`).";
+    }
+  ];
+  string uniqueId = 16 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "A unique id for the transaction.";
+    }
+  ];
+  string blockchain = 17 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The blockchain associated with the transaction (e.g. `ETH`, `BTC`)";
+    }
+  ];
+  string arg1 = 18 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "If set, serves as a sub-identifier to the blockchain field for the type of resource this transaction relates to. Typically a contract address.";
+    }
+  ];
+  string arg2 = 19 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "If set, serves as a sub-identifier to the arg1 field for the type of resource this transaction relates to. Typically a token ID.";
+    }
+  ];
+  Currency currencyInfo = 20 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The currency used in the transaction.";
+    }
+  ];
+  string network = 21 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The network the transaction took place in (e.g. `mainnet`, `testnet`).";
+    }
+  ];
+  uint64 requestId = 22 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "If set, contains the request ID that this transaction originated from.";
+    }
+  ];
+  uint64 confirmationBlock = 23 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The block that the transaction was confirmed by.";
+    }
+  ];
+  bool requestVisible = 24 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Indicates whether the requestId value refers to a request that is visible to the user.";
+    }
+  ];
+  TravelRule travelRule = 25 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Travel rule data provides information about the originator and the beneficiary of the transaction.";
+    }
+  ];
+  string status = 26 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The current status of the transaction, [`NEW`, `SUCCESS`, `PENDING`, `TEMPORARY_FAILURE`, `INVALID`, `TIMEOUT`, `MINED`, `LOST`, `EXPIRED`]";
+    }
+  ];
+  repeated PlatformFee platformFees = 27 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Any Platform fees on the transaction such as exchange withdrawals.";
+    }
+  ];
+  repeated TransactionAttribute attributes = 28 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "A list of key-value transaction attributes.";
+    }
+  ];
+  uint64 forkNumber = 29 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The forkNumber is used in case a blockchain uses a new platform and starts over with a new genesis hash. For instance it is set to 1 on the new DOT AssetHub platform, otherwise it is 0 in most cases.";
+    }
+  ];
+  repeated TransactionFees fees = 30 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "List of the fees of the transaction with corresponding assets.";
+    }
+  ];
+  bool isConfirmed = 31 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "True if the transaction is fully confirmed, false otherwise.";
+    }
+  ];
+}
+
+message PlatformFee {
+  string type = 1; // The fee type. This can only be "exchange", but other types may be added in the future.
+  string amount = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";
+    }
+  ];
+  string amountMainUnit = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Amount in the main currency unit (e.g. A BTC transaction will use the BTC value here instead of SAT)";
+    }
+  ];
+  string symbol = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The symbol returned with the fee amount if provided.";
+    }
+  ];
+}
+
+message TransactionFee {
+  string type = 1;
+  string amount = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";
+    }
+  ];
+  string amountMainUnit = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Amount in the main currency unit (e.g. A BTC transaction will use the BTC value here instead of SAT)";
+    }
+  ];
+}
+
+message TransactionFees {
+  Asset asset = 1;
+  repeated TransactionFee fees = 2;
+}
+
+message TransactionAttribute {
+  string id = 1;
+
+  // uint64 txId = 2; Reserved
+
+  string key = 3;
+  string value = 4;
+}
+
+message TravelRule {
+  oneof originator {
+    PersonTravelRuleData originatorPersonTravelRuleData = 1;
+    CompanyTravelRuleData originatorCompanyTravelRuleData = 2;
+  }
+  oneof beneficiary {
+    CompanyTravelRuleData beneficiaryCompanyTravelRuleData = 3;
+    PersonTravelRuleData beneficiaryPersonTravelRuleData = 4;
+  }
+  string currency = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The symbol or unique id of the associated currency (e.g. `ETH`)";
+    }
+  ];
+  string amount = 6 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";
+    }
+  ];
+  string amountMainUnit = 7 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Amount in the main currency unit (e.g. A BTC transaction will use the BTC value here instead of SAT)";
+    }
+  ];
+  string transactionHash = 8;
+  string originatorParticipant = 9;
+  string beneficiaryParticipant = 10;
+  google.protobuf.Timestamp initiationDate = 11;
+  google.protobuf.Timestamp confirmationDate = 12;
+  string blockchain = 13 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The identifier of the associated blockchain (e.g. `ETH`, `BTC`)";
+    }
+  ];
+  string network = 14 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The associated network (e.g. `mainnet`, `testnet`).";
+    }
+  ];
+}

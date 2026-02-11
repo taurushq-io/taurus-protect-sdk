@@ -1,0 +1,148 @@
+syntax = "proto3";
+
+package tgvalidatord;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "token-metadata.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "tg-validatord token metadata service";
+    version:"1.0";
+    contact:{
+      name:"tg-validatord token metadata service";
+      url:"https://github.com/taurusgroup/tg-validatord";
+      email:"development@taurusgroup.ch";
+    };
+  };
+  consumes:"application/json";
+  produces:"application/json";
+  schemes: [HTTP, HTTPS];
+  security_definitions:{
+    security:{
+      key:"Bearer";
+      value:{
+        type:TYPE_API_KEY;
+        in:IN_HEADER;
+        name:"Authorization";
+      }
+    }
+  }
+  security:{
+    security_requirement:{
+      key:"Bearer";
+      value:{};
+    }
+  }
+  responses:{
+    key:"401";
+    value:{
+      description:"Returned when the user is not authenticated.";
+    }
+  }
+  responses:{
+    key:"403";
+    value:{
+      description:"Returned when the user is not authorized to access the resource.";
+    }
+  }
+  responses:{
+    key:"404";
+    value:{
+      description:"Returned when the resource does not exist.";
+      schema:{
+        json_schema:{
+          type:STRING;
+        }
+      }
+    }
+  }
+
+};
+
+
+message GetERCTokenMetadataRequest {
+  string contract = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The ERC721 or ERC1155 contract.";}];
+  string network = 2;
+  string token = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The token ID.";}];
+  bool withData = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Set to true to get the base64 data and the type.";}];
+  string blockchain = 5;
+}
+
+message GetERCTokenMetadataReply {
+  ERCTokenMetadata result = 1;
+}
+
+message GetFATokenMetadataRequest {
+  string contract = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The FA1.2 or FA2 contract.";}];
+  string network = 2;
+  string token = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The token ID. Must be '0' for a FA1.2 contract and any existing token for a FA2 contract.";}];
+  bool withData = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Set to true to get the base64 data and the type.";}];
+}
+
+message GetFATokenMetadataReply {
+  FATokenMetadata result = 1;
+}
+
+message GetCryptoPunkMetadataRequest {
+  string network = 1;
+  string blockchain = 2;
+  string contract = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Contract address: It should be '0xb47e3cd837dDF8e4c57F05d70Ab865de6e193BBB' for ETH/mainnet";}];
+  uint64 token = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "ID of the Punk. The ID can be between 0 and 9999.";}];
+}
+
+message GetCryptoPunkMetadataReply {
+  CryptoPunkMetadata result = 1;
+}
+
+
+service TokenMetadataService {
+
+  rpc GetERCTokenMetadata (GetERCTokenMetadataRequest) returns (GetERCTokenMetadataReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/eth/{network}/erc/contract/{contract}/token/{token}/metadata"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      deprecated: true;
+      summary: "Use '/api/rest/v1/evm/{network}/erc/contract/{contract}/token/{token}/metadata' instead";
+      description: "This endpoint returns the token metadata of provided contract/token-id";
+      tags: "Token metadata";
+    };
+  };
+
+  rpc GetEVMERCTokenMetadata (GetERCTokenMetadataRequest) returns (GetERCTokenMetadataReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/evm/{network}/erc/contract/{contract}/token/{token}/metadata"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get ERC token metadata";
+      description: "This endpoint returns the token metadata for the supplied contract/token-id pair on the given blockchain";
+      tags: "Token metadata";
+    };
+  };
+
+  rpc GetFATokenMetadata (GetFATokenMetadataRequest) returns (GetFATokenMetadataReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/xtz/{network}/fa/contract/{contract}/token/{token}/metadata"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get FA token metadata";
+      description: "This endpoint returns the token metadata of provided contract/token-id";
+      tags: "Token metadata";
+    };
+  };
+
+  rpc GetCryptoPunksTokenMetadata (GetCryptoPunkMetadataRequest) returns (GetCryptoPunkMetadataReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/evm/{network}/cryptopunks/contract/{contract}/token/{token}/metadata"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get CryptoPunk metadata";
+      description: "This endpoint returns the CryptoPunk metadata (image and attributes) for the provided punk ID.";
+      tags: "Token metadata";
+    };
+  };
+}

@@ -1,0 +1,42 @@
+{
+  "description": "Compact fixture for rules container decoding tests",
+  "metadata": {
+    "hash": "830063cfa8c1dbd696d670fc8360e85fbc57c3ffa66d22358b9a7d6befabb2f0",
+    "payloadAsString": "{\"currency\":\"ALGO\",\"addressType\":\"individual\",\"address\":\"P4QCJV2YYLAEULGLJQAW4XTU3EBOHWL5C46I5SPLH2H7AJEE367ZDACV5A\",\"memo\":\"\",\"label\":\"TN_Bank ACC Cockroach_WTRTest\",\"customerId\":\"\",\"exchangeAccountId\":\"\",\"linkedInternalAddresses\":[],\"contractType\":\"\",\"tnParticipantID\":\"84dc35e3-0af8-4b6b-be75-785f4b149d16\"}"
+  },
+  "rulesSignatures": "ClgKFHN1cGVyYWRtaW4xQGJhbmsuY29tEkAST4lY73f1ffMV+dvzv3NaiWpGWRu1NM1BcbHU+NFBSIFamyiwWbbty+yjYqO31K8vaots3jRmbWmaL8iH167NClgKFHN1cGVyYWRtaW4yQGJhbmsuY29tEkBhYKingez/vk0OSOCOw2GpfPFe7TDE9AVvBcDJ4tkih/eW1guV1QG4GzJlpUUUNoLkqEp8tJksWV7+NKm1jxLd",
+  "signedAddressSignatures": [
+    {
+      "userSignature": {
+        "userId": "team1@bank.com",
+        "signature": "z2DACU7JUXqtSuREKZgRxoQXwJYemItgQ+NHuKIUQHUnVKgOhP+7mQ09Allr6uY+3suT322i46fn90W7wMwHJA==",
+        "comment": "ok"
+      },
+      "hashes": ["830063cfa8c1dbd696d670fc8360e85fbc57c3ffa66d22358b9a7d6befabb2f0"]
+    }
+  ],
+  "rulesContainerJson": {
+    "users": [
+      {"id": "superadmin1@bank.com", "publicKey": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEyWjh6d+PgOK3LqockShMcDMtAHImitWjoVSX/FzBAWvemeaeNnYDKzEXiDDgiq2tILFL1Chdkqofhp9EdBZOlQ==\n-----END PUBLIC KEY-----", "roles": ["SUPERADMIN"]},
+      {"id": "superadmin2@bank.com", "publicKey": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAELJhEUNLLHgI8LiWJaeJGpaBfdvgoYyKsjSFyTMxECR/E+1qpzDlNNug7hDPgBPpZ3Z+U8QWjaKB4Mrbj2/kImQ==\n-----END PUBLIC KEY-----", "roles": ["SUPERADMIN"]},
+      {"id": "team1@bank.com", "publicKey": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEM2NtzaFhm7xIR3OvWq5chW3/GEvWL+3uqoE6lEJ13eWbulxsP/5h36VCqYDIGN/0wDeWwLYdpu5HhSXWhxCsCA==\n-----END PUBLIC KEY-----", "roles": ["USER", "OPERATOR"]},
+      {"id": "hsmslot@bank.com", "publicKey": "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEY9zGugzNLIfpZuaUrzywEh/8ZdtX4IIuIpDHLvJ36glFjfxxSZdOG6yHKFFlQh1GX3OCFZxHe+xeOGBJHBgraA==\n-----END PUBLIC KEY-----", "roles": ["HSMSLOT"]}
+    ],
+    "groups": [
+      {"id": "team1", "userIds": ["team1@bank.com"]},
+      {"id": "superadmins", "userIds": ["superadmin1@bank.com", "superadmin2@bank.com"]}
+    ],
+    "minimumDistinctUserSignatures": 0,
+    "minimumDistinctGroupSignatures": 0,
+    "addressWhitelistingRules": [
+      {
+        "currency": "ALGO",
+        "network": "mainnet",
+        "parallelThresholds": [{"groupId": "team1", "minimumSignatures": 1}]
+      }
+    ],
+    "contractAddressWhitelistingRules": [],
+    "enforcedRulesHash": "",
+    "timestamp": 1706194800
+  }
+}

@@ -1,0 +1,190 @@
+syntax = "proto3";
+
+package tgvalidatord;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "exchange.proto";
+import "cursor.proto";
+
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "tg-validatord exchange service";
+    version:"1.0";
+    contact:{
+      name:"tg-validatord exchange service";
+      url:"https://github.com/taurusgroup/tg-validatord";
+      email:"development@taurusgroup.ch";
+    };
+  };
+  consumes:"application/json";
+  produces:"application/json";
+  schemes: [HTTP, HTTPS];
+  security_definitions:{
+    security:{
+      key:"Bearer";
+      value:{
+        type:TYPE_API_KEY;
+        in:IN_HEADER;
+        name:"Authorization";
+      }
+    }
+  }
+  security:{
+    security_requirement:{
+      key:"Bearer";
+      value:{};
+    }
+  }
+  responses:{
+    key:"401";
+    value:{
+      description:"Returned when the user is not authenticated.";
+    }
+  }
+  responses:{
+    key:"403";
+    value:{
+      description:"Returned when the user is not authorized to access the resource.";
+    }
+  }
+  responses:{
+    key:"404";
+    value:{
+      description:"Returned when the resource does not exist.";
+    }
+  }
+
+};
+
+message GetExchangesRequest{
+  string currencyID = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter on currency ID";}];
+  bool includeBaseCurrencyValuation = 2;
+  string exchangeLabel = 3;
+  string sortOrder = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to ASC to get the id sorted"
+          " in ASC order or DESC to get them in descending order. By default, the order is DESC.";
+    }
+  ];
+  RequestCursor cursor = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The pagination cursor. Note that the default size is 100.";
+    }
+  ];
+  string status = 6 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Returns only exchange accounts that have this status. Leave empty to select all statuses.";
+    }
+  ];
+  bool onlyPositiveBalance = 7 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Whether or not to exclude an exchangeAccount with a zero balance. Defaults to false (exchangeAccounts with 0 balance included). ";
+      example: "false";
+    }
+  ];
+}
+
+message GetExchangesReply{
+  repeated Exchange result = 1;
+  ResponseCursor cursor = 2;
+}
+
+message GetExchangeRequest{
+  uint64 id = 1;
+}
+
+message GetExchangeReply{
+  Exchange result = 1;
+}
+
+message ExportExchangesRequest {
+  string format = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Desired file format, can be csv or json.";
+    }
+  ];
+}
+
+message ExportExchangesReply {
+  string result = 1;
+  uint64 totalItems = 2;
+}
+
+message GetExchangeWithdrawalFeeRequest{
+  uint64 id = 1;
+  uint64 toAddressId = 2;
+  string amount = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";}];
+}
+
+message GetExchangeWithdrawalFeeReply{
+  string result = 1;
+}
+
+message GetExchangeCounterpartiesReply {
+  string exchangesTotalValuation = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Total valuation of all exchanges in the base currency main unit (CHF, EUR, USD etc...)";}];
+  repeated ExchangeCounterparty exchanges = 2;
+}
+
+service ExchangeService {
+  rpc GetExchanges (GetExchangesRequest) returns (GetExchangesReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/exchangeaccounts"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List exchange accounts";
+      description: "This endpoint returns a list of exchange accounts";
+      tags: "Exchange";
+    };
+  };
+
+  rpc GetExchange (GetExchangeRequest) returns (GetExchangeReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/exchangeaccounts/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get an exchange account";
+      description: "This endpoint returns an exchange account";
+      tags: "Exchange";
+    };
+  };
+
+  rpc GetExchangeWithdrawalFee (GetExchangeWithdrawalFeeRequest) returns (GetExchangeWithdrawalFeeReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/exchangeaccounts/{id}/withdrawalfee"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get the withdrawal fees";
+      description: "This endpoint returns the withdrawal fees of an exchange account.\nAn empty response means that the exchange does not provide a live estimation of its fees";
+      tags: "Exchange";
+    };
+  };
+
+  // It is important that this is defined AFTER the more generic /api/rest/v1/requests/{id} routes
+
+  rpc ExportExchanges (ExportExchangesRequest) returns (ExportExchangesReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/exchangeaccounts/export"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Export exchange accounts";
+      description: "This endpoint exports a list of exchange accounts";
+      tags: "Exchange";
+    };
+  };
+
+  rpc GetExchangeCounterparties (google.protobuf.Empty) returns (GetExchangeCounterpartiesReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/exchanges"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List exchanges";
+      description: "This endpoint returns a list of all exchanges, their exposure and exposure limits.";
+      tags: "Exchange";
+    };
+  };
+}

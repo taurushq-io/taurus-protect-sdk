@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package tgvalidatord;
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+import "google/api/annotations.proto";
+import "google/api/httpbody.proto";
+import "google/protobuf/empty.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "airgap.proto";
+import "request_reply.proto";
+
+service AirGapService {
+  rpc GetOutgoingAirGap(GetOutgoingAirGapRequest) returns (google.api.HttpBody) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/airgap/outgoing"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Export HSM ready requests for cold HSM.";
+      description: "This endpoint will return the payload to be transmitted to the cold HSM.";
+      tags: "AirGap";
+      consumes: "application/json";
+      produces: "application/octet-stream";
+      responses: {
+        key: "200";
+        value: {
+          headers: {
+            key: "Content-Disposition";
+            value: {
+              type: "string";
+            };
+          };
+          schema: {
+            json_schema: {type: STRING, format: "binary"},
+          };
+        };
+      };
+    };
+  };
+
+  rpc SubmitIncomingAirGap(SubmitIncomingAirGapRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/airgap/incoming"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Import signed requests from the cold HSM.";
+      description: "This endpoint accepts an envelope of signed requests from the cold HSM.";
+      tags: "AirGap";
+    };
+  }
+}
+
+message GetOutgoingAirGapRequest {
+  Requests requests = 1;
+  Addresses addresses = 2;
+
+  message Requests {
+    repeated uint64 ids = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "uint64; the list of requests that have been approved to be signed by the cold HSM.";
+    }];
+    string signature = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description:  "The signature of the requests, in the form base64(ecdsa_sign(sha256([hex(sha256(req1_metadata)),hex(sha256(req2_metadata)),...hex(sha256(reqN_metadata))])))";
+    }];
+  }
+
+  message Addresses {
+    repeated uint64 ids = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "uint64; the list of addresses to be signed by the cold HSM.";
+    }];
+  }
+}
+
+message SubmitIncomingAirGapRequest {
+  string payload = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "base64; the signed payload by the air-gap importer of the type <*IncomingAirGapFile_SignedPayload>.";
+  }];
+  string signature = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "base64; The signature of the air-gap importer.";
+  }];
+}

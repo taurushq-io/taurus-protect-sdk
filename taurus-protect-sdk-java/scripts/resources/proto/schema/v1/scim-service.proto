@@ -1,0 +1,340 @@
+syntax = "proto3";
+
+package tgvalidatord;
+
+import "google/api/annotations.proto";
+import "google/rpc/status.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/wrappers.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "scim.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "tg-validatord scim service";
+    version: "1.0";
+    contact: {
+      name: "tg-validatord scim service";
+      url: "https://github.com/taurusgroup/tg-validatord";
+      email: "development@taurusgroup.ch";
+    };
+  };
+  consumes: "application/json";
+  produces: "application/scim+json";
+  schemes: [HTTP, HTTPS];
+  security_definitions: {
+    security: {
+      key: "Bearer";
+      value: {
+        type: TYPE_API_KEY;
+        in: IN_HEADER;
+        name: "Authorization";
+      }
+    }
+  }
+  security: {
+    security_requirement: {
+      key: "Bearer";
+      value: {};
+    }
+  }
+  responses: {
+    key: "401";
+    value: {
+      description: "Returned when the user is not authenticated.";
+    }
+  }
+  responses: {
+    key: "403";
+    value: {
+      description: "Returned when the user is not authorized to access the resource.";
+    }
+  }
+  responses: {
+    key: "404";
+    value: {
+      description: "Returned when the resource does not exist.";
+    }
+  }
+  responses: {
+    key: "400",
+    value: {
+      description: "Returned when an argument is invalid. It is"
+          " typically returned if one of the symbols is not available";
+    }
+  }
+  responses: {
+    key: "500",
+    value: {
+      description: "Returned when the service encountered an error."
+    }
+  }
+
+};
+
+message GetScimServiceProviderConfigRequest {}
+
+message GetScimServiceProviderConfigReply {
+  ScimServiceProviderConfig result = 1;
+}
+
+message ScimGetUserRequest {
+  uint64 userId = 1;
+}
+
+message ScimGetUsersRequest {
+  string filter = 1;
+  uint64 startIndex = 2;
+  uint64 count = 3;
+}
+
+message ScimDeleteUserRequest {
+  uint64 userId = 1;
+}
+
+// we need a dedicated ScimDeleteUserReply type to handle the status code with the middleware
+message ScimDeleteUserReply {
+  google.protobuf.Empty result = 1;
+}
+
+message ScimOperation {
+  string op = 1;
+  string path = 2;
+  google.protobuf.Value value = 3;
+}
+
+message ScimPatchUserRequest {
+  uint64 userId = 1;
+  repeated string schemas = 2;
+  repeated ScimOperation Operations = 3;
+}
+
+message ScimCreateUserRequest {
+  repeated string schemas = 1;
+  string externalId = 2;
+  ScimName name = 3;
+  repeated ScimEmail emails = 4;
+  repeated ScimRole roles = 5;
+}
+
+// ScimCreateUserReply should return the same fields as a ScimUser. 
+// we need a dedicated type to handle the status code with the middleware
+message ScimCreateUserReply {
+  repeated google.protobuf.StringValue schemas = 1;
+  google.protobuf.StringValue id = 2;
+  google.protobuf.StringValue externalId = 3;
+  ScimMeta meta = 4;
+  ScimName name = 5;
+  repeated ScimEmail emails = 6;
+  google.protobuf.BoolValue active = 7;
+  repeated ScimRole roles = 8;
+  repeated ScimResource groups = 9;
+  google.protobuf.StringValue userName = 10;
+}
+
+message ScimPutUserRequest {
+  message ScimNamePut {
+    string familyName = 1;
+    string givenName = 2;
+  }
+  message ScimEmailPut {
+    string type = 1;
+    string value = 2;
+  }
+
+  repeated string schemas = 1;
+  string id = 2;
+  string externalId = 3;
+  ScimNamePut name = 4;
+  repeated ScimEmailPut emails = 5;
+  bool active = 6;
+  repeated string roles = 7;
+  string userName = 8;
+}
+
+message ScimGetGroupRequest {
+  uint64 groupId = 1;
+}
+
+message ScimGetGroupsRequest {
+  string filter = 1;
+  uint64 startIndex = 2;
+  uint64 count = 3;
+}
+
+message ScimCreateGroupRequest {
+  repeated string schemas = 1;
+  string externalId = 2;
+  string displayName = 3;
+}
+
+// ScimCreateGroupReply should return the same fields as a ScimGroup. 
+// we need a dedicated type to handle the status code with the middleware
+message ScimCreateGroupReply {
+  repeated google.protobuf.StringValue schemas = 1;
+  google.protobuf.StringValue id = 2;
+  google.protobuf.StringValue externalId = 3;
+  google.protobuf.StringValue displayName = 4;
+  ScimMeta meta = 5;
+  repeated ScimResource members = 6;
+}
+
+message ScimPatchGroupRequest {
+  uint64 groupId = 1;
+  repeated string schemas = 2;
+  repeated ScimOperation Operations = 3;
+}
+
+message ScimDeleteGroupRequest {
+  uint64 groupId = 1;
+}
+
+// we need a dedicated ScimDeleteGroupReply type to handle the status code with the middleware
+message ScimDeleteGroupReply {
+  google.protobuf.Empty result = 1;
+}
+
+
+service ScimService {
+
+  rpc GetScimServiceProviderConfig(GetScimServiceProviderConfigRequest) returns (GetScimServiceProviderConfigReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/scim/v2/ServiceProviderConfig"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get SCIM service provider config";
+      description: "This endpoint returns the SCIM specification compliance, authentication schemes, data models. \nReference: https://datatracker.ietf.org/doc/html/rfc7643#section-5";
+      tags: "SCIM";
+    };
+  };
+
+  rpc ScimGetUser(ScimGetUserRequest) returns (ScimUser) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/scim/v2/Users/{userId}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "SCIM Get a user";
+      description: "This SCIM endpoint returns a user. The userId is the id of the user on the Protect side. \nReference: https://datatracker.ietf.org/doc/html/rfc7644#section-3.4.1";
+      tags: "SCIM";
+    };
+  };
+
+  rpc ScimGetUsers(ScimGetUsersRequest) returns (ScimUserList) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/scim/v2/Users"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "SCIM Get users";
+      description: "This SCIM endpoint returns users based on a filter and pagination. The filter is a minimal one and currently doesn't support boolean operations. \nReference (filter): https://datatracker.ietf.org/doc/html/rfc7644#section-3.4.2.2 \nReference (pagination): https://datatracker.ietf.org/doc/html/rfc7644#section-3.4.2.4";
+      tags: "SCIM";
+    };
+  };
+
+  rpc ScimCreateUser(ScimCreateUserRequest) returns (ScimCreateUserReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/scim/v2/Users"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "SCIM Create a user";
+      description: "This SCIM endpoint create a user. \nReference: https://datatracker.ietf.org/doc/html/rfc7644#section-3.3";
+      tags: "SCIM";
+    };
+  };
+
+  rpc ScimDeleteUser(ScimDeleteUserRequest) returns (ScimDeleteUserReply) {
+    option (google.api.http) = {
+      delete: "/api/rest/v1/scim/v2/Users/{userId}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "SCIM Delete a user";
+      description: "This SCIM endpoint create a deletion request of the user chosen with the userId. The userId is the id of the user on the Protect side. \nReference: https://datatracker.ietf.org/doc/html/rfc7644#section-3.6";
+      tags: "SCIM";
+    };
+  };
+
+  rpc ScimPatchUser(ScimPatchUserRequest) returns (ScimUser) {
+    option (google.api.http) = {
+      patch: "/api/rest/v1/scim/v2/Users/{userId}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "SCIM Patch a user";
+      description: "This SCIM endpoint create a request to change some fields of the user chosen with the userId. The userId is the id of the user on the Protect side. \nReference: https://datatracker.ietf.org/doc/html/rfc7644#section-3.5.2";
+      tags: "SCIM";
+    };
+  };
+
+  rpc ScimPutUser(ScimPutUserRequest) returns (ScimUser) {
+    option (google.api.http) = {
+      put: "/api/rest/v1/scim/v2/Users/{id}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "SCIM Put a user";
+      description: "This SCIM endpoint create a request to potentially update all fields of the user chosen with the userId. The userId is the id of the user on the Protect side. \nReference: https://datatracker.ietf.org/doc/html/rfc7644#section-3.5.1";
+      tags: "SCIM";
+    };
+  };
+
+  rpc ScimGetGroup(ScimGetGroupRequest) returns (ScimGroup) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/scim/v2/Groups/{groupId}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "SCIM Get a group";
+      description: "This SCIM endpoint returns a group. The groupId is the id of the group on the Protect side. \nReference: https://datatracker.ietf.org/doc/html/rfc7644#section-3.4.1";
+      tags: "SCIM";
+    };
+  };
+
+  rpc ScimGetGroups(ScimGetGroupsRequest) returns (ScimGroupsList) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/scim/v2/Groups"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "SCIM Get groups";
+      description: "This SCIM endpoint returns groups based on a filter and pagination. The filter is a minimal one and currently doesn't support boolean operations. \nReference (filter): https://datatracker.ietf.org/doc/html/rfc7644#section-3.4.2.2 \nReference (pagination): https://datatracker.ietf.org/doc/html/rfc7644#section-3.4.2.4";
+      tags: "SCIM";
+    };
+  };
+
+  rpc ScimCreateGroup(ScimCreateGroupRequest) returns (ScimCreateGroupReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/scim/v2/Groups"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "SCIM Create a group";
+      description: "This SCIM endpoint create a group.\nReference: https://datatracker.ietf.org/doc/html/rfc7644#section-3.3";
+      tags: "SCIM";
+    };
+  };
+
+  rpc ScimDeleteGroup(ScimDeleteGroupRequest) returns (ScimDeleteGroupReply) {
+    option (google.api.http) = {
+      delete: "/api/rest/v1/scim/v2/Groups/{groupId}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "SCIM Delete a user";
+      description: "This SCIM endpoint create a deletion request of the group chosen with the groupId. The groupId is the id of the user on the Protect side. \nReference: https://datatracker.ietf.org/doc/html/rfc7644#section-3.6";
+      tags: "SCIM";
+    };
+  };
+
+  rpc ScimPatchGroup(ScimPatchGroupRequest) returns (ScimGroup) {
+    option (google.api.http) = {
+      patch: "/api/rest/v1/scim/v2/Groups/{groupId}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "SCIM Patch a user";
+      description: "This SCIM endpoint create a request to change some fields of the group chosen with the groupId. The groupId is the id of the group on the Protect side. \nReference: https://datatracker.ietf.org/doc/html/rfc7644#section-3.5.2";
+      tags: "SCIM";
+    };
+  };
+
+}

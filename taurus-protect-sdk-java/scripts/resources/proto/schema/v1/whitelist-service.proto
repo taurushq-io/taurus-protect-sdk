@@ -1,0 +1,950 @@
+syntax = "proto3";
+
+package tgvalidatord;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "whitelist.proto";
+import "score.proto";
+import "google/protobuf/timestamp.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "tg-validatord whitelist service";
+    version:"1.0";
+    contact:{
+      name:"tg-validatord whitelist service";
+      url:"https://github.com/taurusgroup/tg-validatord";
+      email:"development@taurusgroup.ch";
+    };
+  };
+  consumes:"application/json";
+  produces:"application/json";
+  schemes: [HTTP, HTTPS];
+  security_definitions:{
+    security:{
+      key:"Bearer";
+      value:{
+        type:TYPE_API_KEY;
+        in:IN_HEADER;
+        name:"Authorization";
+      }
+    }
+  }
+  security:{
+    security_requirement:{
+      key:"Bearer";
+      value:{};
+    }
+  }
+  responses:{
+    key:"401";
+    value:{
+      description:"Returned when the user is not authenticated.";
+    }
+  }
+  responses:{
+    key:"403";
+    value:{
+      description:"Returned when the user is not authorized to access the resource.";
+    }
+  }
+  responses:{
+    key:"404";
+    value:{
+      description:"Returned when the resource does not exist.";
+    }
+  }
+};
+
+// WLA
+
+message GetSignedWhitelistedAddressEnvelopeRequest {
+  uint64 id = 1;
+}
+
+message GetSignedWhitelistedAddressEnvelopeReply {
+  SignedWhitelistedAddressEnvelope result = 1;
+}
+
+message GetSignedWhitelistedAddressEnvelopesRequest {
+  uint64 limit = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; Return maximum `limit` items for a query; Max 100.";}];
+  uint64 offset = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; Start retrieving items starting at `offset` id";}];
+  uint64 exchangeAccountId = 3  [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; **Deprecated:** Use exchangeAccountIds instead";}];
+  string addressType = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Can be one of the following: `individual`, `exchange`, `baker`, `stakepool`, `contract`, `validator`, node, `fiatprovider`";}];
+  string query = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Will find a match in any part of the value. Filter applies to the following fields: `customerid`, `address`, `blockchain`, `label`, `memo`, `addresstype`";}];
+  string currency = 6  [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** Use `blockchain` instead";}];
+  string scoreProvider = 7  [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** Use `scoreFilter` instead. Can be either of the following: `scorechain`, `coinfirm`, `chainalysis`, `elliptic`, `trmlabs`";}];
+  string scoreInBelow = 8  [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; **Deprecated:** Use `scoreFilter` instead";}];
+  string scoreOutBelow = 9  [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; **Deprecated:** Use `scoreFilter` instead";}];
+  bool scoreExclusive = 10  [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** Use `scoreFilter` instead";}];
+  bool rulesContainerNormalized = 11  [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Normalize rules containers in its own object";}];
+  repeated uint64 exchangeAccountIds = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; Array containing the list of IDs for exchange accounts";}];
+  string coinfirmScoreGreater = 13  [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; **Deprecated:** Use `scoreFilter` instead";}];
+  repeated string tagIDs = 14 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Filter addresses with a 'OR' combination of tag IDs";}];
+  string chainalysisScoreGreater = 15  [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; **Deprecated:** Use `scoreFilter` instead";}];
+  string contractType = 16  [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** Use `contractTypes` instead";}];
+  uint64 allowedForAddressId = 17 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; Filter addresses allowed to receive funds from this address id";}];
+  uint64 allowedForWalletId = 18 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; Filter addresses allowed to receive funds from this wallet id. Will be ignored if allowedForAddressId is filled";}];
+  string blockchain = 19 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Filter on the blockchain of the WLA.";}];
+  bool includeForApproval = 20 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "If true, include also addresses waiting for approval in the results.";}];
+  repeated string addresses = 21 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Filter on the specific addresses to return. This field is using the blockchain's native address syntax";}];
+  string network = 22 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Name of the blockchain network, eg. `mainnet`, `testnet`, or `sepolia`";}];
+  repeated uint64 ids = 23 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; List of IDs to return";}];
+  string tnParticipantID = 24 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uuid; UUID of the Taurus-NETWORK participant to whom the address belongs";}];
+  ScoreFilter scoreFilter = 25 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Configure score filters.";}];
+  google.protobuf.Timestamp lastIncomingTxFromWhitelistedAddress = 26 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Filtered addresses with the last incoming transaction older than lastIncomingTransactionDate  won't appear in the result. The default value is never";}];
+  repeated string contractTypes = 27 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Filter addresses by multiple Contract Types. Can be any of: `GENERIC`, `CMTA20`, `CMTA20-KYC`, `CMTA20-RULEENGINE`, `CMTAT`, `ERC20`, `DEFI`, `ERC2771-PROXY-ADMIN`, `TERC1155A`, `GSN_FORWARDER`, `OPEN_ZEPPELIN_FORWARDER`, `TAURUS_CONTRACT_CREATOR`, `SMARTPY-FA2`, `SMARTPY-FA12`, `ASA`, `FIGMENT_STAKING`";}];
+  string attributeFiltersJson = 28 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "A JSON representation of a list of AttributeFilter objects. The filters are combined with an attributeFiltersOperator ('OR' by default). Each AttributeFilter can use different comparison operators: `=` (default if not specified), `<>` (not equal), `>` (greater than), `>=` (greater than or equal), `<` (less than), `<=` (less than or equal)";
+      example: "[{'key':'key1','value':'value1','type':'type1','operator':'='}]";
+    }
+  ];
+  string attributeFiltersOperator = 29 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Specifies how attribute filters are combined. Accepted values: 'OR' (default), 'AND'.";
+      example: "AND";
+    }
+  ];
+}
+
+message AttributeFilter {
+  string key = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Key to filter on";}];
+  string value = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Value filter to match";}];
+  string type = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "One of: `staking_info`, `address_info`, `tag`, `threshold`, `factor`, `transaction_info`, `multi_value`, `reservation_info`";}];
+  string operator = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Comparison operator to use. Supported operators: `=` (default if not specified), `<>` (not equal), `>` (greater than), `>=` (greater than or equal), `<` (less than), `<=` (less than or equal), `contains` (searches for substring)";}];
+}
+
+message HashRulesContainer {
+  string hash = 1;
+  string rulesContainer = 2;
+  string rulesSignatures = 3;
+}
+
+message GetSignedWhitelistedAddressEnvelopesReply {
+  repeated SignedWhitelistedAddressEnvelope result = 1;
+  uint64 totalItems = 2;
+  repeated HashRulesContainer rulesContainers = 3;
+}
+
+message ExportWhitelistedAddressesRequest {
+  string format = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "defaults to `json`; can be `csv` or `json`";}];
+  uint64 exchangeAccountId = 2 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** Use exchangeAccountIds instead";}];
+  string addressType = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Can be one of the following: `individual`, `exchange`, `baker`, `stakepool`, `contract`, `validator`, node, `fiatprovider`";}];
+  string query = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Will find a match in any part of the value. Filter applies to the following fields: `customerid`, `address`, `blockchain`, `label`, `memo`, `addresstype`";}];
+  string currency = 5  [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** Use `blockchain` instead";}];
+  string scoreProvider = 6   [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** Use `scoreFilter` instead. Can be either of the following: `scorechain`, `coinfirm`, `chainalysis`, `elliptic`, `trmlabs`";}];
+  string scoreInBelow = 7  [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; **Deprecated:** Use `scoreFilter` instead";}];
+  string scoreOutBelow = 8  [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; **Deprecated:** Use `scoreFilter` instead";}];
+  bool scoreExclusive = 9  [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** Use `scoreFilter` instead";}];
+  repeated uint64 exchangeAccountIds = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; Array containing the list of IDs for exchange accounts";}];
+  string coinfirmScoreGreater = 11  [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; **Deprecated:** Use `scoreFilter` instead";}];
+  repeated string tags = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "List of tags applied returned whitelisted addresses";}];
+  string chainalysisScoreGreater = 13  [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; **Deprecated:** Use `scoreFilter` instead";}];
+  string blockchain = 14 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Filter on the blockchain of the WLA.";}];
+  repeated string addresses = 15 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Filter on the specific addresses to return. This field is using the blockchain's native address syntax";}];
+  string network = 16 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Name of the blockchain network, eg. `mainnet`, `testnet`, or `sepolia`";}];
+  ScoreFilter scoreFilter = 17  [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Configure score filters.";}];
+}
+
+message ExportWhitelistedAddressesReply {
+  string result = 1;
+  uint64 totalItems = 2;
+}
+
+message GetWhitelistedAddressesForApprovalRequest {
+  uint64 limit = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "uint64; The amount of unapproved whitelisted address returned per request. Max 100.";
+    }
+  ];
+  uint64 offset = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "uint64; The offset from which to begin selection of unapproved whitelisted addresses.";
+    }
+  ];
+  repeated uint64 ids = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "uint64 Array; The ids to filter your requests selection by.";
+    }
+  ];
+  string blockchain = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The blockchain associated with the unapproved whitelisted addresses. (ex. eth, btc)";
+    }
+  ];
+  string addressType = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The type of unapproved whitelisted address (ex. individual, exchange, baker, contract, stakepool, validator, node, fiatprovider).";
+    }
+  ];
+  string query = 6 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "A search query to filter your request with. Will search the label or address fields.";
+    }
+  ];
+  string network = 7 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The network of the associated blockchain the address is in. (ex. mainnet, sepolia)";
+    }
+  ];
+  bool includeAlreadySignedByUser = 8 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set to true to include the pending approval whitelisted addresses already signed by the user. Default: false";
+    }
+  ];
+}
+
+message CreateWhitelistedAddressRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{\"label\": \"Address ABC\",\"customerId\": \"customerABC\",\"address\": \"0x39c4622ac9704dfea991e9c26abcf9bde3c095ac\",\"blockchain\": \"ETH\",\"addressType\": \"individual\"}"
+    json_schema: {
+      required: ["address", "label", "blockchain"]
+    }
+  };
+
+  string address = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Required: The address you wish to whitelist. Must be a valid address for the desired blockchain and network.";
+    }
+  ];
+  string memo = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "A memo to apply to the desired whitelisted address.";
+    }
+  ];
+  string label = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Required: A label to apply to the desired whitelisted address.";
+    }
+  ];
+  uint64 exchangeAccountId = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "uint64; The id of an exchange account. There is a single exchange account per currency, per exchange";
+    }
+  ];
+  string customerId = 6 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The id of the customer to associate with this address.";
+    }
+  ];
+  repeated uint64 linkedInternalAddressIds = 7 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "uint64 Array, An array of address ids to attach to this address, must match the blockchain of the linked addresses and they must not belong omnibus wallets.";
+    }
+  ];
+  string addressType = 8 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The type of the address (e.g. `individual`, `exchange`, `baker`, `contract`, `stakepool`, `validator`, `node`, `fiatprovider`).";
+    }
+  ];
+  string contractType = 9 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The type of contract to associate with this address (ex. CMTA20, GENERIC).";
+    }
+  ];
+  repeated uint64 linkedWalletIds = 10 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "uint64 Array; An array of wallets to attach to this address.";
+    }
+  ];
+  string blockchain = 11 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Required: The symbol of the blockchain of which to whitelist an address. (ex. eth, btc)";
+    }
+  ];
+  string network = 12 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The network of the blockchain the whitelisted address belongs to (ex. mainnet).";
+    }
+  ];
+  string visibilityGroupID = 13 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The id of the visibility group to place the address in. You must be able to see this visibility group.";
+    }
+  ];
+
+  // Next field: 14
+
+  // DEPRECATED
+
+  string currency = 1 [
+    deprecated = true,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "**Deprecated:** use the blockchain parameter instead ";
+    }
+  ];
+}
+
+message ApproveWhitelistedAddressRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["ids", "signature", "comment"]
+    }
+  };
+
+  string signature = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Signature for the approval. To compute the signature use the following formula: base64(ecdsa_sign(sha256([hex(sha256(req1_metadata)),hex(sha256(req2_metadata)),hex(sha256(req3_metadata))]))).";
+    }];
+  string comment = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "An optional comment to be added to the approval."
+    }];
+  repeated uint64 whitelistedAddressIds = 3 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "deprecated: use the ids parameter instead ";}];
+  repeated uint64 ids = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "List of whitelisted address IDs to approve. The list must be sorted in ascending order."
+    }];
+  bool async = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "For large numbers of approvals, will store them and process them in background";}];
+}
+
+message ApproveWhitelistingReply {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{\"signatures\":\"1\"}"
+  };
+  uint64 signatures = 1;
+  WhitelistedAddressBatchSignature asyncSignature = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "If async was passed, this contains the signature that is being applied asynchronously and other fields are empty";}];
+}
+
+message GetAsyncWhitelistedAddressApprovalsRequest {
+  repeated uint64 ids = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; List of IDs to return";}];
+  bool includeDetails = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "If `true`, produce a verbose response";}];
+}
+
+message GetAsyncWhitelistedAddressApprovalsReply {
+  repeated WhitelistedAddressBatchSignature result = 1;
+}
+
+message RejectWhitelistedAddressRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["ids", "comment"]
+    }
+  };
+
+  uint64 id = 1  [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; **Deprecated:** use the ids parameter instead ";}];
+  string comment = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A comment must be provided for the reason for rejection";}];
+  repeated uint64 ids = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; List of IDs to reject";}];
+}
+
+message DeleteWhitelistedAddressRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["id"]
+    }
+  };
+
+  uint64 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The ID of the whitelisted address to delete";}];
+  string comment = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A comment can be provided as the reason for deletion";}];
+}
+message GetWhitelistedAddressAttributeRequest {
+  uint64 whitelistedAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The ID of the whitelisted address for the attribute";}];
+  uint64 id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The ID of the attribute";}];
+}
+
+message GetWhitelistedAddressAttributeReply {
+  WhitelistedAddressAttribute result = 1;
+}
+
+message CreateWhitelistedAddressAttributesRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["attributes"]
+    }
+  };
+
+  uint64 whitelistedAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The ID of the whitelisted address for the attribute";}];
+  repeated CreateWhitelistedAddressAttributeRequest attributes = 2;
+}
+
+message CreateWhitelistedAddressAttributesReply {
+  repeated WhitelistedAddressAttribute result = 1;
+}
+
+message CreateWhitelistedAddressAttributeRequest {
+  string key = 1;
+  string value = 2;
+  string contentType = 3;
+  string type = 4;
+  string subtype = 5;
+  bool isfile = 6;
+}
+
+message DeleteWhitelistedAddressAttributeRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["id", "whitelistedAddressId"]
+    }
+  };
+
+  uint64 whitelistedAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The whitelisted address ID for the attribute";}];
+  uint64 id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The attribute ID to delete";}];
+}
+
+// WCA
+
+
+message GetSignedWhitelistedContractAddressEnvelopeRequest {
+  uint64 id = 1;
+}
+
+message GetSignedWhitelistedContractAddressEnvelopeReply {
+  SignedWhitelistedContractAddressEnvelope result = 1;
+}
+
+message GetSignedWhitelistedContractAddressEnvelopesRequest {
+  uint64 limit = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; Return maximum `limit` items for a query; Max 100.";}];
+  uint64 offset = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; Start retrieving items starting at `offset` id";}];
+  string query = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Will find a match in any part of the value. Filter applies to the following fields: `customerid`, `address`, `blockchain`, `label`, `memo`, `addresstype`";}];
+  string blockchain = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Symbol of the blockchain on which to whitelist an address";}];
+  bool includeForApproval = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "If true, include also addresses waiting for approval in the results.";}];
+  string network = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Name of the blockchain network, eg. `mainnet`, `testnet`, or `sepolia`";}];
+  bool isNFT = 7  [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use the kindTypes parameter with 'nft' instead ";}];
+  repeated uint64 whitelistedContractAddressIds = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The whitelisted contract IDs to retrieve";}];
+  repeated string kindTypes = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Filter on contract kind type, can be `nft` or `token`. An empty list means no filtering.";}];
+}
+
+message GetSignedWhitelistedContractAddressEnvelopesReply {
+  repeated SignedWhitelistedContractAddressEnvelope result = 1;
+  uint64 totalItems = 2;
+}
+
+message GetWhitelistedContractAddressesForApprovalRequest {
+  uint64 limit = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; Return maximum `limit` items for a query; Max 100.";}];
+  uint64 offset = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; Start retrieving items starting at `offset` id";}];
+  repeated uint64 ids = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; List of IDs to return";}];
+}
+
+message CreateWhitelistedContractAddressRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["symbol", "blockchain"]
+    }
+  };
+
+  string blockchain = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Symbol of the blockchain on which to whitelist a contract. Examples: `BTC`, `ADA`, `SOL` ...";}];
+  string contractAddress = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Address of the smart contract.\n"
+        "For ALGO standard assets, this is the address of the creator of the asset.\n"
+        "\n"
+        "For XLM, this is the Stellar address.\n"
+        "\n"
+        "For ICP, this is the ICP principal.";}];
+  string symbol = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Symbol of the token.\n"
+        "For ALGO it is the unit name of the standard asset.";}];
+  string name = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Name for the contract.";}];
+  uint64 decimals = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Number of decimal places to consider as minimum unit of transfer.";}];
+  string tokenId = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Unused for ETH and Polygon.\n"
+        "For XTZ, this is used to create a FA2 token.\n"
+        "For ALGO standard assets, this is the globally unique asset id.";}];
+  string kind = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:
+        "Examples: `\"\"` (default), `\"NFT_AUTO\"`, `\"NFT_XTZ_FA2\"`, `\"NFT_EVM_ERC721\"`, `\"NFT_EVM_ERC1155\"`, `\"SOL_TOKEN\"`, `\"SOL_TOKEN2022\"`, `\"NFT_EVM_CRYPTOPUNKS\"`\n"
+    ;}];
+  string network = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Name of the blockchain network, eg. `mainnet`, `testnet`, or `sepolia`.";}];
+}
+
+message UpdateWhitelistedContractAddressRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["id", "symbol", "name", "decimals"]
+    }
+  };
+  uint64 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "ID of the Whitelisted Contract to update.";}];
+  string symbol = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Symbol of the token.\n";}];
+  string name = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Name of the token.\n";}];
+  uint64 decimals = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Number of decimal places to consider as minimum unit of transfer";}];
+}
+
+message UpdateWhitelistedContractAddressResult {
+  uint64 updatedContractTemporaryId = 1;
+}
+
+message UpdateWhitelistedContractAddressReply {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{\"result\": {\"updatedContractTemporaryId\": \"1322\"}}"
+  };
+
+  UpdateWhitelistedContractAddressResult result = 1;
+}
+
+message RejectWhitelistedContractAddressRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["ids", "comment"]
+    }
+  };
+
+  uint64 id = 1 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; **Deprecated:** Use the `ids` parameter instead ";}];
+  string comment = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A comment must be provided for the reason for rejection";}];
+  repeated uint64 ids = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; List of IDs to reject";}];
+}
+
+message DeleteWhitelistedContractAddressRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["id"]
+    }
+  };
+
+  uint64 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The whitelisted contract ID to delete";}];
+  string comment = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A comment must be provided for the reason for deletion";}];
+}
+
+message ApproveWhitelistedContractAddressRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["ids", "signature", "comment"]
+    }
+  };
+
+  string signature = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "base64(ecdsa_sign(sha256([hex(sha256(req1_metadata)),hex(sha256(req2_metadata)),hex(sha256(req3_metadata))])))";}];
+  string comment = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A comment must be provided for the reason for approval";}];
+  repeated uint64 whitelistedContractAddressIds = 3 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; **Deprecated:** Use the `ids` parameter instead ";}];
+  repeated uint64 ids = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; Sorted list of IDs to approve.";}];
+}
+
+message GetWhitelistedContractAddressAttributeRequest {
+  uint64 whitelistedContractAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The whitelisted contract ID for the attribute";}];
+  uint64 id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The attribute ID to retrieve";}];
+}
+
+message GetWhitelistedContractAddressAttributeReply {
+  WhitelistedContractAddressAttribute result = 1;
+}
+
+message CreateWhitelistedContractAddressAttributesRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["whitelistedContractAddressId"]
+    }
+  };
+
+  uint64 whitelistedContractAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The whitelisted contract ID to bind with the attributes";}];
+  repeated CreateWhitelistedContractAddressAttributeRequest attributes = 2;
+}
+
+message CreateWhitelistedContractAddressAttributeRequest {
+  string key = 1;
+  string value = 2;
+  string contentType = 3;
+  string type = 4;
+  string subtype = 5;
+  bool isfile = 6;
+}
+
+message CreateWhitelistedContractAddressAttributesReply {
+  repeated WhitelistedContractAddressAttribute result = 1;
+}
+
+message DeleteWhitelistedContractAddressAttributeRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["id", "whitelistedContractAddressId"]
+    }
+  };
+
+  uint64 whitelistedContractAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The whitelisted contract ID of the attribute";}];
+  uint64 id = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The attribute ID to delete";}];
+}
+
+message IDResult {
+  uint64 id = 1;
+}
+message CreateReply {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{\"result\": {\"id\": \"1322\"}}"
+  };
+
+  IDResult result = 1;
+}
+
+
+service WhitelistService {
+  /////////////////////////
+  /// Address Whitelist ///
+  /////////////////////////
+  rpc GetWhitelistedAddress (GetSignedWhitelistedAddressEnvelopeRequest) returns (GetSignedWhitelistedAddressEnvelopeReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/whitelists/addresses/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get a whitelisted address";
+      description: "This endpoint returns a whitelisted address";
+      tags: "Address whitelisting";
+    };
+  };
+
+  rpc GetWhitelistedAddressAttribute (GetWhitelistedAddressAttributeRequest) returns (GetWhitelistedAddressAttributeReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/whitelists/addresses/{whitelistedAddressId}/attributes/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List attributes";
+      description: "This endpoint returns a list of attributes of a given whitelisted address";
+      tags: "Address whitelisting";
+    };
+  };
+  rpc CreateWhitelistedAddressAttributes (CreateWhitelistedAddressAttributesRequest) returns (CreateWhitelistedAddressAttributesReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/whitelists/addresses/{whitelistedAddressId}/attributes"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create attributes";
+      description: "This endpoint creates attributes of a given whitelisted address.\n Required role: **WhitelistedAddressCreator**.";
+      tags: "Address whitelisting";
+    };
+  };
+  rpc DeleteWhitelistedAddressAttribute (DeleteWhitelistedAddressAttributeRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/rest/v1/whitelists/addresses/{whitelistedAddressId}/attributes/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete an attribute";
+      description: "This endpoint deletes an attribute of a given whitelisted address.\n Required role: **WhitelistedAddressCreator**.";
+      tags: "Address whitelisting";
+    };
+  };
+
+  // It is important that this is defined AFTER the more generic /api/rest/v1/whitelists/addresses/{id} routes
+
+  rpc CreateWhitelistedAddress (CreateWhitelistedAddressRequest) returns (CreateReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/whitelists/addresses"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a whitelisted address";
+      description: "This endpoint creates a new whitelisted address.\n Required role: **WhitelistedAddressCreator**.";
+      tags: "Address whitelisting";
+    };
+  };
+
+  rpc DeleteWhitelistedAddress (DeleteWhitelistedAddressRequest) returns (CreateReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/whitelists/addresses/delete"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete a whitelisted address";
+      description: "This endpoint deletes a whitelisted address.\n Required role: **WhitelistedAddressCreator**.";
+      tags: "Address whitelisting";
+    };
+  };
+
+  rpc ApproveWhitelistedAddress (ApproveWhitelistedAddressRequest) returns (ApproveWhitelistingReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/whitelists/addresses/approve"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Approve a whitelisted address";
+      description: "This endpoint approves a whitelisted address.\n Required role: **WhitelistedAddressApprover**.";
+      tags: "Address whitelisting";
+    };
+  };
+
+  rpc GetAsyncWhitelistedAddressApprovals (GetAsyncWhitelistedAddressApprovalsRequest) returns (GetAsyncWhitelistedAddressApprovalsReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/whitelists/addresses/async-approvals"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List asynchronous approvals";
+      description: "This endpoint returns a list of approvals that are processed asynchronously";
+      tags: "Requests";
+    };
+  }
+
+  rpc RejectWhitelistedAddress (RejectWhitelistedAddressRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/whitelists/addresses/reject"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Reject a whitelisted address";
+      description: "This endpoint rejects a whitelisted address.\n Required role: **WhitelistedAddressApprover**.";
+      tags: "Address whitelisting";
+    };
+  };
+
+  rpc GetWhitelistedAddresses (GetSignedWhitelistedAddressEnvelopesRequest) returns (GetSignedWhitelistedAddressEnvelopesReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/whitelists/addresses"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List whitelisted addresses";
+      description: "This endpoint returns a list of whitelisted addresses";
+      tags: "Address whitelisting";
+    };
+  };
+
+  rpc ExportWhitelistedAddresses (ExportWhitelistedAddressesRequest) returns (ExportWhitelistedAddressesReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/whitelists/addresses/export"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Export whitelisted addresses";
+      description: "This endpoint exports a list of whitelisted addresses";
+      tags: "Address whitelisting";
+    };
+  };
+
+  rpc GetWhitelistedAddressesForApproval (GetWhitelistedAddressesForApprovalRequest) returns (GetSignedWhitelistedAddressEnvelopesReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/whitelists/addresses/for-approval"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List whitelisted addresses for approval";
+      description: "This endpoint returns a list of whitelisted addresses for approval";
+      tags: "Address whitelisting";
+    };
+  };
+
+  /////////////
+  /// WLCA  ///
+  /////////////
+  rpc GetWhitelistedContract (GetSignedWhitelistedContractAddressEnvelopeRequest) returns (GetSignedWhitelistedContractAddressEnvelopeReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/whitelists/contracts/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get a whitelisted contract";
+      description: "This endpoint returns a whitelisted contract";
+      tags: "Contract whitelisting";
+    };
+  };
+
+  rpc UpdateWhitelistedContract (UpdateWhitelistedContractAddressRequest) returns (UpdateWhitelistedContractAddressReply) {
+    option (google.api.http) = {
+      put: "/api/rest/v1/whitelists/contracts/{id}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Update whitelisted contracts";
+      description: "This endpoint updates a whitelisted contract.\n"
+          "The fields that can be edited are [symbol, name, decimals].\n"
+          "ALGO whitelisted contracts are not editable as they are populated with on-chain data at creation.\n"
+          "Required role: **WhitelistedAddressCreator**.";
+      tags: "Contract whitelisting";
+    };
+  }
+
+  rpc GetWhitelistedContractAttribute (GetWhitelistedContractAddressAttributeRequest) returns (GetWhitelistedContractAddressAttributeReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/whitelists/contracts/{whitelistedContractAddressId}/attributes/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get an attribute";
+      description: "This endpoint returns an attribute of a given whitelisted contract";
+      tags: "Contract whitelisting";
+    };
+  };
+
+  rpc CreateWhitelistedContractAttributes (CreateWhitelistedContractAddressAttributesRequest) returns (CreateWhitelistedContractAddressAttributesReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/whitelists/contracts/{whitelistedContractAddressId}/attributes"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create attributes";
+      description: "This endpoint creates attributes of a given whitelisted contract.\n Required role: **WhitelistedAddressCreator**.";
+      tags: "Contract whitelisting";
+    };
+  };
+
+  rpc DeleteWhitelistedContractAttribute (DeleteWhitelistedContractAddressAttributeRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/rest/v1/whitelists/contracts/{whitelistedContractAddressId}/attributes/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete an attribute";
+      description: "This endpoint deletes an attribute of a given whitelisted contract.\n Required role: **WhitelistedAddressCreator**.";
+      tags: "Contract whitelisting";
+    };
+  };
+
+  // It is important that this is defined AFTER the more generic /api/rest/v1/whitelists/contracts/{id} routes
+
+  rpc CreateWhitelistedContract (CreateWhitelistedContractAddressRequest) returns (CreateReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/whitelists/contracts"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create whitelisted contracts";
+      description: "This endpoint creates a new whitelisted contracts.\n"
+          "For ETH, `tokenId` is left empty\n"
+          "For XTZ, `tokenId` is left empty for FA1.2 tokens and must have a value for FA2 tokens\n"
+          "For ALGO, we either need a tokenId which is the `assetId` for algorand, or we need a `contractAddress` (creator address) and a `symbol` (unit name), which will be used to identify the asset.\n"
+          "For XLM,  we need a valid `contractAddress` (Stellar address) and `tokenId` (Stellar asset code)."
+          "For ICP, we need a valid `contractAddress` (valid ICP principal)."
+          "Required role: **WhitelistedAddressCreator**.";
+      tags: "Contract whitelisting";
+    };
+  };
+
+  rpc DeleteWhitelistedContract (DeleteWhitelistedContractAddressRequest) returns (CreateReply) {
+    option deprecated = true;
+    option (google.api.http) = {
+      post: "/api/rest/v1/whitelists/contracts/delete"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      deprecated: true;
+      summary: "Delete a whitelisted contract";
+      description: "Deprecated: due to complex dependencies, it is not possible to delete a whitelisted contract anymore";
+      tags: "Contract whitelisting";
+    };
+  };
+
+  rpc RejectWhitelistedContract (RejectWhitelistedContractAddressRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/whitelists/contracts/reject"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Reject a whitelisted contract";
+      description: "This endpoint rejects a whitelisted contract.\n Required role: **WhitelistedAddressApprover**.";
+      tags: "Contract whitelisting";
+    };
+  };
+
+  rpc ApproveWhitelistedContract (ApproveWhitelistedContractAddressRequest) returns (ApproveWhitelistingReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/whitelists/contracts/approve"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Approve a whitelisted contract";
+      description: "This endpoint approves a whitelisted contract.\n Required role: **WhitelistedAddressApprover**.";
+      tags: "Contract whitelisting";
+    };
+  };
+
+  rpc GetWhitelistedContracts (GetSignedWhitelistedContractAddressEnvelopesRequest) returns (GetSignedWhitelistedContractAddressEnvelopesReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/whitelists/contracts"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List whitelisted contracts";
+      description: "This endpoint returns a list of whitelisted contracts";
+      tags: "Contract whitelisting";
+    };
+  };
+
+  rpc GetWhitelistedContractsForApproval (GetWhitelistedContractAddressesForApprovalRequest) returns (GetSignedWhitelistedContractAddressEnvelopesReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/whitelists/contracts/for-approval"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List whitelisted contracts for approval";
+      description: "This endpoint returns a list of whitelisted contracts for approval";
+      tags: "Contract whitelisting";
+    };
+  };
+
+
+}

@@ -1,0 +1,145 @@
+syntax = "proto3";
+
+package tgvalidatord;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "tag.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "tg-validatord tag service";
+    version: "1.0";
+    contact: {
+      name: "tg-validatord tag service";
+      url: "https://github.com/taurusgroup/tg-validatord";
+      email: "development@taurusgroup.ch";
+    };
+  };
+  consumes: "application/json";
+  produces: "application/json";
+  schemes: [HTTP, HTTPS];
+  security_definitions: {
+    security: {
+      key: "Bearer";
+      value: {
+        type: TYPE_API_KEY;
+        in: IN_HEADER;
+        name: "Authorization";
+      }
+    }
+  }
+  security: {
+    security_requirement: {
+      key: "Bearer";
+      value: {};
+    }
+  }
+  responses: {
+    key: "401";
+    value: {
+      description: "Returned when the user is not authenticated.";
+    }
+  }
+  responses: {
+    key: "403";
+    value: {
+      description: "Returned when the user is not authorized to access the resource.";
+    }
+  }
+  responses: {
+    key: "404";
+    value: {
+      description: "Returned when the resource does not exist.";
+    }
+  }
+  responses: {
+    key: "400",
+    value: {
+      description: "Returned when an argument is invalid.";
+    }
+  }
+  responses: {
+    key: "500",
+    value: {
+      description: "Returned when the service encountered an error."
+    }
+  }
+
+};
+
+
+message GetTagsRequest {
+  repeated string ids = 1;
+  string query = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Filter tags to select only tags where the value contains the given query substring.";
+    }
+  ];
+}
+
+message GetTagsReply {
+  repeated Tag result = 1;
+}
+
+message CreateTagRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["value", "color"]
+    }
+  };
+
+  string value = 1;
+  string color = 2;
+}
+
+message CreateTagReply {
+  Tag result = 1;
+}
+
+message DeleteTagRequest {
+  string id = 1;
+}
+
+service TagService {
+
+  rpc GetTags(GetTagsRequest) returns (GetTagsReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/tags"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "List tags";
+      description:
+          "This endpoint returns a list of tags.";
+      tags: "Tags";
+    };
+  };
+
+  rpc CreateTag(CreateTagRequest) returns (CreateTagReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/tags"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Create tag";
+      description:
+          "This endpoint creates a tag.";
+      tags: "Tags";
+    };
+  };
+
+  rpc DeleteTag(DeleteTagRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/rest/v1/tags/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Delete tag by id";
+      description:
+          "This endpoint deletes a tag given its id and all assignments of this tag on all the entities.";
+      tags: "Tags";
+    };
+  };
+}

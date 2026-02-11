@@ -1,0 +1,89 @@
+syntax = "proto3";
+
+package tgvalidatord;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "xtzbaker.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "tg-validatord xtzbaker service";
+    version:"1.0";
+    contact:{
+      name:"tg-validatord xtzbaker service";
+      url:"https://github.com/taurusgroup/tg-validatord";
+      email:"development@taurusgroup.ch";
+    };
+  };
+  consumes:"application/json";
+  produces:"application/json";
+  schemes: [HTTP, HTTPS];
+  security_definitions:{
+    security:{
+      key:"Bearer";
+      value:{
+        type:TYPE_API_KEY;
+        in:IN_HEADER;
+        name:"Authorization";
+      }
+    }
+  }
+  security:{
+    security_requirement:{
+      key:"Bearer";
+      value:{};
+    }
+  }
+  responses:{
+    key:"401";
+    value:{
+      description:"Returned when the user is not authenticated.";
+    }
+  }
+  responses:{
+    key:"403";
+    value:{
+      description:"Returned when the user is not authorized to access the resource.";
+    }
+  }
+  responses:{
+    key:"404";
+    value:{
+      description:"Returned when the resource does not exist.";
+      schema:{
+        json_schema:{
+          type:STRING;
+        }
+      }
+    }
+  }
+
+};
+
+
+message GetXTZBakerRequest {
+  string address = 1;
+  string network = 2;
+}
+
+message GetXTZBakerReply {
+  XTZBaker result = 1;
+}
+
+service XTZBakerService {
+
+  rpc GetXTZBaker (GetXTZBakerRequest) returns (GetXTZBakerReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/xtzbakers/{network}/{address}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get XTZ baker";
+      description: "This endpoint returns the baker of an XTZ address";
+      tags: "Requests: XTZ";
+    };
+  };
+
+}

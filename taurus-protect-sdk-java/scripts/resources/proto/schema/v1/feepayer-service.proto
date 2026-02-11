@@ -1,0 +1,157 @@
+syntax = "proto3";
+package tgvalidatord;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "feepayer.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "tg-validatord feepayer service";
+    version:"1.0";
+    contact:{
+      name:"tg-validatord feepayer service";
+      url:"https://github.com/taurusgroup/tg-validatord";
+      email:"development@taurusgroup.ch";
+    };
+  };
+  consumes:"application/json";
+  produces:"application/json";
+  schemes:HTTP;
+  security_definitions:{
+    security:{
+      key:"Bearer";
+      value:{
+        type:TYPE_API_KEY;
+        in:IN_HEADER;
+        name:"Authorization";
+      }
+    }
+  }
+  security:{
+    security_requirement:{
+      key:"Bearer";
+      value:{};
+    }
+  }
+  responses:{
+    key:"401";
+    value:{
+      description:"Returned when the user is not authenticated.";
+    }
+  }
+  responses:{
+    key:"403";
+    value:{
+      description:"Returned when the user is not authorized to access the resource.";
+    }
+  }
+  responses:{
+    key:"404";
+    value:{
+      description:"Returned when the resource does not exist.";
+    }
+  }
+
+};
+
+message GetFeePayersRequest {
+  uint64 limit = 1;
+  uint64 offset = 2;
+  repeated uint64 ids = 3;
+  string blockchain = 4;
+  string network = 5;
+}
+
+message GetFeePayersReply {
+  repeated FeePayerEnvelope result = 1;
+  uint64 totalItems = 2;
+}
+
+message GetFeePayerRequest {
+  uint64 id = 1;
+}
+
+message GetFeePayerReply {
+  FeePayerEnvelope feepayer = 1;
+}
+
+message GetChecksumRequest {
+  bytes data = 1;
+}
+
+message GetChecksumReply {
+  string checksum = 1;
+}
+
+message InitRemoteFeePayerRequest {
+  uint64 tenantId = 1;
+  string url = 2;
+  string email = 3;
+  string externalGroupId = 4;
+  string password = 5;
+  string userKey = 6;
+  string encryptionKey = 7;
+  uint64 forwarderId = 8;
+  uint64 creatorId = 9;
+  uint64 feePayerAddressId = 10;
+  bytes domainSeparator = 11;
+}
+
+message InitRemoteFeePayerReply {
+  bytes remoteEncrypted = 1;
+  bool rulesUpdated = 2;
+  string checksum = 3;
+}
+
+
+service FeePayerService {
+  rpc GetFeePayers (GetFeePayersRequest) returns (GetFeePayersReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/feepayers"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List fee payers";
+      description: "This endpoint returns a list of fee payers";
+      tags: "Fee payers";
+    };
+  };
+
+  rpc GetFeePayer (GetFeePayerRequest) returns (GetFeePayerReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/feepayers/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get a fee payer";
+      description: "This endpoint returns a fee payer";
+      tags: "Fee payers";
+    };
+  };
+
+  // It is important that this is defined AFTER the more generic /api/rest/v1/feepayers/{id} routes
+  rpc Checksum (GetChecksumRequest) returns (GetChecksumReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/feepayers/info/checksum"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get a checksum";
+      description: "This endpoint returns a checksum";
+      tags: "Fee payers";
+    };
+  };
+
+  rpc InitRemoteFeePayer(InitRemoteFeePayerRequest) returns (InitRemoteFeePayerReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/feepayers/remote/init"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Initiate fee payer";
+      description: "This endpoint initiates a remote fee payer";
+      tags: "Fee payers";
+    };
+  };
+}

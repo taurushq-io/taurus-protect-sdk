@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package tgvalidatord;
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+import "google/protobuf/timestamp.proto";
+
+message SecurityDomain {
+  uint64 id = 1;
+  uint64 tenantId = 2;
+  string domain = 3;
+  Mode mode = 4;
+  repeated SecurityDomainAttribute attributes = 5;
+  google.protobuf.Timestamp creationDate = 6;
+  google.protobuf.Timestamp updateDate = 7;
+  bool enabled = 8;
+
+  enum Mode {
+    Undefined = 0;
+    Basic = 1;
+    OIDC = 2;
+    SAML = 3;
+  }
+}
+
+message SecurityDomainAttribute {
+  uint64 id = 1;
+  string key = 2;
+  string value = 3;
+  google.protobuf.Timestamp creationDate = 4;
+  google.protobuf.Timestamp updateDate = 5;
+}

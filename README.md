@@ -1,64 +1,157 @@
-# Taurus-PROTECT Java SDK
+# Taurus-PROTECT SDK Documentation
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+This monorepo contains SDKs for the **Taurus-PROTECT API**, a cryptocurrency custody and transaction management platform.
 
-This repository provides example Java code to consume some APIs of Taurus-PROTECT.
+## Documentation
 
-## Organization
+### Common Documentation
 
-This repository contains two Java modules: `openapi` and  `client`.
+For concepts shared across all SDKs, see [docs/](docs/):
 
-The `openapi` [module](openapi) is generated from OpenAPI descriptions and should not be modified.
+| Document | Description |
+|----------|-------------|
+| [Key Concepts](docs/CONCEPTS.md) | Domain model, entities, relationships, request lifecycle |
+| [Authentication](docs/AUTHENTICATION.md) | TPV1 authentication protocol, security best practices |
+| [Integrity Verification](docs/INTEGRITY_VERIFICATION.md) | Cryptographic verification flows |
 
-The `client` [module](client) contains a higher level Java code that should be used to interact with the Taurus-PROTECT
-APIs. This module is based on the `openapi` module.
+### SDK-Specific Documentation
 
-## Build
+- **Java SDK**: [taurus-protect-sdk-java/](taurus-protect-sdk-java/) | [docs](taurus-protect-sdk-java/docs/)
+- **Go SDK**: [taurus-protect-sdk-go/](taurus-protect-sdk-go/) | [docs](taurus-protect-sdk-go/docs/)
+- **Python SDK**: [taurus-protect-sdk-python/](taurus-protect-sdk-python/) | [docs](taurus-protect-sdk-python/docs/)
+- **TypeScript SDK**: [taurus-protect-sdk-typescript/](taurus-protect-sdk-typescript/) | [docs](taurus-protect-sdk-typescript/docs/)
 
-In order to build the library using OpenJDK 8 (tested with Correto 8), run the following command:
+---
+
+## Repository Structure
 
 ```
-mvn clean compile
+taurus-protect-sdk/
+├── docs/                              # Common documentation
+│   ├── CONCEPTS.md                    # Domain model (shared)
+│   ├── AUTHENTICATION.md              # TPV1 protocol (shared)
+│   └── INTEGRITY_VERIFICATION.md      # Verification flows (shared)
+├── scripts/resources/                 # Shared resources
+│   ├── jars/
+│   │   └── openapi-generator-cli-7.9.0.jar
+│   ├── proto/schema/                  # Protobuf definitions (98 files)
+│   │   ├── v1/                        # v1 API schemas
+│   │   ├── common/                    # Shared types
+│   │   └── third_party/               # Google/gRPC dependencies
+│   └── swagger/
+│       └── apis.swagger.json          # OpenAPI 2.0 specification
+├── taurus-protect-sdk-java/           # Java SDK
+├── taurus-protect-sdk-go/             # Go SDK
+├── taurus-protect-sdk-python/         # Python SDK
+└── taurus-protect-sdk-typescript/     # TypeScript SDK
 ```
 
-To install it using OpenJDK 8 (tested with Correto 8) locally:
+---
 
-```
-mvn clean install
-```
+## Java SDK
 
-## Usage
+**Requirements:** Java 8+ (runtime), Maven 3.6+ (build), Java 11+ (code generation)
 
-To start interacting with the Taurus-PROTECT APIs, a client needs first to be created:
-
-```java
-private final String host = "http://localhost:6000";
-private final String apiKey = "my-api-key";
-private final String apiSecret = "my-api-secret";
-
-ProtectClient client = new ProtectClient(host, apiKey, apiSecret);
+```bash
+cd taurus-protect-sdk-java
+./build.sh           # Full build (compile + test)
+./build.sh unit      # Unit tests only
 ```
 
-Several examples are
-provided [here](client/src/test/java/com/taurushq/sdk/protect/client/ProtectClientIntegrationTest.java).
+**Documentation:** [taurus-protect-sdk-java/docs/](taurus-protect-sdk-java/docs/)
+- [SDK Overview](taurus-protect-sdk-java/docs/SDK_OVERVIEW.md) - Architecture, modules, code generation
+- [Services Reference](taurus-protect-sdk-java/docs/SERVICES.md) - Complete API reference
+- [Usage Examples](taurus-protect-sdk-java/docs/USAGE_EXAMPLES.md) - Code examples
 
-For example, to create an address:
+---
 
-```java
-ProtectClient client = new ProtectClient(host, apiKey, apiSecret);
+## Go SDK
 
-Address a = null;
-try {
-    a = client.getAddressService().createAddress(1, "my address", "my comment", "");
-} catch (ApiException e) {
+**Requirements:** Go 1.21+ (runtime), Java 11+ (code generation), protoc + protoc-gen-go (protobuf)
 
-    System.out.println(e.getMessage());
-    System.out.println(e.getError());
-
-    throw new RuntimeException(e);
-}
+```bash
+cd taurus-protect-sdk-go
+./build.sh build     # Compile only
+./build.sh unit      # Unit tests only
 ```
 
-## Intellectual property
+**Documentation:** [taurus-protect-sdk-go/docs/](taurus-protect-sdk-go/docs/)
+- [SDK Overview](taurus-protect-sdk-go/docs/SDK_OVERVIEW.md) - Architecture, packages, code generation
+- [Services Reference](taurus-protect-sdk-go/docs/SERVICES.md) - Complete API reference
+- [Usage Examples](taurus-protect-sdk-go/docs/USAGE_EXAMPLES.md) - Code examples
 
-This code is copyright (c) 2025 Taurus SA. It is released under [MIT license](./LICENSE).
+---
+
+## Python SDK
+
+**Requirements:** Python 3.9+ (runtime), Java 11+ (code generation), protoc (protobuf)
+
+```bash
+cd taurus-protect-sdk-python
+./build.sh           # Full build (install + test)
+./build.sh unit      # Unit tests only
+```
+
+**Documentation:** [taurus-protect-sdk-python/docs/](taurus-protect-sdk-python/docs/)
+- [SDK Overview](taurus-protect-sdk-python/docs/SDK_OVERVIEW.md) - Architecture, packages, code generation
+- [Services Reference](taurus-protect-sdk-python/docs/SERVICES.md) - Complete API reference
+- [Usage Examples](taurus-protect-sdk-python/docs/USAGE_EXAMPLES.md) - Code examples
+
+---
+
+## TypeScript SDK
+
+**Requirements:** Node.js 18+ (runtime), npm 9+ (package manager), Java 11+ (code generation)
+
+```bash
+cd taurus-protect-sdk-typescript
+./build.sh build     # Compile only
+./build.sh unit      # Unit tests only
+```
+
+**Documentation:** [taurus-protect-sdk-typescript/docs/](taurus-protect-sdk-typescript/docs/)
+- [SDK Overview](taurus-protect-sdk-typescript/docs/SDK_OVERVIEW.md) - Architecture, packages, code generation
+- [Services Reference](taurus-protect-sdk-typescript/docs/SERVICES.md) - Complete API reference
+- [Usage Examples](taurus-protect-sdk-typescript/docs/USAGE_EXAMPLES.md) - Code examples
+
+---
+
+## SDK Comparison
+
+| Aspect | Java | Go | Python | TypeScript |
+|--------|------|-----|--------|------------|
+| **Language Version** | Java 8+ | Go 1.21+ | Python 3.9+ | Node.js 18+ |
+| **Build Tool** | Maven | `go` tool | pip/setuptools | npm |
+| **HTTP Client** | OkHttp | Standard `net/http` | urllib3 | fetch API |
+| **DTO Mapping** | MapStruct (compile-time) | Manual functions | Manual functions + Pydantic models | Manual functions |
+| **Services** | 43 | 43 | 43 | 43 |
+| **Testing** | JUnit 5 | Go testing | pytest | Jest |
+| **Static Analysis** | SpotBugs, PMD, Checkstyle | golangci-lint | black, flake8, mypy | ESLint, TypeScript |
+
+---
+
+## Shared Resources
+
+All SDKs generate code from the same specifications:
+
+### OpenAPI Specification
+- **Location**: `scripts/resources/swagger/apis.swagger.json`
+- **Format**: Swagger 2.0 / OpenAPI 2.0
+- **Content**: 56 REST API services
+
+### Protocol Buffer Schemas
+- **Location**: `scripts/resources/proto/schema/`
+- **Content**: 98 .proto files defining:
+  - v1 API message types
+  - Common shared types
+  - Third-party dependencies (Google protobuf, gRPC gateway)
+
+---
+
+## Disclaimer
+
+This software is provided **for educational, experimental, and development purposes only**. It is not intended for production use. See [DISCLAIMER.md](DISCLAIMER.md) for full details.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.

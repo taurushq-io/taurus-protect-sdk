@@ -1,0 +1,155 @@
+{
+  "description": "Cross-SDK cryptographic test vectors for Taurus-PROTECT SDKs",
+  "version": "1.0.0",
+  "note": "All SDKs must produce identical results for these vectors. Vectors are computed using Node.js crypto module with UTF-8 encoding.",
+  "vectors": {
+    "hex_hash": [
+      {
+        "description": "Empty string",
+        "input": "",
+        "expected": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "description": "Simple ASCII string",
+        "input": "hello",
+        "expected": "2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824"
+      },
+      {
+        "description": "Longer ASCII string",
+        "input": "The quick brown fox jumps over the lazy dog",
+        "expected": "d7a8fbb307d7809469ca9abcb0082e4f8d5651e46d3cdb762d02d0bf37c9e592"
+      },
+      {
+        "description": "JSON payload (typical whitelist address)",
+        "input": "{\"blockchain\":\"ETH\",\"network\":\"mainnet\",\"address\":\"0x742d35Cc6634C0532925a3b844Bc9e7595f2bD17\"}",
+        "expected": "dc113e505556e91b4325aa92759106adc8e1327d2a45d42e45cc2b45fc920fee"
+      },
+      {
+        "description": "Unicode characters (multi-byte UTF-8)",
+        "input": "Unicode: caf\u00e9 r\u00e9sum\u00e9 na\u00efve",
+        "expected": "0df96eee5fa04ff0bdb5a7257ad94cb5922f0762a37187710e3ca173fa17bd6e"
+      },
+      {
+        "description": "Special characters",
+        "input": "Special chars: !@#$%^&*()_+-=[]{}|;':\",./<>?",
+        "expected": "a5c5e8fa7deed6de004a236f4291487e73fdc581b8b7edcaf103eed22bce6c5f"
+      }
+    ],
+    "hmac_sha256": [
+      {
+        "description": "RFC 4231 Test Case 1 (truncated key)",
+        "key_hex": "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b",
+        "data": "Hi There",
+        "expected_base64": "sDRMYdjbOFNcqK/OrwvxK4gdwgDJgz2nJuk3bC4yz/c="
+      },
+      {
+        "description": "RFC 4231 Test Case 2 (Jefe key)",
+        "key_hex": "4a656665",
+        "data": "what do ya want for nothing?",
+        "expected_base64": "W9zBRr9gdU5qBCQmCJV1x1oAPwidJzmDnexYuWTsOEM="
+      },
+      {
+        "description": "Key with repeated bytes",
+        "key_hex": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "data": "Test With Truncation",
+        "expected_base64": "zbXLMUHSHfbykFqjZPqNkF8ujfscuD3boDnYADkZ3Qc="
+      },
+      {
+        "description": "TPV1 signing message format",
+        "key_hex": "0123456789abcdef0123456789abcdef",
+        "data": "TPV1 test-key 550e8400-e29b-41d4-a716-446655440000 1672531200000 POST api.example.com /v1/wallets",
+        "expected_base64": "fwgEoMPFrTTdA2z1CITksgh7Km8+zkekwZgI56xkFKo="
+      },
+      {
+        "description": "Empty data with valid key",
+        "key_hex": "deadbeefcafebabe",
+        "data": "",
+        "expected_base64": "5kc6ZWSbj5QPya8ulMkodZjqVY4+HHddNs4bCp9VXpc="
+      }
+    ],
+    "constant_time_compare": [
+      {
+        "description": "Equal strings",
+        "a": "abc123",
+        "b": "abc123",
+        "expected": true
+      },
+      {
+        "description": "Strings differ in last character",
+        "a": "abc123",
+        "b": "abc124",
+        "expected": false
+      },
+      {
+        "description": "Different length strings",
+        "a": "abc",
+        "b": "abcd",
+        "expected": false
+      },
+      {
+        "description": "Both empty strings",
+        "a": "",
+        "b": "",
+        "expected": true
+      },
+      {
+        "description": "One empty, one non-empty",
+        "a": "",
+        "b": "a",
+        "expected": false
+      }
+    ],
+    "legacy_hash_address": [
+      {
+        "description": "Address with contractType and labels",
+        "payload": "{\"currency\":\"ETH\",\"network\":\"mainnet\",\"address\":\"0x123\",\"contractType\":\"ERC20\",\"linkedInternalAddresses\":[{\"id\":1,\"address\":\"0xabc\",\"label\":\"main\"}]}",
+        "original_hash": "eeaf395732020bd5f8a1048ef65a1badccf36fc22b6065a1205ea965390dc53c",
+        "expected_without_contract_type": "c8836b0e89ae52c3332c94b4037e8b7dd2c09507dfc05a703639375e02f86a42",
+        "expected_without_labels": "bac98de61c1a8cc8c1fe10224d9959a791e8f845bb857e5b0b086d994e6cf5a3",
+        "expected_without_both": "d006f9aa91022ca1cf427fb4b3ed3d9da74d1df947d7117f202a4fa77335d10b",
+        "expected_legacy_count": 3
+      },
+      {
+        "description": "Address without contractType (no legacy needed)",
+        "payload": "{\"currency\":\"BTC\",\"network\":\"mainnet\",\"address\":\"bc1q...\"}",
+        "original_hash": "5af09b4e225a54065576d6d4c5996b3982933d137079a02ec3f1e9ce6b61401b",
+        "expected_legacy_count": 0
+      },
+      {
+        "description": "Address with multiple linked addresses and labels",
+        "payload": "{\"currency\":\"ETH\",\"network\":\"goerli\",\"address\":\"0x456\",\"contractType\":\"ERC721\",\"linkedInternalAddresses\":[{\"id\":1,\"address\":\"0xaaa\",\"label\":\"first\"},{\"id\":2,\"address\":\"0xbbb\",\"label\":\"second\"}]}",
+        "original_hash": "89e3fe7b499070dc055ba0d7216f8ec5562e4d3f2f37901a83199a1c34a6de48",
+        "expected_without_contract_type": "feb0c3e92f2dc47a856e782316ddcd894101f5d9e3b0ab323afb0bef4e22ace9",
+        "expected_without_labels": "4a7fda5df89c0dd6d0c5014f4f1f15790876264a73ce9afc1425aed3e4946824",
+        "expected_without_both": "c8a34d34189a7232e09c06db24afa7369e2b51c7832c0552dcff3d382ac912ac",
+        "expected_legacy_count": 3
+      }
+    ],
+    "legacy_hash_asset": [
+      {
+        "description": "Asset with isNFT and kindType",
+        "payload": "{\"name\":\"USDC\",\"symbol\":\"USDC\",\"isNFT\":false,\"kindType\":\"TOKEN\",\"decimals\":6}",
+        "original_hash": "0392b0fc1af7e6afa358ae0f6b91872c7cf3984ac65c61474361a033e39edcf8",
+        "expected_without_is_nft": "3f94c1a5164a4dd3df0bed11109543f1d7d2255d0cb9002c33d0f51c95de8497",
+        "expected_without_kind_type": "5256bcbaa09d99a8fe851c56767268402db2ceab20764dcf39df0d83d37aec38",
+        "expected_without_both": "063b87f07e7d3d012cdba0798a85022c9e66036f5b9cbde09502bdd6a8f65eeb",
+        "expected_legacy_count": 3
+      },
+      {
+        "description": "Asset without isNFT or kindType (no legacy needed)",
+        "payload": "{\"name\":\"ETH\",\"symbol\":\"ETH\",\"decimals\":18}",
+        "original_hash": "91efb2e9175ea93222606d2cd051096021e264913b6996ad319c2fb0f5f99ba1",
+        "expected_legacy_count": 0
+      },
+      {
+        "description": "NFT asset with both fields",
+        "payload": "{\"name\":\"CryptoPunks\",\"symbol\":\"PUNK\",\"isNFT\":true,\"kindType\":\"NFT\",\"decimals\":0}",
+        "original_hash": "b1217da58641df4d7028bd22a19ab60623dce8949061df948d8b8afb22b6fab5",
+        "expected_without_is_nft": "7a7463fbb9888447fff5e088d7c8690458c7dd879561f2c250d80d0710c7f832",
+        "expected_without_kind_type": "a7ce0039d1529d5e7fedc0a0b2dce8a73fd9da633f73149c3ab3de9dbd3a6f6f",
+        "expected_without_both": "304697473bcb4358e5c98144be2c1ccf5ac9e43713d32b04f095434fdac6fc4b",
+        "expected_legacy_count": 3
+      }
+    ]
+  }
+}

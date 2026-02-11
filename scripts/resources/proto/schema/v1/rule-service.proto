@@ -1,0 +1,317 @@
+syntax = "proto3";
+
+package tgvalidatord;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/protobuf/empty.proto";
+import "cursor.proto";
+
+import "rule.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "tg-validatord rule service";
+    version:"1.0";
+    contact:{
+      name:"tg-validatord rule service";
+      url:"https://github.com/taurusgroup/tg-validatord";
+      email:"development@taurusgroup.ch";
+    };
+  };
+  consumes:"application/json";
+  produces:"application/json";
+  schemes: [HTTP, HTTPS];
+  security_definitions:{
+    security:{
+      key:"Bearer";
+      value:{
+        type:TYPE_API_KEY;
+        in:IN_HEADER;
+        name:"Authorization";
+      }
+    }
+  }
+  security:{
+    security_requirement:{
+      key:"Bearer";
+      value:{};
+    }
+  }
+  responses:{
+    key:"401";
+    value:{
+      description:"Returned when the user is not authenticated.";
+    }
+  }
+  responses:{
+    key:"403";
+    value:{
+      description:"Returned when the user is not authorized to access the resource.";
+    }
+  }
+  responses:{
+    key:"404";
+    value:{
+      description:"Returned when the resource does not exist.";
+    }
+  }
+
+};
+
+message GetBusinessRulesRequest {
+  uint64 limit = 1;
+  uint64 offset = 2;
+  repeated uint64 ids = 3;
+  repeated string ruleKeys = 4;
+  repeated string ruleGroups = 5;
+  repeated uint64 walletIds = 6;
+  repeated string currencies = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter on IDs or symbols of the currency";}];
+  repeated uint64 addressIds = 8;
+  string level = 9  [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "one of '', 'global', 'currency', 'address', 'wallet'";}];
+}
+
+message GetBusinessRulesV2Request {
+  repeated uint64 ids = 1;
+  repeated string ruleKeys = 2;
+  repeated string ruleGroups = 3;
+
+  // Deprecated - Use EntityType and EntityID instead
+  repeated uint64 walletIds = 4 [deprecated = true];
+  repeated string currencyIds = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter on currency ids";}];
+
+  // Deprecated - Use EntityType and EntityID instead
+  repeated uint64 addressIds = 6 [deprecated = true];
+
+  // Deprecated - Use EntityType instead
+  string level = 7  [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "one of '', 'global', 'currency', 'address', 'wallet'";}];
+  RequestCursor cursor = 8 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The pagination cursor. Note that the default size is 100.";
+    }
+  ];
+
+  // Filters rules by what they apply to. This can be one of `global`, `currency`, `wallet`, `address`, `exchange`, `exchange_account`, `tn_participant`.
+  string entityType = 9;
+
+  // Filters rules by the identifier of the affected entity. For wallets, addresses, and currencies this is their ID. For exchanges this is the exchange label. Leave this field blank for global rules.
+  repeated string entityIDs = 10;
+}
+
+message GetBusinessRulesV2Reply {
+  repeated BusinessRule result = 1;
+  ResponseCursor cursor = 2;
+}
+
+message GetBusinessRulesReply {
+  repeated BusinessRule result = 1;
+  uint64 totalItems = 2;
+}
+
+message GetRulesReply {
+  Rules result = 1;
+}
+
+message GetRulesByIDRequest {
+  uint64 id = 1;
+}
+
+message GetRulesHistoryRequest {
+  uint64 limit = 1;
+  bytes cursor = 2;
+}
+
+message GetRulesHistoryReply {
+  repeated Rules result = 1;
+  uint64 totalItems = 2;
+  bytes cursor = 3;
+}
+
+message UpdateRulesProposalRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["rulesContainer"]
+    }
+  };
+
+  string rulesContainer = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "rulesContainer should respect base64 format.";
+    }
+  ];
+}
+
+message ApproveRulesProposalRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["signature", "comment"]
+    }
+  };
+
+  string signature = 1; // base64(ecdsa_sign(sha256(rules_proposal)))
+  string comment = 2;
+}
+
+message RejectRulesProposalRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["comment"]
+    }
+  };
+
+  string comment = 1;
+}
+
+message UpdateTransactionsEnabledBusinessRuleRequest {
+  bool enabled = 1;
+}
+
+message GetPublicKeysReply {
+  message PublicKey {
+    string userID = 1;
+    string publicKey = 2;
+  }
+
+  repeated PublicKey publicKeys = 1;
+}
+
+service RuleService {
+
+  /////////////////////////////
+  ////   Business Rules   /////
+  /////////////////////////////
+  // Deprecated - do not use anymore, use /api/rest/v2/businessrules instead
+  rpc GetBusinessRules (GetBusinessRulesRequest) returns (GetBusinessRulesReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/businessrules"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List business rules";
+      description: "Deprecated - Use /api/rest/v2/businessrules instead - This endpoint returns a list of business rules.\n Required role: **Admin** or **AdminReadOnly**.";
+      tags: "Business rules"
+      deprecated: true
+    };
+  };
+
+  rpc GetBusinessRulesV2 (GetBusinessRulesV2Request) returns (GetBusinessRulesV2Reply) {
+    option (google.api.http) = {
+      get: "/api/rest/v2/businessrules"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List business rules";
+      description: "This endpoint returns a list of business rules.\n Required role: **Admin** or **AdminReadOnly**.";
+      tags: "Business rules"
+    };
+  };
+
+  rpc UpdateTransactionsEnabledBusinessRule (UpdateTransactionsEnabledBusinessRuleRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/api/rest/v1/businessrules/transactions_enabled"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Enable/disable requests";
+      description: "This endpoint toggles the requests enabling rule.\n Required role: **Admin**.";
+      tags: "Business rules"
+    };
+  };
+
+  ///////////////////////////////
+  ////   Governance Rules   /////
+  ///////////////////////////////
+  rpc GetRulesByID (GetRulesByIDRequest) returns (GetRulesReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/rules/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List governance rules";
+      description: "This endpoint returns the governance ruleset with a specifc ID";
+      tags: "Governance rules"
+    };
+  };
+
+  // It is important that this is defined AFTER the more generic /api/rest/v1/rules/{id} routes
+  rpc GetRules (google.protobuf.Empty) returns (GetRulesReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/rules"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List governance rules";
+      description: "This endpoint returns a list of the enforced governance rules";
+      tags: "Governance rules"
+    };
+  };
+
+  rpc GetRulesHistory (GetRulesHistoryRequest) returns (GetRulesHistoryReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/rules/history"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List governance rules history";
+      description: "This endpoint returns a list of governance rule sets history";
+      tags: "Governance rules"
+    };
+  };
+
+  rpc GetRulesProposal (google.protobuf.Empty) returns (GetRulesReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/rules/proposal"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List governance rules proposal";
+      description: "This endpoint returns a list of the proposed governance rules.\n Required role: **SuperAdmin** or **SuperAdminReadOnly**.";
+      tags: "Governance rules"
+    };
+  };
+
+  rpc UpdateRulesProposal (UpdateRulesProposalRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/api/rest/v1/rules/proposal"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Update governance rules proposal";
+      description: "This endpoint updates the proposed governance rules.\n Required role: **SuperAdmin**.";
+      tags: "Governance rules"
+    };
+  };
+
+  rpc ApproveRulesProposal (ApproveRulesProposalRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/rules/proposal/approve"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Approve governance rules proposal";
+      description: "This endpoint approves the proposed governance rules.\n Required role: **SuperAdmin**.";
+      tags: "Governance rules"
+    };
+  };
+
+  rpc RejectRulesProposal (RejectRulesProposalRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/rules/proposal/reject"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Reject governance rules proposal";
+      description: "This endpoint rejects the proposed governance rules.\n Required role: **SuperAdmin**.";
+      tags: "Governance rules"
+    };
+  };
+
+  rpc GetPublicKeys (google.protobuf.Empty) returns (GetPublicKeysReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/rules/publickeys"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List public keys";
+      description: "This endpoint returns a list of superadmin's public keys";
+      tags: "Governance rules";
+    };
+  };
+}
+
+

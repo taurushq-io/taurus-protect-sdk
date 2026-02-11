@@ -1,0 +1,160 @@
+syntax = "proto3";
+package tgvalidatord;
+
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/rpc/status.proto";
+import "google/api/annotations.proto";
+import "google/api/visibility.proto";
+import "contract-template.proto";
+import "cursor.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "tg-validatord contract template service";
+    version: "1.0";
+    contact: {
+      name: "tg-validatord contract template service";
+      url: "https://github.com/taurusgroup/tg-validatord";
+      email: "development@taurusgroup.ch";
+    };
+  };
+  consumes: "application/json";
+  produces: "application/json";
+  schemes: [HTTP, HTTPS];
+  security_definitions: {
+    security: {
+      key: "Bearer";
+      value: {
+        type: TYPE_API_KEY;
+        in: IN_HEADER;
+        name: "Authorization";
+      }
+    }
+  }
+  security: {
+    security_requirement: {
+      key: "Bearer";
+      value: {};
+    }
+  }
+  responses: {
+    key: "401";
+    value: {
+      description: "Returned when the user is not authenticated.";
+      schema: {
+        json_schema: {
+          ref: ".google.rpc.Status"
+        }
+      }
+    }
+  }
+  responses: {
+    key: "403";
+    value: {
+      description: "Returned when the user is not authorized to access the resource.";
+      schema: {
+        json_schema: {
+          ref: ".google.rpc.Status"
+        }
+      }
+    }
+  }
+  responses: {
+    key: "404";
+    value: {
+      description: "Returned when the resource does not exist.";
+      schema: {
+        json_schema: {
+          type: STRING;
+        }
+      }
+    }
+  }
+};
+
+message GetContractTemplateRequest {
+  string id = 1;
+}
+
+message GetContractTemplateReply {
+  ContractTemplateResource result = 1;
+}
+
+message GetContractTemplatesRequest {
+  RequestCursor cursor = 1;
+  GetContractTemplatesFilter filter = 2;
+}
+
+message GetContractTemplatesReply {
+  ResponseCursor cursor = 1;
+  repeated ContractTemplateResource result = 2;
+}
+
+message GetContractTemplatesFilter {
+  message GenericFilter {
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+      json_schema: {
+        required: ["blockchain"]
+      }
+    };
+
+    string blockchain = 1;
+    string tag = 2 [
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "Optional filter on specified tag.";
+      }
+    ];
+    bool providedOnly = 3 [
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "Optional filter to return only Taurus provided Contract Templates.";
+      }
+    ];
+    bool auditedOnly = 4 [
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "Optional filter to return only Contract Templates marked as audited.";
+      }
+    ];
+    string nameSearch = 5 [
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "Optionally Search Contract Templates by name. Example: 'erc' will match ['erc20', 'TERC', 'E-RC', 'e_rc', 'e.r.c'] etc.";
+      }
+    ];
+    repeated ContractTemplateType contractTemplateTypes = 6 [
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "Optional filter on specified Contract Template types.";
+      }
+    ];
+  }
+
+  oneof filter {
+    GenericFilter genericFilter = 1;
+  }
+}
+
+service ContractTemplateService {
+  option (google.api.api_visibility).restriction = "INTERNAL";
+  rpc GetContractTemplates(GetContractTemplatesRequest) returns (GetContractTemplatesReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v3/contract-templates/query"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get Contract Templates";
+      description: "This endpoint returns a list of Contract Templates.";
+      tags: "Contract Template";
+    };
+  }
+
+  rpc GetContractTemplate(GetContractTemplateRequest) returns (GetContractTemplateReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v3/contract-templates/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get Contract Template By ID";
+      description: "This endpoint return the Contract Template for the given ID.";
+      tags: "Contract Template";
+    };
+  }
+}

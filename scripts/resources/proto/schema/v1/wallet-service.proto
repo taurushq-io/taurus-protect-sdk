@@ -1,0 +1,1435 @@
+syntax = "proto3";
+
+package tgvalidatord;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "google/api/annotations.proto";
+import "google/api/httpbody.proto";
+import "google/api/visibility.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "currency.proto";
+import "wallet.proto";
+import "cursor.proto";
+import "reservation.proto";
+import "score.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "tg-validatord wallet service";
+    version:"1.0";
+    contact:{
+      name:"tg-validatord wallet service";
+      url:"https://github.com/taurusgroup/tg-validatord";
+      email:"development@taurusgroup.ch";
+    };
+  };
+  consumes:"application/json";
+  produces:"application/json";
+  schemes: [HTTP, HTTPS];
+  security_definitions:{
+    security:{
+      key:"Bearer";
+      value:{
+        type:TYPE_API_KEY;
+        in:IN_HEADER;
+        name:"Authorization";
+      }
+    }
+  }
+  security:{
+    security_requirement:{
+      key:"Bearer";
+      value:{}
+    }
+  }
+  responses:{
+    key:"401";
+    value:{
+      description:"Returned when the user is not authenticated.";
+    }
+  }
+  responses:{
+    key:"403";
+    value:{
+      description:"Returned when the user is not authorized to access the resource.";
+    }
+  }
+  responses:{
+    key:"404";
+    value:{
+      description:"Returned when the resource does not exist.";
+    }
+  }
+};
+
+message GetCurrenciesRequest {
+  bool showDisabled = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to true to get all currencies,"
+          "Include currencies disabled by business rules.";
+    }
+  ];
+  bool includeLogo = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Currency logos are omitted by default. Set this to true to include them when applicable.";
+    }
+  ];
+}
+
+message GetCurrenciesReply {
+  repeated Currency result = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "An array of all currencies.";
+    }
+  ];
+}
+
+message GetCurrencyRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{ \"uniqueCurrencyFilter\": {\"blockchain\": \"ETH\", \"network\": \"ETH\"} }"
+  };
+
+  bool showDisabled = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to true to get a currency even if it is disabled by business rules.";
+    }
+  ];
+  UniqueCurrencyFilter uniqueCurrencyFilter = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "A filter used to select a specific currency.";
+    }
+  ];
+  string currencyID = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The unique identifier of a currency to filter by.";
+    }
+  ];
+  bool includeLogo = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Currency logos are omitted by default. Set this to true to include them when applicable.";
+    }
+  ];
+}
+
+message GetCurrencyReply {
+  Currency result = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The currency that fits the filter.";
+    }
+  ];
+}
+
+message GetBaseCurrencyReply {
+  string result = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The base fiat currency of the platform.";
+    }
+  ];
+}
+
+message CreateWalletRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{ \"comment\": \"1\", \"currency\": \"ETH\", \"customerId\": null, \"isOmnibus\": false, \"name\": \"Hot wallet XYZ\" }"
+    json_schema: {
+      required: ["name"]
+    }
+  };
+  string currency = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "This can be a currency name or a currency ID. Needs to be the native currency of a blockchain.";
+    }
+  ];
+  string name = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The name of the wallet has to be unique per blockchain, network.";
+    }
+  ];
+  string container = 3 [
+    deprecated = true,
+    (google.api.field_visibility).restriction = "DEPRECATED",
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Deprecated: Do not use";
+    }
+  ];
+  bool isOmnibus = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "When set to `true`, the Wallet can be used as source of transactions allowing the system"
+          " to pick addresses with adequate funds. (This is called *Single owner* in the GUI)";
+    }
+  ];
+  string comment = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Comment or description of the wallet (maximum 254 characters). It is not used or "
+          "interpreted by the system and will be returned as is in the replies from endpoints such as "
+          "`api/rest/v2/wallets`";
+    }
+  ];
+  string customerId = 6 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "When *isOmnibus* is `true`, all addresses in the wallet will have this attribute set "
+          "(maximum 254 characters)";
+    }
+  ];
+  string blockchain = 7 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "A string identifying the blockchain (e.g. \"BTC\"). Required if currency is empty. If the "
+          "blockchain is enabled on more than one network (e.g. \"mainnet\" and \"testnet\"), the network "
+          "needs to be specified.";
+    }
+  ];
+  string network = 8 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "A string identifying the network. Required if the specified blockchain is enabled on "
+          "multiple networks";
+    }
+  ];
+  string visibilityGroupID = 9 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The UUID of a Visibility Group (uuid can be obtained from e.g. "
+          "`api/rest/v1/visibilitygroups`). The created wallet will only be visible and can only be managed "
+          "by users in this group.";
+    }
+  ];
+  string externalWalletId = 10 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "An optional external identifier for the wallet.";
+    }
+  ];
+}
+
+message GetWalletRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{ \"id\": \"1\"}"
+  };
+
+  uint64 id = 1;
+}
+
+message GetWalletReply {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{\"result\":{\"id\": \"1\",\"balance\": {\"totalConfirmed\": \"5735335\",\"totalUnconfirmed\": \"5735335\",\"availableConfirmed\": \"47147\",\"availableUnconfirmed\": \"47147\",\"reservedConfirmed\": \"5688188\",\"reservedUnconfirmed\": \"5688188\"},\"currency\": \"BTC\",\"coin\": \"BTC\",\"name\": \"nostro\",\"container\": \"\",\"seed\": \"btc\",\"accountPath\": \"m/44\'/0\'/0\'\",\"isOmnibus\": true,\"creationDate\": \"2019-01-31T15:58:48.645369Z\",\"updateDate\": \"2022-01-12T09:45:19.981071Z\",\"customerId\": \"cust1\",\"blockchain\": \"BTC\",\"addressesCount\": \"48\"}}"
+  };
+
+  Wallet result = 1;
+}
+
+message GetWalletInfoReply {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{\"result\":{\"id\": \"1\",\"balance\": {\"totalConfirmed\": \"5735335\",\"totalUnconfirmed\": \"5735335\",\"availableConfirmed\": \"47147\",\"availableUnconfirmed\": \"47147\",\"reservedConfirmed\": \"5688188\",\"reservedUnconfirmed\": \"5688188\"},\"currency\": \"BTC\",\"coin\": \"BTC\",\"name\": \"nostro\",\"container\": \"\",\"seed\": \"btc\",\"accountPath\": \"m/44\'/0\'/0\'\",\"isOmnibus\": true,\"creationDate\": \"2019-01-31T15:58:48.645369Z\",\"updateDate\": \"2022-01-12T09:45:19.981071Z\",\"customerId\": \"cust1\",\"blockchain\": \"BTC\",\"addressesCount\": \"48\"}}"
+  };
+
+  WalletInfo result = 1;
+}
+
+message CreateWalletReply {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{\"result\": {\"id\": \"66313\",\"balance\": {},\"currency\": \"ETH\",\"coin\": \"ETH\",\"name\": \"Hot wallet XYZ\",\"seed\": \"eth\",\"accountPath\": \"m/44\'/60\'/84\'\",\"creationDate\": \"2022-01-25T08:50:15.894917Z\",\"updateDate\": \"2022-01-25T08:50:15.894917Z\",\"comment\": \"Meant for XYZ process\",\"blockchain\": \"ETH\"}}"
+  };
+  Wallet result = 1;
+}
+
+message GetWalletsRequest {
+
+  repeated string currencies = 1;
+}
+
+message GetWalletsInfoRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{\"currencies\": [\"BTC\"],\"limit\": 100}"
+  };
+
+  repeated string currencies = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter on IDs or symbols of the currency";}];
+  string query = 2;
+  uint64 limit = 3;
+  uint64 offset = 4;
+  string name = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Used to do a case insensitive partial wallet name match";
+    }
+  ];
+  string sortOrder = 6 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to ASC to get the addresses sorted"
+          " in ascending order or DESC to get them in descending order.";
+    }
+  ];
+  bool excludeDisabled = 7 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Whether or not to exclude wallets disabled by business rules. Defaults to false (disabled wallets included). "
+          "Filtering will be performed after pagination, i.e. the number of returned items may be below `limit` if wallets on a page are disabled. ";
+    }
+  ];
+  repeated string tagIDs = 8 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Filter wallets with a 'OR' combination of tag IDs";
+    }
+  ];
+  bool onlyPositiveBalance = 9 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Whether or not to exclude wallets with a zero balance. Defaults to false (wallets with 0 balance included). ";
+    }
+  ];
+  string blockchain = 10;
+  string network = 11;
+  repeated uint64 ids = 12 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "An optional list of IDs. The list can't exceed 100 elements.";
+    }
+  ];
+}
+
+message GetWalletsReply {
+  repeated Wallet result = 1;
+}
+
+message GetWalletsInfoReply {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{\"result\":[{\"id\": \"1\",\"balance\": {\"totalConfirmed\": \"5735335\",\"totalUnconfirmed\": \"5735335\",\"availableConfirmed\": \"47147\",\"availableUnconfirmed\": \"47147\",\"reservedConfirmed\": \"5688188\",\"reservedUnconfirmed\": \"5688188\"},\"currency\": \"BTC\",\"coin\": \"BTC\",\"name\": \"nostro\",\"container\": \"\",\"seed\": \"btc\",\"accountPath\": \"m/44\'/0\'/0\'\",\"isOmnibus\": true,\"creationDate\": \"2019-01-31T15:58:48.645369Z\",\"updateDate\": \"2022-01-12T09:45:19.981071Z\",\"blockchain\": \"BTC\",\"addressesCount\": \"48\"},{\"id\": \"2\",\"balance\": {\"totalConfirmed\": \"418185\",\"totalUnconfirmed\": \"418185\",\"availableConfirmed\": \"418185\",\"availableUnconfirmed\": \"418185\",\"reservedConfirmed\": \"0\",\"reservedUnconfirmed\": \"0\"},\"currency\": \"BTC\",\"coin\": \"BTC\",\"name\": \"nostro\",\"container\": \"\",\"seed\": \"btc\",\"accountPath\": \"m/44\'/0\'/1\'\",\"isOmnibus\": true,\"creationDate\": \"2019-01-31T15:58:48.645369Z\",\"updateDate\": \"2022-01-12T09:45:19.981071Z\",\"blockchain\": \"BTC\",\"addressesCount\": \"43\"}, {}], \"totalItems\": \"27\"}"
+  };
+
+  repeated WalletInfo result = 1;
+  uint64 totalItems = 2;
+  uint64 offset = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The offset to get the next page.";
+    }
+  ];
+}
+
+message GetAddressTokensReply {
+  repeated AssetBalance balances = 1;
+  uint64 total = 2;
+  bytes next = 3;
+  AssetBalance totalAssetBalance = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Asset balance that represents the total amount (sum of balances) of a multi-token asset.";
+    }
+  ];
+}
+
+message GetAddressTokensRequest {
+  uint64 id = 1;
+  uint64 limit = 2;
+  bytes cursor = 3;
+}
+
+message GetWalletTokensReply {
+  repeated AssetBalance balances = 1;
+  uint64 total = 2;
+  bytes next = 3;
+}
+
+message GetWalletTokensRequest {
+  uint64 id = 1;
+  uint64 limit = 2;
+  bytes cursor = 3;
+}
+
+message GetBalancesRequest {
+  string currency = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter on ID or symbol of the currency";}];
+  uint64 limit = 2;
+  bytes cursor = 3;
+  string tokenId = 4;
+  RequestCursor requestCursor = 5;
+}
+
+message GetBalancesReply {
+  repeated AssetBalance balances = 1;
+  uint64 total = 2;
+  bytes next = 3;
+  ResponseCursor cursor = 4;
+}
+
+message GetNFTCollectionBalancesRequest {
+  string blockchain = 1;
+  string query = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter on the NFT name, the NFT symbol or the NFT contract address";}];
+
+  RequestCursor cursor = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The pagination cursor. Note that the maximum page size is 100.";
+    }
+  ];
+  string network = 4;
+  bool onlyPositiveBalance = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Whether or not to exclude collections with a zero balance. Defaults to false (collections with 0 balance included). ";
+    }
+  ];
+}
+
+message GetNFTCollectionBalancesReply {
+  repeated NFTCollectionBalance balances = 1;
+  ResponseCursor cursor = 2;
+}
+
+message GetAssetWalletsReply {
+  repeated WalletInfo wallets = 1;
+  uint64 totalItems = 2;
+  bytes next = 3;
+  ResponseCursor cursor = 4;
+}
+
+message GetAssetWalletsRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["asset"]
+    }
+  };
+
+  Asset asset = 1;
+  uint64 limit = 2;
+  bytes cursor = 3;
+  uint64 walletId = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filters for asset positions of a specific wallet";}];
+  string walletName = 5;
+  RequestCursor requestCursor = 6;
+}
+
+message GetAssetAddressesReply {
+  repeated Address addresses = 1;
+  uint64 totalItems = 2;
+  bytes next = 3 [deprecated = true]; // Use cursor instead
+  ResponseCursor cursor = 4;
+}
+
+message GetAssetAddressesRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["asset"]
+    }
+  };
+
+  message Sorting {
+    enum SortOrder {
+      ASC = 0; // default
+      DESC = 1;
+    }
+
+    SortOrder sortOrder = 1;
+  }
+
+  Asset asset = 1;
+  uint64 limit = 2;
+  bytes cursor = 3 [deprecated = true]; // Use requestCursor instead
+
+  // Pagination
+  Sorting sorting = 4;
+  RequestCursor requestCursor = 5;
+
+  uint64 walletId = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filters for asset positions of a specific wallet";}];
+  uint64 addressId = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filters for asset positions of a specific address";}];
+  repeated string addresses = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter on the asset addresses to return";}];
+}
+
+message CreateWalletAttributesRequest {
+  uint64 walletId = 1;
+  repeated CreateWalletAttributeRequest attributes = 2;
+}
+
+message CreateWalletAttributesReply {
+  repeated WalletAttribute result = 1;
+}
+
+message CreateWalletAttributeRequest {
+  string key = 1;
+  string value = 2;
+  string contentType = 3;
+  string type = 4;
+  string subtype = 5;
+  bool isfile = 6;
+}
+
+message DeleteWalletAttributeRequest {
+  uint64 walletId = 1;
+  uint64 id = 2;
+}
+
+message CreateAddressAttributesRequest {
+  uint64 addressId = 1;
+  repeated CreateAddressAttributeRequest attributes = 2;
+}
+
+message CreateAddressAttributesReply {
+  repeated AddressAttribute result = 1;
+}
+
+message CreateAddressAttributeRequest {
+  string key = 1;
+  string value = 2;
+  string contentType = 3;
+  string type = 4;
+  string subtype = 5;
+  bool isfile = 6;
+}
+
+message DeleteAddressAttributeRequest {
+  uint64 addressId = 1;
+  uint64 id = 2;
+}
+
+message GetAddressesRequest {
+  string currency = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter on IDs or symbols of the currency";}];
+  string query = 2;
+  uint64 limit = 3;
+  uint64 offset = 4;
+  string scoreProvider = 5 [
+    deprecated = true,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Deprecated. Use scoreFilter instead.";
+    }
+  ];
+  string scoreInBelow = 6 [
+    deprecated = true,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Deprecated. Use scoreFilter instead.";
+    }
+  ];
+  string scoreOutBelow = 7 [
+    deprecated = true,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Deprecated. Use scoreFilter instead.";
+    }
+  ];
+  bool scoreExclusive = 8 [
+    deprecated = true,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Deprecated. Use scoreFilter instead.";
+    }
+  ];
+  bool onlyPositiveBalance = 9 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to true to get only addresses with"
+          " a positive unconfirmed balance";
+    }
+  ];
+  string sortBy = 10 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to select the type on which you want to sort."
+          "The types accepted yet are: BALANCE and ADDRESSID";
+    }
+  ];
+  string sortOrder = 11 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to ASC to get the addresses sorted"
+          " in ascending order or DESC to get them in descending order.";
+    }
+  ];
+  string balanceBelow = 12 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Filter addresses and keep only addresses with "
+          "a balance below the threshold.";
+    }
+  ];
+  string balanceAbove = 13 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Filter addresses and keep only addresses with "
+          "a balance above the threshold.";
+    }
+  ];
+  uint64 walletId = 14;
+  string customerId = 15;
+  string coinfirmScoreGreater = 16 [
+    deprecated = true,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Deprecated. Use scoreFilter instead.";
+    }
+  ];
+  string chainalysisScoreGreater = 17 [
+    deprecated = true,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Deprecated. Use scoreFilter instead.";
+    }
+  ];
+  repeated string tagIDs = 18 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Filter addresses with a 'OR' combination of tag IDs";
+    }
+  ];
+  string blockchain = 19;
+  string network = 20;
+  repeated uint64 addressIds = 21 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Filter addresses with a list of address IDs.";
+    }
+  ];
+  string nfts = 22 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "One of include / exclude / only depending on whether you want to include addresses of type NFTs (or you want only those)";
+    }
+  ];
+  repeated string addresses = 23 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Filter addresses with a list of blockchain addresses (hashes)."
+          "The blockchain needs to be specified when using this filter.";
+    }
+  ];
+  ScoreFilter scoreFilter = 24 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Configure score filters.";
+    }
+  ];
+  string attributeFiltersJson = 25 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "A JSON representation of a list of AttributeFilter objects. The filters are combined with an attributeFiltersOperator ('OR' by default). Each AttributeFilter can use different comparison operators: `=` (default if not specified), `<>` (not equal), `>` (greater than), `>=` (greater than or equal), `<` (less than), `<=` (less than or equal)";
+      example: "[{'key':'key1','value':'value1','type':'type1','operator':'='}]";
+    }
+  ];
+  string attributeFiltersOperator = 26 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Specifies how attribute filters are combined. Accepted values: 'OR' (default), 'AND'.";
+      example: "AND";
+    }
+  ];
+}
+
+message GetAddressesReply {
+  repeated Address result = 1;
+  uint64 totalItems = 2;
+}
+
+message GetLightAddressesRequest {
+  string currencyID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "One of the currencyID or uniqueCurrencyFilter fields must be provided";
+    }
+  ];
+  UniqueCurrencyFilter uniqueCurrencyFilter = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "One of the currencyID or uniqueCurrencyFilter fields must be provided";
+    }
+  ];
+  repeated string addresses = 3;
+}
+
+message GetLightAddressesReply {
+  repeated LightAddressInfo result = 1;
+}
+
+message GetAddressesStatusRequest {
+  message Sorting {
+    enum SortOrder {
+      ASC = 0;
+      DESC = 1;
+    }
+
+    SortOrder sortOrder = 1;
+  }
+  repeated uint64 walletIds = 1;
+  repeated uint64 addressIds = 2;
+  repeated string currencyIds = 3;
+
+  Sorting sorting = 4;
+  RequestCursor cursor = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The pagination cursor. Note that the maximum page size is 100.";
+    }
+  ];
+}
+
+message GetAddressesStatusReply {
+  repeated LightAddressInfo result = 1;
+  ResponseCursor cursor = 2;
+}
+
+// Using non-convential name because of names collision with legacy HSM calls. Must be cleaned up later
+message GetAddressRequest {
+  uint64 id = 1;
+}
+
+// Using non-convential name because of names collision with legacy HSM calls. Must be cleaned up later
+message GetAddressReply {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{\"result\": {\"id\": \"232071\",\"walletId\": \"66313\",\"seed\": \"eth\",\"currency\": \"ETH\",\"addressPath\": \"m/44\'/60\'/84\'/0\'/0\'\",\"address\": \"0x39c4622ac9704dfea991e9c26abcf9bde3c095ac\",\"comment\": \"Deposit ABC\",\"label\": \"Address XYZ\",\"customerId\": \"customerXYZ\",\"balance\": {},\"signature\": \"XXX\",\"creationDate\": \"2022-01-25T21:25:15.306338Z\",\"updateDate\": \"2022-01-25T21:25:15.306338Z\",\"walletInfo\": {\"id\": \"66313\",\"balance\": {},\"currency\": \"ETH\",\"coin\": \"ETH\",\"name\": \"Hot wallet XYZ\",\"seed\": \"eth\",\"accountPath\": \"m/44\'/60\'/84\'\",\"creationDate\": \"2022-01-25T08:50:15.894917Z\",\"updateDate\": \"2022-01-25T08:50:15.894917Z\",\"comment\": \"Meant for XYZ process\",\"blockchain\": \"ETH\"}}}"
+  };
+
+  Address result = 1;
+}
+
+message GetAddressUTXOsRequest {
+  uint64 id = 1;
+}
+
+message GetAddressUTXOsReply {
+  repeated UTXO result = 1;
+}
+
+message GetAddressBalanceHistoryRequest {
+  uint64 id = 1;
+  uint64 intervalHours = 2;
+}
+
+message ExportAddressBalanceHistoryRequest {
+  uint64 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Desired address ID";}];
+  uint64 intervalHours = 2;
+  string format = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Desired file format, can be csv or json.";
+    }
+  ];
+}
+
+message GetAddressBalanceHistoryReply {
+  repeated BalanceHistoryPoint result = 1;
+}
+
+message ExportAddressBalanceHistoryReply {
+  string result = 1;
+  uint64 totalItems = 2;
+}
+
+message GetWalletBalanceHistoryRequest {
+  uint64 id = 1;
+  uint64 intervalHours = 2;
+}
+
+message GetWalletBalanceHistoryReply {
+  repeated BalanceHistoryPoint result = 1;
+}
+
+message CreateAddressRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{"
+        "\"walletId\": \"123456\","
+        "\"label\": \"Satoshi genesis address.\","
+        "\"customerId\": \"7891011\","
+        "\"comment\": \"The first bitcoin address.\","
+        "\"currency\": \"BTC\""
+        "}"
+    json_schema: {
+      required: ["walletId", "label"]
+    }
+  };
+
+  uint64 walletId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Unique identifier for the wallet in which the address will be created. Must be an existing wallet ID. In Protect, a wallet represents a logical collection of addresses.";
+  }];
+  string label = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A human-readable label for the address. Displayed as `Name` in the UI.";
+  }];
+  string comment = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Optional comment for additional information about the address.";
+  }];
+  string customerId = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "ID of the customer that owns the address. Automatically set if address belongs to an omnibus (shared) wallet.";
+  }];
+
+  bool nonHardenedDerivation = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Indicates whether non-hardened derivation should be used for address creation. Default (recommended value) is false.";
+  }];
+  int32 workchainId = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Workchain identifier. Used for smart contracts on blockchains like TON.";
+  }];
+  string type = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Address type, specific to the blockchain being used.\n"
+        "\n"
+        "For BTC & LTC, valid values are ``p2pkh``, ``p2sh_p2wpkh``, or ``p2wpkh``. Defaults to ``p2sh_p2wpkh`` if empty.\n"
+        "\n"
+        "For DOGE, value must be ``p2pkh``. Will default to ``p2pkh`` if empty.\n"
+        "\n"
+        "For all other blockchains, this field must be empty.\n";
+  }];
+  string externalAddressId = 16 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Identifier for the address in the user's system. This must be unique. Attempting to create an address with an existing externalAddressId will return the originally created address instead of creating a new one.";
+  }];
+}
+
+message CreateAddressesRequest {
+  repeated CreateAddressRequest addresses = 1;
+}
+
+message CreateAddressReply {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{\"result\": {"
+        "\"id\": \"987654321\","
+        "\"walletId\": \"123456\","
+        "\"seed\": \"btc\","
+        "\"currency\": \"BTC\","
+        "\"addressPath\": \"m/44'/0'/0'/0/0\","
+        "\"address\": \"1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa\","
+        "\"comment\": \"The first bitcoin address.\","
+        "\"label\": \"Satoshi genesis address - BTC\","
+        "\"customerId\": \"customer_7890\","
+        "\"balance\": {}, "
+        "\"signature\": \"XYZSignature\","
+        "\"creationDate\": \"2025-03-27T15:30:00.000000Z\","
+        "\"updateDate\": \"2025-03-27T15:30:00.000000Z\","
+        "\"walletInfo\": {"
+        "\"id\": \"123456\","
+        "\"balance\": {},"
+        "\"currency\": \"BTC\","
+        "\"coin\": \"BTC\","
+        "\"name\": \"Satoshi Wallet\","
+        "\"seed\": \"btc\","
+        "\"accountPath\": \"m/44'/0'/0'/0\","
+        "\"creationDate\": \"2025-03-27T15:30:00.000000Z\","
+        "\"updateDate\": \"2025-03-27T15:30:00.000000Z\","
+        "\"comment\": \"Collection of addresses used for long term savings. A wallet in Protect is simply a collection of addresses.\","
+        "\"blockchain\": \"BTC\""
+        "}"
+        "}"
+        "}"
+  };
+  Address result = 1;
+}
+
+message CreateAddressesReply {
+  repeated LightAddressInfo result = 1;
+}
+
+message ComputeAddressesSignatureRequest {
+  uint64 walletId = 1;
+  uint64 addressId = 2;
+}
+
+message ComputeAddressesSignatureReply {
+  message AddressSignature{
+    uint64 walletId = 1;
+    uint64 addressId = 2;
+    string address = 3;
+    string currency = 4;
+    string signature = 5;
+    string error = 6;
+    Currency currencyInfo = 7;
+  }
+  repeated AddressSignature result = 1;
+  uint64 totalItems = 2;
+}
+
+message GetAddressProofOfReserveRequest {
+  uint64 id = 1;
+  string challenge = 2;
+}
+
+message GetAddressProofOfReserveReply {
+  ProofOfReserve result = 1;
+}
+
+message GetAddressesProofOfReserveRequest {
+  repeated string addresses = 1;
+  string blockchain = 2;
+  string challenge = 3;
+  string network = 4;
+}
+
+message GetAddressesProofOfReserveReply {
+  repeated ProofOfReserve result = 1;
+}
+
+message BTCSignMessageRequest {
+  uint64 addressId = 1;
+  string message = 2;
+}
+
+message BTCSignMessageReply {
+  string address = 1;
+  string message = 2;
+  string signature = 3;
+}
+
+message ETHSignMessageRequest {
+  uint64 addressId = 1;
+  string message = 2;
+}
+
+message ETHSignMessageReply {
+  string address = 1;
+  string message = 2;
+  string signature = 3;
+}
+
+message ExportAddressesRequest {
+  uint64 walletId = 1;
+  string currency = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter on ID or symbol of the currency";}];;
+  string format = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Desired file format, can be csv or json.";
+    }
+  ];
+  string query = 4;
+  string scoreProvider = 5 [
+    deprecated = true,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Deprecated. Use scoreFilter instead.";
+    }
+  ];
+  string scoreInBelow = 6 [
+    deprecated = true,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Deprecated. Use scoreFilter instead.";
+    }
+  ];
+  string scoreOutBelow = 7 [
+    deprecated = true,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Deprecated. Use scoreFilter instead.";
+    }
+  ];
+  bool scoreExclusive = 8 [
+    deprecated = true,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Deprecated. Use scoreFilter instead.";
+    }
+  ];
+  string customerId = 9;
+  string coinfirmScoreGreater = 10 [
+    deprecated = true,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Deprecated. Use scoreFilter instead.";
+    }
+  ];
+  string chainalysisScoreGreater = 11 [
+    deprecated = true,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Deprecated. Use scoreFilter instead.";
+    }
+  ];
+  ScoreFilter scoreFilter = 12 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Configure score filters.";
+    }
+  ];
+  string blockchain = 13;
+  string network = 14;
+}
+
+message ExportAddressesReply {
+  string result = 1;
+  uint64 totalItems = 2;
+}
+
+// Reservation messages
+
+message GetReservationsRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{\"kind\": \"PENDING_REQUEST\", \"address\": \"aef123\"}"
+  };
+
+  string kind = 1 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Deprecated since 3.20: use 'kinds' instead.";}];
+  string address = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter by blockchain address";}];
+  uint64 addressId = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter by address id";}];
+
+  RequestCursor cursor = 4;
+
+  repeated string kinds = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter by kinds of reservation. Takes precedence over 'kind'.";}];
+}
+
+message GetReservationsReply {
+  repeated Reservation result = 1;
+  ResponseCursor cursor = 2;
+}
+
+message GetReservationRequest {
+  uint64 id = 1;
+}
+
+message GetReservationReply {
+  Reservation result = 1;
+}
+
+message GetReservationUTXORequest {
+  uint64 id = 1;
+}
+
+message GetReservationUTXOReply {
+  UTXO result = 1;
+}
+
+service WalletService {
+  // #######################3
+  //
+  // Currencies APIs
+  //
+  // #######################3
+  rpc GetCurrencies (GetCurrenciesRequest) returns (GetCurrenciesReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/currencies"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List currencies";
+      description: "This endpoint returns a list of currencies";
+      tags: "Currencies";
+    };
+  };
+
+  rpc GetCurrency (GetCurrencyRequest) returns (GetCurrencyReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/currency"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get currency";
+      description: "This endpoint returns a currency. The parameters need to point to a unique currency.";
+      tags: "Currencies";
+    };
+  };
+
+  rpc GetBaseCurrency (google.protobuf.Empty) returns (GetBaseCurrencyReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/currencies/base"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get base currency";
+      description: "This endpoint returns the configured base currency (CHF, EUR or USD...)";
+      tags: "Currencies";
+    };
+  };
+
+  // #######################3
+  //
+  // Addresess APIs
+  //
+  // #######################3
+  rpc CreateAddressAttributes (CreateAddressAttributesRequest) returns (CreateAddressAttributesReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/addresses/{addressId}/attributes"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create attributes";
+      description: "This endpoint creates attributes for a given address. \n Required role: **AccountCreator**.";
+      tags: "Addresses";
+    };
+  };
+
+  rpc DeleteAddressAttribute (DeleteAddressAttributeRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/rest/v1/addresses/{addressId}/attributes/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete an attribute";
+      description: "This endpoint deletes an attribute of a given address. \n Required role: **AccountCreator**.";
+      tags: "Addresses";
+    };
+  };
+
+  rpc GetAddress (GetAddressRequest) returns (GetAddressReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/addresses/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get an address";
+      description: "This endpoint accepts a unique address ID and returns the address alongside related information including:\n\n"
+          "* additional risk score data (if applicable).\n"
+          "* information about the related wallet and currency.\n"
+          "* related whitelisted address IDs.\n\n"
+          "To search across all addresses with query parameters, use the [List Addresses](https://docs.taurushq.com/protect-capital/reference/walletservice_getaddresses) endpoint.";
+      tags: "Addresses";
+    };
+  };
+
+  rpc GetAddressUTXOs (GetAddressUTXOsRequest) returns (GetAddressUTXOsReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/addresses/{id}/utxos"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List UTXOs of an address";
+      description: "This endpoint returns a list of UTXOs of a given address. In the case of the ADA blockchain, the value returned is the one from the native currency. Result is sorted by (address, id) DESC.";
+      tags: "Addresses";
+    };
+  };
+
+  rpc GetAddressBalanceHistory (GetAddressBalanceHistoryRequest) returns (GetAddressBalanceHistoryReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/addresses/{id}/balances/history"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List address' balances history";
+      description: "This endpoint returns the balances history of a given address";
+      tags: "Addresses";
+    };
+  };
+
+  rpc ExportAddressBalanceHistory (ExportAddressBalanceHistoryRequest) returns (ExportAddressBalanceHistoryReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/addresses/{id}/balances/history/export"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Export address' balances history";
+      description: "This endpoint exports a list of address' balances history";
+      tags: "Addresses";
+    };
+  };
+
+  rpc GetAddressProofOfReserve (GetAddressProofOfReserveRequest) returns (GetAddressProofOfReserveReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/addresses/{id}/proofofreserve"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get the proof of reserve of an address";
+      description: "This endpoint returns the proof of reserve of an address. The relevance of response fields is specific to the request type.";
+      tags: "Addresses";
+    };
+  };
+
+  rpc ETHSignMessage (ETHSignMessageRequest) returns (ETHSignMessageReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/addresses/{addressId}/eth_sign"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Calculate an ETH specific signature of a message";
+      description: "This endpoint returns an ETH specific signature from a given message and address as input.";
+      tags: "Addresses";
+    };
+  };
+
+  rpc BTCSignMessage (BTCSignMessageRequest) returns (BTCSignMessageReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/addresses/{addressId}/btc_sign"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Calculate a BTC specific signature of a message";
+      description: "This endpoint returns a BTC specific signature from a given message and address as input.";
+      tags: "Addresses";
+    };
+  };
+
+  rpc GetAddressesProofOfReserve (GetAddressesProofOfReserveRequest) returns (GetAddressesProofOfReserveReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/{blockchain}/addresses/proofofreserve"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get the proof of reserve of a list of addresses";
+      description: "This endpoint returns the proof of reserve for a list of addresses.  The relevance of response fields is specific to the request type.";
+      tags: "Addresses";
+    };
+  };
+
+  rpc GetAddressTokens (GetAddressTokensRequest) returns (GetAddressTokensReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/addresses/{id}/tokens"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get the list of tokens for an address";
+      description: "This endpoint returns the list of tokens with their balances held by a given address.";
+      tags: "Addresses";
+    };
+  };
+
+  // It is important that this is defined AFTER the more generic /api/rest/v1/addresses/{id} routes
+
+  rpc GetAddresses (GetAddressesRequest) returns (GetAddressesReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/addresses"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List addresses";
+      description: "This endpoint returns a list of addresses";
+      tags: "Addresses";
+    };
+  };
+
+  rpc CreateAddress (CreateAddressRequest) returns (CreateAddressReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/addresses"
+      body: "*"
+    };
+
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an address";
+      description: "This endpoint creates a new address within a specified Wallet. "
+          "All addresses _must_ be associated with a parent wallet. Addresses "
+          "created with this endpoint are internal to Protect. To create an "
+          "external address, you need to create a [whitelisted address request]"
+          "(https://docs.taurushq.com/protect-capital/reference/whitelistservice_createwhitelistedaddress).\n\n"
+
+          "For more information about whitelisted assets, see our [user guides]"
+          "(https://docs.taurushq.com/user-and-technical-guides/docs/smart-contracts).\n\n"
+
+          "Address creation requires HSM signature, which makes it synchronous. "
+          "Therefore, address creation can be slow, and failures may occur if the "
+          "HSM is either unavailable or takes too long to process. If this happens, "
+          "the API can be safely called again.\n\n"
+
+          "**Required role:** AccountCreator.";
+      tags: "Addresses";
+    };
+  };
+
+  rpc GetLightAddresses (GetLightAddressesRequest) returns (GetLightAddressesReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/addresses/light"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List light addresses";
+      description: "This endpoint returns a list of addresses with light information filtered by a unique currency and a list of addresses. The light address information mainly contains the identifiers. There is no balance, risk score or attributes.";
+      tags: "Addresses";
+    };
+  };
+
+  rpc GetAddressesStatus (GetAddressesStatusRequest) returns (GetAddressesStatusReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/addresses/status"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List addresses's status";
+      description: "This endpoint returns a list of addresses with their status";
+      tags: "Addresses";
+    };
+  };
+
+  rpc ExportAddresses (ExportAddressesRequest) returns (ExportAddressesReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/addresses/export"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Export addresses";
+      description: "This endpoint exports a list of addresses";
+      tags: "Addresses";
+    };
+  };
+
+  rpc CreateAddressesBatch (CreateAddressesRequest) returns (CreateAddressesReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/addresses/batch"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a batch of addresses";
+      description: "Required role: **AccountCreator**. \n This endpoint creates a batch of addresses. \n Address created from this endpoint will start with a **created** and will not be ready to use until the HSM process them. ";
+      tags: "Addresses";
+    };
+  };
+
+  rpc ComputeAddressesSignature (ComputeAddressesSignatureRequest) returns (ComputeAddressesSignatureReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/addresses/signature/compute"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Recompute addresses signatures";
+      description: "This endpoint forces a recompute of all addresses signatures.\n Required role: **Admin**.";
+      tags: "Addresses";
+    };
+  };
+
+  // #######################3
+  //
+  // Assets APIs
+  //
+  // #######################3
+  rpc GetAssetWallets (GetAssetWalletsRequest) returns (GetAssetWalletsReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/asset/wallets"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get the balance, at wallet level, for a specific asset";
+      description: "Retrieve the wallet level balance for a specific asset.\nAn asset is identified by the `currency` parameter.\nOptionally, set `kind` to \"NFT\" or \"Unknown\" for additional filtering.\nIf `kind` is \"Unknown\", the \"unknown\" object can further filter balances by blockchain, arg1, and arg2 (e.g., blockchain, contract number, and token ID)."
+      tags: "Assets";
+    };
+  }
+
+  rpc GetAssetAddresses (GetAssetAddressesRequest) returns (GetAssetAddressesReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/asset/addresses"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get the balance, at address level, for a specific asset";
+      description: "Retrieve the address level balance for a specific asset.\nAn asset is identified by the `currency` parameter.\nOptionally, set `kind` to \"NFT\" or \"Unknown\" for additional filtering.\nIf `kind` is \"Unknown\", the \"unknown\" object can further filter balances by blockchain, arg1, and arg2 (e.g., blockchain, contract number, and token ID)."
+      tags: "Assets";
+    };
+  }
+
+  // #######################3
+  //
+  // Balances APIs
+  //
+  // #######################3
+  rpc GetBalances(GetBalancesRequest) returns (GetBalancesReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/balances"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get the total balances for the tenant, for each asset";
+      description: "Get the total balances for the tenant, for each asset\nAn asset is identified by a full triplet of attributes blockchain, arg1, arg2 (typically blockchain, contract number, and token ID)";
+      tags: "Balances";
+    };
+  }
+
+  rpc GetNFTCollectionBalances(GetNFTCollectionBalancesRequest) returns (GetNFTCollectionBalancesReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/balances/nft/collections"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get the total balances for the tenant, for each nft collection";
+      description: "Get the total balances for the tenant, for each nft collection";
+      tags: "Balances";
+    };
+  }
+
+  // #######################3
+  //
+  // Wallets APIs
+  //
+  // #######################3
+  // Deprecated - do NOT use this endpoint, use GetWalletV2 /api/rest/v2/wallets/{id} instead
+  rpc GetWallet (GetWalletRequest) returns (GetWalletReply) {
+    option deprecated = true;
+    option (google.api.http) = {
+      get: "/api/rest/v1/wallets/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      deprecated: true;
+      summary: "Get a wallet";
+      description: "Deprecated: use /api/rest/v2/wallets/{id} instead. This endpoint returns a wallet";
+      tags: "Wallets";
+    };
+  };
+
+  rpc GetWalletV2 (GetWalletRequest) returns (GetWalletInfoReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v2/wallets/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get a wallet";
+      description: "This endpoint returns a wallet";
+      tags: "Wallets";
+    };
+  };
+
+  rpc CreateWalletAttributes (CreateWalletAttributesRequest) returns (CreateWalletAttributesReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/wallets/{walletId}/attributes"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create attributes";
+      description: "This endpoint creates attributes for a given wallet. \n Required role: **AccountCreator**.";
+      tags: "Wallets";
+    };
+  };
+
+  rpc DeleteWalletAttribute (DeleteWalletAttributeRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/rest/v1/wallets/{walletId}/attributes/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete an attribute";
+      description: "This endpoint deletes an attribute of a given wallet. \n Required role: **AccountCreator**.";
+      tags: "Wallets";
+    };
+  };
+
+  rpc GetWalletTokens (GetWalletTokensRequest) returns (GetWalletTokensReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/wallets/{id}/tokens"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get the list of tokens for a wallet";
+      description: "This endpoint returns the list of tokens with their balances held by a given wallet.";
+      tags: "Wallets";
+    };
+  };
+
+  rpc GetWalletBalanceHistory (GetWalletBalanceHistoryRequest) returns (GetWalletBalanceHistoryReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/wallets/{id}/balances/history"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List wallet's balances history";
+      description: "This endpoint returns the balances history of a given wallet";
+      tags: "Wallets";
+    };
+  };
+
+  // It is important that this is defined AFTER the more generic /api/rest/v2/wallets/{id} routes
+
+  rpc CreateWallet (CreateWalletRequest) returns (CreateWalletReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/wallets"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a wallet";
+      description: "This endpoint creates a new wallet.\n\n"
+          "You must specify either a `currency` (by ID or symbol) or a combination of `blockchain` and `network`.\n\n"
+          "- If `currency` is provided, `blockchain` and `network` cannot be used.\n"
+          "- If `currency` is not provided, you may use `blockchain`, `network`, or both together.\n\n"
+          "Only one of these approaches is allowed per request.\n\n"
+          "The `currencyID` is globally unique across blockchains and networks, and can be identified by querying the `/currencies` endpoint. "
+          "We recommend using `currencyID` whenever possible to avoid ambiguity.\n\n"
+          "Required role: **AccountCreator**.";
+      tags: "Wallets";
+    };
+  };
+
+  // Deprecated - do NOT use this endpoint, use /api/rest/v1/wallets/info instead
+  rpc GetWallets (GetWalletsRequest) returns (GetWalletsReply) {
+    option deprecated = true;
+    option (google.api.http) = {
+      get: "/api/rest/v1/wallets"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      deprecated: true;
+      summary: "List wallets";
+      description: "Deprecated: use /api/rest/v1/wallets/info instead; this endpoint returns a list of wallets.";
+      tags: "Wallets";
+    };
+  };
+
+  // Deprecated - do NOT use this endpoint, use /api/rest/v2/wallets instead
+  // Better naming, and better REST route
+  rpc GetWalletsInfo (GetWalletsInfoRequest) returns (GetWalletsInfoReply) {
+    option deprecated = true;
+    option (google.api.http) = {
+      get: "/api/rest/v1/wallets/info"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      deprecated: true;
+      summary: "List wallets";
+      description: "Deprecated: use /api/rest/v2/wallets instead; this endpoint returns a list of wallets.";
+      tags: "Wallets";
+    };
+  };
+
+  rpc GetWalletsV2 (GetWalletsInfoRequest) returns (GetWalletsInfoReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v2/wallets"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List wallets";
+      description: "This endpoint returns a list of wallets.";
+      tags: "Wallets";
+    };
+  };
+
+  // #######################3
+  //
+  // Reservations APIs
+  //
+  // #######################3
+  rpc GetReservations (GetReservationsRequest) returns (GetReservationsReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/reservations"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List reserved funds";
+      description: "This endpoint returns a list of fund reservations. Default limit is 100. Results are sorted by the most recent reservations first.";
+      tags: "Reservations";
+    };
+  };
+
+  rpc GetReservation (GetReservationRequest) returns (GetReservationReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/reservations/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get a reservation";
+      description: "This endpoint returns a reservation";
+      tags: "Reservations";
+    };
+  };
+
+  rpc GetReservationUTXO (GetReservationUTXORequest) returns (GetReservationUTXOReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/reservations/{id}/utxo"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get the UTXO associated to the reservation";
+      description: "This endpoint returns the UTXO associated to the reservation, if any. Otherwise returns a 404.";
+      tags: "Reservations";
+    };
+  }
+}

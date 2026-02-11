@@ -1,0 +1,15 @@
+syntax = "proto3";
+package tgvalidatord;
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+// ErrorDetails is used to embed some details in the generic error structure that GRPC handles
+message ErrorDetails {
+  string message = 1;
+  // for business errors: a human readble code that represents the error the user committed
+  // for other errors: the same as id
+  string code = 2;
+  // a unique id for the error,
+  string id = 3;
+}
+

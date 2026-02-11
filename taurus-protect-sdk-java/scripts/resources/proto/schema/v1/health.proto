@@ -1,0 +1,44 @@
+syntax = "proto3";
+package tgvalidatord;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+message ClientStatus {
+  string hostPort = 1;
+  google.protobuf.BoolValue connected = 2;
+  string error = 3;
+  google.protobuf.Timestamp lastPing = 4;
+}
+
+message HealthReport {
+  string name = 1;
+  string status = 2;
+  string message = 3;
+  string duration = 4;
+  string error = 5;
+  map<string, string> results = 6;
+  repeated ClientStatus vaultdClients = 7;
+}
+
+message Health {
+  uint64 tenantId = 1;
+  string componentName = 2;
+  string componentId = 3;
+  string group = 4;
+  string healthCheck = 5;
+  string status = 6;
+  HealthReport report = 7;
+  google.protobuf.Timestamp lastUpdateDate = 8;
+  google.protobuf.Timestamp validUntilDate = 9;
+}
+
+message HealthGroup {
+  repeated Health healthChecks = 1;
+}
+
+message HealthComponent {
+  map<string, HealthGroup> groups = 1;
+}

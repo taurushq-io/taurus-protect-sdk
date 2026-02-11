@@ -1,0 +1,277 @@
+syntax = "proto3";
+
+package tgvalidatord;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "cursor.proto";
+import "staking.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "tg-validatord staking service";
+    version: "1.0";
+    contact: {
+      name: "tg-validatord staking service";
+      url: "https://github.com/taurusgroup/tg-validatord";
+      email: "development@taurusgroup.ch";
+    };
+  };
+  consumes: "application/json";
+  produces: "application/json";
+  schemes: [HTTP, HTTPS];
+  security_definitions: {
+    security: {
+      key: "Bearer";
+      value: {
+        type: TYPE_API_KEY;
+        in: IN_HEADER;
+        name: "Authorization";
+      }
+    }
+  }
+  security: {
+    security_requirement: {
+      key: "Bearer";
+      value: {};
+    }
+  }
+  responses: {
+    key: "401";
+    value: {
+      description: "Returned when the user is not authenticated.";
+    }
+  }
+  responses: {
+    key: "403";
+    value: {
+      description: "Returned when the user is not authorized to access the resource.";
+    }
+  }
+  responses: {
+    key: "404";
+    value: {
+      description: "Returned when the resource does not exist.";
+    }
+  }
+  responses: {
+    key: "400",
+    value: {
+      description: "Returned when an argument is invalid. It is"
+          " typically returned if one of the symbols is not available";
+    }
+  }
+  responses: {
+    key: "500",
+    value: {
+      description: "Returned when the service encountered an error."
+    }
+  }
+
+};
+
+
+message GetADAStakePoolInfoRequest {
+  string network = 1;
+  string stakePoolId = 2;
+}
+
+message GetADAStakePoolInfoReply {
+  string pledge = 1;
+  float margin = 2;
+  string fixedCost = 3;
+  string url = 4;
+  string activeStake = 5;
+  uint64 epoch = 6;
+}
+
+message GetFTMValidatorInfoRequest {
+  string network = 1;
+  string validatorAddress = 2;
+}
+
+message GetFTMValidatorInfoReply {
+  uint64 validatorID = 1;
+  string address = 2;
+  bool isActive = 3;
+  string totalStake = 4;
+  string selfStake = 5;
+  uint64 deactivatedAtDateUnix = 6;
+  uint64 createdAtDateUnix = 7;
+}
+
+message GetXTZAddressStakingRewardsRequest {
+  string network = 1;
+  uint64 addressID = 2;
+  google.protobuf.Timestamp from = 3;
+  google.protobuf.Timestamp to = 4;
+}
+
+message GetXTZAddressStakingRewardsReply {
+  string receivedRewardsAmount = 1;
+}
+
+message GetNEARValidatorInfoRequest {
+  string network = 1;
+  string validatorAddress = 2;
+}
+
+message GetNEARValidatorInfoReply {
+  string validatorAddress = 1;
+  string ownerId = 2;
+  string totalStakedBalance = 3;
+  float rewardFeeFraction = 4;
+  string stakingKey = 5;
+  bool isStakingPaused = 6;
+}
+
+message GetETHValidatorsInfoRequest {
+  string network = 1;
+  repeated string ids = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "List of ETH validator internal IDs to retrieve";}];
+}
+
+message GetETHValidatorsInfoReply {
+  repeated ETHValidatorInfo validators = 1;
+}
+
+message ETHValidatorInfo {
+  string id = 1;
+  string pubkey = 2;
+  string status = 3;
+  string balance = 4;
+  string network = 5;
+  string provider = 6;
+  uint64 addressID = 7;
+}
+
+message GetICPNeuronInfoRequest {
+  string network = 1;
+  uint64 neuronID = 2;
+}
+
+message ICPKnownNeuronData {
+  string name = 1;
+  string description = 2;
+}
+
+message GetICPNeuronInfoReply {
+  enum NeuronState {
+    NeuronStateUnspecified = 0;
+    NeuronStateNotDissolving = 1;
+    NeuronStateDissolving = 2;
+    NeuronStateDissolved = 3;
+    NeuronStateSpawning = 4;
+  }
+
+  uint64 neuronId = 1;
+  uint64 retrieveAtTimestampSeconds = 2;
+  NeuronState neuronState = 3;
+  uint64 ageSeconds = 4;
+  uint64 dissolveDelaySeconds = 5;
+  uint64 votingPower = 6;
+  uint64 createdTimestampSeconds = 7;
+  uint64 stakeE8S = 8;
+  uint64 joinedCommunityFundTimestampSeconds = 9;
+  ICPKnownNeuronData knownNeuronData = 10;
+}
+
+message GetStakeAccountsRequest {
+  uint64 addressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Identifier for the Protect address that the stake accounts are derived from.";
+  }];
+  StakeAccountType accountType = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "The type of stake account.";
+  }];
+  string accountAddress = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "The address of the stake account.";
+  }];
+  RequestCursor cursor = 4;
+}
+
+message GetStakeAccountsReply {
+  repeated StakeAccount stakeAccounts = 1;
+  ResponseCursor cursor = 2;
+}
+
+service StakingService {
+
+  rpc GetADAStakePoolInfo(GetADAStakePoolInfoRequest) returns (GetADAStakePoolInfoReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/staking/ada/{network}/stakepools/{stakePoolId}/info"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get ADA stake pool info";
+      description: "This endpoint returns the stake pool information of a given ADA stake pool";
+      tags: "Staking";
+    };
+  };
+
+  rpc GetFTMValidatorInfo(GetFTMValidatorInfoRequest) returns (GetFTMValidatorInfoReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/staking/ftm/{network}/validators/{validatorAddress}/info"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get FTM validator info";
+      description: "This endpoint returns the validator information of a given FTM validator address";
+      tags: "Staking";
+    };
+  };
+
+  rpc GetNEARValidatorInfo(GetNEARValidatorInfoRequest) returns (GetNEARValidatorInfoReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/staking/near/{network}/validators/{validatorAddress}/info"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get NEAR validator info";
+      description: "This endpoint returns the validator information of a given NEAR validator address";
+      tags: "Staking";
+    };
+  };
+
+  rpc GetETHValidatorsInfo(GetETHValidatorsInfoRequest) returns (GetETHValidatorsInfoReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/staking/eth/{network}/validators"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get ETH validators info";
+      description: "This endpoint returns the validator information for given ETH validator IDs. Maximum 500 ids can be provided.";
+      tags: "Staking";
+    };
+  };
+
+  rpc GetXTZAddressStakingRewards(GetXTZAddressStakingRewardsRequest) returns (GetXTZAddressStakingRewardsReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/staking/xtz/{network}/addresses/{addressID}/rewards"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get XTZ received staking rewards ";
+      description: "This endpoint returns the received staking rewards for a given XTZ address";
+      tags: "Staking";
+    };
+  };
+
+  rpc GetICPNeuronInfo(GetICPNeuronInfoRequest) returns (GetICPNeuronInfoReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/staking/icp/{network}/neurons/{neuronID}/info"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get ICP neuron info";
+      description: "This endpoint returns the neuron info for the given neuronID";
+      tags: "Staking";
+    };
+  };
+
+  rpc GetStakeAccounts (GetStakeAccountsRequest) returns (GetStakeAccountsReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/staking/stake_accounts"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get stake accounts";
+      description: "This endpoint returns a list of stake accounts.";
+      tags: "Staking";
+    };
+  };
+}

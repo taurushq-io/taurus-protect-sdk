@@ -1,5 +1,0 @@
-<FindBugsFilter>
-    <Match>
-        <Bug pattern="PA_PUBLIC_PRIMITIVE_ATTRIBUTE,EI_EXPOSE_REP,EI_EXPOSE_REP2,URF_UNREAD_PUBLIC_OR_PROTECTED_FIELD,CT_CONSTRUCTOR_THROW"/>
-    </Match>
-</FindBugsFilter>

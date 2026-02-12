@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package tgvalidatord;
+
+import "currency.proto";
+
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+message CurrencyPrice {
+
+  string blockchain = 1;
+  string currencyFrom = 2;
+  string currencyTo = 3;
+  string decimals = 4;
+  string rate = 5;
+  repeated CurrencyPriceSignature signatures = 6;  // signatures of a json serialized string ({"blockchain":"ETH","currencyFrom":"BNB","currencyTo":"CHF","decimals":18, "value":"123.1000"}) by user with the role "priceupdater"
+  string changePercent24Hour = 7;
+  string source = 8;
+  google.protobuf.Timestamp creationDate = 9;
+  google.protobuf.Timestamp updateDate = 10;
+  Currency currencyFromInfo = 11;
+  Currency currencyToInfo = 12;
+}
+
+message CurrencyPriceSignature {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["userId", "signature"]
+    }
+  };
+
+  string userId = 1;
+  string signature = 2;
+}
+
+message CurrencyPriceSignatures {
+  repeated CurrencyPriceSignature signatures = 1;
+}
+
+message ConversionValue {
+  string symbol = 1;
+  string value = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Value in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";}];
+  string mainUnitValue = 3;
+  Currency currencyInfo = 4;
+}
+
+message PricesHistoryPoint {
+  google.protobuf.Timestamp periodStartDate = 1;
+  string blockchain = 2;
+  string currencyFrom = 3;
+  string currencyTo = 4;
+  string high = 5;
+  string low = 6;
+  string open = 7;
+  string close = 8;
+  string volumeFrom = 9;
+  string volumeTo = 10;
+  string changePercent = 11;
+  Currency currencyFromInfo = 12;
+  Currency currencyToInfo = 13;
+}

@@ -1,0 +1,135 @@
+syntax = "proto3";
+
+package tgvalidatord;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "health.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "tg-validatord health service";
+    version:"1.0";
+    contact:{
+      name:"tg-validatord health service";
+      url:"https://github.com/taurusgroup/tg-validatord";
+      email:"development@taurusgroup.ch";
+    };
+  };
+  consumes:"application/json";
+  produces:"application/json";
+  schemes: [HTTP, HTTPS];
+  responses:{
+    key:"401";
+    value:{
+      description:"Returned when the user is not authenticated.";
+    }
+  }
+  responses:{
+    key:"403";
+    value:{
+      description:"Returned when the user is not authorized to access the resource.";
+    }
+  }
+  responses:{
+    key:"404";
+    value:{
+      description:"Returned when the resource does not exist.";
+    }
+  }
+
+};
+
+message GetHealthCheckRequest {
+  string group = 1;
+  string healthCheck = 2;
+  uint64 tenantId = 3;
+  bool failIfUnhealthy = 4;
+}
+
+message GetHealthCheckReply {
+  Health health = 1;
+}
+
+message GetHealthChecksInGroupRequest {
+  string group = 1;
+  uint64 tenantId = 2;
+  bool failIfUnhealthy = 3;
+}
+
+message GetHealthChecksInGroupReply {
+  repeated Health healths = 1;
+}
+
+message GetHealthChecksRequest {
+  uint64 tenantId = 1;
+  bool failIfUnhealthy = 2;
+}
+
+message GetHealthChecksReply {
+  map<string, HealthGroup> groups = 1;
+}
+
+message GetAllHealthChecksRequest {
+  uint64 tenantId = 1;
+  bool failIfUnhealthy = 2;
+}
+
+message GetAllHealthChecksReply {
+  map<string, HealthComponent> components = 1;
+}
+
+service HealthService {
+
+  rpc GetHealthChecks (GetHealthChecksRequest) returns (GetHealthChecksReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/health"
+      additional_bindings: [{custom: {kind: "HEAD" path:"/api/rest/v1/health"}}];
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List health checks";
+      description: "This endpoint returns a list of health checks";
+      tags: "Health";
+    };
+  };
+
+  rpc GetHealthCheck (GetHealthCheckRequest) returns (GetHealthCheckReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/health/{group}/{healthCheck}"
+      additional_bindings: [{custom: {kind: "HEAD" path:"/api/rest/v1/health/{group}/{healthCheck}"}}];
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get a health check";
+      description: "This endpoint returns a health check";
+      tags: "Health";
+    };
+  };
+
+  rpc GetHealthChecksInGroup (GetHealthChecksInGroupRequest) returns (GetHealthChecksInGroupReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/health/{group}"
+      additional_bindings: [{custom: {kind: "HEAD" path:"/api/rest/v1/health/{group}"}}];
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List health checks in a group";
+      description: "This endpoint returns a list of health checks belonging to a group";
+      tags: "Health";
+    };
+  };
+
+  // It is important that this is defined AFTER the more generic /api/rest/v1/health/{group} routes
+  rpc GetAllHealthChecks (GetAllHealthChecksRequest) returns (GetAllHealthChecksReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/health/all"
+      additional_bindings: [{custom: {kind: "HEAD" path:"/api/rest/v1/health/all"}}];
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List all health checks";
+      description: "This endpoint returns a list of all health checks";
+      tags: "Health";
+    };
+  };
+
+}

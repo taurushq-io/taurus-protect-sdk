@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+package auth_proxy;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.common.auth_proxy";
+
+message ApiRequestToValidate {
+  string prefix = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "An identifier of the signing protocol version";
+    }
+  ];
+  string apiKey = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The API key of the user submitting the request";
+    }
+  ];
+  string nonce = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The nonce associated to the API key (to avoid replay)";
+    }
+  ];
+  google.protobuf.Timestamp timestamp = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The timestamp of the request - used to reject too old or future requests";
+    }
+  ];
+  string method = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The HTTP method of the request";
+    }
+  ];
+  string host = 6 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The host property of the request";
+    }
+  ];
+  string path = 7 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The path property of the request";
+    }
+  ];
+  string query = 8 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The query property of the request";
+    }
+  ];
+  string contentType = 9 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The contentType property of the request";
+    }
+  ];
+  bytes body = 10 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The body of the request (through the REST API, the bytes are encoded as a base64 string)";
+    }
+  ];
+  bytes signature = 11 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The submitted HMAC signature for the request, which we need to validate (through the REST API, the bytes are encoded as a base64 string)";
+    }
+  ];
+}
+

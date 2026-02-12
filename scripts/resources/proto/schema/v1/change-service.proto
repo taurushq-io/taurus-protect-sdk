@@ -1,0 +1,385 @@
+syntax = "proto3";
+
+package tgvalidatord;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/protobuf/empty.proto";
+import "change.proto";
+import "cursor.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "tg-validatord change service";
+    version: "1.0";
+    contact: {
+      name: "tg-validatord change service";
+      url: "https://github.com/taurusgroup/tg-validatord";
+      email: "development@taurusgroup.ch";
+    };
+  };
+  consumes: "application/json";
+  produces: "application/json";
+  schemes: [HTTP, HTTPS];
+  security_definitions: {
+    security: {
+      key: "Bearer";
+      value: {
+        type: TYPE_API_KEY;
+        in: IN_HEADER;
+        name: "Authorization";
+      }
+    }
+  }
+  security:{
+    security_requirement: {
+      key: "Bearer";
+      value: {};
+    }
+  }
+  responses: {
+    key: "400";
+    value: {
+      description: "Returned when the arguments of the request are invalid.";
+    }
+  }
+  responses:{
+    key: "401";
+    value: {
+      description: "Returned when the user is not authenticated.";
+    }
+  }
+  responses:{
+    key: "403";
+    value: {
+      description: "Returned when the user is not authorized to access the resource.";
+    }
+  }
+  responses:{
+    key: "404";
+    value:{
+      description: "Returned when the resource does not exist.";
+    }
+  }
+};
+
+
+message CreateChangeRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: [
+        "action",
+        "entity"
+      ]
+    },
+    example: "{\n"
+        "  \"action\": \"create\",\n"
+        "  \"entity\": \"user\",\n"
+        "  \"changes\": {\n"
+        "    \"externaluserid\": \"johndoe123\",\n"
+        "    \"firstname\": \"John\",\n"
+        "    \"lastname\": \"Doe\",\n"
+        "    \"email\": \"johndoe@company.com\",\n"
+        "    \"roles\": \"requestcreator\",\n"
+        "    \"status\": \"active\"\n"
+        "  }\n"
+        "}"
+  };
+
+  string action = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Can be one of the following: `create` `update` `delete` `resetpassword` `resettotp` `resetkeycontainer` `assign` `unassign`"
+    }
+  ];
+  uint64 entityId = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The id of the entity to change."
+    }
+  ];
+  string entity = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Can be one of the following: `user` `group` `usergroup` `businessrule` `exchange` `price` `action` `feepayer` `userapikey` `securitydomain` `taurusnetworkparticipant` `visibilitygroup` `uservisibilitygroup` `manualaccountbalancefreeze` `manualutxofreeze` `wallet` `whitelistedaddress` `autotransfereventhandler`"
+    }
+  ];
+  map<string, string> changes = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "This field is only mandatory if the action is 'create' or 'update'. It includes the actual changes to be made to the entity. [Click here](https://taurus.readme.io/protect-capital/docs/changes) to see a list of fields for each entity."
+    }
+  ];
+  string changeComment = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "A comment for describing the change request. "
+    }
+  ];
+  string entityUUID = 6 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The uuid of the entity being changed."
+      format: "uuid"
+    }
+  ];
+}
+
+message CreateChangeReply {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{\"result\": {\"id\": \"2744\" }}"
+  };
+
+  CreateChangeResult result = 1;
+}
+message CreateChangeResult {
+  uint64 id = 1;
+}
+
+message GetChangesRequest {
+  string entity = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Can be one of the following: `user` `group` `usergroup` `businessrule` `exchange` `price` `action` `feepayer` `userapikey` `securitydomain` `taurusnetworkparticipant` `visibilitygroup` `uservisibilitygroup` `manualaccountbalancefreeze` `wallet` `whitelistedaddress` `autotransfereventhandler`"
+    }
+  ];
+  uint64 entityId = 2 [
+    deprecated = true,
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "**Deprecated:** since 3.30: use 'entityIDs' instead."
+    }
+  ];
+  Change.Status status = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The current status of the change request."
+    }
+  ];
+  uint64 creatorId = 4;
+  string sortOrder = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to ASC to get the id sorted"
+          " in ASC order or DESC to get them in descending order. By default, the order is DESC.";
+    }
+  ];
+  RequestCursor cursor = 6 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The pagination cursor. Note that the default size is 100.";
+    }
+  ];
+  repeated uint64 entityIDs = 7 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "uint64; Valid when only entity type is given.";
+    }
+  ];
+  repeated string entityUUIDs = 8 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Valid when only entity type is given.";
+    }
+  ];
+}
+
+message GetChangeRequest {
+  uint64 id = 1;
+}
+
+message GetChangeReply {
+  Change result = 1;
+}
+
+message GetChangesReply {
+  repeated Change result = 1;
+  ResponseCursor cursor = 2;
+}
+
+message ApproveChangeRequest {
+  uint64 id = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "id of change to be approved. List of changes for approval can be retrieved with this [endpoint](https://docs.taurushq.com/protect-capital/reference/changeservice_getchangesforapproval).";
+    }
+  ];
+}
+
+message ApproveChangesRequest {
+  repeated uint64 ids = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "list of ids of changes to be approved. List of changes for approval can be retrieved with this [endpoint](https://docs.taurushq.com/protect-capital/reference/changeservice_getchangesforapproval).";
+    }
+  ];
+}
+
+message RejectChangeRequest {
+  uint64 id = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "id of change to be rejected. List of changes for approval can be retrieved with this [endpoint](https://docs.taurushq.com/protect-capital/reference/changeservice_getchangesforapproval).";
+    }
+  ];
+}
+
+message RejectChangesRequest {
+  repeated uint64 ids = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "list of ids of changes to be rejected. List of changes for approval can be retrieved with this [endpoint](https://docs.taurushq.com/protect-capital/reference/changeservice_getchangesforapproval).";
+    }
+  ];
+}
+
+message GetChangesForApprovalRequest {
+  repeated string entities = 1;
+  string sortOrder = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to ASC to get the id sorted"
+          " in ASC order or DESC to get them in descending order. By default, the order is DESC.";
+    }
+  ];
+  RequestCursor cursor = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The pagination cursor. Note that the default size is 100.";
+    }
+  ];
+  repeated uint64 entityIDs = 4[
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Valid when only one entity type is given.";
+    }
+  ];
+  repeated string entityUUIDs = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Valid when only one entity type is given.";
+    }
+  ];
+
+}
+
+service ChangeService {
+
+  rpc GetChanges (GetChangesRequest) returns (GetChangesReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/changes"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List changes";
+      description: "This endpoint returns a list of changes.";
+      tags: "Changes";
+    };
+  };
+
+  rpc GetChange (GetChangeRequest) returns (GetChangeReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/changes/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get change by ID";
+      description: "This endpoint returns a change given a specific id. \n Required role: **Admin**, **SuperAdmin**, **UserManager** or **AdminReadOnly**.";
+      tags: "Changes";
+    };
+  }
+
+  rpc CreateChange (CreateChangeRequest) returns (CreateChangeReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/changes"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a change";
+      description: "Taurus-PROTECT has a robust change approval system where each change must be approved by admins or in some cases, superadmins. This endpoint can be used to make change requests to users, wallets, whitelisted addresses, and more. \n\n"
+          "This endpoint creates a new change which is then sent to admins or in some cases superadmins for approval. It is the same endpoint that powers the PROTECT web and desktop applications.  \n\n"
+          "Entities represent what is being changed. For example, a user, a group, a wallet, etc. The action represents what is being done to the entity. For example, creating a new user, updating an existing user, deleting a user, etc. Each entity can accept different fields which are passed to the API as JSON in the `changes` parameter. \n\n"
+          "The following table lists the supported entities, actions and valid change fields.\n\n"
+          "## Entity Actions & Valid Change Fields\n\n"
+          "| `Entity`                  | `Supported Actions`                                                       | `Valid Change Fields`                                                                                                                                         |\n"
+          "|:---------------------------|:-----------------------------------------------------------------------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------|\n"
+          "| `User`                    | `create`, `update`, `delete`, `resetpassword`, `resettotp`, `resetkeycontainer` | `firstname`, `lastname`, `status`, `roles`, `externaluserid`, `username`, `publickey`, `email`, `userid`, `keycontainer`                                      |\n"
+          "| `Group`                   | `create`, `update`, `delete`                                                 | `name`, `externalgroupid`, `description`, `groupemail`                                                                                                         |\n"
+          "| `UserGroup`               | `create`, `update`, `delete`                                                 | `name`, `externalgroupid`, `description`                                                                                                                       |\n"
+          "| `Exchange`                | `create`, `update`, `delete`                                                 | `name`, `symbol`, `country`, `website`                                                                                                                         |\n"
+          "| `BusinessRule`            | `create`, `update`, `delete`                                                 | `rulekey`, `rulevalue`, `rulewalletid`                                                                                                                         |\n"
+          "| `Rule`                    | `create`, `update`, `delete`                                                 | `name`, `description`, `condition`, `action`                                                                                                                   |\n"
+          "| `Price`                   | `create`, `update`, `delete`                                                 | `blockchain`, `currencyfrom`, `currencyto`, `decimals`, `rate`, `source`, `currencyfromid`, `currencytoid`                                                    |\n"
+          "| `TPAction`                | `create`, `update`, `delete`                                                 | `label`, `autoApprove`, `trigger`, `tasks`, `state`                                                                                                            |\n"
+          "| `FeePayer`                | `create`, `update`, `delete`                                                 | `name`, `network`, `blockchain`, `address`                                                                                                                     |\n"
+          "| `SecurityDomain`          | `create`, `update`, `delete`                                                 | `name`, `description`, `mode`, `openid_configuration_url`                                                                                                      |\n"
+          "| `UserApiKey`              | `create`, `update`, `delete`                                                 | `key`, `description`, `permissions`                                                                                                                           |\n"
+          "| `VisibilityGroup`         | `create`, `update`, `delete`                                                 | `name`, `description`, `members`                                                                                                                              |\n"
+          "| `UserVisibilityGroup`     | `create`, `update`, `delete`                                                 | `userid`, `visibilitygroupid`                                                                                                                                  |\n"
+          "| `Wallet`                  | `create`, `update`, `delete`                                                 | `address`, `network`, `type`, `balance`                                                                                                                       |\n"
+          "| `WhitelistedAddress`      | `create`, `update`, `delete`                                                 | `address`, `network`, `type`, `description`                                                                                                                   |\n"
+          "| `ManualAccountFreeze`     | `create`, `update`, `delete`                                                 | `account`, `reason`, `duration`                                                                                                                               |\n"
+          "| `ManualUTXOFreeze`        | `create`, `update`, `delete`                                                 | `utxo`, `reason`, `duration`                                                                                                                                  |\n"
+          "| `autotransfereventhandler`| `create`, `update`, `delete`                                                 | `monitored_wallet_id`, `payer_address_id`, `trigger_type`, `minimum_fiat_value_token`, `transfer_amount_factor_percentage`, `status`                          |\n\n"
+          "## Entity specific processing rules\n\n"
+          "The `changes` API implements CRUD semantics on various entities, where each entity type has its own processing rules. Here are some of the entity-specific rules that apply. Note that this list is non-exhaustive.\n\n"
+          "### All Entities\n\n"
+          "- You cannot create a change which already exists. The API will return an error.\n"
+          "- Once a change has been created, it cannot be edited. You must reject the change and create a new one.\n"
+          "- Once approved, changes are applied immediately by PROTECT.\n\n"
+          "### `User`\n\n"
+          "- Super admin users cannot be deleted.\n"
+          "- A user's `Super Admin` role cannot be removed.\n"
+          "- Only `firstname`, `lastname`, `email`, `username`, `status` and `roles` can be changed for Super Admin users.\n"
+          "- All users must have an `externalUserID` (typically an email address).\n\n"
+          "### `Groups`\n\n"
+          "- If SSO is enabled, groups changed via SCIM cannot be changed manually.\n"
+          "- Groups are automatically reset for SSO users on the next login, creating a change request.\n\n"
+          "### Account Freezes\n\n"
+          "- There are two different entities for account freezes (manualaccountbalancefreeze, manualutxofreeze) depending on if a blockchain is account based (e.g., Ethereum) or utxo based (e.g., Bitcoin). For examples on how to freeze funds see the [develop and integrate guide.](https://docs.taurushq.com/protect-capitalnull/null#freezing-funds-in-protect-1)\n";
+      tags: "Changes";
+    };
+  }
+
+  rpc ApproveChange (ApproveChangeRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/changes/{id}/approve"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Approve a change";
+      description: "This endpoint approves a change.";
+      tags: "Changes";
+    };
+  };
+
+  rpc ApproveChanges (ApproveChangesRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/changes/approve"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Approve changes";
+      description: "This endpoint approves multiple changes.";
+      tags: "Changes";
+    };
+  };
+
+  rpc RejectChange (RejectChangeRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/changes/{id}/reject"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Reject a change";
+      description: "This endpoint rejects a change.";
+      tags: "Changes";
+    };
+  };
+
+  // It is important that this is defined AFTER the more generic /api/rest/v1/changes/{id}/reject routes
+  rpc RejectChanges (RejectChangesRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/changes/reject"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Reject changes";
+      description: "This endpoint rejects multiple changes.";
+      tags: "Changes";
+    };
+  };
+
+  // It is important that this is defined AFTER the more generic /api/rest/v1/changes/{id} routes
+  rpc GetChangesForApproval (GetChangesForApprovalRequest) returns (GetChangesReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/changes/for-approval"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List changes for approval";
+      description: "This endpoint returns a list of changes for approval.";
+      tags: "Changes";
+    };
+  };
+}
+
+

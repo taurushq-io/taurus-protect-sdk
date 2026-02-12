@@ -1,0 +1,9 @@
+syntax = "proto3";
+package tgvalidatord;
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+message KeyValue {
+  string key = 1;
+  string value = 2;
+}

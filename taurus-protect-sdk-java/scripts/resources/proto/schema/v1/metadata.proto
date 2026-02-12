@@ -1,0 +1,12 @@
+syntax = "proto3";
+package tgvalidatord;
+
+import "google/protobuf/struct.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+message Metadata {
+  string hash = 1;
+  google.protobuf.Value payload = 2;
+  string payloadAsString = 3;
+}

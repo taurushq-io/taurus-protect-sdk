@@ -1,0 +1,11 @@
+--- scripts/resources/proto/schema/v1/request_reply.proto.orig	2025-06-23 15:31:05
++++ scripts/resources/proto/schema/v1/request_reply.proto	2025-06-23 15:31:14
+@@ -1186,7 +1186,7 @@
+     kindV0 = 0;
+   }
+ 
+-  VersionKind version = 1;
++  VersionKind versionKind = 1;
+ 
+   oneof Version{
+     ClaimantV0 v0 = 2;

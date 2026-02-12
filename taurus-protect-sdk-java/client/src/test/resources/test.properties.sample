@@ -1,0 +1,47 @@
+# Test configuration for Taurus-PROTECT Java SDK (integration + E2E tests).
+#
+# Copy this file to test.properties (same directory) and fill in real values.
+# test.properties is git-ignored and MUST NOT be committed.
+#
+# Each setting can also be overridden by an environment variable (see comments).
+#
+# Identity fields: name, apiKey, apiSecret, privateKey, publicKey (all optional).
+# Identities with publicKey are used as SuperAdmin keys for signature verification.
+
+# Shared settings
+# Env: PROTECT_API_HOST
+host=https://your-api-host.example.com
+# Minimum valid SuperAdmin signatures required for verification
+minValidSignatures=2
+
+# Env: PROTECT_INTEGRATION_TEST (set to "true" to enable integration tests)
+
+# Identity 1 — default user (API creds + private key for signing)
+# Env: PROTECT_API_KEY_1, PROTECT_API_SECRET_1, PROTECT_PRIVATE_KEY_1
+identity.1.name=default
+identity.1.apiKey=00000000-0000-0000-0000-000000000001
+identity.1.apiSecret=0000000000000000000000000000000000000000000000000000000000000001
+identity.1.privateKey=-----BEGIN EC PRIVATE KEY-----\nREPLACE_WITH_REAL_PEM_KEY\n-----END EC PRIVATE KEY-----
+
+# Identity 2 — admin who proposes changes
+# Env: PROTECT_API_KEY_2, PROTECT_API_SECRET_2
+identity.2.name=admin1
+identity.2.apiKey=00000000-0000-0000-0000-000000000002
+identity.2.apiSecret=0000000000000000000000000000000000000000000000000000000000000002
+
+# Identity 3 — admin who approves changes
+# Env: PROTECT_API_KEY_3, PROTECT_API_SECRET_3
+identity.3.name=admin2
+identity.3.apiKey=00000000-0000-0000-0000-000000000003
+identity.3.apiSecret=0000000000000000000000000000000000000000000000000000000000000003
+
+# Identities 4-6 — SuperAdmins (public keys only, for signature verification)
+# Env: PROTECT_PUBLIC_KEY_4, PROTECT_PUBLIC_KEY_5, PROTECT_PUBLIC_KEY_6
+identity.4.name=superadmin1
+identity.4.publicKey=-----BEGIN PUBLIC KEY-----\nREPLACE_WITH_REAL_PEM_KEY\n-----END PUBLIC KEY-----
+
+identity.5.name=superadmin2
+identity.5.publicKey=-----BEGIN PUBLIC KEY-----\nREPLACE_WITH_REAL_PEM_KEY\n-----END PUBLIC KEY-----
+
+identity.6.name=superadmin3
+identity.6.publicKey=-----BEGIN PUBLIC KEY-----\nREPLACE_WITH_REAL_PEM_KEY\n-----END PUBLIC KEY-----

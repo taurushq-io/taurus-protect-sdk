@@ -1,0 +1,417 @@
+syntax = "proto3";
+package tgvalidatord;
+
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+import "approvers.proto";
+import "currency.proto";
+import "metadata.proto";
+
+import "google/protobuf/timestamp.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+message AutoTransferEventHandler {
+  string id = 1;
+  uint64 monitoredWalletId = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "ID of the monitored native wallet (ETH or SOL).";
+    }
+  ];
+  uint64 payerAddressId = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "ID of the payer address (ETH or SOL).";
+    }
+  ];
+  string triggerType = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Can be 'on_native_erc20_balance_change' or 'on_demand_address_check'.";
+    }
+  ];
+  string lastTriggeredAtBlock = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Last block at which this handler was triggered.";
+    }
+  ];
+  string lastProccessedAtBlock = 6 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Last block at which this handler was processed.";
+    }
+  ];
+  repeated AutoTransferEventHandlerAttribute attributes = 7 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Handler options.";
+    }
+  ];
+  string status = 8 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The handler can be 'active' or 'disabled'";
+    }
+  ];
+  string blockchain = 9 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Blockchain on which the handler is operating on. It can be ETH or SOL.";
+    }
+  ];
+  string network = 10 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Blockchain network on which the handler is operating on.";
+    }
+  ];
+  google.protobuf.Timestamp createdAt = 11;
+  google.protobuf.Timestamp updatedAt = 12;
+}
+
+message AutoTransferEventHandlerAttribute {
+  string id = 1;
+  string handlerId = 2;
+  string key = 3;
+  string value = 4;
+  string contentType = 5;
+  string owner = 6;
+  string type = 7;
+  string subType = 8;
+}
+
+message CompanyTravelRuleData {
+  string department = 1;
+  string buildingNumber = 2;
+  string street = 3;
+  string city = 4;
+  string province = 5;
+  string postalCode = 6;
+  string country = 7;
+
+  string legalEntityIdentifier = 8;
+  string businessName = 9;
+  string accountNumber = 10;
+}
+
+message PersonTravelRuleData {
+  string name = 1;
+  string houseNumber = 2;
+  string street = 3;
+  string city = 4;
+  string province = 5;
+  string postalCode = 6;
+  string country = 7;
+
+  string idNumber = 8;
+  string externalCustomerID = 9;
+  string birthdate = 10;
+  string birthPlace = 11;
+  string accountNumber = 12;
+}
+
+message TravelRuleDataInput {
+  oneof originator {
+    PersonTravelRuleData originatorPersonTravelRuleData = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "OriginatorPersonTravelRuleData is used when the originator of a transaction is a physical person.";}];
+    CompanyTravelRuleData originatorCompanyTravelRuleData = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "OriginatorCompanyTravelRuleData is used when the originator of a transaction is a legal entity.";}];
+  }
+  oneof beneficiary {
+    CompanyTravelRuleData beneficiaryCompanyTravelRuleData = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "BeneficiaryCompanyTravelRuleData is used when the beneficiary of a transaction is a legal entity.";}];
+    PersonTravelRuleData beneficiaryPersonTravelRuleData = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "BeneficiaryPersonTravelRuleData is used when the beneficiary of a transaction is a physical person.";}];
+  }
+  string provider = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Provider is the type of the travel rule data provider. Supported provider: 'TaurusNetwork'";}];
+}
+
+message RequestBatchSignature {
+  uint64 ID = 1;
+  uint64 TenantID = 2;
+  uint64 UserID = 3;
+  string Signature = 4;
+  string Comment = 5;
+  string Status = 6;
+  google.protobuf.Timestamp CreationDate = 7;
+  google.protobuf.Timestamp UpdateDate = 8;
+
+  message RequestSignature {
+    uint64 ID = 1;
+    uint64 TenantID = 2;
+    uint64 BatchSignatureID = 3;
+    uint64 RequestID = 4;
+    string MetadataHash = 5;
+    string Status = 6;
+    string Message = 7;
+    google.protobuf.Timestamp CreationDate = 8;
+    google.protobuf.Timestamp UpdateDate = 9;
+  }
+  repeated RequestSignature signatures = 9;
+}
+
+message RequestBundleDetailsSource {
+  uint64 totalSources = 1;
+  uint64 fromWalletId = 2;
+  uint64 fromAddressId = 3;
+}
+
+message RequestBundleDetailsDestination {
+  uint64 totalDestinations = 1;
+  uint64 toAddressId = 2;
+  uint64 toWhitelistedAddressId = 3;
+}
+
+message RequestBundleDetails {
+  string error = 1;
+  string amount = 2;
+  RequestBundleDetailsSource source = 3;
+  RequestBundleDetailsDestination destination = 4;
+}
+
+message RequestAttribute{
+  uint64 id = 1;
+  string key = 2;
+  string value = 3;
+  string contentType = 4;
+}
+
+message SignedRequestAttribute {
+  uint64 id = 1;
+  string key = 2;
+  string value = 3;
+  string contentType = 4;
+}
+
+message RequestBundle {
+  uint64 id = 1;
+  uint64 tenantId = 2;
+  string blockchain = 3;
+  RequestBundleDetails details = 4;
+  string status = 5;
+  google.protobuf.Timestamp creationDate = 6;
+  google.protobuf.Timestamp updateDate = 7;
+  // This field is not always filled in, as there can be many associated requests.
+  repeated Request requests = 8;
+
+  string network = 9;
+  message SignedRequestBundle {
+    uint64 id = 1;
+    string status = 2;
+    string transaction = 3;
+    string hash = 4;
+    string details = 5;
+    google.protobuf.Timestamp creationDate = 6;
+    google.protobuf.Timestamp updateDate = 7;
+    google.protobuf.Timestamp broadcastDate = 8;
+    google.protobuf.Timestamp confirmationDate = 9;
+  }
+  repeated SignedRequestBundle signedRequestBundles = 10;
+}
+
+message Request {
+
+  message Trail {
+    uint64 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "ID for the event record.",
+    }];
+    uint64 userId = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the user related to the audit event. For events that are not triggered by a user, 1 is used.",
+    }];
+    string externalUserId = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The external ID of the user related to the audit event. E.g., validator-core@taurusgroup.com corrosponds to user ID 1",
+    }];
+    string action = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The event being logged. E.g., `broadcasting`, `hsm_signed`, `hsm_ready`, `approved`, etc...",
+    }];
+    string comment = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Some more details about the event. This could be the transaction hash, or the ID or an error code associated with the event.",
+    }];
+    google.protobuf.Timestamp date = 6;
+    string requestStatus = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The status of the request at the time of the event. One of the following: `CREATED`, `APPROVING`, `APPROVED`, `HSM_SIGNED`, `HSM_READY`, `BROADCASTING`, `BROADCASTED`, `CONFIRMED`, `REJECTED`",
+    }];
+
+  }
+
+  message SignedRequest {
+    uint64 id = 1;
+    string signedRequest = 2;
+    string status = 3;
+    string hash = 4;
+    uint32 block = 5;
+    string details = 6;
+    google.protobuf.Timestamp creationDate = 7;
+    google.protobuf.Timestamp updateDate = 8;
+    google.protobuf.Timestamp broadcastDate = 9;
+    google.protobuf.Timestamp confirmationDate = 10;
+    repeated SignedRequestAttribute attributes = 11;
+  }
+
+  uint64 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Unique identifier for the request.",
+  }];
+  uint64 tenantId = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "The ID of the Protect tenant where the request was created.",
+  }];
+  string currency = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "The currency of the request.",
+  }];
+  string envelope = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "This field is used internally by Protect for request signing and approvals. This field is signed and encrypted.",
+  }];
+  string status = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "The status of the request. One of the following: `CREATED`, `APPROVING`, `HSM_SIGNED`, `BROADCASTING`, `BROADCASTED`, `CONFIRMED`, `REJECTED`",
+  }];
+  repeated Trail trails = 6;
+  repeated SignedRequest signedRequests = 7;
+  google.protobuf.Timestamp creationDate = 8;
+  google.protobuf.Timestamp updateDate = 9;
+  Metadata metadata = 10;
+  repeated RequestAttribute attributes = 11;
+  string rule = 12;
+  Approvers approvers = 13;
+  string type = 14 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Value used internally to distinguish between different types of blockchain transactions (e.g., staking, unstaking, transfer, delegate, etc)",
+  }];
+  Currency currencyInfo = 15;
+  repeated string needsApprovalFrom = 16 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "List of groups that the request needs approval from.",
+  }];
+  uint64 requestBundleId = 17 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "The ID of the request bundle. For more information on request bundles, see the [our docs](https://docs.taurushq.com/user-and-technical-guides/docs/accounts#bundle-request).",
+  }];
+  string externalRequestId = 18 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Identifier for the request in the user's system. This must be unique.",
+  }];
+  TravelRuleDataInput travelRuleDataInput = 19;
+}
+
+message ContractArgValue {
+  string primitive = 1;
+  repeated ContractArgValue composite = 2;
+}
+
+message ContractArg {
+  string name = 1;
+  string type = 2;
+  ContractArgValue value = 3;
+}
+
+message ContractCall {
+  string functionSignature = 1;
+  repeated ContractArg args = 2;
+}
+
+message GenericContractCall {
+  string blockchain = 1;
+  ContractCall eth = 2 [deprecated = true];
+  XTZContractCall xtz = 3;
+  ContractCall evm = 4;
+}
+
+message GenericCreateContract {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["blockchain"]
+    }
+  };
+
+  message EVMContract {
+    bytes bytecode = 1;
+    ContractCall constructor = 2;
+  }
+
+  message XTZContract {
+    string code = 1;
+    XTZContractArg storage = 2;
+    message Delegate {
+      uint64 toAddressId = 1;
+      uint64 toWhitelistedAddressId = 2;
+    }
+    Delegate delegate = 3;
+  }
+  string blockchain = 1;
+  EVMContract eth = 2 [deprecated = true];
+  XTZContract xtz = 3;
+  EVMContract evm = 4;
+}
+
+message CosmosMessageValue {
+  enum Kind {
+    None = 0;
+    Source = 1;
+    Destination = 2;
+    String = 3;
+    Int = 4;
+    Bytes = 5;
+    Message = 6;
+    Array = 7;
+  }
+
+  message _Source {
+    uint64 addressId = 1;
+  }
+
+  message _Destination {
+    uint64 addressId = 1;
+    uint64 whitelistedAddressId = 2;
+  }
+
+  message _Array {
+    string kind = 1;
+    repeated _Value elems = 2;
+  }
+
+  message _Value {
+    _Source source = 1;
+    _Destination destination = 2;
+    string string = 3;
+    string int = 4;
+    bytes bytes = 5;
+    repeated CosmosMessageValue message = 6;
+    _Array array = 7;
+  }
+
+  string kind = 1;
+  string name = 2;
+  uint64 fieldId = 3;
+  _Value value = 4;
+}
+
+message CosmosMessageCall {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["url"]
+    }
+  };
+
+  string url = 1;
+  repeated CosmosMessageValue message = 2;
+}
+
+message XTZContractCall {
+  string entrypoint = 1;
+  XTZContractArg arg = 2;
+}
+
+message XTZContractArg {
+  enum Kind {
+    None = 0;
+    Source = 1;
+    Destination = 2;
+    String = 3;
+    Int = 4;
+    Bytes = 5;
+    Primitive = 6;
+  }
+
+  message _Source {
+    uint64 fromAddressId = 1;
+  }
+
+  message _Destination {
+    uint64 toAddressId = 1;
+    uint64 toWhitelistedAddressId = 2;
+  }
+
+  string kind = 1;
+  string prim = 2;
+  repeated XTZContractArg args = 3;
+  _Source source = 4;
+  _Destination destination = 5;
+  string string = 6;
+  string int = 7;
+  bytes bytes = 8;
+  repeated string annotations = 9;
+}
+

@@ -1,0 +1,3022 @@
+syntax = "proto3";
+
+package tgvalidatord;
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "request.proto";
+import "cursor.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "tg-validatord request service";
+    version:"1.0";
+    contact:{
+      name:"tg-validatord request service";
+      url:"https://github.com/taurusgroup/tg-validatord";
+      email:"development@taurusgroup.ch";
+    };
+  };
+  consumes:"application/json";
+  produces:"application/json";
+  schemes: [HTTP, HTTPS];
+  security_definitions:{
+    security:{
+      key:"Bearer";
+      value:{
+        type:TYPE_API_KEY;
+        in:IN_HEADER;
+        name:"Authorization";
+      }
+    }
+  }
+  security:{
+    security_requirement:{
+      key:"Bearer";
+      value:{};
+    }
+  }
+  responses:{
+    key:"401";
+    value:{
+      description:"Returned when the user is not authenticated.";
+    }
+  }
+  responses:{
+    key:"403";
+    value:{
+      description:"Returned when the user is not authorized to access the resource.";
+    }
+  }
+  responses:{
+    key:"404";
+    value:{
+      description:"Returned when the resource does not exist.";
+    }
+  }
+
+};
+
+message ExtendedAmount {
+  enum Kind {
+    // Default amount is exploded in the main struct
+    _default_ = 0;
+    NFT = 1;
+  }
+
+  message _NFT {
+    string id = 1;
+    string quantity = 2;
+  }
+
+  string kind = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Kind of extended amount. Valid values: \"\" (empty string) for default, or \"NFT\". If set to \"NFT\", the nft object must be provided.";}];
+  _NFT nft = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "NFT details. Required when kind is set to \"NFT\".";}];
+}
+
+// Extensions for chains
+
+message XLMOpts{
+  uint64 SponsoredByAddressID = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "(XLM Blockchain Field) If set, is the ID of the address who will sponsor the cost of the operation on the minimum balance of the source address";}];
+}
+
+message BlockchainOpts{
+  oneof opts{
+    XLMOpts xlm = 1;
+    // Add new blockchain opts here...
+  }
+}
+
+message CreateOutgoingRequestBundleRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{\n   "
+        "   \"requests\":[\n    "
+        "   {\n "
+        "       \"fromAddressId\":\"450081\",\n "
+        "       \"amount\":\"10000\",\n "
+        "       \"toWhitelistedAddressId\":\"452944\"\n    "
+        "   },\n    "
+        "   {\n "
+        "       \"fromAddressId\":\"442016\",\n "
+        "       \"amount\":\"20000\",\n "
+        "       \"toWhitelistedAddressId\":\"434396\"\n    "
+        "   }\n "
+        "   ]\n "
+        "}  "
+    json_schema: {
+      required: ["requests"]
+    }
+  };
+
+  repeated CreateOutgoingRequestRequest requests = 1;
+}
+
+message CreateOutgoingAddressToAddressRequestBundleRequest {
+  repeated CreateAddressToAddressTransferOutgoingRequestRequest requests = 1;
+}
+
+
+message CreateOutgoingRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{\n"
+        "  \"amount\": \"100000\",\n"
+        "  \"fee\": \"4865\",\n"
+        "  \"fromAddressId\": \"1\",\n"
+        "  \"toAddressId\": \"204\",\n"
+        "  \"comment\": \"Ich bin eine flying Roasted Butternut Squash Boodles\",\n"
+        "  \"useUnconfirmedFunds\": true,\n"
+        "  \"feePaidByReceiver\": true\n"
+        "}"
+    json_schema: {
+      required: ["amount"]
+    }
+  };
+
+  string amount = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";
+  }];
+  string feeLimit = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum amount of fees to be paid for the transaction. For ETH it is the maximum amount of fees to be paid per unit of gas.";
+  }];
+  uint64 fromWalletId = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; A source should be specified. Either `fromAddressId` or `fromWalletId`. `fromWalletId` should be used to specify an omnibus wallet only.";
+  }];
+  uint64 fromAddressId = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; A source should be specified. Either `fromAddressId` or `fromWalletId`. `fromAddressId` should be used for using an address as source.";
+  }];
+  uint64 toAddressId = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; A destination should be specified. Either toAddressId or toWhitelistedAddressId. To perform a batch transfer to multiple addresses, you can pass in multiple request objects in the body parameters. Each request object can specify its own toAddressId.";
+  }];
+  uint64 toWhitelistedAddressId = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; A destination should be specified. Either toAddressId or toWhitelistedAddressId.";
+  }];
+  string gasLimit = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum gas committed to the transaction. For non-ETH chains, use `feeLimit`.";
+  }];
+  string comment = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A reconciliation note can be given when initiating a request and this will be included in transaction history.";
+  }];
+  bool useUnconfirmedFunds = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Allow use of unconfirmed funds for this transaction";
+  }];
+  bool feePaidByReceiver = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "If `true`, maximum `amount` of funds will be transferred, including fees. When `false`, fees are added on top of `amount`.";
+  }];
+  string transactionComment = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Max 256 characters external reference for the transaction.";
+  }];
+  bool useAllFunds = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "If set to true, it will send all the funds from an address or from all the addresses of a wallet. If an address in a wallet can't pay the fees, it is skipped.";
+  }];
+  uint64 feePayerId = 13 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The `id` of the fee payer to use for this transaction.";
+  }];
+  ExtendedAmount extendedAmount = 14 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Use for NFT transfers. For regular transfers, use `amount`.";
+  }];
+  string transactionReference = 15 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** Use `externalRequestId` instead";
+  }];
+  string externalRequestId = 16 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";
+  }];
+  string destinationAddressMemo = 17 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A memo can be specified if the destination is a whitelisted address on a blockchain supporting memos.";
+  }];
+  // Extra
+  BlockchainOpts opts = 18 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Blockchain-specific parameters";
+  }];
+  TravelRuleDataInput travelRuleDataInput = 19 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Travel rule data provides information about the originator and the beneficiary of the transaction";
+  }];
+  uint64 feePayerAddressId = 20 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Internal protect address designated to pay for the fees. Supported on SOL token transfers.";
+  }];
+}
+
+message CreateAddressToAddressTransferOutgoingRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddress", "toAddress"]
+    }
+  };
+
+  string amount = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";}];
+  string currency = 2;
+  string fromAddress = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Source address.";}];
+  string toAddress = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Single destination address. To perform a batch transfer to multiple addresses, you can pass in multiple request objects in the body parameters. Each request object can specify its own toAddress.";}];
+  string feeLimit = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Maximum amount of fees to be paid for the transaction. For ETH it is the maximum amount of fees to be paid per unit of gas.";}];
+  string gasLimit = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Maximum gas committed to the transaction. For non-ETH chains, use feeLimit.";}];
+  string comment = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A reconciliation note can be given when initiating a request and this will be included in transaction history.";}];
+  bool useUnconfirmedFunds = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Allow use of unconfirmed funds for this transaction";}];
+  bool feePaidByReceiver = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "If true, maximum amount of funds will be transferred, including fees. When false, fees are added on top of amount.";}];
+  string transactionComment = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Max 256 characters external reference for the transaction.";}];
+  bool useAllFunds = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "If set to true, it will send all the funds from an address or from all the addresses of a wallet. If an address in a wallet can't pay the fees, it is skipped.";}];
+  uint64 feePayerId = 12;
+  ExtendedAmount extendedAmount = 14;
+  string transactionReference = 15 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  string externalRequestId = 16 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+  string destinationAddressMemo = 17 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "A memo can be specified if the destination is a whitelisted address on a blockchain supporting memos.";}];
+  BlockchainOpts opts = 18;
+}
+
+message CreateOutgoingADADelegateRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "toStakePoolAddressId"]
+    }
+  };
+
+  uint64 fromAddressId = 1;
+  uint64 toStakePoolAddressId = 2;
+  string feeLimit = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum amount of fees to be paid for the transaction.";}];
+  string comment = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "string; A reconciliation note can be given when initiating a request and this will be included in transaction history.";}];
+  bool useUnconfirmedFunds = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Allow use of unconfirmed funds for this transaction";}];
+  string transactionReference = 6 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  bytes stakePoolRegistrationCertificate = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field).read_only = true];
+  bool stakePoolRegistrationDeposit = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field).read_only = true];
+  string externalRequestId = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+
+  string drep = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "string; Delegate representative: can be either 'ABSTAIN' (votes don't count), 'NOCONFIDENCE' (always vote against proposals) or an address (format drep1....).";
+  }];
+}
+
+message CreateOutgoingADAUndelegateRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId"]
+    }
+  };
+
+  uint64 fromAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The ID of the source address for funds.";}];
+  string feeLimit = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum amount of fees to be paid for the transaction.";}];
+  string comment = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "string; A reconciliation note can be given when initiating a request and this will be included in transaction history.";}];
+  bool useUnconfirmedFunds = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Allow use of unconfirmed funds for this transaction";}];
+  string transactionReference = 5 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  string externalRequestId = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingADAVoteDelegateRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "drep"]
+    }
+  };
+
+  uint64 fromAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The ID of the source address for funds.";
+  }];
+  string feeLimit = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum amount of fees to be paid for the transaction.";
+  }];
+  string comment = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "string; A reconciliation note can be given when initiating a request and this will be included in transaction history.";
+  }];
+  bool useUnconfirmedFunds = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "bool; Allow use of unconfirmed funds for this transaction";
+  }];
+  string externalRequestId = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "string; Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request.";
+  }];
+  string drep = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "string; Delegate representative: can be either 'ABSTAIN' (votes don't count), 'NOCONFIDENCE' (always vote against proposals) or an address (format drep1....).";
+  }];
+}
+
+message CreateOutgoingADAWithdrawalRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId"]
+    }
+  };
+
+  uint64 fromAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The ID of the source address for funds.";}];
+  string feeLimit = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum amount of fees to be paid for the transaction.";}];
+  string comment = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "string; A free form comment to be added to the transaction.";}];
+  bool useUnconfirmedFunds = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Allow use of unconfirmed funds for this transaction";}];
+  string transactionReference = 5 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  string externalRequestId = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingCosmosDelegateRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "toValidatorAddressId", "amount"]
+    }
+  };
+
+  uint64 fromAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The ID of the source address for funds.";}];
+  uint64 toValidatorAddressId = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Whitelisted validator's staking pool you want to stake on";}];
+  string amount = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";}];
+  string feeLimit = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum amount of fees to be paid for the transaction.";}];
+  string gasLimit = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum gas committed to the transaction.";}];
+  string comment = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A reconciliation note can be given when initiating a request and this will be included in transaction history.";}];
+  string transactionReference = 7 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  string externalRequestId = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingCosmosUndelegateRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "toValidatorAddressId", "amount"]
+    }
+  };
+
+  uint64 fromAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The ID of the source address for funds.";}];
+  uint64 toValidatorAddressId = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Whitelisted validator's staking pool you want to stake on";}];
+  string amount = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";}];
+  string feeLimit = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum amount of fees to be paid for the transaction.";}];
+  string gasLimit = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum gas committed to the transaction.";}];
+  string comment = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A free form comment to be added to the transaction.";}];
+  string transactionReference = 7 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  string externalRequestId = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingCosmosWithdrawRewardRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "toValidatorAddressId"]
+    }
+  };
+
+  uint64 fromAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The ID of the source address for funds.";}];
+  uint64 toValidatorAddressId = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Whitelisted validator's staking pool you want to unstake from";}];
+  string feeLimit = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum amount of fees to be paid for the transaction.";}];
+  string gasLimit = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum gas committed to the transaction.";}];
+  string comment = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A reconciliation note can be given when initiating a request and this will be included in transaction history.";}];
+  string transactionReference = 6 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  string externalRequestId = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingXTZDelegateRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "toBakerAddressId"]
+    }
+  };
+
+  uint64 fromAddressId = 1;
+  uint64 toBakerAddressId = 2;
+  string gasLimit = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum gas committed to the transaction.";}];
+  string feeLimit = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum amount of fees to be paid for the transaction.";}];
+  string comment = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A reconciliation note can be given when initiating a request and this will be included in transaction history.";}];
+  string transactionReference = 6 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  string externalRequestId = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingXTZUndelegateRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId"]
+    }
+  };
+
+  uint64 fromAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The ID of the source address for funds.";}];
+  string gasLimit = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum gas committed to the transaction.";}];
+  string feeLimit = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum amount of fees to be paid for the transaction.";}];
+  string comment = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A reconciliation note can be given when initiating a request and this will be included in transaction history.";}];
+  string transactionReference = 5 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  string externalRequestId = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingXTZStakeRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId"]
+    }
+  };
+
+  uint64 fromAddressId = 1;
+  string amount = 2;
+  string gasLimit = 3;
+  string feeLimit = 4;
+  string comment = 5;
+  string externalRequestId = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingXTZUnstakeRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId"]
+    }
+  };
+
+  uint64 fromAddressId = 1;
+  string amount = 2;
+  string gasLimit = 3;
+  string feeLimit = 4;
+  string comment = 5;
+  string externalRequestId = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+
+}
+
+message CreateOutgoingFTMDelegateRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "toValidatorAddressId", "amount"]
+    }
+  };
+
+  uint64 fromAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The ID of the source address for funds.";}];
+  uint64 toValidatorAddressId = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Whitelisted validator's staking pool you want to stake on";}];
+  string amount = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";}];
+  string feeLimit = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum amount of fees to be paid for the transaction.";}];
+  string gasLimit = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum gas committed to the transaction.";}];
+  string comment = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "string; A reconciliation note can be given when initiating a request and this will be included in transaction history.";}];
+  bool useUnconfirmedFunds = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Allow use of unconfirmed funds for this transaction";}];
+  string transactionReference = 8 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  string externalRequestId = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingFTMUndelegateRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "toValidatorAddressId", "amount"]
+    }
+  };
+
+  uint64 fromAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The ID of the source address for funds.";}];
+  uint64 toValidatorAddressId = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Whitelisted validator's staking pool you want to unstake from";}];
+  string amount = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";}];
+  string feeLimit = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum amount of fees to be paid for the transaction.";}];
+  string gasLimit = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum gas committed to the transaction.";}];
+  string comment = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A reconciliation note can be given when initiating a request and this will be included in transaction history.";}];
+  string transactionReference = 7 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  string externalRequestId = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingFTMWithdrawalRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "toValidatorAddressId", "withdrawalId"]
+    }
+  };
+
+  uint64 fromAddressId = 1;
+  uint64 toValidatorAddressId = 2;
+  uint64 withdrawalId = 3;
+  string feeLimit = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum amount of fees to be paid for the transaction.";}];
+  string gasLimit = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum gas committed to the transaction.";}];
+  string comment = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A reconciliation note can be given when initiating a request and this will be included in transaction history.";}];
+  string transactionReference = 7 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  string externalRequestId = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingFTMClaimRewardsRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "toValidatorAddressId"]
+    }
+  };
+
+  uint64 fromAddressId = 1;
+  uint64 toValidatorAddressId = 2;
+  bool restake = 3;
+  string feeLimit = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum amount of fees to be paid for the transaction.";}];
+  string gasLimit = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum gas committed to the transaction.";}];
+  string comment = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A reconciliation note can be given when initiating a request and this will be included in transaction history.";}];
+  string transactionReference = 7 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  string externalRequestId = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingDOTNominateRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "validatorWLAIds"]
+    }
+  };
+
+  uint64 fromAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The ID of the source address for funds.";}];
+  repeated uint64 validatorWLAIds = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "List of whitelisted validator addresses";}];
+  string feeLimit = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum amount of fees to be paid for the transaction.";}];
+  string comment = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A reconciliation note can be given when initiating a request and this will be included in transaction history.";}];
+  string transactionReference = 5 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  string externalRequestId = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingDOTBondRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId"]
+    }
+  };
+
+  uint64 fromAddressId = 1;
+  string amount = 2;
+  bool restakeRewards = 3;
+  string feeLimit = 4;
+  string comment = 5;
+  bool useAllFunds = 6;
+  string transactionReference = 7 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  string externalRequestId = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+message CreateOutgoingDOTBondExtraRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId"]
+    }
+  };
+
+  uint64 fromAddressId = 1;
+  string amount = 2;
+  string feeLimit = 3;
+  string comment = 4;
+  bool useAllFunds = 5;
+  string transactionReference = 6 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  string externalRequestId = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingDOTChillRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId"]
+    }
+  };
+
+  uint64 fromAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The ID of the source address for funds.";}];
+  string feeLimit = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum amount of fees to be paid for the transaction.";}];
+  string comment = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A reconciliation note can be given when initiating a request and this will be included in transaction history.";}];
+  string transactionReference = 4 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  string externalRequestId = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingDOTUnbondRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "amount"]
+    }
+  };
+
+  uint64 fromAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The ID of the source address for funds.";}];
+  string amount = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";}];
+  string feeLimit = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum amount of fees to be paid for the transaction.";}];
+  string comment = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A reconciliation note can be given when initiating a request and this will be included in transaction history.";}];
+  string transactionReference = 5 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  string externalRequestId = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingDOTWithdrawUnbondedRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId"]
+    }
+  };
+
+  uint64 fromAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The ID of the source address for funds.";}];
+  string feeLimit = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum amount of fees to be paid for the transaction.";}];
+  string comment = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A reconciliation note can be given when initiating a request and this will be included in transaction history.";}];
+  string transactionReference = 4 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  string externalRequestId = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingMinaDelegationRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema : {required : ["fromAddressId", "toWhitelistedAddressId"]}
+  };
+
+  uint64 fromAddressId = 1
+  [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:
+        "uint64; The ID of the source address for funds.";
+  }];
+  uint64 toWhitelistedAddressId = 2
+  [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:
+        "uint64; The ID of the whitelisted validator that you want to "
+            "delegate to.";
+  }];
+  string feeLimit = 3
+  [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:
+        "numeric; Maximum amount of fees to be paid for the transaction.";
+  }];
+  string comment = 4
+  [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:
+        "A reconciliation note can be given when initiating a request and "
+            "this will be included in transaction history.";
+  }];
+  string externalRequestId = 5
+  [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:
+        "Identifier for the request in the user's system. This must be "
+            "unique. Attempting to create a request with an existing "
+            "externalRequestId will do nothing and return the originally created "
+            "request";
+  }];
+}
+
+message CreateOutgoingMinaUndelegationRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema : {required : ["fromAddressId"]}
+  };
+
+  uint64 fromAddressId = 1
+  [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:
+        "uint64; The ID of the source address for funds.";
+  }];
+  string feeLimit = 2
+  [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:
+        "numeric; Maximum amount of fees to be paid for the transaction.";
+  }];
+  string comment = 3
+  [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:
+        "A reconciliation note can be given when initiating a request and "
+            "this will be included in transaction history.";
+  }];
+  string externalRequestId = 4
+  [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:
+        "Identifier for the request in the user's system. This must be "
+            "unique. Attempting to create a request with an existing "
+            "externalRequestId will do nothing and return the originally created "
+            "request";
+  }];
+}
+
+message CreateOutgoingNEARDepositAndStakeRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "toValidatorAddressId", "amount"]
+    }
+  };
+
+  uint64 fromAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The ID of the source address for funds.";}];
+  uint64 toValidatorAddressId = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; Whitelisted validator's staking pool you want to stake on";}];
+  string amount = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";}];
+  string feeLimit = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum amount of fees to be paid for the transaction.";}];
+  string comment = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A reconciliation note can be given when initiating a request and this will be included in transaction history.";}];
+  string transactionReference = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "A client's reference that can then be used for reconciliation in the client's systems later";}];
+}
+
+message CreateOutgoingNEARUnstakeRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "toValidatorAddressId", "amount"]
+    }
+  };
+
+
+  uint64 fromAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The ID of the source address for funds.";}];
+  uint64 toValidatorAddressId = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; Whitelisted validator's staking pool you want to unstake from";}];
+  string amount = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";}];
+  string feeLimit = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum amount of fees to be paid for the transaction.";}];
+  string comment = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A reconciliation note can be given when initiating a request and this will be included in transaction history.";}];
+  string transactionReference = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "A client's reference that can then be used for reconciliation in the client's systems later";}];
+}
+
+message CreateOutgoingNEARWithdrawRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "toValidatorAddressId", "amount"]
+    }
+  };
+
+  uint64 fromAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; The ID of the source address for funds.";}];
+  uint64 toValidatorAddressId = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; Whitelisted validator's staking pool you want to withdraw from";}];
+  string amount = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";}];
+  string feeLimit = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum amount of fees to be paid for the transaction.";}];
+  string comment = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A reconciliation note can be given when initiating a request and this will be included in transaction history.";}];
+  string transactionReference = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "A client's reference that can then be used for reconciliation in the client's systems later";}];
+}
+
+message CreateOutgoingUTXOsRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["amount", "fromAddressId", "utxoIds"]
+    }
+  };
+
+  string amount = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Amount in the smallest currency unit, based on the currency decimals. Example: 100000000 satoshi (smallest BTC unit) corresponds to 1 BTC (BTC has 8 decimals places)";}];
+  string feeLimit = 2;
+  uint64 fromAddressId = 3;
+  uint64 toAddressId = 4;
+  uint64 toWhitelistedAddressId = 5;
+  repeated uint64 utxoIds = 6;
+  string comment = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "string; A reconciliation note can be given when initiating a request and this will be included in transaction history.";}];
+  bool feePaidByReceiver = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "If `true`, maximum `amount` of funds will be transferred, including fees. When `false`, fees are added on top of `amount`.";}];
+  string transactionReference = 9 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  string externalRequestId = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingCancelRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["addressId"]
+    }
+  };
+
+  uint64 addressId = 1;
+  uint64 nonce = 2;
+  uint64 feePayerId = 3;
+  repeated uint64 addressIds = 4;
+  repeated uint64 nonces = 5;
+  string externalRequestId = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingDeployContractRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "contract"]
+    }
+  };
+
+  uint64 fromAddressId = 1;
+  bytes bytecode = 2;
+  ContractCall constructor = 3;
+  bool generateWhitelistedAddress = 4;
+  string gasLimit = 5;
+  string gasPriceLimit = 6;
+  string comment = 7;
+  string contractType = 8;
+  uint64 feePayerId = 9;
+  string feeLimit = 10;
+  GenericCreateContract contract = 11;
+  string transactionReference = 12 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  string externalRequestId = 13 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingCallContractRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "toWhitelistedAddressId", "method"]
+    }
+  };
+
+  uint64 fromAddressId = 1;
+  uint64 toWhitelistedAddressId = 2;
+  ContractCall method = 3;
+  string gasLimit = 4;
+  string gasPriceLimit = 5;
+  string comment = 6;
+  string contractType = 7;
+  string amount = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";}];
+  uint64 feePayerId = 9;
+  string feeLimit = 10;
+  GenericContractCall call = 11;
+  string transactionReference = 12 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  string externalRequestId = 13 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingCosmosGenericRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["chainId", "signers", "messages"]
+    }
+  };
+
+  string chainId = 1;
+  repeated uint64 signers = 2;
+  string feeDenom = 3;
+  string fee = 4;
+  string feePayer = 5;
+  uint64 gasLimit = 6;
+  repeated CosmosMessageCall messages = 7;
+  string comment = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "string; A reconciliation note can be given when initiating a request and this will be included in transaction history.";}];
+  bool useUnconfirmedFunds = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Allow use of unconfirmed funds for this transaction";}];
+  string transactionReference = 10 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  enum BroadcastKind {
+    None = 0;
+    Manual = 1;
+    Automatic = 2;
+  }
+
+  string broadcastKind = 11;
+  message AccountInfo {
+    uint64 sequence = 1;
+    uint64 accountNumber = 2;
+  }
+  // Fields for manual broadcast
+  repeated AccountInfo accountsInfo = 12;
+  string memo = 13;
+  string externalRequestId = 14 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+
+message CreateOutgoingXLMMintAssetRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      description: "Creates a XLM Payment request which creates a new XLM Asset. The source of the payment is the issuer of the asset. To receive the payment, the receiver must open an XLM Trustline first"
+      required: ["fromAddressId", "amount"]
+    }
+  };
+
+  string amount = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Amount in the smallest currency unit, based on the currency decimals. For example, 1 corresponds to 1 'stroop' (one ten-millionth of XLM), and 1 XLM corresponds to 10000000 (7 decimals)";}];
+  string feeLimit = 2;
+  uint64 fromAddressId = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "(Optional) ID of the address representing the issuer of the asset to be minted. Should match an existing WhitelistedContractAddress";}];
+  uint64 toAddressId = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A destination should be specified. Either toAddressId or toWhitelistedAddressId.";}];
+  uint64 toWhitelistedAddressId = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A destination should be specified. Either toAddressId or toWhitelistedAddressId.";}];
+  string comment = 6;
+  string externalRequestId = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+  string destinationAddressMemo = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A memo can be specified if the destination is a whitelisted address on a blockchain supporting memos.";}];
+}
+
+message CreateOutgoingXLMChangeTrustRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "trustlineLimit"]
+    }
+  };
+
+  uint64 fromAddressId = 1;
+  uint64 trustlineLimit = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Limit for the trustline, in base units";}];
+  string feeLimit = 3;
+  string comment = 4;
+  string poolID = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Hex String representing the Liquidity Pool ID on ledger. Example: 076bbb9f17f8d47209515a345420d40ea1ebcd3cb6a370ea0d56fc12dbf084cb";}];
+  string externalRequestId = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+  uint64 sponsoredByAddressId = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "If set, is the ID of the address who will sponsor the cost of the operation on the minimum balance of the source address";}];
+}
+
+message CreateOutgoingXLMManageDataRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "dataName"]
+    }
+  };
+  uint64 fromAddressId = 1;
+  string dataName = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "name of the XLM data entry";}];
+  string dataValue = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "base64 encoded byte array";}];
+  string feeLimit = 5;
+  string comment = 6;
+  string externalRequestId = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+  uint64 sponsoredByAddressId = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "If set, is the ID of the address who will sponsor the cost of the operation on the minimum balance of the source address";}];
+}
+
+message CreateOutgoingXLMSetOptionsRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId"]
+    }
+  };
+  uint64 fromAddressId = 1;
+  repeated string setFlags = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "flags to set as list of XLM SetOptions Account Flags: ['AuthRequiredFlag', 'AuthRevocableFlag', 'AuthImmutableFlag', 'AuthClawbackEnabledFlag']";}];
+  repeated string clearFlags = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "flags to clear as list of XLM SetOptions Account Flags: ['AuthRequiredFlag', 'AuthRevocableFlag', 'AuthImmutableFlag', 'AuthClawbackEnabledFlag']";}];
+  string feeLimit = 4;
+  string comment = 5;
+  string externalRequestId = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingICPTransferToStakeRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "amount"]
+    }
+  };
+
+  uint64 fromAddressId = 1;
+  string amount = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "amount to transfer to the address' neuron";}];
+  string comment = 3;
+  string externalRequestId = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingICPSetDissolveDelayRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "delay"]
+    }
+  };
+
+  uint64 fromAddressId = 1;
+  uint32 delay = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The dissolve delay (in days) to set for the neuron. This should be larger than the currently set delay. Due to how ICP handles setting the delay, the actual on-chain delay will change depending on how long the approval workflow takes to complete";}];
+  string comment = 3;
+  string externalRequestId = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingICPFollowRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId"]
+    }
+  };
+  uint64 fromAddressId = 1;
+  repeated uint64 neuronWhitelistedAddressIds = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A list of whitelisted ids of neurons to follow. If missing or otherwise empty, the request will remove all followees for the given topic";}];
+  string topic = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The topic for which we are updating the followees. Defaults to 'Unspecified'";}];
+  string comment = 4;
+  string externalRequestId = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingXLMSetTrustlineFlagsRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId"]
+    }
+  };
+
+  uint64 fromAddressId = 1  [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "(Optional) ID of the address representing the issuer of the asset of the trustline. Should match an existing WhitelistedContractAddress";}];;
+  uint64 trustorInternalAddressId = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "address id of the account which established the trustline. Either `trustorInternalAddressId` or `trustorWhitelistedAddressId` shall be specified";}];
+  uint64 trustorWhitelistedAddressId = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "id of the account which established the trustline. Either `trustorInternalAddressId` or `trustorWhitelistedAddressId` shall be specified";}];
+  repeated string setFlags = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "flags to set for the Trustline created by trustor, as list of XLM SetTrustlineFlagsOp Flags: ['AuthorizedFlag', 'AuthorizedToMaintainLiabilitiesFlag']";}];
+  repeated string clearFlags = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "flags to clear for the Trustline created by trustor, as list of XLM SetTrustlineFlagsOp Flags: ['AuthorizedFlag', 'AuthorizedToMaintainLiabilitiesFlag', 'TrustlineClawbackEnabledFlag']";}];
+  string feeLimit = 5;
+  string comment = 6;
+  string externalRequestId = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingICPStartDissolvingRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId"]
+    }
+  };
+
+  uint64 fromAddressId = 1;
+  string comment = 2;
+  string externalRequestId = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingXLMCreateClaimableBalanceRequestRequest{
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["amount"]
+    }
+  };
+
+  string amount = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Amount in the smallest currency unit, based on the currency decimals. For example, 1 corresponds to 1 'stroop' (one ten-millionth of XLM), and 1 XLM corresponds to 10000000 (7 decimals)";}];
+  string feeLimit = 2;
+  uint64 fromAddressId = 3;
+  uint64 fromWalletId = 4;
+  uint64 toAddressId = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A destination should be specified. Either toAddressId or toWhitelistedAddressId.";}];
+  uint64 toWhitelistedAddressId = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A destination should be specified. Either toAddressId or toWhitelistedAddressId.";}];
+  string comment = 8;
+  string externalRequestId = 16 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+  string destinationAddressMemo = 17 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A memo can be specified if the destination is a whitelisted address on a blockchain supporting memos.";}];
+  uint64 absoluteTimeBefore = 18 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A relative deadline for when the claimable balance can be claimed. The value represents the number of seconds since the close time of the ledger which created the claimable balance.";}];
+  uint64 relativeTimeBefore = 19 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Unix epoch representing a deadline for when the claimable balance can be claimed. If the balance is claimed before the date then this clause of the condition is satisfied. Example: 1603303504267";}];
+  uint64 sponsoredByAddressId = 20 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "If set, is the ID of the address who will sponsor the cost of the operation on the minimum balance of the source address";}];
+}
+
+message CreateOutgoingXLMClaimClaimableBalanceRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "claimableBalanceID"]
+    }
+  };
+  uint64 fromAddressId = 1;
+  string claimableBalanceID = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Hex string representing the balance id. Example: '00000000da310928d0887254a759fef918da3478be1e56ebe75e8b269efadb92d2d51a5d'";}];
+  string feeLimit = 5;
+  string comment = 6;
+  string externalRequestId = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingXLMClawbackClaimableBalanceRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "claimableBalanceID"]
+    }
+  };
+  uint64 fromAddressId = 1;
+  string claimableBalanceID = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Hex string representing the balance id. Example: '00000000da310928d0887254a759fef918da3478be1e56ebe75e8b269efadb92d2d51a5d'";}];
+  string feeLimit = 5;
+  string comment = 6;
+  string externalRequestId = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingXLMRevokeSponsorshipRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      description: "Creates an XLM Revoke Sponsorship Request. If `toAddressId or `toWhitelistedAddressId` is set, only one between `dataName`, `assetID` and `offerID` can be set. If not, `claimableBalanceID` shall be set."
+      required: ["fromAddressId"]
+    }
+  };
+  uint64 fromAddressId = 1;
+  uint64 toAddressId = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A destination should be specified. Either toAddressId or toWhitelistedAddressId.";}];
+  uint64 toWhitelistedAddressId = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A destination should be specified. Either toAddressId or toWhitelistedAddressId.";}];
+  string destinationAddressMemo = 13 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A memo can be specified if the destination is a whitelisted address on a blockchain supporting memos.";}];
+  string claimableBalanceID = 4;
+  string dataName = 6;
+  string currencyID = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Taurus-PROTECT Currency ID of the Whitelisted Contract Asset representing the XLM Asset for which the trustline is being revoked.";}];
+  // we currently do not support sponsorships of for XLM offers as Stellar API does not allow effective tracking
+  // int64 offerID = 8;
+  string feeLimit = 9;
+  string comment = 10;
+  string externalRequestId = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+  uint64 sponsoredByAddressId = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "If set, is the ID of the address who will sponsor the cost of the operation on the minimum balance of the source address";}];
+}
+
+message CreateOutgoingXLMClawbackRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      description: "Creates an XLM Clawback Request to burn a certain amount on an XLM asset from the destination account."
+      required: ["fromAddressId", "amount"]
+    }
+  };
+  uint64 fromAddressId = 1;
+  uint64 toAddressId = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A destination should be specified. Either toAddressId or toWhitelistedAddressId.";}];
+  uint64 toWhitelistedAddressId = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A destination should be specified. Either toAddressId or toWhitelistedAddressId.";}];
+  string destinationAddressMemo = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A memo can be specified if the destination is a whitelisted address on a blockchain supporting memos.";}];
+  string amount = 5;
+  string feeLimit = 6;
+  string comment = 7;
+  string externalRequestId = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingXLMLiquidityPoolDepositRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      description: "Creates an XLM Liquidity Pool Deposit Request to deposit up to 'maxAmount' of asset A and B in the liquidity pool."
+      required: ["fromAddressId", "poolID", "maxAmountAssetA", "maxAmountAssetB"]
+    }
+  };
+  uint64 fromAddressId = 1;
+  string poolID = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Hex String representing the Liquidity Pool ID on ledger. Example: 076bbb9f17f8d47209515a345420d40ea1ebcd3cb6a370ea0d56fc12dbf084cb";}];
+  string maxAmountAssetA = 3;
+  string maxAmountAssetB = 4;
+  uint32 priceVariation = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "% of allowed price variation for liquidity pool spot price. Example: 2 corresponds to 2% price variation";}];
+  string feeLimit = 7;
+  string comment = 8;
+  string externalRequestId = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingXLMLiquidityPoolWithdrawRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      description: "Creates an XLM Liquidity Pool Withdraw Request to withdraw 'amount' of shares from the liquidity pool, and at least 'minAmounts' of asset A and B."
+      required: ["fromAddressId", "poolID", "amount", "minAmountAssetA", "minAmountAssetB"]
+    }
+  };
+  uint64 fromAddressId = 1;
+  string poolID = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Hex String representing the Liquidity Pool ID on ledger. Example: 076bbb9f17f8d47209515a345420d40ea1ebcd3cb6a370ea0d56fc12dbf084cb";}];
+  string amount = 3;
+  string minAmountAssetA = 4;
+  string minAmountAssetB = 5;
+  string feeLimit = 7;
+  string comment = 8;
+  string externalRequestId = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingXLMPathPaymentStrictSendRequestRequest{
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      description: "Creates an XLM Path Payment Strict Send Request. Sending asset is the asset associated to the address identified by `fromAddressId`."
+      required: ["fromAddressId", "amount"]
+    }
+  };
+
+  string amount = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Amount of the sending asset to be sent, in the smallest currency unit, based on the currency decimals. For example, 1 corresponds to 1 'stroop' (one ten-millionth of XLM), and 1 XLM corresponds to 10000000 (7 decimals)";}];
+  string minDestinationAmount = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Minimum Amount that the destination should be able to receive. Amount in the smallest currency unit, based on the currency decimals. For example, 1 corresponds to 1 'stroop' (one ten-millionth of XLM), and 1 XLM corresponds to 10000000 (7 decimals)";}];
+  string feeLimit = 2;
+  uint64 fromAddressId = 3;
+  uint64 toAddressId = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A destination should be specified. Either toAddressId or toWhitelistedAddressId.";}];
+  uint64 toWhitelistedAddressId = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A destination should be specified. Either toAddressId or toWhitelistedAddressId.";}];
+  string destinationAssetID = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Specify asset to be received by destination. Can only be set with toWhitelistedAddressId. Leave empty for XLM native";}];
+  string destinationAssetIssuer = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Specify asset to be received by destination. Can only be set with toWhitelistedAddressId. Leave Empty for XLM native";}];
+  string comment = 8;
+  string externalRequestId = 16 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+  string destinationAddressMemo = 17 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A memo can be specified if the destination is a whitelisted address on a blockchain supporting memos.";}];
+}
+
+message CreateOutgoingXLMPathPaymentStrictReceiveRequestRequest{
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      description: "Creates an XLM Path Payment Strict Receive Request. Sending asset is the asset associated to the address identified by `fromAddressId`."
+      required: ["fromAddressId", "amount"]
+    }
+  };
+
+  string amount = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Amount to destination asset be received, in the smallest currency unit, based on the currency decimals. For example, 1 corresponds to 1 'stroop' (one ten-millionth of XLM), and 1 XLM corresponds to 10000000 (7 decimals)";}];
+  string maxSenderAmount = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Maximum Amount that the sender should be able to send. Amount in the smallest currency unit, based on the currency decimals. For example, 1 corresponds to 1 'stroop' (one ten-millionth of XLM), and 1 XLM corresponds to 10000000 (7 decimals)";}];
+  string feeLimit = 2;
+  uint64 fromAddressId = 3;
+  uint64 toAddressId = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A destination should be specified. Either toAddressId or toWhitelistedAddressId.";}];
+  uint64 toWhitelistedAddressId = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A destination should be specified. Either toAddressId or toWhitelistedAddressId.";}];
+  string destinationAssetID = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Specify asset to be received by destination. Can only be set with toWhitelistedAddressId. Leave empty for XLM native";}];
+  string destinationAssetIssuer = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Specify asset to be received by destination. Can only be set with toWhitelistedAddressId. Leave Empty for XLM native";}];
+  string comment = 8;
+  string externalRequestId = 16 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+  string destinationAddressMemo = 17 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A memo can be specified if the destination is a whitelisted address on a blockchain supporting memos.";}];
+}
+
+message CreateOutgoingXLMBuyOfferRequestRequest{
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      description: "Creates (or modifies an existing) XLM Buy Offer Request. Selling asset is the asset associated to the address identified by `fromAddressId`."
+      required: ["fromAddressId", "price"]
+    }
+  };
+
+  string amount = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Amount of the buying asset to buy, in the smallest currency unit, based on the currency decimals. For example, 1 corresponds to 1 'stroop' (one ten-millionth of XLM), and 1 XLM corresponds to 10000000 (7 decimals). If set to 0, deletes the offer identified by `offerID`";}];
+  string feeLimit = 3;
+  uint64 fromAddressId = 4;
+  string buyingAssetID = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Specify asset to be bought in the offer. Leave empty for XLM native";}];
+  string buyingAssetIssuer = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Specify asset to be bought in the offer. Leave Empty for XLM native";}];
+  string comment = 7;
+  string price = 8  [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Price of 1 unit of buying in terms of selling, as a string representing a floating point number. For example, if you wanted to buy 30 XLM and sell 5 BTC, the price would be 5/30 = '0.1666667'";}];
+  int64 offerID = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "ID of the offer to be modified. If 0, a new offer is created";}];
+  string externalRequestId = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+  // we currently do not support sponsorships for offer as Stellar API does not allow effective tracking
+  //uint64 sponsoredByAddressId = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "If set, is the ID of the address who will sponsor the cost of the operation on the minimum balance of the source address";}];
+}
+
+message CreateOutgoingXLMSellOfferRequestRequest{
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      description: "Creates (or modifies an existing) XLM Sell Offer Request. Selling asset is the asset associated to the address identified by `fromAddressId`."
+      required: ["fromAddressId", "price"]
+    }
+  };
+
+  string amount = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Amount of the selling asset to sell, in the smallest currency unit, based on the currency decimals. For example, 1 corresponds to 1 'stroop' (one ten-millionth of XLM), and 1 XLM corresponds to 10000000 (7 decimals). If set to 0, deletes the offer identified by `offerID`";}];
+  string feeLimit = 3;
+  uint64 fromAddressId = 4;
+  string buyingAssetID = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Specify asset to be bought in the offer. Leave empty for XLM native";}];
+  string buyingAssetIssuer = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Specify asset to be bought in the offer. Leave Empty for XLM native";}];
+  string comment = 7;
+  string price = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Price of 1 unit of selling in terms of buying, as a string representing a floating point number. For example, if you wanted to sell 30 XLM and buy 5 BTC, the price would be 5/30 = '0.1666667'";}];
+  int64 offerID = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "ID of the offer to be modified. If 0, a new offer is created. Cannot be set if isPassive is true";}];
+  bool isPassive = 10 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "If true, creates a Passive Sell offer that will not consume a counter offer that exactly matches this offer. This is useful for offers meant to be 1:1 exchanges for path payments";}];
+  string externalRequestId = 11 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+  // we currently do not support sponsorships for offer as Stellar API does not allow effective tracking
+  //uint64 sponsoredByAddressId = 12 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "If set, is the ID of the address who will sponsor the cost of the operation on the minimum balance of the source address";}];
+}
+
+message CreateOutgoingALGOASAOptInRequestRequest {
+  uint64 fromAddressId = 1;
+  uint64 assetId = 4;
+  string feeLimit = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Maximum amount of fees to be paid for the transaction.";}];
+  string comment = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A reconciliation note can be given when initiating a request and this will be included in transaction history.";}];
+  string transactionReference = 8 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  string externalRequestId = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+
+
+}
+
+message CreateIncomingRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["amount", "fromExchangeId", "toAddressId"]
+    }
+  };
+
+  string amount = 1;
+  uint64 fromExchangeId = 2;
+  uint64 toAddressId = 3;
+  string comment = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A reconciliation note can be given when initiating a request and this will be included in transaction history.";}];
+  string transactionReference = 5 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "**Deprecated:** use `externalRequestId` instead";}];
+  string externalRequestId = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+  bool feePaidByReceiver = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "[Coinbase Pro/Exchange] If this flag is set, the fee will directly be deduced from the withdrawal amount (total withdrawal of requested amount). If the flag is not set, the fees will be added to the withdrawal amount (total withdrawal of requested amount plus fees).";}];
+}
+
+message CreateFiatProviderWithdrawalRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAccountID", "amount"]
+    }
+  };
+
+  string amount = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";}];
+  string fromAccountID = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "The ID of the fiat provider account from which the funds will be withdrawn. This is the Taurus-PROTECT Account ID.";}];
+  oneof destinationID {
+    uint64 toAddressID = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the internal address that the withdrawal will be sent to, if applicable (ex. Circle USDC). Depending on the provider, this address might be whitelisted as a recipient address on the provider.";}];
+    string toAccountID = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the fiat provider account that the withdrawal will be sent to, if applicable (ex. Cubnet).";}];
+  }
+  string comment = 5;
+  string externalRequestID = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestID will do nothing and return the originally created request. The excternalRequestID is passed to fiat providers as an idempotency key.";}];
+}
+
+message CreateFiatProviderDepositRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["toAccountID", "amount"]
+    }
+  };
+
+  string amount = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";}];
+  oneof sourceID {
+    string fromAccountID = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the fiat provider account from which the funds will be withdrawn. This is the Taurus-PROTECT Account ID.";}];
+    uint64 fromAddressID = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the internal address from which the funds will be withdrawn.";}];
+  }
+  string toAccountID = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "The ID of the fiat provider account that the deposit will be sent to. This is the Taurus-PROTECT Account ID.";}];
+  string comment = 5;
+  string externalRequestID = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestID will do nothing and return the originally created request. The excternalRequestID is passed to fiat providers as an idempotency key.";}];
+}
+
+message CreateFiatProviderTransferRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAccountID", "amount"]
+    }
+  };
+
+  string amount = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "numeric; Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";}];
+  string fromAccountID = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "The ID of the fiat provider account that the transfer will be sent from. This is the Taurus-PROTECT Account ID.";}];
+  oneof destinationID {
+    string toAccountID = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the fiat provider account that the transfer will be sent to, if applicable (ex. Cubnet). This is the Taurus-PROTECT Account ID.";}];
+    string toCounterpartyAccountID = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the counterparty fiat provider account that the transfer will be sent to, if applicable (ex. Cubnet). This is the Taurus-PROTECT Counterparty Account ID.";}];
+  }
+  string comment = 5;
+  string externalRequestID = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestID will do nothing and return the originally created request. The excternalRequestID is passed to fiat providers as an idempotency key.";}];
+}
+
+message CreateOutgoingSOLDelegateRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "toValidatorAddressId", "amount"]
+    }
+  };
+
+  uint64 fromAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "The ID of the source SOL address from which SOL will be delegated to the validator.";
+  }];
+
+  uint64 toValidatorAddressId = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "The ID of the (whitelisted) validator address to delegate SOL to.";
+  }];
+
+  string amount = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "The amount of SOL to delegate.";
+  }];
+
+  string feeLimit = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Fee limit. If fee limit is not provided, it's computed from the estimate and configured fee factors.";
+  }];
+
+  string comment = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Comment to be added to the request trail.";
+  }];
+
+  bool useUnconfirmedFunds = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Whether to use (unreserved) unconfirmed funds for delegation.";
+  }];
+
+  string externalRequestId = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request.";}];
+
+  bool autoMerging = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Allows the resulting stake account to be automatically merged into other existing accounts.";
+  }];
+}
+
+message CreateOutgoingSOLDeactivateRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId"]
+    }
+  };
+
+  uint64 fromAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+  {description: "The ID of the SOL address that you want to deactivate.";}];
+
+  string feeLimit = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+  {description: "Fee Limit.";}];
+
+  string comment = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+  {description: "Comment to be added to request trail.";}];
+
+  bool useUnconfirmedFunds = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+  {description: "Whether to use (unreserved) unconfirmed funds for deactivate request.";}];
+
+  string externalRequestId = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+  {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+
+  uint64 fromStakeAccountDerivationIndex = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+  {description: "Determines which derived stake account will be deactivated.";}];
+
+  uint64 amount = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+  {description: "The amount to deactivate. If 0 or unspecified, the entire stake account will be deactivated. If a value is provided, the account will be split.";}];
+}
+
+message CreateOutgoingSOLWithdrawRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "amount"]
+    }
+  };
+
+  uint64 fromAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The ID of the SOL address to withdraw funds from.";}];
+  string amount = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Amount to withdraw.";}];
+  string feeLimit = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Fee limit.";}];
+  string comment = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Comment to be added to request trail.";}];
+  bool useUnconfirmedFunds = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Whether to use (unreserved) unconfirmed funds for withdrawal.";}];
+  string externalRequestId = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request.";}];
+  uint64 fromStakeAccountDerivationIndex = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+  {description: "Determines which derived stake account will be withdrawn from.";}];
+}
+
+message CreateOutgoingSOLCreateTokenRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "name", "symbol"]
+    }
+  };
+
+  uint64 fromAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Native SOL address ID that will become the owner of the token.";
+  }];
+  string feeLimit = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Fee limit to pass on to request meta data.";
+  }];
+
+  uint64 decimals = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Token decimals: 0 to 9.";
+  }];
+
+  // on-chain metadata
+  string name = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Name to be used on the request meta data.";
+  }];
+
+  string symbol = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Symbol to be used on the request meta data.";
+  }];
+  string uri = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "URI to be passed on to the request meta data.";
+  }];
+
+
+  string comment = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Comment to be added to the request meta data.";
+  }];
+
+  string externalRequestId = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Unique identifer for the request to be added in the database. If it already exists, it will return the existing request.";
+  }];
+}
+
+message CreateOutgoingSOLTokenMintRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "amount"]
+    }
+  };
+
+  uint64 fromAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "SPL token address ID (owner of the token).";
+  }];
+  uint64 toAddressId = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Destination of the tokens (SPL token address ID). Either this field or 'toWhitelistedAddressId' can be used.";
+  }];
+  uint64 toWhitelistedAddressId = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Destination of the tokens. Either this field or 'toAddressId' can be used.";
+  }];
+  string amount = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Amount.";
+  }];
+  string feeLimit = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Fee limit.";
+  }];
+
+  string comment = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Comment to be added to request trail.";
+  }];
+  string externalRequestId = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Unique identifer for the request to be added in the database. If it already exists, it will return the existing request.";
+  }];
+}
+
+message CreateOutgoingSOLTokenBurnRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "amount"]
+    }
+  };
+
+  uint64 fromAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "SPL token address ID (owner of the token).";
+  }];
+  string amount = 2  [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Amount to burn.";
+  }];
+  string feeLimit = 3  [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Fee limit.";
+  }];
+  string comment = 4  [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Comment to be added to request trail.";
+  }];
+  string externalRequestId = 5  [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request.";
+  }];
+}
+
+message CreateOutgoingSOLMergeRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["addressId", "fromStakeAccountDerivationIndex", "toStakeAccountDerivationIndex"]
+    }
+  };
+
+  uint64 addressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Identifier for the Protect address that the stake accounts are derived from.";
+  }];
+  uint64 fromStakeAccountDerivationIndex = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "The derivation index of the stake account that will be merged into the destination. This account will be closed.";
+  }];
+  uint64 toStakeAccountDerivationIndex = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "The derivation index of the stake account that will be merged into. This account will remain.";
+  }];
+
+  string feeLimit = 4  [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Fee limit.";
+  }];
+  string comment = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Comment to be added to the request trail.";
+  }];
+  string externalRequestId = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request.";
+  }];
+  bool useUnconfirmedFunds = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Allow use of unconfirmed funds for this transaction";}];
+}
+
+message CreateOutgoingHederaStakingRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "toWhitelistedAddressId"]
+    }
+  };
+
+  uint64 fromAddressId = 1;
+  uint64 toWhitelistedAddressId = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "the whitelisted address to which we want to delegate our stake. Can be an 'individual' or 'node' address. The whitelisted address must be in (0.0.<number>) format";}];
+  string feeLimit = 3;
+  string comment = 4;
+  string externalRequestId = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateOutgoingHederaUnstakingRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId"]
+    }
+  };
+
+  uint64 fromAddressId = 1;
+  string feeLimit = 2;
+  string comment = 3;
+  string externalRequestId = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request";}];
+}
+
+message CreateRequestReply {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{\"result\": {\"id\": \"442\",\"tenantId\": \"1\",\"currency\": \"BTC\",\"envelope\": \"CgM0NDIQmfGjk6Ops/oVGAEqmgUSrAEKPwoPbS80NCcvMCcvMCcvMC8wGiAeyruP7CoNYcGISzRo8iZmuVnV6M9gLiZuShy7aDtKKiABKNHEFDD/////DxIoCiIxQ3Zoeml0ZFZMUGhOVGZ3NU5rUm9YWHZveldacGZhWXQ2EJ/nBRoVCg9tLzQ0Jy8wJy8wJy8wLzAYsbcOMig0NDI6NDY5ZTMxOGUtYjcxZC00MGUwLTg0ZjctNzVlOGQwOWE3Yzg2IhMKCnJlcXVlc3RfaWQQARoDNDQyIhIKCXJ1bGVzX2tleRABGgNCVEMiEQoIY3VycmVuY3kQARoDQlRDIlsKBnNvdXJjZRAEGkcIARJDCAESIjFKTUJZTU1pOWlqSlJlVFlxdEZUU2RlVkJ6azhOSGRzVHUaCm5vc3RybyBCVEMiD20vNDQnLzAnLzAnLzAvMCIGc291cmNlImIKC2Rlc3RpbmF0aW9uEAUaRBJCCMwBEiIxQ3Zoeml0ZFZMUGhOVGZ3NU5rUm9YWHZveldacGZhWXQ2GghteSBsYWJlbCIPbS80NCcvMCcvMCcvMC84IgtkZXN0aW5hdGlvbiKeAQoGYW1vdW50EAoaiQEKAwGGoBIHMTAuMDQzMBoKMTAwNDIuOTcwMCAIKgNCVEMyA0NIRjphCh12YWxpZGF0b3ItY29yZUB0YXVydXNncm91cC5jaBJAffe4nBGVSajYYQxxzEZbQuj0snr8WOC1P506eXRn2EUsDrAnkWvNW9wfU+pwUoBVUaXl/veYW/6m/DJsEKijLCIGYW1vdW50Ih4KEXRvdGFsX2ZpYXRfYW1vdW50EAEaBzEwLjA0MzAiCwoDZmVlEAIaAhMBIh4KFGZlZV9wYWlkX2J5X3JlY2VpdmVyEAEaBHRydWU=\",\"status\": \"CREATED\",\"trails\": [{\"userId\": \"11\",\"externalUserId\": \"team1@bank.com\",\"action\": \"created\",\"comment\": \"Ich bin eine flying Roasted Butternut Squash Boodles\",\"requestStatus\": \"CREATED\"}, {\"userId\": \"1\",\"externalUserId\": \"validator-core@taurusgroup.ch\",\"action\": \"approvers_assigned\",\"comment\": \"rule = [source: any, destination: any, amount: 10.0000], approvals = [\'team1\': 1 sig, \'team2\': 1 sig]\",\"requestStatus\": \"CREATED\"}],\"rule\": \"rule = [source: any, destination: any, amount: 10.0000], approvals = [\'team1\': 1 sig, \'team2\': 1 sig]\",\"approvers\": {\"parallel\": [{ \"sequential\": [{\"externalGroupID\": \"team1\",\"minimumSignatures\": 1},{\"externalGroupID\": \"team2\",\"minimumSignatures\": 1}] }]}}}"
+  };
+  Request result = 1;
+}
+
+message CreateRequestBundleReply {
+  RequestBundle result = 1;
+}
+
+message GetRequestBundleRequest {
+  uint64 id = 1;
+  bool showRequests = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "If this field is set, requests in the bundles will also be returned";}];
+}
+
+message GetRequestBundleReply {
+  RequestBundle result = 1;
+}
+
+message GetRequestBundlesRequest {
+  google.protobuf.Timestamp from = 1;
+  google.protobuf.Timestamp to = 2;
+  repeated string statuses = 3;
+  repeated uint64 ids = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter for specific bundles, identified by their unique ID";}];
+  bool showRequests = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "If this field is set, requests in the bundles will also be returned";}];
+  RequestCursor cursor = 6;
+}
+
+message GetRequestBundlesReply {
+  repeated RequestBundle results = 1;
+  ResponseCursor cursor = 2;
+}
+
+message GetRequestBundlesForApprovalRequest {
+  repeated string blockchains = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter on IDs or symbols of the blockchain";}];
+  repeated uint64 ids = 2;
+  RequestCursor cursor = 3;
+}
+
+message GetRequestsRequest {
+  uint64 limit = 1;
+  uint64 offset = 2;
+  google.protobuf.Timestamp from = 3;
+  google.protobuf.Timestamp to = 4;
+  repeated string currencies = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Filter on IDs or symbols of the currency";}];
+  string type = 6;  // deprecated, use the multi-valued propery "types" instead
+  repeated string statuses = 7;
+  repeated string types = 8;
+  repeated uint64 ids = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; Filter for specific requests, identified by their unique ID";}];
+}
+
+message GetRequestsV2Request {
+  google.protobuf.Timestamp from = 1;
+  google.protobuf.Timestamp to = 2;
+  string currencyID = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter on currency IDs";}];
+  repeated string statuses = 4;
+  repeated string types = 5;
+  repeated uint64 ids = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter for specific requests, identified by their unique ID";}];
+  RequestCursor cursor = 7;
+  string sortOrder = 8 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to ASC to get the addresses sorted"
+          " in ascending order or DESC to get them in descending order.";
+    }
+  ];
+  repeated string externalRequestIDs = 9 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter on external request ID";}
+  ];
+}
+
+message GetRequestsReply {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{\"result\":[{\"id\":\"442\",\"tenantId\":\"1\",\"currency\":\"BTC\",\"envelope\":\"CgM0NDIQmfGjk6Ops/oVGAEqmgUSrAEKPwoPbS80NCcvMCcvMCcvMC8wGiAeyruP7CoNYcGISzRo8iZmuVnV6M9gLiZuShy7aDtKKiABKNHEFDD/////DxIoCiIxQ3Zoeml0ZFZMUGhOVGZ3NU5rUm9YWHZveldacGZhWXQ2EJ/nBRoVCg9tLzQ0Jy8wJy8wJy8wLzAYsbcOMig0NDI6NDY5ZTMxOGUtYjcxZC00MGUwLTg0ZjctNzVlOGQwOWE3Yzg2IhMKCnJlcXVlc3RfaWQQARoDNDQyIhIKCXJ1bGVzX2tleRABGgNCVEMiEQoIY3VycmVuY3kQARoDQlRDIlsKBnNvdXJjZRAEGkcIARJDCAESIjFKTUJZTU1pOWlqSlJlVFlxdEZUU2RlVkJ6azhOSGRzVHUaCm5vc3RybyBCVEMiD20vNDQnLzAnLzAnLzAvMCIGc291cmNlImIKC2Rlc3RpbmF0aW9uEAUaRBJCCMwBEiIxQ3Zoeml0ZFZMUGhOVGZ3NU5rUm9YWHZveldacGZhWXQ2GghteSBsYWJlbCIPbS80NCcvMCcvMCcvMC84IgtkZXN0aW5hdGlvbiKeAQoGYW1vdW50EAoaiQEKAwGGoBIHMTAuMDQzMBoKMTAwNDIuOTcwMCAIKgNCVEMyA0NIRjphCh12YWxpZGF0b3ItY29yZUB0YXVydXNncm91cC5jaBJAffe4nBGVSajYYQxxzEZbQuj0snr8WOC1P506eXRn2EUsDrAnkWvNW9wfU+pwUoBVUaXl/veYW/6m/DJsEKijLCIGYW1vdW50Ih4KEXRvdGFsX2ZpYXRfYW1vdW50EAEaBzEwLjA0MzAiCwoDZmVlEAIaAhMBIh4KFGZlZV9wYWlkX2J5X3JlY2VpdmVyEAEaBHRydWU=\",\"status\":\"CREATED\",\"trails\":[{\"userId\":\"11\",\"externalUserId\":\"team1@bank.com\",\"action\":\"created\",\"comment\":\"IchbineineflyingRoastedButternutSquashBoodles\",\"date\":\"2020-02-19T12:24:47.748229Z\",\"requestStatus\":\"CREATED\"},{\"userId\":\"1\",\"externalUserId\":\"validator-core@taurusgroup.ch\",\"action\":\"approvers_assigned\",\"comment\":\"rule=[source:any,destination:any,amount:10.0000],approvals=[\'team1\':1sig,\'team2\':1sig]\",\"date\":\"2020-02-19T12:24:47.774836Z\",\"requestStatus\":\"CREATED\"}],\"creationDate\":\"2020-02-19T12:24:47.586041Z\",\"updateDate\":\"2020-02-19T12:24:47.713648Z\",\"metadata\":{\"hash\":\"fda859afd5dcc16f7abec8e7ab7fc528d90b094e43eeb111037581c45f8e16b5\",\"payload\":[{\"column\":\"\",\"key\":\"request_id\",\"type\":\"String\",\"value\":\"442\"},{\"column\":\"\",\"key\":\"rules_key\",\"type\":\"String\",\"value\":\"BTC\"},{\"column\":\"\",\"key\":\"currency\",\"type\":\"String\",\"value\":\"BTC\"},{\"column\":\"source\",\"key\":\"source\",\"type\":\"Source\",\"value\":{\"payload\":{\"address\":\"1JMBYMMi9ijJReTYqtFTSdeVBzk8NHdsTu\",\"id\":\"1\",\"label\":\"nostroBTC\",\"path\":\"m/44\'/0\'/0\'/0/0\"},\"type\":\"SourceInternalAddress\"}},{\"column\":\"destination\",\"key\":\"destination\",\"type\":\"Destination\",\"value\":{\"payload\":{\"address\":\"1CvhzitdVLPhNTfw5NkRoXXvozWZpfaYt6\",\"id\":\"204\",\"label\":\"mylabel\",\"path\":\"m/44\'/0\'/0\'/0/8\"},\"type\":\"DestinationInternalAddress\"}},{\"column\":\"amount\",\"key\":\"amount\",\"type\":\"Amount\",\"value\":{\"currencyFrom\":\"BTC\",\"currencyTo\":\"CHF\",\"decimals\":\"8\",\"rate\":\"10042.9700\",\"valueFrom\":\"100000\",\"valueTo\":\"10.0430\"}},{\"column\":\"\",\"key\":\"total_fiat_amount\",\"type\":\"String\",\"value\":\"10.0430\"},{\"column\":\"\",\"key\":\"fee\",\"type\":\"BigInt\",\"value\":\"4865\"},{\"column\":\"\",\"key\":\"fee_paid_by_receiver\",\"type\":\"String\",\"value\":\"true\"}]},\"rule\":\"rule=[source:any,destination:any,amount:10.0000],approvals=[\'team1\':1sig,\'team2\':1sig]\",\"approvers\":{\"parallel\":[{\"sequential\":[{\"externalGroupID\":\"team1\",\"minimumSignatures\":1},{\"externalGroupID\":\"team2\",\"minimumSignatures\":1}]}]}}],\"totalItems\":\"1\"}"
+  };
+
+  repeated Request result = 1;
+  uint64 totalItems = 2;
+}
+
+message GetRequestReply {
+  Request result = 1;
+}
+
+message GetRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example:
+        "{\n"
+            "  \"result\": {\n"
+            "    \"id\": \"442\",\n"
+            "    \"tenantId\": \"1\",\n"
+            "    \"currency\": \"BTC\",\n"
+            "    \"status\": \"BROADCASTING\",\n"
+            "    \"creationDate\": \"2020-02-19T12:24:47.586041Z\",\n"
+            "    \"updateDate\": \"2020-02-20T08:44:13.257347Z\",\n"
+            "    \"metadata\": {\n"
+            "      \"hash\": \"fda859afd5dcc16f7abec8e7ab7fc528d90b094e43eeb111037581c45f8e16b5\",\n"
+            "      \"payload\": [\n"
+            "        { \"key\": \"request_id\", \"type\": \"String\", \"value\": \"442\" },\n"
+            "        { \"key\": \"currency\", \"type\": \"String\", \"value\": \"BTC\" },\n"
+            "        { \"key\": \"total_fiat_amount\", \"type\": \"String\", \"value\": \"10.0430\" },\n"
+            "        { \"key\": \"fee\", \"type\": \"BigInt\", \"value\": \"4865\" },\n"
+            "        { \"key\": \"fee_paid_by_receiver\", \"type\": \"String\", \"value\": \"true\" }\n"
+            "      ]\n"
+            "    },\n"
+            "    \"rule\": \"rule=[source:any,destination:any,amount:10.0000],approvals=['team1':1sig,'team2':1sig]\",\n"
+            "    \"approvers\": {\n"
+            "      \"parallel\": [\n"
+            "        { \"sequential\": [\n"
+            "          { \"externalGroupID\": \"team1\", \"minimumSignatures\": 1 },\n"
+            "          { \"externalGroupID\": \"team2\", \"minimumSignatures\": 1 }\n"
+            "        ]}\n"
+            "      ]\n"
+            "    }\n"
+            "  }\n"
+            "}"
+  };
+
+  uint64 id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; Unique identifier of the request."
+  }];
+}
+
+message GetRequestsForApprovalRequest {
+  uint64 limit = 1;
+  uint64 offset = 2;
+  repeated string currencies = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Filter on IDs or symbols of the currency";}];
+  string type = 4; // **Deprecated:** use the multi-valued propery "types" instead
+  repeated string types = 5;
+  repeated uint64 ids = 6;
+}
+
+message GetRequestsForApprovalV2Request {
+  string currencyID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Filter on currency ID. Get valid IDs from the [currencies endpoint](https://docs.taurushq.com/protect-capital/reference/walletservice_getcurrency)";
+    }
+  ];
+  repeated string types = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Filter on request types. Examples: ``payment``, ``function_call``, ``ada_delegate``, ``sol_token_burn``, ``xtz_stake`` ...";
+    }
+  ];
+  repeated uint64 ids = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Filter on specific Requests IDs. An empty list will retrieve all request IDs for approval";
+    }
+  ];
+  RequestCursor cursor = 6;
+  string sortOrder = 7 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to ASC to get the addresses sorted"
+          " in ascending order or DESC to get them in descending order.";
+    }
+  ];
+  repeated string excludeTypes = 8 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Exclude request types. Examples: ``cosmos_delegate``, ``hedera_staking``, ``ada_delegate``, ``xlm_offer_buy``, ``xtz_unstake`` ...";
+    }
+  ];
+  repeated string externalRequestIDs = 9 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Filter on external request ID";
+    }
+  ];
+}
+
+message GetRequestsV2Reply {
+  repeated Request result = 1;
+  ResponseCursor cursor = 2;
+}
+
+message ApproveRequestsRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example:
+        "{ \"signature\": \"I0xWyXI3L33DMZAKvvKXnlWD3GGXWh0AuL5zHD12DGp2/pR2h2MbgiQZrNGB27s/iB938UgMK1xUhbm1fNx8nw==\","
+            " \"comment\": \"try01\","
+            " \"ids\": [\"442\"] }",
+    json_schema: {
+      required: ["ids", "signature", "comment"]
+    }
+  };
+  string signature = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "The signature of the request approval, in the form base64(ecdsa_sign(sha256([hex(sha256(req1_metadata)),hex(sha256(req2_metadata)),...hex(sha256(reqN_metadata))])))";}]; //
+  string comment = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "A comment field for the request approval, can be used to indicate the approver, or reason for approval.";}];
+  repeated uint64 requestIds = 3 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "uint64; **Deprecated:** use the ids parameter instead ";}];
+  repeated uint64 ids = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "uint64; The IDs of the requests to approve";}];
+  bool async = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "Process the requests asynchronously (in the background). Use for large numbers of approvals";}];
+}
+
+message ApproveRequestsReply {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{\"signatures\":\"1\"}"
+  };
+  uint64 signedRequests = 1 [deprecated = true]; // use signatures instead
+  uint64 signatures = 2;
+  RequestBatchSignature asyncSignature = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description:  "If async was passed, this contains the signature that is being applied asynchronously and other fields are empty";}];
+}
+
+message GetAsyncApprovalsRequest {
+  repeated uint64 ids = 1;
+  bool includeDetails = 2;
+}
+
+message GetAsyncApprovalsReply {
+  repeated RequestBatchSignature result = 1;
+}
+
+message RejectRequestsRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["ids", "comment"]
+    }
+  };
+
+  string comment = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "A reconciliation note can be given when rejecting a request.";}];
+  repeated uint64 requestIds = 2 [deprecated = true, (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "deprecated: use the ids parameter instead ";}];
+  repeated uint64 ids = 3;
+}
+
+message UpdateRequestStatusRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["id", "status"]
+    }
+  };
+
+  uint64 id = 1;
+  string status = 2;
+}
+
+message GetRequestAttributeRequest {
+  uint64 id = 1;
+}
+
+message GetRequestAttributeReply {
+  RequestAttribute result = 1;
+}
+message CreateRequestAttributesRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["requestId", "attributes"]
+    }
+  };
+
+  uint64 requestId = 1;
+  repeated CreateRequestAttributeRequest attributes = 2;
+}
+
+message CreateRequestAttributeRequest {
+  string key = 1;
+  string value = 2;
+  string contentType = 3;
+}
+
+message GetAutoTransferEventHandlersRequest {
+  RequestCursor cursor = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The pagination cursor. Note that the default page size is 300.";
+    }
+  ];
+  string status = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Filter handlers by status: 'active' or 'disabled'. Required if no wallet ID is provided.";
+    }
+  ];
+  string blockchain = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Filter handlers by blockchain: 'ETH' or 'SOL'. Required if no wallet ID is provided.";
+    }
+  ];
+  string network = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Filter handlers by network. Required if no wallet ID is provided.";
+    }
+  ];
+  uint64 monitoredWalletId = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Get handlers linked to given monitored native wallet. Status and Blockchain filters are ignored if this is set.";
+    }
+  ];
+}
+
+message GetAutoTransferEventHandlersReply {
+  ResponseCursor cursor = 1;
+  repeated AutoTransferEventHandler handlers = 2;
+}
+
+message GetAutoTransferEventHandlerByIdRequest {
+  string id = 1;
+}
+
+message GetAutoTransferEventHandlerByIdReply {
+  AutoTransferEventHandler handler = 1;
+}
+
+message TriggerAutoTransferEventHandlerRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["id", "destinationAddressId"]
+    }
+  };
+
+  string id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "ID of the handler to trigger, the handler requires to be of type 'on_demand_address_check'.";}];
+  uint64 destinationAddressId = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Destination address to trigger for auto-transfer, it needs to be part of the handler's monitored wallet.";}];
+  string externalRequestId = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique.";}];
+}
+
+message StakingProvider {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["kind"]
+    }
+  };
+
+  string kind = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "the kind of staking provider. Currently only 'figment' is supported";}];;
+}
+
+message StakeETHRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "amount", "provider"]
+    }
+  };
+
+  uint64 fromAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "the ID of the address to stake";}];
+  string amount = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "the amount (in wei) to stake, must be a multiple of 32ETH.";}];
+  StakingProvider provider = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "the staking provider to use";}];
+  string gasLimit = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A target gas limit for the request. If not provided, one will be automatically computed.";}];
+  string gasPriceLimit = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A hard limit for the gas price for the request. If not provided, one will be automatically computed.";}];
+  string comment = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A reconciliation notes can be given when initiating a request and this will be included in transaction history.";}];
+  string externalRequestId = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique.";}];
+}
+
+message CreateETHUnstakeRequestRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["fromAddressId", "amount"]
+    }
+  };
+
+  uint64 fromAddressId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "the ID of the address to unstake";}];
+  string amount = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "the amount (in wei) to unstake, must be a multiple of 32ETH. If not provided, all the staked funds will be withdrawn.";}];
+  repeated string ethValidatorIDs = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "optional list of ETH validator internal ids to unstake.";}];;
+  string comment = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "A reconciliation notes can be given when initiating a request and this will be included in transaction history.";}];
+  string externalRequestId = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Identifier for the request in the user's system. This must be unique.";}];
+}
+
+service RequestService {
+
+  rpc GetRequest (GetRequestRequest) returns (GetRequestReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/requests/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get a request";
+      description: "This endpoint is used to get information on a specific Transaction Request in Taurus-PROTECT. To learn more about transactions and requests, please refer to the following [page](https://docs.taurushq.com/protect-capital/reference/entities) in the Taurus User Guides.";
+      tags: "Requests";
+    };
+  };
+
+  rpc UpdateRequestStatus (UpdateRequestStatusRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/api/rest/v1/requests/{id}/status"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Update a request status";
+      description: "This endpoint update a request status.\n Required role: **RequestCanceler**.";
+      tags: "Requests";
+    };
+  }
+
+  rpc GetRequestBundle(GetRequestBundleRequest) returns (GetRequestBundleReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/requests/bundles/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get a request bundle";
+      description: "This endpoint returns a request bundle";
+      tags: "Requests";
+    };
+  };
+
+  // It is important that this is defined AFTER the more generic /api/rest/v1/requests/{id} routes
+
+  rpc GetAutoTransferEventHandlers(GetAutoTransferEventHandlersRequest) returns (GetAutoTransferEventHandlersReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/requests/auto_transfer_handlers"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get auto-transfer event handlers";
+      description: "This endpoint returns auto-transfers event handlers with some optional filtering parameters.";
+      tags: "Requests";
+    };
+  }
+
+  rpc GetAutoTransferEventHandlerById(GetAutoTransferEventHandlerByIdRequest) returns (GetAutoTransferEventHandlerByIdReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/requests/auto_transfer_handlers/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get auto-transfer event handler by id";
+      description: "This endpoint returns the auto-transfers event handler for the given id.";
+      tags: "Requests";
+    };
+  }
+
+  rpc TriggerAutoTransferEventHandler (TriggerAutoTransferEventHandlerRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/auto_transfer_handlers/{id}/trigger"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Trigger an auto-transfer";
+      description: "This endpoint triggers auto-transfers on a given event handler than supports manual trigger (on demand)";
+      tags: "Requests";
+    };
+  };
+
+  rpc CreateOutgoingRequest (CreateOutgoingRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an outgoing request";
+      description: "This endpoint creates an outgoing request.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests";
+    };
+  };
+
+  rpc CreateAddressToAddressTransferOutgoingRequest (CreateAddressToAddressTransferOutgoingRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/transfers/address_to_address"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a simple outgoing request (using addresses)";
+      description: "This endpoint creates an outgoing transfer request from an address to another address.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests";
+    };
+  };
+
+  rpc CreateOutgoingAddressToAddressRequestBundle (CreateOutgoingAddressToAddressRequestBundleRequest) returns (CreateRequestBundleReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/bundle/outgoing/transfers/address_to_address"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an outgoing request bundle (using addresses)";
+      description: "This endpoint creates an outgoing request bundle. It will create a set of requests prepared to send funds to multiple addresses (multi-output) from one address in a single transaction. The requests are specified using addresses instead of IDs. \n Currently only supported on: BTC. \n Required role: **RequestCreator**.";
+      tags: "Requests";
+    };
+  };
+
+  rpc CreateOutgoingRequestBundle (CreateOutgoingRequestBundleRequest) returns (CreateRequestBundleReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/bundle/outgoing"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an outgoing request bundle";
+      description: "This endpoint creates an outgoing request bundle. It will create a set of requests prepared to send funds to multiple addresses (multi-output) from one address in a single transaction. \n Currently only supported on: BTC. \n Required role: **RequestCreator**.";
+      tags: "Requests";
+    };
+  };
+
+  rpc CreateOutgoingALGOASAOptInRequest (CreateOutgoingALGOASAOptInRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/algo/asa_opt_in"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an ASA opt in request";
+      description: "This endpoint creates an opt in request for an Algorand Standard Asset.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: ALGO";
+    };
+  };
+
+  rpc CreateOutgoingXLMMintAssetRequest (CreateOutgoingXLMMintAssetRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/xlm/mint"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an XLM Payment request for a new asset on the ledger";
+      description: "This endpoint creates an XLM payment which creates a new asset on the ledger.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: XLM";
+    };
+  };
+
+  rpc CreateOutgoingXLMChangeTrustRequest (CreateOutgoingXLMChangeTrustRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/xlm/change_trust"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an XLM change trust request";
+      description: "This endpoint creates a change trust request for an XLM address.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: XLM";
+    };
+  };
+
+  rpc CreateOutgoingXLMManageDataRequest (CreateOutgoingXLMManageDataRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/xlm/manage_data"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an XLM manage data request";
+      description: "This endpoint creates a manage data request for an XLM address.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: XLM";
+    };
+  };
+
+  rpc CreateOutgoingXLMSetTrustlineFlagsRequest (CreateOutgoingXLMSetTrustlineFlagsRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/xlm/set_trustline_flags"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an XLM set trustline flags request";
+      description: "This endpoint creates a set trustline flags request for an XLM trustline.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: XLM";
+    };
+  };
+
+  rpc CreateOutgoingXLMSetOptionsRequest (CreateOutgoingXLMSetOptionsRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/xlm/set_options"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an XLM Set Options request";
+      description: "This endpoint creates a set options request for an XLM address.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: XLM";
+    };
+  };
+
+  rpc CreateOutgoingXLMCreateClaimableBalanceRequest (CreateOutgoingXLMCreateClaimableBalanceRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/xlm/create_claimable_balance"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an XLM create claimable balance request";
+      description: "This endpoint creates a create claimable balance requests for an XLM claimant address.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: XLM";
+    };
+  };
+
+  rpc CreateOutgoingXLMClaimClaimableBalanceRequest (CreateOutgoingXLMClaimClaimableBalanceRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/xlm/claim_claimable_balance"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an XLM claim claimable balance request";
+      description: "This endpoint creates a claim claimable balance requests for an XLM claimable balance.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: XLM";
+    };
+  };
+
+  rpc CreateOutgoingXLMClawbackClaimableBalanceRequest (CreateOutgoingXLMClawbackClaimableBalanceRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/xlm/clawback_claimable_balance"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an XLM clawback claimable balance request";
+      description: "This endpoint creates a clawback claimable balance requests for an XLM claimable balance.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: XLM";
+    };
+  };
+
+  rpc CreateOutgoingXLMRevokeSponsorshipRequest (CreateOutgoingXLMRevokeSponsorshipRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/xlm/revoke_sponsorship"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an XLM revoke sponsorship request";
+      description: "This endpoint creates an XLM revoke sponsorship request.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: XLM";
+    };
+  };
+
+  rpc CreateOutgoingXLMClawbackRequest (CreateOutgoingXLMClawbackRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/xlm/clawback"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an XLM clawback request";
+      description: "This endpoint creates an XLM clawback request.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: XLM";
+    };
+  };
+
+
+  rpc CreateOutgoingXLMLiquidityPoolDepositRequest (CreateOutgoingXLMLiquidityPoolDepositRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/xlm/deposit"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an XLM liquidity pool deposit request";
+      description: "This endpoint creates an XLM liquidity pool deposit request.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: XLM";
+    };
+  };
+
+  rpc CreateOutgoingXLMLiquidityPoolWithdrawRequest (CreateOutgoingXLMLiquidityPoolWithdrawRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/xlm/withdraw"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an XLM liquidity pool Withdraw request";
+      description: "This endpoint creates an XLM liquidity pool Withdraw request.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: XLM";
+    };
+  };
+
+  rpc CreateOutgoingXLMPathPaymentStrictSendRequest (CreateOutgoingXLMPathPaymentStrictSendRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/xlm/path_payment_send"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an XLM path payment strict send request";
+      description: "This endpoint creates an XLM path payment strict send request.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: XLM";
+    };
+  };
+
+  rpc CreateOutgoingXLMPathPaymentStrictReceiveRequest (CreateOutgoingXLMPathPaymentStrictReceiveRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/xlm/path_payment_receive"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an XLM path payment strict receive request";
+      description: "This endpoint creates an XLM path payment strict receive request.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: XLM";
+    };
+  };
+
+  rpc CreateOutgoingXLMBuyOfferRequest (CreateOutgoingXLMBuyOfferRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/xlm/buy_offer"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an XLM Manage Buy Offer request";
+      description: "This endpoint creates an XLM Manage Buy Offer request.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: XLM";
+    };
+  };
+
+  rpc CreateOutgoingXLMSellOfferRequest (CreateOutgoingXLMSellOfferRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/xlm/sell_offer"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an XLM Manage Sell Offer request or Create Passive Sell Offer request";
+      description: "This endpoint creates an XLM Manage Sell Offer or Create Passive Sell Offer request.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: XLM";
+    };
+  };
+
+  rpc CreateOutgoingXTZDelegateRequest (CreateOutgoingXTZDelegateRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/xtz/delegate"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a delegate request";
+      description: "This endpoint creates an outgoing delegate request for XTZ.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: XTZ";
+    };
+  };
+
+  rpc CreateOutgoingXTZUndelegateRequest (CreateOutgoingXTZUndelegateRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/xtz/undelegate"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an undelegate request";
+      description: "This endpoint creates an outgoing undelegate request for XTZ.\n Required role: **RequestCreator**.extractRequestEntity";
+      tags: "Requests: XTZ";
+    };
+  };
+
+  rpc CreateOutgoingXTZStakeRequest (CreateOutgoingXTZStakeRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/xtz/stake"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a stake request";
+      description: "This endpoint creates an outgoing stake request for XTZ.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: XTZ";
+    };
+  };
+
+  rpc CreateOutgoingXTZUnstakeRequest (CreateOutgoingXTZUnstakeRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/xtz/unstake"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an unstake request";
+      description: "This endpoint creates an outgoing unstake request for XTZ.\n Required role: **RequestCreator**.extractRequestEntity";
+      tags: "Requests: XTZ";
+    };
+  };
+
+  rpc CreateOutgoingADADelegateRequest (CreateOutgoingADADelegateRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/ada/delegate"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a delegate request";
+      description: "This endpoint creates an outgoing delegate request for ADA.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: ADA";
+    };
+  };
+
+  rpc CreateOutgoingADAUndelegateRequest (CreateOutgoingADAUndelegateRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/ada/undelegate"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an undelegate request";
+      description: "This endpoint creates an outgoing undelegate request for ADA.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: ADA";
+    };
+  };
+
+  rpc CreateOutgoingADAVoteDelegateRequest (CreateOutgoingADAVoteDelegateRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/ada/vote_delegate"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an vote delegation request";
+      description: "This endpoint creates an outgoing vote delegation request for ADA.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: ADA";
+    };
+  };
+
+  rpc CreateOutgoingADAWithdrawalRequest (CreateOutgoingADAWithdrawalRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/ada/withdrawal"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a withdrawal request";
+      description: "This endpoint creates an outgoing withdrawal request for ADA.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: ADA";
+    };
+  };
+
+  rpc CreateOutgoingCosmosDelegateRequest (CreateOutgoingCosmosDelegateRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/cosmos/delegate"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a delegate request";
+      description: "This endpoint creates an outgoing delegate request for Cosmos.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: Cosmos";
+    };
+  };
+
+  rpc CreateOutgoingCosmosUndelegateRequest (CreateOutgoingCosmosUndelegateRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/cosmos/undelegate"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an undelegate request";
+      description: "This endpoint creates an outgoing undelegate request for Cosmos.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: Cosmos";
+    };
+  };
+
+  rpc CreateOutgoingCosmosWithdrawRewardRequest (CreateOutgoingCosmosWithdrawRewardRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/cosmos/withdraw_reward"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a withdrawal request";
+      description: "This endpoint creates an outgoing withdraw rewards request for Cosmos. \n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: Cosmos";
+    };
+  };
+
+  rpc CreateOutgoingFTMDelegateRequest (CreateOutgoingFTMDelegateRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/ftm/delegate"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a delegate request";
+      description: "This endpoint creates an outgoing delegate request for FTM.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: FTM";
+    };
+  };
+
+  rpc CreateOutgoingFTMUndelegateRequest (CreateOutgoingFTMUndelegateRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/ftm/undelegate"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an undelegate request";
+      description: "This endpoint creates an outgoing undelegate request for FTM.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: FTM";
+    };
+  };
+
+  rpc CreateOutgoingFTMWithdrawalRequest (CreateOutgoingFTMWithdrawalRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/ftm/withdrawal"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a withdrawal request";
+      description: "This endpoint creates an outgoing withdrawal request for FTM. It is required to do an undelegate request before, and use the same withdrawalId. A FTM withdrawal is only possible 7 days after an undelegation. \n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: FTM";
+    };
+  };
+
+  rpc CreateOutgoingFTMClaimRewardsRequest (CreateOutgoingFTMClaimRewardsRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/ftm/claim_rewards"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a claim rewards request";
+      description: "This endpoint creates a claim rewards request for FTM. The rewards can either be transferred to the address or directly restaked to the same validator.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: FTM";
+    };
+  };
+
+  rpc CreateOutgoingDOTNominateRequest (CreateOutgoingDOTNominateRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/dot/nominate"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a DOT nominate request";
+      description: "This endpoint creates a nominate request for DOT. You can nominate up to 16 validators given as whitelisted address id.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: DOT";
+    };
+  };
+
+  rpc CreateOutgoingDOTBondRequest (CreateOutgoingDOTBondRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/dot/bond"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a DOT bond request";
+      description: "This endpoint creates a bond request for DOT. You can select to automatically restake your rewards or to receive them in your address.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: DOT";
+    };
+  };
+
+  rpc CreateOutgoingDOTBondExtraRequest (CreateOutgoingDOTBondExtraRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/dot/bond_extra"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a DOT bond extra request";
+      description: "This endpoint creates an bond extra request for DOT. This will add some funds in the bonded stake. An initial bond request is required before.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: DOT";
+    };
+  };
+
+  rpc CreateOutgoingDOTChillRequest (CreateOutgoingDOTChillRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/dot/chill"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a DOT chill request";
+      description: "This endpoint creates a chill request for DOT. This will remove the nominations, hence stopping the staking. You can then nominate new validators.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: DOT";
+    };
+  };
+
+  rpc CreateOutgoingDOTUnbondRequest (CreateOutgoingDOTUnbondRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/dot/unbond"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a DOT unbond request";
+      description: "This endpoint creates an unbond request for DOT. This will unbond the selected amount. The unbonded funds will then be locked for 28 days, and can be claimed when unlocked with a DOT WithdrawUnbonded request.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: DOT";
+    };
+  };
+
+  rpc CreateOutgoingMinaDelegationRequest (CreateOutgoingMinaDelegationRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/mina/delegate"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a Mina delegation request";
+      description: "This endpoint creates a delegation request for Mina. This will set the address' delegation to the address of the selected validator.\n Required role: **RequestCreator**.";
+      tags: "Requests: Mina";
+    };
+  };
+
+  rpc CreateOutgoingMinaUndelegationRequest (CreateOutgoingMinaUndelegationRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/mina/undelegate"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a Mina undelegation request";
+      description: "This endpoint creates a undelegation request for Mina. This will set the address' undelegation to the address of the selected validator.\n Required role: **RequestCreator**.";
+      tags: "Requests: Mina";
+    };
+  };
+
+  rpc CreateOutgoingNEARDepositAndStakeRequest (CreateOutgoingNEARDepositAndStakeRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/near/deposit_and_stake"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a NEAR deposit_and_stake request";
+      description: "This endpoint creates an deposit_and_stake request for NEAR. This will deposit and stake the selected amount to the selected validator.\n Required role: **RequestCreator**.";
+      tags: "Requests: NEAR";
+    };
+  };
+
+  rpc CreateOutgoingNEARUnstakeRequest (CreateOutgoingNEARUnstakeRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/near/unstake"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a NEAR unstake request";
+      description: "This endpoint creates an unstake request for NEAR. This will unstaked the selected amount from the selected validator. These funds will be withdrawable in 36 to 48h.\n Required role: **RequestCreator**.";
+      tags: "Requests: NEAR";
+    };
+  };
+
+  rpc CreateOutgoingNEARWithdrawRequest (CreateOutgoingNEARWithdrawRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/near/withdraw"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a NEAR withdraw request";
+      description: "This endpoint creates an withdraw request for NEAR. This will send the selected unstaked amount from the validator to the address.\n Required role: **RequestCreator**.";
+      tags: "Requests: NEAR";
+    };
+  };
+
+  rpc CreateOutgoingDOTWithdrawUnbondedRequest (CreateOutgoingDOTWithdrawUnbondedRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/dot/withdraw_unbonded"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a DOT withdraw unbonded request";
+      description: "This endpoint creates an withdraw unbonded request for DOT. This will withdraw all the unbonded funds that are ready (unbonded funds are ready to be withdrawn 28 days after the unbonding request).\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: DOT";
+    };
+  };
+
+  rpc CreateOutgoingSOLTokenMintRequest(CreateOutgoingSOLTokenMintRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/sol/token/mint"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a SOL token mint request";
+      description: "This endpoint creates a request to mint SPL tokens. \n Required role: **RequestCreator**.";
+      tags: "Requests: SOL";
+    };
+  };
+
+  rpc CreateOutgoingSOLTokenBurnRequest(CreateOutgoingSOLTokenBurnRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/sol/token/burn"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a SOL token burn request";
+      description: "This endpoint creates a request to burn SPL tokens. \n Required role: **RequestCreator**.";
+      tags: "Requests: SOL";
+    };
+  };
+
+  rpc CreateOutgoingSOLCreateTokenRequest(CreateOutgoingSOLCreateTokenRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/sol/token"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a SOL token creation request";
+      description: "This endpoint creates a request that will create a new SOL SPL token (token2022 program). \n Required role: **RequestCreator**.";
+      tags: "Requests: SOL";
+    };
+  };
+
+  rpc CreateOutgoingSOLDelegateRequest (CreateOutgoingSOLDelegateRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/sol/stake"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a SOL delegate request";
+      description: "This endpoint creates a request that will create a stake account if needed, transfer to it and delegate to a validator. \n Required role: **RequestCreator**.";
+      tags: "Requests: SOL";
+    };
+  };
+
+  rpc CreateOutgoingSOLDeactivateRequest (CreateOutgoingSOLDeactivateRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/sol/unstake"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a SOL deactivate stake request";
+      description: "This endpoint creates a request to deactivate staking of the selected amount. The staked funds will gradually become inactive and withdrawable in following epochs.\n Required role: **RequestCreator**.";
+      tags: "Requests: SOL";
+    };
+  };
+
+  rpc CreateOutgoingSOLWithdrawRequest (CreateOutgoingSOLWithdrawRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/sol/withdraw"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a SOL withdraw request";
+      description: "This endpoint creates a withdrawal request for SOL. This will send the inactive amount from the stake account to the address.\n Required role: **RequestCreator**.";
+      tags: "Requests: SOL";
+    };
+  };
+
+  rpc CreateOutgoingSOLMergeRequest (CreateOutgoingSOLMergeRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/sol/merge"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a SOL merge request";
+      description: "This endpoint creates a merge stake request for SOL. This will merge one stake account into another.\n Required role: **RequestCreator**.";
+      tags: "Requests: SOL";
+    };
+  };
+
+  rpc CreateOutgoingHederaStakingRequest (CreateOutgoingHederaStakingRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/hedera/staking"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a hedera staking request";
+      description: "This endpoint creates a staking request for Hedera. Required role: **RequestCreator**.";
+      tags: "Requests: Hedera";
+    };
+  };
+
+  rpc CreateOutgoingHederaUnstakingRequest (CreateOutgoingHederaUnstakingRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/hedera/unstaking"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a hedera unstaking request";
+      description: "This endpoint creates an unstaking request for Hedera. Required role: **RequestCreator**.";
+      tags: "Requests: Hedera";
+    };
+  };
+
+  rpc CreateOutgoingUTXOsRequest (CreateOutgoingUTXOsRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/utxos"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an outgoing request with selected UTXOs";
+      description: "This endpoint creates an outgoing request with manually selected UTXOs\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests";
+    };
+  };
+
+  rpc CreateOutgoingCancelRequest (CreateOutgoingCancelRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/cancel"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an outgoing cancel request";
+      description: "This endpoint creates an outgoing cancel request.\n Required role: **Admin**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests";
+    };
+  };
+
+  rpc CreateOutgoingDeployContractRequest (CreateOutgoingDeployContractRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/contracts/deploy"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a deploy contract request";
+      description: "This endpoint creates an outgoing deploy contract request.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: Contracts";
+    };
+  };
+
+  rpc CreateOutgoingCallContractRequest (CreateOutgoingCallContractRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/contracts/call"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a call contract request";
+      description: "This endpoint creates an outgoing call contract request.\n Required role: **RequestCreator** or **ContractCaller**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: Contracts";
+    };
+  };
+
+  rpc CreateOutgoingCosmosGenericRequest (CreateOutgoingCosmosGenericRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/cosmos/generic_request"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a generic cosmos request";
+      description: "This endpoint creates a generic request for Cosmos. Use 'manual' broadcast for chains not supported natively in protect, and 'automatic' for the others.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests: Cosmos";
+    };
+  };
+
+  rpc CreateOutgoingICPTransferToStakeRequest(CreateOutgoingICPTransferToStakeRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/icp/transfer_to_stake"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an ICP transfer to stake request";
+      description: "This endpoint creates a request that transfers some amount into the neuron associated with the given address. It can be used to initialize a neuron, or to top-up an already staking neuron";
+      tags: "Requests: ICP";
+    };
+  }
+
+  rpc CreateOutgoingICPSetDissolveDelayRequest(CreateOutgoingICPSetDissolveDelayRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/icp/set_dissolve_delay"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an ICP set dissolve delay request";
+      description: "This endpoint creates a request that sets the dissolve delay to the requested parameter. Due to how ICP works, the delay set on-chain will be lower than the one in this parameter, depending on the length of the approval workflow. It's recommended to keep a large enough buffer of time for the request to not fail";
+      tags: "Requests: ICP";
+    };
+  }
+
+  rpc CreateOutgoingICPFollowRequest(CreateOutgoingICPFollowRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/icp/follow"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an ICP follow request";
+      description: "This endpoint creates a request that will set the followees for the given address and topic";
+      tags: "Requests: ICP";
+    };
+  }
+
+  rpc CreateOutgoingICPStartDissolvingRequest(CreateOutgoingICPStartDissolvingRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/outgoing/icp/start_dissolving"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an ICP start dissolving request";
+      description: "This endpoint creates a request that will start dissolving an ICP address";
+      tags: "Requests: ICP";
+    };
+  }
+
+  rpc CreateIncomingRequest (CreateIncomingRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/incoming"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an incoming request";
+      description: "This endpoint creates an incoming request.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestId attribute";
+      tags: "Requests";
+    };
+  };
+
+  rpc CreateFiatProviderWithdrawalRequest (CreateFiatProviderWithdrawalRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/fiat_provider/withdrawal"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a fiat provider withdrawal request";
+      description: "This endpoint creates a fiat provider withdrawal request.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestID attribute";
+      tags: "Requests";
+    };
+  };
+
+  rpc CreateFiatProviderDepositRequest (CreateFiatProviderDepositRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/fiat_provider/deposit"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a fiat provider deposit request";
+      description: "This endpoint creates a fiat provider deposit request.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestID attribute";
+      tags: "Requests";
+    };
+  };
+
+  rpc CreateFiatProviderTransferRequest (CreateFiatProviderTransferRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/fiat_provider/transfer"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create a fiat provider transfer request";
+      description: "This endpoint creates a fiat provider transfer request.\n Required role: **RequestCreator**.\nThis API can be made idempotent by generating an ID for the Request beforehand and passing it as the externalRequestID attribute";
+      tags: "Requests";
+    };
+  };
+
+  rpc ApproveRequests (ApproveRequestsRequest) returns (ApproveRequestsReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/approve"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Approve a request";
+      description: "This endpoint approves a request.\n Required role: **RequestApprover**.";
+      tags: "Requests";
+    };
+  };
+
+  rpc GetAsyncApprovals (GetAsyncApprovalsRequest) returns (GetAsyncApprovalsReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/requests/async-approvals"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List asynchronous approvals";
+      description: "This endpoint returns a list of approvals that are processed asynchronously";
+      tags: "Requests";
+    };
+  }
+
+  rpc RejectRequests (RejectRequestsRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/reject"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Reject a request";
+      description: "This endpoint rejects a request.\n Required role: **RequestApprover**.";
+      tags: "Requests";
+    };
+  };
+
+  // Deprecated - Replaced by GetRequestsV2
+  rpc GetRequests (GetRequestsRequest) returns (GetRequestsReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/requests"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      deprecated: true;
+      summary: "List requests";
+      description: "Deprecated: Use /api/rest/v2/requests instead. This endpoint returns a list of requests";
+      tags: "Requests";
+    };
+  };
+
+  rpc GetRequestsV2 (GetRequestsV2Request) returns (GetRequestsV2Reply) {
+    option (google.api.http) = {
+      get: "/api/rest/v2/requests"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List requests";
+      description: "This endpoint returns a list of requests";
+      tags: "Requests";
+    };
+  };
+
+  // Deprecated - Replaced by GetRequestsForApprovalV2
+  rpc GetRequestsForApproval (GetRequestsForApprovalRequest) returns (GetRequestsReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/requests/for-approval"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      deprecated: true
+      summary: "List requests for approval";
+      description: "Deprecated: Use /api/rest/v2/requests/for-approval instead. This endpoint returns a list of requests for approval.\n Required role: **RequestApprover**.";
+      tags: "Requests";
+    };
+  };
+
+  rpc GetRequestsForApprovalV2 (GetRequestsForApprovalV2Request) returns (GetRequestsV2Reply) {
+    option (google.api.http) = {
+      get: "/api/rest/v2/requests/for-approval"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List requests for approval";
+      description: "This endpoint returns a list of requests for approval.\n Required role: **RequestApprover**.";
+      tags: "Requests";
+    };
+  }
+
+  rpc GetRequestBundles (GetRequestBundlesRequest) returns (GetRequestBundlesReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/requests/bundles"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List request bundles";
+      description: "This endpoint returns a list of request bundles";
+      tags: "Requests";
+    };
+  };
+
+  rpc GetRequestBundlesForApproval (GetRequestBundlesForApprovalRequest) returns (GetRequestBundlesReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/requests/bundles/for-approval"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List request bundles for approval";
+      description: "This endpoint returns a list of request bundles for approval.\n Required role: **RequestApprover**.";
+      tags: "Requests";
+    };
+  };
+
+  rpc CreateRequestAttributes (CreateRequestAttributesRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requestattributes"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create request attributes";
+      description: "This endpoint creates request attributes.\n Required role: **RequestCreator**.";
+      tags: "Requests";
+    };
+  };
+
+  rpc GetRequestAttribute (GetRequestAttributeRequest) returns (GetRequestAttributeReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/requestattributes/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get a request attribute";
+      description: "This endpoint returns a request attribute";
+      tags: "Requests";
+    };
+  };
+
+  rpc StakeETH (StakeETHRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/staking/eth_stake"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Stake ETH";
+      description: "This endpoint will begin the process of staking on an ethereum address";
+      tags: "Requests";
+    };
+  };
+
+  rpc CreateETHUnstakeRequest (CreateETHUnstakeRequestRequest) returns (CreateRequestReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/requests/staking/eth_unstake"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an ETH unstake request";
+      description: "This endpoint will create an ETH unstake request";
+      tags: "Requests";
+    };
+  };
+}

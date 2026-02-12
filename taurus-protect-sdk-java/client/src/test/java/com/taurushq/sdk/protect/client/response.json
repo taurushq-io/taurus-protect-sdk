@@ -1,0 +1,239 @@
+{
+  "result": {
+    "id": "391",
+    "tenantId": "1",
+    "signedAddress": {
+      "signatures": [
+        {
+          "signature": {
+            "userId": "team1@bank.com",
+            "signature": "ug2pMKZJMjsN7wL7QElsksamYxhZESJ61IgTpR7lEVqIrK+9z5JO3zLTYAt9dxm82C3ArXHNyzOvEsm+zwUSww==",
+            "comment": "go"
+          },
+          "hashes": [
+            "1032334322c7c4beb5c30593a96c09984e1accd7990daf5f64d3fc6a622f06a3",
+            "15259b8a5e6fcb66fb2f1327f7f0fe30b89038f2cb18a52f04d981e02de16460",
+            "35f5e3f47908e34412a7882042f899da3db09abb9f9e36bbea76db505fa5aeb1",
+            "88e4e456f7ca1fc4ca415c6c571f828c0eb047e9f15f36d547c103b2ea0def9b"
+          ]
+        },
+        {
+          "signature": {
+            "userId": "team2@bank.com",
+            "signature": "FgNG9D72xBOGQI315rx05Ff5fj4Qb0rAvEXTsvCaipdBYE7U6ACIlcqLP55gYbXJHQ2gBT71ROZJ2CHlZTrlMg==",
+            "comment": "go"
+          },
+          "hashes": [
+            "1032334322c7c4beb5c30593a96c09984e1accd7990daf5f64d3fc6a622f06a3",
+            "15259b8a5e6fcb66fb2f1327f7f0fe30b89038f2cb18a52f04d981e02de16460",
+            "35f5e3f47908e34412a7882042f899da3db09abb9f9e36bbea76db505fa5aeb1",
+            "88e4e456f7ca1fc4ca415c6c571f828c0eb047e9f15f36d547c103b2ea0def9b"
+          ]
+        },
+        {
+          "signature": {
+            "userId": "X123456789",
+            "signature": "GQMG3ODaZYfmIW0sCOUlIA9yqYblEGVurUS7ioo7rIpwYud5WaBxXrsyrDZqZbTbpg/wxTqx129xZ827w3jdPA==",
+            "comment": "go"
+          },
+          "hashes": [
+            "1032334322c7c4beb5c30593a96c09984e1accd7990daf5f64d3fc6a622f06a3",
+            "15259b8a5e6fcb66fb2f1327f7f0fe30b89038f2cb18a52f04d981e02de16460",
+            "35f5e3f47908e34412a7882042f899da3db09abb9f9e36bbea76db505fa5aeb1",
+            "88e4e456f7ca1fc4ca415c6c571f828c0eb047e9f15f36d547c103b2ea0def9b"
+          ]
+        }
+      ],
+      "payload": "CgNFVEgaKjB4NWMyNjk3ZjVmYWY2ZmFhZWVmYTlmMmZhMWU1YTE4YmIyNDhhNjM4MCoXMjAyMDAzMjQgdGVzdCBhZGRyZXNzIDIyATFCPQgKEioweDU4OWVmM2Q3NTg1ZjU0ZjA1MzllMjQyNTMwNTA4ODdjNjkxYzliZDgaDWNsaWVudCAwIEVUSCBCSQgNEioweDY2OTgwNWYzMTE3OGZhZjBkY2EzOWM4YTVjNDllY2M1MzFiNTE1NmUaGUVUSCBpbnRlcm5hbCBjbGllbnQgMDIuMDJCOQgUEioweDZjZjZhYjc4ZWJiODBkN2RkZTRlYzExZDdmMTM5ZWE0ZDAyMTBjM2QaCUxCUiAwNy4wMkJNCGISKjB4MmRjNWI3ZjhmOTRjYmIyYTFkMTMwNmRkYTEzMDMyNWQ3Mzg0Mjk2ZRodRVRIIExCUiBpbnRlcm5hbCBjbGllbnQgMjYuMDJCPAgZEioweDliYzI4ZTY3MTBmNWJiMjUxMTM3Mjk4N2Y2MTNhNDM2NjE4ZTI4YWQaDExCUiBJQyAxMy4wMg=="
+    },
+    "metadata": {
+      "hash": "7d62d7f78ed55c716ea1278473d6cac5b60a31e1df941873118932822df32b03",
+      "payload": {
+        "address": "0x5c2697f5faf6faaeefa9f2fa1e5a18bb248a6380",
+        "addressType": "individual",
+        "contractType": "",
+        "currency": "ETH",
+        "customerId": "1",
+        "exchangeAccountId": "",
+        "label": "20200324 test address 2",
+        "linkedInternalAddresses": [
+          {
+            "address": "0x589ef3d7585f54f0539e24253050887c691c9bd8",
+            "id": "10",
+            "label": "client 0 ETH "
+          },
+          {
+            "address": "0x669805f31178faf0dca39c8a5c49ecc531b5156e",
+            "id": "13",
+            "label": "ETH internal client 02.02"
+          },
+          {
+            "address": "0x6cf6ab78ebb80d7dde4ec11d7f139ea4d0210c3d",
+            "id": "20",
+            "label": "LBR 07.02"
+          },
+          {
+            "address": "0x2dc5b7f8f94cbb2a1d1306dda130325d7384296e",
+            "id": "98",
+            "label": "ETH LBR internal client 26.02"
+          },
+          {
+            "address": "0x9bc28e6710f5bb2511372987f613a436618e28ad",
+            "id": "25",
+            "label": "LBR IC 13.02"
+          }
+        ],
+        "memo": ""
+      },
+      "payloadAsString": "{\"currency\":\"ETH\",\"addressType\":\"individual\",\"address\":\"0x5c2697f5faf6faaeefa9f2fa1e5a18bb248a6380\",\"memo\":\"\",\"label\":\"20200324 test address 2\",\"customerId\":\"1\",\"exchangeAccountId\":\"\",\"linkedInternalAddresses\":[{\"id\":\"10\",\"address\":\"0x589ef3d7585f54f0539e24253050887c691c9bd8\",\"label\":\"client 0 ETH \"},{\"id\":\"13\",\"address\":\"0x669805f31178faf0dca39c8a5c49ecc531b5156e\",\"label\":\"ETH internal client 02.02\"},{\"id\":\"20\",\"address\":\"0x6cf6ab78ebb80d7dde4ec11d7f139ea4d0210c3d\",\"label\":\"LBR 07.02\"},{\"id\":\"98\",\"address\":\"0x2dc5b7f8f94cbb2a1d1306dda130325d7384296e\",\"label\":\"ETH LBR internal client 26.02\"},{\"id\":\"25\",\"address\":\"0x9bc28e6710f5bb2511372987f613a436618e28ad\",\"label\":\"LBR IC 13.02\"}],\"contractType\":\"\"}"
+    },
+    "action": "create",
+    "scores": [
+      {
+        "id": "587",
+        "provider": "scorechain",
+        "type": "in",
+        "score": "75",
+        "updateDate": "2021-03-10T00:17:01.569032Z"
+      },
+      {
+        "id": "588",
+        "provider": "scorechain",
+        "type": "out",
+        "score": "100",
+        "updateDate": "2021-03-10T00:17:01.588066Z"
+      },
+      {
+        "id": "1175",
+        "provider": "chainalysis",
+        "type": "risk",
+        "score": "0",
+        "updateDate": "2025-01-31T03:46:46.759514Z"
+      },
+      {
+        "id": "4468",
+        "provider": "elliptic",
+        "type": "risk",
+        "score": "1",
+        "updateDate": "2024-08-11T10:51:32.374105Z"
+      },
+      {
+        "id": "4713",
+        "provider": "elliptic",
+        "type": "risk",
+        "score": "0",
+        "updateDate": "2024-09-25T15:28:56.325869Z"
+      },
+      {
+        "id": "4775",
+        "provider": "elliptic",
+        "type": "risk",
+        "score": "1",
+        "updateDate": "2025-03-09T19:44:08.399552Z"
+      },
+      {
+        "id": "5090",
+        "provider": "elliptic",
+        "type": "risk",
+        "score": "0",
+        "updateDate": "2026-01-27T19:52:34.079869Z"
+      },
+      {
+        "id": "6011",
+        "provider": "trmlabs",
+        "type": "risk",
+        "score": "0",
+        "updateDate": "2025-11-02T01:34:36.527132Z"
+      },
+      {
+        "id": "7240",
+        "provider": "scorechain",
+        "type": "in",
+        "score": "67",
+        "updateDate": "2025-07-31T12:57:47.297490Z"
+      },
+      {
+        "id": "7241",
+        "provider": "scorechain",
+        "type": "out",
+        "score": "46",
+        "updateDate": "2025-07-31T12:57:47.306297Z"
+      }
+    ],
+    "trails": [
+      {
+        "id": "1013",
+        "userId": "11",
+        "externalUserId": "team1@bank.com",
+        "action": "created",
+        "date": "2020-03-24T18:15:16.286272Z"
+      },
+      {
+        "id": "1017",
+        "userId": "11",
+        "externalUserId": "team1@bank.com",
+        "action": "approved",
+        "comment": "go",
+        "date": "2020-03-24T18:16:39.310735Z"
+      },
+      {
+        "id": "1021",
+        "userId": "12",
+        "externalUserId": "team2@bank.com",
+        "action": "approved",
+        "comment": "go",
+        "date": "2020-03-24T18:18:50.041935Z"
+      },
+      {
+        "id": "1028",
+        "userId": "91",
+        "externalUserId": "X123456789",
+        "action": "approved",
+        "comment": "go",
+        "date": "2020-03-24T18:19:51.189119Z"
+      },
+      {
+        "id": "1029",
+        "userId": "91",
+        "externalUserId": "X123456789",
+        "action": "last_approval",
+        "date": "2020-03-24T18:19:51.207594Z"
+      }
+    ],
+    "rulesContainer": "Cr8BCgUxMjM0NRKxAS0tLS0tQkVHSU4gUFVCTElDIEtFWS0tLS0tCk1Ga3dFd1lIS29aSXpqMENBUVlJS29aSXpqMERBUWNEUWdBRU0yTnR6YUZobTd4SVIzT3ZXcTVjaFczL0dFdlcKTCszdXFvRTZsRUoxM2VXYnVseHNQLzVoMzZWQ3FZRElHTi8wd0RlV3dMWWRwdTVIaFNYV2h4Q3NDQT09Ci0tLS0tRU5EIFBVQkxJQyBLRVktLS0tLRoCAAQKwQEKBzEyMzQ1NjcSsQEtLS0tLUJFR0lOIFBVQkxJQyBLRVktLS0tLQpNRmt3RXdZSEtvWkl6ajBDQVFZSUtvWkl6ajBEQVFjRFFnQUVZOXpHdWd6TkxJZnBadWFVcnp5d0VoLzhaZHRYCjRJSXVJcERITHZKMzZnbEZqZnh4U1pkT0c2eUhLRkZsUWgxR1gzT0NGWnhIZSt4ZU9HQkpIQmdyYUE9PQotLS0tLUVORCBQVUJMSUMgS0VZLS0tLS0aAgAECsMBCgkxMjM0NTY3ODkSsQEtLS0tLUJFR0lOIFBVQkxJQyBLRVktLS0tLQpNRmt3RXdZSEtvWkl6ajBDQVFZSUtvWkl6ajBEQVFjRFFnQUVZOXpHdWd6TkxJZnBadWFVcnp5d0VoLzhaZHRYCjRJSXVJcERITHZKMzZnbEZqZnh4U1pkT0c2eUhLRkZsUWgxR1gzT0NGWnhIZSt4ZU9HQkpIQmdyYUE9PQotLS0tLUVORCBQVUJMSUMgS0VZLS0tLS0aAgAECsEBCgZYMTIzNDUSsQEtLS0tLUJFR0lOIFBVQkxJQyBLRVktLS0tLQpNRmt3RXdZSEtvWkl6ajBDQVFZSUtvWkl6ajBEQVFjRFFnQUVZOXpHdWd6TkxJZnBadWFVcnp5d0VoLzhaZHRYCjRJSXVJcERITHZKMzZnbEZqZnh4U1pkT0c2eUhLRkZsUWgxR1gzT0NGWnhIZSt4ZU9HQkpIQmdyYUE9PQotLS0tLUVORCBQVUJMSUMgS0VZLS0tLS0aAwQAAgrCAQoHWDEyMzQ1NhKxAS0tLS0tQkVHSU4gUFVCTElDIEtFWS0tLS0tCk1Ga3dFd1lIS29aSXpqMENBUVlJS29aSXpqMERBUWNEUWdBRVYyekVEdlpqSi9xUitRaDFyMHNLTmNpMzl3NzkKQjAwTmc1TUdnNHdSTTdBaDlwcjFHYmtncktJVWY0a2FIUGpyUFZhUUtJUjh6RFUzamdtMGxXeGVIQT09Ci0tLS0tRU5EIFBVQkxJQyBLRVktLS0tLRoDBAACCsUBCgpYMTIzNDU2Nzg5ErEBLS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUZrd0V3WUhLb1pJemowQ0FRWUlLb1pJemowREFRY0RRZ0FFTEpoRVVOTExIZ0k4TGlXSmFlSkdwYUJmZHZnbwpZeUtzalNGeVRNeEVDUi9FKzFxcHpEbE5OdWc3aERQZ0JQcFozWitVOFFXamFLQjRNcmJqMi9rSW1RPT0KLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tGgMEAAIK1AEKGWNocmlzdG9waGVAdGF1cnVzZ3JvdXAuY2gSsQEtLS0tLUJFR0lOIFBVQkxJQyBLRVktLS0tLQpNRmt3RXdZSEtvWkl6ajBDQVFZSUtvWkl6ajBEQVFjRFFnQUVMSmhFVU5MTEhnSThMaVdKYWVKR3BhQmZkdmdvCll5S3NqU0Z5VE14RUNSL0UrMXFwekRsTk51ZzdoRFBnQlBwWjNaK1U4UVdqYUtCNE1yYmoyL2tJbVE9PQotLS0tLUVORCBQVUJMSUMgS0VZLS0tLS0aAwAEAgrLAQoRZnJlZGVyaWNAYmFuay5jb20SsQEtLS0tLUJFR0lOIFBVQkxJQyBLRVktLS0tLQpNRmt3RXdZSEtvWkl6ajBDQVFZSUtvWkl6ajBEQVFjRFFnQUVZOXpHdWd6TkxJZnBadWFVcnp5d0VoLzhaZHRYCjRJSXVJcERITHZKMzZnbEZqZnh4U1pkT0c2eUhLRkZsUWgxR1gzT0NGWnhIZSt4ZU9HQkpIQmdyYUE9PQotLS0tLUVORCBQVUJMSUMgS0VZLS0tLS0aAgAECtABChdoc21zbG90MEB0YXVydXNncm91cC5jaBKxAS0tLS0tQkVHSU4gUFVCTElDIEtFWS0tLS0tCk1Ga3dFd1lIS29aSXpqMENBUVlJS29aSXpqMERBUWNEUWdBRXFZWUIyN2xVVmZSeG5KWUMvWng3VTJIamR3OUkKZHg2VW53dytQNG4xNUE1U1R6RVpEQmFYSSs3MTNzRXArUTEzQkQyalluSkJzSmdpbjJINDk2SUk3QT09Ci0tLS0tRU5EIFBVQkxJQyBLRVktLS0tLRoBBQrJAQoPcGF0cmlrQGJhbmsuY29tErEBLS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUZrd0V3WUhLb1pJemowQ0FRWUlLb1pJemowREFRY0RRZ0FFTEpoRVVOTExIZ0k4TGlXSmFlSkdwYUJmZHZnbwpZeUtzalNGeVRNeEVDUi9FKzFxcHpEbE5OdWc3aERQZ0JQcFozWitVOFFXamFLQjRNcmJqMi9rSW1RPT0KLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tGgIABArOAQoUc3VwZXJhZG1pbjFAYmFuay5jb20SsgEtLS0tLUJFR0lOIFBVQkxJQyBLRVktLS0tLQpNRmt3RXdZSEtvWkl6ajBDQVFZSUtvWkl6ajBEQVFjRFFnQUVNMk50emFGaG03eElSM092V3E1Y2hXMy9HRXZXCkwrM3Vxb0U2bEVKMTNlV2J1bHhzUC81aDM2VkNxWURJR04vMHdEZVd3TFlkcHU1SGhTWFdoeENzQ0E9PQotLS0tLUVORCBQVUJMSUMgS0VZLS0tLS0KGgEDCs4BChRzdXBlcmFkbWluMkBiYW5rLmNvbRKyAS0tLS0tQkVHSU4gUFVCTElDIEtFWS0tLS0tCk1Ga3dFd1lIS29aSXpqMENBUVlJS29aSXpqMERBUWNEUWdBRVk5ekd1Z3pOTElmcFp1YVVyenl3RWgvOFpkdFgKNElJdUlwREhMdkozNmdsRmpmeHhTWmRPRzZ5SEtGRmxRaDFHWDNPQ0ZaeEhlK3hlT0dCSkhCZ3JhQT09Ci0tLS0tRU5EIFBVQkxJQyBLRVktLS0tLQoaAQMKzgEKFHN1cGVyYWRtaW4zQGJhbmsuY29tErIBLS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUZrd0V3WUhLb1pJemowQ0FRWUlLb1pJemowREFRY0RRZ0FFVjJ6RUR2WmpKL3FSK1FoMXIwc0tOY2kzOXc3OQpCMDBOZzVNR2c0d1JNN0FoOXByMUdia2dyS0lVZjRrYUhQanJQVmFRS0lSOHpEVTNqZ20wbFd4ZUhBPT0KLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tChoBAwrIAQoOdGVhbTFAYmFuay5jb20SsQEtLS0tLUJFR0lOIFBVQkxJQyBLRVktLS0tLQpNRmt3RXdZSEtvWkl6ajBDQVFZSUtvWkl6ajBEQVFjRFFnQUVMSmhFVU5MTEhnSThMaVdKYWVKR3BhQmZkdmdvCll5S3NqU0Z5VE14RUNSL0UrMXFwekRsTk51ZzdoRFBnQlBwWjNaK1U4UVdqYUtCNE1yYmoyL2tJbVE9PQotLS0tLUVORCBQVUJMSUMgS0VZLS0tLS0aAgQACscBCg50ZWFtMkBiYW5rLmNvbRKxAS0tLS0tQkVHSU4gUFVCTElDIEtFWS0tLS0tCk1Ga3dFd1lIS29aSXpqMENBUVlJS29aSXpqMERBUWNEUWdBRTRVQW8rR054dzR0RXFkbVREaTZ2Mk1acTJ1ZzgKYWpXOC9NbnFKL1FkNGJuaVB5RHZJVHJTRVpVeVA5VHZZcGtMQWJnL0FDeGNSL3lBNmxCRWd0RTYwUT09Ci0tLS0tRU5EIFBVQkxJQyBLRVktLS0tLRoBAArHAQoOdGVhbTNAYmFuay5jb20SsQEtLS0tLUJFR0lOIFBVQkxJQyBLRVktLS0tLQpNRmt3RXdZSEtvWkl6ajBDQVFZSUtvWkl6ajBEQVFjRFFnQUVIaml3VThDd3hQUEYrU3hiVFZPbTdaMW5kOVA2Cm1UYkZDMkZZVVlpU2xBSndmRTd3b003QkFPZzZiOFcweTBKSUpBYyt0MTZWN3pPTVd6c0ZWbWVlNmc9PQotLS0tLUVORCBQVUJMSUMgS0VZLS0tLS0aAQAKyAEKDnVzZXIxQGJhbmsuY29tErEBLS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUZrd0V3WUhLb1pJemowQ0FRWUlLb1pJemowREFRY0RRZ0FFTEpoRVVOTExIZ0k4TGlXSmFlSkdwYUJmZHZnbwpZeUtzalNGeVRNeEVDUi9FKzFxcHpEbE5OdWc3aERQZ0JQcFozWitVOFFXamFLQjRNcmJqMi9rSW1RPT0KLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tGgIEAArXAQoddmFsaWRhdG9yLWNvcmVAdGF1cnVzZ3JvdXAuY2gSsQEtLS0tLUJFR0lOIFBVQkxJQyBLRVktLS0tLQpNRmt3RXdZSEtvWkl6ajBDQVFZSUtvWkl6ajBEQVFjRFFnQUVZUFhJQjRtdHF5MEFMdUVLZFlBZlFwV21zS3U2CkRtNWEwNWRjUlVGVzUySkdrME03N2VzYW9Ic2lIdUc4OXFGcXlmRkkvMlBmNFMvaExuSEJHV01tUmc9PQotLS0tLUVORCBQVUJMSUMgS0VZLS0tLS0aAgECEkMKE2NvbXBsaWFuY2VAYmFuay5jb20SGWNocmlzdG9waGVAdGF1cnVzZ3JvdXAuY2gSEWZyZWRlcmljQGJhbmsuY29tEjoKCmVsY2FfMTIzNDUSGWNocmlzdG9waGVAdGF1cnVzZ3JvdXAuY2gSEWZyZWRlcmljQGJhbmsuY29tEkYKDXJpc2tAYmFuay5jb20SClgxMjM0NTY3ODkSGWNocmlzdG9waGVAdGF1cnVzZ3JvdXAuY2gSDnVzZXIxQGJhbmsuY29tElgKBXRlYW0xEgUxMjM0NRIKWDEyMzQ1Njc4ORIZY2hyaXN0b3BoZUB0YXVydXNncm91cC5jaBIRZnJlZGVyaWNAYmFuay5jb20SDnRlYW0xQGJhbmsuY29tEjsKBXRlYW0yEgUxMjM0NRIHMTIzNDU2NxIGWDEyMzQ1EgpYMTIzNDU2Nzg5Eg50ZWFtMkBiYW5rLmNvbRJPCgV0ZWFtMxIJMTIzNDU2Nzg5EgdYMTIzNDU2EgdYMTIzNDU2EgdYMTIzNDU2EgdYMTIzNDU2EgdYMTIzNDU2Eg50ZWFtM0BiYW5rLmNvbRI5Cgd0ZXN0Y2tyEg50ZWFtMUBiYW5rLmNvbRIOdGVhbTJAYmFuay5jb20SDnRlYW0zQGJhbmsuY29tEh8KDXRoaXJkX2xpbmVfQUQSDnRlYW0zQGJhbmsuY29tKvABCgNCQ0gSCBIGc291cmNlEg8IARILZGVzdGluYXRpb24SCggCEgZhbW91bnQaSgoACgAKDggCEgoKCDUwMC4wMDAwEjQKCQoFdGVhbTEQAQoJCgV0ZWFtMhABCgkKBXRlYW0zEAEKEQoNcmlza0BiYW5rLmNvbRABGjUKAAoACgwIAhIICgY3LjAwMDASIQoJCgV0ZWFtMRABCgkKBXRlYW0yEAEKCQoFdGVhbTMQARoqCgAKAAoMCAISCAoGNS4wMDAwEhYKCQoFdGVhbTIQAQoJCgV0ZWFtMxABGhMKAAoACgASCwoJCgV0ZWFtMRABKsQBCgNCU1YSCBIGc291cmNlEg8IARILZGVzdGluYXRpb24SCggCEgZhbW91bnQaSgoACgAKDggCEgoK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",
+    "rule": ", approvals = ['team1': 1 sig, 'team2': 1 sig, 'risk@bank.com': 1 sig]",
+    "approvers": {
+      "parallel": [
+        {
+          "sequential": [
+            {
+              "externalGroupID": "team1",
+              "minimumSignatures": 1
+            },
+            {
+              "externalGroupID": "team2",
+              "minimumSignatures": 1
+            },
+            {
+              "externalGroupID": "risk@bank.com",
+              "minimumSignatures": 1
+            }
+          ]
+        }
+      ]
+    },
+    "attributes": [
+      {
+        "id": "965",
+        "key": "lastTransactionDate",
+        "value": "2022-07-06T06:49:45Z",
+        "contentType": "text/plain",
+        "owner": "system"
+      }
+    ],
+    "blockchain": "ETH",
+    "status": "APPROVED",
+    "network": "mainnet",
+    "rulesSignatures": "ClgKFHN1cGVyYWRtaW4xQGJhbmsuY29tEkAGSaSrsrfIHiA3uQGeMyeASs1ICboi5p2hZkJcqPcbz1WNWYrsIFDtvDCNSQFsPYWW+FjnveLGBoVUIdnu87TRClgKFHN1cGVyYWRtaW4yQGJhbmsuY29tEkBxfTWUPTCfEDiKJPpFL7UbJTzEuWCcRFnsKBaqv2TzvrDWZFjfkZ5lGXaIiNkYbAZzmAXHmMzU4gL78NdtAE91"
+  }
+}

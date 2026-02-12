@@ -1,0 +1,146 @@
+syntax = "proto3";
+package tp_messages;
+
+option java_package = "com.taurushq.sdk.protect.proto.common.tp_messages";
+
+enum CommitmentKind {
+  UTXO = 0;
+  Account = 1;
+  Algo = 2;
+  ETHwrapped = 3;
+  Icp = 4;
+  Hash = 5;
+  HederaTransactions = 6;
+}
+
+// Is the commitment type for:
+// Avax,Cosmos,DOT,ETH,FTM,NEAR,Polygon,XLM,XRP,XTZ
+message AccountCommitment {
+  message AccountBinding {
+    string address = 1;
+    bytes nonce = 2;
+    bytes amount = 3;
+  }
+  // Strong binding to the committer
+  // Different committers operate on different networks, and will refuse to sign data from another network.
+  // This information is cross checked within the metadata
+  // In itself, this isn't enough to prevent replays across networks, but combined with the chainId, it's enough.
+  string network = 1;
+  // A generic chain identifier, used to distinguish between chain networks.
+  // Avax,ETH,FTM,Polygon: the chain id
+  // Cosmos: the chain id
+  // DOT: the genesis hash
+  // NEAR: a recent block hash
+  // XLM: hash of the network passphrase
+  // XRP: network ID
+  // XTZ: a recent block hash
+  bytes chainId = 2;
+  repeated AccountBinding bindings = 3;
+  string blockchain = 4;
+}
+
+// Is the commitment type for
+// ADA,BCH,BTC,LTC requests
+message UTXOCommitment {
+  // Inputs are very susceptible to being malleable
+  // transfers from addresses/wallets can use any utxo for the address/wallet and lie about its amount (pay the excess in fees)
+  // Outputs however, are not malleable in a useful way:
+  // - changing the target destination results in a metadata mismatch
+  // - changing the change destination results in either a correct request or a metadata mismatch
+  // On the other hand, inputs of a transaction are enough to completely distinguish it
+  // Making them ideal for commitments
+  message InputBinding {
+    bytes hash = 1;
+    uint64 index = 2;
+    bytes amount = 3;
+  }
+  string network = 1;
+  bytes chainId = 2;
+  repeated InputBinding bindings = 3;
+  string blockchain = 4;
+}
+
+// Algo commitments
+// The unicity constraint enforced on-chain is that two identical transactions cannot be mined,
+// and that two transactions cannot have the same (sender,lease) pair within their validity window (max 1000 blocks).
+// Algorand commitments bind on the lease and validity window of a transaction:
+// * the lease `lx` allows us to identify broadcasted transactions on the blockchain. It is globally unique and fixed in the metadata.
+// * the validity window `lv` determines when a commitment expires
+message AlgoCommitment {
+  message TxBinding {
+    string address = 1;
+    bytes lx = 2;
+    uint64 lv = 3;
+  }
+  string blockchain = 1;
+  string network = 2;
+  string chainId = 3; // ALGO genesis ID
+  repeated TxBinding bindings = 4;
+}
+
+// ICP commitments
+// hash == hash(from, to, amount, fee, memo, created_at_time)
+//  or hash(from, amount, memo, created_at_time) for Burn and to instead of from for Mint.
+// Only 1 transaction with the same fields can pass
+message ICPCommitment {
+  message TxBinding {
+    string hash = 1;
+  }
+  string network = 1;
+  repeated TxBinding bindings = 2;
+  string blockchain = 3;
+}
+
+
+// "Wrapped" EVM commitment, for gasless transactions
+// Ignores the amount, binds to address and nonce, adds the forwarder address
+message ETHWrappedCommitment {
+  message Binding {
+    string address = 1;
+    bytes nonce = 2;
+  }
+  string network = 1;
+  repeated Binding bindings = 4;
+  string blockchain = 5;
+}
+
+// Hash commitments
+// Each tx is identified by its (pre-signature) tx hash
+message HashCommitment {
+  message TxBinding {
+    bytes hash = 1;
+    string address = 2;
+  }
+  string blockchain = 1;
+  string network = 2;
+  bytes chainId = 3;
+  repeated TxBinding bindings = 4;
+}
+
+// Hedera commitments
+// A special kind of account commitment, with no chain_id
+// The nonce is replaced by a timestamp
+message HederaCommitment {
+  // Stutter because of swagger's weird namespacing..?
+  message HederaTimestamp {
+    uint64 seconds = 1;
+    uint64 nanos = 2;
+  }
+  message HederaBinding {
+    // Hedera addresses are represented as <shardnum>.<realmnum>.<accountid>
+    // Where <accountid> has no relation to the key
+    // This means given only an address, we cannot tie it to a public key
+    // This explains the presence of the publicKey (compressed ECDSA) field in the binding
+    string address = 1;
+    bytes publicKey = 2;
+    HederaTimestamp timestamp = 3;
+    // Hedera transactions by themselves don't have amounts
+  }
+  // The network is still used to strongly tie to a committer
+  // but the lack of chain_id means the same commitment
+  // can be used to generate transactions valid on multiple networks
+  // Due to Hedera's structure,
+  string network = 1;
+  repeated HederaBinding bindings = 3;
+  string blockchain = 4;
+}

@@ -1,0 +1,3482 @@
+syntax = "proto3";
+package tgvalidatord;
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+import "tp_messages/commitments.proto";
+//////////////////////////////
+//
+// Reply
+//
+/////////
+
+
+message Status {
+  enum StatusCode {
+    Success = 0;
+    InternalError = 1;
+    ValidationError = 2;
+    SecurityError = 3;
+  }
+  StatusCode code = 1;
+  string message = 2;
+}
+
+message Traces {
+  string function = 1;
+  uint64 duration = 2; // duration in ms
+  repeated Traces children = 3;
+  uint64 offset = 4; // offset against parent, in ms
+}
+
+message EncryptedRepliesContainer {
+  bytes iv = 1;
+  bytes ciphertext = 2; // Encrypted SignedRepliesEnvelope
+  bytes mac = 3; // hmac-sha256(key,ciphertext)
+}
+
+message SignedRepliesEnvelope {
+  string id = 1; // correspond to SignedRequestEnvelope.id
+  Status status = 2;
+  bytes payloadSignature = 3; // payload is signed by the HSM
+  bytes payload = 4; // contains a Replies message
+
+  // If this field is set, all fields with index under 1000 must be absent.
+  // This lets us keep deserialization simple, and backwards-compatible
+  EncryptedRepliesContainer encryptedRepliesEnvelope = 1000;
+  // Traces are always sent decrypted, not taken into account in the encrypted container
+  Traces traces = 1001;
+}
+
+message Replies {
+  repeated Reply replies = 1;
+}
+
+message Reply {
+  string id = 1; // correspond to RequestEnvelope.id
+  enum PayloadType {
+    None = 0;
+    Bytes = 1;
+    AddressResponse = 3;
+    // GRAMAddressResponse = 4;     // keep this line to show that this field is reserved forever
+    TransactionsResponse = 5;
+    ETHTransactionsResponse = 6;
+    // ETCTransactionsResponse = 7; // keep this line to show that this field is reserved forever
+    ProofOfReserveResponse = 8;
+    // DiemJWTResponse = 9;         // keep this line to show that this field is reserved forever
+    // DiemAddressResponse = 10;    // keep this line to show that this field is reserved forever
+    ETHWrappedTransactionsResponse = 11;
+    ETHWrappedCreateContractResponse = 12;
+    ADAProofOfReserveResponse = 13;
+    FTMTransactionsResponse = 14;
+    ETHSignTextResponse = 15;
+    PolygonTransactionsResponse = 16;
+    PolygonWrappedTransactionsResponse = 17;
+    PolygonWrappedCreateContractResponse = 18;
+    PolygonSignTextResponse = 19;
+    AvaxCChainTransactionsResponse = 20;
+    AvaxCChainWrappedTransactionsResponse = 21;
+    AvaxCChainWrappedCreateContractResponse = 22;
+    AvaxCChainSignTextResponse = 23;
+    BTCSignTextResponse = 24;
+    ICPRequestsResponse = 25;
+    ICPAddressResponse = 26;
+    MonitoringResponse = 27;
+    SonicTransactionsResponse = 28;
+    FilecoinTransactionsResponse = 29;
+    TRONTransactionsResponse = 30;
+    CantonAddressResponse = 31;
+  }
+  Status status = 2;
+  PayloadType payloadType = 3;
+  bytes payload = 4;
+}
+
+message MonitoringResponse {
+  string payload = 1; // json payload: {"serial_number": "XXXX", "fm_version": "vX.X.X", "fm_commit": "abcdef", "rules_timestamp": 123456}
+  string signature = 2; //b64_encode of ECDSA-SHA256 over P256 of payload
+}
+
+message ProofOfReserveResponse {
+  enum Curve {
+    Secp256k1 = 0;
+    Ed25519 = 1;
+    Secp256r1 = 2;
+    Pallas = 3;
+  }
+  Curve curve = 1;
+  enum Cipher {
+    ECDSA_SHA256 = 0;
+    ECDSA_SHA512 = 1;
+    EDDSA = 2;
+    Schnorr = 3;
+  }
+  Cipher cipher = 2;
+  string address = 3;
+  string path = 4;
+  bytes publicKey = 5; // public key for the curve. For p256 x::y, for ed25519, 32byte pubkey.
+  string challenge = 6;
+  bytes challengeResponse = 7;
+}
+
+message TransactionsResponse {
+  message Transaction {
+    string id = 1;
+    string transaction = 2;
+  }
+  repeated Transaction transactions = 1;
+}
+
+//////////////////////////////
+//
+// Request
+//
+/////////
+
+
+message SourceInternalWallet {
+  uint64 id = 1;
+  string name = 2;
+  string path = 3;
+}
+
+message SourceInternalAddress {
+  uint64 id = 1;
+  string address = 2;
+  string label = 3;
+  string path = 4;
+}
+
+message SourceExchange {
+  uint64 id = 1;
+  string label = 2;
+}
+
+message SourceFiatProviderAccount {
+  string id = 1;
+  string label = 2;
+  string accountType = 3; // e.g. "wallet", "bank" etc.
+  bool isCounterparty = 4; // true if this is a counterparty account, false if this is a provider account
+}
+
+// this message is used when there are actions we need to approve coming from an external address
+// for example approving an incoming TnPledge (action AcceptPledge)
+message SourceExternalAddress {
+  uint64 id = 1; // wl address id
+  string address = 2;
+  string label = 3;
+  string memo = 4;
+}
+
+message Source {
+
+  // 1:1 mapping between enum and payload
+  enum SourceType {
+    SourceInternalWallet = 0; // payload  is "SourceInternalWallet"
+    SourceInternalAddress = 1; // payload is "SourceInternalAddress"
+    SourceExchange = 2; // payload is "SourceExchange"
+    SourceExternalAddress = 3; // payload is "SourceExternalAddress"
+    SourceFiatProviderAccount = 4; // payload is "SourceFiatProviderAccount"
+  }
+
+  SourceType type = 1;
+  bytes payload = 2;
+}
+
+message DestinationInternalAddress {
+  uint64 id = 1;
+  string address = 2;
+  string label = 3;
+  string path = 4;
+}
+
+message DestinationExternalAddress {
+  uint64 id = 1;
+  string address = 2;
+  string label = 3;
+  string memo = 4;
+}
+
+message DestinationExchangeAddress {
+  uint64 id = 1;
+  string address = 2;
+  string label = 3;
+  uint64 exchangeAccountId = 4;
+  string exchangeAccountLabel = 5;
+  string memo = 6;
+}
+
+message DestinationFiatProviderAccount {
+  string id = 1;
+  string label = 2;
+  string accountType = 3; // e.g. "wallet", "bank" etc.
+  bool isCounterparty = 4; // true if this is a counterparty account, false if this is a provider account
+}
+
+message DestinationContractAddress {
+  uint64 id = 1;
+  string address = 2;
+  string name = 3;
+  string symbol = 4;
+  Blockchain blockchain = 5;
+}
+
+message Destination {
+
+  // 1:1 mapping between enum and payload
+  enum DestinationType {
+    DestinationInternalAddress = 0; // payload is "DestinationInternalAddress"
+    DestinationExternalAddress = 1; // payload is "DestinationExternalAddress"
+    DestinationExchangeAddress = 2; // Payload is "DestinationExchangeAddress"
+    DestinationContractAddress = 3; // Payload is "DestinationContractAddress"
+    DestinationFiatProviderAccount = 4; // Payload is "DestinationFiatProviderAccount"
+  }
+
+  DestinationType type = 1;
+  bytes payload = 2;
+}
+
+message WhitelistedContractAddressArray {
+  repeated DestinationContractAddress addresses = 1;
+}
+
+// Contains the common metadata of every blockchain transaction type
+message RequestMetadata {
+
+  enum MetadataType {
+    Bytes = 0;
+    String = 1;
+    BigInt = 2;
+    BigIntArray = 3;
+    Source = 4;
+    Destination = 5;
+    StringArray = 6;
+    Tuple = 7;
+    Array = 8;
+    BytesArray = 9;
+    Amount = 10;
+    SignedBigInt = 11;
+    Operation = 12;
+    BytesHash = 13;
+    WhitelistedContractAddress = 14;
+    WhitelistedContractAddressArray = 15;
+  }
+
+  message ArrayElems {
+    MetadataType type = 1;
+    repeated bytes value = 2;
+  }
+
+  message TupleElems {
+    message Elem {
+      MetadataType type = 1;
+      bytes value = 2;
+    }
+    repeated Elem elems = 1;
+  }
+
+  message XOperation {
+    string operation = 1;
+    message Arg {
+      MetadataType type = 1;
+      bytes value = 2;
+    }
+    repeated Arg arguments = 2;
+  }
+
+  string key = 1; // Keys used for tx validation ("from", "to", "amount"...)
+  MetadataType type = 2;
+  bytes value = 3; // serialized message of type "MetadataType" (i.e., Source, Destination, etc)
+  string column = 4;
+  bool __deprecated__secondaryCommit = 5; // metadata must be commited by a second party
+}
+
+message SignedBigInt {
+  bool negative = 1;
+  bytes payload = 2;
+}
+
+message BytesArray {
+  repeated bytes payload = 1;
+}
+
+message BigIntArray {
+  repeated bytes payload = 1;
+}
+
+message StringArray {
+  repeated string payload = 1;
+}
+
+message Amount {
+  bytes valueFrom = 1;
+  string valueTo = 2;
+  string rate = 3;
+  uint32 decimals = 4;
+  string currencyFrom = 5;
+  string currencyTo = 6;
+  repeated UserSignature signatures = 7; // signatures of the sha256 hash of a json serialized string ({"blockchain":"ETH","currencyFrom":"BNB","currencyTo":"CHF","decimals":"18", "rate":"123.1000"}) by user with the role "priceupdater"
+}
+
+enum Blockchain {
+  None = 0;
+  BTC = 1;
+  BCH = 2;
+  LTC = 3;
+  // BSV = 4;  // keep this line to show that this field is reserved forever
+  ETH = 5; // ERC-20 token are part of ETH
+  XLM = 6;
+  XRP = 7;
+  // NEO = 8;   // keep this line to show that this field is reserved forever
+  // GRAM = 9;  // keep this line to show that this field is reserved forever
+  // ETC = 10;  // keep this line to show that this field is reserved forever
+  XTZ = 11;
+  // Diem = 12; // keep this line to show that this field is reserved forever
+  ADA = 13;
+  DOT = 14;
+  FTM = 15;
+  ALGO = 16;
+  SOL = 17;
+  Cosmos = 18;
+  Polygon = 19;
+  NEAR = 20;
+  AvalancheC = 21;
+  ICP = 22;
+  TAO = 23; // Bittensor
+  DOGE = 24;
+  Hedera = 25;
+  Sonic = 26;
+  Mina = 27;
+  Filecoin = 28;
+  TRON = 29;
+  // ...
+  Canton = 30;
+}
+
+
+message UserSignatures {
+  repeated UserSignature signatures = 1;
+}
+
+message UserSignature {
+  string userId = 1;
+  bytes signature = 2;
+  string comment = 3;
+}
+
+message SignedRequestsEnvelope {
+  string id = 1;
+  UserSignature payloadSignature = 2; // payload is signed by the core
+  bytes payload = 3; // contains a serialized "RequestsEnvelope"
+
+  // If this field is set, all fields with index under 1000 must be absent.
+  // This lets us keep deserialization simple, and backwards-compatible
+  EncryptedSignedRequestsEnvelope encryptedPayload = 1000;
+  // Always sent in cleartext, not contained within the encrypted container
+  bool enableTracing = 1001;
+}
+
+message EncryptedSignedRequestsEnvelope {
+  uint32 tenant = 1; // Must match the tenant inside the payload
+  bytes iv = 2;
+  bytes ciphertext = 3; // decrypts to a packed SignedRequestsEnvelope
+  // Uncompressed 65 bytes (0x04::x::y) "public key" format
+  bytes ecPoint = 4;
+  bytes mac = 5; // hmac-sha256(key,ciphertext)
+}
+
+message RequestsEnvelope {
+  uint64 ts = 1;
+  uint32 slot = 2; // HSM slot
+  repeated UserSignature rulesSignatures = 3; // HSM has N admin public keys and a signature threshold M for admins loaded during key ceremony. HSM must check that at least M signatures are correct
+  bytes rules = 4; // contains a serialized "RulesContainer" message
+  repeated RequestEnvelope requests = 5;
+}
+
+// This message is used for routing to the right cylinder
+message RequestEnvelope {
+
+  enum Network {
+    Mainnet = 0;
+    Testnet = 1;
+  }
+
+  // 1:1 mapping between PayloadType and serialized Message, update envelope deserialization when updating
+  enum PayloadType {
+    TransactionRequest = 0;
+    HMACRequest = 1;
+    BTCAddressRequest = 3;
+    BCHAddressRequest = 4;
+    LTCAddressRequest = 5;
+    // BSVAddressRequest = 6;    // keep this line to show that this field is reserved forever
+    XLMAddressRequest = 7;
+    XRPAddressRequest = 8;
+    ETHAddressRequest = 9;
+    // ETCAddressRequest = 10;   // keep this line to show that this field is reserved forever
+    // NEOAddressRequest = 11;   // keep this line to show that this field is reserved forever
+    // GRAMAddressRequest = 12;  // keep this line to show that this field is reserved forever
+    BTCProofOfReserveRequest = 13;
+    BCHProofOfReserveRequest = 14;
+    LTCProofOfReserveRequest = 15;
+    // BSVProofOfReserveRequest = 16;   // keep this line to show that this field is reserved forever
+    XLMProofOfReserveRequest = 17;
+    XRPProofOfReserveRequest = 18;
+    ETHProofOfReserveRequest = 19;
+    // ETCProofOfReserveRequest = 20;   // keep this line to show that this field is reserved forever
+    // NEOProofOfReserveRequest = 21;   // keep this line to show that this field is reserved forever
+    // GRAMProofOfReserveRequest = 22;  // keep this line to show that this field is reserved forever
+    XTZAddressRequest = 23;
+    XTZProofOfReserveRequest = 24;
+    XTZRevealRequest = 25;
+    // DiemAddressRequest = 26;        // keep this line to show that this field is reserved forever
+    // DiemProofOfReserveRequest = 27; // keep this line to show that this field is reserved forever
+    // DiemJWTRequest = 28;            // keep this line to show that this field is reserved forever
+    ADAAddressRequest = 29;
+    ADAProofOfReserveRequest = 30;
+    NoSignatureNeededRequest = 31;
+    DOTAddressRequest = 32;
+    DOTProofOfReserveRequest = 33;
+    FTMAddressRequest = 34;
+    FTMProofOfReserveRequest = 35;
+    ALGOAddressRequest = 36;
+    ALGOProofOfReserveRequest = 37;
+    SOLAddressRequest = 38;
+    SOLProofOfReserveRequest = 39;
+    CosmosAddressRequest = 40;
+    CosmosProofOfReserveRequest = 41;
+    ETHSignTextRequest = 42;
+    PolygonAddressRequest = 43;
+    PolygonProofOfReserveRequest = 44;
+    PolygonSignTextRequest = 45;
+    BundleTransactionRequest = 46;
+    NEARAddressRequest = 47;
+    NEARProofOfReserveRequest = 48;
+    AvaxCChainAddressRequest = 49;
+    AvaxCChainProofOfReserveRequest = 50;
+    AvaxCChainSignTextRequest = 51;
+    BTCSignTextRequest = 52;
+    ICPAddressRequest = 53;
+    ICPProofOfReserveRequest = 54;
+    ICPClaimOrRefreshRequest = 55;
+    ICPSetAutoStakeRewardsRequest = 56;
+    ICPSpawnRequest = 57;
+    ICPDisburseToPrimaryRequest = 58;
+    ICPListNeuronsRequests = 59;
+    TnPledgeActionRequest = 60;
+    MonitoringRequest = 61;
+    TAOAddressRequest = 62;
+    TAOProofOfReserveRequest = 63;
+    DOGEAddressRequest = 64;
+    DOGEProofOfReserveRequest = 65;
+    HederaProofOfReserveRequest = 66;
+    HederaAddressRequest = 67;
+    SonicAddressRequest = 68;
+    SonicProofOfReserveRequest = 69;
+    ICPRefreshVotingPowerRequest = 70;
+    MinaProofOfReserveRequest = 71;
+    MinaAddressRequest = 72;
+    FilecoinAddressRequest = 73;
+    FilecoinProofOfReserveRequest = 74;
+    TRONProofOfReserveRequest = 75;
+    TRONAddressRequest = 76;
+    ICPDisburseMaturityToPrimaryRequest = 77;
+    // ...
+    CantonAddressRequest = 78;
+    CantonProofOfReserveRequest = 79;
+    CantonCreateTransferPreapprovalProposal = 80;
+    SOLCleanupDerivedAccountRequest = 81;
+  }
+
+  string id = 1;
+  uint64 ts = 2;
+  Blockchain blockchain = 3;
+  PayloadType payloadType = 4;
+  bytes payload = 5; // contains a serialized  "Request" message: e.g. TransactionRequest, BTCAddressRequest, HMACRequest, etc.
+  Network network = 6;
+  string networkId = 7;
+}
+
+message RequestSignature {
+  UserSignature signature = 1;
+  repeated string hashes = 2;
+}
+
+message HMACRequest {
+  // 1:1 mapping between PayloadType and serialized Message
+  enum HMACType {
+    HMACSHA256 = 0;
+    HMACSHA384 = 1;
+    HMACSHA512 = 2;
+  }
+  HMACType type = 1;
+  string label = 2; // secret's label
+  bytes payload = 3; // contains the payload to be HMACed
+  repeated RequestSignature signatures = 4;
+  repeated RequestMetadata metadata = 5;
+}
+
+// TODO: Maybe better to have dedicated requests ? (message CoinbaseCustodyWithdrawalRequest, SignetXXRequest ...)
+message NoSignatureNeededRequest {
+  enum RequestType {
+    CoinbaseCustodyWithdrawal = 0;
+    SignetRedeem = 1;
+    SignetDeposit = 2;
+    SignetSend = 3;
+    WoortonWithdrawal = 4;
+    ETHStakingExit = 5;
+    FiatProviderDeposit = 6;
+    FiatProviderWithdrawal = 7;
+    FiatProviderTransfer = 8;
+  }
+  RequestType type = 1;
+  repeated RequestSignature signatures = 2;
+  repeated RequestMetadata metadata = 3;
+}
+
+message Commitment {
+  tp_messages.CommitmentKind kind = 1;
+  bytes commitment = 2;
+  bytes intent = 3;
+  // Signatures are over the sha256(<commitment_type>::sha256(commitment_bytes)::<metadata_hash>)
+  // where commitment type is the string representation of the name of the commitment message in protobuf
+  // This is meant to prevent passing off one type of commitment as another.
+  repeated UserSignature signatures = 4;
+}
+
+message TnPledgeActionRequest {
+  enum PledgeAction {
+    CreatePledge = 0;
+    AcceptPledge = 1;
+    Unpledge = 2;
+    AddCollateral = 3;
+    WithdrawPledge = 4;
+    InitiateWithdrawPledge = 5;
+  }
+  PledgeAction action = 1;
+  repeated RequestSignature signatures = 2;
+  repeated RequestMetadata metadata = 3;
+}
+
+message MonitoringRequest {}
+
+message TransactionRequest {
+  // 1:1 mapping between PayloadType and serialized Message, update envelope deserialization when updating
+  // Must end with "Request"
+  enum PayloadType {
+    BTCTransactionRequest = 0;
+    BCHTransactionRequest = 1;
+    LTCTransactionRequest = 2;
+    // BSVTransactionRequest = 3; // keep this line to show that this field is reserved forever
+    // NEOPaymentRequest = 4;     // keep this line to show that this field is reserved forever
+    // NEOClaimRequest = 5;       // keep this line to show that this field is reserved forever
+    XLMPaymentsRequest = 6;
+    XRPPaymentsRequest = 8;
+    ETHTransactionsRequest = 9;
+    // ETCTransactionsRequest = 10;  // keep this line to show that this field is reserved forever
+    // GRAMTransfersRequest = 11;    // keep this line to show that this field is reserved forever
+    // GRAMNewStakeRequest = 12;     // keep this line to show that this field is reserved forever
+    // GRAMRecoverStakeRequest = 13; // keep this line to show that this field is reserved forever
+    XTZTransactionsRequest = 14;
+    XTZDelegationsRequest = 15;
+    ETHCreateContractRequest = 16;
+    XTZBlockHeaderRequest = 17;
+    // DiemTransfersRequest = 18;       // keep this line to show that this field is reserved forever
+    // DiemAuthKeyRotationRequest = 19; // keep this line to show that this field is reserved forever
+    // DiemPreburnRequest = 20;         // keep this line to show that this field is reserved forever
+    // DiemPremintRequest = 21;         // keep this line to show that this field is reserved forever
+    XTZFA12TransfersRequest = 22;
+    XTZFA2TransfersRequest = 23;
+    ETHWrappedTransactionsRequest = 24;
+    ETHWrappedCreateContractRequest = 25;
+    ADATransactionRequest = 26;
+    ADADelegationRequest = 27;
+    ADAUndelegationRequest = 28;
+    ADAWithdrawalRequest = 29;
+    XTZCreateContractRequest = 30;
+    DOTTransactionsRequest = 31;
+    DOTBondRequest = 32;
+    DOTBondExtraRequest = 33;
+    DOTChillRequest = 34;
+    DOTUnbondRequest = 35;
+    DOTNominateRequest = 36;
+    DOTWithdrawUnbondedRequest = 37;
+    DOTPayoutStakersRequest = 38;
+    FTMTransactionsRequest = 39;
+    FTMStakingDelegateRequest = 40;
+    FTMStakingClaimRewardsRequest = 41;
+    FTMStakingLockRequest = 42;
+    ALGOTransactionsRequest = 43;
+    ALGOAssetOptinRequest = 44;
+    ALGOAssetTransferRequest = 45;
+    SOLTransfersRequest = 46;
+    // SOLCreateStakeAddressRequest = 47; // keep this line to show that this field is reserved forever
+    SOLDelegateStakeRequest = 48;
+    SOLDeactivateStakeRequest = 49;
+    SOLWithdrawStakeRequest = 50;
+    // SOLTransferToStakeRequest = 51; // keep this line to show that this field is reserved forever
+    CosmosGenericCallRequest = 52;
+    CosmosCancelRequest = 53;
+    PolygonTransactionsRequest = 54;
+    PolygonCreateContractRequest = 55;
+    PolygonWrappedTransactionsRequest = 56;
+    PolygonWrappedCreateContractRequest = 57;
+    NEARTransactionsRequest = 58;
+    AvaxCChainTransactionsRequest = 59;
+    AvaxCChainCreateContractRequest = 60;
+    AvaxCChainWrappedTransactionsRequest = 61;
+    AvaxCChainWrappedCreateContractRequest = 62;
+    NEARDepositAndStakeRequest = 63;
+    NEARUnstakeRequest = 64;
+    NEARWithdrawRequest = 65;
+    XLMChangeTrustRequest = 66;
+    ICPTransferRequest = 67;
+    XLMSetOptionsRequest = 68;
+    XLMSetTrustlineFLagsRequest = 69;
+    XLMManageDataRequest = 70;
+    ICPTransferToStakeRequest = 71;
+    ICPFollowRequest = 72;
+    ICPSetDissolveDelayRequest = 73;
+    ICPStartDissolvingRequest = 74;
+    ICPDisburseRequest = 75;
+    XLMCreateClaimableBalanceRequest = 76;
+    XLMClaimClaimableBalanceRequest = 77;
+    XLMClawbackClaimableBalanceRequest = 78;
+    XLMRevokeSponsorshipRequest = 79;
+    XLMClawbackRequest = 80;
+    XLMMintAssetRequest = 81;
+    XLMLiquidityPoolDepositRequest = 82;
+    XLMLiquidityPoolWithdrawRequest = 83;
+    XLMPathPaymentSendRequest = 84;
+    XLMPathPaymentReceiveRequest = 85;
+    XLMOfferRequest = 86;
+    ICPICRC1TransferRequest = 87;
+    SOLTokenTransfersRequest = 88;
+    SOLTokenCreateRequest = 89;
+    SOLTokenMintRequest = 90;
+    SOLTokenBurnRequest = 91;
+    TAOTransactionsRequest = 92;
+    TAOAddStakeRequest = 93;
+    TAORemoveStakeRequest = 94;
+    XTZStakeRequest = 95;
+    XTZUnstakeRequest = 96;
+    XTZFinalizeUnstakeRequest = 97;
+    DOGETransactionRequest = 98;
+    HederaTransactionsRequest = 99;
+    SonicTransactionsRequest = 100;
+    SonicStakingDelegateRequest = 101;
+    SonicStakingClaimRewardsRequest = 102;
+    MinaPaymentsRequest = 103;
+    MinaDelegationRequest = 104;
+    FilecoinTransactionsRequest = 105;
+    ADAVoteDelegationRequest = 106;
+    SOLPartialDeactivateStakeRequest = 107;
+    SOLMergeStakeRequest = 108;
+    TRONTransactionsRequest = 109;
+    SOLTokenFreezeAccountRequest = 110;
+    ICPDisburseMaturityToPrimary = 111;
+    CantonTransactionsRequest = 112;
+  }
+
+  PayloadType payloadType = 1;
+  bytes payload = 2; // contains a serialized blockchain specific message, like "BTCTransactionRequest", "XLMPaymentsRequest"
+  repeated RequestSignature signatures = 3; // In order to verify the signatures, the payload has to be decoded to find the proper keys set based on the address or the wallet from the rules
+  repeated RequestMetadata metadata = 4;
+  Commitment commitment = 8;
+}
+
+// A Bundle Transaction is a single blockchain transaction that satisfies all the TransactionRequests
+// They are used to reduce chain fees and wait times
+// Instead of passing signatures per request, signatures are combined and passed at the top level.
+message BundleTransactionRequest {
+  string id = 1;
+  repeated TransactionRequest bundle = 2;
+  repeated RequestSignature signatures = 3;
+}
+
+message AddressResponse {
+  string address = 1;
+  bytes signature = 2;
+}
+
+//////////
+//
+// Canton
+//
+//////////
+
+message CantonAddressRequest {
+  string prefix = 1;
+  string path = 2;
+  string forParticipantID = 3;
+}
+
+message CantonAddressResponse {
+  string party = 1;
+  bytes partySignature = 2;
+  bytes signedTopologyTransactions = 3;
+}
+
+message CantonTransaction {
+  string id = 1;
+  string source = 2;
+  string partyPrefix = 3;
+  bytes preparedSubmission = 4;
+
+  // Fields not used by the engine, reserved for validator
+  bytes choiceArguments = 1000; // A marshalled "Value"
+  string commandID = 1001;
+  string party = 1002;
+}
+
+message CantonTransactionsRequest {
+  enum CantonOperationKind {
+    Unknown = 0;
+    CreateTransferPreapprovalProposal = 1;
+    CantonCoinTransfers = 2;
+  }
+  CantonOperationKind kind = 1;
+  repeated CantonTransaction transactions = 2;
+}
+
+message CantonProofOfReserveRequest {
+  string path = 1;
+  string prefix = 2;
+  string challenge = 3;
+}
+
+//////////
+//
+// ICP
+//
+//////////
+
+message ICPAddressResponse {
+  string accountIdentifier = 1;
+  bytes accountIdentifierSignature = 2;
+  string principal = 3;
+  string subAccount = 4;
+}
+
+message ICPProofOfReserveRequest {
+  string path = 1;
+  string challenge = 2;
+}
+
+message ICPAddressRequest {
+  string path = 1;
+}
+
+message ICPRequestsRequest {
+  repeated ICPRequest requests = 1;
+}
+
+message ICPRequestsResponse {
+  message ICPRequestResponse {
+    string id = 1;
+    string operationRequest = 2;
+    string statusRequest = 3;
+  }
+  repeated ICPRequestResponse requests = 1;
+}
+
+message ICPTransfer {
+  string from = 1;
+  string to = 2;
+  uint64 amount = 3;
+  uint64 fee = 4;
+  uint64 memo = 5;
+  uint64 createdAtTime = 6;
+}
+
+message ICPTransferToStake {
+  string from = 1;
+  uint64 amount = 2;
+  uint64 fee = 3;
+  uint64 memo = 4;
+  uint64 createdAtTime = 5;
+}
+
+message ICPFollow {
+  string from = 1;
+  repeated uint64 followees = 2;
+  uint64 topic = 3;
+}
+
+message ICPClaimOrRefresh {
+  string from = 1;
+}
+
+message ICPSetAutoStakeRewards {
+  string from = 1;
+}
+
+message ICPSetDissolveDelay {
+  string from = 1;
+  uint64 nowTimestampSeconds = 2;
+  uint64 delayTimestampSeconds = 3;
+}
+
+message ICPSpawn {
+  string from = 1;
+  uint64 nonce = 2;
+}
+
+message ICPDisburseToPrimary {
+  string from = 1;
+  uint64 nonce = 2;
+  uint64 amount = 3;
+}
+
+message ICPStartDissolving {
+  string from = 1;
+}
+
+message ICPDisburse {
+  string from = 1;
+  uint64 amount = 2;
+}
+
+message ICPListNeurons {
+  string from = 1;
+}
+
+message ICPRefreshVotingPower {
+  string from = 1;
+}
+
+message ICPDisburseMaturityToPrimary {
+  string from = 1;
+}
+
+message ICRC1Transfer {
+  /*
+  type TransferArgs = record {
+      from_subaccount : opt Subaccount; // type Subaccount = blob
+      to : Account; // type Account = record { owner : principal; subaccount : opt Subaccount; };
+      amount : nat;
+      fee : opt nat;
+      memo : opt blob;
+      created_at_time : opt nat64;
+  };
+  */
+
+  string to = 1; // Example: "k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae-dfxgiyy.102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20 or k2t6j-2nvnp-4zjm3-25dtz-6xhaa-c7boj-5gayf-oj3xs-i43lp-teztq-6ae"
+  uint64 amount = 2;
+  uint64 fee = 3;
+  string memo = 4;
+  uint64 createdAtTime = 5;
+
+  bytes natAmount = 6;
+  bytes natFee = 7;
+}
+
+message ICPRequest {
+  string id = 1;
+  string sender = 2;
+  bytes nonce = 3;
+  uint64 ingressExpiry = 4;
+  string canisterId = 5;
+
+  enum ICPRequestKind {
+    None = 0;
+
+    // ICP (native) tokens transfer
+    Transfer = 1;
+
+    // Staking
+    TransferToStake = 2;        // Transfer to the main neuron controlled by the from address
+    ClaimOrRefresh = 3;         // Claim or refresh neuron (basically tell the governance canister to ask the ledger canister about the neuron balance etc.)
+    SetAutoStakeRewards = 4;    // Set auto_stake_rewards to true
+    Follow = 5;                 // Follow a neuron
+    SetDissolveDelay = 6;       // Set the dissolve delay of the main neuron
+    StartDissolving = 7;        // Dissolve the main neuron
+    Spawn = 8;                  // Spawn a new neuron from the main one (mint the maturity on the ledger)
+    DisburseToPrimary = 9;      // Disburse a secondary neuron to the main neuron
+    Disburse = 10;              // Disburse the main neuron (send ICP tokens from the neuron to the address)
+    ListNeurons = 11;           // Query the neurons controlled by the "from" address
+
+    // ICRC1
+    ICRC1Transfer = 12;         // Invoke the `icrc1_transfer` method of ICRC1 canisters
+
+    RefreshVotingPower = 13;    // Keep the neuron "alive" (ping)
+
+    DisburseMaturityToPrimary = 14;  // Disburse the maturity of the main neuron (mint ICP tokens to the address of the main neuron)
+  }
+
+  ICPRequestKind kind = 6;
+  bytes payload = 7;
+
+  // -- Deprecate/remove it when proto support is fully removed from their network
+  // Useful for staking only
+  // This as been added in case we're updating the HSM before validatord, we need to return proto by default
+  bool encodeAsCandid = 8;
+}
+
+
+//////////
+//
+// NEAR
+//
+//////////
+
+message NEARProofOfReserveRequest {
+  string path = 1;
+  string challenge = 2;
+}
+
+message NEARAddressRequest {
+  string path = 1;
+}
+
+message NEARTransactionsRequest {
+  repeated NEARTransaction transactions = 1;
+}
+
+message NEARTransaction {
+  string id = 1;
+  string from = 2;
+  uint64 nonce = 3;
+  string to = 4;
+  string blockHash = 5;
+  bytes amount = 6;
+  bool isNonceSet = 7;
+}
+
+message NEARDepositAndStakeRequest {
+  string id = 1;
+  string from = 2;
+  uint64 nonce = 3;
+  string to = 4;
+  string blockHash = 5;
+
+  bytes amount = 6;
+  uint64 gas = 7;
+  bool isNonceSet = 8;
+}
+
+message NEARUnstakeRequest {
+  string id = 1;
+  string from = 2;
+  uint64 nonce = 3;
+  string to = 4;
+  string blockHash = 5;
+
+  bytes amount = 6;
+  uint64 gas = 7;
+  bool isNonceSet = 8;
+}
+
+message NEARWithdrawRequest {
+  string id = 1;
+  string from = 2;
+  uint64 nonce = 3;
+  string to = 4;
+  string blockHash = 5;
+
+  bytes amount = 6;
+  uint64 gas = 7;
+  bool isNonceSet = 8;
+}
+
+//////////
+//
+// ADA
+//
+//////////
+
+message ADAAddressRequest {
+  string path = 1;
+}
+
+message ADAInput {
+  string path = 1;
+  bytes hash = 2;
+  uint64 index = 3;
+  ADAValue value = 4;
+}
+
+message ADANativeAsset {
+  bytes name = 1;
+  uint64 amount = 2;
+}
+
+message ADAAssetPolicy {
+  bytes policyId = 1;
+  repeated ADANativeAsset assets = 2;
+}
+
+message ADAValue {
+  uint64 amount = 1;
+  repeated ADAAssetPolicy policies = 2;
+}
+
+message ADAOutput {
+  string address = 1;
+  ADAValue value = 2;
+}
+
+message ADAChangeOutput {
+  string path = 1;
+  ADAValue value = 2;
+}
+
+message ADAWithdrawal {
+  string path = 1;
+  uint64 amount = 2;
+}
+
+message ADATransactionRequest {
+  string id = 1;
+  repeated ADAInput inputs = 2;
+  repeated ADAOutput outputs = 3;
+  ADAChangeOutput changeOutput = 4;
+  uint64 ttl = 5;
+  uint64 fee = 6;
+}
+
+message ADAWithdrawalRequest {
+  string id = 1;
+  repeated ADAInput inputs = 2;
+  ADAWithdrawal withdrawal = 3;
+  ADAChangeOutput changeOutput = 4;
+  uint64 ttl = 5;
+  uint64 fee = 6;
+}
+
+message ADADrep {
+  enum DRepType {
+    Abstain = 0;
+    NoConfidence = 1;
+    DrepId = 2;     // Key Hash or script hash
+  }
+  DRepType drepType = 1;
+  string drep = 2; // CIP-0129 drepid to whom we are we delegating votes to, empty for Abstain or NoConfidence types
+  // CIP-105 key hash drep ids are also supported
+}
+
+message ADADelegationRequest {
+  string id = 1;
+  repeated ADAInput inputs = 2;
+  ADAChangeOutput changeOutput = 3;
+  string delegate = 4; // who are we delegating to
+  bool first = 5; // should we include a stake_registration?
+  uint64 ttl = 6;
+  uint64 fee = 7;
+  bytes stakePoolRegistrationCertificate = 8;
+
+  uint64 keyDeposit = 9;   // Deposit amount for stake registration if included (2025-currently 2 ADA but can change in later protocols)
+  ADADrep drep = 10;       // If set we include a drep vote delegation as well
+}
+
+message ADAUndelegationRequest {
+  string id = 1;
+  repeated ADAInput inputs = 2;
+  ADAChangeOutput changeOutput = 3;
+  ADAWithdrawal withdrawal = 4;
+  uint64 ttl = 5;
+  uint64 fee = 6;
+  uint64 keyDeposit = 7;   // Deposit amount refunded by stake deregistration
+}
+
+message ADAVoteDelegationRequest {
+  string id = 1;
+  repeated ADAInput inputs = 2;
+  ADAChangeOutput changeOutput = 3;
+  ADADrep drep = 4;
+  uint64 ttl = 5;
+  uint64 fee = 6;
+}
+
+message ADAProofOfReserveRequest {
+  string path = 1;
+  string challenge = 2;
+}
+
+message ADAProofOfReserveResponse {
+  string address = 3;
+  string path = 4;
+  string challenge = 5;
+  bytes paymentPublicKey = 6; // public key for the curve. For p256 x::y, for ed25519, 32byte pubkey.
+  bytes paymentChallengeResponse = 7;
+  bytes stakePublicKey = 8; // public key for the curve. For p256 x::y, for ed25519, 32byte pubkey.
+  bytes stakeChallengeResponse = 9;
+}
+
+//////////
+//
+// XLM
+//
+/////////
+
+message XLMAsset {
+  enum AssetType {
+    Native = 0;
+    Alphanum4 = 1;
+    Alphanum12 = 2;
+    PoolShare = 3;
+  }
+  message Alphanum {
+    string assetID = 1;
+    string issuer = 2;
+  }
+  message LiquidityPoolParams {// ConstantProductParams on Stellar XDR
+    XLMAsset assetA = 1;
+    XLMAsset assetB = 2;
+    int32 fee = 3; // Fee is in basis points, so the actual rate is (fee/100)%. Example fee = 1 is 0.01%
+  }
+  AssetType type = 1;
+  Alphanum alphanum = 2;
+  LiquidityPoolParams pool = 3;
+}
+
+message XLMLedgerEntry {
+  enum LedgerEntryType {
+    TypeAccount = 0;
+    TypeTrustline = 1;
+    TypeOffer = 2;
+    TypeData = 3;
+    TypeClaimableBalance = 4;
+  }
+
+  LedgerEntryType type = 1;
+
+  string account = 2;
+  XLMAsset asset = 3;
+  int64 offerId = 4;
+  string dataName = 5;
+  bytes claimableBalanceID = 6;
+
+}
+
+message XLMTransactionDetails {
+  string id = 1;
+  string from = 2;
+  uint64 fee = 3;
+  uint64 minimumTime = 4;
+  uint64 maximumTime = 5;
+  string memo = 6;
+  uint64 sequence = 7;
+  bool isSequenceSet = 8;
+  string sponsoredBy = 9; // path of internal address sponsoring `from` account base reserve cost for the underlying operation
+}
+
+message XLMMintAssetRequest {
+  XLMTransactionDetails details = 1;
+  string asset_id = 2;
+  uint64 amount = 3;
+  string destination = 4;
+}
+
+message XLMChangeTrustRequest {
+  XLMTransactionDetails details = 1;
+  XLMAsset asset = 2;
+  uint64 limit = 3;
+}
+
+message XLMSetTrustlineFlagsRequest{
+  XLMTransactionDetails details = 1;
+  string trustor = 2;
+  XLMAsset asset = 3;
+  uint32 setFlags = 4;
+  uint32 clearFlags = 5;
+}
+
+
+message XLMPaymentsRequest {
+  repeated XLMPayment payments = 1;
+}
+
+message XLMPayment {
+  enum Operation {
+    Payment = 0;
+    CreateAccount = 1;
+  }
+
+  string from = 1;
+  uint64 fee = 2;
+  uint64 minimumTime = 3;
+  uint64 maximumTime = 4;
+  string memo = 5; // Only MEMO_TEXT, ath most 28 characters
+  // Payment operation (at the moment the only asset is ASSET_TYPE_NATIVE)
+  string to = 6;
+  uint64 amount = 7;
+  uint64 sequence = 8;
+  string id = 9;
+  Operation operation = 10;
+  bool isSequenceSet = 11;
+  XLMAsset asset = 12;
+  string sponsoredBy = 13; // as in details
+}
+
+message XLMAddressRequest {
+  string path = 1; // BIP 44 path
+}
+
+message XLMProofOfReserveRequest {
+  string path = 1;
+  string challenge = 2;
+}
+
+message XLMSetOptionsRequest {
+  XLMTransactionDetails details = 1;
+
+  uint32 setFlags = 2;
+  uint32 clearFlags = 3;
+}
+
+message XLMManageDataRequest {
+  XLMTransactionDetails details = 1;
+
+  string name = 2;
+  bytes valueData = 4;
+}
+
+message XLMClaimPredicate{
+  enum ClaimPredicateType {
+
+    /*
+    We currently only support Unconditional, AbsBefore and RelBefore,
+    to keep validation as simple as possible
+    */
+
+    Unconditional = 0;
+    // And = 1;
+    // Or = 2;
+    // Not = 3;
+
+    AbsBefore = 4;
+    RelBefore = 5;
+  }
+
+  message PredicateUnconditional{
+    // void
+  }
+
+  //message PredicateAnd{
+  //    repeated XLMClaimPredicate andPredicates = 1;
+  //}
+
+  //message PredicateOr{
+  //    repeated XLMClaimPredicate orPredicates = 1;
+  //}
+
+  //message PredicateNot {
+  //    XLMClaimPredicate notPredicate = 1;
+  //}
+
+  message PredicateAbsBefore {
+    uint64 absBefore = 1;
+  }
+
+  message PredicateRelBefore {
+    uint64 relBefore = 1;
+  }
+
+  ClaimPredicateType type = 1;
+
+  oneof Predicate{
+    PredicateUnconditional predicateUnconditional = 2;
+    //PredicateAnd predicateAnd = 3;
+    //PredicateOr predicateOr = 4;
+    //PredicateNot predicateNot = 5;
+    PredicateAbsBefore predicateAbsBefore = 6;
+    PredicateRelBefore predicateRelBefore = 7;
+  }
+}
+
+message XLMClaimant{
+  message ClaimantV0{
+    string destination = 1;
+    XLMClaimPredicate claimPredicate = 2;
+  }
+
+  enum VersionKind{
+    kindV0 = 0;
+  }
+
+  VersionKind versionKind = 1;
+
+  oneof Version{
+    ClaimantV0 v0 = 2;
+  }
+}
+
+message XLMCreateClaimableBalanceRequest {
+  XLMTransactionDetails details = 1;
+
+  XLMAsset asset = 2;
+  uint64 amount = 3;
+  XLMClaimant claimant = 4;
+}
+
+message XLMClaimClaimableBalanceRequest{
+  XLMTransactionDetails details = 1;
+
+  bytes claimableBalanceID = 2;
+}
+
+message XLMClawbackClaimableBalanceRequest{
+  XLMTransactionDetails details = 1;
+
+  bytes claimableBalanceID = 2;
+}
+
+message XLMRevokeSponsorshipRequest{
+  XLMTransactionDetails details = 1;
+  XLMLedgerEntry entry = 2;
+}
+
+message XLMClawbackRequest {
+  XLMTransactionDetails details = 1;
+  string destination = 2;
+  XLMAsset asset = 3;
+  uint64 amount = 4;
+}
+
+message XLMPrice {
+  int32 numerator = 1;
+  int32 denominator = 2;
+}
+
+message XLMLiquidityPoolDepositRequest {
+  XLMTransactionDetails details = 1;
+  bytes poolID = 2;
+  int64 maxAmountA = 3; // maximum amount of first asset to deposit
+  int64 maxAmountB = 4;  // maximum amount of second asset to deposit
+  XLMPrice minPrice = 5;   // minimum depositA/depositB
+  XLMPrice maxPrice = 6;   // maximum depositA/depositB
+}
+
+message XLMLiquidityPoolWithdrawRequest {
+  XLMTransactionDetails details = 1;
+  bytes poolID = 2;
+  int64 amount = 3; // amount of shares to withdraw
+  int64 minAmountA = 5;
+  int64 minAmountB = 6;
+}
+
+message XLMPathPaymentSendRequest {
+  XLMTransactionDetails details = 1;
+  string destination = 2;
+  XLMAsset srcAsset = 3;
+  XLMAsset dstAsset = 4;
+  repeated XLMAsset path = 5;
+  uint64 srcAmount = 6;
+  uint64 minDstAmount = 7;
+}
+
+message XLMPathPaymentReceiveRequest {
+  XLMTransactionDetails details = 1;
+  string destination = 2;
+  XLMAsset srcAsset = 3;
+  XLMAsset dstAsset = 4;
+  repeated XLMAsset path = 5;
+  uint64 dstAmount = 6;
+  uint64 maxSrcAmount = 7;
+}
+
+message XLMOfferRequest {
+  XLMTransactionDetails details = 1;
+  XLMAsset sellAsset = 2;
+  XLMAsset buyAsset = 3;
+  uint64 amount = 4;
+  XLMPrice price = 5;
+  int64 offerId = 6;
+
+  enum OfferKind {
+    Buy = 0;
+    Sell = 1;
+    Passive = 2;
+  }
+  OfferKind kind = 7;
+}
+
+//////////
+//
+// XRP
+//
+/////////
+
+
+message XRPPaymentsRequest {
+  repeated XRPPayment payments = 1;
+}
+
+message XRPPayment{
+  string from = 1;
+  uint32 sequence = 2;
+  bytes destinationTag = 3;
+  bytes lastLedgerSequence = 4;
+  string to = 5;
+  uint64 fee = 6;
+  uint64 amount = 7;
+  string id = 8;
+  bool isSequenceSet = 9;
+}
+
+message XRPAddressRequest {
+  string path = 1;
+}
+
+message XRPProofOfReserveRequest {
+  string path = 1;
+  string challenge = 2;
+}
+
+//////////
+//
+// XTZ
+//
+/////////
+
+message XTZRevealRequest {
+  string id = 1;
+  string branch = 2;
+  string from = 3;
+  uint64 fee = 4;
+  bytes counter = 5;
+  bytes gasLimit = 6;
+}
+
+message XTZDelegationsRequest {
+  repeated XTZDelegation delegations = 1;
+}
+
+message XTZDelegation {
+  string id = 1;
+  string branch = 2;
+  string from = 3;
+  uint64 fee = 4;
+  bytes counter = 5;
+  bytes gasLimit = 6;
+  string delegate = 7;
+  bool isNonceSet = 8;
+}
+
+message XTZTransactionsRequest {
+  repeated XTZTransaction transactions = 1;
+}
+
+message XTZTransaction {
+  string id = 1;
+  string branch = 2;
+  string from = 3;
+  uint64 fee = 4;
+  bytes counter = 5;
+  bytes gasLimit = 6;
+  bytes storageLimit = 7;
+  uint64 amount = 8;
+  string to = 9;
+  bytes parameters = 10;
+  bool isNonceSet = 11;
+}
+
+message XTZFA12TransfersRequest {
+  repeated XTZFA12Transfer transfers = 1;
+}
+
+message XTZFA12Transfer {
+  string id = 1;
+  string branch = 2;
+  string from = 3;
+  uint64 fee = 4;
+  bytes counter = 5;
+  bytes gasLimit = 6;
+  bytes storageLimit = 7;
+  uint64 amount = 8;
+  string to = 9;
+  string contract = 10;
+  bool isNonceSet = 11;
+}
+
+message XTZFA2TransfersRequest {
+  repeated XTZFA2Transfer transfers = 1;
+}
+
+message XTZFA2Transfer {
+  string id = 1;
+  string branch = 2;
+  string from = 3;
+  uint64 fee = 4;
+  bytes counter = 5;
+  bytes gasLimit = 6;
+  bytes storageLimit = 7;
+  uint64 amount = 8;
+  string to = 9;
+  string contract = 10;
+  bytes tokenId = 11;
+  bool isNonceSet = 12;
+}
+
+message XTZCreateContractRequest {
+  string id = 1;
+  string branch = 2;
+  string from = 3;
+  uint64 fee = 4;
+  bytes counter = 5;
+  bytes gasLimit = 6;
+  bytes storageLimit = 7;
+  uint64 amount = 8;
+  string delegate = 9;
+  bytes code = 10;
+  bytes storage = 11;
+  bool isNonceSet = 12;
+}
+
+message XTZStakeRequest {
+  string id = 1;
+  string branch = 2;
+  string from = 3;
+  uint64 fee = 4;
+  bytes counter = 5;
+  bytes gasLimit = 6;
+  uint64 amount = 7;
+  bool isNonceSet = 8;
+}
+
+message XTZUnstakeRequest {
+  string id = 1;
+  string branch = 2;
+  string from = 3;
+  uint64 fee = 4;
+  bytes counter = 5;
+  bytes gasLimit = 6;
+  uint64 amount = 7;
+  bool isNonceSet = 8;
+}
+
+message XTZFinalizeUnstakeRequest {
+  string id = 1;
+  string branch = 2;
+  string from = 3;
+  uint64 fee = 4;
+  bytes counter = 5;
+  bytes gasLimit = 6;
+  bool isNonceSet = 7;
+}
+
+message XTZAddressRequest {
+  string path = 1;
+}
+
+message XTZProofOfReserveRequest {
+  string path = 1;
+  string challenge = 2;
+}
+
+message XTZBlockHeaderRequest {
+  string id = 1;
+  string path = 2;
+  bytes payload = 3;
+}
+
+//////////
+//
+// ETH
+//
+/////////
+
+message ETHTransactionsRequest {
+  repeated ETHTransaction transactions = 2;
+}
+
+message ETHTransaction {
+  string from = 1;
+  uint64 nonce = 2;
+  uint64 gasLimit = 3;
+  bytes gasPrice = 4;
+  string to = 5;
+  bytes amount = 6;
+  bytes payload = 7;
+  string id = 8;
+  bool isNonceSet = 9;
+  uint64 chainId = 10;
+}
+
+message ETHCreateContractRequest {
+  string from = 1;
+  uint64 nonce = 2;
+  uint64 gasLimit = 3;
+  bytes gasPrice = 4;
+  bytes amount = 5;
+  bytes payload = 6;
+  string id = 7;
+  bool isNonceSet = 8;
+  uint64 chainId = 9;
+}
+
+message ETHAddressRequest {
+  string path = 1; // BIP 44 path
+}
+
+message ETHProofOfReserveRequest {
+  string path = 1;
+  string challenge = 2;
+}
+
+message ETHTransactionsResponse {
+  message ETHTransactionResponse {
+    string id = 1;
+    string transaction = 2;
+    bytes publicKey = 3;
+  }
+  repeated ETHTransactionResponse transactions = 1;
+}
+
+message ETHSignTextRequest {
+  string id = 1;
+  string from = 2;
+  string message = 3;
+}
+
+message ETHSignTextResponse {
+  string id = 1;
+  bytes signature = 2; // r::s
+  bytes publicKey = 3;
+}
+
+//////////
+//
+// ETH_WRAPPED
+//
+/////////
+
+message ETHWrappedTransactionsRequest {
+  repeated ETHWrappedTransaction transactions = 1;
+}
+
+message ETHWrappedTransaction {
+  enum ForwarderKind {
+    GSNForwarderV2 = 0;
+    OpenZeppelinForwarder = 1;
+  }
+
+  bytes domainSeparator = 1;
+  bytes requestTypeHash = 2;
+  string from = 3;
+  string to = 4;
+  uint64 nonce = 5;
+  uint64 gasLimit = 6;
+  bytes payload = 7;
+  string id = 8;
+  bool isNonceSet = 9;
+  string forwarder = 10;
+  uint64 deadline = 11;
+  ForwarderKind forwarderKind = 12;
+}
+
+message ETHWrappedCreateContractRequest {
+  bytes domainSeparator = 1;
+  bytes requestTypeHash = 2;
+  string from = 3;
+  uint64 nonce = 4;
+  bytes payload = 5;
+  string id = 6;
+  bool isNonceSet = 7;
+  string creator = 8;
+}
+
+message ETHWrappedTransactionsResponse {
+  message ETHWrappedTransactionResponse {
+    string id = 1;
+    string transaction = 2;
+    bytes publicKey = 3;
+  }
+  repeated ETHWrappedTransactionResponse transactions = 1;
+}
+
+message ETHWrappedCreateContractResponse {
+  string id = 1;
+  string transaction = 2;
+  bytes publicKey = 3;
+}
+
+
+//////////
+//
+// BTC
+//
+/////////
+
+enum BTCAddressType {
+  BTC_P2PKH = 0;
+  BTC_P2SH_P2WPKH = 1;
+  BTC_P2WPKH = 2;
+}
+
+enum BTCSigHashType {
+  BTC_SIGHASH_ALL = 0;
+}
+
+message BTCInput {
+  string path = 1;
+  BTCAddressType addressType = 2;
+  bytes txHash = 3;
+  uint32 outputIndex = 4;
+  uint64 value = 5;
+  uint32 sequenceNumber = 6;
+}
+
+message BTCOutput {
+  string destination = 1;
+  uint64 amount = 2;
+}
+
+message BTCChangeOutput {
+  string path = 1; // A change address must be internal
+  BTCAddressType addressType = 2;
+  uint64 amount = 3;
+}
+
+message BTCTransactionRequest {
+  repeated BTCInput inputs = 1;
+  repeated BTCOutput outputs = 2;
+  repeated BTCChangeOutput changeOutputs = 3;
+  uint32 lockTime = 4; //
+  BTCSigHashType hashType = 5;
+  string id = 6;
+  uint32 size = 7;
+}
+
+message BTCAddressRequest {
+  string path = 1; // BIP 44 path
+  BTCAddressType addressType = 2; // P2PKH or P2SH-P2WPKH
+}
+
+message BTCProofOfReserveRequest {
+  string path = 1;
+  BTCAddressType addressType = 2; // P2PKH or P2SH-P2WPKH
+  string challenge = 3;
+}
+
+message BTCSignTextRequest {
+  string id = 1;
+  string from = 2; // BIP 44 path
+  string message = 3; // message to sign, without the "\x18Bitcoin Signed Message:\n" prefix
+}
+
+message BTCSignTextResponse {
+  string id = 1;
+  bytes signature = 2; // 64 bytes signature r::s
+  bytes publicKey = 3;
+}
+
+//////////
+//
+// LTC
+//
+/////////
+
+enum LTCAddressType {
+  LTC_P2PKH = 0;
+  LTC_P2SH_P2WPKH = 1;
+  LTC_P2WPKH = 2;
+}
+
+enum LTCSigHashType {
+  LTC_SIGHASH_ALL = 0;
+}
+
+message LTCInput {
+  string path = 1;
+  LTCAddressType addressType = 2;
+  bytes txHash = 3;
+  uint32 outputIndex = 4;
+  uint64 value = 5;
+  uint32 sequenceNumber = 6;
+}
+
+message LTCOutput {
+  string destination = 1;
+  uint64 amount = 2;
+}
+
+message LTCChangeOutput {
+  string path = 1; // A change address must be internal
+  LTCAddressType addressType = 2;
+  uint64 amount = 3;
+}
+
+message LTCTransactionRequest {
+  repeated LTCInput inputs = 1;
+  repeated LTCOutput outputs = 2;
+  repeated LTCChangeOutput changeOutputs = 3;
+  uint32 lockTime = 4; //
+  LTCSigHashType hashType = 5;
+  string id = 6;
+}
+
+message LTCAddressRequest {
+  string path = 1; // BIP 44 path
+  LTCAddressType addressType = 2; // P2PKH or P2SH-P2WPKH
+}
+
+message LTCProofOfReserveRequest {
+  string path = 1;
+  LTCAddressType addressType = 2; // P2PKH or P2SH-P2WPKH
+  string challenge = 3;
+}
+
+//////////
+//
+// BCH
+//
+/////////
+
+enum BCHAddressType {
+  BCH_P2PKH = 0;
+}
+
+enum BCHSigHashType {
+  BCH_SIGHASH_ALL = 0;
+}
+
+message BCHInput {
+  string path = 1;
+  BCHAddressType addressType = 2;
+  bytes txHash = 3;
+  uint32 outputIndex = 4;
+  uint64 value = 5;
+  uint32 sequenceNumber = 6;
+}
+
+message BCHOutput {
+  string destination = 1;
+  uint64 amount = 2;
+}
+
+message BCHChangeOutput {
+  string path = 1; // A change address must be internal
+  BCHAddressType addressType = 2;
+  uint64 amount = 3;
+}
+
+message BCHTransactionRequest {
+  repeated BCHInput inputs = 1;
+  repeated BCHOutput outputs = 2;
+  repeated BCHChangeOutput changeOutputs = 3;
+  uint32 lockTime = 4; //
+  BCHSigHashType hashType = 5;
+  string id = 6;
+}
+
+message BCHAddressRequest {
+  string path = 1; // BIP 44 path
+  BCHAddressType addressType = 2; // P2PKH or P2SH-P2WPKH
+}
+
+message BCHProofOfReserveRequest {
+  string path = 1;
+  BCHAddressType addressType = 2; // P2PKH or P2SH-P2WPKH
+  string challenge = 3;
+}
+
+//////////
+//
+// Substrate chains
+//  DOT / TAO
+//
+/////////
+
+message DOTExtrinsic {
+  string id = 1;
+  string path = 2; // BIP 44 path
+
+  uint32 validityPeriod = 3; // power of two in 4..4096
+  uint64 nonce = 4;
+  bool isNonceSet = 5;
+  bytes tip = 6; // bigint
+
+  uint32 specVersion = 7;
+  uint32 transVersion = 8;
+  bytes genesisHash = 9;
+  bytes eraBlockHash = 10;
+  uint64 eraBlockNumber = 11;
+
+  bytes fee = 12; // bigint
+
+  enum Network {
+    mainnet = 0;
+    assethub = 1;
+    westend = 2;
+    assethubWestend = 3;
+  }
+  Network network = 13;
+}
+
+//////////
+//
+// DOT
+//
+/////////
+
+message DOTAddressRequest {
+  string path = 1; // BIP 44 path
+}
+
+message DOTTransactionsRequest {
+  repeated DOTTransaction transactions = 1;
+}
+
+message DOTTransaction {
+  string destination = 1;
+  bytes amount = 2; // bigint
+
+  DOTExtrinsic extrinsic = 3;
+
+  bool unsafe = 4; // Switch between transfer_keep_alive and transfer
+}
+
+message DOTProofOfReserveRequest {
+  string path = 1;
+  string challenge = 2;
+}
+
+message DOTPayoutStakersRequest {
+  string validator = 1;
+  uint32 era = 2;
+  DOTExtrinsic extrinsic = 3;
+}
+
+message DOTBondRequest {
+  bytes amount = 1;
+  bool staked = 2;
+  DOTExtrinsic extrinsic = 3;
+}
+
+message DOTUnbondRequest {
+  bytes amount = 1;
+  DOTExtrinsic extrinsic = 2;
+}
+
+message DOTBondExtraRequest {
+  bytes amount = 1;
+  DOTExtrinsic extrinsic = 2;
+}
+
+message DOTChillRequest {
+  DOTExtrinsic extrinsic = 1;
+}
+
+message DOTNominateRequest {
+  repeated string nominees = 1;
+  DOTExtrinsic extrinsic = 2;
+}
+
+message DOTWithdrawUnbondedRequest {
+  uint32 s = 1;
+  DOTExtrinsic extrinsic = 2;
+}
+
+//////////
+//
+// TAO
+//
+/////////
+
+message TAOAddressRequest {
+  string path = 1; // BIP 44 path
+}
+
+message TAOTransactionsRequest {
+  repeated TAOTransaction transactions = 1;
+}
+
+message TAOTransaction {
+  string destination = 1;
+  bytes amount = 2; // bigint
+
+  DOTExtrinsic extrinsic = 3;
+
+  bool unsafe = 4; // Switch between transfer_keep_alive and transfer
+}
+
+message TAOProofOfReserveRequest {
+  string path = 1;
+  string challenge = 2;
+}
+
+message TAOAddStakeRequest {
+  string destination = 1; // ss58 formatted address, validator hotkey
+  bytes amount = 2;
+  DOTExtrinsic extrinsic = 3;
+}
+
+message TAORemoveStakeRequest {
+  string destination = 1; // ss58 formatted address, validator hotkey
+  bytes amount = 2;
+  DOTExtrinsic extrinsic = 3;
+}
+
+//////////
+//
+// FTM
+//
+/////////
+
+message FTMTransactionsRequest {
+  repeated FTMTransaction transactions = 2;
+}
+
+message FTMTransaction {
+  string from = 1;
+  uint64 nonce = 2;
+  uint64 gasLimit = 3;
+  bytes gasPrice = 4;
+  string to = 5;
+  bytes amount = 6;
+  // bytes payload = 7;
+  string id = 8;
+  bool isNonceSet = 9;
+}
+
+message FTMAddressRequest {
+  string path = 1; // BIP 44 path
+}
+
+message FTMProofOfReserveRequest {
+  string path = 1;
+  string challenge = 2;
+}
+
+message FTMStakingDelegateRequest {
+  enum FTMDelegateOperation {
+    Delegate = 0;
+    Undelegate = 1;
+    Withdraw = 2;
+  }
+  FTMTransaction tx = 1;
+  uint64 validatorId = 2;
+  FTMDelegateOperation operation = 3;
+  uint64 withdrawalId = 4;
+  bytes withdrawalAmount = 5;
+}
+
+message FTMStakingClaimRewardsRequest {
+  FTMTransaction tx = 1;
+  uint64 validatorId = 2;
+  bool restake = 3;
+}
+
+message FTMStakingLockRequest {
+  enum FTMLockOperation {
+    Lock = 0;
+    Relock = 1;
+    Unlock = 2;
+  }
+  FTMTransaction tx = 1;
+  uint64 validatorId = 2;
+  FTMLockOperation operation = 3;
+  uint64 duration = 4;
+  bytes lockAmount = 5;
+}
+
+message FTMTransactionsResponse {
+  message FTMTransactionResponse {
+    string id = 1;
+    string transaction = 2;
+    bytes publicKey = 3;
+  }
+  repeated FTMTransactionResponse transactions = 1;
+}
+
+//////////
+//
+// Sonic
+//
+/////////
+
+message SonicTransactionsRequest {
+  repeated SonicTransaction transactions = 2;
+}
+
+message SonicTransaction {
+  string from = 1;
+  uint64 nonce = 2;
+  uint64 gasLimit = 3;
+  bytes gasPrice = 4;
+  string to = 5;
+  bytes amount = 6;
+  // bytes payload = 7;
+  string id = 8;
+  bool isNonceSet = 9;
+}
+
+message SonicAddressRequest {
+  string path = 1; // BIP 44 path
+}
+
+message SonicProofOfReserveRequest {
+  string path = 1;
+  string challenge = 2;
+}
+
+message SonicStakingDelegateRequest {
+  enum SonicDelegateOperation {
+    Delegate = 0;
+    Undelegate = 1;
+    Withdraw = 2;
+  }
+  SonicTransaction tx = 1;
+  uint64 validatorId = 2;
+  SonicDelegateOperation operation = 3;
+  uint64 withdrawalId = 4;
+  bytes withdrawalAmount = 5;
+}
+
+message SonicStakingClaimRewardsRequest {
+  SonicTransaction tx = 1;
+  uint64 validatorId = 2;
+  bool restake = 3;
+}
+
+message SonicTransactionsResponse {
+  message SonicTransactionResponse {
+    string id = 1;
+    string transaction = 2;
+    bytes publicKey = 3;
+  }
+  repeated SonicTransactionResponse transactions = 1;
+}
+
+//////////
+//
+// ALGO
+//
+/////////
+
+message ALGOTransactionsRequest {
+  repeated ALGOTransaction transactions = 1;
+}
+
+message ALGOTransactionMaterial {
+  uint64 fee = 1;
+  uint64 fv = 2;
+  uint64 lv = 3;
+  bytes lx = 4;  // 32 bytes
+  string gen = 5;
+  bytes gh = 6;  // 32 bytes
+  bytes note = 7; // max 1kb
+}
+
+message ALGOTransaction {
+  string path = 1; // BIP 44 path
+  string to = 2;
+  uint64 amount = 3;
+  ALGOTransactionMaterial material = 4;
+  string id = 5;
+}
+
+message ALGOAddressRequest {
+  string path = 1; // BIP 44 path
+}
+
+message ALGOProofOfReserveRequest {
+  string path = 1;
+  string challenge = 2;
+}
+
+message ALGOAssetOptinRequest {
+  string path = 1; // BIP 44 path
+  uint64 assetID = 2;
+  ALGOTransactionMaterial material = 3;
+  string id = 4;
+}
+
+message ALGOAssetTransferRequest {
+  repeated ALGOAssetTransfer transfers = 1;
+}
+
+message ALGOAssetTransfer{
+  string path = 1; // BIP 44 path
+  string to = 2;
+  uint64 assetID = 3;
+  uint64 amount = 4;
+  ALGOTransactionMaterial material = 5;
+  string id = 6;
+}
+
+//////////
+//
+// HEDERA
+//
+/////////
+
+message HederaAddressRequest {
+  uint64 shardNum = 1;
+  uint64 realmNum = 2;
+  string path = 3;
+}
+
+message HederaTransactionsRequest {
+  enum OperationKind {
+    Invalid = 0;
+    ContractCall = 7;
+    ContractCreate = 8;
+    ContractUpdate = 9;
+    CryptoAddLiveHash = 10;
+    CryptoCreate = 11;
+    CryptoDelete = 12;
+    CryptoDeleteLiveHash = 13;
+    CryptoTransfer = 14;
+    CryptoUpdate = 15;
+    FileAppend = 16;
+    FileCreate = 17;
+    FileDelete = 18;
+    FileUpdate = 19;
+    SystemDelete = 20;
+    SystemUndelete = 21;
+    ContractDelete = 22;
+    Freeze = 23;
+    ConsensusCreateTopic = 24;
+    ConsensusUpdateTopic = 25;
+    ConsensusDeleteTopic = 26;
+    ConsensusSubmitMessage = 27;
+    UncheckedSubmitBody = 28;
+    TokenCreate = 29;
+    TokenFreezeAccount = 31;
+    TokenUnfreezeAccount = 32;
+    TokenGrantKyc = 33;
+    TokenRevokeKyc = 34;
+    TokenDelete = 35;
+    TokenUpdate = 36;
+    TokenMint = 37;
+    TokenBurn = 38;
+    TokenWipeAccount = 39;
+    TokenAssociate = 40;
+    TokenDissociate = 41;
+    ScheduleCreate = 42;
+    ScheduleDelete = 43;
+    ScheduleSign = 44;
+    TokenFeeScheduleUpdate = 45;
+    TokenPause = 46;
+    TokenUnpause = 47;
+    CryptoApproveAllowance = 48;
+    CryptoDeleteAllowance = 49;
+    Ethereum = 50;
+    NodeStakeUpdate = 51;
+    UtilPrng = 52;
+    TokenUpdateNfts = 53;
+    NodeCreate = 54;
+    NodeUpdate = 55;
+    NodeDelete = 56;
+    TokenReject = 57;
+    TokenAirdrop = 58;
+    TokenCancelAirdrop = 59;
+    TokenClaimAirdrop = 60;
+  }
+  OperationKind kind = 1;
+  repeated HederaTransaction transactions = 2;
+}
+
+message HederaAccount {
+  uint64 shardNum = 1;
+  uint64 realmNum = 2;
+  uint64 accountID = 3;
+}
+
+message HederaTimestamp {
+  uint64 seconds = 1;
+  uint64 nanos = 2;
+}
+
+message HederaTransaction {
+  string id = 1;
+  HederaTimestamp timestamp = 2;
+  HederaAccount source = 3;
+  string source_path = 4;
+  HederaAccount node = 5;
+  uint64 fee_limit = 6;
+  uint64 ttlSeconds = 7;
+  string memo = 8;
+  bytes operation = 9;
+}
+
+message HederaProofOfReserveRequest {
+  uint64 shardNum = 1;
+  uint64 realmNum = 2;
+  string path = 3;
+  string challenge = 4;
+}
+
+
+//////////
+//
+// SOL
+//
+/////////
+
+message SOLAddressRequest {
+  string path = 1; // BIP 44 path
+}
+
+message SOLProofOfReserveRequest {
+  string path = 1;
+  string challenge = 2;
+}
+
+message SOLCleanupDerivedAccountRequest {
+  string blockHash = 1;
+  string path = 2;
+  string seed = 3;
+  string program = 4;
+  uint64 amount = 5;
+  string id = 6;
+}
+
+message SOLTransfersRequest {
+  repeated SOLTransfer transfers = 1;
+}
+
+message SOLTransfer {
+  string blockHash = 1;
+  string path = 2;
+  string to = 3;
+  uint64 amount = 4;
+  uint64 fee = 5; // [deprecated = true] deprecated in favor of compute price + budget, but still needed for old HSMs
+  string id = 6;
+
+  // priorityFee = computePrice * computeBudget / 1e6
+  uint64 computePrice = 7; // in microLamports
+  uint64 computeBudget = 8; // in compute units
+}
+
+message SOLDelegateStakeRequest {
+  string blockHash = 1;
+  string path = 2;
+  bool create_account = 3;
+  uint64 space = 4;
+  uint64 amount = 5;
+  string voter = 6;
+  string id = 7;
+
+  uint64 computePrice = 8;
+  uint64 computeBudget = 9;
+
+  uint64 derivationIndex = 10; // index of the derivation path for the stake account
+}
+
+message SOLDeactivateStakeRequest {
+  string blockHash = 1;
+  string path = 2;
+  string id = 3;
+
+  uint64 computePrice = 4;
+  uint64 computeBudget = 5;
+
+  uint64 derivationIndex = 6; // index of the derivation path for the stake account
+}
+
+message SOLPartialDeactivateStakeRequest {
+  string blockHash = 1;
+  string path = 2;
+  uint64 sourceDerivationIndex = 3;      // index of the (existing) source account
+  uint64 destinationDerivationIndex = 4; // index of the (new) destination account
+  uint64 space = 5;
+  uint64 rentExemptBalance = 6;
+  uint64 amount = 7;
+  uint64 inactiveAmount = 8; // which part of amount is currently inactive
+  string id = 9;
+
+  uint64 computePrice = 10;
+  uint64 computeBudget = 11;
+}
+
+message SOLWithdrawStakeRequest {
+  string blockHash = 1;
+  string path = 2;
+  uint64 amount = 3;
+  string id = 4;
+
+  uint64 computePrice = 5;
+  uint64 computeBudget = 6;
+
+  uint64 derivationIndex = 7; // index of the derivation path for the stake account
+}
+
+message SOLMergeStakeRequest {
+  string blockHash = 1;
+  string path = 2;
+  uint64 sourceDerivationIndex = 3;      // index of the (vanishing) source account
+  uint64 destinationDerivationIndex = 4; // index of the (remaining) destination account
+  string id = 5;
+
+  uint64 computePrice = 6;
+  uint64 computeBudget = 7;
+}
+
+message SOLTokenCreateRequest{
+  string blockHash = 1;
+  string path = 2;
+
+  string program = 3;
+  string seed = 4;
+  uint64 decimals = 5;
+  uint64 rentExemptBalance = 6;
+
+  string name = 7;
+  string symbol = 8;
+  string uri = 9;
+
+  string id = 10;
+
+  uint64 computePrice = 11;
+  uint64 computeBudget = 12;
+
+  bool enableFreeze = 13;
+}
+
+message SOLTokenMintRequest{
+  string blockHash = 1;
+  string path = 2;
+
+  string program = 3;
+  string mint = 4;
+  uint64 decimals = 6;
+
+  string destination = 7;
+  bool createAccount = 8;
+  uint64 amount = 9;
+  string id = 10;
+
+  uint64 computePrice = 11;
+  uint64 computeBudget = 12;
+}
+
+message SOLTokenBurnRequest{
+  string blockHash = 1;
+  string path = 2;
+
+  string program = 3;
+  string mint = 4;
+  uint64 decimals = 6;
+
+  uint64 amount = 7;
+
+  string id = 8;
+
+  uint64 computePrice = 9;
+  uint64 computeBudget = 10;
+}
+
+// SOLTokenFreezeAccountRequest also handles the unfreeze (thaw) operation
+message SOLTokenFreezeAccountRequest{
+  string blockHash = 1;
+  string path = 2;
+  string destination = 3;
+  bool createAccount = 4;
+
+  string program = 5;
+  string mint = 6;
+
+  enum OperationKind {
+    Freeze = 0;
+    Unfreeze = 1;
+  }
+  OperationKind operation = 7;
+
+  string id = 8;
+
+  uint64 computePrice = 9;
+  uint64 computeBudget = 10;
+}
+
+message SOLTokenTransfersRequest {
+  repeated SOLTokenTransfer transfers = 1;
+}
+
+message SOLTokenTransfer{
+  string blockHash = 1;
+  string path = 2;
+  string to = 3;
+  uint64 amount = 4;
+  // uint64 fee = 5; // deprecated in favor of compute price + budget
+  bool createDestination = 6;
+  string mint = 7;
+  uint64 decimals = 8; // uint8 when unpacked
+  string program = 9;
+  string id = 10;
+
+  uint64 computePrice = 11;
+  uint64 computeBudget = 12;
+
+  string feepayer = 13; // optional. if set, rule SOLTokenTransferWithFeepayer is required.
+}
+
+//////////
+//
+// Cosmos
+//
+/////////
+
+message CosmosAddressRequest {
+  string path = 1;
+  string prefix = 2;
+}
+
+message CosmosProofOfReserveRequest {
+  string path = 1;
+  string prefix = 2;
+  string challenge = 3;
+}
+
+message CosmosRequestDetails {
+  string chainId = 1;
+  repeated CosmosSigner signers = 2;
+  uint64 gasLimit = 3;
+  string feeDenom = 4;
+  bytes feeAmount = 5;
+  string feePayer = 6; // should be one of the signers
+  string memo = 7;
+  uint64 timeoutHeight = 8;
+  string id = 9;
+  bool isNonceSet = 10;
+  bool isRawRequest = 11;
+  bool isTransferRequest = 12;
+}
+
+message CosmosSigner {
+  string path = 1;
+  uint64 sequence = 2;
+  uint64 accountNumber = 3;
+}
+
+message CosmosMessage {
+  string url = 1;
+  bytes payload = 2;
+}
+
+// Generic call requests
+message CosmosGenericCallRequest {
+  CosmosRequestDetails details = 1;
+  repeated CosmosMessage messages = 2;
+}
+
+message CosmosCancelRequest {
+  CosmosRequestDetails details = 1;
+  string addressPrefix = 2;
+}
+
+//////////
+//
+// Polygon
+//
+/////////
+
+message PolygonTransactionsRequest {
+  repeated PolygonTransaction transactions = 2;
+}
+
+message PolygonTransaction {
+  string from = 1;
+  uint64 nonce = 2;
+  uint64 gasLimit = 3;
+  bytes gasPrice = 4;
+  string to = 5;
+  bytes amount = 6;
+  bytes payload = 7;
+  string id = 8;
+  bool isNonceSet = 9;
+  uint64 chainId = 10;
+}
+
+message PolygonCreateContractRequest {
+  string from = 1;
+  uint64 nonce = 2;
+  uint64 gasLimit = 3;
+  bytes gasPrice = 4;
+  bytes amount = 5;
+  bytes payload = 6;
+  string id = 7;
+  bool isNonceSet = 8;
+  uint64 chainId = 9;
+}
+
+message PolygonAddressRequest {
+  string path = 1; // BIP 44 path
+}
+
+message PolygonProofOfReserveRequest {
+  string path = 1;
+  string challenge = 2;
+}
+
+message PolygonTransactionsResponse {
+  message PolygonTransactionResponse {
+    string id = 1;
+    string transaction = 2;
+    bytes publicKey = 3;
+  }
+  repeated PolygonTransactionResponse transactions = 1;
+}
+
+message PolygonSignTextRequest {
+  string id = 1;
+  string from = 2;
+  string message = 3;
+}
+
+message PolygonSignTextResponse {
+  string id = 1;
+  bytes signature = 2; // r::s
+  bytes publicKey = 3;
+}
+
+//////////
+//
+// Polygon_WRAPPED
+//
+/////////
+
+message PolygonWrappedTransactionsRequest {
+  repeated PolygonWrappedTransaction transactions = 1;
+}
+
+message PolygonWrappedTransaction {
+  bytes domainSeparator = 1;
+  bytes requestTypeHash = 2;
+  string from = 3;
+  string to = 4;
+  uint64 nonce = 5;
+  uint64 gasLimit = 6;
+  bytes payload = 7;
+  string id = 8;
+  bool isNonceSet = 9;
+  string forwarder = 10;
+}
+
+message PolygonWrappedCreateContractRequest {
+  bytes domainSeparator = 1;
+  bytes requestTypeHash = 2;
+  string from = 3;
+  uint64 nonce = 4;
+  bytes payload = 5;
+  string id = 6;
+  bool isNonceSet = 7;
+  string creator = 8;
+}
+
+message PolygonWrappedTransactionsResponse {
+  message PolygonWrappedTransactionResponse {
+    string id = 1;
+    string transaction = 2;
+    bytes publicKey = 3;
+  }
+  repeated PolygonWrappedTransactionResponse transactions = 1;
+}
+
+message PolygonWrappedCreateContractResponse {
+  string id = 1;
+  string transaction = 2;
+  bytes publicKey = 3;
+}
+
+//////////
+//
+// Avalanche C-Chain
+//
+/////////
+
+message AvaxCChainTransactionsRequest {
+  repeated AvaxCChainTransaction transactions = 2;
+}
+
+message AvaxCChainTransaction {
+  string from = 1;
+  uint64 nonce = 2;
+  uint64 gasLimit = 3;
+  bytes gasPrice = 4;
+  string to = 5;
+  bytes amount = 6;
+  bytes payload = 7;
+  string id = 8;
+  bool isNonceSet = 9;
+  uint64 chainId = 10;
+}
+
+message AvaxCChainCreateContractRequest {
+  string from = 1;
+  uint64 nonce = 2;
+  uint64 gasLimit = 3;
+  bytes gasPrice = 4;
+  bytes amount = 5;
+  bytes payload = 6;
+  string id = 7;
+  bool isNonceSet = 8;
+  uint64 chainId = 9;
+}
+
+message AvaxCChainAddressRequest {
+  string path = 1; // BIP 44 path
+}
+
+message AvaxCChainProofOfReserveRequest {
+  string path = 1;
+  string challenge = 2;
+}
+
+message AvaxCChainTransactionsResponse {
+  message AvaxCChainTransactionResponse {
+    string id = 1;
+    string transaction = 2;
+    bytes publicKey = 3;
+  }
+  repeated AvaxCChainTransactionResponse transactions = 1;
+}
+
+message AvaxCChainSignTextRequest {
+  string id = 1;
+  string from = 2;
+  string message = 3;
+}
+
+message AvaxCChainSignTextResponse {
+  string id = 1;
+  bytes signature = 2; // r::s
+  bytes publicKey = 3;
+}
+
+//////////
+//
+// Avalanche C-Chain (Wrapped)
+//
+/////////
+
+message AvaxCChainWrappedTransactionsRequest {
+  repeated AvaxCChainWrappedTransaction transactions = 1;
+}
+
+message AvaxCChainWrappedTransaction {
+  bytes domainSeparator = 1;
+  bytes requestTypeHash = 2;
+  string from = 3;
+  string to = 4;
+  uint64 nonce = 5;
+  uint64 gasLimit = 6;
+  bytes payload = 7;
+  string id = 8;
+  bool isNonceSet = 9;
+  string forwarder = 10;
+}
+
+message AvaxCChainWrappedCreateContractRequest {
+  bytes domainSeparator = 1;
+  bytes requestTypeHash = 2;
+  string from = 3;
+  uint64 nonce = 4;
+  bytes payload = 5;
+  string id = 6;
+  bool isNonceSet = 7;
+  string creator = 8;
+}
+
+message AvaxCChainWrappedTransactionsResponse {
+  message AvaxCChainWrappedTransactionResponse {
+    string id = 1;
+    string transaction = 2;
+    bytes publicKey = 3;
+  }
+  repeated AvaxCChainWrappedTransactionResponse transactions = 1;
+}
+
+message AvaxCChainWrappedCreateContractResponse {
+  string id = 1;
+  string transaction = 2;
+  bytes publicKey = 3;
+}
+
+//////////
+//
+// DOGE
+//
+/////////
+
+enum DOGEAddressType {
+  DOGE_P2PKH = 0;
+}
+
+enum DOGESigHashType {
+  DOGE_SIGHASH_ALL = 0;
+}
+
+message DOGEInput {
+  string path = 1;
+  DOGEAddressType addressType = 2;
+  bytes txHash = 3;
+  uint32 outputIndex = 4;
+  uint64 value = 5;
+  uint32 sequenceNumber = 6;
+}
+
+message DOGEOutput {
+  string destination = 1;
+  uint64 amount = 2;
+}
+
+message DOGEChangeOutput {
+  string path = 1; // A change address must be internal
+  DOGEAddressType addressType = 2;
+  uint64 amount = 3;
+}
+
+message DOGETransactionRequest {
+  repeated DOGEInput inputs = 1;
+  repeated DOGEOutput outputs = 2;
+  repeated DOGEChangeOutput changeOutputs = 3;
+  uint32 lockTime = 4;
+  DOGESigHashType hashType = 5;
+  string id = 6;
+}
+
+message DOGEAddressRequest {
+  string path = 1; // BIP 44 path
+  DOGEAddressType addressType = 2; // currently only P2PKH
+}
+
+message DOGEProofOfReserveRequest {
+  string path = 1;
+  DOGEAddressType addressType = 2; // currently only P2PKH
+  string challenge = 3;
+}
+
+
+//////////
+//
+// Mina
+//
+/////////
+
+
+message MinaAddressRequest {
+  string path = 1;
+}
+
+message MinaTxCommon {
+  string id = 1;
+  uint64 fee = 2;
+  uint32 nonce = 3;
+  uint32 validUntil = 4;
+  string memo = 5;
+  uint32 networkId = 6;
+  bytes networkPrefix = 7;
+  string source = 8;
+}
+
+message MinaPayment {
+  MinaTxCommon common = 1;
+  string destination = 2;
+  uint64 amount = 3;
+}
+
+message MinaPaymentsRequest {
+  repeated MinaPayment payments = 1;
+}
+
+message MinaDelegationRequest {
+  MinaTxCommon common = 1;
+  string delegate = 2;
+}
+
+message MinaProofOfReserveRequest {
+  string path = 1;
+  string challenge = 2;
+}
+
+
+//////////
+//
+// TRON
+//
+/////////
+
+message TRONAddressRequest {
+  string path = 1;
+}
+
+message TRONProofOfReserveRequest {
+  string path = 1;
+  string challenge = 2;
+}
+
+message TRONTransactionsRequest {
+  enum OperationKind {
+    Invalid = 0; // Currently invalid, but will be replaced by AccountCreateContract if supported
+    TransferContract = 1;
+    TriggerSmartContract = 31;
+  }
+  OperationKind kind = 1;
+  repeated TRONTransaction transactions = 2;
+}
+
+message TRONTransaction {
+  string id = 1;
+  string source = 2;
+  bytes refBlockBytes = 3;
+  bytes refBlockHash = 4;
+  int64 expiration = 5;
+  int64 timestamp = 6;
+  int64 feeLimit = 7;
+  bytes data = 8;
+  bytes operation = 9;
+}
+
+message TRONTransactionsResponse {
+  message TRONTransactionResponse {
+    string id = 1;
+    string transaction = 2;
+    bytes publicKey = 3;
+  }
+  repeated TRONTransactionResponse transactions = 1;
+}
+
+//////////
+//
+// Filecoin
+//
+/////////
+
+message FilecoinTransactionsRequest {
+  repeated FilecoinTransaction transactions = 1;
+}
+
+message FilecoinTransaction {
+  string id = 1;
+  string from = 2;
+  FilecoinAddressType addressType = 3;
+  string to = 4;
+  uint64 nonce = 5;
+  bytes amount = 6;
+  // Gas pointers on filecoin https://spec.filecoin.io/systems/filecoin_vm/gas_fee/
+  // https://www.starboard.ventures/post/gas-burning-in-filecoin-a-protocol-bidding-mechanism-to-advance-the-network-s-health
+  uint64 gasLimit = 7;     // Max units of gas to be used for the transaction. If > 10% than actual gasUsed overestimateFees applies
+  bytes gasFeeCap = 8;     // In attoFil per unit of gas. The Max fee can never exceed gasLimit * gasFeeCap
+  bytes gasPremium = 9;    // In attoFil per unit of gas. PriorityFee on top of baseFee (dynamically set by the network) paid to the miner
+  // (gasLimit * gasPremium goes to the miner), should be gasFeeCap - baseFee
+  bool isNonceSet = 10;
+}
+
+enum FilecoinAddressType {
+  FILECOIN_SECP256K1 = 0;
+  FILECOIN_BLS = 1;
+  FILECOIN_DELEGATED = 2;
+}
+
+message FilecoinAddressRequest {
+  string path = 1; // BIP 44 path
+  FilecoinAddressType addressType = 2;
+}
+
+message FilecoinProofOfReserveRequest {
+  string path = 1;
+  FilecoinAddressType addressType = 2;
+  string challenge = 3;
+}
+
+message FilecoinTransactionsResponse {
+  message FilecoinTransactionResponse {
+    string id = 1;
+    string transaction = 2;
+    bytes publicKey = 3;
+  }
+  repeated FilecoinTransactionResponse transactions = 1;
+}
+
+////////////////////
+//
+// Users / Groups
+//
+/////////
+
+
+enum Role {
+  REQUESTAPPROVER = 0;
+  TGVALIDATORD = 1;
+  PRICEUPDATER = 2;
+  SUPERADMIN = 3;
+  REQUESTCREATOR = 4;
+  HSMSLOT = 5;
+  SECONDARYCOMMITTER = 6;
+  REQUESTCANCELER = 7;
+  ACCOUNTCREATOR = 8;
+  WHITELISTEDADDRESSCREATOR = 9;
+  TPUSER = 10;
+  WHITELISTEDADDRESSAPPROVER = 11;
+  REQUESTMOBILEAPPSIGNER = 12;
+  WHITELISTEDADDRESSMOBILEAPPSIGNER = 13;
+  AIRGAPEXPORTER = 14;
+  AIRGAPIMPORTER = 15;
+  AIRGAPSIGNER = 16;
+}
+
+message User {
+  string id = 1;
+  string publicKey = 2;
+  repeated Role roles = 3;
+  map<string, bytes> properties = 4;
+}
+
+message Group {
+  string id = 1;
+  repeated string userIds = 2;
+  map<string, bytes> properties = 3;
+}
+
+////////////////////
+//
+// Rules
+//
+/////////
+
+message RuleSourceInternalWallet {
+  string path = 1;
+}
+
+message RuleSourceInternalAddress {
+  string address = 1;
+  string path = 2;
+}
+
+message RuleSourceExchange {
+  string label = 1;
+}
+
+message RuleSourceExternalAddress {
+  string address = 1;
+  string memo = 2;
+}
+
+message RuleSource {
+
+  // 1:1 mapping between enum and payload message
+  enum RuleSourceType {
+    RuleSourceAny = 0; //  payload is nil
+    RuleSourceInternalWallet = 1; // payload is  RuleSourceInternalWallet
+    RuleSourceInternalAddress = 2; // payload is RuleSourceInternalAddress
+    RuleSourceAnyExchange = 3; // payload is nil
+    RuleSourceExchange = 4; //  payload is RuleSourceExchange
+    RuleSourceExternalAddress = 5; //  payload is RuleSourceExternalAddress
+  }
+
+  RuleSourceType type = 1;
+  bytes payload = 2;
+}
+
+message RuleDestinationInternalWallet {
+  string path = 1;
+}
+
+message RuleDestinationInternalAddress {
+  string address = 1;
+  string path = 2;
+}
+
+message RuleDestinationExternalAddress {
+  string address = 1;
+  string memo = 2;
+}
+
+message RuleDestinationContractAddress {
+  string address = 1;
+  string name = 2;
+  string symbol = 3;
+  Blockchain blockchain = 4;
+}
+
+message RuleDestinationExchange {
+  string label = 1;
+  string memo = 2;
+}
+
+
+
+message RuleDestination {
+
+  // 1:1 mapping between enum and payload
+  enum RuleDestinationType {
+    RuleDestinationAny = 0; // payload is nil
+    RuleDestinationInternalWallet = 1; // payload is RuleDestinationInternalWallet
+    RuleDestinationInternalAddress = 2; // payload is RuleDestinationInternalAddress
+    RuleDestinationExternalAddress = 3; // payload is RuleDestinationExternalAddress
+    RuleDestinationAnyExchange = 4; // payload is nil
+    RuleDestinationExchange = 5; //  payload is RuleDestinationExchange
+    RuleDestinationContractAddress = 6; // payload is RuleDestinationContractAddress
+    RuleDestinationAnyExternalAddress = 7; // payload is nil
+    RuleDestinationAnyContractAddress = 8; // payload is nil
+  }
+
+  RuleDestinationType type = 1;
+  bytes payload = 2;
+}
+
+message RuleWhitelistedContract {
+  enum RuleWhitelistedContractType {
+    RuleWhitelistedContractAny = 0; // payload is nil
+    RuleWhitelistedContract_RuleDestinationContractAddress = 1; // payload is RuleDestinationContractAddress
+  }
+  RuleWhitelistedContractType type = 1;
+  bytes payload = 2;
+}
+
+message RuleIntegerGreater {
+  // 1:1 mapping between enum and payload message
+  enum RuleIntegerGreaterType {
+    RuleIntegerGreaterAny = 0;
+    RuleIntegerGreaterValue = 1;
+    RuleIntegerGreaterNegValue = 2;
+  }
+
+  RuleIntegerGreaterType type = 1;
+  bytes payload = 2;
+}
+
+message RuleUIntegerGreater {
+  // 1:1 mapping between enum and payload message
+  enum RuleUIntegerGreaterType {
+    RuleUIntegerGreaterAny = 0;
+    RuleUIntegerGreaterIsZero = 1;
+    RuleUIntegerGreaterValue = 2;
+    RuleUIntegerGreaterIsEqual = 3;
+  }
+
+  RuleUIntegerGreaterType type = 1;
+  bytes payload = 2;
+}
+
+message RuleFiatAmountRange {
+  string minAmount = 1; // a string, containing a "double" to ease processing in the HSM (Non inclusive range)
+  string maxAmount = 2; // a string, containing a "double" to ease processing in the HSM (Inclusive range)
+}
+
+message RuleFiatAmount {
+  // 1:1 mapping between enum and payload message
+  enum RuleFiatAmountType {
+    RuleFiatAmountAny = 0; //  payload is nil
+    RuleFiatAmountIsZero = 1; //  payload is nil
+    RuleFiatAmountRange = 2; // payload is  RuleFiatAmountRangeValue
+  }
+
+  RuleFiatAmountType type = 1;
+  bytes payload = 2;
+}
+
+message RuleStringEqual {
+  // 1:1 mapping between enum and payload message
+  enum RuleStringEqualType {
+    RuleStringEqualAny = 0; //  payload is nil
+    RuleStringEqualEmpty = 1; //  payload is nil
+    RuleStringEqualValue = 2; //  payload is string
+  }
+
+  RuleStringEqualType type = 1;
+  bytes payload = 2;
+}
+
+message RuleStringArrayEqualValue {
+  repeated string values = 1;
+}
+
+message RuleStringArrayEqual {
+  // 1:1 mapping between enum and payload message
+  enum RuleStringArrayEqualType {
+    RuleStringArrayEqualAny = 0; //  payload is nil
+    RuleStringArrayEqualEmpty = 1; //  payload is nil
+    RuleStringArrayEqualValue = 2; //  payload is RuleStringArrayEqualValue
+  }
+
+  RuleStringArrayEqualType type = 1;
+  bytes payload = 2;
+}
+
+message RuleBytesEqual {
+  // 1:1 mapping between enum and payload message
+  enum RuleBytesEqualType {
+    RuleBytesEqualAny = 0; //  payload is nil
+    RuleBytesEqualEmpty = 1; //  payload is nil
+    RuleBytesEqualValue = 2; //  payload is bytes
+  }
+
+  RuleBytesEqualType type = 1;
+  bytes payload = 2;
+}
+
+message GroupThreshold {
+  string groupId = 1;
+  uint32 minimumSignatures = 2;
+}
+
+message SequentialThresholds {
+  repeated GroupThreshold thresholds = 1;
+}
+
+
+
+
+message RulesContainer {
+
+  // key: String
+  // ColumnType | ColumnType | ColumnType | ColumnType
+  // ---------------------------------------------------   -------------------
+  // bytes      | bytes      | bytes      | bytes        ->  parallelThresholds
+  // bytes      | bytes      | bytes      | bytes        ->  parallelThresholds
+  // bytes      | bytes      | bytes      | bytes        ->  parallelThresholds
+
+
+  //
+  // key: ETH
+  // ETH_From | ETH_To | ETH_Amount | Payload  -> parallelThresholds
+  // -----------------------------------------
+  //     W1   |    *   |    >=10    |    0     ->   1
+  //     *    |    BNB |      0     |    *     ->  50
+  //     *    |    *   |      *     |    *     ->   100
+  //
+
+  // key: ETH
+  // type: RuleSource , name: ETH_From              | type: RuleDestination, name: ETH_To                          | type: RuleFiatAmountGreater, name: ETH_Amount         | type: RuleBytesEqual, name: Payload    -> parallelThresholds
+  // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------      -------------------
+  // RuleSource{RuleSourceInternalWallet{W1, ...}}  | RuleDestination{RuleDestinationAny}                          | RuleFiatAmountGreater{RuleFiatAmountGreaterValue{10}} | RuleBytesEqual{RuleBytesEqualEmpty}         ->    1
+  // RuleSource{RuleSourceAny}                      | RuleDestination{RuleDestinationContractAddress{{0x123, BNB}} | RuleFiatAmountGreater{RuleFiatAmountAny}       | RuleBytesEqual{RuleBytesEqualAny}           ->    50
+  // RuleSource{RuleSourceAny}                      | RuleDestination{RuleDestinationAny}                          | RuleFiatAmountGreater{RuleFiatAmountAny}       | RuleBytesEqual{RuleBytesEqualAny}           ->   100
+  //
+
+
+  //
+  // key: ETH/ERC20_Transfer(address,uint256)
+  // ETH_From | ETH_To | ETH_Amount | To  | Amount | Tresh
+  //     *    |   BNB  |      0     |  *  |  >=10  |   3
+  //     *    |   *    |      0     |  *  |   *    |  75
+  //
+
+  // key: ETH/ERC20_Transfer(address,uint256)
+  // type: RuleSource , name: ETH_From | type: RuleDestination, name: ETH_To                          | type: RuleFiatAmountGreater, name: ETH_Amount      | type: RuleDestination, name: To      | type: RuleFiatAmountGreater, name: Amount                 -> parallelThresholds
+  // ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------           -----------------
+  // RuleSource{RuleSourceAny}         | RuleDestination{RuleDestinationContractAddress{{0x123, BNB}} | RuleFiatAmountGreater{RuleFiatAmountGreaterEmpty}  | RuleDestination{RuleDestinationAny}  | RuleFiatAmountGreater{RuleFiatAmountGreaterValue{10}}     ->    50
+  // RuleSource{RuleSourceAny}         | RuleDestination{RuleDestinationAny}                          | RuleFiatAmountGreater{RuleFiatAmountGreaterEmpty}  | RuleDestination{RuleDestinationAny}  | RuleFiatAmountGreater{RuleFiatAmountAny}                  ->   100
+  //
+
+
+  enum ColumnType {
+    RuleSource = 0;
+    RuleDestination = 1;
+    RuleFiatAmount = 2;
+    RuleBytesEqual = 3;
+    RuleStringEqual = 4;
+    RuleIntegerGreater = 5;
+    RuleUIntegerGreater = 6;
+    RuleAny = 7;
+    RuleStringArrayEqual = 8;
+    RuleWhitelistedContract = 9;
+  }
+
+  message Column {
+    ColumnType type = 1;
+    string name = 2;
+    string metadataKey = 3;
+  }
+
+  message Line {
+    repeated bytes cells = 1; // rule inputs, len(Line.cells) == len (TransactionRules.columns)
+    repeated SequentialThresholds parallelThresholds = 2; // rule output
+    map<string, bytes> properties = 3;
+    uint32 priority = 4; // used to sort rules, 0 is the lowest priority
+  }
+
+  message TransactionRules {
+    message TransactionRuleDetails {
+      enum RuleDomain {
+        RuleDomainAny = 0;
+        RuleDomainTransfer = 1;
+        RuleDomainStaking = 2;
+        RuleDomainOperation = 3;
+        RuleDomainCallContract = 4; // EvmCallContract or XtzCallContract fields will be defined depending on blockchain
+        RuleDomainCashSettlement = 5; // CashSettlement field will be defined - represents the fiat providers requests
+      }
+
+      enum RuleSubDomain {
+        RuleSubDomainAny = 0;
+
+        // DomainTransfer
+        RuleSubDomainNative = 1;
+        RuleSubDomainERC20 = 2;
+        RuleSubDomainERC721 = 3;
+        RuleSubDomainERC1155 = 4;
+        RuleSubDomainFA12 = 5;
+        RuleSubDomainFA2 = 6;
+        RuleSubDomainFA2NFT = 7;
+        RuleSubDomainASA = 8;
+        RuleSubDomainCosmosMsgSend = 9;
+        RuleSubDomainCancel = 10;
+        RuleSubDomainXLMAsset = 27;
+        RuleSubDomainXLMMintAsset = 40;
+        RuleSubDomainXLMPathPaymentNativeToAsset = 44;
+        RuleSubDomainXLMPathPaymentAssetToNative = 45;
+        RuleSubDomainXLMPathPaymentAssetToAsset = 46;
+        RuleSubDomainSOLTokenTransfer = 50;
+        RuleSubDomainICRC1 = 51;
+        RuleSubDomainHederaToken = 57;
+        RuleSubDomainHederaNFT = 58;
+        RuleSubDomainCryptoPunks = 60;
+        RuleSubDomainTRC20 = 63;
+        RuleSubDomainSOLTokenFreeze = 91;
+        RuleSubDomainSOLTokenUnfreeze = 92;
+        RuleSubDomainCIP56 = 94;
+
+        // DomainStaking
+        RuleSubDomainDelegate = 11; // includes DotNominate, TaoAddStake
+        RuleSubDomainUndelegate = 12; // includes DotChill, TaoRemoveStake
+        RuleSubDomainWithdrawal = 13;
+        RuleSubDomainClaimRewards = 14;
+        RuleSubDomainDOTBond = 15;
+        RuleSubDomainDOTBondExtra = 16;
+        RuleSubDomainDOTUnbond = 17;
+        RuleSubDomainFTMLock = 23;
+        // RuleSubDomainSOLCreateStakeAddress = 24;     // no longer used
+        // RuleSubDomainSOLTransferToStakeAddress = 25; // no longer used
+        RuleSubDomainICPSetDissolveDelay = 31;
+        RuleSubDomainICPStartDissolving = 32;
+        RuleSubDomainICPTransferToStake = 33;
+        RuleSubDomainStake = 55;
+        RuleSubDomainUnstake = 56;
+        RuleSubDomainADAVoteDelegate = 59;
+        RuleSubDomainSOLPartialDeactivate = 61;
+        RuleSubDomainSOLMerge = 62;
+
+        // DomainOperation
+        RuleSubDomainDeployContract = 18;
+        RuleSubDomainASAOptIn = 19;
+        RuleSubDomainBlock = 20;
+        RuleSubDomainCosmosSimplified = 21;
+        RuleSubDomainCosmosGeneric = 22;
+        RuleSubDomainXLMChangeTrust = 26;
+        RuleSubDomainXLMSetOptions = 28;
+        RuleSubDomainXLMSetTrustlineFlags = 29;
+        RuleSubDomainXLMManageData = 30;
+        RuleSubDomainXLMClaimClaimableBalance = 34;
+        RuleSubDomainXLMClawbackClaimableBalance = 35;
+        RuleSubDomainXLMCreateClaimableBalanceNative = 36;
+        RuleSubDomainXLMCreateClaimableBalanceAsset = 37;
+        RuleSubDomainXLMRevokeSponsorship = 38;
+        RuleSubDomainXLMClawback = 39;
+        RuleSubDomainXLMLiquidityPoolDeposit = 41;
+        RuleSubDomainXLMLiquidityPoolWithdraw = 42;
+        RuleSubDomainXLMChangeTrustLiquidityPool = 43;
+        RuleSubDomainXLMOfferNativeForAsset = 47;
+        RuleSubDomainXLMOfferAssetForNative = 48;
+        RuleSubDomainXLMOfferAssetForAsset = 49;
+        RuleSubDomainSOLTokenCreate = 52;
+        RuleSubDomainSOLTokenMint = 53;
+        RuleSubDomainSOLTokenBurn = 54;
+        RuleSubDomainHederaCreateToken = 67;
+        RuleSubDomainHederaUpdateToken = 68;
+        RuleSubDomainHederaMintToken = 69;
+        RuleSubDomainHederaMintNFT = 70;
+        RuleSubDomainHederaBurnToken = 71;
+        RuleSubDomainHederaBurnNFT = 72;
+        RuleSubDomainHederaDeleteToken = 73;
+        RuleSubDomainHederaWipeTokenAccount = 74;
+        RuleSubDomainHederaWipeNFTTokenAccount = 75;
+        RuleSubDomainHederaFreezeTokenAccount = 76;
+        RuleSubDomainHederaUnfreezeTokenAccount = 77;
+        RuleSubDomainHederaGrantKycToTokenAccount = 78;
+        RuleSubDomainHederaRevokeKycFromTokenAccount = 79;
+        RuleSubDomainHederaAssociateToken = 80;
+        RuleSubDomainHederaDissociateToken = 81;
+        RuleSubDomainHederaUpdateTokenFeeSchedule = 82;
+        RuleSubDomainHederaPauseToken = 83;
+        RuleSubDomainHederaUnpauseToken = 84;
+        RuleSubDomainHederaUpdateNfts = 85;
+        RuleSubDomainHederaRejectToken = 86;
+        RuleSubDomainHederaAirdropToken = 87;
+        RuleSubDomainHederaAirdropNFT = 88;
+        RuleSubDomainHederaCancelAirdrop = 89;
+        RuleSubDomainHederaClaimAirdrop = 90;
+
+        // Fiat provider
+        RuleSubDomainFiatDeposit = 64; // e.g. Circle, Cubnet, Blinc
+        RuleSubDomainFiatWithdrawal = 65; // e.g. Circle, Cubnet, Blinc
+        RuleSubDomainFiatTransfer = 66; // e.g. Cubnet, Blinc
+      }
+
+      message EvmCallContract {
+        string contractType = 1; // GENERIC, ERC20, CMTAT, CMTA20...
+        string methodSignature = 2;
+      }
+
+      message XtzCallContract {
+        string contractType = 1;
+        string methodSignature = 2;
+      }
+
+      message CashSettlement {
+        string provider = 1;
+        string requestType = 2;
+      }
+
+      message CosmosDetails {
+        repeated string methodSignatures = 1;
+      }
+
+      RuleDomain domain = 1;
+      RuleSubDomain subDomain = 2;
+      string blockchain = 3;
+      string network = 4;
+      EvmCallContract evmCallContract = 5;
+      XtzCallContract xtzCallContract = 6;
+      CashSettlement cashSettlement = 7;
+      CosmosDetails cosmosDetails = 8;
+    }
+
+    string key = 1; // Should be unique
+    repeated Column columns = 2; // len(Line.cells) == len (TransactionRules.columns)
+    repeated Line lines = 3; // array is sorted
+    TransactionRuleDetails details = 4;
+  }
+
+  message AddressWhitelistingRules {
+
+    message Line {
+      repeated bytes cells = 1; // rule inputs (source restriction)
+      repeated SequentialThresholds parallelThresholds = 2; // rule output
+      map<string, bytes> properties = 3;
+    }
+
+    string currency = 1; // Should be unique and actually represent a blockchain. If empty -> valid for all non-listed currencies
+    repeated SequentialThresholds parallelThresholds = 2;
+    map<string, bytes> properties = 3;
+    string network = 4;
+    // For rules with a specified source. Rules without source specification (Any) are defined using the fields
+    // at list level.
+    repeated Line lines = 5;
+  }
+
+  message ContractAddressWhitelistingRules {
+    Blockchain blockchain = 3;
+    repeated SequentialThresholds parallelThresholds = 2;
+    map<string, bytes> properties = 4;
+    string network = 5;
+  }
+
+  message Policy {
+    string id = 1;
+    string label = 2;
+    repeated SequentialThresholds parallelThresholds = 3;
+    string description = 4;
+  }
+
+  message Policies {
+    repeated Policy policies = 1;
+  }
+
+  repeated User users = 1;
+  repeated Group groups = 2;
+  uint32 minimumDistinctUserSignatures = 3; // at least minimumDistinctUserSignatures users must have signed a request, despite any other rules
+  uint32 minimumDistinctGroupSignatures = 4; // at least minimumDistinctGroupSignatures users of distinct groups must have signed a request, despite any other rules
+  repeated TransactionRules transactionRules = 5;
+  repeated AddressWhitelistingRules addressWhitelistingRules = 6;
+  repeated ContractAddressWhitelistingRules contractAddressWhitelistingRules = 7;
+  string enforcedRulesHash = 8;
+  map<string, bytes> properties = 9;
+  uint64 timestamp = 10;
+  uint32 minimumCommitmentSignatures = 11;
+  repeated string engineIdentities = 12; // known HSM serial numbers from tenant. HSM will refure to process request if their serial is not in the list.
+  uint32 hsmSlotId = 13; // HSM slot ID that these rules are intended for. When this changes, rules must be re-signed.
+}

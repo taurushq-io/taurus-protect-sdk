@@ -1,0 +1,20 @@
+# Sync Documentation with Code
+
+Generate missing documentation and fix outdated sections.
+
+## Instructions
+
+1. First, run verification to identify issues
+2. For each missing API, generate documentation
+3. For each outdated section, update it to match code
+4. Preserve any manually written content (examples, notes)
+5. Show a summary of changes made
+
+## Rules:
+
+- Never delete documentation without confirmation
+- Preserve custom examples and notes
+- Mark auto-generated sections with `<!-- AUTO-GENERATED -->`
+- Create backup before major changes
+
+Sync documentation for: $ARGUMENTS

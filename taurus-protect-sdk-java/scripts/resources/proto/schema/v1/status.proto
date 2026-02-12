@@ -1,0 +1,36 @@
+syntax = "proto3";
+package tgvalidatord;
+
+import "health.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+message GroupStatus {
+  string groupStatus = 1;
+  repeated Health healths = 2;
+}
+
+message ComponentStatus {
+  string componentStatus = 1;
+  repeated GroupStatus groupsStatus = 2;
+}
+
+message TenantConfig {
+  message NFTMinting {
+    bool enabled = 1;
+    string publicBaseURL = 2;
+  }
+
+  uint64 superAdminMinimumSignatures = 1;
+  string baseCurrency = 2;
+  bool isMFAMandatory = 3;
+  bool excludeContainer = 4;
+  uint64 tenantId = 5;
+  float feeLimitFactor = 6;
+  string protectEngineVersion = 7;
+  bool restrictSourcesForWhitelistedAddresses = 8;
+  NFTMinting nftMinting = 9;
+  bool isProtectEngineCold = 10;
+  bool isColdProtectEngineOffline = 11;
+  bool isPhysicalAirGapEnabled = 12;
+}

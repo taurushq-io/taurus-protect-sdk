@@ -1,0 +1,1600 @@
+syntax = "proto3";
+
+package tgvalidatord;
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+import "google/api/annotations.proto";
+
+import "cursor.proto";
+import "kv.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "taurus-network.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "tg-validatord taurusnetwork service";
+    version: "1.0";
+    contact: {
+      name: "tg-validatord taurusnetwork service";
+      url: "https://github.com/taurusgroup/tg-validatord";
+      email: "development@taurusgroup.ch";
+    };
+  };
+  consumes: "application/json";
+  produces: "application/json";
+  schemes: [HTTP, HTTPS];
+  security_definitions: {
+    security: {
+      key: "Bearer";
+      value: {
+        type: TYPE_API_KEY;
+        in: IN_HEADER;
+        name: "Authorization";
+      }
+    }
+  }
+  security: {
+    security_requirement: {
+      key: "Bearer";
+      value: {};
+    }
+  }
+  responses: {
+    key: "401";
+    value: {
+      description: "Returned when the user is not authenticated.";
+    }
+  }
+  responses: {
+    key: "403";
+    value: {
+      description: "Returned when the user is not authorized to access the resource.";
+    }
+  }
+  responses: {
+    key: "404";
+    value: {
+      description: "Returned when the resource does not exist.";
+    }
+  }
+  responses: {
+    key: "400",
+    value: {
+      description: "Returned when an argument is invalid.";
+    }
+  }
+  responses: {
+    key: "500",
+    value: {
+      description: "Returned when the service encountered an error."
+    }
+  }
+
+};
+
+message GetParticipantRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["participantID"]
+    }
+  };
+
+  string participantID = 1;
+  bool includeTotalPledgesValuation = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+    {description: "Include the total aggregated valuation (outgoing and incoming) of the pledges for the participant.";}
+  ];
+}
+
+message GetParticipantReply {
+  TnParticipant result = 1;
+}
+
+message GetMyParticipantReply {
+  TnParticipant result = 1;
+  TnParticipantSettings settings = 2;
+}
+
+message GetParticipantsRequest {
+  repeated string participantIDs = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+    {description: "Filter participants by specifying a list of participant IDs.";}
+  ];
+
+  bool includeTotalPledgesValuation = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+    {description: "Include the total aggregated valuation in base currency (ex. CHF) of the pledges for each participant (outgoing and incoming).";}
+  ];
+}
+
+message GetParticipantsReply {
+  repeated TnParticipant result = 1;
+}
+
+message GetSharedAddressesRequest {
+
+  string participantID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+    {description: "Get all the shared addresses where the participantID is either the owner or the target of the shared address.";}
+  ];
+
+  string ownerParticipantID = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+    {description: "Filter shared addresses by specifying who is the owner of the shared addresses (your participant or the counterparty)";}
+  ];
+  string targetParticipantID = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+    {description: "Filter shared addresses by specifying who is the target of the shared addresses (your participant or the counterparty)";}
+  ];
+
+  string blockchain = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+    {description: "Filter shared addresses by specifying the blockchain of the shared addresses";}
+  ];
+
+  string network = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+    {description: "Filter shared addresses by specifying the network of the shared addresses. It must be used in combination with the blockchain filter.";}
+  ];
+
+  repeated string ids = 6 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+    {description: "Filter shared addresses by specifying the shared address IDs";}
+  ];
+
+  string sortOrder = 7 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to ASC to get the id sorted"
+          " in ASC order or DESC to get them in descending order. By default, the order is DESC.";
+    }
+  ];
+  RequestCursor cursor = 8 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The pagination cursor. Note that the default page size is 100.";
+    }
+  ];
+
+  repeated string statuses = 9 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Filter shared addresses by specifying a list of statuses. Accepted status values:  'new', 'pending', 'rejected', 'accepted', 'unshared'";
+    }
+  ];
+}
+
+message GetSharedAddressesReply {
+  repeated TnSharedAddress sharedAddresses = 1;
+  ResponseCursor cursor = 2;
+}
+
+message GetSharedAssetsRequest {
+
+  string participantID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+    {description: "Get all the shared assets where the participantID is either the owner or the target of the shared assets.";}
+  ];
+
+  string ownerParticipantID = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+    {description: "Filter shared assets by specifying who is the owner of the shared assets (your participant or the counterparty)";}
+  ];
+  string targetParticipantID = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+    {description: "Filter shared assets by specifying who is the target of the shared assets (your participant or the counterparty)";}
+  ];
+
+  string blockchain = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+    {description: "Filter shared assets by specifying the blockchain of the shared assets";}
+  ];
+
+  string network = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+    {description: "Filter shared assets by specifying the network of the shared assets. It must be used in combination with the blockchain filter.";}
+  ];
+
+  repeated string ids = 6 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+    {description: "Filter shared addresses by specifying the shared asset IDs";}
+  ];
+
+  string sortOrder = 7 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to ASC to get the id sorted"
+          " in ASC order or DESC to get them in descending order. By default, the order is DESC.";
+    }
+  ];
+
+  RequestCursor cursor = 8 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The pagination cursor. Note that the default page size is 100.";
+    }
+  ];
+
+  repeated string statuses = 9 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Filter shared assets by specifying a list of statuses. Accepted status values:  'new', 'pending', 'rejected', 'accepted', 'unshared'";
+    }
+  ];
+}
+
+message GetSharedAssetsReply {
+  repeated TnSharedAsset sharedAssets = 1;
+  ResponseCursor cursor = 2;
+}
+
+message ShareAddressRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["toParticipantID", "addressID"]
+    }
+  };
+
+  string toParticipantID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the participant to share the address with.";
+    }
+  ];
+  uint64 addressID = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the internal address to share. Only the native address will be shared.";
+    }
+  ];
+  repeated KeyValue keyValueAttributes = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Optional key-value attributes to attach to the shared address. The key-values will be shared with the target participant.";
+    }
+  ];
+}
+
+message ShareAddressReply {}
+
+message UnshareAddressRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["tnSharedAddressID"]
+    }
+  };
+
+  string tnSharedAddressID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the shared address to unshare.";
+    }
+  ];
+}
+
+message ShareWhitelistedAssetRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["toParticipantID", "whitelistedContractID"]
+    }
+  };
+
+  string toParticipantID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the participant to share the whitelisted contract with.";
+    }
+  ];
+  uint64 whitelistedContractID = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the whitelisted contract to share.";
+    }
+  ];
+}
+
+message ShareWhitelistedAssetReply {}
+
+message UnshareWhitelistedAssetReply {}
+
+message UnshareWhitelistedAssetRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["tnSharedAssetID"]
+    }
+  };
+
+  string tnSharedAssetID = 1;
+}
+message CreatePledgeRequest {
+
+  message PledgeDurationSetupRequest {
+    google.protobuf.Duration minimumDuration = 1 [
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "The minimum duration of the pledge. The minimum duration is the time that the pledge must remain active before it can be unpledged. (example 1 month, the owner can't unpledge before one month)"
+            "You can either set endOfMinimumDurationDate or minimumDuration. If endOfMinimumDurationDate is set, minimumDuration will be inferred from endOfMinimumDurationDate. Example of value: '86400s' for 1 day.";
+      }
+    ];
+    google.protobuf.Timestamp endOfMinimumDurationDate = 2 [
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "The end date of the minimum duration of the pledge. The minimum duration is the time that the pledge must remain active before it can be unpledged."
+            "You can either set endOfMinimumDurationDate or minimumDuration. If endOfMinimumDurationDate is set, minimumDuration will be inferred from endOfMinimumDurationDate.";
+      }
+    ];
+    google.protobuf.Duration noticePeriodDuration = 3 [
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "The duration of the notice period occuring after doing an unpledge."
+            "When an unpledge is performed, the target participant will be able to perform withdrawals until the end of the notice period. (example 48h after the unpledge)"
+            "When this field is not set, the pledge is considered 'At sight', so the owner can unpledge at anytime and the target can't withdraw anymore. Example of value: '86400s' for 1 day.";
+      }
+    ];
+  }
+
+  string sharedAddressID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The shared address ID representing the internal address where the pledged funds will be held.";
+    }
+  ];
+  string currencyID = 2;
+  string amount = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "numeric; Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";
+    }
+  ];
+  PledgeDurationSetupRequest pledgeDurationSetup = 4;
+  string pledgeType = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The type of the pledge regarding the withdrawal rights. Possible values are: 'NO_WITHDRAWALS_RIGHTS', 'PLEDGEE_WITHDRAWALS_RIGHTS', 'PLEDGEE_AUTO_APPROVED_WITHDRAWALS_RIGHTS'"
+          "\n\n'NO_WITHDRAWALS_RIGHTS' means that the target participant has no right to withdraw from the pledge."
+          "\n\n'PLEDGEE_WITHDRAWALS_RIGHTS' means that the target participant can request withdrawals from the pledge that must be approved by the owner participant."
+          "\n\n'PLEDGEE_AUTO_APPROVED_WITHDRAWALS_RIGHTS' means that the target participant can request withdrawals from the pledge that are automatically approved without the owner participant approval, if the owner approved the setuped governance rules.";
+    }
+  ];
+  repeated KeyValue keyValueAttributes = 6 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Optional key-value attributes to attach to the pledge.";
+    }
+  ];
+  string externalReferenceId = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Reference identifier for the pledge that will be shared to the counter participant.";}];
+  string reconciliationNote = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Reconciliation note used internally, not shared to the counter participant.";}];
+
+}
+
+message CreatePledgeReply {
+  TnPledge result = 1;
+  string pledgeActionID = 2;
+}
+
+message UpdatePledgeRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["pledgeID"]
+    }
+  };
+
+  string pledgeID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the pledge to update.";
+    }
+  ];
+  string defaultDestinationSharedAddressID = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The default destination shared address ID. This is the address where the funds will be sent on withdrawals. The address must be shared with the participant owning the pledge.";
+    }
+  ];
+  uint64 defaultDestinationInternalAddressID = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The default destination internal address ID. This is the address where the funds will be sent on withdrawals. The ID represents an internal address which must be shared with the participant owning the pledge.";
+    }
+  ];
+}
+
+message UpdatePledgeReply {}
+
+message GetPledgesRequest {
+  string ownerParticipantID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+    {description: "Get all the pledges where the ownerParticipantID is the owner of the pledge.";}
+  ];
+  string targetParticipantID = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+    {description: "Get all the pledges where the targetParticipantID is the target of the pledge.";}
+  ];
+  repeated string sharedAddressIDs = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+    {description: "Filter pledges by specifying a list of shared address IDs backing the pledges.";}
+  ];
+  string currencyID = 4;
+
+  string sortOrder = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to ASC to get the id sorted"
+          " in ascending order or DESC to get them in descending order. By default, the order is DESC.";
+    }
+  ];
+  RequestCursor cursor = 6 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The pagination cursor. Note that the default page size is 100.";
+    }
+  ];
+  string attributeFiltersJson = 7 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "A JSON representation of a list of AttributeFilter objects. The filters are combined with an attributeFiltersOperator ('OR' by default). Each AttributeFilter can use different comparison operators: `=` (default if not specified), `<>` (not equal), `>` (greater than), `>=` (greater than or equal), `<` (less than), `<=` (less than or equal)";
+      example: "[{'key':'key1','value':'value1','type':'type1','operator':'='}]";
+    }
+  ];
+  repeated string statuses = 8 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Filter pledges by specifying a list of statuses. Accepted status values: 'CREATED', 'REJECTED_BY_OWNER', 'APPROVED_BY_OWNER', 'RECEIVED', 'REJECTED_BY_TARGET', 'ACCEPTED_BY_TARGET', 'UNPLEDGE_PENDING', 'UNPLEDGE_SENT', 'UNPLEDGE_RECEIVED', 'UNPLEDGED'.";
+    }
+  ];
+  string attributeFiltersOperator = 9 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Specifies how attribute filters are combined. Accepted values: 'OR' (default), 'AND'.";
+      example: "AND";
+    }
+  ];
+}
+
+message GetPledgesReply {
+  repeated TnPledge pledges = 1;
+  ResponseCursor cursor = 2;
+}
+
+message GetPledgeRequest {
+  string pledgeID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the pledge to retrieve.";
+    }
+  ];
+}
+
+message GetPledgeReply {
+  TnPledge result = 1;
+}
+
+message UnpledgeRequest {
+  string pledgeID = 1;
+}
+
+message UnpledgeReply {
+  string pledgeActionID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the pledge action to be approved to finalize the unpledge action.";
+    }
+  ];
+}
+
+message RejectPledgeRequest {
+  string pledgeID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the pledge to reject.";
+    }
+  ];
+}
+
+message WithdrawPledgeRequest {
+  string pledgeID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the pledge from which to withdraw funds.";
+    }
+  ];
+  string destinationSharedAddressID = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Use either destinationInternalAddressID or destinationSharedAddressID.";
+    }
+  ];
+  string amount = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "numeric; Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";
+    }
+  ];
+  uint64 destinationInternalAddressID = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Use either destinationInternalAddressID or destinationSharedAddressID. destinationInternalAddressID should represent an internal address that is shared with the participant owning the pledge.";
+    }
+  ];
+  string externalReferenceID = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Identifier for the withdrawal in the user's system. This must be unique. Attempting to create a withdrawal with an existing externalReferenceID will do nothing and return the originally existing withdrawal";}];
+
+}
+
+message WithdrawPledgeReply {
+  string pledgeWithdrawalID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the pledge withdrawal.";
+    }
+  ];
+  string pledgeActionID = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the pledge action to be approved to finalize the withdrawal creation.";
+    }
+  ];
+}
+
+message InitiateWithdrawPledgeRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["pledgeID", "amount"]
+    }
+  };
+  string pledgeID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the pledge from which to withdraw funds.";
+    }
+  ];
+  string destinationSharedAddressID = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The shared address ID representing the address where the withdrawn funds will be sent. The address must be shared with the participant owning the pledge.";
+    }
+  ];
+  string amount = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "numeric; Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";
+    }
+  ];
+}
+
+message InitiateWithdrawPledgeReply {
+  string pledgeWithdrawalID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the pledge withdrawal.";
+    }
+  ];
+  string pledgeActionID = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the pledge action to be approved to finalize the withdrawal creation.";
+    }
+  ];
+}
+
+message AddPledgeCollateralRequest {
+  string pledgeID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the pledge to which collateral will be added.";
+    }
+  ];
+  string amount = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "numeric; Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";
+    }
+  ];
+}
+
+message AddPledgeCollateralReply {
+  string pledgeActionID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the pledge action to be approved to finalize the add collateral action.";
+    }
+  ];
+}
+
+message GetPledgesWithdrawalsRequest {
+  string pledgeID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the pledge for which to retrieve withdrawals.";
+    }
+  ];
+  string sortOrder = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to ASC to get the id sorted"
+          " in ascending order or DESC to get them in descending order. By default, the order is DESC.";
+    }
+  ];
+  RequestCursor cursor = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The pagination cursor. Note that the default page size is 100.";
+    }
+  ];
+  string withdrawalStatus = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Filter the withdrawals by specifying the status of the withdrawals. Possible values are: PENDING, CONFIRMED, REJECTED.";
+    }
+  ];
+}
+
+message GetPledgesWithdrawalsReply {
+  repeated TnPledgeWithdrawal withdrawals = 1;
+  ResponseCursor cursor = 2;
+}
+
+message ApprovePledgeActionsRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{ \"signature\": \"I0xWyXI3L33DMZAKvvKXnlWD3GGXWh0AuL5zHD12DGp2/pR2h2MbgiQZrNGB27s/iB938UgMK1xUhbm1fNx8nw==\", \"comment\": \"try01\", \"ids\": [ \"442\" ]}"
+    json_schema: {
+      required: ["ids", "signature", "comment"]
+    }
+  };
+  string signature = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The base64-encoded ECDSA signature over the SHA-256 hash of the concatenated SHA-256 hashes of the pledge action metadata to approve. The signature must be created using the private key associated with the participant's TLS certificate."
+          "base64(ecdsa_sign(sha256([hex(sha256(pledgeAction1_metadata)),hex(sha256(pledgeAction2_metadata)),hex(sha256(pledgeAction3_metadata))])))";
+    }
+  ];
+  string comment = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "An optional comment to attach to the approval of the pledge actions.";
+    }
+  ];
+  repeated string ids = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The IDs of the pledge actions to approve. The IDs must be sorted in ascending order before computing the signature.";
+    }
+  ];
+}
+
+message ApprovePledgeActionsReply {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{\"signatures\":\"1\"}"
+  };
+  uint64 signatures = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The number of pledge actions that were successfully approved.";
+    }
+  ];
+}
+
+message RejectPledgeActionsRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["ids", "comment"]
+    }
+  };
+
+  string comment = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "A comment to attach to the rejection of the pledge actions.";
+    }
+  ];
+  repeated string ids = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The IDs of the pledge actions to reject.";
+    }
+  ];
+}
+
+message GetPledgeActionsForApprovalRequest {
+  repeated string types = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter on pledge actions types";}];
+  repeated string ids = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter on pledge action IDs";}];
+  RequestCursor cursor = 3;
+  string sortOrder = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to ASC to get the addresses sorted"
+          " in ascending order or DESC to get them in descending order.";
+    }
+  ];
+}
+
+message GetPledgeActionsForApprovalReply {
+  repeated TnPledgeAction result = 1;
+  ResponseCursor cursor = 2;
+}
+
+message GetPledgeActionsRequest {
+
+  RequestCursor cursor = 1;
+  string sortOrder = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to ASC to get the addresses sorted"
+          " in ascending order or DESC to get them in descending order.";
+    }
+  ];
+  repeated string ids = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter on pledge action IDs";}];
+  string pledgeID = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter on pledge ID";}];
+}
+
+message GetPledgeActionsReply {
+  repeated TnPledgeAction result = 1;
+  ResponseCursor cursor = 2;
+}
+
+message CreateParticipantAttributeRequest {
+  string participantID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the participant for whom the attribute will be created.";
+    }
+  ];
+  ParticipantAttributeData attributeData = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The data of the attribute to create (key, value, type etc...).";
+    }
+  ];
+  bool shareToTaurusNetworkParticipant = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set to true to share the attribute with the Taurus-NETWORK participant linked to the participantID.";
+    }
+  ];
+}
+
+message ParticipantAttributeData {
+  string key = 1;
+  string value = 2;
+  string contentType = 3;
+  string type = 4;
+  string subtype = 5;
+}
+
+message DeleteParticipantAttributeRequest {
+  string participantID = 1;
+  string attributeID = 2;
+}
+
+message CreateSettlementRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["targetParticipantID", "firstLegParticipantID", "firstLegAssets", "secondLegAssets"]
+    }
+  };
+
+  message ClipRequest {
+    uint64 index = 1;
+    repeated TnSettlementAssetTransfer firstLegAssets = 2;
+    repeated TnSettlementAssetTransfer secondLegAssets = 3;
+  }
+
+  string targetParticipantID = 1;
+  string firstLegParticipantID = 2;
+  repeated TnSettlementAssetTransfer firstLegAssets = 3;
+  repeated TnSettlementAssetTransfer secondLegAssets = 4;
+  repeated ClipRequest clips = 5;
+  google.protobuf.Timestamp startExecutionDate = 6;
+}
+
+message CreateSettlementReply {
+  string settlementID = 1;
+}
+
+message GetSettlementRequest {
+  string settlementID = 1;
+}
+
+message CancelSettlementRequest {
+  string settlementID = 1;
+}
+
+message ReplaceSettlementRequest {
+  string settlementID = 1;
+  CreateSettlementRequest createSettlementRequest = 2;
+}
+
+message GetSettlementReply {
+  TnSettlement result = 1;
+}
+
+message GetSettlementsRequest {
+  string counterParticipantID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) =
+    {description: "Get all the settlements where the counterParticipantID is either the creatorParticipantID or the targetParticipantID.";}
+  ];
+  repeated string statuses = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Filter settlements by specifying a list of statuses. Accepted status values: 'CREATING', 'CREATED', 'REJECTED_BY_CREATOR', 'APPROVED_BY_CREATOR', 'RECEIVED', 'REJECTED_BY_TARGET', 'ACCEPTED_BY_TARGET', 'PENDING', 'COMPLETED', 'FAILED'.";
+    }
+  ];
+
+  string sortOrder = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to ASC to get the (createdAt, id) sorted"
+          " in ascending order or DESC to get them in descending order. By default, the order is DESC.";
+    }
+  ];
+  RequestCursor cursor = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The pagination cursor. Note that the default page size is 100.";
+    }
+  ];
+}
+
+message GetSettlementsReply {
+  repeated TnSettlement result = 1;
+  ResponseCursor cursor = 2;
+}
+
+message GetSettlementsForApprovalRequest {
+  repeated string ids = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter on settlement IDs";}];
+  RequestCursor cursor = 2;
+  string sortOrder = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to ASC to get the addresses sorted"
+          " in ascending order or DESC to get them in descending order.";
+    }
+  ];
+}
+
+message GetSettlementsForApprovalReply {
+  repeated TnSettlement result = 1;
+  ResponseCursor cursor = 2;
+}
+
+message GetLendingAgreementsForApprovalRequest {
+  repeated string ids = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Filter on Lending Agreements IDs";}];
+  RequestCursor cursor = 2;
+  string sortOrder = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to ASC to get the agreements sorted by createdat"
+          " in ascending order or DESC to get them in descending order.";
+    }
+  ];
+}
+
+message GetLendingAgreementsForApprovalReply {
+  repeated LendingAgreement result = 1;
+  ResponseCursor cursor = 2;
+}
+
+message GetLendingAgreementsRequest {
+  string sortOrder = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to ASC to get the creation date sorted"
+          " in ASC order or DESC to get them in descending order. By default, the order is DESC.";
+    }
+  ];
+  RequestCursor cursor = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The pagination cursor. Note that the default page size is 100.";
+    }
+  ];
+}
+
+message GetLendingAgreementsReply {
+  repeated LendingAgreement lendingAgreements = 1;
+  ResponseCursor cursor = 2;
+}
+
+message GetLendingAgreementRequest {
+  string lendingAgreementID = 1;
+}
+
+message GetLendingAgreementReply {
+  LendingAgreement result = 1;
+}
+
+message GetLendingOffersRequest {
+  string sortOrder = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to ASC to get the id sorted"
+          " in ASC order or DESC to get them in descending order. By default, the order is DESC.";
+    }
+  ];
+  RequestCursor cursor = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The pagination cursor. Note that the default page size is 100.";
+    }
+  ];
+
+  message CurrencyIDs {
+    repeated string currencyIDs = 1 [
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "Filter on currency ID";
+      }];
+  }
+
+  oneof filter {
+    CurrencyIDs currencyIDs = 3;
+    string participantID = 4;
+    google.protobuf.Duration duration = 5;
+  }
+}
+
+message GetLendingOfferRequest {
+  string offerID = 1;
+}
+
+message UpdateLendingAgreementRequest {
+  string lenderSharedAddressID = 1;
+  string lendingAgreementID = 2;
+}
+
+message UpdateLendingAgreementReply {}
+
+message RepayLendingAgreementRequest {
+  string repayerSharedAddressID = 1;
+  string lendingAgreementID = 2;
+}
+
+message RepayLendingAgreementReply {}
+
+
+message CancelLendingAgreementRequest {
+  string lendingAgreementID = 1;
+}
+
+message CancelLendingAgreementReply {}
+
+message CreateLendingOfferRequest {
+  uint64 annualPercentageYield = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The interest rate of the to create lending offer, based on 5 decimals. Example: 525000 corresponds to 5.25% annual percentage yield";
+    }
+  ];
+  google.protobuf.Duration duration = 2;
+  message CollateralRequirement {
+    string ratio = 1;
+    string currencyID = 2;
+  }
+  repeated CollateralRequirement collateralRequirement = 3;
+  string currencyID = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The currency ID of the to create lending offer";
+    }
+  ];
+  string amount = 5;
+}
+
+message DeleteLendingOfferRequest {
+  string offerID = 1;
+}
+
+message CreateLendingOfferReply {
+  string offerID = 1;
+}
+
+message DeleteLendingOfferReply {
+}
+
+message DeleteLendingOffersReply {
+}
+
+message GetLendingOffersReply {
+  repeated TnLendingOffer lendingOffers = 1;
+  ResponseCursor cursor = 2;
+}
+
+message GetLendingOfferReply {
+  TnLendingOffer lendingOffer = 1;
+}
+
+message CreateLendingAgreementRequest {
+
+  message LoanCollateralRequest {
+    string sourceSharedAddressID = 1 [
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "The shared address ID representing the internal address where the collateral is held. A pledge will be created from this address to the lender participant.";
+      }
+    ];
+    string currencyID = 2 [
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "The currency ID of the collateral";
+      }
+    ];
+    string amount = 3 [
+      (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+        description: "numeric; Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";
+      }
+    ];
+  }
+
+  string lendingOfferID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the lending offer used to create the agreement. This parameter is optional if both the lender and the borrower already negotiated the terms of the loan not represented by an existing lending offer.";
+    }
+  ];
+  string lenderParticipantID = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the lender participant";
+    }
+  ];
+  uint64 annualPercentageYield = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The interest rate of the to create lending offer, based on 5 decimals. Example: 525000 corresponds to 5.25% annual percentage yield";
+    }
+  ];
+  string currencyID = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The currency ID of the loan";
+    }
+  ];
+  string amount = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "numeric; Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)";
+    }
+  ];
+  google.protobuf.Duration duration = 6;
+
+  repeated LoanCollateralRequest collaterals = 7;
+  string borrowerSharedAddressID = 8 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The shared address ID representing the address owned by the borrower where the lender will sent the funds to. Unless it is updated, it will also be the addres used for repayment.";
+    }
+  ];
+}
+
+message CreateLendingAgreementReply {
+  string lendingAgreementID = 1;
+}
+
+message CreateLendingAgreementAttachmentRequest {
+  string lendingAgreementID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the lending agreement for which to create the attachment.";
+    }
+  ];
+  string name = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The name of the attachment to create.";
+    }
+  ];
+  string value = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The content of the attachment to create, encoded as a base64 string.";
+    }
+  ];
+  string contentType = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The content type of the attachment to create. Example: application/pdf";
+    }
+  ];
+
+  string type = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The type of the attachment to create. It is used to specify whether the attachment is embedded in the value itself or if it is a link to an externally hosted resource. Possible values are: 'EMBEDDED', 'EXTERNAL_LINK'.";
+    }
+  ];
+}
+
+message CreateLendingAgreementAttachmentReply {
+}
+
+message GetLendingAgreementAttachmentsRequest {
+  string lendingAgreementID = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The ID of the lending agreement for which to retrieve the attachments.";
+    }
+  ];
+}
+
+message GetLendingAgreementAttachmentsReply {
+  repeated LendingAgreementAttachment result = 1;
+}
+
+service TaurusNetworkService {
+
+  rpc GetMyParticipant(google.protobuf.Empty) returns (GetMyParticipantReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/tn/participants/me/info"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Get my participant";
+      description:
+          "This endpoint returns the current participant linked to the tenant with additional Taurus-NETWORK settings.";
+      tags: "Taurus Network - Participant";
+    };
+  };
+
+  rpc GetParticipant(GetParticipantRequest) returns (GetParticipantReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/tn/participants/{participantID}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Get participant by ID";
+      description:
+          "This endpoint returns a Taurus-NETWORK participant based on the provided ID.";
+      tags: "Taurus Network - Participant";
+    };
+  };
+
+  rpc GetParticipants(GetParticipantsRequest) returns (GetParticipantsReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/tn/participants"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "List participants";
+      description:
+          "This endpoint returns a list of visible Taurus-NETWORK participants connected to my participant.";
+      tags: "Taurus Network - Participant";
+    };
+  };
+
+  rpc CreateParticipantAttribute (CreateParticipantAttributeRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/participants/{participantID}/attributes"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an attribute for a participant";
+      description: "This endpoint creates an attribute for a given participant. The attribute can also be shared to the linked Taurus-NETWORK participant. \n Required role: **Admin**.";
+      tags: "Taurus Network - Participant";
+    };
+  };
+
+  rpc DeleteParticipantAttribute (DeleteParticipantAttributeRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/rest/v1/participants/{participantID}/attributes/{attributeID}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete an attribute for a participant";
+      description: "This endpoint deletes an attribute for a given participant. If the attribute was shared to the linked Taurus-NETWORK participant a message will be sent to the participant. \n Required role: **Admin**.";
+      tags: "Taurus Network - Participant";
+    };
+  };
+
+  rpc GetSharedAddresses(GetSharedAddressesRequest) returns (GetSharedAddressesReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/tn/shared_addresses"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "List shared addresses";
+      description:
+          "This endpoint returns a list of addresses that you shared or that are shared to you via Taurus-NETWORK. You can filter the results by specifying the owner or the target of the shared addresses.";
+      tags: "Taurus Network - Shared address/asset";
+    };
+  };
+
+  rpc ShareAddress(ShareAddressRequest) returns (ShareAddressReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/tn/shared_addresses"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Share an address";
+      description:
+          "This endpoint shares an internal address with a Taurus-NETWORK participant. It will automatically create a whitelisted address to be approved/rejected on the target participant side.";
+      tags: "Taurus Network - Shared address/asset";
+    };
+  };
+
+  rpc UnshareAddress(UnshareAddressRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/tn/shared_addresses/{tnSharedAddressID}/unshare"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Unshare an address";
+      description:
+          "This endpoint unshares an address with a Taurus-NETWORK participant. The address must be shared with the participant to be unshared. Unsharing an address will not delete shared address in the participant registry, it will update the status of the shared address.";
+      tags: "Taurus Network - Shared address/asset";
+    };
+  };
+
+  rpc GetSharedAssets(GetSharedAssetsRequest) returns (GetSharedAssetsReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/tn/shared_assets"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "List shared assets";
+      description:
+          "This endpoint returns a list of whitelisted assets that you shared or that are shared to you via Taurus-NETWORK. You can filter the results by specifying the owner or the target of the shared assets.";
+      tags: "Taurus Network - Shared address/asset";
+    };
+  };
+
+  rpc ShareWhitelistedAsset(ShareWhitelistedAssetRequest) returns (ShareWhitelistedAssetReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/tn/shared_assets"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Share an asset";
+      description:
+          "This endpoint shares an asset with a Taurus-NETWORK participant. It will automatically create a whitelisted asset to be approved/rejected on the target participant side.";
+      tags: "Taurus Network - Shared address/asset";
+    };
+  };
+
+  rpc UnshareWhitelistedAsset(UnshareWhitelistedAssetRequest) returns (UnshareWhitelistedAssetReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/tn/shared_assets/{tnSharedAssetID}/unshare"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Unshare an asset";
+      description:
+          "This endpoint unshares an asset with a Taurus-NETWORK participant. The asset must be shared with the participant to be unshared. Unsharing an asset will not delete shared asset in the participant registry, it will update the status of the shared address.";
+      tags: "Taurus Network - Shared address/asset";
+    };
+  };
+
+  rpc CreatePledge(CreatePledgeRequest) returns (CreatePledgeReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/tn/pledges"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Create pledge";
+      description:
+          "This endpoint creates a pledge of funds from an internal address that was previously shared to a Taurus-NETWORK participant. The funds will reserved and can't be spend until they are unpledged or withdrawn by the target participant. The endpoint will create a pledge action that needs to be approved to finalize the pledge and transmit it to the other participant.";
+      tags: "Taurus Network - Pledge";
+    };
+  };
+
+  rpc UpdatePledge(UpdatePledgeRequest) returns (UpdatePledgeReply) {
+    option (google.api.http) = {
+      put: "/api/rest/v1/tn/pledges/{pledgeID}"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Update pledge";
+      description:
+          "This endpoint updates a pledge for a few modifiable fields.";
+      tags: "Taurus Network - Pledge";
+    };
+  };
+
+  rpc GetPledges(GetPledgesRequest) returns (GetPledgesReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/tn/pledges"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "List pledges";
+      description:
+          "This endpoint returns a list of pledges directed to/from the Taurus-NETWORK participant linked to the tenant. You can filter the results by specifying the owner or the target of the pledges.";
+      tags: "Taurus Network - Pledge";
+    };
+  };
+
+  rpc GetPledge(GetPledgeRequest) returns (GetPledgeReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/tn/pledges/{pledgeID}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Get pledge";
+      description:
+          "This endpoint returns a pledge.";
+      tags: "Taurus Network - Pledge";
+    };
+  };
+
+  rpc RejectPledge(RejectPledgeRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/tn/pledges/{pledgeID}/reject"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Reject pledge";
+      description:
+          "This endpoint rejects a pledge. It can be called only if the pledge was not yet approved by both participants. The pledge should be in status ' Created', 'ApprovedByOwner' or 'Received'. It can be called by both the owner and the target participants.";
+      tags: "Taurus Network - Pledge";
+    };
+  };
+
+  rpc Unpledge(UnpledgeRequest) returns (UnpledgeReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/tn/pledges/{pledgeID}/unpledge"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Unpledge";
+      description:
+          "This endpoint unpledge funds from a pledge. Only the pledgor (owner of the pledge) can call this endpoint. Unpledging a pledge will release the reserved funds and make them available for spending again. The endpoint will create a pledge action that needs to be approved to finalize the unpledge.";
+      tags: "Taurus Network - Pledge";
+    };
+  };
+
+  rpc AddPledgeCollateral(AddPledgeCollateralRequest) returns (AddPledgeCollateralReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/tn/pledges/{pledgeID}/add_collateral"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Add pledge collateral";
+      description:
+          "This endpoint adds collateral to an existing pledge. It will increase the amount of the pledge. The additional funds will also be reserved and can't be spent until they are unpledged or withdrawn by the target participant. Only the pledgor (owner of the pledge) can call this endpoint. The endpoint will create a pledge action that needs to be approved to finalize the addition of collateral.";
+      tags: "Taurus Network - Pledge";
+    };
+  };
+
+  rpc WithdrawPledge(WithdrawPledgeRequest) returns (WithdrawPledgeReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/tn/pledges/{pledgeID}/withdraw"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Withdraw pledge";
+      description:
+          "This endpoint creates a request from the pledgee (target of the pledge) to withdraw from a pledge. The amount withdrawn will be deducted from the pledge amount. Only the pledgee can call this endpoint. The endpoint will create a pledge action that needs to be approved to finalize the withdrawal.";
+      tags: "Taurus Network - Pledge";
+    };
+  };
+
+  rpc InitiateWithdrawPledge(InitiateWithdrawPledgeRequest) returns (InitiateWithdrawPledgeReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/tn/pledges/{pledgeID}/initiate_withdraw"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Initiate withdraw pledge";
+      description:
+          "This endpoint initiates a withdrawal from the pledgor (owner of the pledge) to send funds from a pledge to the pledgee (target of the pledge). The amount withdrawn will be deducted from the pledge amount. Only the pledgor can call this endpoint. The endpoint will create a pledge action that needs to be approved to finalize the withdrawal.";
+      tags: "Taurus Network - Pledge";
+    };
+  };
+
+  rpc GetPledgesWithdrawals(GetPledgesWithdrawalsRequest) returns (GetPledgesWithdrawalsReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/tn/pledges/withdrawals"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "List pledges withdrawals";
+      description:
+          "This endpoint returns a list of pledges withdrawals.";
+      tags: "Taurus Network - Pledge";
+    };
+  };
+
+  rpc ApprovePledgeActions (ApprovePledgeActionsRequest) returns (ApprovePledgeActionsReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/tn/pledges/actions/approve"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Approve a pledge action";
+      description: "This endpoint approves a Taurus-NETWORK pledge action.\n Required role: **RequestApprover**.";
+      tags: "Taurus Network - Pledge";
+    };
+  };
+
+  rpc RejectPledgeActions (RejectPledgeActionsRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/tn/pledges/actions/reject"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Reject a pledge action";
+      description: "This endpoint rejects a Taurus-NETWORK pledge action.\n Required role: **RequestApprover**.";
+      tags: "Taurus Network - Pledge";
+    };
+  };
+
+  rpc GetPledgeActionsForApproval (GetPledgeActionsForApprovalRequest) returns (GetPledgeActionsForApprovalReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/tn/pledges/actions/for-approval"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List pledge actions for approval";
+      description: "This endpoint returns a list of Taurus-NETWORK pledge actions for approval.\n Required role: **RequestApprover**.";
+      tags: "Taurus Network - Pledge";
+    };
+  };
+
+  rpc GetPledgeActions (GetPledgeActionsRequest) returns (GetPledgeActionsReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/tn/pledges/actions"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List pledge actions";
+      description: "This endpoint returns a list of Taurus-NETWORK pledge actions.\n Required role: **RequestApprover**.";
+      tags: "Taurus Network - Pledge";
+    };
+  };
+
+  rpc CreateSettlement(CreateSettlementRequest) returns (CreateSettlementReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/tn/settlements"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Create settlement";
+      description:
+          "This endpoint creates a settlement of funds from addresses that were shared with a Taurus-NETWORK participant.";
+      tags: "Taurus Network - Settlement";
+    };
+  };
+
+  rpc GetSettlement(GetSettlementRequest) returns (GetSettlementReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/tn/settlements/{settlementID}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Get settlement";
+      description:
+          "This endpoint returns a settlement.";
+      tags: "Taurus Network - Settlement";
+    };
+  };
+
+  rpc GetSettlements(GetSettlementsRequest) returns (GetSettlementsReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/tn/settlements"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "List settlements";
+      description:
+          "This endpoint returns a list of settlements directed to/from the Taurus-NETWORK participant linked to the tenant.";
+      tags: "Taurus Network - Settlement";
+    };
+  };
+
+  rpc CancelSettlement(CancelSettlementRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/tn/settlements/{settlementID}/cancel"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Cancel settlement";
+      description:
+          "This endpoint cancels a settlement.";
+      tags: "Taurus Network - Settlement";
+    };
+  };
+
+  rpc ReplaceSettlement(ReplaceSettlementRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/tn/settlements/{settlementID}/replace"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Replace settlement";
+      description:
+          "This endpoint replaces a settlement with new attributes at target side before the target approves the settlement.";
+      tags: "Taurus Network - Settlement";
+    };
+  };
+
+  rpc GetLendingOffers(GetLendingOffersRequest) returns (GetLendingOffersReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/tn/lending/offers"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "List lending offers";
+      description:
+          "This endpoint returns a list of lending offers. You can filter the results by currency";
+      tags: "Taurus Network - Lending";
+    };
+  };
+
+  rpc GetLendingOffer(GetLendingOfferRequest) returns (GetLendingOfferReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/tn/lending/offers/{offerID}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Get lending offer";
+      description:
+          "This endpoint returns a lending offer.";
+      tags: "Taurus Network - Lending";
+    };
+  };
+
+  rpc GetSettlementsForApproval (GetSettlementsForApprovalRequest) returns (GetSettlementsForApprovalReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/tn/settlements/for-approval"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List settlements for approval";
+      description: "This endpoint returns a list of Taurus-NETWORK settlements for approval.\n Required role: **RequestApprover**.";
+      tags: "Taurus Network - Settlement";
+    };
+  };
+  rpc CreateLendingOffer(CreateLendingOfferRequest) returns (CreateLendingOfferReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/tn/lending/offers"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Create lending offer";
+      description:
+          "This endpoint creates a lending offer.";
+      tags: "Taurus Network - Lending";
+    };
+  };
+
+  rpc DeleteLendingOffer(DeleteLendingOfferRequest) returns (DeleteLendingOfferReply) {
+    option (google.api.http) = {
+      delete: "/api/rest/v1/tn/lending/offers/{offerID}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Delete lending offer";
+      description:
+          "This endpoint deletes a lending offer.";
+      tags: "Taurus Network - Lending";
+    };
+  };
+
+
+  rpc DeleteLendingOffers(google.protobuf.Empty) returns (DeleteLendingOffersReply) {
+    option (google.api.http) = {
+      delete: "/api/rest/v1/tn/lending/offers"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Delete my lending offers";
+      description:
+          "This endpoint deletes all lending offers that I created.";
+      tags: "Taurus Network - Lending";
+    };
+  };
+
+  rpc CreateLendingAgreement(CreateLendingAgreementRequest) returns (CreateLendingAgreementReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/tn/lending/agreements"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Create lending agreement";
+      description:
+          "This endpoint creates a lending agreement. Once approved by the lender and the borrower, the agreement will automatically execute the loan lifecycle. This endpoint should be called by the borrower.";
+      tags: "Taurus Network - Lending";
+    };
+  };
+
+  rpc GetLendingAgreements(GetLendingAgreementsRequest) returns (GetLendingAgreementsReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/tn/lending/agreements"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "List lending agreement";
+      description:
+          "This endpoint returns a list of lending agreements.";
+      tags: "Taurus Network - Lending";
+    };
+  };
+
+  rpc GetLendingAgreement(GetLendingAgreementRequest) returns (GetLendingAgreementReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/tn/lending/agreements/{lendingAgreementID}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Get lending agreement";
+      description:
+          "This endpoint returns a lending agreement.";
+      tags: "Taurus Network - Lending";
+    };
+  };
+
+  rpc GetLendingAgreementsForApproval(GetLendingAgreementsForApprovalRequest) returns (GetLendingAgreementsForApprovalReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/tn/lending/agreements/for-approval"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "List lending agreements for approval";
+      description:
+          "This endpoint returns a list of lending agreements for approval.";
+      tags: "Taurus Network - Lending";
+    };
+  };
+
+  rpc UpdateLendingAgreement(UpdateLendingAgreementRequest) returns (UpdateLendingAgreementReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/tn/lending/agreements/{lendingAgreementID}/update"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Update lending agreement";
+      description:
+          "This endpoint is to update certain modifiable fields of a lending agreement.";
+      tags: "Taurus Network - Lending";
+    };
+  };
+
+  rpc CreateLendingAgreementAttachment(CreateLendingAgreementAttachmentRequest) returns (CreateLendingAgreementAttachmentReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/tn/lending/agreements/{lendingAgreementID}/attachments"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Create lending agreement attachment";
+      description:
+          "This endpoint creates an attachment for a lending agreement.";
+      tags: "Taurus Network - Lending";
+    };
+  };
+
+  rpc GetLendingAgreementAttachments(GetLendingAgreementAttachmentsRequest) returns (GetLendingAgreementAttachmentsReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/tn/lending/agreements/{lendingAgreementID}/attachments"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "List lending agreement attachments";
+      description:
+          "This endpoint returns a list of attachments associated with a lending agreement.";
+      tags: "Taurus Network - Lending";
+    };
+  };
+
+  rpc RepayLendingAgreement(RepayLendingAgreementRequest) returns (RepayLendingAgreementReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/tn/lending/agreements/{lendingAgreementID}/repay"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Repay lending agreement";
+      description:
+          "This endpoint repays a lending agreement.";
+      tags: "Taurus Network - Lending";
+    };
+  };
+
+  rpc CancelLendingAgreement(CancelLendingAgreementRequest) returns (CancelLendingAgreementReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/tn/lending/agreements/{lendingAgreementID}/cancel"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary : "Cancel lending agreement";
+      description:
+          "This endpoint cancels a lending agreement when it is not yet approved by lender participant.";
+      tags: "Taurus Network - Lending";
+    };
+  };
+}

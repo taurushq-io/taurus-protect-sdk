@@ -1,0 +1,210 @@
+syntax = "proto3";
+
+package tgvalidatord;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "apikey.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "tg-validatord steward service";
+    version: "1.0";
+    contact: {
+      name:"tg-validatord steward service";
+      url:"https://github.com/taurusgroup/tg-validatord";
+      email:"development@taurusgroup.ch";
+    };
+  };
+  consumes: "application/json";
+  produces: "application/json";
+  schemes: [HTTP, HTTPS];
+  security_definitions: {
+    security: {
+      key: "Bearer";
+      value: {
+        type: TYPE_API_KEY;
+        in: IN_HEADER;
+        name: "Authorization";
+      }
+    }
+  }
+  security: {
+    security_requirement: {
+      key: "Bearer";
+      value: {};
+    }
+  }
+  responses: {
+    key: "401";
+    value: {
+      description: "Returned when the user is not authenticated.";
+    }
+  }
+  responses: {
+    key: "403";
+    value: {
+      description: "Returned when the user is not authorized to access the resource.";
+    }
+  }
+  responses: {
+    key: "404";
+    value: {
+      description: "Returned when the resource does not exist.";
+    }
+  }
+};
+
+message InitializeTenantRequest {
+  uint64   tenantId = 1;
+  string   type = 2;
+}
+
+message InitializeTenantReply {
+  string result = 1;
+}
+
+message InitializeETHContractRequest {
+  enum RulesToCreate {
+    All = 0;
+    NFT = 1;
+  }
+  uint64 tenantId = 1;
+  string rulesToCreate = 2;
+}
+
+message InitializeETHContractReply {
+  string result = 1;
+}
+
+message InitializeXTZContractRequest {
+  uint64 tenantId = 1;
+}
+
+message InitializeXTZContractReply {
+  string result = 1;
+}
+
+message CreateApiKeyRequest {
+  uint64 tenantId = 1;
+  google.protobuf.Timestamp expiration = 2;
+  repeated string roles = 3;
+}
+
+message CreateApiKeyReply {
+  ApiKeyToken result = 1;
+}
+
+message ListApiKeyRequest {
+  uint64 tenantId = 1;
+}
+
+message ListApiKeyReply {
+  repeated ApiKey result = 1;
+}
+
+message RevokeApiKeyRequest {
+  uint64 tenantId = 1;
+  string id = 2;
+}
+
+message RevokeApiKeyReply {}
+
+message SetupSecondaryCommitmentRequest {
+  uint64 tenantId = 1;
+  bool enabled = 2;
+}
+
+message SetupSecondaryCommitmentReply {
+  string result = 1;
+}
+
+service StewardService {
+  rpc InitializeTenant (InitializeTenantRequest) returns (InitializeTenantReply) {
+    option deprecated = true;
+    option (google.api.http) = {
+      post: "/api/rest/v1/steward/tenants/initialize"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      deprecated: true;
+      summary: "Initialize a tenant";
+      description: "This endpoint does not do anything anymore. Since 3.16, tenant initialization is automatic at server startup";
+      tags: "Steward";
+    };
+  };
+
+
+  rpc InitializeETHContract (InitializeETHContractRequest) returns (InitializeETHContractReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/steward/tenants/{tenantId}/ethcontract/initialize"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Initialize the ETH contract support";
+      description: "This endpoint initializes the ETH contract support on a given tenant.\n Required role: **TgValidatord**.";
+      tags: "Steward";
+    };
+  };
+
+  rpc InitializeXTZContract (InitializeXTZContractRequest) returns (InitializeXTZContractReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/steward/tenants/{tenantId}/xtzcontract/initialize"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Initialize the XTZ contract support";
+      description: "This endpoint initializes the XTZ contract support on a given tenant.\n Required role: **TgValidatord**.";
+      tags: "Steward";
+    };
+  };
+
+  rpc CreateApiKey (CreateApiKeyRequest) returns (CreateApiKeyReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/steward/tenants/{tenantId}/apikeys"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an API key";
+      description: "This endpoint creates an API key for a given tenant and roles";
+      tags: "Steward";
+    };
+  };
+
+  rpc ListApiKey (ListApiKeyRequest) returns (ListApiKeyReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/steward/tenants/{tenantId}/apikeys";
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List the API keys";
+      description: "This endpoint returns the list of valid API keys for the tenant";
+      tags: "Steward";
+    };
+  };
+
+  rpc RevokeApiKey (RevokeApiKeyRequest) returns (RevokeApiKeyReply) {
+    option (google.api.http) = {
+      delete: "/api/rest/v1/steward/tenants/{tenantId}/apikeys/{id}";
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete the API key";
+      description: "This endpoint deletes the API key identified by the tenant and the ID";
+      tags: "Steward";
+    };
+  };
+
+  rpc SetupSecondaryCommitment(SetupSecondaryCommitmentRequest) returns (SetupSecondaryCommitmentReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/steward/tenants/{tenantId}/secondary_commitment"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Setup secondary commitment";
+      description: "This endpoint enables/disables the secondary commitment security feature for the given tenant";
+      tags: "Steward";
+    };
+  };
+}

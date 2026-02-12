@@ -1,0 +1,143 @@
+syntax = "proto3";
+
+package tgvalidatord;
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "request_reply.proto";
+
+// OutgoingAirGapFile is the protobuf payload returned by calling the outgoing air-gap endpoint. This will be read by the
+// signer CLI to request a signature by the cold HSM.
+message OutgoingAirGapFile {
+  bytes encryptedPayload = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "the encrypted payload by the shared key for signatures by the cold HSM.";
+  }];
+
+  string wrappingPublicKey = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "PKIX; the public key to be used to derive the shared key with the signer private key.";
+  }];
+
+  repeated Signer signers = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "The list of air-gap signer that can decrypt the payload.";
+  }];
+
+  message Payload {
+    AirGapMetadata metadata = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Metadata that will be transmitted when submitting signed request.";
+    }];
+    AirGapSignedEnvelope envelope = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The envelope containing the requests to be signed by the cold HSM.";
+    }];
+    UserSignature signature = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The signature of the payload from an air-gap exporter.";
+    }];
+  }
+
+  message Signer {
+    string externalId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The user external id that corresponds to the wrapped shared key.";
+    }];
+    bytes encryptedSharedKey = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The air-gap signer can decrypt the shared key from their private key.";
+    }];
+  }
+}
+
+// IncomingAirGapFile is the protobuf payload created by the signer CLI after getting the different signatures for the
+// requests from the cold HSM. This is decrypted by the GUI or the CLI to submit the signatures via the incoming
+// endpoint.
+message IncomingAirGapFile {
+  bytes encryptedPayload = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Encrypted payload of type <*IncomingAirGapFile_SignedPayload>.";
+  }];
+
+  string wrappingPublicKey = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "PKIX; the public key to be used to derive the shared key with the signer private key.";
+  }];
+
+  repeated Importer importers = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "The list of air-gap importers that can decrypt the payload.";
+  }];
+
+  message Importer {
+    string externalId = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The user external id that corresponds to the wrapped shared key.";
+    }];
+    bytes encryptedSharedKey = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The air-gap importer can decrypt the shared key from their private key.";
+    }];
+  }
+
+  message Payload {
+    AirGapMetadata metadata = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Metadata returned during the outgoing request.";
+    }];
+    SignedRepliesEnvelope signedRequests = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Envelope holding the requests signed by the cold HSM, either accepted or cancellation requests.";
+    }];
+    repeated RequestEnvelope rejectedRequests = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "A list of the requests that have been rejected by the air-gap signer.";
+    }];
+    AirGapTrail signerTrail = 4;
+  }
+
+  message SignedPayload {
+    bytes payload = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Payload of type <*IncomingAirGapFile_Payload>.";
+    }];
+    UserSignature signature = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "The signature of the payload from an air-gap signer.";
+    }];
+  }
+}
+
+message AirGapMetadata {
+  bytes value = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Value of type <*AirGapMetadata_Value>.";
+  }];
+  bytes signature = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "The signature of the value from the Protect daemon.";
+  }];
+
+  message Value {
+    repeated Address addresses = 1;
+    AirGapTrail exporterTrail = 2;
+  }
+
+  message Address {
+    uint64 id = 1;
+    string requestId = 2;
+  }
+}
+
+message AirGapSignedEnvelope {
+  string id = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "<uuid>; a unique identifier for the envelope.";
+  }];
+  UserSignature payloadSignature = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "The signature of the value from the Protect daemon.";
+  }];
+  bytes payload = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Encrypted payload of type <*AirGapSignedEnvelope_Requests>.";
+  }];
+
+  message Requests {
+    uint64 ts = 1;
+    uint32 slot = 2;
+    repeated UserSignature rulesSignatures = 3;
+    bytes rules = 4;
+    repeated AirGapSignedEnvelope.Request requests = 5;
+  }
+
+  message Request {
+    RequestEnvelope envelope = 1;
+    repeated RequestEnvelope cancellations = 2;
+  }
+}
+
+message AirGapTrail {
+  string externalId = 1;
+  google.protobuf.Timestamp createdAt = 2;
+}

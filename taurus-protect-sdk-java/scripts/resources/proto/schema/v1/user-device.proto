@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package tgvalidatord;
+
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+message UserDevicePairingInfo {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["status", "pairingID"]
+    }
+  };
+
+  enum Status {
+    NONE = 0;
+    WAITING = 1;
+    PAIRING = 2;
+    APPROVED = 3;
+  }
+
+  Status status = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "Status of the pairing process",
+  }];
+  string pairingID = 2;
+  string apiKey = 3;
+}

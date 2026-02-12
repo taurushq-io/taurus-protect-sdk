@@ -1,0 +1,313 @@
+syntax = "proto3";
+
+package tgvalidatord;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/protobuf/empty.proto";
+import "statistics.proto";
+import "cursor.proto";
+import "currency.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "tg-validatord statistics service";
+    version:"1.0";
+    contact:{
+      name:"tg-validatord statistics service";
+      url:"https://github.com/taurusgroup/tg-validatord";
+      email:"development@taurusgroup.ch";
+    };
+  };
+  consumes:"application/json";
+  produces:"application/json";
+  schemes: [HTTP, HTTPS];
+  security_definitions:{
+    security:{
+      key:"Bearer";
+      value:{
+        type:TYPE_API_KEY;
+        in:IN_HEADER;
+        name:"Authorization";
+      }
+    }
+  }
+  security:{
+    security_requirement:{
+      key:"Bearer";
+      value:{};
+    }
+  }
+  responses:{
+    key:"401";
+    value:{
+      description:"Returned when the user is not authenticated.";
+    }
+  }
+  responses:{
+    key:"403";
+    value:{
+      description:"Returned when the user is not authorized to access the resource.";
+    }
+  }
+  responses:{
+    key:"404";
+    value:{
+      description:"Returned when the resource does not exist.";
+    }
+  }
+
+};
+
+message GetCurrencyStatisticsRequest{
+  repeated CurrencyFilter currencies = 1;
+}
+
+message GetCurrencyStatisticsReply{
+  repeated CurrencyStatistics result = 1;
+}
+
+message GetTagsStatisticsReply{
+  repeated TagStatistics result = 1;
+  ResponseCursor cursor = 2;
+}
+
+message GetTagAssetStatisticsReply{
+  repeated TagAssetStatistics result = 1;
+  ResponseCursor cursor = 2;
+}
+
+message GetTagAssetStatisticsRequest{
+  string tagID = 1;
+  string sortOrder = 2 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to ASC to get the tag asset breakdown statistics reverse sorted";
+    }
+  ];
+  RequestCursor cursor = 3;
+}
+
+message GetTagStatisticsRequest{
+  string sortOrder = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to ASC to get the tag statistics reverse sorted";
+    }
+  ];
+  RequestCursor cursor = 2;
+  string query = 3 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Filter tags to select only tags where the value contains the given query substring.";
+    }
+  ];
+  string sortBy = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to select the type on which you want to sort."
+          "Types accepted are: 'id' (default), 'tagname', and 'createdat'";
+    }
+  ];
+}
+
+message GetCurrencyStatisticsHistoryRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["intervalHours", "limit"]
+    }
+  };
+
+  repeated CurrencyFilter currencies = 1;
+  uint64 intervalHours = 2;
+  google.protobuf.Timestamp from = 3;
+  google.protobuf.Timestamp to = 4;
+  uint64 limit = 5;
+  string sortOrder = 6 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to ASC to get the stats history point sorted"
+          " in ascending order or DESC to get them in descending order (based on timestamp).";
+    }
+  ];
+}
+
+message GetCurrencyStatisticsHistoryReply{
+  repeated CurrencyStatisticsHistory result = 1;
+}
+
+message GetPortfolioStatisticsReply{
+  AggregatedStatsData result = 1;
+}
+
+message GetPortfolioStatisticsHistoryRequest {
+  uint64 intervalHours = 1;
+  google.protobuf.Timestamp from = 2;
+  google.protobuf.Timestamp to = 3;
+  uint64 limit = 4;
+  string sortOrder = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to ASC to get the stats history point sorted"
+          " in ascending order or DESC to get them in descending order (based on timestamp).";
+    }
+  ];
+  RequestCursor cursor = 6;
+}
+
+message GetPortfolioStatisticsHistoryReply{
+  repeated AggregatedStatsHistoryPoint result = 1;
+  ResponseCursor cursor = 2;
+}
+
+message GetPortfolioStatisticsHistoryExportRequest {
+  uint64 intervalHours = 1;
+  google.protobuf.Timestamp from = 2;
+  google.protobuf.Timestamp to = 3;
+  string sortOrder = 4 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Set this parameter to ASC to get the stats history point sorted"
+          " in ascending order or DESC (default) to get them in descending order (based on timestamp).";
+    }
+  ];
+  string format = 5 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Format of the exported file. Can be CSV (default) or JSON.";
+    }
+  ];
+  RequestCursor cursor = 6;
+}
+
+message GetPortfolioStatisticsHistoryExportReply{
+  string result = 1;
+  ResponseCursor cursor = 2;
+}
+
+message GetTnParticipantPledgesStatisticsRequest{
+  string participantID = 1;
+}
+
+message GetTnParticipantPledgesStatisticsReply{
+  TnPledgeStatisticsTnParticipant result = 1;
+}
+
+message GetForApprovalStatisticsRequest{
+  uint64 limit = 1 [
+    (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+      description: "Maximum count that will be returned in the counters. Must be less or equal to 100";
+      example: "100";
+    }
+  ];
+}
+
+message GetForApprovalStatisticsReply{
+  uint64 requestsCount = 1;
+  uint64 accountChangesCount = 2;
+  uint64 contractCallsCount = 3;
+  uint64 whitelistedAddressesCount = 4;
+  uint64 whitelistedContractsCount = 5;
+  uint64 settlementsCount = 6;
+  uint64 pledgesCount = 7;
+}
+
+service StatisticsService {
+
+  rpc GetAggregatedTagStats (GetTagStatisticsRequest) returns (GetTagsStatisticsReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/statistics/tags"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List tags statistics";
+      description: "This endpoint returns a list of statistics about tags. The statistics contains information about the number of addresses/wallets and fiat valuation of a given tag.";
+      tags: "Statistics";
+    };
+  };
+
+  rpc GetIndividualTagStats (GetTagAssetStatisticsRequest) returns (GetTagAssetStatisticsReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/statistics/tags/{tagID}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List assets statistics for a certain tag";
+      description: "This endpoint returns a list of asset statistics about a certain tag. The statistics contains information about the number of addresses/wallets, the balance and fiat valuation for assets of a given tag.";
+      tags: "Statistics";
+    };
+  };
+
+  rpc GetCurrencyStatistics (GetCurrencyStatisticsRequest) returns (GetCurrencyStatisticsReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/statistics/currencies"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List currencies statistics";
+      description: "This endpoint returns a list of statistics about currencies. The statistics contains information about the number of addresses, the total balance and other information for all wallets of a given currency.";
+      tags: "Statistics";
+    };
+  };
+
+  rpc GetCurrencyStatisticsHistory (GetCurrencyStatisticsHistoryRequest) returns (GetCurrencyStatisticsHistoryReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/statistics/currencies/history"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List currency's statistics history";
+      description: "This endpoint returns a history of statistics for a given currency. The statistics contains information about the number of addresses, the total balance and other information for all wallets of a given currency.";
+      tags: "Statistics";
+    };
+  };
+
+  rpc GetPortfolioStatistics (google.protobuf.Empty) returns (GetPortfolioStatisticsReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/statistics/portfolio"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get portfolio statistics";
+      description: "This endpoint returns the statistics information about the global portfolio. The statistics contains information about the number of addresses, the total balance and other information.";
+      tags: "Statistics";
+    };
+  };
+
+  rpc GetPortfolioStatisticsHistory (GetPortfolioStatisticsHistoryRequest) returns (GetPortfolioStatisticsHistoryReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/statistics/portfolio/history"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get portfolio statistics history";
+      description: "This endpoint returns a history of statistics about the global portfolio. The statistics contains information about the number of addresses, the total balance and other information.";
+      tags: "Statistics";
+    };
+  };
+
+  rpc GetPortfolioStatisticsHistoryExport (GetPortfolioStatisticsHistoryExportRequest) returns (GetPortfolioStatisticsHistoryExportReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/statistics/portfolio/history/export"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get portfolio statistics history export";
+      description: "This endpoint exports the history of statistics about the global portfolio. The statistics contains information about the number of addresses, the total balance and other information.";
+      tags: "Statistics";
+    };
+  };
+
+  rpc GetTnParticipantPledgesStatistics (GetTnParticipantPledgesStatisticsRequest) returns (GetTnParticipantPledgesStatisticsReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/statistics/tn/participant/{participantID}/pledges"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get Taurus-NETWORK pledges statistics";
+      description: "This endpoint returns the statistics information about the Taurus-NETWORK pledges for a given participant.";
+      tags: "Statistics";
+    };
+  };
+
+
+  rpc GetForApprovalStatistics (GetForApprovalStatisticsRequest) returns (GetForApprovalStatisticsReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/statistics/for-approval"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get count of activities to be approved";
+      description: "This endpoint returns the count of activities to be approved up to the limit param. This can be useful for building dashboards and other UI elements that require the count of pending approvals.";
+      tags: "Statistics";
+    };
+  };
+}

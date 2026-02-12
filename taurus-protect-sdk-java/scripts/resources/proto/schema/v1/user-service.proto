@@ -1,0 +1,388 @@
+syntax = "proto3";
+
+package tgvalidatord;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+
+import "user.proto";
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "tg-validatord user service";
+    version:"1.0";
+    contact:{
+      name:"tg-validatord user service";
+      url:"https://github.com/taurusgroup/tg-validatord";
+      email:"development@taurusgroup.ch";
+    };
+  };
+  consumes:"application/json";
+  produces:"application/json";
+  schemes: [HTTP, HTTPS];
+  security_definitions:{
+    security:{
+      key:"Bearer";
+      value:{
+        type:TYPE_API_KEY;
+        in:IN_HEADER;
+        name:"Authorization";
+      }
+    }
+  }
+  security:{
+    security_requirement:{
+      key:"Bearer";
+      value:{};
+    }
+  }
+  responses:{
+    key:"401";
+    value:{
+      description:"Returned when the user is not authenticated.";
+    }
+  }
+  responses:{
+    key:"403";
+    value:{
+      description:"Returned when the user is not authorized to access the resource.";
+    }
+  }
+  responses:{
+    key:"404";
+    value:{
+      description:"Returned when the resource does not exist.";
+    }
+  }
+
+};
+
+message GetMeRequest {
+  bool includeKeyContainer = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "If set to true, it displays the key container. Default value: false",
+  }];
+  bool checkEnforcedInRules = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "If set to true, it displays whether the properties were enforced in rules. Default value: false",
+  }];
+}
+
+message GetMeReply {
+  InternalUser result = 1;
+}
+
+message GetUsersRequest {
+  uint64 limit = 1;
+  uint64 offset = 2;
+  repeated uint64 ids = 3;
+  repeated string externalUserIds = 4;
+  repeated string emails = 5;
+  string query = 6;
+  string publicKey = 7;
+  bool excludeTechnicalUsers = 8;
+  repeated string roles = 9 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+    description: "If roles are provided, only users having all the given roles will be returned.",
+  }];
+  string status = 10;
+  google.protobuf.BoolValue totpEnabled = 11;
+  repeated uint64 groupIds = 12;
+}
+
+message GetUsersReply {
+  repeated InternalUser result = 1;
+  uint64 totalItems = 2;
+}
+
+message GetUserRequest {
+  uint64 id = 3;
+}
+
+message GetUserReply {
+  InternalUser result = 1;
+}
+
+message GetGroupsRequest {
+  uint64 limit = 1;
+  uint64 offset = 2;
+  repeated uint64 ids = 3;
+  repeated string externalGroupIds = 4;
+  string query = 5;
+}
+
+message GetGroupsReply {
+  repeated InternalGroup result = 1;
+  uint64 totalItems = 2;
+}
+
+message UpdatePasswordRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["currentPassword", "newPassword"]
+    }
+  };
+
+  string currentPassword = 1;
+  string newPassword = 2;
+}
+
+message ResetTotpRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["password"]
+    }
+  };
+
+  string password = 1;
+}
+
+message ResetTotpReply {
+  string totpSecret = 1;
+  repeated string totpRecoveryCodes = 2;
+}
+
+message EnableTotpRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      required: ["totp"]
+    }
+  };
+
+  string totp = 1;
+}
+
+message RenewTokenReply {
+  string result = 1;
+}
+
+message CreateMeAttributeRequest {
+  string key = 1;
+  string value = 2;
+  string contentType = 3;
+  string type = 4;
+  string subtype = 5;
+  bool isfile = 6;
+}
+
+message CreateUserAttributeReply {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    example: "{\"result\": {\"id\": \"12\",\"key\": \"signing_mode\",\"value\": \"key_container\",\"contentType\": \"\",\"type\": \"\",\"subtype\": \"\",\"isfile\": false}}"
+  };
+  InternalUser.Attribute result = 1;
+}
+
+message RevealUserApiKeyRequest {
+  string apiKeyId = 1;
+}
+
+message RevealUserApiKeyReply {
+  string apiKeyId = 1;
+  string secret = 2;
+  google.protobuf.Timestamp creationDate = 3;
+  google.protobuf.Timestamp revealDate = 4;
+  bool revealable = 5;
+}
+
+message DeleteMeAttributeRequest {
+  uint64 id = 1;
+}
+
+message GetVisibilityGroupsReply {
+  repeated InternalVisibilityGroup result = 1;
+}
+
+message GetUsersByVisibilityGroupIDRequest {
+  string visibilityGroupID = 1;
+}
+
+message GetUsersByVisibilityGroupIDReply {
+  repeated InternalUser result = 1;
+}
+
+message CreateUserAttributeRequest {
+  uint64 userId = 1;
+  string key = 2;
+  string value = 3;
+  string contentType = 4;
+  string type = 5;
+  string subtype = 6;
+  bool isfile = 7;
+}
+
+service UserService {
+  ///////////////
+  ///  Users  ///
+  ///////////////
+  rpc GetUser (GetUserRequest) returns (GetUserReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/users/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get user by id";
+      description: "This endpoint returns a user with the matching id";
+      tags: "Users";
+    };
+  };
+
+
+  rpc CreateAttribute (CreateUserAttributeRequest) returns (CreateUserAttributeReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/users/{userId}/attributes"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create an user attribute";
+      description: "This endpoint creates an attribute for the specified user";
+      tags: "Users";
+    };
+  };
+
+  // It is important that this is defined AFTER the more generic /api/rest/v1/users/{userId}/attributes routes
+
+  rpc GetMe (GetMeRequest) returns (GetMeReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/users/me"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get my own user";
+      description: "This endpoint returns the details of the authenticated user";
+      tags: "Users";
+    };
+  };
+
+  rpc GetUsers (GetUsersRequest) returns (GetUsersReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/users"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List users";
+      description: "This endpoint returns a list of users";
+      tags: "Users";
+    };
+  };
+
+  rpc UpdatePassword (UpdatePasswordRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/api/rest/v1/users/me/password"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Update my password";
+      description: "This endpoint updates the password of the authenticated user";
+      tags: "Users";
+    };
+  };
+
+  rpc ResetTotp (ResetTotpRequest) returns (ResetTotpReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/users/me/totp/reset"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Reset TOTP";
+      description: "This endpoint resets the TOTP of the authenticated user";
+      tags: "Users";
+    };
+  };
+
+  rpc EnableTotp (EnableTotpRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/users/me/totp/enable"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Enable TOTP";
+      description: "This endpoint enables the TOTP of the authenticated user";
+      tags: "Users";
+    };
+  };
+
+  rpc RenewToken (google.protobuf.Empty) returns (RenewTokenReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/users/me/token/renew"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Renew token";
+      description: "This endpoint renews the token of the authenticated user";
+      tags: "Users";
+    };
+  };
+
+  rpc CreateMeAttribute (CreateMeAttributeRequest) returns (CreateUserAttributeReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/users/me/attributes"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Create user attribute";
+      description: "This endpoint creates an attribute for the current user";
+      tags: "Users";
+    };
+  };
+
+  rpc DeleteMeAttribute (DeleteMeAttributeRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/api/rest/v1/users/me/attributes/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Delete an attribute from current user";
+      description: "This endpoint delete a specific attribute for the current user";
+      tags: "Users";
+    };
+  };
+
+  rpc RevealUserApiKey (RevealUserApiKeyRequest) returns (RevealUserApiKeyReply) {
+    option (google.api.http) = {
+      post: "/api/rest/v1/userapikey/{apiKeyId}/reveal"
+      body: "*"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Reveal user API key";
+      description: "This endpoint reveals the secret tied to a user API key. Each API key can only be revealed once.\nRequired role: **User Manager**.";
+      tags: "Users";
+    };
+  };
+
+  ///////////////
+  ///  Groups ///
+  ///////////////
+  rpc GetGroups (GetGroupsRequest) returns (GetGroupsReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/groups"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List groups";
+      description: "This endpoint returns a list of groups";
+      tags: "Groups";
+    };
+  };
+
+  //////////////////////////////////////
+  ///  Restricted Visibility Groups  ///
+  //////////////////////////////////////
+  rpc GetVisibilityGroups (google.protobuf.Empty) returns (GetVisibilityGroupsReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/visibilitygroups"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List restricted visibility groups";
+      description: "This endpoint returns a list of restricted visibility groups";
+      tags: "Restricted visibility groups";
+    };
+  }
+
+  rpc GetUsersByVisibilityGroupID (GetUsersByVisibilityGroupIDRequest) returns (GetUsersByVisibilityGroupIDReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/visibilitygroups/{visibilityGroupID}/users"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List users in a restricted visibility group";
+      description: "This endpoint returns a list of users in a given restricted visibility group";
+      tags: "Restricted visibility groups";
+    };
+  }
+}

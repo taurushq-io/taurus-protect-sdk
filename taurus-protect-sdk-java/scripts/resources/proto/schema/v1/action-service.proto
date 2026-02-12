@@ -1,0 +1,103 @@
+syntax = "proto3";
+package tgvalidatord;
+
+option java_package = "com.taurushq.sdk.protect.proto.v1";
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+import "action.proto";
+
+
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "tg-validatord action service";
+    version:"1.0";
+    contact:{
+      name:"tg-validatord action service";
+      url:"https://github.com/taurusgroup/tg-validatord";
+      email:"development@taurusgroup.ch";
+    };
+  };
+  consumes:"application/json";
+  produces:"application/json";
+  schemes: [HTTP, HTTPS];
+  security_definitions:{
+    security:{
+      key:"Bearer";
+      value:{
+        type:TYPE_API_KEY;
+        in:IN_HEADER;
+        name:"Authorization";
+      }
+    }
+  }
+  security:{
+    security_requirement:{
+      key:"Bearer";
+      value:{};
+    }
+  }
+  responses:{
+    key:"401";
+    value:{
+      description:"Returned when the user is not authenticated.";
+    }
+  }
+  responses:{
+    key:"403";
+    value:{
+      description:"Returned when the user is not authorized to access the resource.";
+    }
+  }
+  responses:{
+    key:"404";
+    value:{
+      description:"Returned when the resource does not exist.";
+    }
+  }
+
+};
+
+message GetActionsRequest {
+  uint64 limit = 1;
+  uint64 offset = 2;
+  repeated uint64 ids = 3;
+}
+
+message GetActionsReply {
+  repeated ActionEnvelope result = 1;
+  uint64 totalItems = 2;
+}
+
+message GetActionRequest {
+  uint64 id = 1;
+}
+
+message GetActionReply {
+  ActionEnvelope action = 1;
+}
+
+service ActionService {
+  rpc GetActions (GetActionsRequest) returns (GetActionsReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/actions"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "List actions";
+      description: "This endpoint lists all actions.\n Required role: **Admin** or **AdminReadOnly**.";
+      tags: "Actions";
+    };
+  };
+
+  rpc GetAction (GetActionRequest) returns (GetActionReply) {
+    option (google.api.http) = {
+      get: "/api/rest/v1/actions/{id}"
+    };
+    option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+      summary: "Get an action";
+      description: "This endpoint returns a single action.\n Required role: **Admin** or **AdminReadOnly**.";
+      tags: "Actions";
+    };
+  };
+}

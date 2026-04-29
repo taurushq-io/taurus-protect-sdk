@@ -93,9 +93,14 @@ M_OPTS="$M_OPTS --go_opt=Mprotoc-gen-openapiv2/options/openapiv2.proto=github.co
 echo "Generating Go code with package mappings..."
 echo
 
+# These service protos depend on shared proto definitions that are not present in
+# the shared schema checkout. The Go SDK does not use their generated output, so
+# exclude them from the Go-only proto package to keep generation and builds stable.
+EXCLUDED_PROTOS_REGEX='/(authentication-service|steward-service)\.proto$'
+
 # Generate all proto files in a single protoc invocation
 ALL_PROTOS=""
-for file in $(find "$PROTO_BASE" -type f -name '*.proto' | grep -v 'third_party/'); do
+for file in $(find "$PROTO_BASE" -type f -name '*.proto' | grep -v 'third_party/' | grep -Ev "$EXCLUDED_PROTOS_REGEX"); do
     ALL_PROTOS="$ALL_PROTOS $file"
 done
 

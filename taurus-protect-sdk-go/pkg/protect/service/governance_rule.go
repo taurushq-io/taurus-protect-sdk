@@ -149,6 +149,26 @@ func (s *GovernanceRuleService) GetRulesProposal(ctx context.Context) (*model.Go
 	return mapper.GovernanceRulesetFromDTO(resp.Result), nil
 }
 
+// UpdateRulesProposal updates the proposed governance rules.
+// The rulesContainer must be a base64-encoded protobuf RulesContainer.
+func (s *GovernanceRuleService) UpdateRulesProposal(ctx context.Context, rulesContainer string) (map[string]interface{}, error) {
+	if rulesContainer == "" {
+		return nil, fmt.Errorf("rulesContainer cannot be empty")
+	}
+
+	body := openapi.TgvalidatordUpdateRulesProposalRequest{
+		RulesContainer: rulesContainer,
+	}
+	resp, httpResp, err := s.api.RuleServiceUpdateRulesProposal(ctx).
+		Body(body).
+		Execute()
+	if err != nil {
+		return nil, s.errMapper.MapError(err, httpResp)
+	}
+
+	return resp, nil
+}
+
 // GetPublicKeys retrieves the list of SuperAdmin public keys.
 func (s *GovernanceRuleService) GetPublicKeys(ctx context.Context) ([]*model.SuperAdminPublicKey, error) {
 	resp, httpResp, err := s.api.RuleServiceGetPublicKeys(ctx).Execute()

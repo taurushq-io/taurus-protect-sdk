@@ -253,6 +253,9 @@ func mapOpenAPIError(err *openapi.GenericOpenAPIError, resp *http.Response) erro
 
 	code := resp.StatusCode
 	message := err.Error()
+	if body := err.Body(); len(body) > 0 {
+		message = fmt.Sprintf("%s: %s", message, string(body))
+	}
 
 	// Create typed error based on status code
 	switch {

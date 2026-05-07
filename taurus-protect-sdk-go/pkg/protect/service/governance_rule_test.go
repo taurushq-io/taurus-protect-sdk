@@ -42,6 +42,20 @@ func TestGovernanceRuleService_GetRulesByID_Validation(t *testing.T) {
 	}
 }
 
+func TestGovernanceRuleService_UpdateRulesProposal_Validation(t *testing.T) {
+	s := &GovernanceRuleService{
+		errMapper: NewErrorMapper(),
+	}
+
+	_, err := s.UpdateRulesProposal(nil, "")
+	if err == nil {
+		t.Fatal("UpdateRulesProposal() expected error for empty rulesContainer")
+	}
+	if err.Error() != "rulesContainer cannot be empty" {
+		t.Fatalf("UpdateRulesProposal() error = %q", err.Error())
+	}
+}
+
 func TestGovernanceRulesHistoryOptions(t *testing.T) {
 	tests := []struct {
 		name string

@@ -1,6 +1,7 @@
 package mapper
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -76,7 +77,7 @@ func TestRequestFromDTO(t *testing.T) {
 func TestRequestFromDTO_WithMetadata(t *testing.T) {
 	hash := "abc123"
 	payloadString := `{"key":"value"}`
-	payload := map[string]interface{}{"key": "value"}
+	payload := json.RawMessage(`{"key":"value"}`)
 	dto := &openapi.TgvalidatordRequest{
 		Metadata: &openapi.TgvalidatordMetadata{
 			Hash:            &hash,
@@ -199,7 +200,7 @@ func TestMetadataFromDTO(t *testing.T) {
 			dto: func() *openapi.TgvalidatordMetadata {
 				hash := "hash123"
 				payloadAsString := `{"data":"test"}`
-				payload := map[string]interface{}{"data": "test"}
+				payload := json.RawMessage(`{"data":"test"}`)
 				return &openapi.TgvalidatordMetadata{
 					Hash:            &hash,
 					PayloadAsString: &payloadAsString,

@@ -36202,13 +36202,16 @@
         }
       }
     },
+    "tgvalidatordJsonValue": {},
     "tgvalidatordMetadata": {
       "type": "object",
       "properties": {
         "hash": {
           "type": "string"
         },
-        "payload": {},
+        "payload": {
+          "$ref": "#/definitions/tgvalidatordJsonValue"
+        },
         "payloadAsString": {
           "type": "string"
         }

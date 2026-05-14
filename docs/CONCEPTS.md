@@ -82,7 +82,7 @@ Contains the cryptographically signed details of a request.
 | Property | Description |
 |----------|-------------|
 | `hash` | SHA-256 hash of the payload |
-| `payload` | Parsed transaction details (source, destination, amount) |
+| `payload` | Any valid JSON value (object, array, string, number, boolean, or null) |
 | `payloadAsString` | Raw JSON string for verification |
 
 ### Transaction

@@ -1,6 +1,7 @@
 package mapper
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -92,10 +93,7 @@ func TestWhitelistedAddressFromDTO_WithMetadata(t *testing.T) {
 		Metadata: &openapi.TgvalidatordMetadata{
 			Hash:            &hash,
 			PayloadAsString: &payloadAsString,
-			Payload: map[string]interface{}{
-				"address": "0x123",
-				"label":   "Test Address",
-			},
+			Payload:         json.RawMessage(`{"address":"0x123","label":"Test Address"}`),
 		},
 	}
 
@@ -180,7 +178,7 @@ func TestWhitelistedAssetMetadataFromDTO_WhitelistedAddress(t *testing.T) {
 				return &openapi.TgvalidatordMetadata{
 					Hash:            &hash,
 					PayloadAsString: &payloadAsString,
-					Payload:         map[string]interface{}{"key": "value"},
+					Payload:         json.RawMessage(`{"key":"value"}`),
 				}
 			}(),
 		},

@@ -48,7 +48,10 @@ java -jar "$GENERATOR_JAR" generate -g go -i "$SPEC_FILE" -o .codegen \
     --skip-validate-spec \
     --additional-properties=packageName=openapi \
     --additional-properties=isGoSubmodule=true \
-    --additional-properties=enumClassPrefix=true
+    --additional-properties=enumClassPrefix=true \
+    --schema-mappings=tgvalidatordJsonValue=json.RawMessage \
+    --import-mappings=json.RawMessage=encoding/json \
+    --language-specific-primitives=json.RawMessage
 
 # Copy generated files to internal/openapi
 cp -R .codegen/*.go internal/openapi/ 2>/dev/null || true

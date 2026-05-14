@@ -74,6 +74,9 @@ generate() {
         -i "$OPENAPI_SPEC" \
         -o "$TEMP_DIR" \
         --skip-validate-spec \
+        --schema-mappings=tgvalidatordJsonValue=Any \
+        --type-mappings=tgvalidatordJsonValue=Any \
+        --language-specific-primitives=Any \
         --additional-properties=packageName=taurus_protect._internal.openapi \
         --additional-properties=projectName=taurus-protect-openapi \
         --additional-properties=pythonAttrNoneIfUnset=true \

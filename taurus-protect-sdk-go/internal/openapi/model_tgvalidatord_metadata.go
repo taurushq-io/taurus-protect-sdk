@@ -20,7 +20,7 @@ var _ MappedNullable = &TgvalidatordMetadata{}
 // TgvalidatordMetadata struct for TgvalidatordMetadata
 type TgvalidatordMetadata struct {
 	Hash *string `json:"hash,omitempty"`
-	Payload map[string]interface{} `json:"payload,omitempty"`
+	Payload json.RawMessage `json:"payload,omitempty"`
 	PayloadAsString *string `json:"payloadAsString,omitempty"`
 }
 
@@ -74,9 +74,9 @@ func (o *TgvalidatordMetadata) SetHash(v string) {
 }
 
 // GetPayload returns the Payload field value if set, zero value otherwise.
-func (o *TgvalidatordMetadata) GetPayload() map[string]interface{} {
+func (o *TgvalidatordMetadata) GetPayload() json.RawMessage {
 	if o == nil || IsNil(o.Payload) {
-		var ret map[string]interface{}
+		var ret json.RawMessage
 		return ret
 	}
 	return o.Payload
@@ -84,9 +84,9 @@ func (o *TgvalidatordMetadata) GetPayload() map[string]interface{} {
 
 // GetPayloadOk returns a tuple with the Payload field value if set, nil otherwise
 // and a boolean to check if the value has been set.
-func (o *TgvalidatordMetadata) GetPayloadOk() (map[string]interface{}, bool) {
+func (o *TgvalidatordMetadata) GetPayloadOk() (json.RawMessage, bool) {
 	if o == nil || IsNil(o.Payload) {
-		return map[string]interface{}{}, false
+		return json.RawMessage{}, false
 	}
 	return o.Payload, true
 }
@@ -100,8 +100,8 @@ func (o *TgvalidatordMetadata) HasPayload() bool {
 	return false
 }
 
-// SetPayload gets a reference to the given map[string]interface{} and assigns it to the Payload field.
-func (o *TgvalidatordMetadata) SetPayload(v map[string]interface{}) {
+// SetPayload gets a reference to the given json.RawMessage and assigns it to the Payload field.
+func (o *TgvalidatordMetadata) SetPayload(v json.RawMessage) {
 	o.Payload = v
 }
 
@@ -138,7 +138,7 @@ func (o *TgvalidatordMetadata) SetPayloadAsString(v string) {
 }
 
 func (o TgvalidatordMetadata) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -194,5 +194,3 @@ func (v *NullableTgvalidatordMetadata) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

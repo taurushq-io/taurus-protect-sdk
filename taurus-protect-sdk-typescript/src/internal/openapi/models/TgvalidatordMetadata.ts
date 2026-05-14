@@ -27,10 +27,10 @@ export interface TgvalidatordMetadata {
     hash?: string;
     /**
      * 
-     * @type {object}
+     * @type {any}
      * @memberof TgvalidatordMetadata
      */
-    payload?: object;
+    payload?: any;
     /**
      * 
      * @type {string}

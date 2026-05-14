@@ -87,6 +87,9 @@ generate() {
         -i "$SPEC_FILE" \
         -o "$TEMP_DIR" \
         --skip-validate-spec \
+        --schema-mappings=tgvalidatordJsonValue=any \
+        --type-mappings=tgvalidatordJsonValue=any \
+        --language-specific-primitives=any \
         --additional-properties=typescriptThreePlus=true \
         --additional-properties=supportsES6=true \
         --additional-properties=withInterfaces=true \

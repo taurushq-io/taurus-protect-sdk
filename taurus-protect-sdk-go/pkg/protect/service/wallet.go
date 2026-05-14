@@ -61,6 +61,12 @@ func (s *WalletService) ListWallets(ctx context.Context, opts *model.ListWallets
 		if opts.Query != "" {
 			req = req.Query(opts.Query)
 		}
+		if opts.Blockchain != "" {
+			req = req.Blockchain(opts.Blockchain)
+		}
+		if opts.Network != "" {
+			req = req.Network(opts.Network)
+		}
 		if opts.ExcludeDisabled {
 			req = req.ExcludeDisabled(true)
 		}

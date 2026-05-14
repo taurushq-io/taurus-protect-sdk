@@ -104,6 +104,10 @@ type ListWalletsOptions struct {
 	Currency string
 	// Query searches wallet names.
 	Query string
+	// Blockchain filters by blockchain symbol.
+	Blockchain string
+	// Network filters by network or environment (e.g., "mainnet", "testnet").
+	Network string
 	// ExcludeDisabled excludes disabled wallets from results.
 	ExcludeDisabled bool
 }

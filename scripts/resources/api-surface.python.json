@@ -1,0 +1,1251 @@
+{
+  "sdk": "python",
+  "source": "taurus_protect/services",
+  "services": [
+    {
+      "name": "ActionService",
+      "methods": [
+        {
+          "name": "get",
+          "signature": "get(action_id: 'str') -> 'Action'",
+          "doc": "Get an action by ID."
+        },
+        {
+          "name": "list",
+          "signature": "list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Action], Optional[Pagination]]'",
+          "doc": "List actions with pagination."
+        }
+      ]
+    },
+    {
+      "name": "AddressService",
+      "methods": [
+        {
+          "name": "create",
+          "signature": "create(request: 'CreateAddressRequest') -> 'Address'",
+          "doc": "Create a new address."
+        },
+        {
+          "name": "create_address",
+          "signature": "create_address(wallet_id: 'int', label: 'str', comment: 'str' = '', customer_id: 'str' = '') -> 'Address'",
+          "doc": "Create a new address with explicit parameters."
+        },
+        {
+          "name": "create_attribute",
+          "signature": "create_attribute(address_id: 'int', key: 'str', value: 'str') -> 'None'",
+          "doc": "Create an attribute for an address."
+        },
+        {
+          "name": "delete_attribute",
+          "signature": "delete_attribute(address_id: 'int', attribute_id: 'int') -> 'None'",
+          "doc": "Delete an attribute from an address."
+        },
+        {
+          "name": "get",
+          "signature": "get(address_id: 'int') -> 'Address'",
+          "doc": "Get an address by ID with mandatory signature verification."
+        },
+        {
+          "name": "get_proof_of_reserve",
+          "signature": "get_proof_of_reserve(address_id: 'int', challenge: 'Optional[str]' = None) -> 'Any'",
+          "doc": "Get the proof of reserve for an address."
+        },
+        {
+          "name": "list",
+          "signature": "list(wallet_id: 'int', limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Address], Optional[Pagination]]'",
+          "doc": "List addresses for a wallet with mandatory signature verification."
+        },
+        {
+          "name": "list_with_options",
+          "signature": "list_with_options(options: 'Optional[ListAddressesOptions]' = None) -> 'Tuple[List[Address], Optional[Pagination]]'",
+          "doc": "List addresses with full filtering options."
+        }
+      ]
+    },
+    {
+      "name": "AirGapService",
+      "methods": [
+        {
+          "name": "get_unsigned_payload",
+          "signature": "get_unsigned_payload(request_id: 'int') -> 'bytes'",
+          "doc": "Get unsigned transaction payload for offline signing."
+        },
+        {
+          "name": "submit_signed_payload",
+          "signature": "submit_signed_payload(request_id: 'int', signed_payload: 'bytes') -> 'None'",
+          "doc": "Submit a signed payload back to the system."
+        }
+      ]
+    },
+    {
+      "name": "AssetService",
+      "methods": [
+        {
+          "name": "get",
+          "signature": "get(asset_id: 'str') -> 'Asset'",
+          "doc": "Get an asset by ID."
+        },
+        {
+          "name": "get_addresses",
+          "signature": "get_addresses(currency: 'str', limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Address], Optional[Pagination]]'",
+          "doc": "Get address balances for a specific asset."
+        },
+        {
+          "name": "get_wallets",
+          "signature": "get_wallets(currency: 'str', limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Any], Optional[Pagination]]'",
+          "doc": "Get wallet balances for a specific asset."
+        },
+        {
+          "name": "list",
+          "signature": "list(currency: 'str' = 'ETH', limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Asset], Optional[Pagination]]'",
+          "doc": "List asset wallets for a given currency."
+        }
+      ]
+    },
+    {
+      "name": "AuditService",
+      "methods": [
+        {
+          "name": "export_audit_trails",
+          "signature": "export_audit_trails(external_user_id: 'Optional[str]' = None, entities: 'Optional[List[str]]' = None, actions: 'Optional[List[str]]' = None, from_date: 'Optional[datetime]' = None, to_date: 'Optional[datetime]' = None, format: 'Optional[str]' = None) -> 'str'",
+          "doc": "Export audit trails in the specified format."
+        },
+        {
+          "name": "get",
+          "signature": "get(audit_id: 'str') -> 'Audit'",
+          "doc": "Get an audit event by ID."
+        },
+        {
+          "name": "list",
+          "signature": "list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Audit], Optional[Pagination]]'",
+          "doc": "List audit events with pagination."
+        }
+      ]
+    },
+    {
+      "name": "BalanceService",
+      "methods": [
+        {
+          "name": "list",
+          "signature": "list(currency: 'Optional[str]' = None, limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[AssetBalance], Optional[Pagination]]'",
+          "doc": "Get all balances for the tenant, optionally filtered by currency."
+        },
+        {
+          "name": "list_nft_collections",
+          "signature": "list_nft_collections(blockchain: 'str', network: 'str', limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[NFTCollectionBalance], Optional[Pagination]]'",
+          "doc": "Get NFT collection balances for the tenant."
+        }
+      ]
+    },
+    {
+      "name": "BlockchainService",
+      "methods": [
+        {
+          "name": "get",
+          "signature": "get(blockchain: 'str', network: 'str' = 'mainnet', include_block_height: 'bool' = False) -> 'Blockchain'",
+          "doc": "Get blockchain information."
+        },
+        {
+          "name": "get_by_id",
+          "signature": "get_by_id(blockchain_id: 'str') -> 'Blockchain'",
+          "doc": "Get blockchain by composite ID."
+        },
+        {
+          "name": "list",
+          "signature": "list(blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None, include_block_height: 'bool' = False) -> 'List[Blockchain]'",
+          "doc": "List supported blockchains."
+        }
+      ]
+    },
+    {
+      "name": "BusinessRuleService",
+      "methods": [
+        {
+          "name": "list",
+          "signature": "list(page_size: 'Optional[int]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None, rule_keys: 'Optional[List[str]]' = None, wallet_ids: 'Optional[List[str]]' = None, currency_ids: 'Optional[List[str]]' = None, entity_type: 'Optional[str]' = None, entity_ids: 'Optional[List[str]]' = None) -> 'BusinessRuleResult'",
+          "doc": "List business rules with cursor-based pagination (v2 API)."
+        },
+        {
+          "name": "list_by_currency",
+          "signature": "list_by_currency(currency_id: 'str', page_size: 'Optional[int]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'BusinessRuleResult'",
+          "doc": "List business rules for a specific currency."
+        },
+        {
+          "name": "list_by_wallet",
+          "signature": "list_by_wallet(wallet_id: 'int', page_size: 'Optional[int]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'BusinessRuleResult'",
+          "doc": "List business rules for a specific wallet."
+        },
+        {
+          "name": "update_transactions_enabled",
+          "signature": "update_transactions_enabled(enabled: 'bool') -> 'None'",
+          "doc": "Enable or disable transaction processing for the tenant."
+        }
+      ]
+    },
+    {
+      "name": "ChangeService",
+      "methods": [
+        {
+          "name": "approve_change",
+          "signature": "approve_change(change_id: 'str') -> 'None'",
+          "doc": "Approve a change."
+        },
+        {
+          "name": "approve_changes",
+          "signature": "approve_changes(change_ids: 'List[str]') -> 'None'",
+          "doc": "Approve multiple changes."
+        },
+        {
+          "name": "create_change",
+          "signature": "create_change(request: 'CreateChangeRequest') -> 'str'",
+          "doc": "Create a change request."
+        },
+        {
+          "name": "get",
+          "signature": "get(change_id: 'str') -> 'Change'",
+          "doc": "Get a change by ID."
+        },
+        {
+          "name": "list",
+          "signature": "list(options: 'Optional[ListChangesOptions]' = None) -> 'ChangeResult'",
+          "doc": "List changes with cursor-based pagination."
+        },
+        {
+          "name": "list_for_approval",
+          "signature": "list_for_approval(options: 'Optional[ListChangesOptions]' = None) -> 'ChangeResult'",
+          "doc": "List changes pending approval with cursor-based pagination."
+        },
+        {
+          "name": "reject_change",
+          "signature": "reject_change(change_id: 'str') -> 'None'",
+          "doc": "Reject a change."
+        },
+        {
+          "name": "reject_changes",
+          "signature": "reject_changes(change_ids: 'List[str]') -> 'None'",
+          "doc": "Reject multiple changes."
+        }
+      ]
+    },
+    {
+      "name": "ConfigService",
+      "methods": [
+        {
+          "name": "get",
+          "signature": "get() -> 'TenantConfig'",
+          "doc": "Get tenant configuration."
+        },
+        {
+          "name": "get_features",
+          "signature": "get_features() -> 'List[Feature]'",
+          "doc": "Get enabled features for the tenant."
+        }
+      ]
+    },
+    {
+      "name": "ContractWhitelistingService",
+      "methods": [
+        {
+          "name": "approve_whitelisted_contracts",
+          "signature": "approve_whitelisted_contracts(contract_ids: 'List[str]', signature: 'str', comment: 'Optional[str]' = None) -> 'None'",
+          "doc": "Approve whitelisted contracts with a signature."
+        },
+        {
+          "name": "create",
+          "signature": "create(address: 'str', name: 'str', blockchain: 'str', network: 'Optional[str]' = None, abi: 'Optional[str]' = None) -> 'int'",
+          "doc": "Create a whitelisted contract request."
+        },
+        {
+          "name": "create_attribute",
+          "signature": "create_attribute(contract_id: 'str', key: 'str', value: 'str') -> 'None'",
+          "doc": "Create an attribute on a whitelisted contract."
+        },
+        {
+          "name": "delete",
+          "signature": "delete(contract_id: 'int') -> 'None'",
+          "doc": "Delete a whitelisted contract."
+        },
+        {
+          "name": "get_attribute",
+          "signature": "get_attribute(contract_id: 'str', key: 'str') -> 'Optional[str]'",
+          "doc": "Get an attribute value from a whitelisted contract."
+        }
+      ]
+    },
+    {
+      "name": "CurrencyService",
+      "methods": [
+        {
+          "name": "get",
+          "signature": "get(currency_id: 'str') -> 'Currency'",
+          "doc": "Get a currency by ID."
+        },
+        {
+          "name": "get_base_currency",
+          "signature": "get_base_currency() -> 'Currency'",
+          "doc": "Get the base currency configured for the tenant."
+        },
+        {
+          "name": "get_by_blockchain",
+          "signature": "get_by_blockchain(blockchain: 'str', network: 'str', contract_address: 'Optional[str]' = None, token_id: 'Optional[str]' = None) -> 'Currency'",
+          "doc": "Get a currency by blockchain and network."
+        },
+        {
+          "name": "list",
+          "signature": "list(show_disabled: 'bool' = False, include_logo: 'bool' = False) -> 'List[Currency]'",
+          "doc": "Get all currencies."
+        }
+      ]
+    },
+    {
+      "name": "ExchangeService",
+      "methods": [
+        {
+          "name": "get",
+          "signature": "get(exchange_id: 'str') -> 'Exchange'",
+          "doc": "Get an exchange account by ID."
+        },
+        {
+          "name": "get_withdrawal_fee",
+          "signature": "get_withdrawal_fee(exchange_id: 'str', to_address_id: 'Optional[str]' = None, amount: 'Optional[str]' = None) -> 'Any'",
+          "doc": "Get withdrawal fees for an exchange account."
+        },
+        {
+          "name": "list",
+          "signature": "list(limit: 'int' = 50, offset: 'int' = 0, currency_id: 'Optional[str]' = None, exchange_label: 'Optional[str]' = None, status: 'Optional[str]' = None, only_positive_balance: 'bool' = False) -> 'Tuple[List[Exchange], Optional[Pagination]]'",
+          "doc": "List exchange accounts with pagination."
+        },
+        {
+          "name": "list_counterparties",
+          "signature": "list_counterparties() -> 'List[Any]'",
+          "doc": "List exchange counterparties with their exposure limits."
+        }
+      ]
+    },
+    {
+      "name": "FeePayerService",
+      "methods": [
+        {
+          "name": "get",
+          "signature": "get(fee_payer_id: 'str') -> 'FeePayer'",
+          "doc": "Get a fee payer by ID."
+        },
+        {
+          "name": "list",
+          "signature": "list(limit: 'int' = 50, offset: 'int' = 0, blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None) -> 'Tuple[List[FeePayer], Optional[Pagination]]'",
+          "doc": "List fee payers with pagination."
+        }
+      ]
+    },
+    {
+      "name": "FeeService",
+      "methods": [
+        {
+          "name": "estimate",
+          "signature": "estimate(currency: 'str', amount: 'Optional[str]' = None, destination: 'Optional[str]' = None) -> 'FeeEstimate'",
+          "doc": "Estimate transaction fee."
+        },
+        {
+          "name": "list",
+          "signature": "list() -> 'List[FeeEstimate]'",
+          "doc": "List fee estimates for all supported currencies."
+        }
+      ]
+    },
+    {
+      "name": "FiatService",
+      "methods": [
+        {
+          "name": "get_account",
+          "signature": "get_account(account_id: 'str') -> 'FiatProviderAccount'",
+          "doc": "Get a fiat provider account by ID."
+        },
+        {
+          "name": "get_base_currency",
+          "signature": "get_base_currency() -> 'FiatCurrency'",
+          "doc": "Get the configured base currency."
+        },
+        {
+          "name": "get_rate",
+          "signature": "get_rate(from_currency: 'str', to_currency: 'str') -> 'ExchangeRate'",
+          "doc": "Get the exchange rate between two currencies."
+        },
+        {
+          "name": "list",
+          "signature": "list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[FiatProviderAccount], Optional[Pagination]]'",
+          "doc": "List fiat provider accounts with pagination."
+        },
+        {
+          "name": "list_providers",
+          "signature": "list_providers() -> 'List[Any]'",
+          "doc": "List available fiat providers."
+        }
+      ]
+    },
+    {
+      "name": "GovernanceRuleService",
+      "methods": [
+        {
+          "name": "approve_rules_proposal",
+          "signature": "approve_rules_proposal(private_key: 'EllipticCurvePrivateKey', comment: 'str', expected_container_hash: 'str') -> 'None'",
+          "doc": "Sign the pending proposal's rules container and submit the approval."
+        },
+        {
+          "name": "decode_proposal_for_review",
+          "signature": "decode_proposal_for_review(rules: 'GovernanceRules') -> 'DecodedRulesContainer'",
+          "doc": "Decode a PENDING proposal so a SuperAdmin can inspect it before approving."
+        },
+        {
+          "name": "get_decoded_rules_container",
+          "signature": "get_decoded_rules_container(rules: 'GovernanceRules') -> 'DecodedRulesContainer'",
+          "doc": "Get the decoded rules container from governance rules."
+        },
+        {
+          "name": "get_public_keys",
+          "signature": "get_public_keys() -> 'List[SuperAdminPublicKey]'",
+          "doc": "Get the list of SuperAdmin public keys."
+        },
+        {
+          "name": "get_rules",
+          "signature": "get_rules() -> 'Optional[GovernanceRules]'",
+          "doc": "Get the currently enforced governance rules."
+        },
+        {
+          "name": "get_rules_by_id",
+          "signature": "get_rules_by_id(rules_id: 'str') -> 'Optional[GovernanceRules]'",
+          "doc": "Get a governance ruleset by its ID."
+        },
+        {
+          "name": "get_rules_history",
+          "signature": "get_rules_history(page_size: 'int' = 50, cursor: 'Optional[str]' = None) -> 'GovernanceRulesHistoryResult'",
+          "doc": "Get the history of governance rules with cursor-based pagination."
+        },
+        {
+          "name": "get_rules_proposal",
+          "signature": "get_rules_proposal() -> 'Optional[GovernanceRules]'",
+          "doc": "Get the proposed governance rules."
+        },
+        {
+          "name": "proposal_container_hash",
+          "signature": "proposal_container_hash(rules: 'GovernanceRules') -> 'str'",
+          "doc": "Return the canonical SHA-256 hex digest of a ruleset's decoded container."
+        },
+        {
+          "name": "reject_rules_proposal",
+          "signature": "reject_rules_proposal(comment: 'str') -> 'None'",
+          "doc": "Reject the pending rules proposal with a comment (SuperAdmin only)."
+        },
+        {
+          "name": "update_rules_proposal",
+          "signature": "update_rules_proposal(container: 'DecodedRulesContainer') -> 'None'",
+          "doc": "Submit a rules container as a governance proposal (SuperAdmin only)."
+        },
+        {
+          "name": "verify_governance_rules",
+          "signature": "verify_governance_rules(rules: 'GovernanceRules') -> 'GovernanceRules'",
+          "doc": "Verify that governance rules have enough valid SuperAdmin signatures."
+        }
+      ]
+    },
+    {
+      "name": "GroupService",
+      "methods": [
+        {
+          "name": "get",
+          "signature": "get(group_id: 'str') -> 'Group'",
+          "doc": "Get a group by ID."
+        },
+        {
+          "name": "list",
+          "signature": "list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Group], Optional[Pagination]]'",
+          "doc": "List groups with pagination."
+        }
+      ]
+    },
+    {
+      "name": "HealthService",
+      "methods": [
+        {
+          "name": "check",
+          "signature": "check() -> 'HealthStatus'",
+          "doc": "Check the API health status."
+        },
+        {
+          "name": "get_all_health_checks",
+          "signature": "get_all_health_checks(tenant_id: 'Optional[str]' = None, fail_if_unhealthy: 'bool' = False) -> 'GetAllHealthChecksResult'",
+          "doc": "Get all health checks with optional filtering."
+        }
+      ]
+    },
+    {
+      "name": "JobService",
+      "methods": [
+        {
+          "name": "get",
+          "signature": "get(job_id: 'str') -> 'Job'",
+          "doc": "Get a job by ID."
+        },
+        {
+          "name": "list",
+          "signature": "list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Job], Optional[Pagination]]'",
+          "doc": "List jobs with pagination."
+        }
+      ]
+    },
+    {
+      "name": "LendingService",
+      "methods": [
+        {
+          "name": "cancel_lending_agreement",
+          "signature": "cancel_lending_agreement(lending_agreement_id: 'str') -> 'None'",
+          "doc": "Cancel a lending agreement."
+        },
+        {
+          "name": "create_attachment",
+          "signature": "create_attachment(agreement_id: 'str', request: 'CreateLendingAgreementAttachmentRequest') -> 'str'",
+          "doc": "Add an attachment to a lending agreement."
+        },
+        {
+          "name": "create_lending_agreement",
+          "signature": "create_lending_agreement(request: 'CreateLendingAgreementRequest') -> 'str'",
+          "doc": "Create a new lending agreement."
+        },
+        {
+          "name": "create_lending_agreement_attachment",
+          "signature": "create_lending_agreement_attachment(lending_agreement_id: 'str', request: 'CreateLendingAgreementAttachmentRequest') -> 'str'",
+          "doc": "Add an attachment to a lending agreement."
+        },
+        {
+          "name": "create_lending_offer",
+          "signature": "create_lending_offer(request: 'CreateLendingOfferRequest') -> 'str'",
+          "doc": "Create a new lending offer."
+        },
+        {
+          "name": "delete_lending_offer",
+          "signature": "delete_lending_offer(offer_id: 'str') -> 'None'",
+          "doc": "Delete a specific lending offer."
+        },
+        {
+          "name": "delete_lending_offers",
+          "signature": "delete_lending_offers() -> 'None'",
+          "doc": "Delete all lending offers for the current participant."
+        },
+        {
+          "name": "get_lending_agreement",
+          "signature": "get_lending_agreement(lending_agreement_id: 'str') -> 'LendingAgreement'",
+          "doc": "Get a lending agreement by ID."
+        },
+        {
+          "name": "get_lending_offer",
+          "signature": "get_lending_offer(offer_id: 'str') -> 'LendingOffer'",
+          "doc": "Get a lending offer by ID."
+        },
+        {
+          "name": "list_attachments",
+          "signature": "list_attachments(agreement_id: 'str') -> 'List[LendingAgreementAttachment]'",
+          "doc": "List attachments for a lending agreement."
+        },
+        {
+          "name": "list_lending_agreement_attachments",
+          "signature": "list_lending_agreement_attachments(lending_agreement_id: 'str') -> 'List[LendingAgreementAttachment]'",
+          "doc": "List attachments for a lending agreement."
+        },
+        {
+          "name": "list_lending_agreements",
+          "signature": "list_lending_agreements(options: 'Optional[ListLendingAgreementsOptions]' = None) -> 'Tuple[List[LendingAgreement], Optional[CursorPagination]]'",
+          "doc": "List lending agreements."
+        },
+        {
+          "name": "list_lending_agreements_for_approval",
+          "signature": "list_lending_agreements_for_approval(options: 'Optional[ListLendingAgreementsOptions]' = None) -> 'Tuple[List[LendingAgreement], Optional[CursorPagination]]'",
+          "doc": "List lending agreements pending approval."
+        },
+        {
+          "name": "list_lending_offers",
+          "signature": "list_lending_offers(options: 'Optional[ListLendingOffersOptions]' = None) -> 'Tuple[List[LendingOffer], Optional[CursorPagination]]'",
+          "doc": "List lending offers."
+        },
+        {
+          "name": "repay_lending_agreement",
+          "signature": "repay_lending_agreement(lending_agreement_id: 'str', request: 'RepayLendingAgreementRequest') -> 'None'",
+          "doc": "Record repayment for a lending agreement."
+        },
+        {
+          "name": "update_lending_agreement",
+          "signature": "update_lending_agreement(lending_agreement_id: 'str', request: 'UpdateLendingAgreementRequest') -> 'None'",
+          "doc": "Update a lending agreement."
+        }
+      ]
+    },
+    {
+      "name": "MultiFactorSignatureService",
+      "methods": [
+        {
+          "name": "create_challenge",
+          "signature": "create_challenge(request_id: 'int', challenge_type: 'str') -> 'str'",
+          "doc": "Create a new multi-factor signature challenge."
+        },
+        {
+          "name": "get_challenge",
+          "signature": "get_challenge(challenge_id: 'str') -> 'MultiFactorSignatureChallenge'",
+          "doc": "Get a multi-factor signature challenge by ID."
+        },
+        {
+          "name": "list_challenges",
+          "signature": "list_challenges(request_id: 'Optional[int]' = None, limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[MultiFactorSignatureChallenge], Optional[Pagination]]'",
+          "doc": "List multi-factor signature challenges."
+        },
+        {
+          "name": "verify_challenge",
+          "signature": "verify_challenge(challenge_id: 'str', response: 'str') -> 'bool'",
+          "doc": "Verify a multi-factor signature challenge response."
+        }
+      ]
+    },
+    {
+      "name": "ParticipantService",
+      "methods": [
+        {
+          "name": "create_participant_attribute",
+          "signature": "create_participant_attribute(participant_id: 'str', request: 'CreateParticipantAttributeRequest') -> 'None'",
+          "doc": "Create an attribute for a participant."
+        },
+        {
+          "name": "delete_participant_attribute",
+          "signature": "delete_participant_attribute(participant_id: 'str', attribute_id: 'str') -> 'None'",
+          "doc": "Delete an attribute for a participant."
+        },
+        {
+          "name": "get",
+          "signature": "get(participant_id: 'str', options: 'Optional[GetParticipantOptions]' = None) -> 'Participant'",
+          "doc": "Get a participant by ID."
+        },
+        {
+          "name": "get_my_participant",
+          "signature": "get_my_participant() -> 'MyParticipant'",
+          "doc": "Get the current participant with settings."
+        },
+        {
+          "name": "list",
+          "signature": "list(options: 'Optional[ListParticipantsOptions]' = None) -> 'List[Participant]'",
+          "doc": "List visible Taurus Network participants."
+        }
+      ]
+    },
+    {
+      "name": "PledgeService",
+      "methods": [
+        {
+          "name": "add_pledge_collateral",
+          "signature": "add_pledge_collateral(pledge_id: 'str', req: 'AddPledgeCollateralRequest') -> 'Tuple[Pledge, PledgeAction]'",
+          "doc": "Add collateral to an existing pledge."
+        },
+        {
+          "name": "approve_pledge_actions",
+          "signature": "approve_pledge_actions(actions: 'List[PledgeAction]', private_key: 'EllipticCurvePrivateKey', comment: 'str' = 'approving via taurus-protect-sdk-python') -> 'int'",
+          "doc": "Approve multiple pledge actions with ECDSA signature."
+        },
+        {
+          "name": "create_pledge",
+          "signature": "create_pledge(req: 'CreatePledgeRequest') -> 'Tuple[Pledge, PledgeAction]'",
+          "doc": "Create a new pledge."
+        },
+        {
+          "name": "get_pledge",
+          "signature": "get_pledge(pledge_id: 'str') -> 'Pledge'",
+          "doc": "Get a pledge by ID."
+        },
+        {
+          "name": "initiate_withdraw_pledge",
+          "signature": "initiate_withdraw_pledge(pledge_id: 'str', req: 'InitiateWithdrawPledgeRequest') -> 'Tuple[PledgeWithdrawal, PledgeAction]'",
+          "doc": "Initiate withdrawal from a pledge (pledgor operation)."
+        },
+        {
+          "name": "list_pledge_actions",
+          "signature": "list_pledge_actions(opts: 'Optional[ListPledgeActionsOptions]' = None) -> 'Tuple[List[PledgeAction], Optional[Pagination]]'",
+          "doc": "List all pledge actions with optional filtering."
+        },
+        {
+          "name": "list_pledge_actions_for_approval",
+          "signature": "list_pledge_actions_for_approval(opts: 'Optional[ListPledgeActionsOptions]' = None) -> 'Tuple[List[PledgeAction], Optional[Pagination]]'",
+          "doc": "List pledge actions pending approval."
+        },
+        {
+          "name": "list_pledge_withdrawals",
+          "signature": "list_pledge_withdrawals(opts: 'Optional[ListPledgeWithdrawalsOptions]' = None) -> 'Tuple[List[PledgeWithdrawal], Optional[Pagination]]'",
+          "doc": "List pledge withdrawals with optional filtering."
+        },
+        {
+          "name": "list_pledges",
+          "signature": "list_pledges(opts: 'Optional[ListPledgesOptions]' = None) -> 'Tuple[List[Pledge], Optional[Pagination]]'",
+          "doc": "List pledges with optional filtering."
+        },
+        {
+          "name": "reject_pledge",
+          "signature": "reject_pledge(pledge_id: 'str', req: 'RejectPledgeRequest') -> 'Pledge'",
+          "doc": "Reject a pledge."
+        },
+        {
+          "name": "reject_pledge_actions",
+          "signature": "reject_pledge_actions(req: 'RejectPledgeActionsRequest') -> 'int'",
+          "doc": "Reject multiple pledge actions."
+        },
+        {
+          "name": "unpledge",
+          "signature": "unpledge(pledge_id: 'str') -> 'Tuple[Pledge, PledgeAction]'",
+          "doc": "Unpledge all funds from a pledge."
+        },
+        {
+          "name": "update_pledge",
+          "signature": "update_pledge(pledge_id: 'str', req: 'UpdatePledgeRequest') -> 'Pledge'",
+          "doc": "Update a pledge's default destination."
+        },
+        {
+          "name": "withdraw_pledge",
+          "signature": "withdraw_pledge(pledge_id: 'str', req: 'WithdrawPledgeRequest') -> 'Tuple[PledgeWithdrawal, PledgeAction]'",
+          "doc": "Withdraw from a pledge (pledgee operation)."
+        }
+      ]
+    },
+    {
+      "name": "PriceService",
+      "methods": [
+        {
+          "name": "get_current",
+          "signature": "get_current(currency: 'Optional[str]' = None) -> 'List[Price]'",
+          "doc": "Get current prices for all currencies or a specific currency."
+        },
+        {
+          "name": "get_historical",
+          "signature": "get_historical(base_currency: 'str', quote_currency: 'str', limit: 'Optional[int]' = None) -> 'List[PriceHistoryPoint]'",
+          "doc": "Get historical prices for a currency pair."
+        }
+      ]
+    },
+    {
+      "name": "RequestService",
+      "methods": [
+        {
+          "name": "approve_request",
+          "signature": "approve_request(request: 'Request', private_key: 'EllipticCurvePrivateKey', comment: 'str' = 'approving via taurus-protect-sdk-python') -> 'int'",
+          "doc": "Approve a single request with ECDSA signature."
+        },
+        {
+          "name": "approve_requests",
+          "signature": "approve_requests(requests: 'List[Request]', private_key: 'EllipticCurvePrivateKey', comment: 'str' = 'approving via taurus-protect-sdk-python') -> 'int'",
+          "doc": "Approve multiple requests with ECDSA signature."
+        },
+        {
+          "name": "create_cancel_request",
+          "signature": "create_cancel_request(address_id: 'int', nonce: 'int') -> 'Request'",
+          "doc": "Create a cancel request for a pending transaction."
+        },
+        {
+          "name": "create_external_transfer",
+          "signature": "create_external_transfer(from_address_id: 'int', to_whitelisted_address_id: 'int', amount: 'str') -> 'Request'",
+          "doc": "Create an external transfer to a whitelisted address."
+        },
+        {
+          "name": "create_external_transfer_from_wallet",
+          "signature": "create_external_transfer_from_wallet(from_wallet_id: 'int', to_whitelisted_address_id: 'int', amount: 'str') -> 'Request'",
+          "doc": "Create an external transfer from an omnibus wallet."
+        },
+        {
+          "name": "create_incoming_request",
+          "signature": "create_incoming_request(from_exchange_id: 'int', to_address_id: 'int', amount: 'str') -> 'Request'",
+          "doc": "Create an incoming request from an exchange."
+        },
+        {
+          "name": "create_internal_transfer",
+          "signature": "create_internal_transfer(from_address_id: 'int', to_address_id: 'int', amount: 'str') -> 'Request'",
+          "doc": "Create an internal transfer request between addresses."
+        },
+        {
+          "name": "create_internal_transfer_from_wallet",
+          "signature": "create_internal_transfer_from_wallet(from_wallet_id: 'int', to_address_id: 'int', amount: 'str') -> 'Request'",
+          "doc": "Create an internal transfer from an omnibus wallet."
+        },
+        {
+          "name": "get",
+          "signature": "get(request_id: 'int') -> 'Request'",
+          "doc": "Get a request by ID with mandatory hash verification."
+        },
+        {
+          "name": "get_for_approval",
+          "signature": "get_for_approval(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Request], Optional[Pagination]]'",
+          "doc": "Get requests pending approval."
+        },
+        {
+          "name": "list",
+          "signature": "list(limit: 'int' = 50, offset: 'int' = 0, from_date: 'Optional[datetime]' = None, to_date: 'Optional[datetime]' = None, currency_id: 'Optional[str]' = None, statuses: 'Optional[List[RequestStatus]]' = None) -> 'Tuple[List[Request], Optional[Pagination]]'",
+          "doc": "List requests with filtering and pagination."
+        },
+        {
+          "name": "reject_request",
+          "signature": "reject_request(request_id: 'int', comment: 'str') -> 'None'",
+          "doc": "Reject a single request."
+        },
+        {
+          "name": "reject_requests",
+          "signature": "reject_requests(request_ids: 'List[int]', comment: 'str') -> 'None'",
+          "doc": "Reject multiple requests."
+        }
+      ]
+    },
+    {
+      "name": "ReservationService",
+      "methods": [
+        {
+          "name": "cancel",
+          "signature": "cancel(reservation_id: 'int') -> 'None'",
+          "doc": "Cancel a reservation."
+        },
+        {
+          "name": "get",
+          "signature": "get(reservation_id: 'int') -> 'Reservation'",
+          "doc": "Get a reservation by ID."
+        },
+        {
+          "name": "list",
+          "signature": "list(wallet_id: 'Optional[int]' = None, limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Reservation], Optional[Pagination]]'",
+          "doc": "List reservations."
+        }
+      ]
+    },
+    {
+      "name": "ScoreService",
+      "methods": [
+        {
+          "name": "get_address_score",
+          "signature": "get_address_score(address_id: 'str', provider: 'Optional[str]' = None) -> 'List[Score]'",
+          "doc": "Get risk score for an address."
+        },
+        {
+          "name": "get_transaction_score",
+          "signature": "get_transaction_score(tx_hash: 'str', provider: 'Optional[str]' = None) -> 'List[Score]'",
+          "doc": "Get risk score for a transaction."
+        },
+        {
+          "name": "refresh_whitelisted_address_score",
+          "signature": "refresh_whitelisted_address_score(address_id: 'str', provider: 'Optional[str]' = None) -> 'List[Score]'",
+          "doc": "Refresh risk score for a whitelisted address."
+        }
+      ]
+    },
+    {
+      "name": "SettlementService",
+      "methods": [
+        {
+          "name": "cancel_settlement",
+          "signature": "cancel_settlement(settlement_id: 'str') -> 'None'",
+          "doc": "Cancel a settlement."
+        },
+        {
+          "name": "create_settlement",
+          "signature": "create_settlement(request: 'CreateSettlementRequest') -> 'str'",
+          "doc": "Create a new settlement."
+        },
+        {
+          "name": "get_settlement",
+          "signature": "get_settlement(settlement_id: 'str') -> 'Settlement'",
+          "doc": "Get a settlement by ID."
+        },
+        {
+          "name": "list_settlements",
+          "signature": "list_settlements(options: 'Optional[ListSettlementsOptions]' = None) -> 'Tuple[List[Settlement], Optional[CursorPagination]]'",
+          "doc": "List settlements."
+        },
+        {
+          "name": "list_settlements_for_approval",
+          "signature": "list_settlements_for_approval(options: 'Optional[ListSettlementsForApprovalOptions]' = None) -> 'Tuple[List[Settlement], Optional[CursorPagination]]'",
+          "doc": "List settlements pending approval."
+        },
+        {
+          "name": "replace_settlement",
+          "signature": "replace_settlement(settlement_id: 'str', request: 'CreateSettlementRequest') -> 'None'",
+          "doc": "Replace a settlement with new attributes."
+        }
+      ]
+    },
+    {
+      "name": "SharingService",
+      "methods": [
+        {
+          "name": "list_shared_addresses",
+          "signature": "list_shared_addresses(options: 'Optional[ListSharedAddressesOptions]' = None) -> 'Tuple[List[SharedAddress], Optional[CursorPagination]]'",
+          "doc": "List shared addresses."
+        },
+        {
+          "name": "list_shared_assets",
+          "signature": "list_shared_assets(options: 'Optional[ListSharedAssetsOptions]' = None) -> 'Tuple[List[SharedAsset], Optional[CursorPagination]]'",
+          "doc": "List shared whitelisted assets."
+        },
+        {
+          "name": "share_address",
+          "signature": "share_address(request: 'ShareAddressRequest') -> 'None'",
+          "doc": "Share an address with a Taurus Network participant."
+        },
+        {
+          "name": "share_whitelisted_asset",
+          "signature": "share_whitelisted_asset(request: 'ShareWhitelistedAssetRequest') -> 'None'",
+          "doc": "Share a whitelisted asset with a Taurus Network participant."
+        },
+        {
+          "name": "unshare_address",
+          "signature": "unshare_address(shared_address_id: 'str') -> 'None'",
+          "doc": "Unshare an address with a Taurus Network participant."
+        },
+        {
+          "name": "unshare_whitelisted_asset",
+          "signature": "unshare_whitelisted_asset(shared_asset_id: 'str') -> 'None'",
+          "doc": "Unshare a whitelisted asset with a Taurus Network participant."
+        }
+      ]
+    },
+    {
+      "name": "StakingService",
+      "methods": [
+        {
+          "name": "get_staking_info",
+          "signature": "get_staking_info(address_id: 'int') -> 'StakingInfo'",
+          "doc": "Get staking information for an address."
+        },
+        {
+          "name": "list_validators",
+          "signature": "list_validators(blockchain: 'str', network: 'str' = 'mainnet', limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Validator], Optional[Pagination]]'",
+          "doc": "List validators for a blockchain."
+        }
+      ]
+    },
+    {
+      "name": "StatisticsService",
+      "methods": [
+        {
+          "name": "get_summary",
+          "signature": "get_summary() -> 'Optional[PortfolioStatistics]'",
+          "doc": "Get summary statistics for the portfolio."
+        },
+        {
+          "name": "get_transaction_stats",
+          "signature": "get_transaction_stats(from_date: 'Optional[datetime]' = None, to_date: 'Optional[datetime]' = None) -> 'TransactionStatistics'",
+          "doc": "Get transaction statistics for a date range."
+        }
+      ]
+    },
+    {
+      "name": "TagService",
+      "methods": [
+        {
+          "name": "create",
+          "signature": "create(name: 'str', color: 'str') -> 'Tag'",
+          "doc": "Create a new tag."
+        },
+        {
+          "name": "delete",
+          "signature": "delete(tag_id: 'str') -> 'None'",
+          "doc": "Delete a tag."
+        },
+        {
+          "name": "get",
+          "signature": "get(tag_id: 'str') -> 'Tag'",
+          "doc": "Get a tag by ID."
+        },
+        {
+          "name": "list",
+          "signature": "list(limit: 'int' = 50, offset: 'int' = 0) -> 'List[Tag]'",
+          "doc": "List tags."
+        }
+      ]
+    },
+    {
+      "name": "TokenMetadataService",
+      "methods": [
+        {
+          "name": "get",
+          "signature": "get(blockchain: 'str', contract_address: 'str', token_id: 'str' = '0', network: 'str' = 'mainnet', with_data: 'bool' = False) -> 'Optional[TokenMetadata]'",
+          "doc": "Get token metadata for an ERC token."
+        },
+        {
+          "name": "get_crypto_punk",
+          "signature": "get_crypto_punk(network: 'str', contract_address: 'str', punk_id: 'str', blockchain: 'Optional[str]' = None) -> 'Optional[CryptoPunkMetadata]'",
+          "doc": "Get CryptoPunk token metadata."
+        },
+        {
+          "name": "get_erc",
+          "signature": "get_erc(network: 'str', contract_address: 'str', token_id: 'str', blockchain: 'Optional[str]' = None, with_data: 'bool' = False) -> 'Optional[TokenMetadata]'",
+          "doc": "Get ERC token metadata (ERC721 or ERC1155)."
+        },
+        {
+          "name": "get_fa",
+          "signature": "get_fa(network: 'str', contract_address: 'str', token_id: 'str' = '0', with_data: 'bool' = False) -> 'Optional[FATokenMetadata]'",
+          "doc": "Get FA token metadata (Tezos FA1.2 or FA2)."
+        }
+      ]
+    },
+    {
+      "name": "TransactionService",
+      "methods": [
+        {
+          "name": "export_csv",
+          "signature": "export_csv(from_date: 'Optional[datetime]' = None, to_date: 'Optional[datetime]' = None, currency: 'Optional[str]' = None, direction: 'Optional[str]' = None, limit: 'int' = 1000, offset: 'int' = 0, blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None) -> 'str'",
+          "doc": "Export transactions to CSV format."
+        },
+        {
+          "name": "get",
+          "signature": "get(transaction_id: 'int') -> 'Transaction'",
+          "doc": "Get a single transaction by ID."
+        },
+        {
+          "name": "get_by_hash",
+          "signature": "get_by_hash(tx_hash: 'str') -> 'Transaction'",
+          "doc": "Get a transaction by its blockchain hash."
+        },
+        {
+          "name": "list",
+          "signature": "list(from_date: 'Optional[datetime]' = None, to_date: 'Optional[datetime]' = None, currency: 'Optional[str]' = None, direction: 'Optional[str]' = None, limit: 'int' = 50, offset: 'int' = 0, blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None) -> 'Tuple[List[Transaction], Optional[Pagination]]'",
+          "doc": "List transactions with filtering."
+        },
+        {
+          "name": "list_by_address",
+          "signature": "list_by_address(address: 'str', limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Transaction], Optional[Pagination]]'",
+          "doc": "List transactions for a specific blockchain address."
+        }
+      ]
+    },
+    {
+      "name": "UserDeviceService",
+      "methods": [
+        {
+          "name": "approve_pairing",
+          "signature": "approve_pairing(pairing_id: 'str', nonce: 'str') -> 'None'",
+          "doc": "Approve a user device pairing request (Step 3)."
+        },
+        {
+          "name": "create_pairing",
+          "signature": "create_pairing() -> 'UserDevicePairing'",
+          "doc": "Create a new user device pairing request (Step 1)."
+        },
+        {
+          "name": "get",
+          "signature": "get(device_id: 'str') -> 'UserDevicePairingInfo'",
+          "doc": "Get user device pairing by ID."
+        },
+        {
+          "name": "get_pairing_status",
+          "signature": "get_pairing_status(pairing_id: 'str', nonce: 'str') -> 'UserDevicePairingInfo'",
+          "doc": "Get the status of a user device pairing request."
+        },
+        {
+          "name": "list",
+          "signature": "list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[UserDevicePairing], Optional[Pagination]]'",
+          "doc": "List user device pairings."
+        },
+        {
+          "name": "start_pairing",
+          "signature": "start_pairing(pairing_id: 'str', nonce: 'str', encryption_key: 'str') -> 'None'",
+          "doc": "Start a user device pairing request (Step 2)."
+        }
+      ]
+    },
+    {
+      "name": "UserService",
+      "methods": [
+        {
+          "name": "create_user_attribute",
+          "signature": "create_user_attribute(user_id: 'str', key: 'str', value: 'str') -> 'None'",
+          "doc": "Create an attribute for a user."
+        },
+        {
+          "name": "get",
+          "signature": "get(user_id: 'str') -> 'User'",
+          "doc": "Get a user by ID."
+        },
+        {
+          "name": "get_current",
+          "signature": "get_current() -> 'User'",
+          "doc": "Get the current authenticated user."
+        },
+        {
+          "name": "get_users_by_email",
+          "signature": "get_users_by_email(emails: 'List[str]') -> 'List[User]'",
+          "doc": "Get users by their email addresses."
+        },
+        {
+          "name": "list",
+          "signature": "list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[User], Optional[Pagination]]'",
+          "doc": "List users with pagination."
+        }
+      ]
+    },
+    {
+      "name": "VisibilityGroupService",
+      "methods": [
+        {
+          "name": "get",
+          "signature": "get(group_id: 'str') -> 'VisibilityGroup'",
+          "doc": "Get a visibility group by ID."
+        },
+        {
+          "name": "get_users",
+          "signature": "get_users(group_id: 'str') -> 'List[Any]'",
+          "doc": "Get users in a visibility group."
+        },
+        {
+          "name": "list",
+          "signature": "list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[VisibilityGroup], Optional[Pagination]]'",
+          "doc": "List visibility groups with pagination."
+        }
+      ]
+    },
+    {
+      "name": "WalletService",
+      "methods": [
+        {
+          "name": "create",
+          "signature": "create(request: 'CreateWalletRequest') -> 'Wallet'",
+          "doc": "Create a new wallet."
+        },
+        {
+          "name": "create_attribute",
+          "signature": "create_attribute(wallet_id: 'int', key: 'str', value: 'str') -> 'None'",
+          "doc": "Create an attribute for a wallet."
+        },
+        {
+          "name": "create_wallet",
+          "signature": "create_wallet(blockchain: 'str', network: 'str', name: 'str', is_omnibus: 'bool' = False, comment: 'str' = '', customer_id: 'str' = '') -> 'Wallet'",
+          "doc": "Create a new wallet with explicit parameters."
+        },
+        {
+          "name": "get",
+          "signature": "get(wallet_id: 'int') -> 'Wallet'",
+          "doc": "Get a wallet by ID."
+        },
+        {
+          "name": "get_balance_history",
+          "signature": "get_balance_history(wallet_id: 'int', interval_hours: 'int') -> 'List[BalanceHistoryPoint]'",
+          "doc": "Get wallet balance history."
+        },
+        {
+          "name": "get_by_name",
+          "signature": "get_by_name(name: 'str', limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Wallet], Optional[Pagination]]'",
+          "doc": "Get wallets by name with pagination."
+        },
+        {
+          "name": "get_tokens",
+          "signature": "get_tokens(wallet_id: 'int', limit: 'int' = 50) -> 'List[AssetBalance]'",
+          "doc": "Get wallet tokens (asset balances)."
+        },
+        {
+          "name": "list",
+          "signature": "list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Wallet], Optional[Pagination]]'",
+          "doc": "List wallets with pagination."
+        },
+        {
+          "name": "list_with_options",
+          "signature": "list_with_options(options: 'Optional[ListWalletsOptions]' = None) -> 'Tuple[List[Wallet], Optional[Pagination]]'",
+          "doc": "List wallets with full filtering options."
+        }
+      ]
+    },
+    {
+      "name": "WebhookCallService",
+      "methods": [
+        {
+          "name": "get",
+          "signature": "get(call_id: 'str') -> 'WebhookCall'",
+          "doc": "Get a webhook call by ID."
+        },
+        {
+          "name": "get_webhook_calls",
+          "signature": "get_webhook_calls(event_id: 'Optional[str]' = None, webhook_id: 'Optional[str]' = None, status: 'Optional[str]' = None, sort_order: 'Optional[str]' = None, cursor: 'Optional[ApiRequestCursor]' = None) -> 'WebhookCallResult'",
+          "doc": "Retrieve webhook call history with optional filtering."
+        },
+        {
+          "name": "list",
+          "signature": "list(webhook_id: 'Optional[str]' = None, event_id: 'Optional[str]' = None, status: 'Optional[str]' = None, sort_order: 'Optional[str]' = None, limit: 'int' = 50, cursor: 'Optional[str]' = None) -> 'Tuple[List[WebhookCall], Optional[Pagination]]'",
+          "doc": "List webhook calls with optional filtering."
+        }
+      ]
+    },
+    {
+      "name": "WebhookService",
+      "methods": [
+        {
+          "name": "create",
+          "signature": "create(url: 'str', events: 'List[str]') -> 'Webhook'",
+          "doc": "Create a new webhook."
+        },
+        {
+          "name": "delete",
+          "signature": "delete(webhook_id: 'str') -> 'None'",
+          "doc": "Delete a webhook."
+        },
+        {
+          "name": "get",
+          "signature": "get(webhook_id: 'str') -> 'Webhook'",
+          "doc": "Get a webhook by ID."
+        },
+        {
+          "name": "list",
+          "signature": "list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Webhook], Optional[Pagination]]'",
+          "doc": "List webhooks with pagination."
+        }
+      ]
+    },
+    {
+      "name": "WhitelistedAddressService",
+      "methods": [
+        {
+          "name": "approve",
+          "signature": "approve(ids: 'List[int]', private_key: 'Any', comment: 'str') -> 'None'",
+          "doc": "Sign and submit an approval for the given whitelisted addresses, all-or-nothing."
+        },
+        {
+          "name": "get",
+          "signature": "get(whitelisted_address_id: 'int') -> 'WhitelistedAddress'",
+          "doc": "Get a whitelisted address by ID with verification."
+        },
+        {
+          "name": "get_envelope",
+          "signature": "get_envelope(whitelisted_address_id: 'int') -> 'SignedWhitelistedAddressEnvelope'",
+          "doc": "Get the signed envelope for a whitelisted address."
+        },
+        {
+          "name": "list",
+          "signature": "list(currency: 'Optional[str]' = None, limit: 'int' = 50, offset: 'int' = 0, *, ids: 'Optional[List[str]]' = None, include_for_approval: 'bool' = False) -> 'WhitelistedAddressListResult'",
+          "doc": "List whitelisted addresses with cryptographic verification."
+        },
+        {
+          "name": "list_for_approval",
+          "signature": "list_for_approval(limit: 'int' = 50, offset: 'int' = 0, *, ids: 'Optional[List[str]]' = None, include_already_signed_by_user: 'bool' = False) -> 'WhitelistedAddressListResult'",
+          "doc": "List whitelisted addresses awaiting approval, verified exactly as ``list`` is."
+        }
+      ]
+    },
+    {
+      "name": "WhitelistedAssetService",
+      "methods": [
+        {
+          "name": "approve",
+          "signature": "approve(ids: 'List[int]', private_key: 'Any', comment: 'str') -> 'None'",
+          "doc": "Sign and submit an approval for the given whitelisted assets, all-or-nothing."
+        },
+        {
+          "name": "get",
+          "signature": "get(asset_id: 'int') -> 'WhitelistedAsset'",
+          "doc": "Get a whitelisted asset by ID."
+        },
+        {
+          "name": "list",
+          "signature": "list(blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None, limit: 'int' = 50, offset: 'int' = 0, *, ids: 'Optional[List[str]]' = None, include_for_approval: 'bool' = False) -> 'Tuple[List[WhitelistedAsset], Optional[Pagination]]'",
+          "doc": "List whitelisted assets."
+        },
+        {
+          "name": "list_for_approval",
+          "signature": "list_for_approval(ids: 'Optional[List[str]]' = None, limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[WhitelistedAsset], Optional[Pagination]]'",
+          "doc": "List whitelisted assets awaiting approval, verified as in list()."
+        }
+      ]
+    }
+  ]
+}

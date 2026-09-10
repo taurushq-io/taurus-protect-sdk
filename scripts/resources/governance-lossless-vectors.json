@@ -1,0 +1,47 @@
+[
+  {
+    "description": "RuleSource carrying an unknown field on the source",
+    "scenario": "rule_source_lossless",
+    "wire_base64": "oB8q"
+  },
+  {
+    "description": "RuleSource with a payload on a payload-less Any arm",
+    "scenario": "rule_source_lossless",
+    "wire_base64": "CAMSBQoDYWJj"
+  },
+  {
+    "description": "RuleSource with an unknown field inside the payload",
+    "scenario": "rule_source_lossless",
+    "wire_base64": "CAESEQoMbS80NCcvNjAnLzAnoB8H"
+  },
+  {
+    "description": "container with unknown enum values (role 201, columnType 77, subDomain 202, blockchain 203)",
+    "scenario": "unknown_enum_passthrough",
+    "wire_base64": "CggKAnUxGgLJASoJEgIITSIDEMoBOgMYywE="
+  },
+  {
+    "description": "container with five properties entries, encoded deterministically",
+    "scenario": "deterministic_encoding",
+    "wire_base64": "CmgKAnUxEgNQRU0aAQMiEAoGa0FscGhhEgZrQWxwaGEiEAoGa0JyYXZvEgZrQnJhdm8iFAoIa0NoYXJsaWUSCGtDaGFybGllIhAKBmtEZWx0YRIGa0RlbHRhIg4KBWtFY2hvEgVrRWNob0oQCgZrQWxwaGESBmtBbHBoYUoQCgZrQnJhdm8SBmtCcmF2b0oUCghrQ2hhcmxpZRIIa0NoYXJsaWVKEAoGa0RlbHRhEgZrRGVsdGFKDgoFa0VjaG8SBWtFY2hv"
+  },
+  {
+    "description": "unknown fields inside all four nested rule-detail sub-messages",
+    "scenario": "nested_detail_unknown_fields",
+    "wire_base64": "KlIKCEVUSC9jYWxsIkYqJQoFRVJDMjASGXRyYW5zZmVyKGFkZHJlc3MsdWludDI1NimgHyoyCAoDRkEyoB8qOgkKBHByb3agHypCCAoDc2lnoB8q"
+  },
+  {
+    "description": "non-UTF-8 RuleStringEqual cell plus a truncated RuleFiatAmount",
+    "scenario": "malformed_cell_degrades_alone",
+    "wire_base64": "KjQKDEVUSC90cmFuc2ZlchIMCAQSCGNvbnRyYWN0EgoIAhIGYW1vdW50GgoKBQgCEgH/CgEI"
+  },
+  {
+    "description": "empty payload on a payload-carrying arm leaves the variant unset",
+    "scenario": "empty_payload_arm",
+    "wire_base64": "CAE="
+  },
+  {
+    "description": "RuleSource with an explicitly-present zero-length payload (non-canonical; re-encodes to 0801)",
+    "scenario": "explicit_empty_payload_noncanonical",
+    "wire_base64": "CAESAA=="
+  }
+]

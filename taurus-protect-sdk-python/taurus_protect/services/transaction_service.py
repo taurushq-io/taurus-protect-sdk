@@ -163,6 +163,8 @@ class TransactionService(BaseService):
         direction: Optional[str] = None,
         limit: int = 50,
         offset: int = 0,
+        blockchain: Optional[str] = None,
+        network: Optional[str] = None,
     ) -> Tuple[List[Transaction], Optional[Pagination]]:
         """
         List transactions with filtering.
@@ -174,6 +176,8 @@ class TransactionService(BaseService):
             direction: Filter by direction ("incoming" or "outgoing").
             limit: Maximum number of transactions to return.
             offset: Offset for pagination.
+            blockchain: Filter by blockchain (e.g. "ETH").
+            network: Filter by network (e.g. "mainnet").
 
         Returns:
             Tuple of (transactions list, pagination info).
@@ -200,8 +204,8 @@ class TransactionService(BaseService):
                 source=None,
                 destination=None,
                 ids=None,
-                blockchain=None,
-                network=None,
+                blockchain=blockchain,
+                network=network,
                 from_block_number=None,
                 to_block_number=None,
                 hashes=None,
@@ -294,6 +298,8 @@ class TransactionService(BaseService):
         direction: Optional[str] = None,
         limit: int = 1000,
         offset: int = 0,
+        blockchain: Optional[str] = None,
+        network: Optional[str] = None,
     ) -> str:
         """
         Export transactions to CSV format.
@@ -305,6 +311,8 @@ class TransactionService(BaseService):
             direction: Filter by direction ("incoming" or "outgoing").
             limit: Maximum number of transactions to export.
             offset: Offset for pagination.
+            blockchain: Filter by blockchain (e.g. "ETH").
+            network: Filter by network (e.g. "mainnet").
 
         Returns:
             CSV content as a string.
@@ -332,8 +340,8 @@ class TransactionService(BaseService):
                 source=None,
                 destination=None,
                 ids=None,
-                blockchain=None,
-                network=None,
+                blockchain=blockchain,
+                network=network,
                 from_block_number=None,
                 to_block_number=None,
                 amount_above=None,

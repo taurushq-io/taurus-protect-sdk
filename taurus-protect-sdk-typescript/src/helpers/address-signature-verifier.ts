@@ -11,25 +11,39 @@ import { verifySignature, decodePublicKeyPem } from "../crypto";
 import { IntegrityError } from "../errors";
 import type { DecodedRulesContainer } from "../models/governance-rules";
 import { getHsmPublicKey } from "../models/governance-rules";
+import { isCryptoVerificationError } from "../crypto";
 
 /**
  * Verifies an address signature using the HSM public key from the rules container.
  *
  * The signed data is the raw blockchain address string (not hex-encoded).
  *
+ * Throws on every failure rather than returning false, matching Go
+ * (VerifyAddressSignature), Java (AddressSignatureVerifier.verifyAddressSignature)
+ * and Python (verify_address_signature). This used to return `false` for a missing
+ * signature and skip the empty-address check entirely, so two distinct failures —
+ * "nothing to verify" and "verification failed" — reached the caller as one value.
+ *
  * @param address - The blockchain address string
  * @param signatureBase64 - Base64-encoded signature
  * @param rulesContainer - The decoded rules container containing HSM public key
- * @returns true if the signature is valid
- * @throws IntegrityError if HSM public key is not found
+ * @param addressId - Optional identifier used in error messages
+ * @throws IntegrityError if the address or signature is missing, the HSM public key
+ *   is absent, or the signature does not verify
  */
 export function verifyAddressSignature(
   address: string,
   signatureBase64: string,
-  rulesContainer: DecodedRulesContainer
-): boolean {
+  rulesContainer: DecodedRulesContainer,
+  addressId?: string | number
+): void {
+  const label = addressId === undefined ? address : String(addressId);
+
   if (!signatureBase64) {
-    return false;
+    throw new IntegrityError(`Address ${label} has no signature`);
+  }
+  if (!address) {
+    throw new IntegrityError(`Address ${label} has no blockchain address to verify`);
   }
 
   // Get HSM public key from rules container
@@ -48,49 +62,41 @@ export function verifyAddressSignature(
   // Verify signature - signed data is the raw address string
   const addressData = Buffer.from(address, "utf-8");
 
+  let valid: boolean;
   try {
-    return verifySignature(hsmPublicKey, addressData, signatureBase64);
+    valid = verifySignature(hsmPublicKey, addressData, signatureBase64);
   } catch (error: unknown) {
-    if (error instanceof Error &&
-        (error.message.includes('signature') ||
-         error.message.includes('key') ||
-         error.message.includes('Invalid') ||
-         error.message.includes('decode') ||
-         error.message.includes('ERR_OSSL'))) {
-      return false;
+    if (isCryptoVerificationError(error)) {
+      throw new IntegrityError(
+        `Address signature verification failed for address ${label}`
+      );
     }
     throw error;
+  }
+
+  if (!valid) {
+    throw new IntegrityError(
+      `Address signature verification failed for address ${label}`
+    );
   }
 }
 
 /**
- * Verifies multiple address signatures.
+ * Verifies multiple address signatures, failing on the first that does not verify.
+ *
+ * Matches Go's VerifyAddressSignatures, which returns the first error. It used to
+ * return a boolean[] — so a caller that ignored the array silently accepted every
+ * unverified address, and one that read it could not tell why a row failed.
  *
  * @param addresses - Array of {address, signature} objects
  * @param rulesContainer - The decoded rules container
- * @returns Array of verification results (true/false for each address)
+ * @throws IntegrityError on the first address that does not verify
  */
 export function verifyAddressSignatures(
-  addresses: Array<{ address: string; signature: string | undefined }>,
+  addresses: Array<{ address: string; signature: string | undefined; id?: string | number }>,
   rulesContainer: DecodedRulesContainer
-): boolean[] {
-  return addresses.map(({ address, signature }) => {
-    if (!signature) {
-      return false;
-    }
-    try {
-      return verifyAddressSignature(address, signature, rulesContainer);
-    } catch (error: unknown) {
-      if (error instanceof IntegrityError ||
-          (error instanceof Error &&
-           (error.message.includes('signature') ||
-            error.message.includes('key') ||
-            error.message.includes('Invalid') ||
-            error.message.includes('decode') ||
-            error.message.includes('ERR_OSSL')))) {
-        return false;
-      }
-      throw error;
-    }
-  });
+): void {
+  for (const { address, signature, id } of addresses) {
+    verifyAddressSignature(address, signature ?? "", rulesContainer, id);
+  }
 }

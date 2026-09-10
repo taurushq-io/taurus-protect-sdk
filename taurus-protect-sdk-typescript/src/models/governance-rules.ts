@@ -1,3 +1,17 @@
+import type { RuleCell } from './rule-cell';
+
+export type { RuleCell } from './rule-cell';
+
+/**
+ * Unknown protobuf fields captured at decode, keyed by field number, in the
+ * ts-proto `_unknownFields` shape. Re-attached verbatim on encode so data from
+ * a newer schema than this SDK version is never silently dropped.
+ */
+export type UnknownFields = { [key: number]: Uint8Array[] };
+
+/** A protobuf `map<string, bytes>` properties bag. */
+export type Properties = { [key: string]: Uint8Array };
+
 /**
  * A user in the governance rules system.
  */
@@ -6,6 +20,8 @@ export interface RuleUser {
   readonly name: string | undefined;
   readonly publicKeyPem: string | undefined;
   readonly roles: string[];
+  readonly properties?: Properties;
+  readonly unknownFields?: UnknownFields;
 }
 
 /**
@@ -15,6 +31,8 @@ export interface RuleGroup {
   readonly id: string | undefined;
   readonly name: string | undefined;
   readonly userIds: string[];
+  readonly properties?: Properties;
+  readonly unknownFields?: UnknownFields;
 }
 
 /**
@@ -24,6 +42,7 @@ export interface GroupThreshold {
   readonly groupId: string | undefined;
   readonly minimumSignatures: number;
   readonly threshold: number;
+  readonly unknownFields?: UnknownFields;
 }
 
 /**
@@ -31,13 +50,135 @@ export interface GroupThreshold {
  */
 export interface SequentialThresholds {
   readonly thresholds: GroupThreshold[];
+  readonly unknownFields?: UnknownFields;
+}
+
+/**
+ * A column in a transaction rule.
+ */
+export interface RuleColumn {
+  readonly type: string;
+  readonly name: string;
+  readonly metadataKey: string;
+  readonly unknownFields?: UnknownFields;
+}
+
+/**
+ * A line/row in a transaction rule. Cells align positionally with the rule's
+ * columns.
+ */
+export interface RuleLine {
+  readonly cells: RuleCell[];
+  readonly parallelThresholds: SequentialThresholds[];
+  readonly priority: number;
+  readonly properties?: Properties;
+  readonly unknownFields?: UnknownFields;
+}
+
+/** EVM contract-call scoping. */
+export interface EvmCallContract {
+  readonly contractType: string;
+  readonly methodSignature: string;
+  /** Protobuf fields from a newer schema, re-attached on encode. */
+  readonly unknownFields?: UnknownFields;
+}
+
+/** Tezos contract-call scoping. */
+export interface XtzCallContract {
+  readonly contractType: string;
+  readonly methodSignature: string;
+  /** Protobuf fields from a newer schema, re-attached on encode. */
+  readonly unknownFields?: UnknownFields;
+}
+
+/** Cash-settlement scoping. */
+export interface CashSettlement {
+  readonly provider: string;
+  readonly requestType: string;
+  /** Protobuf fields from a newer schema, re-attached on encode. */
+  readonly unknownFields?: UnknownFields;
+}
+
+/** Cosmos scoping. */
+export interface CosmosDetails {
+  readonly methodSignatures: string[];
+  /** Protobuf fields from a newer schema, re-attached on encode. */
+  readonly unknownFields?: UnknownFields;
+}
+
+/**
+ * Additional transaction-rule configuration.
+ */
+export interface TransactionRuleDetails {
+  readonly domain: string;
+  readonly subDomain: string;
+  readonly blockchain: string;
+  readonly network: string;
+  readonly evmCallContract?: EvmCallContract;
+  readonly xtzCallContract?: XtzCallContract;
+  readonly cashSettlement?: CashSettlement;
+  readonly cosmosDetails?: CosmosDetails;
+  readonly unknownFields?: UnknownFields;
 }
 
 /**
  * Transaction approval rules.
  */
 export interface TransactionRules {
+  readonly key: string;
+  readonly columns: RuleColumn[];
+  readonly lines: RuleLine[];
+  readonly details?: TransactionRuleDetails;
+  readonly unknownFields?: UnknownFields;
+}
+
+/** The type of a rule source (whitelisting cell). */
+export enum RuleSourceType {
+  Unknown = 0,
+  InternalWallet = 1,
+  InternalAddress = 2,
+  AnyExchange = 3,
+  Exchange = 4,
+  ExternalAddress = 5,
+}
+
+export interface RuleSourceInternalWallet {
+  readonly path: string;
+}
+export interface RuleSourceInternalAddress {
+  readonly address: string;
+  readonly path: string;
+}
+export interface RuleSourceExchange {
+  readonly label: string;
+}
+export interface RuleSourceExternalAddress {
+  readonly address: string;
+  readonly memo: string;
+}
+
+/**
+ * A source specification in an address-whitelisting rule line. Sources whose
+ * type/content is unknown to this SDK version keep their exact wire bytes in
+ * `raw` and are re-emitted verbatim on encode.
+ */
+export interface RuleSource {
+  readonly type: RuleSourceType;
+  readonly internalWallet?: RuleSourceInternalWallet;
+  readonly internalAddress?: RuleSourceInternalAddress;
+  readonly exchange?: RuleSourceExchange;
+  readonly externalAddress?: RuleSourceExternalAddress;
+  readonly raw?: Uint8Array;
+}
+
+/**
+ * A source-specific address-whitelisting rule line.
+ */
+export interface AddressWhitelistingLine {
+  readonly cells: RuleSource[];
   readonly parallelThresholds: SequentialThresholds[];
+  readonly properties?: Properties;
+  readonly unknownFields?: UnknownFields;
 }
 
 /**
@@ -47,6 +188,9 @@ export interface AddressWhitelistingRules {
   readonly currency: string | undefined;
   readonly network: string | undefined;
   readonly parallelThresholds: SequentialThresholds[];
+  readonly lines: AddressWhitelistingLine[];
+  readonly properties?: Properties;
+  readonly unknownFields?: UnknownFields;
 }
 
 /**
@@ -56,6 +200,8 @@ export interface ContractAddressWhitelistingRules {
   readonly blockchain: string | undefined;
   readonly network: string | undefined;
   readonly parallelThresholds: SequentialThresholds[];
+  readonly properties?: Properties;
+  readonly unknownFields?: UnknownFields;
 }
 
 /**
@@ -109,15 +255,49 @@ export interface ListGovernanceRulesHistoryOptions {
 /**
  * Result from listing governance rules history.
  */
+/**
+ * A SuperAdmin public key as configured on the server, used to verify the signatures on
+ * a governance rules container.
+ */
+export interface SuperAdminPublicKey {
+  /** ID of the SuperAdmin user this key belongs to */
+  readonly userId: string;
+  /** PEM-encoded public key */
+  readonly publicKey: string;
+}
+
+/** A history entry withheld because its SuperAdmin signatures did not verify. */
+export interface ExcludedRuleset {
+  /**
+   * When the excluded ruleset was created — the only stable identifier a history entry
+   * carries.
+   */
+  readonly creationDate: Date | undefined;
+  /** Why it was excluded. */
+  readonly reason: string;
+}
+
 export interface GovernanceRulesHistoryResult {
-  /** List of historical governance rules */
+  /** Historical governance rules whose SuperAdmin signatures verified */
   readonly items: GovernanceRules[];
+  /**
+   * Entries withheld because their signatures did not verify, so a shortened page
+   * cannot read as a complete one. History is LENIENT and does not throw when nothing
+   * survives: a SuperAdmin key rotation makes every pre-rotation ruleset unverifiable,
+   * and aborting would deny the whole audit trail.
+   */
+  readonly excludedUnverified: ExcludedRuleset[];
   /** Cursor for fetching the next page, undefined if no more pages */
   readonly nextCursor: string | undefined;
 }
 
 /**
  * Decoded rules container containing all governance rules.
+ *
+ * The model is lossless: it carries every governance protobuf field (including
+ * per-node `properties` and `unknownFields`), so a container decoded from the
+ * wire re-encodes without dropping data — even data introduced by a newer
+ * schema than this SDK version.
  */
 export interface DecodedRulesContainer {
   readonly users: RuleUser[];
@@ -132,6 +312,8 @@ export interface DecodedRulesContainer {
   readonly hsmSlotId: number;
   readonly minimumCommitmentSignatures: number;
   readonly engineIdentities: string[];
+  readonly properties?: Properties;
+  readonly unknownFields?: UnknownFields;
 }
 
 /**
@@ -152,6 +334,65 @@ export function createEmptyRulesContainer(): DecodedRulesContainer {
     minimumCommitmentSignatures: 0,
     engineIdentities: [],
   };
+}
+
+function hasUf(uf: UnknownFields | undefined): boolean {
+  return uf !== undefined && Object.keys(uf).length > 0;
+}
+
+/**
+ * Reports whether any part of the container carries data unknown to this SDK
+ * version (unknown protobuf fields, raw cells, or raw whitelisting sources).
+ * Such data is preserved verbatim on re-encode; a true result is a hint to
+ * upgrade the SDK before editing the container.
+ */
+export function hasUnknownFields(container: DecodedRulesContainer): boolean {
+  if (hasUf(container.unknownFields)) return true;
+  if (container.users.some((u) => hasUf(u.unknownFields))) return true;
+  if (container.groups.some((g) => hasUf(g.unknownFields))) return true;
+  for (const tr of container.transactionRules) {
+    if (hasUf(tr.unknownFields)) return true;
+    if (tr.columns.some((c) => hasUf(c.unknownFields))) return true;
+    if (ruleDetailsHaveUnknown(tr.details)) return true;
+    for (const l of tr.lines) {
+      if (hasUf(l.unknownFields)) return true;
+      if (thresholdsHaveUnknown(l.parallelThresholds)) return true;
+      if (l.cells.some((c) => c.kind === 'RawCell')) return true;
+    }
+  }
+  for (const awr of container.addressWhitelistingRules) {
+    if (hasUf(awr.unknownFields) || thresholdsHaveUnknown(awr.parallelThresholds)) return true;
+    for (const l of awr.lines) {
+      if (hasUf(l.unknownFields) || thresholdsHaveUnknown(l.parallelThresholds)) return true;
+      if (l.cells.some((s) => s.raw !== undefined && s.raw.length > 0)) return true;
+    }
+  }
+  for (const cawr of container.contractAddressWhitelistingRules) {
+    if (hasUf(cawr.unknownFields) || thresholdsHaveUnknown(cawr.parallelThresholds)) return true;
+  }
+  return false;
+}
+
+/**
+ * Reports unknown fields on the details node and each nested scoping sub-message.
+ * Checking only the details node would report a container clean while a nested
+ * contract-call scoping node carried data from a newer schema.
+ */
+function ruleDetailsHaveUnknown(details: TransactionRuleDetails | undefined): boolean {
+  if (!details) return false;
+  if (hasUf(details.unknownFields)) return true;
+  return [
+    details.evmCallContract,
+    details.xtzCallContract,
+    details.cashSettlement,
+    details.cosmosDetails,
+  ].some((n) => n !== undefined && hasUf(n.unknownFields));
+}
+
+function thresholdsHaveUnknown(thresholds: SequentialThresholds[]): boolean {
+  return thresholds.some(
+    (st) => hasUf(st.unknownFields) || st.thresholds.some((t) => hasUf(t.unknownFields))
+  );
 }
 
 /**

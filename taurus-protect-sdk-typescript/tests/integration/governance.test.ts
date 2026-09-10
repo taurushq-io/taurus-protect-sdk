@@ -41,7 +41,7 @@ describe("Integration: Governance Rules", () => {
 
     const client = getTestClient();
     try {
-      const rules = await client.governanceRules.get();
+      const rules = await client.governanceRules.getRules();
 
       console.log("Governance rules response received");
 
@@ -85,7 +85,7 @@ describe("Integration: Governance Rules", () => {
 
     const client = getTestClient();
     try {
-      const result = await client.governanceRules.getHistory({ limit: 10 });
+      const result = await client.governanceRules.getRulesHistory({ limit: 10 });
 
       console.log("Governance rules history response received");
 
@@ -143,7 +143,7 @@ describe("Integration: Governance Rules", () => {
 
     const client = getTestClientWithVerification();
     try {
-      const rules = await client.governanceRules.get();
+      const rules = await client.governanceRules.getRules();
 
       if (!rules) {
         console.log("No governance rules available - skipping test");

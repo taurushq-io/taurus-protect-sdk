@@ -15,7 +15,7 @@ import java.util.List;
  * @see AddressWhitelistingRules
  * @see TransactionRules
  */
-public class SequentialThresholds {
+public class SequentialThresholds extends RulesNode {
 
     /**
      * Ordered list of group thresholds to satisfy sequentially.

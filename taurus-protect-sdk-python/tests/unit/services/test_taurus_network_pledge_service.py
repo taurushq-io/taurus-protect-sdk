@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -127,6 +127,83 @@ class TestApprovePledgeActions:
             service.approve_pledge_actions(
                 actions=[action], private_key=MagicMock()
             )
+
+
+class TestApprovePledgeActionsVerification:
+    """
+    approve_pledge_actions was the last signing site in any of the four SDKs with no
+    verification: it checked that a hash was non-empty and then signed it, so the
+    approver attested to a hash nothing had checked. Python is the only SDK where the
+    SDK signs pledge actions at all (Go and TypeScript take a caller-supplied signature,
+    Java has no such method), which is why it drifted alone.
+    """
+
+    def _make_service(self) -> tuple:
+        pledge_api = MagicMock()
+        reply = MagicMock()
+        reply.approved_count = 1
+        pledge_api.taurus_network_service_approve_pledge_actions.return_value = reply
+        service = PledgeService(api_client=MagicMock(), pledge_api=pledge_api)
+        return service, pledge_api
+
+    @staticmethod
+    def _action(action_id: str, payload: str, hash_value: str) -> MagicMock:
+        action = MagicMock()
+        action.id = action_id
+        action.metadata = MagicMock()
+        action.metadata.payload = payload
+        action.metadata.hash = hash_value
+        return action
+
+    def test_signs_an_action_whose_hash_covers_its_payload(self) -> None:
+        from taurus_protect.crypto.hashing import calculate_hex_hash
+
+        service, api = self._make_service()
+        payload = '{"amount":"1"}'
+        action = self._action("a-1", payload, calculate_hex_hash(payload))
+
+        with patch(
+            "taurus_protect.services.taurus_network.pledge_service.sign_data",
+            return_value="signature_base64",
+        ):
+            assert service.approve_pledge_actions(actions=[action], private_key=MagicMock()) == 1
+        api.taurus_network_service_approve_pledge_actions.assert_called_once()
+
+    def test_refuses_a_hash_that_does_not_cover_its_payload(self) -> None:
+        from taurus_protect.crypto.hashing import calculate_hex_hash
+        from taurus_protect.errors import IntegrityError
+
+        service, api = self._make_service()
+        # The documented attack: alter the payload, leave the hash alone.
+        action = self._action("a-1", '{"amount":"999"}', calculate_hex_hash('{"amount":"1"}'))
+
+        with pytest.raises(IntegrityError, match="refusing to sign pledge action a-1"):
+            service.approve_pledge_actions(actions=[action], private_key=MagicMock())
+        api.taurus_network_service_approve_pledge_actions.assert_not_called()
+
+    def test_refuses_a_hash_with_no_payload(self) -> None:
+        from taurus_protect.errors import IntegrityError
+
+        service, api = self._make_service()
+        action = self._action("a-1", "", "abc123")
+
+        with pytest.raises(IntegrityError, match="payload is missing"):
+            service.approve_pledge_actions(actions=[action], private_key=MagicMock())
+        api.taurus_network_service_approve_pledge_actions.assert_not_called()
+
+    def test_is_all_or_nothing(self) -> None:
+        """One signature covers every hash in the batch, so partial is not an option."""
+        from taurus_protect.crypto.hashing import calculate_hex_hash
+        from taurus_protect.errors import IntegrityError
+
+        service, api = self._make_service()
+        good_payload = '{"amount":"1"}'
+        ok = self._action("a-1", good_payload, calculate_hex_hash(good_payload))
+        bad = self._action("a-2", '{"amount":"999"}', calculate_hex_hash(good_payload))
+
+        with pytest.raises(IntegrityError):
+            service.approve_pledge_actions(actions=[ok, bad], private_key=MagicMock())
+        api.taurus_network_service_approve_pledge_actions.assert_not_called()
 
 
 class TestRejectPledgeActions:

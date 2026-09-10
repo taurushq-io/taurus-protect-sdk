@@ -3,7 +3,7 @@
  */
 
 import type { TgvalidatordAddress, TgvalidatordAddressAttribute } from "../internal/openapi";
-import type { Address, AddressAttribute, Balance } from "../models/address";
+import type { Address, AddressAttribute } from "../models/address";
 import { safeString, safeStringDefault, safeBoolDefault, safeDate, safeMap } from "./base";
 
 /**

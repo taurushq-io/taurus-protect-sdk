@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hmac
 import json
+import logging
 from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple
@@ -11,8 +12,9 @@ from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 
 from taurus_protect.crypto.hashing import calculate_hex_hash
+from taurus_protect.errors import IntegrityError
 from taurus_protect.crypto.signing import sign_data
-from taurus_protect.mappers.request import request_from_dto, requests_from_dto
+from taurus_protect.mappers.request import request_from_dto
 from taurus_protect.models.pagination import Pagination
 from taurus_protect.models.request import (
     CreateExternalTransferRequest,
@@ -26,6 +28,9 @@ from taurus_protect.services._base import BaseService
 if TYPE_CHECKING:
     pass  # For OpenAPI types when available
 
+
+# Module logger: the Python idiom. Metadata only -- id and reason, never the payload.
+_LOGGER = logging.getLogger(__name__)
 
 class RequestService(BaseService):
     """
@@ -96,16 +101,9 @@ class RequestService(BaseService):
 
                 raise NotFoundError(f"Request {request_id} not found")
 
-            request = request_from_dto(result)
-            if request is None:
-                from taurus_protect.errors import NotFoundError
-
-                raise NotFoundError(f"Request {request_id} not found")
-
-            # Mandatory hash verification
-            self._verify_request_hash(request)
-
-            return request
+            # Mandatory hash verification, and mark the result so a caller can
+            # tell a verified request from one that merely came back.
+            return self._verified_request(result)
         except Exception as e:
             from taurus_protect.errors import APIError, IntegrityError
 
@@ -162,7 +160,7 @@ class RequestService(BaseService):
             )
 
             result = getattr(resp, "result", None)
-            requests = requests_from_dto(result) if result else []
+            requests = self._verified_requests(result)
 
             # Extract pagination from total_items
             total_items = getattr(resp, "total_items", None)
@@ -216,7 +214,7 @@ class RequestService(BaseService):
             )
 
             result = getattr(resp, "result", None)
-            requests = requests_from_dto(result) if result else []
+            requests = self._verified_requests(result)
 
             cursor = getattr(resp, "cursor", None)
             pagination = None
@@ -267,6 +265,19 @@ class RequestService(BaseService):
                 raise ValueError("request metadata cannot be None")
             if r.metadata.hash is None or r.metadata.hash == "":
                 raise ValueError("request metadata hash cannot be None or empty")
+            # RE-VERIFY the hash this signature will attest to. ``hash_verified`` is
+            # deliberately NOT consulted: it is a plain model field, so a Request
+            # rebuilt from JSON (a queue, a webhook, a cached blob) can arrive
+            # claiming True and get an attacker-chosen hash signed by the approver's
+            # real key. Re-verification is a SHA-256 over a string already in hand,
+            # and it is the same rule ``WhitelistedAssetService.approve`` gets by
+            # re-reading -- so both signing paths rest on one rule, not two.
+            # Ordered after the presence check so an early-status request still
+            # reports the clearer absence message.
+            try:
+                self._verify_request_hash(r)
+            except IntegrityError as exc:
+                raise IntegrityError(f"refusing to sign request {r.id}: {exc}") from exc
 
         try:
             # Sort requests by ID (numeric sort)
@@ -416,13 +427,7 @@ class RequestService(BaseService):
 
                 raise APIError(500, "Failed to create request: no result returned")
 
-            request = request_from_dto(result)
-            if request is None:
-                from taurus_protect.errors import APIError
-
-                raise APIError(500, "Failed to create request: invalid response")
-
-            return request
+            return self._verified_request(result)
         except Exception as e:
             from taurus_protect.errors import APIError
 
@@ -473,7 +478,7 @@ class RequestService(BaseService):
 
                 raise APIError(500, "Failed to create request: no result returned")
 
-            return request_from_dto(result)
+            return self._verified_request(result)
         except Exception as e:
             from taurus_protect.errors import APIError
 
@@ -524,7 +529,7 @@ class RequestService(BaseService):
 
                 raise APIError(500, "Failed to create request: no result returned")
 
-            return request_from_dto(result)
+            return self._verified_request(result)
         except Exception as e:
             from taurus_protect.errors import APIError
 
@@ -575,7 +580,7 @@ class RequestService(BaseService):
 
                 raise APIError(500, "Failed to create request: no result returned")
 
-            return request_from_dto(result)
+            return self._verified_request(result)
         except Exception as e:
             from taurus_protect.errors import APIError
 
@@ -620,7 +625,7 @@ class RequestService(BaseService):
 
                 raise APIError(500, "Failed to create cancel request: no result")
 
-            return request_from_dto(result)
+            return self._verified_request(result)
         except Exception as e:
             from taurus_protect.errors import APIError
 
@@ -671,13 +676,113 @@ class RequestService(BaseService):
 
                 raise APIError(500, "Failed to create incoming request: no result")
 
-            return request_from_dto(result)
+            return self._verified_request(result)
         except Exception as e:
             from taurus_protect.errors import APIError
 
             if isinstance(e, (APIError, ValueError)):
                 raise
             raise self._handle_error(e) from e
+
+    def _verified_request(self, dto: Any) -> Request:
+        """
+        Map one request DTO and verify its metadata. The ONLY way this module builds
+        a ``Request``.
+
+        get() ---------------+
+        list/for_approval ---+
+        create_* (x6) -------+--> _verified_request -> request_from_dto
+                                                    -> _verify_and_mark
+                                        ok <--------+--------> IntegrityError
+                                (hash_verified set)          (names the request id)
+
+        Verification lived in ``get()`` alone. The list paths skipped it in one pass
+        and the six create paths in the next -- both times because "remember to
+        verify" was a rule rather than the only available construction path. So do
+        NOT call ``request_from_dto`` / ``requests_from_dto`` anywhere else here.
+
+        The id goes into the error because a failing create has already succeeded
+        server-side; the caller needs the id to reconcile rather than retrying and
+        creating a second request.
+
+        Raises:
+            NotFoundError: If the DTO maps to nothing.
+            IntegrityError: If the metadata hash does not cover the payload.
+        """
+        request = request_from_dto(dto)
+        if request is None:
+            from taurus_protect.errors import NotFoundError
+
+            raise NotFoundError("request not found")
+        try:
+            return self._verify_and_mark(request)
+        except IntegrityError as exc:
+            # ``exc.message``, not ``str(exc)``: IntegrityError.__str__ prefixes its own
+            # class name, so re-wrapping the string form yields
+            # "IntegrityError: request 2: IntegrityError: ...".
+            raise IntegrityError(f"request {request.id}: {exc.message}") from exc
+
+    def _verified_requests(self, dtos: Optional[List[Any]]) -> List[Request]:
+        """
+        Keep only the rows whose metadata integrity verifies.
+
+        rows -> _verified_request -+- ok    -> kept, marked hash_verified
+                                   +- fails -> excluded + logged
+
+        The list endpoints previously returned every row without verifying any of
+        them, so a payload altered in transit reached the caller with no error and
+        no flag -- while ``get()`` verified. Excluding rather than raising keeps one
+        bad row from denying access to every good one; logging keeps a shortened
+        list from passing as a complete one.
+
+        Takes DTOs rather than models, so the mapper stays behind the seam.
+        """
+        kept: List[Request] = []
+        for dto in dtos or []:
+            if dto is None:
+                continue
+            try:
+                kept.append(self._verified_request(dto))
+            except IntegrityError as exc:
+                _LOGGER.warning(
+                    "request excluded: metadata integrity verification failed "
+                    "(request_id=%s, reason=%s)",
+                    getattr(dto, "id", None),
+                    exc.message,
+                )
+                continue
+        return kept
+
+    def _verify_and_mark(self, request: Request) -> Request:
+        """
+        Verify a request's metadata hash and return it marked verified.
+
+        The single place verification and the flag are set together. Keeping them
+        apart is what let ``get()`` verify and then return a request whose
+        ``hash_verified`` was still False, so a caller checking the flag could not
+        tell a verified request from an unverified one.
+
+        Metadata is frozen, so a verified row is rebuilt with ``model_copy`` rather
+        than mutated.
+
+        Args:
+            request: The request to verify.
+
+        Returns:
+            The request, with ``metadata.hash_verified`` set when it carries metadata.
+
+        Raises:
+            IntegrityError: If hash verification fails.
+        """
+        self._verify_request_hash(request)
+
+        if request.metadata is not None and (
+            request.metadata.hash or request.metadata.payload_as_string
+        ):
+            request = request.model_copy(
+                update={"metadata": request.metadata.model_copy(update={"hash_verified": True})}
+            )
+        return request
 
     def _verify_request_hash(self, request: Request) -> None:
         """
@@ -700,8 +805,6 @@ class RequestService(BaseService):
 
         if not payload:
             if provided_hash:
-                from taurus_protect.errors import IntegrityError
-
                 raise IntegrityError(
                     "request hash verification failed: hash exists but payload is missing"
                 )
@@ -712,14 +815,10 @@ class RequestService(BaseService):
 
         # Explicit null check before constant-time comparison
         if provided_hash is None:
-            from taurus_protect.errors import IntegrityError
-
             raise IntegrityError("request hash verification failed: provided hash is null")
 
         # Use constant-time comparison to prevent timing attacks
         if not hmac.compare_digest(computed_hash, provided_hash):
-            from taurus_protect.errors import IntegrityError
-
             raise IntegrityError(
                 f"request hash verification failed: computed={computed_hash}, provided={provided_hash}"
             )

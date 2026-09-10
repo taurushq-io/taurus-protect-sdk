@@ -5,16 +5,12 @@ import com.taurushq.sdk.protect.client.mapper.ContractWhitelistingMapper;
 import com.taurushq.sdk.protect.client.model.ApiException;
 import com.taurushq.sdk.protect.client.model.Attribute;
 import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
-import com.taurushq.sdk.protect.client.model.SignedWhitelistedContractAddressEnvelope;
-import com.taurushq.sdk.protect.client.model.WhitelistedContractAddressResult;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import com.taurushq.sdk.protect.openapi.api.ContractWhitelistingApi;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordApproveWhitelistedContractAddressRequest;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordCreateWhitelistedContractAddressAttributeRequest;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordCreateWhitelistedContractAddressRequest;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordDeleteWhitelistedContractAddressRequest;
-import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetSignedWhitelistedContractAddressEnvelopeReply;
-import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetSignedWhitelistedContractAddressEnvelopesReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetWhitelistedContractAddressAttributeReply;
 import com.taurushq.sdk.protect.openapi.model.WhitelistServiceCreateWhitelistedContractAttributesBody;
 import com.taurushq.sdk.protect.openapi.model.WhitelistServiceUpdateWhitelistedContractBody;
@@ -26,11 +22,11 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * Service for managing whitelisted contract addresses (tokens, NFTs) in Taurus Protect.
+ * Service for whitelisted contract WRITE operations (tokens, NFTs) in Taurus Protect.
  * <p>
- * This service provides operations for creating, approving, updating, and deleting
- * whitelisted contract addresses such as ERC20 tokens, NFT collections (ERC721/ERC1155),
- * FA2 tokens on Tezos, and other smart contract-based assets.
+ * Creating, approving, updating and deleting whitelisted contract addresses such as ERC20
+ * tokens, NFT collections (ERC721/ERC1155), FA2 tokens on Tezos, and other smart
+ * contract-based assets.
  * <p>
  * Example usage:
  * <pre>{@code
@@ -38,18 +34,17 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * String id = client.getContractWhitelistingService().createWhitelistedContract(
  *     "ETH", "mainnet", "0x1234...", "USDC", "USD Coin", 6, "erc20", null);
  *
- * // Get a whitelisted contract by ID
- * SignedWhitelistedContractAddressEnvelope contract = client.getContractWhitelistingService()
- *     .getWhitelistedContract("123");
- *
- * // List whitelisted contracts with filters
- * WhitelistedContractAddressResult result = client.getContractWhitelistingService()
- *     .getWhitelistedContracts("ETH", "mainnet", null, false, 50, 0);
+ * // Read them back through the verified reader
+ * WhitelistedAssetResult result = client.getWhitelistedAssetService()
+ *     .getWhitelistedAssets(50, 0, "ETH", "mainnet", null, null, null, null);
  * }</pre>
  *
- * @see SignedWhitelistedContractAddressEnvelope
- * @see WhitelistedContractAddressResult
+ * @see WhitelistedAssetService
  */
+// Reads live on WhitelistedAssetService, which is the same server entity
+// (/api/rest/v1/whitelists/contracts) verified through the six-step chain. The
+// get/getAll/withFilters/forApproval that used to sit here returned the envelope with no
+// verification, which made the verified reader avoidable. Do not re-add them.
 public class ContractWhitelistingService {
 
     /**
@@ -141,7 +136,12 @@ public class ContractWhitelistingService {
      * @param comment   the approval comment
      * @throws ApiException             if the API call fails
      * @throws IllegalArgumentException if parameters are invalid
+     * @deprecated the signature is an opaque blob over hashes nothing verified, so the
+     *     caller cannot know what they signed. Use
+     *     {@link WhitelistedAssetService#approveWhitelistedAssets}, which re-reads and
+     *     verifies the rows first.
      */
+    @Deprecated
     public void approveWhitelistedContracts(final List<String> ids, final String signature,
                                             final String comment)
             throws ApiException {
@@ -163,137 +163,10 @@ public class ContractWhitelistingService {
         }
     }
 
-    /**
-     * Gets a single whitelisted contract by ID.
-     *
-     * @param id the contract ID
-     * @return the signed whitelisted contract address envelope
-     * @throws ApiException             if the API call fails
-     * @throws IllegalArgumentException if id is null or empty
-     */
-    public SignedWhitelistedContractAddressEnvelope getWhitelistedContract(final String id)
-            throws ApiException {
-        checkArgument(!Strings.isNullOrEmpty(id), "id cannot be null or empty");
-
-        try {
-            TgvalidatordGetSignedWhitelistedContractAddressEnvelopeReply reply =
-                    whitelistApi.whitelistServiceGetWhitelistedContract(id);
-            return mapper.fromEnvelopeDTO(reply.getResult());
-        } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
-            throw apiExceptionMapper.toApiException(e);
-        }
-    }
-
-    /**
-     * Lists whitelisted contracts with optional filtering and pagination.
-     *
-     * @param blockchain       filter by blockchain (optional)
-     * @param network          filter by network (optional)
-     * @param query            search query string (optional)
-     * @param isNFT            filter for NFT contracts only (optional)
-     * @param limit            maximum number of results (optional)
-     * @param offset           pagination offset (optional)
-     * @return the paginated result
-     * @throws ApiException if the API call fails
-     */
-    public WhitelistedContractAddressResult getWhitelistedContracts(
-            final String blockchain, final String network, final String query,
-            final Boolean isNFT, final Integer limit, final Integer offset)
-            throws ApiException {
-
-        try {
-            String limitStr = limit != null ? String.valueOf(limit) : null;
-            String offsetStr = offset != null ? String.valueOf(offset) : null;
-
-            TgvalidatordGetSignedWhitelistedContractAddressEnvelopesReply reply =
-                    whitelistApi.whitelistServiceGetWhitelistedContracts(
-                            limitStr,
-                            offsetStr,
-                            query,
-                            blockchain,
-                            false, // includeForApproval
-                            network,
-                            isNFT,
-                            null, // whitelistedContractAddressIds
-                            null  // kindTypes
-                    );
-            return mapper.fromEnvelopesReply(reply);
-        } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
-            throw apiExceptionMapper.toApiException(e);
-        }
-    }
-
-    /**
-     * Lists whitelisted contracts with additional filter options.
-     *
-     * @param blockchain       filter by blockchain (optional)
-     * @param network          filter by network (optional)
-     * @param query            search query string (optional)
-     * @param isNFT            filter for NFT contracts only (optional)
-     * @param kindTypes        filter by contract kinds (optional)
-     * @param contractIds      filter by specific contract IDs (optional)
-     * @param limit            maximum number of results (optional)
-     * @param offset           pagination offset (optional)
-     * @return the paginated result
-     * @throws ApiException if the API call fails
-     */
-    public WhitelistedContractAddressResult getWhitelistedContractsWithFilters(
-            final String blockchain, final String network, final String query,
-            final Boolean isNFT, final List<String> kindTypes, final List<String> contractIds,
-            final Integer limit, final Integer offset)
-            throws ApiException {
-
-        try {
-            String limitStr = limit != null ? String.valueOf(limit) : null;
-            String offsetStr = offset != null ? String.valueOf(offset) : null;
-
-            TgvalidatordGetSignedWhitelistedContractAddressEnvelopesReply reply =
-                    whitelistApi.whitelistServiceGetWhitelistedContracts(
-                            limitStr,
-                            offsetStr,
-                            query,
-                            blockchain,
-                            false,
-                            network,
-                            isNFT,
-                            contractIds,
-                            kindTypes
-                    );
-            return mapper.fromEnvelopesReply(reply);
-        } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
-            throw apiExceptionMapper.toApiException(e);
-        }
-    }
-
-    /**
-     * Lists whitelisted contracts pending approval.
-     *
-     * @param ids    filter by specific IDs (optional)
-     * @param limit  maximum number of results (optional)
-     * @param offset pagination offset (optional)
-     * @return the paginated result
-     * @throws ApiException if the API call fails
-     */
-    public WhitelistedContractAddressResult getWhitelistedContractsForApproval(
-            final List<String> ids, final Integer limit, final Integer offset)
-            throws ApiException {
-
-        try {
-            String limitStr = limit != null ? String.valueOf(limit) : null;
-            String offsetStr = offset != null ? String.valueOf(offset) : null;
-
-            TgvalidatordGetSignedWhitelistedContractAddressEnvelopesReply reply =
-                    whitelistApi.whitelistServiceGetWhitelistedContractsForApproval(
-                            limitStr,
-                            offsetStr,
-                            ids
-                    );
-            return mapper.fromEnvelopesReply(reply);
-        } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
-            throw apiExceptionMapper.toApiException(e);
-        }
-    }
-
+    
+    
+    
+    
     /**
      * Updates an existing whitelisted contract.
      * <p>

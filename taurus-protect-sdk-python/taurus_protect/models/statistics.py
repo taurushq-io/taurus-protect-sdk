@@ -3,9 +3,18 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
+
+
+class PriceSignature(BaseModel):
+    """A PRICEUPDATER signature over the canonical price form."""
+
+    user_id: Optional[str] = Field(default=None, description="Signing user ID")
+    signature: Optional[str] = Field(default=None, description="Base64 ECDSA signature")
+
+    model_config = {"frozen": True}
 
 
 class Price(BaseModel):
@@ -25,6 +34,7 @@ class Price(BaseModel):
         source: Price data source.
         created_at: When the price was first recorded.
         updated_at: When the price was last updated.
+        signatures: PRICEUPDATER signatures over the canonical price form.
     """
 
     currency_from: str = Field(default="", description="Source currency symbol")
@@ -38,6 +48,9 @@ class Price(BaseModel):
     source: Optional[str] = Field(default=None, description="Price data source")
     created_at: Optional[datetime] = Field(default=None, description="Creation timestamp")
     updated_at: Optional[datetime] = Field(default=None, description="Last update timestamp")
+    signatures: List[PriceSignature] = Field(
+        default_factory=list, description="PRICEUPDATER signatures over the price"
+    )
 
     model_config = {"frozen": True}
 

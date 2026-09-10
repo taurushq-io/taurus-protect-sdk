@@ -3,14 +3,18 @@ package service
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/internal/openapi"
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/mapper"
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/model"
 )
 
-// WhitelistedContractService provides whitelisted contract management operations.
+// WhitelistedContractService provides whitelisted contract WRITE operations.
+//
+// Reads live on WhitelistedAssetService, which is the same server entity
+// (/api/rest/v1/whitelists/contracts) verified through the 6-step chain. This service
+// used to expose its own get/list/for-approval that returned the DTO with no
+// verification at all, which made the verified reader avoidable. Do not re-add them.
 // It wraps the ContractWhitelistingAPI for managing whitelisted smart contracts
 // (tokens and NFTs) in the Taurus-PROTECT platform.
 type WhitelistedContractService struct {
@@ -24,123 +28,6 @@ func NewWhitelistedContractService(client *openapi.APIClient) *WhitelistedContra
 		api:       client.ContractWhitelistingAPI,
 		errMapper: NewErrorMapper(),
 	}
-}
-
-// GetWhitelistedContract retrieves a whitelisted contract by ID.
-func (s *WhitelistedContractService) GetWhitelistedContract(ctx context.Context, id string) (*model.WhitelistedContract, error) {
-	if id == "" {
-		return nil, fmt.Errorf("id cannot be empty")
-	}
-
-	resp, httpResp, err := s.api.WhitelistServiceGetWhitelistedContract(ctx, id).Execute()
-	if err != nil {
-		return nil, s.errMapper.MapError(err, httpResp)
-	}
-
-	if resp.Result == nil {
-		return nil, nil
-	}
-
-	return mapper.WhitelistedContractFromDTO(resp.Result), nil
-}
-
-// ListWhitelistedContracts retrieves a list of whitelisted contracts.
-func (s *WhitelistedContractService) ListWhitelistedContracts(ctx context.Context, opts *model.ListWhitelistedContractsOptions) (*model.ListWhitelistedContractsResult, error) {
-	req := s.api.WhitelistServiceGetWhitelistedContracts(ctx)
-
-	if opts != nil {
-		if opts.Limit > 0 {
-			req = req.Limit(fmt.Sprintf("%d", opts.Limit))
-		}
-		if opts.Offset > 0 {
-			req = req.Offset(fmt.Sprintf("%d", opts.Offset))
-		}
-		if opts.Query != "" {
-			req = req.Query(opts.Query)
-		}
-		if opts.Blockchain != "" {
-			req = req.Blockchain(opts.Blockchain)
-		}
-		if opts.Network != "" {
-			req = req.Network(opts.Network)
-		}
-		if opts.IncludeForApproval {
-			req = req.IncludeForApproval(true)
-		}
-		if len(opts.KindTypes) > 0 {
-			req = req.KindTypes(opts.KindTypes)
-		}
-		if len(opts.IDs) > 0 {
-			req = req.WhitelistedContractAddressIds(opts.IDs)
-		}
-	}
-
-	resp, httpResp, err := req.Execute()
-	if err != nil {
-		return nil, s.errMapper.MapError(err, httpResp)
-	}
-
-	contracts := mapper.WhitelistedContractsFromDTO(resp.Result)
-
-	var pagination *model.Pagination
-	if resp.TotalItems != nil {
-		pagination = &model.Pagination{}
-		if total, parseErr := strconv.ParseInt(*resp.TotalItems, 10, 64); parseErr == nil {
-			pagination.TotalItems = total
-		}
-		if opts != nil {
-			pagination.Limit = opts.Limit
-			pagination.Offset = opts.Offset
-			pagination.HasMore = pagination.Offset+pagination.Limit < pagination.TotalItems
-		}
-	}
-
-	return &model.ListWhitelistedContractsResult{
-		Contracts:  contracts,
-		Pagination: pagination,
-	}, nil
-}
-
-// ListWhitelistedContractsForApproval retrieves contracts pending approval.
-func (s *WhitelistedContractService) ListWhitelistedContractsForApproval(ctx context.Context, opts *model.ListWhitelistedContractsForApprovalOptions) (*model.ListWhitelistedContractsResult, error) {
-	req := s.api.WhitelistServiceGetWhitelistedContractsForApproval(ctx)
-
-	if opts != nil {
-		if opts.Limit > 0 {
-			req = req.Limit(fmt.Sprintf("%d", opts.Limit))
-		}
-		if opts.Offset > 0 {
-			req = req.Offset(fmt.Sprintf("%d", opts.Offset))
-		}
-		if len(opts.IDs) > 0 {
-			req = req.Ids(opts.IDs)
-		}
-	}
-
-	resp, httpResp, err := req.Execute()
-	if err != nil {
-		return nil, s.errMapper.MapError(err, httpResp)
-	}
-
-	contracts := mapper.WhitelistedContractsFromDTO(resp.Result)
-
-	var pagination *model.Pagination
-	if resp.TotalItems != nil {
-		pagination = &model.Pagination{}
-		if total, parseErr := strconv.ParseInt(*resp.TotalItems, 10, 64); parseErr == nil {
-			pagination.TotalItems = total
-		}
-		if opts != nil {
-			pagination.Limit = opts.Limit
-			pagination.Offset = opts.Offset
-			pagination.HasMore = pagination.Offset+pagination.Limit < pagination.TotalItems
-		}
-	}
-
-	return &model.ListWhitelistedContractsResult{
-		Contracts:  contracts,
-		Pagination: pagination,
-	}, nil
 }
 
 // CreateWhitelistedContract creates a new whitelisted contract.
@@ -239,6 +126,7 @@ func (s *WhitelistedContractService) DeleteWhitelistedContract(ctx context.Conte
 		deleteReq.Comment = &comment
 	}
 
+	//nolint:staticcheck // deprecated delete-contract endpoint retained for compatibility
 	resp, httpResp, err := s.api.WhitelistServiceDeleteWhitelistedContract(ctx).
 		Body(deleteReq).
 		Execute()
@@ -255,6 +143,10 @@ func (s *WhitelistedContractService) DeleteWhitelistedContract(ctx context.Conte
 
 // ApproveWhitelistedContract approves whitelisted contracts.
 // The signature is base64(ecdsa_sign(sha256([hex(sha256(req1_metadata)),hex(sha256(req2_metadata)),...]))).
+//
+// Deprecated: the signature is an opaque blob over hashes nothing verified, so the caller
+// cannot know what they signed. Use WhitelistedAssetService.ApproveWhitelistedAssets, which
+// re-reads and verifies the rows first.
 func (s *WhitelistedContractService) ApproveWhitelistedContract(ctx context.Context, ids []string, signature string, comment string) error {
 	if len(ids) == 0 {
 		return fmt.Errorf("ids cannot be empty")

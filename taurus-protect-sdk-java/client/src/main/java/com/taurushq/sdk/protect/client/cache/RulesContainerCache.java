@@ -95,6 +95,7 @@ public class RulesContainerCache {
                     ex.setCode(503);
                     ex.setError("Interrupted");
                     ex.setMessage("Interrupted while waiting for rules container refresh");
+                    ex.initCause(e);
                     throw ex;
                 }
             }
@@ -160,6 +161,7 @@ public class RulesContainerCache {
                     ex.setCode(503);
                     ex.setError("Interrupted");
                     ex.setMessage("Interrupted while waiting for rules container invalidation");
+                    ex.initCause(e);
                     throw ex;
                 }
             }

@@ -319,17 +319,17 @@ def test_list_taurus_network_shared_assets(client: ProtectClient) -> None:
 
 
 # =============================================================================
-# ContractWhitelistingService
+# WhitelistedAssetService — the verified reader of /whitelists/contracts
 # =============================================================================
 
 
 @pytest.mark.integration
 def test_list_whitelisted_contracts(client: ProtectClient) -> None:
-    """Test listing whitelisted contracts."""
-    contracts, pagination = client.contract_whitelisting.list()
+    """Test listing whitelisted contracts through the verified reader."""
+    contracts, pagination = client.whitelisted_assets.list()
 
     logger.info("Found %d whitelisted contracts", len(contracts))
     assert contracts is not None
 
     for c in contracts[:5]:
-        logger.info("  Contract: ID=%s", getattr(c, "id", c))
+        logger.info("  Contract: ID=%s address=%s", c.id, c.contract_address)

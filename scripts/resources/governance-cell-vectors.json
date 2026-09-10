@@ -1,0 +1,336 @@
+[
+  {
+    "description": "fiat amount any",
+    "column_type": "RuleFiatAmount",
+    "cell_type": "RuleFiatAmountAny",
+    "typed_value_json": {},
+    "wire_base64": ""
+  },
+  {
+    "description": "fiat amount is zero",
+    "column_type": "RuleFiatAmount",
+    "cell_type": "RuleFiatAmountIsZero",
+    "typed_value_json": {},
+    "wire_base64": "CAE="
+  },
+  {
+    "description": "fiat amount range",
+    "column_type": "RuleFiatAmount",
+    "cell_type": "RuleFiatAmountRange",
+    "typed_value_json": {
+      "minAmount": "1000",
+      "maxAmount": "50000"
+    },
+    "wire_base64": "CAISDQoEMTAwMBIFNTAwMDA="
+  },
+  {
+    "description": "source any",
+    "column_type": "RuleSource",
+    "cell_type": "RuleSourceAny",
+    "typed_value_json": {},
+    "wire_base64": ""
+  },
+  {
+    "description": "source internal wallet",
+    "column_type": "RuleSource",
+    "cell_type": "RuleSourceInternalWallet",
+    "typed_value_json": {
+      "path": "m/44'/60'/0'"
+    },
+    "wire_base64": "CAESDgoMbS80NCcvNjAnLzAn"
+  },
+  {
+    "description": "source internal address",
+    "column_type": "RuleSource",
+    "cell_type": "RuleSourceInternalAddress",
+    "typed_value_json": {
+      "address": "0xabc",
+      "path": "m/44'/60'/0'/0/0"
+    },
+    "wire_base64": "CAISGQoFMHhhYmMSEG0vNDQnLzYwJy8wJy8wLzA="
+  },
+  {
+    "description": "source any exchange",
+    "column_type": "RuleSource",
+    "cell_type": "RuleSourceAnyExchange",
+    "typed_value_json": {},
+    "wire_base64": "CAM="
+  },
+  {
+    "description": "source exchange",
+    "column_type": "RuleSource",
+    "cell_type": "RuleSourceExchange",
+    "typed_value_json": {
+      "label": "kraken-main"
+    },
+    "wire_base64": "CAQSDQoLa3Jha2VuLW1haW4="
+  },
+  {
+    "description": "source external address",
+    "column_type": "RuleSource",
+    "cell_type": "RuleSourceExternalAddress",
+    "typed_value_json": {
+      "address": "0xdef",
+      "memo": "memo-1"
+    },
+    "wire_base64": "CAUSDwoFMHhkZWYSBm1lbW8tMQ=="
+  },
+  {
+    "description": "destination any",
+    "column_type": "RuleDestination",
+    "cell_type": "RuleDestinationAny",
+    "typed_value_json": {},
+    "wire_base64": ""
+  },
+  {
+    "description": "destination internal wallet",
+    "column_type": "RuleDestination",
+    "cell_type": "RuleDestinationInternalWallet",
+    "typed_value_json": {
+      "path": "m/44'/60'/1'"
+    },
+    "wire_base64": "CAESDgoMbS80NCcvNjAnLzEn"
+  },
+  {
+    "description": "destination internal address",
+    "column_type": "RuleDestination",
+    "cell_type": "RuleDestinationInternalAddress",
+    "typed_value_json": {
+      "address": "0x111",
+      "path": "m/44'/60'/1'/0/0"
+    },
+    "wire_base64": "CAISGQoFMHgxMTESEG0vNDQnLzYwJy8xJy8wLzA="
+  },
+  {
+    "description": "destination external address",
+    "column_type": "RuleDestination",
+    "cell_type": "RuleDestinationExternalAddress",
+    "typed_value_json": {
+      "address": "0x222",
+      "memo": "dest-memo"
+    },
+    "wire_base64": "CAMSEgoFMHgyMjISCWRlc3QtbWVtbw=="
+  },
+  {
+    "description": "destination any exchange",
+    "column_type": "RuleDestination",
+    "cell_type": "RuleDestinationAnyExchange",
+    "typed_value_json": {},
+    "wire_base64": "CAQ="
+  },
+  {
+    "description": "destination exchange",
+    "column_type": "RuleDestination",
+    "cell_type": "RuleDestinationExchange",
+    "typed_value_json": {
+      "label": "binance-desk",
+      "memo": "x"
+    },
+    "wire_base64": "CAUSEQoMYmluYW5jZS1kZXNrEgF4"
+  },
+  {
+    "description": "destination contract address",
+    "column_type": "RuleDestination",
+    "cell_type": "RuleDestinationContractAddress",
+    "typed_value_json": {
+      "address": "0x333",
+      "name": "USDC",
+      "symbol": "USDC",
+      "blockchain": "ETH"
+    },
+    "wire_base64": "CAYSFQoFMHgzMzMSBFVTREMaBFVTREMgBQ=="
+  },
+  {
+    "description": "destination contract address (unknown blockchain)",
+    "column_type": "RuleDestination",
+    "cell_type": "RuleDestinationContractAddress",
+    "typed_value_json": {
+      "address": "0x1",
+      "name": "",
+      "symbol": "",
+      "blockchain": "4242"
+    },
+    "wire_base64": "CAYSCAoDMHgxIJIh"
+  },
+  {
+    "description": "destination any external address",
+    "column_type": "RuleDestination",
+    "cell_type": "RuleDestinationAnyExternalAddress",
+    "typed_value_json": {},
+    "wire_base64": "CAc="
+  },
+  {
+    "description": "destination any contract address",
+    "column_type": "RuleDestination",
+    "cell_type": "RuleDestinationAnyContractAddress",
+    "typed_value_json": {},
+    "wire_base64": "CAg="
+  },
+  {
+    "description": "string equal any",
+    "column_type": "RuleStringEqual",
+    "cell_type": "RuleStringEqualAny",
+    "typed_value_json": {},
+    "wire_base64": ""
+  },
+  {
+    "description": "string equal empty",
+    "column_type": "RuleStringEqual",
+    "cell_type": "RuleStringEqualEmpty",
+    "typed_value_json": {},
+    "wire_base64": "CAE="
+  },
+  {
+    "description": "string equal value",
+    "column_type": "RuleStringEqual",
+    "cell_type": "RuleStringEqualValue",
+    "typed_value_json": {
+      "value": "contract-id-42"
+    },
+    "wire_base64": "CAISDmNvbnRyYWN0LWlkLTQy"
+  },
+  {
+    "description": "bytes equal any",
+    "column_type": "RuleBytesEqual",
+    "cell_type": "RuleBytesEqualAny",
+    "typed_value_json": {},
+    "wire_base64": ""
+  },
+  {
+    "description": "bytes equal empty",
+    "column_type": "RuleBytesEqual",
+    "cell_type": "RuleBytesEqualEmpty",
+    "typed_value_json": {},
+    "wire_base64": "CAE="
+  },
+  {
+    "description": "bytes equal value",
+    "column_type": "RuleBytesEqual",
+    "cell_type": "RuleBytesEqualValue",
+    "typed_value_json": {
+      "value_base64": "3q2+7w=="
+    },
+    "wire_base64": "CAISBN6tvu8="
+  },
+  {
+    "description": "string array equal any",
+    "column_type": "RuleStringArrayEqual",
+    "cell_type": "RuleStringArrayEqualAny",
+    "typed_value_json": {},
+    "wire_base64": ""
+  },
+  {
+    "description": "string array equal empty",
+    "column_type": "RuleStringArrayEqual",
+    "cell_type": "RuleStringArrayEqualEmpty",
+    "typed_value_json": {},
+    "wire_base64": "CAE="
+  },
+  {
+    "description": "string array equal value",
+    "column_type": "RuleStringArrayEqual",
+    "cell_type": "RuleStringArrayEqualValue",
+    "typed_value_json": {
+      "values": [
+        "a",
+        "b",
+        "c"
+      ]
+    },
+    "wire_base64": "CAISCQoBYQoBYgoBYw=="
+  },
+  {
+    "description": "integer greater any",
+    "column_type": "RuleIntegerGreater",
+    "cell_type": "RuleIntegerGreaterAny",
+    "typed_value_json": {},
+    "wire_base64": ""
+  },
+  {
+    "description": "integer greater positive value",
+    "column_type": "RuleIntegerGreater",
+    "cell_type": "RuleIntegerGreaterValue",
+    "typed_value_json": {
+      "value": "50"
+    },
+    "wire_base64": "CAESATI="
+  },
+  {
+    "description": "integer greater negative value",
+    "column_type": "RuleIntegerGreater",
+    "cell_type": "RuleIntegerGreaterNegValue",
+    "typed_value_json": {
+      "value": "-50"
+    },
+    "wire_base64": "CAISATI="
+  },
+  {
+    "description": "integer greater zero",
+    "column_type": "RuleIntegerGreater",
+    "cell_type": "RuleIntegerGreaterValue",
+    "typed_value_json": {
+      "value": "0"
+    },
+    "wire_base64": "CAESAQA="
+  },
+  {
+    "description": "uinteger greater any",
+    "column_type": "RuleUIntegerGreater",
+    "cell_type": "RuleUIntegerGreaterAny",
+    "typed_value_json": {},
+    "wire_base64": ""
+  },
+  {
+    "description": "uinteger greater is zero",
+    "column_type": "RuleUIntegerGreater",
+    "cell_type": "RuleUIntegerGreaterIsZero",
+    "typed_value_json": {},
+    "wire_base64": "CAE="
+  },
+  {
+    "description": "uinteger greater value",
+    "column_type": "RuleUIntegerGreater",
+    "cell_type": "RuleUIntegerGreaterValue",
+    "typed_value_json": {
+      "value": "18446744073709551615"
+    },
+    "wire_base64": "CAISCP//////////"
+  },
+  {
+    "description": "uinteger greater is equal",
+    "column_type": "RuleUIntegerGreater",
+    "cell_type": "RuleUIntegerGreaterIsEqual",
+    "typed_value_json": {
+      "value": "10"
+    },
+    "wire_base64": "CAMSAQo="
+  },
+  {
+    "description": "whitelisted contract any",
+    "column_type": "RuleWhitelistedContract",
+    "cell_type": "RuleWhitelistedContractAny",
+    "typed_value_json": {},
+    "wire_base64": ""
+  },
+  {
+    "description": "whitelisted contract address",
+    "column_type": "RuleWhitelistedContract",
+    "cell_type": "RuleWhitelistedContract_RuleDestinationContractAddress",
+    "typed_value_json": {
+      "address": "0x444",
+      "name": "DAI",
+      "symbol": "DAI",
+      "blockchain": "ETH"
+    },
+    "wire_base64": "CAESEwoFMHg0NDQSA0RBSRoDREFJIAU="
+  },
+  {
+    "description": "raw cell (unknown cell type preserved verbatim)",
+    "column_type": "RuleFiatAmount",
+    "cell_type": "",
+    "typed_value_json": {
+      "preserved_verbatim": true
+    },
+    "wire_base64": "CIYHEhNmdXR1cmUtY2VsbC1wYXlsb2Fk"
+  }
+]

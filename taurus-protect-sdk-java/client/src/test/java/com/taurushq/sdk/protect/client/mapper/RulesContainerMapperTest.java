@@ -346,7 +346,7 @@ class RulesContainerMapperTest {
     @Test
     void rolesToStrings_convertsEnums() {
         List<String> result = RulesContainerMapper.INSTANCE.rolesToStrings(
-                Arrays.asList(RequestReply.Role.SUPERADMIN, RequestReply.Role.HSMSLOT));
+                Arrays.asList(RequestReply.Role.SUPERADMIN.getNumber(), RequestReply.Role.HSMSLOT.getNumber()));
 
         assertNotNull(result);
         assertEquals(2, result.size());
@@ -355,27 +355,28 @@ class RulesContainerMapperTest {
     }
 
     @Test
-    void blockchainToString_handlesNull() {
-        assertNull(RulesContainerMapper.INSTANCE.blockchainToString(null));
+    void blockchainToString_passesUnknownNumberThrough() {
+        // A blockchain newer than this SDK keeps its number as a decimal string.
+        assertEquals("999", RulesContainerMapper.INSTANCE.blockchainToString(999));
     }
 
     @Test
     void blockchainToString_convertsEnum() {
         assertEquals("ETH", RulesContainerMapper.INSTANCE.blockchainToString(
-                RequestReply.Blockchain.ETH));
+                RequestReply.Blockchain.ETH.getNumber()));
         assertEquals("BTC", RulesContainerMapper.INSTANCE.blockchainToString(
-                RequestReply.Blockchain.BTC));
+                RequestReply.Blockchain.BTC.getNumber()));
     }
 
     @Test
-    void columnTypeToString_handlesNull() {
-        assertNull(RulesContainerMapper.INSTANCE.columnTypeToString(null));
+    void columnTypeToString_passesUnknownNumberThrough() {
+        assertEquals("77", RulesContainerMapper.INSTANCE.columnTypeToString(77));
     }
 
     @Test
     void columnTypeToString_convertsEnum() {
         String result = RulesContainerMapper.INSTANCE.columnTypeToString(
-                RequestReply.RulesContainer.ColumnType.RuleSource);
+                RequestReply.RulesContainer.ColumnType.RuleSource.getNumber());
         assertEquals("RuleSource", result);
     }
 }

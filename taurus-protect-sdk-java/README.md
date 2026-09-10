@@ -43,26 +43,27 @@ Add the dependency to your project:
 ### Client Initialization
 
 ```java
+import com.taurushq.sdk.protect.client.Credentials;
 import com.taurushq.sdk.protect.client.ProtectClient;
 import java.util.Arrays;
 
 String host = "https://api.protect.taurushq.com";
-String apiKey = "your-api-key";
-String apiSecret = "your-api-secret";
 
+// SuperAdmin keys are required — client-side rules verification is mandatory.
 List<String> superAdminPublicKeysPem = Arrays.asList(
-    "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...\n-----END PUBLIC KEY-----",
     "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...\n-----END PUBLIC KEY-----"
 );
 
-ProtectClient client = ProtectClient.createFromPem(
-    host,
-    apiKey,
-    apiSecret,
-    superAdminPublicKeysPem,
-    2  // minimum valid signatures
-);
+ProtectClient client = ProtectClient.builder()
+    .host(host)
+    .credentials(Credentials.apiKey("your-api-key", "your-api-secret"))
+    .superAdminKeysPem(superAdminPublicKeysPem)
+    .minValidSignatures(2)
+    .build();
 ```
+
+Build the credentials with `Credentials.apiKey(key, secret)` for TPV1-HMAC, or
+`Credentials.bearerTokenProvider(fn)` for a per-request Bearer token.
 
 See [Authentication](docs/AUTHENTICATION.md) for more initialization options.
 

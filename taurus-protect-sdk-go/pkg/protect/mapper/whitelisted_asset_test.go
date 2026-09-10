@@ -157,7 +157,6 @@ func TestWhitelistedAssetMetadataFromDTO(t *testing.T) {
 				payloadAsString := `{"key":"value"}`
 				return &openapi.TgvalidatordMetadata{
 					Hash:            &hash,
-					Payload:         map[string]interface{}{"key": "value"},
 					PayloadAsString: &payloadAsString,
 				}
 			}(),

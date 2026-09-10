@@ -184,7 +184,7 @@ func TestNewWhitelistedAssetVerifier(t *testing.T) {
 	t.Run("with keys", func(t *testing.T) {
 		v := NewWhitelistedAssetVerifier(keys, 1)
 		if v == nil {
-			t.Error("NewWhitelistedAssetVerifier() returned nil")
+			t.Fatal("NewWhitelistedAssetVerifier() returned nil")
 		}
 		if len(v.superAdminKeys) != 1 {
 			t.Errorf("superAdminKeys length = %d, want 1", len(v.superAdminKeys))
@@ -197,7 +197,7 @@ func TestNewWhitelistedAssetVerifier(t *testing.T) {
 	t.Run("with nil keys", func(t *testing.T) {
 		v := NewWhitelistedAssetVerifier(nil, 0)
 		if v == nil {
-			t.Error("NewWhitelistedAssetVerifier() returned nil")
+			t.Fatal("NewWhitelistedAssetVerifier() returned nil")
 		}
 		if len(v.superAdminKeys) != 0 {
 			t.Errorf("superAdminKeys length = %d, want 0", len(v.superAdminKeys))
@@ -803,18 +803,15 @@ func TestAssetVerifier_EndToEnd_ParallelPathsORLogic(t *testing.T) {
 // =============================================================================
 
 func TestAssetVerifier_SequentialThresholds_NilInput(t *testing.T) {
-	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	v := NewWhitelistedAssetVerifier([]*ecdsa.PublicKey{&key.PublicKey}, 1)
-
 	t.Run("nil threshold", func(t *testing.T) {
-		err := v.verifySequentialThresholds(nil, nil, nil, "hash", nil)
+		err := verifySequentialThresholds(nil, nil, nil, "hash", nil)
 		if err == nil {
 			t.Error("expected error for nil threshold")
 		}
 	})
 
 	t.Run("empty thresholds", func(t *testing.T) {
-		err := v.verifySequentialThresholds(&model.SequentialThresholds{}, nil, nil, "hash", nil)
+		err := verifySequentialThresholds(&model.SequentialThresholds{}, nil, nil, "hash", nil)
 		if err == nil {
 			t.Error("expected error for empty thresholds")
 		}
@@ -826,9 +823,6 @@ func TestAssetVerifier_SequentialThresholds_NilInput(t *testing.T) {
 // =============================================================================
 
 func TestAssetVerifier_GroupThreshold_EmptyGroupZeroMinSigs(t *testing.T) {
-	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	v := NewWhitelistedAssetVerifier([]*ecdsa.PublicKey{&key.PublicKey}, 1)
-
 	container := &model.DecodedRulesContainer{
 		Groups: []*model.RuleGroup{
 			{ID: "empty_group", UserIDs: []string{}},
@@ -837,7 +831,7 @@ func TestAssetVerifier_GroupThreshold_EmptyGroupZeroMinSigs(t *testing.T) {
 
 	t.Run("empty group with 0 min sigs is OK", func(t *testing.T) {
 		gt := &model.GroupThreshold{GroupID: "empty_group", MinimumSignatures: 0}
-		err := v.verifyGroupThreshold(gt, container, nil, "hash", nil)
+		err := verifyGroupThreshold(gt, container, nil, "hash", nil)
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
@@ -845,7 +839,7 @@ func TestAssetVerifier_GroupThreshold_EmptyGroupZeroMinSigs(t *testing.T) {
 
 	t.Run("empty group with min sigs > 0 fails", func(t *testing.T) {
 		gt := &model.GroupThreshold{GroupID: "empty_group", MinimumSignatures: 1}
-		err := v.verifyGroupThreshold(gt, container, nil, "hash", nil)
+		err := verifyGroupThreshold(gt, container, nil, "hash", nil)
 		if err == nil {
 			t.Error("expected error for empty group with min sigs > 0")
 		}
@@ -853,9 +847,6 @@ func TestAssetVerifier_GroupThreshold_EmptyGroupZeroMinSigs(t *testing.T) {
 }
 
 func TestAssetVerifier_GroupThreshold_NilUserSignature(t *testing.T) {
-	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	v := NewWhitelistedAssetVerifier([]*ecdsa.PublicKey{&key.PublicKey}, 1)
-
 	container := &model.DecodedRulesContainer{
 		Groups: []*model.RuleGroup{
 			{ID: "group1", UserIDs: []string{"user1@bank.com"}},
@@ -867,7 +858,7 @@ func TestAssetVerifier_GroupThreshold_NilUserSignature(t *testing.T) {
 	}
 
 	gt := &model.GroupThreshold{GroupID: "group1", MinimumSignatures: 1}
-	err := v.verifyGroupThreshold(gt, container, signatures, "hash1", precomputeHashesJSON(signatures))
+	err := verifyGroupThreshold(gt, container, signatures, "hash1", precomputeHashesJSON(signatures))
 	if err == nil {
 		t.Error("expected error when all signatures have nil userSig")
 	}
@@ -1217,5 +1208,26 @@ func TestWhitelistedAssetVerifier_ValidEnvelopeList(t *testing.T) {
 					asset.ID, result.VerifiedHash, asset.Metadata.Hash)
 			}
 		})
+	}
+}
+
+// TestVerifiedAsset_ForgedValueCarriesNothing pins the Go half of the verified-witness
+// design. Go cannot make the type unforgeable — another package may write
+// helper.VerifiedAsset{} — so the guarantee is that a forged one is USELESS, which is
+// the same security property and the one RequestMetadata.entries already relies on.
+func TestVerifiedAsset_ForgedValueCarriesNothing(t *testing.T) {
+	var forged VerifiedAsset
+
+	if forged.IsVerified() {
+		t.Error("a zero-value VerifiedAsset must not report itself verified")
+	}
+	if forged.Asset() != nil {
+		t.Error("a zero-value VerifiedAsset must expose no asset")
+	}
+	if forged.RulesContainer() != nil {
+		t.Error("a zero-value VerifiedAsset must expose no rules container")
+	}
+	if forged.VerifiedHash() != "" {
+		t.Error("a zero-value VerifiedAsset must expose no hash")
 	}
 }

@@ -19,8 +19,7 @@ var _ MappedNullable = &TgvalidatordMetadata{}
 
 // TgvalidatordMetadata struct for TgvalidatordMetadata
 type TgvalidatordMetadata struct {
-	Hash *string `json:"hash,omitempty"`
-	Payload map[string]interface{} `json:"payload,omitempty"`
+	Hash            *string `json:"hash,omitempty"`
 	PayloadAsString *string `json:"payloadAsString,omitempty"`
 }
 
@@ -73,38 +72,6 @@ func (o *TgvalidatordMetadata) SetHash(v string) {
 	o.Hash = &v
 }
 
-// GetPayload returns the Payload field value if set, zero value otherwise.
-func (o *TgvalidatordMetadata) GetPayload() map[string]interface{} {
-	if o == nil || IsNil(o.Payload) {
-		var ret map[string]interface{}
-		return ret
-	}
-	return o.Payload
-}
-
-// GetPayloadOk returns a tuple with the Payload field value if set, nil otherwise
-// and a boolean to check if the value has been set.
-func (o *TgvalidatordMetadata) GetPayloadOk() (map[string]interface{}, bool) {
-	if o == nil || IsNil(o.Payload) {
-		return map[string]interface{}{}, false
-	}
-	return o.Payload, true
-}
-
-// HasPayload returns a boolean if a field has been set.
-func (o *TgvalidatordMetadata) HasPayload() bool {
-	if o != nil && !IsNil(o.Payload) {
-		return true
-	}
-
-	return false
-}
-
-// SetPayload gets a reference to the given map[string]interface{} and assigns it to the Payload field.
-func (o *TgvalidatordMetadata) SetPayload(v map[string]interface{}) {
-	o.Payload = v
-}
-
 // GetPayloadAsString returns the PayloadAsString field value if set, zero value otherwise.
 func (o *TgvalidatordMetadata) GetPayloadAsString() string {
 	if o == nil || IsNil(o.PayloadAsString) {
@@ -138,7 +105,7 @@ func (o *TgvalidatordMetadata) SetPayloadAsString(v string) {
 }
 
 func (o TgvalidatordMetadata) MarshalJSON() ([]byte, error) {
-	toSerialize,err := o.ToMap()
+	toSerialize, err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -149,9 +116,6 @@ func (o TgvalidatordMetadata) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	if !IsNil(o.Hash) {
 		toSerialize["hash"] = o.Hash
-	}
-	if !IsNil(o.Payload) {
-		toSerialize["payload"] = o.Payload
 	}
 	if !IsNil(o.PayloadAsString) {
 		toSerialize["payloadAsString"] = o.PayloadAsString
@@ -194,5 +158,3 @@ func (v *NullableTgvalidatordMetadata) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
-
-

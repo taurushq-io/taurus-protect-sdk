@@ -178,7 +178,6 @@ class RequestMapperTest {
 
         TgvalidatordMetadata metadata = new TgvalidatordMetadata();
         metadata.setHash("metadataHash123");
-        // payloadAsString needs to be valid JSON for RequestMetadata.setPayloadAsString to work
         metadata.setPayloadAsString("[]");
         dto.setMetadata(metadata);
 

@@ -391,14 +391,14 @@ async function runTransferFlow(
 
     // Verify source address in metadata matches what we sent
     if (metadata!.payloadAsString) {
-      const metadataSource = getSourceAddress(metadata!.payloadAsString);
+      const metadataSource = getSourceAddress(metadata);
       expect(metadataSource).toBe(source.address);
       console.log(`${tag} Step 2: Source verified: ${metadataSource}`);
 
       // Verify destination address in metadata
       // For token transfers, the metadata destination is the token contract address,
       // not the recipient address
-      const metadataDestination = getDestinationAddress(metadata!.payloadAsString);
+      const metadataDestination = getDestinationAddress(metadata);
       if (!config.isToken) {
         expect(metadataDestination).toBe(destination.address);
       }
@@ -409,7 +409,7 @@ async function runTransferFlow(
 
       // Verify amount in metadata
       // For token transfers, the native value is 0 (token amount is in contract call data)
-      const metadataAmount = getAmount(metadata!.payloadAsString);
+      const metadataAmount = getAmount(metadata);
       expect(metadataAmount).toBeDefined();
       if (!config.isToken) {
         expect(metadataAmount!.valueFrom).toBe(config.transferAmount.toString());

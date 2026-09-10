@@ -169,4 +169,28 @@ export class BusinessRuleService extends BaseService {
       return rules[0];
     });
   }
+
+  /**
+   * Enables or disables transaction processing for the tenant (the
+   * transactions-enabled business rule).
+   *
+   * This is the kill switch tg-protect-mcpd drives, so it must exist in every SDK. Peer
+   * of Go BusinessRuleService.UpdateTransactionsEnabled, Java updateTransactionsEnabled
+   * and Python update_transactions_enabled.
+   *
+   * @param enabled - true to allow transactions, false to halt them
+   * @throws {@link APIError} If the API request fails
+   *
+   * @example
+   * ```typescript
+   * await businessRuleService.updateTransactionsEnabled(false);
+   * ```
+   */
+  async updateTransactionsEnabled(enabled: boolean): Promise<void> {
+    return this.execute(async () => {
+      await this.businessRulesApi.ruleServiceUpdateTransactionsEnabledBusinessRule({
+        body: { enabled },
+      });
+    });
+  }
 }

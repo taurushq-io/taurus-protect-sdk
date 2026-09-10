@@ -21,7 +21,7 @@ import java.util.List;
  * @see SequentialThresholds
  * @see DecodedRulesContainer
  */
-public class AddressWhitelistingRules {
+public class AddressWhitelistingRules extends RulesNodeWithProperties {
 
     /**
      * Blockchain identifier (e.g., "ETH", "BTC"). Null or empty means global default.

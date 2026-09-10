@@ -33,6 +33,9 @@ export {
   type ProtectClientConfig,
 } from "./client";
 
+// Authentication mechanism
+export { Credentials } from "./credentials";
+
 // Error types
 export {
   APIError,
@@ -46,7 +49,11 @@ export {
   WhitelistError,
   ConfigurationError,
   RequestMetadataError,
+  UnverifiedMetadataError,
   mapHttpError,
+  // Exported so a caller holding a server message from somewhere other than a mapped
+  // error (a log line, a wrapped gRPC status) can still recover the required roles.
+  parseRequiredRoles,
 } from "./errors";
 
 // Crypto utilities (for advanced use cases)
@@ -78,4 +85,8 @@ export * from "./mappers";
 export * from "./services";
 
 // Transport (for custom middleware)
-export { createTPV1Middleware } from "./transport";
+export {
+  createBearerMiddleware,
+  createTPV1Middleware,
+  type BearerTokenProvider,
+} from "./transport";

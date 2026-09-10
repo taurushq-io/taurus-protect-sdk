@@ -1,9 +1,13 @@
 /**
- * Protobuf to model conversion for RulesContainer.
+ * Protobuf → model decoding for RulesContainer (mirrors the Go SDK's
+ * rules_container.go decode path).
  *
- * This module provides functions to decode protobuf-encoded rules containers
- * to the SDK's domain models. The protobuf format is the primary format used
- * by the Taurus-PROTECT API (aligning with the Java SDK).
+ * The decode is lossless: every governance field is carried onto the model,
+ * transaction-rule cells are decoded into the typed {@link RuleCell} union, and
+ * per-node protobuf unknown fields are captured (ts-proto `_unknownFields`,
+ * enabled via `--ts_proto_opt=unknownFields=true`) so a container from a newer
+ * schema re-encodes without dropping data. Encoding lives in
+ * `protobuf-rules-container-encode.ts`.
  */
 
 import type {
@@ -11,93 +15,115 @@ import type {
   RuleUser,
   RuleGroup,
   TransactionRules,
+  TransactionRuleDetails,
+  RuleColumn,
+  RuleLine,
   AddressWhitelistingRules,
+  AddressWhitelistingLine,
   ContractAddressWhitelistingRules,
   GroupThreshold,
   SequentialThresholds,
+  RuleSource,
+  UnknownFields,
 } from '../models/governance-rules';
+import { RuleSourceType } from '../models/governance-rules';
+import { ruleCellFromBytes } from './rule-cell-codec';
+import { ruleSourceToBytes } from './protobuf-rules-container-encode';
 import {
   RulesContainer as ProtobufRulesContainer,
   Role,
   Blockchain,
   RuleSource as ProtobufRuleSource,
-  RuleSourceInternalWallet as ProtobufRuleSourceInternalWallet,
   RuleSource_RuleSourceType,
+  RuleSourceInternalWallet as PbSourceInternalWallet,
+  RuleSourceInternalAddress as PbSourceInternalAddress,
+  RuleSourceExchange as PbSourceExchange,
+  RuleSourceExternalAddress as PbSourceExternalAddress,
+  RulesContainer_ColumnType,
+  RulesContainer_TransactionRules_TransactionRuleDetails_RuleDomain as PbRuleDomain,
+  RulesContainer_TransactionRules_TransactionRuleDetails_RuleSubDomain as PbRuleSubDomain,
   type User as ProtobufUser,
   type Group as ProtobufGroup,
-  type RulesContainer_AddressWhitelistingRules as ProtobufAddressWhitelistingRules,
-  type RulesContainer_AddressWhitelistingRules_Line as ProtobufAddressWhitelistingLine,
-  type RulesContainer_ContractAddressWhitelistingRules as ProtobufContractAddressWhitelistingRules,
-  type RulesContainer_TransactionRules as ProtobufTransactionRules,
-  type SequentialThresholds as ProtobufSequentialThresholds,
-  type GroupThreshold as ProtobufGroupThreshold,
+  type RulesContainer_AddressWhitelistingRules as PbAddressWhitelistingRules,
+  type RulesContainer_AddressWhitelistingRules_Line as PbAddressWhitelistingLine,
+  type RulesContainer_ContractAddressWhitelistingRules as PbContractAddressWhitelistingRules,
+  type RulesContainer_TransactionRules as PbTransactionRules,
+  type RulesContainer_Column as PbColumn,
+  type RulesContainer_Line as PbLine,
+  type RulesContainer_TransactionRules_TransactionRuleDetails as PbDetails,
+  type SequentialThresholds as PbSequentialThresholds,
+  type GroupThreshold as PbGroupThreshold,
 } from '../internal/proto/request_reply';
 
+/** ts-proto stores unknown fields on `_unknownFields`; return it if non-empty. */
+function uf(m: { _unknownFields?: UnknownFields }): UnknownFields | undefined {
+  const u = m._unknownFields;
+  return u && Object.keys(u).length > 0 ? u : undefined;
+}
+
+function mapOf(m: { [key: string]: Uint8Array } | undefined): { [key: string]: Uint8Array } | undefined {
+  return m && Object.keys(m).length > 0 ? m : undefined;
+}
+
+/** Number → enum-value name, or the decimal string for values unknown to this SDK (passthrough). */
+export function pbEnumName(enumObj: Record<string | number, string | number>, value: number): string {
+  const name = enumObj[value];
+  return typeof name === 'string' && name !== 'UNRECOGNIZED' ? name : String(value);
+}
+
 /**
- * Attempts to decode protobuf bytes to DecodedRulesContainer.
- * Returns undefined if decoding fails (e.g., if data is JSON, not protobuf).
- *
- * @param bytes - The raw bytes to decode
- * @returns Decoded rules container, or undefined if decoding fails
+ * Attempts to decode protobuf bytes to a DecodedRulesContainer.
+ * Returns undefined if the bytes are not a protobuf RulesContainer.
  */
-export function tryDecodeProtobufRulesContainer(
-  bytes: Uint8Array
-): DecodedRulesContainer | undefined {
+export function tryDecodeProtobufRulesContainer(bytes: Uint8Array): DecodedRulesContainer | undefined {
   try {
-    const pb = ProtobufRulesContainer.decode(bytes);
-    return rulesContainerFromProtobuf(pb);
+    return rulesContainerFromProtobuf(ProtobufRulesContainer.decode(bytes));
   } catch {
     return undefined;
   }
 }
 
-/**
- * Converts a protobuf RulesContainer to DecodedRulesContainer domain model.
- */
-function rulesContainerFromProtobuf(
-  pb: ReturnType<typeof ProtobufRulesContainer.decode>
-): DecodedRulesContainer {
-  // Map users
+function rulesContainerFromProtobuf(pb: ReturnType<typeof ProtobufRulesContainer.decode>): DecodedRulesContainer {
   const users: RuleUser[] = pb.users.map((u: ProtobufUser) => ({
     id: u.id || undefined,
-    name: undefined, // protobuf User doesn't have name field, only id and publicKey
+    name: undefined, // protobuf User has no name field
     publicKeyPem: u.publicKey || undefined,
-    roles: u.roles.map((r: Role) => Role[r] ?? String(r)),
+    roles: u.roles.map((r: Role) => pbEnumName(Role, r)),
+    properties: mapOf(u.properties),
+    unknownFields: uf(u),
   }));
 
-  // Map groups
   const groups: RuleGroup[] = pb.groups.map((g: ProtobufGroup) => ({
     id: g.id || undefined,
-    name: undefined, // protobuf Group doesn't have name field
+    name: undefined,
     userIds: [...g.userIds],
+    properties: mapOf(g.properties),
+    unknownFields: uf(g),
   }));
 
-  // Map transaction rules
-  const transactionRules: TransactionRules[] =
-    (pb.transactionRules || []).map((r: ProtobufTransactionRules) => ({
-      parallelThresholds: mapSequentialThresholds(
-        (r.lines || []).flatMap((line) => line.parallelThresholds || [])
-      ),
-    }));
+  const transactionRules: TransactionRules[] = (pb.transactionRules || []).map(transactionRulesFromProtobuf);
 
-  // Map address whitelisting rules (including lines for per-wallet-path thresholds)
-  const addressWhitelistingRules = pb.addressWhitelistingRules.map(
-    (r: ProtobufAddressWhitelistingRules) => ({
+  const addressWhitelistingRules: AddressWhitelistingRules[] = pb.addressWhitelistingRules.map(
+    (r: PbAddressWhitelistingRules) => ({
       currency: r.currency || undefined,
       network: r.network || undefined,
       parallelThresholds: mapSequentialThresholds(r.parallelThresholds || []),
-      lines: mapAddressWhitelistingLines(r.lines || []),
+      lines: (r.lines || []).map(addressWhitelistingLineFromProtobuf),
+      properties: mapOf(r.properties),
+      unknownFields: uf(r),
     })
   );
 
-  // Map contract address whitelisting rules
   const contractAddressWhitelistingRules: ContractAddressWhitelistingRules[] =
-    pb.contractAddressWhitelistingRules.map((r: ProtobufContractAddressWhitelistingRules) => ({
-      blockchain: r.blockchain !== undefined && r.blockchain !== Blockchain.None
-        ? Blockchain[r.blockchain] ?? String(r.blockchain)
-        : undefined,
+    pb.contractAddressWhitelistingRules.map((r: PbContractAddressWhitelistingRules) => ({
+      blockchain:
+        r.blockchain !== undefined && r.blockchain !== Blockchain.None
+          ? pbEnumName(Blockchain, r.blockchain)
+          : undefined,
       network: r.network || undefined,
       parallelThresholds: mapSequentialThresholds(r.parallelThresholds || []),
+      properties: mapOf(r.properties),
+      unknownFields: uf(r),
     }));
 
   return {
@@ -109,94 +135,165 @@ function rulesContainerFromProtobuf(
     addressWhitelistingRules,
     contractAddressWhitelistingRules,
     enforcedRulesHash: pb.enforcedRulesHash || undefined,
-    timestamp: pb.timestamp || 0,
+    timestamp: typeof pb.timestamp === 'bigint' ? Number(pb.timestamp) : pb.timestamp || 0,
     hsmSlotId: pb.hsmSlotId || 0,
     minimumCommitmentSignatures: pb.minimumCommitmentSignatures || 0,
     engineIdentities: pb.engineIdentities ? [...pb.engineIdentities] : [],
+    properties: mapOf(pb.properties),
+    unknownFields: uf(pb),
   };
 }
 
-/**
- * Maps protobuf SequentialThresholds[] to domain SequentialThresholds[].
- */
-function mapSequentialThresholds(
-  seqThresholds: ProtobufSequentialThresholds[]
-): SequentialThresholds[] {
-  return seqThresholds.map((seq) => ({
-    thresholds: (seq.thresholds || []).map(mapGroupThreshold),
+function transactionRulesFromProtobuf(r: PbTransactionRules): TransactionRules {
+  const columns: RuleColumn[] = (r.columns || []).map((c: PbColumn) => ({
+    type: pbEnumName(RulesContainer_ColumnType, c.type),
+    name: c.name,
+    metadataKey: c.metadataKey,
+    unknownFields: uf(c),
   }));
-}
 
-/**
- * Maps a single protobuf GroupThreshold to domain GroupThreshold.
- */
-function mapGroupThreshold(t: ProtobufGroupThreshold): GroupThreshold {
-  return {
-    groupId: t.groupId || undefined,
-    minimumSignatures: t.minimumSignatures || 0,
-    threshold: 0, // protobuf doesn't have a separate threshold field
-  };
-}
-
-/**
- * Maps protobuf AddressWhitelistingRules.Line[] to domain model.
- * Each line contains cells (serialized RuleSource protobuf) and parallelThresholds.
- */
-function mapAddressWhitelistingLines(
-  lines: ProtobufAddressWhitelistingLine[]
-): Array<{
-  cells: Array<{ type: string; internalWallet?: { path?: string } }>;
-  parallelThresholds: SequentialThresholds[];
-}> {
-  return lines.map((line) => ({
-    cells: (line.cells || [])
-      .map(ruleSourceFromBytes)
-      .filter((s): s is NonNullable<typeof s> => s !== undefined),
-    parallelThresholds: mapSequentialThresholds(line.parallelThresholds || []),
+  const lines: RuleLine[] = (r.lines || []).map((l: PbLine) => ({
+    cells: (l.cells || []).map((cellBytes, i) =>
+      ruleCellFromBytes(i < columns.length ? columns[i].type : '', cellBytes)
+    ),
+    parallelThresholds: mapSequentialThresholds(l.parallelThresholds || []),
+    priority: l.priority || 0,
+    properties: mapOf(l.properties),
+    unknownFields: uf(l),
   }));
-}
 
-/**
- * Maps protobuf RuleSource_RuleSourceType to the type strings expected by the verifier.
- */
-const RULE_SOURCE_TYPE_MAP: Record<number, string> = {
-  [RuleSource_RuleSourceType.RuleSourceAny]: "ANY",
-  [RuleSource_RuleSourceType.RuleSourceInternalWallet]: "INTERNAL_WALLET",
-  [RuleSource_RuleSourceType.RuleSourceInternalAddress]: "INTERNAL_ADDRESS",
-  [RuleSource_RuleSourceType.RuleSourceAnyExchange]: "ANY_EXCHANGE",
-  [RuleSource_RuleSourceType.RuleSourceExchange]: "EXCHANGE",
-  [RuleSource_RuleSourceType.RuleSourceExternalAddress]: "EXTERNAL_ADDRESS",
-};
-
-/**
- * Decodes a RuleSource from serialized protobuf bytes.
- * Matches Go SDK's ruleSourceFromBytes().
- */
-function ruleSourceFromBytes(
-  data: Uint8Array
-): { type: string; internalWallet?: { path?: string } } | undefined {
-  try {
-    const pbSource = ProtobufRuleSource.decode(data);
-
-    const result: { type: string; internalWallet?: { path?: string } } = {
-      type: RULE_SOURCE_TYPE_MAP[pbSource.type] ?? String(pbSource.type),
+  let details: TransactionRuleDetails | undefined;
+  if (r.details) {
+    const d: PbDetails = r.details;
+    details = {
+      domain: pbEnumName(PbRuleDomain, d.domain),
+      subDomain: pbEnumName(PbRuleSubDomain, d.subDomain),
+      blockchain: d.blockchain,
+      network: d.network,
+      evmCallContract: d.evmCallContract
+        ? { contractType: d.evmCallContract.contractType, methodSignature: d.evmCallContract.methodSignature, unknownFields: uf(d.evmCallContract) }
+        : undefined,
+      xtzCallContract: d.xtzCallContract
+        ? { contractType: d.xtzCallContract.contractType, methodSignature: d.xtzCallContract.methodSignature, unknownFields: uf(d.xtzCallContract) }
+        : undefined,
+      cashSettlement: d.cashSettlement
+        ? { provider: d.cashSettlement.provider, requestType: d.cashSettlement.requestType, unknownFields: uf(d.cashSettlement) }
+        : undefined,
+      cosmosDetails: d.cosmosDetails
+        ? { methodSignatures: [...d.cosmosDetails.methodSignatures], unknownFields: uf(d.cosmosDetails) }
+        : undefined,
+      unknownFields: uf(d),
     };
+  }
 
-    // Decode payload for InternalWallet type
-    if (
-      pbSource.type === RuleSource_RuleSourceType.RuleSourceInternalWallet &&
-      pbSource.payload.length > 0
-    ) {
-      try {
-        const pbWallet = ProtobufRuleSourceInternalWallet.decode(pbSource.payload);
-        result.internalWallet = { path: pbWallet.path || undefined };
-      } catch {
-        // Payload decode failure — skip wallet info
-      }
-    }
+  return { key: r.key, columns, lines, details, unknownFields: uf(r) };
+}
 
-    return result;
+function addressWhitelistingLineFromProtobuf(line: PbAddressWhitelistingLine): AddressWhitelistingLine {
+  return {
+    cells: (line.cells || []).map(ruleSourceFromBytes),
+    parallelThresholds: mapSequentialThresholds(line.parallelThresholds || []),
+    properties: mapOf(line.properties),
+    unknownFields: uf(line),
+  };
+}
+
+/**
+ * Decodes a whitelisting RuleSource cell, keeping anything this SDK cannot
+ * reproduce byte-for-byte as a verbatim raw passthrough.
+ *
+ * Mirrors the cell codec's lossless guard. An unknown-field check alone is too weak:
+ * a non-canonical encoding carries no unknown field yet still re-encodes differently.
+ * An explicitly-present zero-length payload (`08 01 12 00`) decodes to the same typed
+ * value as an absent one (`08 01`), so re-emitting the typed form would drop two
+ * bytes from a container the SuperAdmins signed.
+ */
+export function ruleSourceFromBytes(data: Uint8Array): RuleSource {
+  const typed = ruleSourceFromBytesTyped(data);
+  if (typed === undefined) {
+    return { type: RuleSourceType.Unknown, raw: data };
+  }
+  let reencoded: Uint8Array;
+  try {
+    reencoded = ruleSourceToBytes(typed);
+  } catch {
+    return { type: RuleSourceType.Unknown, raw: data };
+  }
+  if (!Buffer.from(reencoded).equals(Buffer.from(data))) {
+    return { type: RuleSourceType.Unknown, raw: data };
+  }
+  return typed;
+}
+
+/** Decodes into the typed form, or undefined when this SDK cannot type it. */
+function ruleSourceFromBytesTyped(data: Uint8Array): RuleSource | undefined {
+  let pb: ProtobufRuleSource;
+  try {
+    pb = ProtobufRuleSource.decode(data);
   } catch {
     return undefined;
   }
+  // A schema-newer field on the source itself cannot be represented by the typed model,
+  // so keep the bytes verbatim rather than dropping it on the next encode.
+  if (uf(pb)) return undefined;
+
+  const src: { -readonly [K in keyof RuleSource]?: RuleSource[K] } = { type: pb.type as number as RuleSourceType };
+  try {
+    switch (pb.type) {
+      case RuleSource_RuleSourceType.RuleSourceAny:
+      case RuleSource_RuleSourceType.RuleSourceAnyExchange:
+        // Payload-less arms: a present payload is data this SDK would discard.
+        if (pb.payload.length > 0) return undefined;
+        break;
+      case RuleSource_RuleSourceType.RuleSourceInternalWallet:
+        if (pb.payload.length > 0) {
+          const i = PbSourceInternalWallet.decode(pb.payload);
+          if (uf(i)) return undefined;
+          src.internalWallet = { path: i.path };
+        }
+        break;
+      case RuleSource_RuleSourceType.RuleSourceInternalAddress:
+        if (pb.payload.length > 0) {
+          const i = PbSourceInternalAddress.decode(pb.payload);
+          if (uf(i)) return undefined;
+          src.internalAddress = { address: i.address, path: i.path };
+        }
+        break;
+      case RuleSource_RuleSourceType.RuleSourceExchange:
+        if (pb.payload.length > 0) {
+          const i = PbSourceExchange.decode(pb.payload);
+          if (uf(i)) return undefined;
+          src.exchange = { label: i.label };
+        }
+        break;
+      case RuleSource_RuleSourceType.RuleSourceExternalAddress:
+        if (pb.payload.length > 0) {
+          const i = PbSourceExternalAddress.decode(pb.payload);
+          if (uf(i)) return undefined;
+          src.externalAddress = { address: i.address, memo: i.memo };
+        }
+        break;
+      default:
+        return undefined; // source type newer than this SDK
+    }
+  } catch {
+    return undefined;
+  }
+  return src as RuleSource;
+}
+
+function mapSequentialThresholds(seq: PbSequentialThresholds[]): SequentialThresholds[] {
+  return seq.map((s) => ({
+    thresholds: (s.thresholds || []).map(mapGroupThreshold),
+    unknownFields: uf(s),
+  }));
+}
+
+function mapGroupThreshold(t: PbGroupThreshold): GroupThreshold {
+  return {
+    groupId: t.groupId || undefined,
+    minimumSignatures: t.minimumSignatures || 0,
+    threshold: 0, // no separate proto field; retained for backward compatibility
+    unknownFields: uf(t),
+  };
 }

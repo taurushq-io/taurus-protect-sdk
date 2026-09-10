@@ -35,7 +35,7 @@ type addressPair struct {
 type currencyResultStatus int
 
 const (
-	resultPassed  currencyResultStatus = iota
+	resultPassed currencyResultStatus = iota
 	resultSkipped
 	resultFailed
 )
@@ -257,8 +257,13 @@ func runCurrencyTransferFlow(t *testing.T, ctx context.Context, client *protect.
 		return currencyResult{symbol: cfg.symbol, status: resultFailed, errorMessage: "Step 2: metadata hash is empty"}
 	}
 
-	// Verify source address in metadata
-	metadataSource := metadata.GetSourceAddress()
+	// Verify source address in metadata. GetRequest verified the metadata, so an
+	// ErrMetadataUnverified here means that verification did not take.
+	metadataSource, err := metadata.GetSourceAddress()
+	if err != nil {
+		return currencyResult{symbol: cfg.symbol, status: resultFailed,
+			errorMessage: fmt.Sprintf("Step 2: GetSourceAddress failed: %v", err)}
+	}
 	if !cfg.isToken && metadataSource != source.Address {
 		return currencyResult{symbol: cfg.symbol, status: resultFailed,
 			errorMessage: fmt.Sprintf("Step 2: metadata source %q != expected %q", metadataSource, source.Address)}
@@ -266,7 +271,11 @@ func runCurrencyTransferFlow(t *testing.T, ctx context.Context, client *protect.
 	t.Logf("%s Step 2: Source verified: %s", tag, metadataSource)
 
 	// Verify destination address in metadata
-	metadataDestination := metadata.GetDestinationAddress()
+	metadataDestination, err := metadata.GetDestinationAddress()
+	if err != nil {
+		return currencyResult{symbol: cfg.symbol, status: resultFailed,
+			errorMessage: fmt.Sprintf("Step 2: GetDestinationAddress failed: %v", err)}
+	}
 	if !cfg.isToken && metadataDestination != destination.Address {
 		return currencyResult{symbol: cfg.symbol, status: resultFailed,
 			errorMessage: fmt.Sprintf("Step 2: metadata destination %q != expected %q", metadataDestination, destination.Address)}
@@ -278,7 +287,11 @@ func runCurrencyTransferFlow(t *testing.T, ctx context.Context, client *protect.
 	t.Logf("%s Step 2: Destination: %s%s", tag, metadataDestination, suffix)
 
 	// Log amount from metadata (non-fatal check -- payload structure may vary)
-	metadataAmount := metadata.GetAmount()
+	metadataAmount, err := metadata.GetAmount()
+	if err != nil {
+		return currencyResult{symbol: cfg.symbol, status: resultFailed,
+			errorMessage: fmt.Sprintf("Step 2: GetAmount failed: %v", err)}
+	}
 	if metadataAmount != nil {
 		t.Logf("%s Step 2: Amount: valueFrom=%s, currency=%s", tag, metadataAmount.ValueFrom, metadataAmount.CurrencyFrom)
 		if !cfg.isToken && metadataAmount.ValueFrom != cfg.transferAmount {

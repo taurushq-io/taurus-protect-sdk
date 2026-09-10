@@ -8,6 +8,7 @@
 import * as crypto from "crypto";
 
 import { IntegrityError } from "../errors";
+import { isCryptoVerificationError } from "./errors";
 
 /**
  * Size of P-256 curve parameters (r and s) in bytes.
@@ -111,14 +112,9 @@ export function verifySignature(
     if (error instanceof IntegrityError) {
       throw error;
     }
-    // Only swallow expected crypto/signature errors
-    if (error instanceof Error &&
-        (error.message.includes('signature') ||
-         error.message.includes('key') ||
-         error.message.includes('Invalid') ||
-         error.message.includes('decode') ||
-         error.message.includes('ERR_OSSL') ||
-         error.message.includes('DER'))) {
+    // Only swallow errors that mean "this input did not verify". Anything else
+    // is a defect and must surface rather than read as a failed signature.
+    if (isCryptoVerificationError(error)) {
       return false;
     }
     throw error;

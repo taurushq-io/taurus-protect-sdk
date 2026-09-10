@@ -2,7 +2,6 @@ package com.taurushq.sdk.protect.client.model.rulescontainer;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-import java.util.List;
 
 /**
  * Represents detailed metadata for a transaction rule set.
@@ -15,7 +14,7 @@ import java.util.List;
  * @see EvmCallContract
  * @see XtzCallContract
  */
-public class TransactionRuleDetails {
+public class TransactionRuleDetails extends RulesNode {
 
     /**
      * The rule domain (e.g., "RuleDomainTransfer", "RuleDomainStaking", "RuleDomainContract").
@@ -53,9 +52,9 @@ public class TransactionRuleDetails {
     private CashSettlement cashSettlement;
 
     /**
-     * List of Cosmos message type signatures this rule applies to.
+     * Cosmos-specific scoping for this rule.
      */
-    private List<String> cosmosMethodSignatures;
+    private CosmosDetails cosmosDetails;
 
     @Override
     public String toString() {
@@ -189,20 +188,20 @@ public class TransactionRuleDetails {
     }
 
     /**
-     * Gets the Cosmos method signatures.
+     * Gets the Cosmos scoping.
      *
-     * @return the Cosmos method signatures
+     * @return the Cosmos scoping
      */
-    public List<String> getCosmosMethodSignatures() {
-        return cosmosMethodSignatures;
+    public CosmosDetails getCosmosDetails() {
+        return cosmosDetails;
     }
 
     /**
-     * Sets the Cosmos method signatures.
+     * Sets the Cosmos scoping.
      *
-     * @param cosmosMethodSignatures the Cosmos method signatures
+     * @param cosmosDetails the Cosmos scoping
      */
-    public void setCosmosMethodSignatures(List<String> cosmosMethodSignatures) {
-        this.cosmosMethodSignatures = cosmosMethodSignatures;
+    public void setCosmosDetails(CosmosDetails cosmosDetails) {
+        this.cosmosDetails = cosmosDetails;
     }
 }

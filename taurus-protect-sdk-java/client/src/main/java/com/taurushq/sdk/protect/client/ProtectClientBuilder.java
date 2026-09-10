@@ -23,7 +23,7 @@ import static com.google.common.base.Strings.isNullOrEmpty;
  * <pre>{@code
  * ProtectClient client = ProtectClient.builder()
  *     .host("https://api.protect.taurushq.com")
- *     .credentials(apiKey, apiSecret)
+ *     .credentials(Credentials.apiKey(apiKey, apiSecret))
  *     .superAdminKeysPem(pemKeys)
  *     .minValidSignatures(2)
  *     .build();
@@ -34,6 +34,7 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 public final class ProtectClientBuilder {
 
     private String host;
+    private Credentials credentials;
     private String apiKey;
     private String apiSecret;
     private final List<PublicKey> superAdminPublicKeys = new ArrayList<>();
@@ -59,12 +60,26 @@ public final class ProtectClientBuilder {
     }
 
     /**
+     * Sets the authentication mechanism. Build one with {@link Credentials#apiKey},
+     * {@link Credentials#bearerToken}, or {@link Credentials#bearerTokenProvider}.
+     *
+     * @param credentials the credentials
+     * @return this builder for chaining
+     */
+    public ProtectClientBuilder credentials(Credentials credentials) {
+        this.credentials = credentials;
+        return this;
+    }
+
+    /**
      * Sets the API credentials.
      *
      * @param apiKey    the API key
      * @param apiSecret the API secret (hex-encoded)
      * @return this builder for chaining
+     * @deprecated use {@link #credentials(Credentials)} with {@link Credentials#apiKey}
      */
+    @Deprecated
     public ProtectClientBuilder credentials(String apiKey, String apiSecret) {
         this.apiKey = apiKey;
         this.apiSecret = apiSecret;
@@ -76,7 +91,9 @@ public final class ProtectClientBuilder {
      *
      * @param apiKey the API key
      * @return this builder for chaining
+     * @deprecated use {@link #credentials(Credentials)} with {@link Credentials#apiKey}
      */
+    @Deprecated
     public ProtectClientBuilder apiKey(String apiKey) {
         this.apiKey = apiKey;
         return this;
@@ -87,7 +104,9 @@ public final class ProtectClientBuilder {
      *
      * @param apiSecret the API secret (hex-encoded)
      * @return this builder for chaining
+     * @deprecated use {@link #credentials(Credentials)} with {@link Credentials#apiKey}
      */
+    @Deprecated
     public ProtectClientBuilder apiSecret(String apiSecret) {
         this.apiSecret = apiSecret;
         return this;
@@ -182,24 +201,30 @@ public final class ProtectClientBuilder {
      * @throws IllegalStateException if required configuration is missing
      */
     public ProtectClient build() throws ApiKeyTPV1Exception {
-        validate();
-        return ProtectClient.create(host, apiKey, apiSecret, superAdminPublicKeys,
-                minValidSignatures, rulesContainerCacheTtlMs);
-    }
-
-    private void validate() {
         if (isNullOrEmpty(host)) {
             throw new IllegalStateException("host is required. Call host(\"https://...\")");
         }
-        if (isNullOrEmpty(apiKey)) {
-            throw new IllegalStateException("apiKey is required. Call credentials(key, secret) or apiKey(key)");
-        }
-        if (isNullOrEmpty(apiSecret)) {
-            throw new IllegalStateException("apiSecret is required. Call credentials(key, secret) or apiSecret(secret)");
-        }
+        Credentials creds = resolveCredentials();
+        // SuperAdmin keys are mandatory regardless of the credentials mechanism.
         if (superAdminPublicKeys.isEmpty()) {
             throw new IllegalStateException(
                     "At least one SuperAdmin public key is required. Call superAdminKeys(...) or superAdminKeysPem(...)");
         }
+        return ProtectClient.create(host, creds, superAdminPublicKeys, minValidSignatures, rulesContainerCacheTtlMs);
+    }
+
+    // Resolves the configured Credentials, falling back to the deprecated apiKey/apiSecret setters.
+    private Credentials resolveCredentials() {
+        if (credentials != null) {
+            return credentials;
+        }
+        if (isNullOrEmpty(apiKey)) {
+            throw new IllegalStateException(
+                    "apiKey is required. Call credentials(Credentials), or credentials(key, secret)");
+        }
+        if (isNullOrEmpty(apiSecret)) {
+            throw new IllegalStateException("apiSecret is required. Call credentials(key, secret) or apiSecret(secret)");
+        }
+        return Credentials.apiKey(apiKey, apiSecret);
     }
 }

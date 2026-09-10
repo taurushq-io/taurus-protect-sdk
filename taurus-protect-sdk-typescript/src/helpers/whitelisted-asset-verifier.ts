@@ -22,7 +22,6 @@ import { IntegrityError, WhitelistError } from "../errors";
 import type {
   DecodedRulesContainer,
   RuleUserSignature,
-  ContractAddressWhitelistingRules,
   GroupThreshold,
   SequentialThresholds,
 } from "../models/governance-rules";
@@ -39,11 +38,15 @@ import type {
 import { parseWhitelistedAssetFromJson } from "../models/whitelisted-asset";
 import type { WhitelistSignatureEntry } from "../models/whitelisted-address";
 import { constantTimeCompare } from "./constant-time";
-import { isValidSignature } from "./signature-verifier";
+import { keyFingerprint, verifyGovernanceRulesSignatures } from "./signature-verifier";
 import {
   computeAssetLegacyHashes,
   verifyHashCoverage,
+  containsHash,
+  resolveRuleKey,
 } from "./whitelist-hash-helper";
+import { attestVerified } from "./verified";
+import { strictBase64Decode } from "./strict-base64";
 
 /**
  * Configuration for WhitelistedAssetVerifier.
@@ -137,6 +140,24 @@ export class WhitelistedAssetVerifier {
    * @throws IntegrityError if any verification step fails
    * @throws WhitelistError if governance thresholds are not met
    */
+  // 5-step verification for a whitelisted asset, plus the parse that makes it usable.
+  //
+  //   envelope ──▶ 1 hash ──▶ 2 SuperAdmin sigs ──▶ 3 decode rules
+  //                                                      │
+  //                6 parse VERIFIED payload ◀── 5 thresholds ◀── 4 coverage
+  //                           │                       │                │
+  //                           ▼                       │      returns the hash it
+  //                    returned to caller             │      matched, which is
+  //                                                   │      what step 5 checks
+  //                                                   ▼
+  //                                per group: DISTINCT signers, keyed on the
+  //                                container's public key, never the entry's userId
+  //
+  // Steps 1-5 prove the envelope is authentic; step 6 is what stops an unsigned
+  // value reaching the caller. Assets use ContractAddressWhitelistingRules and the
+  // ASSET legacy hashes (isNFT / kindType) — not the address ones.
+  //
+  // All six run here: verify() returns the parsed asset, not just a verdict.
   verify(
     envelope: SignedWhitelistedAssetEnvelope,
     rulesContainerDecoder: RulesContainerDecoder,
@@ -161,11 +182,12 @@ export class WhitelistedAssetVerifier {
       rulesContainerDecoder
     );
 
-    // Step 4: Verify hash in signed hashes list (no legacy hash support for assets)
-    this.verifyHashInSignedHashes(envelope);
+    // Step 4: Verify hash in signed hashes list. Returns the hash actually
+    // covered, which may be a legacy one.
+    const verifiedHash = this.verifyHashInSignedHashes(envelope);
 
-    // Step 5: Verify whitelist signatures
-    this.verifyWhitelistSignatures(envelope, rulesContainer);
+    // Step 5: Verify whitelist signatures against the hash step 4 matched
+    this.verifyWhitelistSignatures(envelope, rulesContainer, verifiedHash);
 
     // Parse and return verified asset
     const verifiedAsset = parseWhitelistedAssetFromJson(
@@ -180,7 +202,9 @@ export class WhitelistedAssetVerifier {
 
     return {
       verifiedAsset: assetWithId,
-      verifiedHash: envelope.metadata.hash,
+      verifiedHash,
+      // The single point where the marker is applied: every step above has passed.
+      verifiedEnvelope: attestVerified(envelope),
     };
   }
 
@@ -243,28 +267,23 @@ export class WhitelistedAssetVerifier {
     // Decode rules container data (raw bytes)
     let rulesData: Buffer;
     try {
-      rulesData = Buffer.from(envelope.rulesContainerBase64, "base64");
+      rulesData = strictBase64Decode(envelope.rulesContainerBase64);
     } catch (error) {
       throw new IntegrityError(
         `failed to decode rules container: ${error instanceof Error ? error.message : "unknown error"}`
       );
     }
 
-    // Count valid signatures
-    let validCount = 0;
-    for (const sig of signatures) {
-      if (
-        sig.signature &&
-        isValidSignature(rulesData, sig.signature, this.superAdminKeys)
-      ) {
-        validCount++;
-      }
-    }
-
-    if (validCount < this.minValidSignatures) {
+    try {
+      verifyGovernanceRulesSignatures(
+        rulesData,
+        signatures,
+        this.superAdminKeys,
+        this.minValidSignatures
+      );
+    } catch (error) {
       throw new IntegrityError(
-        `rules container signature verification failed: only ${validCount} valid signatures, ` +
-          `minimum ${this.minValidSignatures} required`
+        `rules container signature verification failed: ${error instanceof Error ? error.message : "unknown error"}`
       );
     }
   }
@@ -296,12 +315,19 @@ export class WhitelistedAssetVerifier {
    * Supports legacy hashes for backward compatibility with assets signed
    * before schema changes (e.g., before isNFT or kindType was added).
    *
+   * Returns the hash that was actually covered — the current one, or the legacy
+   * variant that matched. Returning `void` and letting the caller re-read
+   * `metadata.hash` meant a legacy-signed asset passed step 4 and then failed
+   * step 5, because step 5 looked for a hash no signature covers. Go and Python
+   * both carry the matched hash forward.
+   *
    * @param envelope - The signed whitelisted asset envelope
+   * @returns the covered hash
    * @throws IntegrityError if hash is not covered by any signature
    */
   private verifyHashInSignedHashes(
     envelope: SignedWhitelistedAssetEnvelope
-  ): void {
+  ): string {
     if (!envelope.signedContractAddress) {
       throw new IntegrityError("signedContractAddress is null or undefined");
     }
@@ -315,7 +341,7 @@ export class WhitelistedAssetVerifier {
 
     // Try the provided hash first
     if (verifyHashCoverage(metadataHash, signatures)) {
-      return; // Found - verification passed
+      return metadataHash;
     }
 
     // Try legacy hashes for backward compatibility
@@ -325,7 +351,7 @@ export class WhitelistedAssetVerifier {
     );
     for (const legacyHash of legacyHashes) {
       if (verifyHashCoverage(legacyHash, signatures)) {
-        return; // Found - verification passed with legacy hash
+        return legacyHash;
       }
     }
 
@@ -341,20 +367,27 @@ export class WhitelistedAssetVerifier {
    */
   private verifyWhitelistSignatures(
     envelope: SignedWhitelistedAssetEnvelope,
-    rulesContainer: DecodedRulesContainer
+    rulesContainer: DecodedRulesContainer,
+    metadataHash: string
   ): void {
-    const metadataHash = envelope.metadata.hash;
 
-    // Find matching contract address whitelisting rules
-    const whitelistRules = findContractAddressWhitelistingRules(
-      rulesContainer,
+    // Keyed off the SIGNED payload, not the response. See the address verifier.
+    const { blockchain, network } = resolveRuleKey(
+      envelope.metadata?.payloadAsString,
       envelope.blockchain,
       envelope.network
     );
 
+    // Find matching contract address whitelisting rules
+    const whitelistRules = findContractAddressWhitelistingRules(
+      rulesContainer,
+      blockchain,
+      network
+    );
+
     if (!whitelistRules) {
       throw new WhitelistError(
-        `no contract address whitelisting rules found for blockchain=${envelope.blockchain} network=${envelope.network}`
+        `no contract address whitelisting rules found for blockchain=${blockchain} network=${network}`
       );
     }
 
@@ -515,11 +548,21 @@ export class WhitelistedAssetVerifier {
       return null; // minSignatures == 0, so empty group is OK
     }
 
+    // A populated group with a zero threshold is a malformed container, not a
+    // group anyone may satisfy. There is no post-loop threshold check — the only
+    // success exit is inside the loop after an increment — so a zero here
+    // silently means "one signature suffices", turning a 2-of-N group into
+    // 1-of-N. Fail closed.
+    if (minSigs <= 0) {
+      return `group '${groupId}' has ${group.userIds.length} user(s) but requires 0 signature(s): minimumSignatures must be positive`;
+    }
+
     // Build set for faster lookup
     const groupUserIdSet = new Set(group.userIds);
 
     // Count valid signatures from users in this group
-    let validCount = 0;
+    // Count DISTINCT signers, not signature entries — see the address verifier.
+    const signers = new Set<string>();
     const skippedReasons: string[] = [];
 
     for (let sigIdx = 0; sigIdx < signatures.length; sigIdx++) {
@@ -535,7 +578,7 @@ export class WhitelistedAssetVerifier {
       }
 
       // Check that metadata hash is covered by this signature
-      if (!this.containsHash(sig.hashes, metadataHash)) {
+      if (!containsHash(sig.hashes, metadataHash)) {
         skippedReasons.push(
           `user '${sigUserId}' signature does not cover metadata hash '${metadataHash}' (signed hashes=${JSON.stringify(sig.hashes)})`
         );
@@ -582,8 +625,8 @@ export class WhitelistedAssetVerifier {
 
       try {
         if (verifySignature(publicKey, hashesData, sig.userSignature.signature)) {
-          validCount++;
-          if (validCount >= minSigs) {
+          signers.add(keyFingerprint(publicKey));
+          if (signers.size >= minSigs) {
             return null; // Threshold met
           }
         } else {
@@ -599,26 +642,11 @@ export class WhitelistedAssetVerifier {
     }
 
     // Threshold not met
-    let message = `group '${groupId}' requires ${minSigs} signature(s) but only ${validCount} valid`;
+    let message = `group '${groupId}' requires ${minSigs} distinct signer(s) but only ${signers.size} valid`;
     if (skippedReasons.length > 0) {
       message += ` [${skippedReasons.join("; ")}]`;
     }
     return message;
   }
 
-  /**
-   * Checks if a hash is in the list using constant-time comparison.
-   *
-   * @param hashes - List of hashes to search
-   * @param hash - Hash to find
-   * @returns true if the hash is found
-   */
-  private containsHash(hashes: string[], hash: string): boolean {
-    for (const h of hashes) {
-      if (constantTimeCompare(h, hash)) {
-        return true;
-      }
-    }
-    return false;
-  }
 }

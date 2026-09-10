@@ -64,19 +64,41 @@ auth.close()
 
 ## Client Initialization
 
-### Basic Initialization
+### Authentication mechanisms
+
+Build the auth mechanism with `Credentials` and pass it as `credentials=`:
+
+- `Credentials.api_key(api_key, api_secret)` — static TPV1-HMAC.
+- `Credentials.bearer_token(token)` — a single static Bearer token.
+- `Credentials.bearer_token_provider(fn)` — a Bearer token resolved per request.
+
+SuperAdmin public keys are **required** regardless of the mechanism — client-side
+governance rules verification is mandatory.
+
+> **A client must not be shared across a trust boundary.** The rules-container cache is a
+> single slot shared by every caller of one client. On a cache hit no request is issued, so
+> a second caller receives the container fetched with the first caller's token and their own
+> authorization for the governance read is never exercised. Governance containers are
+> tenant-wide and SuperAdmin-signed, so this is not a cross-tenant leak — but with a
+> per-request token provider, build **one client per tenant**. `tg-protect-mcpd`'s
+> `tenantClientRegistry` is the reference pattern.
+
 
 ```python
-from taurus_protect import ProtectClient
+from taurus_protect import Credentials, ProtectClient
 
 with ProtectClient.create(
     host="https://api.protect.taurushq.com",
-    api_key="your-api-key",
-    api_secret="your-api-secret-hex",
+    credentials=Credentials.api_key("your-api-key", "your-api-secret-hex"),
+    super_admin_keys_pem=super_admin_keys,   # required
+    min_valid_signatures=2,
 ) as client:
     # API requests are automatically signed
     wallets, _ = client.wallets.list()
 ```
+
+The examples below pass the flat `api_key`/`api_secret` parameters directly; those are
+**deprecated** — prefer `credentials=`.
 
 ### Initialization Parameters
 
@@ -95,7 +117,7 @@ with ProtectClient.create(
 For production use, provide SuperAdmin public keys to enable governance rule verification:
 
 ```python
-from taurus_protect import ProtectClient
+from taurus_protect import Credentials, ProtectClient
 
 super_admin_keys = [
     """-----BEGIN PUBLIC KEY-----
@@ -108,8 +130,7 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...
 
 with ProtectClient.create(
     host="https://api.protect.taurushq.com",
-    api_key="your-api-key",
-    api_secret="your-api-secret-hex",
+    credentials=Credentials.api_key("your-api-key", "your-api-secret-hex"),
     super_admin_keys_pem=super_admin_keys,
     min_valid_signatures=2,  # Require 2 valid signatures
 ) as client:
@@ -121,7 +142,7 @@ with ProtectClient.create(
 
 ```python
 import os
-from taurus_protect import ProtectClient
+from taurus_protect import Credentials, ProtectClient
 
 def create_client() -> ProtectClient:
     """Create client from environment variables."""
@@ -129,19 +150,17 @@ def create_client() -> ProtectClient:
     api_key = os.environ["PROTECT_API_KEY"]
     api_secret = os.environ["PROTECT_API_SECRET"]
 
-    # Optional: Load SuperAdmin keys from file
-    super_admin_keys = None
-    keys_path = os.environ.get("PROTECT_SUPER_ADMIN_KEYS_PATH")
-    if keys_path:
-        with open(keys_path) as f:
-            super_admin_keys = [key.strip() for key in f.read().split("-----END PUBLIC KEY-----")
-                               if key.strip()]
+    # SuperAdmin keys are REQUIRED for every auth mechanism — create() raises
+    # ConfigurationError without them, because client-side verification is not optional.
+    keys_path = os.environ["PROTECT_SUPER_ADMIN_KEYS_PATH"]
+    with open(keys_path) as f:
+        super_admin_keys = [key.strip() for key in f.read().split("-----END PUBLIC KEY-----")
+                           if key.strip()]
             super_admin_keys = [k + "-----END PUBLIC KEY-----" for k in super_admin_keys]
 
     return ProtectClient.create(
         host=host,
-        api_key=api_key,
-        api_secret=api_secret,
+        credentials=Credentials.api_key(api_key, api_secret),
         super_admin_keys_pem=super_admin_keys,
         min_valid_signatures=int(os.environ.get("PROTECT_MIN_SIGNATURES", "1")),
     )
@@ -209,13 +228,13 @@ When approving transaction requests, the SDK signs the request hashes with ECDSA
 
 ```python
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
-from taurus_protect import ProtectClient
+from taurus_protect import Credentials, ProtectClient
 
 # Load your approval private key
 with open("approval_key.pem", "rb") as f:
     private_key = load_pem_private_key(f.read(), password=None)
 
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     # Get requests pending approval
     requests, _ = client.requests.get_for_approval(limit=10)
 
@@ -270,15 +289,21 @@ When SuperAdmin keys are configured, the SDK verifies governance rules:
 │  3. For each signature:                                     │
 │     a. Decode base64 signature                              │
 │     b. Try verification against each SuperAdmin key         │
-│     c. Count if valid                                       │
-│  4. Require: validCount >= minValidSignatures               │
+│     c. If valid, record the signing key's fingerprint       │
+│  4. Require: distinct signing keys >= minValidSignatures    │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+> `minValidSignatures` counts **distinct signing keys**, never signature entries. ECDSA is
+> randomized, so one key can emit unlimited valid signatures over the same container, and
+> `userId` is server-supplied — so neither entries nor user IDs can gate the count. A signer
+> is identified by a SHA-256 hash of its encoded public key; a key configured twice counts
+> once.
 
 ### Configuration Example
 
 ```python
-from taurus_protect import ProtectClient
+from taurus_protect import Credentials, ProtectClient
 
 # Production configuration with 2-of-3 SuperAdmin verification
 super_admin_keys = [
@@ -289,8 +314,7 @@ super_admin_keys = [
 
 client = ProtectClient.create(
     host="https://api.protect.taurushq.com",
-    api_key=api_key,
-    api_secret=api_secret,
+    credentials=Credentials.api_key(api_key, api_secret),
     super_admin_keys_pem=super_admin_keys,
     min_valid_signatures=2,  # 2 of 3 required
 )
@@ -426,7 +450,7 @@ from taurus_protect.errors import (
 )
 
 try:
-    with ProtectClient.create(host, api_key, api_secret) as client:
+    with ProtectClient.create(host, credentials) as client:
         wallet = client.wallets.get(123)
 except ConfigurationError as e:
     print(f"Invalid configuration: {e.message}")

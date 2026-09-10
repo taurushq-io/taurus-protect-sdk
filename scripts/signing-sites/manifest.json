@@ -1,0 +1,55 @@
+{
+  "_comment": [
+    "Cross-SDK gate: every ECDSA signing site must declare whether it verifies first.",
+    "",
+    "Why this exists. The same defect was made four times and found by grep, not by a test:",
+    "`approveRequests` checked that a metadata hash was non-empty and then signed it, so the",
+    "approver attested to a hash nothing had checked. A fifth site (Python's",
+    "`approve_pledge_actions`) had no verification at all and drifted alone for the same",
+    "reason -- nothing enumerated the signing surface, so a new signer inherited no rule.",
+    "",
+    "So the manifest is the point, not the count: adding a signing site forces an entry, and",
+    "the entry has to say which of two shapes it is.",
+    "",
+    "  verifies         the bytes signed come from data this SDK verified in the same call",
+    "  signs-own-bytes  it signs a document the caller is authoring, so there is nothing to",
+    "                   verify against yet (a governance proposal carries 0..N signatures --",
+    "                   signing IS the approval step)",
+    "",
+    "The four approveRulesProposal sites stay signs-own-bytes -- a pending proposal has",
+    "0..N signatures, so there is genuinely nothing to verify against. They are NOT",
+    "unbound, though: each takes an expectedContainerHash and aborts without signing if",
+    "the re-fetched container differs from the one the caller reviewed. Verification and",
+    "content-binding are different mitigations; do not 'fix' these to verify.",
+    "",
+    "Run:  python3 scripts/signing-sites/check.py           # verify against the manifest",
+    "      python3 scripts/signing-sites/check.py --update  # rewrite the manifest"
+  ],
+  "sites": {
+    "go": {
+      "taurus-protect-sdk-go/pkg/protect/service/governance_rule.go:ApproveRulesProposal": "signs-own-bytes",
+      "taurus-protect-sdk-go/pkg/protect/service/request.go:ApproveRequests": "verifies",
+      "taurus-protect-sdk-go/pkg/protect/service/whitelisted_address.go:ApproveWhitelistedAddresses": "verifies",
+      "taurus-protect-sdk-go/pkg/protect/service/whitelisted_asset.go:ApproveWhitelistedAssets": "verifies"
+    },
+    "java": {
+      "taurus-protect-sdk-java/client/src/main/java/com/taurushq/sdk/protect/client/service/GovernanceRuleService.java:approveRulesProposal": "signs-own-bytes",
+      "taurus-protect-sdk-java/client/src/main/java/com/taurushq/sdk/protect/client/service/RequestService.java:approveRequests": "verifies",
+      "taurus-protect-sdk-java/client/src/main/java/com/taurushq/sdk/protect/client/service/WhitelistedAddressService.java:approveWhitelistedAddresses": "verifies",
+      "taurus-protect-sdk-java/client/src/main/java/com/taurushq/sdk/protect/client/service/WhitelistedAssetService.java:approveWhitelistedAssets": "verifies"
+    },
+    "python": {
+      "taurus-protect-sdk-python/taurus_protect/services/governance_rule_service.py:approve_rules_proposal": "signs-own-bytes",
+      "taurus-protect-sdk-python/taurus_protect/services/request_service.py:approve_requests": "verifies",
+      "taurus-protect-sdk-python/taurus_protect/services/taurus_network/pledge_service.py:approve_pledge_actions": "verifies",
+      "taurus-protect-sdk-python/taurus_protect/services/whitelisted_address_service.py:approve": "verifies",
+      "taurus-protect-sdk-python/taurus_protect/services/whitelisted_asset_service.py:approve": "verifies"
+    },
+    "typescript": {
+      "taurus-protect-sdk-typescript/src/services/governance-rule-service.ts:approveRulesProposal": "signs-own-bytes",
+      "taurus-protect-sdk-typescript/src/services/request-service.ts:approveRequests": "verifies",
+      "taurus-protect-sdk-typescript/src/services/whitelisted-address-service.ts:approve": "verifies",
+      "taurus-protect-sdk-typescript/src/services/whitelisted-asset-service.ts:approve": "verifies"
+    }
+  }
+}

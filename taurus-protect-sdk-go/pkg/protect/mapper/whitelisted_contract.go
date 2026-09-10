@@ -5,67 +5,9 @@ import (
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/model"
 )
 
-// WhitelistedContractFromDTO converts an OpenAPI SignedWhitelistedContractAddressEnvelope to a domain WhitelistedContract.
-func WhitelistedContractFromDTO(dto *openapi.TgvalidatordSignedWhitelistedContractAddressEnvelope) *model.WhitelistedContract {
-	if dto == nil {
-		return nil
-	}
-
-	contract := &model.WhitelistedContract{
-		ID:                  safeString(dto.Id),
-		TenantID:            safeString(dto.TenantId),
-		Status:              safeString(dto.Status),
-		Action:              safeString(dto.Action),
-		Blockchain:          safeString(dto.Blockchain),
-		Network:             safeString(dto.Network),
-		Rule:                safeString(dto.Rule),
-		RulesContainer:      safeString(dto.RulesContainer),
-		RulesSignatures:     safeString(dto.RulesSignatures),
-		BusinessRuleEnabled: safeBool(dto.BusinessRuleEnabled),
-	}
-
-	// Convert metadata
-	if dto.Metadata != nil {
-		contract.Metadata = WhitelistedAssetMetadataFromDTO(dto.Metadata)
-	}
-
-	// Convert signed contract address
-	if dto.SignedContractAddress != nil {
-		contract.SignedContractAddress = SignedContractAddressFromDTO(dto.SignedContractAddress)
-	}
-
-	// Convert approvers
-	if dto.Approvers != nil {
-		contract.Approvers = ApproversFromDTO(dto.Approvers)
-	}
-
-	// Convert attributes
-	if dto.Attributes != nil {
-		contract.Attributes = WhitelistedContractAttributesFromDTO(dto.Attributes)
-	}
-
-	// Convert trails
-	if dto.Trails != nil {
-		contract.Trails = make([]model.Trail, len(dto.Trails))
-		for i, trail := range dto.Trails {
-			contract.Trails[i] = TrailFromDTO(&trail)
-		}
-	}
-
-	return contract
-}
-
-// WhitelistedContractsFromDTO converts a slice of OpenAPI SignedWhitelistedContractAddressEnvelope to domain WhitelistedContracts.
-func WhitelistedContractsFromDTO(dtos []openapi.TgvalidatordSignedWhitelistedContractAddressEnvelope) []*model.WhitelistedContract {
-	if dtos == nil {
-		return nil
-	}
-	contracts := make([]*model.WhitelistedContract, len(dtos))
-	for i := range dtos {
-		contracts[i] = WhitelistedContractFromDTO(&dtos[i])
-	}
-	return contracts
-}
+// Attribute mappers only. The envelope mappers that lived here built a
+// model.WhitelistedContract straight from the DTO with no verification, which is what
+// made the verified reader on WhitelistedAssetService avoidable.
 
 // WhitelistedContractAttributeFromDTO converts an OpenAPI WhitelistedContractAddressAttribute to a domain WhitelistedContractAttribute.
 func WhitelistedContractAttributeFromDTO(dto *openapi.TgvalidatordWhitelistedContractAddressAttribute) model.WhitelistedContractAttribute {

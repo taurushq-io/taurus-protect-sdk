@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for WhitelistIntegrityHelper that verify envelope field validation.
- * Test vectors are taken from the Go whitelist_test.go file.
+ * Test vectors originate from the validatord whitelist tests.
  */
 class WhitelistIntegrityHelperTest {
 

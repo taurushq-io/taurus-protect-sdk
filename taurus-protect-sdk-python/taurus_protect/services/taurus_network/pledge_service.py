@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import hmac
 import json
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 
 from taurus_protect.crypto.hashing import calculate_hex_hash
+from taurus_protect.errors import IntegrityError
 from taurus_protect.crypto.signing import sign_data
 from taurus_protect.mappers.taurus_network.pledge import (
     pledge_action_from_dto,
@@ -730,12 +732,31 @@ class PledgeService(BaseService):
         if private_key is None:
             raise ValueError("private_key cannot be None")
 
-        # Validate all actions have metadata with hash
+        # Validate all actions have metadata with hash, and VERIFY each hash this
+        # signature will attest to.
+        #
+        #   presence check -> sha256(payload) == hash -> sort -> sign once
+        #
+        # This was the last signing site in any of the four SDKs with no verification at
+        # all: it checked only that a hash was non-empty and then signed it, so the
+        # approver attested to a hash nothing had checked. One signature covers the whole
+        # batch, so any failure aborts the call rather than signing a subset.
         for action in actions:
             if action.metadata is None:
                 raise ValueError("action metadata cannot be None")
             if not action.metadata.hash:
                 raise ValueError("action metadata hash cannot be empty")
+            if not action.metadata.payload:
+                raise IntegrityError(
+                    f"refusing to sign pledge action {action.id}: hash exists but "
+                    "payload is missing"
+                )
+            computed = calculate_hex_hash(action.metadata.payload)
+            if not hmac.compare_digest(computed, action.metadata.hash):
+                raise IntegrityError(
+                    f"refusing to sign pledge action {action.id}: hash verification "
+                    f"failed: computed={computed}, provided={action.metadata.hash}"
+                )
 
         try:
             # Sort actions by ID (string sort, as IDs might be UUIDs)

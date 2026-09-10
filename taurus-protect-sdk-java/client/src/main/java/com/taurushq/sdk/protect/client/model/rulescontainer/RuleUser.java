@@ -18,7 +18,7 @@ import java.util.List;
  * @see RuleGroup
  * @see DecodedRulesContainer
  */
-public class RuleUser {
+public class RuleUser extends RulesNodeWithProperties {
 
     /**
      * Unique identifier for the user within the rules container.

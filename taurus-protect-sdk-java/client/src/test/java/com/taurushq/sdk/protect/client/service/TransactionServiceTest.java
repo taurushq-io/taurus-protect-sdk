@@ -32,6 +32,37 @@ class TransactionServiceTest {
                 new TransactionService(apiClient, null));
     }
 
+    /**
+     * The chain-filter overloads exist because the API accepts blockchain and network on
+     * both endpoints and Go/TS expose them, while this SDK hardcoded null. Without a
+     * network stub (the project forbids Mockito) the reachable assertion is that the new
+     * arity validates its arguments exactly like the 6-arg form, which also pins the
+     * overload's existence and parameter order at compile time.
+     */
+    @Test
+    void getTransactionsWithChainFilters_throwsOnNonPositiveLimit() {
+        assertThrows(IllegalArgumentException.class, () ->
+                transactionService.getTransactions(null, null, null, null, "ETH", "mainnet", 0, 0));
+    }
+
+    @Test
+    void getTransactionsWithChainFilters_throwsOnNegativeOffset() {
+        assertThrows(IllegalArgumentException.class, () ->
+                transactionService.getTransactions(null, null, null, null, "ETH", "mainnet", 50, -1));
+    }
+
+    @Test
+    void exportTransactionsWithChainFilters_throwsOnNonPositiveLimit() {
+        assertThrows(IllegalArgumentException.class, () ->
+                transactionService.exportTransactions(null, null, null, null, "ETH", "mainnet", 0, 0));
+    }
+
+    @Test
+    void exportTransactionsWithChainFilters_throwsOnNegativeOffset() {
+        assertThrows(IllegalArgumentException.class, () ->
+                transactionService.exportTransactions(null, null, null, null, "ETH", "mainnet", 50, -1));
+    }
+
     @Test
     void getTransactionById_throwsOnZeroId() {
         assertThrows(IllegalArgumentException.class, () ->

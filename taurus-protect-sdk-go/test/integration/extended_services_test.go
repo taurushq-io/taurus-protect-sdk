@@ -285,7 +285,7 @@ func TestIntegration_ListTaurusNetworkSharedAssets(t *testing.T) {
 }
 
 // =============================================================================
-// ContractWhitelistingService
+// WhitelistedAssetService — the verified reader of /whitelists/contracts
 // =============================================================================
 
 func TestIntegration_ListWhitelistedContracts(t *testing.T) {
@@ -294,10 +294,10 @@ func TestIntegration_ListWhitelistedContracts(t *testing.T) {
 	defer client.Close()
 
 	ctx := context.Background()
-	result, err := client.WhitelistedContracts().ListWhitelistedContracts(ctx, nil)
+	assets, _, err := client.WhitelistedAssets().ListWhitelistedAssets(ctx, nil)
 	if err != nil {
-		t.Fatalf("ListWhitelistedContracts() error = %v", err)
+		t.Fatalf("ListWhitelistedAssets() error = %v", err)
 	}
 
-	t.Logf("Found %d whitelisted contracts", len(result.Contracts))
+	t.Logf("Found %d whitelisted contracts", len(assets))
 }

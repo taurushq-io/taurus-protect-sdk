@@ -4,7 +4,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"strconv"
 
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/internal/openapi"
@@ -46,7 +45,9 @@ func (s *WalletService) GetWallet(ctx context.Context, walletID string) (*model.
 
 // ListWallets retrieves a list of wallets.
 func (s *WalletService) ListWallets(ctx context.Context, opts *model.ListWalletsOptions) ([]*model.Wallet, *model.Pagination, error) {
-	req := s.api.WalletServiceGetWalletsInfo(ctx)
+	// v2 takes the same request and reply as the deprecated GetWalletsInfo; only the
+	// path differs.
+	req := s.api.WalletServiceGetWalletsV2(ctx)
 
 	if opts != nil {
 		if opts.Limit > 0 {
@@ -58,11 +59,34 @@ func (s *WalletService) ListWallets(ctx context.Context, opts *model.ListWallets
 		if opts.Currency != "" {
 			req = req.Currencies([]string{opts.Currency})
 		}
+		// Query matches seven columns (currency, customerid, blockchain, name,
+		// container, accountpath, comment); Name matches the name alone.
 		if opts.Query != "" {
 			req = req.Query(opts.Query)
 		}
+		if opts.Name != "" {
+			req = req.Name(opts.Name)
+		}
 		if opts.ExcludeDisabled {
 			req = req.ExcludeDisabled(true)
+		}
+		if len(opts.IDs) > 0 {
+			req = req.Ids(opts.IDs)
+		}
+		if opts.Blockchain != "" {
+			req = req.Blockchain(opts.Blockchain)
+		}
+		if opts.Network != "" {
+			req = req.Network(opts.Network)
+		}
+		if len(opts.TagIDs) > 0 {
+			req = req.TagIDs(opts.TagIDs)
+		}
+		if opts.OnlyPositiveBalance {
+			req = req.OnlyPositiveBalance(true)
+		}
+		if opts.SortOrder != "" {
+			req = req.SortOrder(opts.SortOrder)
 		}
 	}
 
@@ -206,14 +230,19 @@ func (s *WalletService) GetWalletBalanceHistory(ctx context.Context, walletID st
 
 // GetWalletTokens retrieves token balances for a wallet.
 // limit specifies the maximum number of tokens to return.
-func (s *WalletService) GetWalletTokens(ctx context.Context, walletID string, limit int) ([]*model.AssetBalance, error) {
+func (s *WalletService) GetWalletTokens(ctx context.Context, walletID string, opts *model.GetWalletTokensOptions) ([]*model.AssetBalance, error) {
 	if walletID == "" {
 		return nil, fmt.Errorf("walletID cannot be empty")
 	}
 
 	req := s.api.WalletServiceGetWalletTokens(ctx, walletID)
-	if limit > 0 {
-		req = req.Limit(fmt.Sprintf("%d", limit))
+	if opts != nil {
+		if opts.Limit > 0 {
+			req = req.Limit(fmt.Sprintf("%d", opts.Limit))
+		}
+		if opts.Cursor != "" {
+			req = req.Cursor(opts.Cursor)
+		}
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -222,72 +251,4 @@ func (s *WalletService) GetWalletTokens(ctx context.Context, walletID string, li
 	}
 
 	return mapper.AssetBalancesFromDTO(resp.Balances), nil
-}
-
-// ErrorMapper maps OpenAPI errors to domain errors.
-type ErrorMapper struct{}
-
-// NewErrorMapper creates a new ErrorMapper.
-func NewErrorMapper() *ErrorMapper {
-	return &ErrorMapper{}
-}
-
-// MapError converts an OpenAPI error to a domain error.
-func (m *ErrorMapper) MapError(err error, resp *http.Response) error {
-	if err == nil {
-		return nil
-	}
-
-	// Try to extract OpenAPI error details
-	if openAPIErr, ok := err.(*openapi.GenericOpenAPIError); ok {
-		return mapOpenAPIError(openAPIErr, resp)
-	}
-
-	return err
-}
-
-func mapOpenAPIError(err *openapi.GenericOpenAPIError, resp *http.Response) error {
-	if resp == nil {
-		return err
-	}
-
-	code := resp.StatusCode
-	message := err.Error()
-
-	// Create typed error based on status code
-	switch {
-	case code == 400:
-		return &APIError{Code: code, Message: message, Description: "Bad Request"}
-	case code == 401:
-		return &APIError{Code: code, Message: message, Description: "Unauthorized"}
-	case code == 403:
-		return &APIError{Code: code, Message: message, Description: "Forbidden"}
-	case code == 404:
-		return &APIError{Code: code, Message: message, Description: "Not Found"}
-	case code == 429:
-		return &APIError{Code: code, Message: message, Description: "Rate Limited"}
-	case code >= 500:
-		return &APIError{Code: code, Message: message, Description: "Server Error"}
-	default:
-		return &APIError{Code: code, Message: message}
-	}
-}
-
-// APIError represents an API error from the service layer.
-type APIError struct {
-	Code        int
-	Message     string
-	Description string
-	Err         error
-}
-
-func (e *APIError) Error() string {
-	if e.Description != "" {
-		return fmt.Sprintf("%s: %s (code=%d)", e.Description, e.Message, e.Code)
-	}
-	return fmt.Sprintf("%s (code=%d)", e.Message, e.Code)
-}
-
-func (e *APIError) Unwrap() error {
-	return e.Err
 }

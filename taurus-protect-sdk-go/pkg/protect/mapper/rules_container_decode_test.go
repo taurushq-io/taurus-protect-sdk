@@ -13,9 +13,9 @@ import (
 
 // testFixture holds the structure of the test fixture file.
 type testFixture struct {
-	RulesSignatures     string          `json:"rulesSignatures"`
-	RulesContainerJSON  json.RawMessage `json:"rulesContainerJson"`
-	Metadata            *struct {
+	RulesSignatures    string          `json:"rulesSignatures"`
+	RulesContainerJSON json.RawMessage `json:"rulesContainerJson"`
+	Metadata           *struct {
 		Hash            string `json:"hash"`
 		PayloadAsString string `json:"payloadAsString"`
 	} `json:"metadata"`

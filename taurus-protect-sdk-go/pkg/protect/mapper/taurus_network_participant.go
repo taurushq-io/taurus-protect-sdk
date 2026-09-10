@@ -12,20 +12,20 @@ func TnParticipantFromDTO(dto *openapi.TgvalidatordTnParticipant) *taurusnetwork
 	}
 
 	participant := &taurusnetwork.TnParticipant{
-		ID:                                        safeString(dto.Id),
-		Name:                                      safeString(dto.Name),
-		LegalAddress:                              safeString(dto.LegalAddress),
-		Country:                                   safeString(dto.Country),
-		LogoBase64:                                safeString(dto.LogoBase64),
-		PublicKey:                                 safeString(dto.PublicKey),
-		Shield:                                    safeString(dto.Shield),
-		OwnedSharedAddressesCount:                 safeString(dto.OwnedSharedAddressesCount),
-		TargetedSharedAddressesCount:              safeString(dto.TargetedSharedAddressesCount),
+		ID:                           safeString(dto.Id),
+		Name:                         safeString(dto.Name),
+		LegalAddress:                 safeString(dto.LegalAddress),
+		Country:                      safeString(dto.Country),
+		LogoBase64:                   safeString(dto.LogoBase64),
+		PublicKey:                    safeString(dto.PublicKey),
+		Shield:                       safeString(dto.Shield),
+		OwnedSharedAddressesCount:    safeString(dto.OwnedSharedAddressesCount),
+		TargetedSharedAddressesCount: safeString(dto.TargetedSharedAddressesCount),
 		OutgoingTotalPledgesValuationBaseCurrency: safeString(dto.OutgoingTotalPledgesValuationBaseCurrency),
 		IncomingTotalPledgesValuationBaseCurrency: safeString(dto.IncomingTotalPledgesValuationBaseCurrency),
-		PublicSubname:                             safeString(dto.PublicSubname),
-		LegalEntityIdentifier:                     safeString(dto.LegalEntityIdentifier),
-		Status:                                    safeString(dto.Status),
+		PublicSubname:         safeString(dto.PublicSubname),
+		LegalEntityIdentifier: safeString(dto.LegalEntityIdentifier),
+		Status:                safeString(dto.Status),
 	}
 
 	// Convert timestamps

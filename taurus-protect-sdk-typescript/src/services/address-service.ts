@@ -13,7 +13,7 @@ import type {
   TgvalidatordGetAddressProofOfReserveReply,
   WalletServiceCreateAddressAttributesBody,
 } from "../internal/openapi";
-import { ConfigurationError, IntegrityError, NotFoundError, ServerError, ValidationError } from "../errors";
+import { ConfigurationError, NotFoundError, ServerError, ValidationError } from "../errors";
 import { verifyAddressSignature } from "../helpers";
 import type { RulesContainerCache } from "../cache";
 import type { DecodedRulesContainer } from "../models/governance-rules";
@@ -404,24 +404,9 @@ export class AddressService extends BaseService {
     // Get rules container if not provided
     const rules = rulesContainer ?? (await this.rulesCache.get());
 
-    // Address must have a signature
-    if (!address.signature) {
-      throw new IntegrityError(
-        `Address ${address.id} is missing signature - cannot verify integrity`
-      );
-    }
-
-    // Verify the signature
-    const isValid = verifyAddressSignature(
-      address.address,
-      address.signature,
-      rules
-    );
-
-    if (!isValid) {
-      throw new IntegrityError(
-        `Invalid signature for address ${address.id} - data may have been tampered with`
-      );
-    }
+    // The helper throws on every failure — missing signature, missing address,
+    // absent HSM key, or a signature that does not verify — so the checks this
+    // wrapper used to duplicate now live in one place shared with the peers.
+    verifyAddressSignature(address.address, address.signature ?? "", rules, address.id);
   }
 }

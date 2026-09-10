@@ -7,22 +7,6 @@ import (
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/model"
 )
 
-func TestWhitelistedContractService_GetWhitelistedContract_EmptyID(t *testing.T) {
-	// Create a service with a nil API (we're testing validation, not API calls)
-	svc := &WhitelistedContractService{
-		api:       nil,
-		errMapper: NewErrorMapper(),
-	}
-
-	_, err := svc.GetWhitelistedContract(context.Background(), "")
-	if err == nil {
-		t.Error("expected error for empty ID")
-	}
-	if err.Error() != "id cannot be empty" {
-		t.Errorf("expected 'id cannot be empty', got '%s'", err.Error())
-	}
-}
-
 func TestWhitelistedContractService_CreateWhitelistedContract_NilRequest(t *testing.T) {
 	svc := &WhitelistedContractService{
 		api:       nil,

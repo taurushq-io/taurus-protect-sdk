@@ -230,31 +230,31 @@ func TestTenantConfigFromDTO_NilNFTMinting(t *testing.T) {
 
 func TestTenantConfigFromDTO_BooleanFields(t *testing.T) {
 	tests := []struct {
-		name                 string
-		isMFAMandatory       *bool
-		wantIsMFAMandatory   bool
-		isProtectEngineCold  *bool
+		name                  string
+		isMFAMandatory        *bool
+		wantIsMFAMandatory    bool
+		isProtectEngineCold   *bool
 		wantProtectEngineCold bool
 	}{
 		{
-			name:                 "nil booleans default to false",
-			isMFAMandatory:       nil,
-			wantIsMFAMandatory:   false,
-			isProtectEngineCold:  nil,
+			name:                  "nil booleans default to false",
+			isMFAMandatory:        nil,
+			wantIsMFAMandatory:    false,
+			isProtectEngineCold:   nil,
 			wantProtectEngineCold: false,
 		},
 		{
-			name:                 "true values",
-			isMFAMandatory:       boolPtr(true),
-			wantIsMFAMandatory:   true,
-			isProtectEngineCold:  boolPtr(true),
+			name:                  "true values",
+			isMFAMandatory:        boolPtr(true),
+			wantIsMFAMandatory:    true,
+			isProtectEngineCold:   boolPtr(true),
 			wantProtectEngineCold: true,
 		},
 		{
-			name:                 "false values",
-			isMFAMandatory:       boolPtr(false),
-			wantIsMFAMandatory:   false,
-			isProtectEngineCold:  boolPtr(false),
+			name:                  "false values",
+			isMFAMandatory:        boolPtr(false),
+			wantIsMFAMandatory:    false,
+			isProtectEngineCold:   boolPtr(false),
 			wantProtectEngineCold: false,
 		},
 	}

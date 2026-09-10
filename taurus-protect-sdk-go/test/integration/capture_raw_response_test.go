@@ -23,12 +23,14 @@ func TestIntegration_CaptureRawWhitelistedAddressResponse(t *testing.T) {
 	ctx := context.Background()
 
 	// Get whitelisted addresses
-	addresses, _, err := client.WhitelistedAddresses().ListWhitelistedAddresses(ctx, &model.ListWhitelistedAddressesOptions{
+	listResult, err := client.WhitelistedAddresses().ListWhitelistedAddresses(ctx, &model.ListWhitelistedAddressesOptions{
 		Limit: 10,
 	})
 	if err != nil {
 		t.Fatalf("ListWhitelistedAddresses error: %v", err)
 	}
+
+	addresses := listResult.Addresses
 
 	if len(addresses) == 0 {
 		t.Skip("No whitelisted addresses available for capture")

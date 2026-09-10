@@ -28,10 +28,7 @@ export {
 export { ConfigService } from "./config-service";
 export {
   ContractWhitelistingService,
-  type WhitelistedContract,
   type WhitelistedContractAttribute,
-  type ListWhitelistedContractsOptions,
-  type ListForApprovalOptions,
   type CreateWhitelistedContractRequest,
   type UpdateWhitelistedContractRequest,
 } from "./contract-whitelisting-service";
@@ -75,6 +72,7 @@ export {
 export {
   WhitelistedAddressService,
   type ListWhitelistedAddressesOptions,
+  type ListWhitelistedAddressesForApprovalOptions,
   type ListWhitelistedAddressesResult,
   type WhitelistedAddressServiceConfig,
 } from "./whitelisted-address-service";

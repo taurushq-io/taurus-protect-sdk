@@ -2,34 +2,70 @@
 
 from __future__ import annotations
 
+import logging
+
 import base64
 import binascii
+import hashlib
 import json
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Tuple
 
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 
+from taurus_protect.crypto.signing import sign_data
 from taurus_protect._internal.openapi.exceptions import ApiException
-from taurus_protect.errors import APIError, IntegrityError
-from taurus_protect.helpers.signature_verifier import is_valid_signature
+from taurus_protect.errors import ContainerIntegrityError, APIError, IntegrityError, WhitelistError
+from taurus_protect.helpers.signature_verifier import verify_governance_rules_signatures
 from taurus_protect.helpers.whitelisted_address_verifier import WhitelistedAddressVerifier
 from taurus_protect.mappers.governance_rules import (
     rules_container_from_base64,
     user_signatures_from_base64,
 )
 from taurus_protect.models.governance_rules import DecodedRulesContainer
-from taurus_protect.models.pagination import Pagination
 from taurus_protect.models.whitelisted_address import (
+    ExcludedWhitelistedAddress,
     InternalWallet,
     SignedWhitelistedAddress,
     SignedWhitelistedAddressEnvelope,
     WhitelistedAddress,
+    WhitelistedAddressListResult,
     WhitelistMetadata,
     WhitelistSignature,
     WhitelistSignatureEntry,
     WhitelistUserSignature,
 )
 from taurus_protect.services._base import BaseService
+
+_LOGGER = logging.getLogger(__name__)
+
+
+def _container_hash_label(container_base64: str) -> str:
+    """
+    Recompute the label validatord files a normalized rules container under.
+
+    A row's ``rules_container_hash`` then resolves only to bytes that really hash to it.
+    The convention is validatord's, in its whitelist controller::
+
+        h := base64.StdEncoding.EncodeToString(crypto.Sha256([]byte(e.GetRulesContainer())))
+
+    Note what is hashed. ``GetRulesContainer()`` is ALREADY a base64 string there, so the
+    digest is over the base64 TEXT, not over the decoded protobuf, and the output is
+    base64 rather than hex. Decoding the container first and hashing the protobuf yields
+    a different value and would reject every container, breaking all list calls.
+
+    Do not confuse it with ``enforcedRulesHash``, which is ``base64(SHA256(raw
+    protobuf))`` and is a backlink to a ruleset's predecessor rather than its own
+    identity. Both are 44-character base64 SHA-256 digests, so mixing them up is silent.
+
+    Args:
+        container_base64: the container exactly as the response carried it.
+
+    Returns:
+        The label those bytes should be filed under.
+    """
+    digest = hashlib.sha256(container_base64.encode("utf-8")).digest()
+    return base64.b64encode(digest).decode("ascii")
+
 
 if TYPE_CHECKING:
     from taurus_protect._internal.openapi.api.address_whitelisting_api import (
@@ -146,7 +182,10 @@ class WhitelistedAddressService(BaseService):
         currency: Optional[str] = None,
         limit: int = 50,
         offset: int = 0,
-    ) -> Tuple[List[WhitelistedAddress], Optional[Pagination]]:
+        *,
+        ids: Optional[List[str]] = None,
+        include_for_approval: bool = False,
+    ) -> WhitelistedAddressListResult:
         """
         List whitelisted addresses with cryptographic verification.
 
@@ -158,7 +197,8 @@ class WhitelistedAddressService(BaseService):
             offset: Offset for pagination.
 
         Returns:
-            Tuple of (verified addresses list, pagination info).
+            The verified addresses, the page window with total_items reduced by the
+            number of excluded rows, and the excluded rows themselves.
 
         Raises:
             IntegrityError: If verification fails for any address.
@@ -175,38 +215,290 @@ class WhitelistedAddressService(BaseService):
                 limit=str(limit),
                 offset=str(offset),
                 rules_container_normalized=True,
+                ids=ids or None,
+                include_for_approval=include_for_approval or None,
             )
 
             # Build rules container cache from normalized containers
             rules_container_cache = self._build_rules_container_cache(reply)
 
-            addresses: List[WhitelistedAddress] = []
-            if reply.result:
-                for dto in reply.result:
-                    # Map to envelope and verify (strict mode - fail on first error)
-                    envelope = self._map_envelope_from_dto(dto)
+            # rows -> verify -+- ok    -> returned
+            #                  +- fails -> excluded + logged, list survives
+            #
+            # One unverifiable row used to fail the whole call, which took down the
+            # whitelist for every consumer -- and listing is how an operator would
+            # find the bad row, so the failure hid its own cause. Excluding stays
+            # fail-closed: an omitted destination cannot be selected.
+            rows = list(reply.result or [])
+            envelopes, excluded = self._verified_addresses(rows, rules_container_cache)
+            addresses = [e.verified_whitelisted_address for e in envelopes]
 
-                    # Look up cached rules container by hash
-                    cached = None
-                    if envelope.rules_container_hash:
-                        cached = rules_container_cache.get(envelope.rules_container_hash)
-
-                    self._verify_and_populate_envelope(envelope, dto, cached_rules_container=cached)
-                    if envelope.verified_whitelisted_address:
-                        addresses.append(envelope.verified_whitelisted_address)
-
+            # The server counts rows it returned; the caller receives only those that
+            # verified. Reporting the server's total lets a filtered page pass for a
+            # complete one, and makes has_more promise a page never fully readable.
             pagination = self._extract_pagination(
                 getattr(reply, "total_items", None),
                 offset,
                 limit,
             )
-            return addresses, pagination
+            if pagination is not None and pagination.total_items is not None:
+                pagination = pagination.model_copy(
+                    update={"total_items": max(0, pagination.total_items - len(excluded))}
+                )
+
+            return WhitelistedAddressListResult(
+                addresses=addresses,
+                pagination=pagination,
+                excluded_unverified=excluded,
+            )
         except IntegrityError:
             raise
         except Exception as e:
             if isinstance(e, ApiException):
                 raise self._handle_error(e)
             raise
+
+    def list_for_approval(
+        self,
+        limit: int = 50,
+        offset: int = 0,
+        *,
+        ids: Optional[List[str]] = None,
+        include_already_signed_by_user: bool = False,
+    ) -> WhitelistedAddressListResult:
+        """
+        List whitelisted addresses awaiting approval, verified exactly as ``list`` is.
+
+        Both this endpoint and the approval endpoint below are generated in all four SDK
+        clients and were wrapped by none of them, so the rows an approver reads before
+        whitelisting a destination were not reachable through the SDK at all -- verified
+        or not.
+
+        Args:
+            limit: Maximum number of rows to return.
+            offset: Offset for pagination.
+            ids: Filter by specific whitelisted address IDs.
+            include_already_signed_by_user: Include rows the calling user has already
+                signed, which is how an approver tells "waiting for me" from "waiting
+                for someone else".
+
+        Returns:
+            The verified rows, the page window, and the rows withheld.
+
+        Raises:
+            IntegrityError: If the container cannot be interpreted, or no row survived.
+            APIError: If the API call fails.
+        """
+        if limit <= 0:
+            raise ValueError("limit must be positive")
+        if offset < 0:
+            raise ValueError("offset cannot be negative")
+
+        try:
+            reply = self._api.whitelist_service_get_whitelisted_addresses_for_approval(
+                limit=str(limit),
+                offset=str(offset),
+                ids=ids or None,
+                include_already_signed_by_user=include_already_signed_by_user or None,
+            )
+
+            # This endpoint has no normalized-container mode, so the per-row containers
+            # are used and the cache starts empty.
+            rows = list(reply.result or [])
+            envelopes, excluded = self._verified_addresses(rows, {})
+            addresses = [e.verified_whitelisted_address for e in envelopes]
+
+            pagination = self._extract_pagination(
+                getattr(reply, "total_items", None), offset, limit
+            )
+            if pagination is not None and pagination.total_items is not None:
+                pagination = pagination.model_copy(
+                    update={"total_items": max(0, pagination.total_items - len(excluded))}
+                )
+
+            return WhitelistedAddressListResult(
+                addresses=addresses,
+                pagination=pagination,
+                excluded_unverified=excluded,
+            )
+        except IntegrityError:
+            raise
+        except Exception as e:
+            if isinstance(e, ApiException):
+                raise self._handle_error(e)
+            raise
+
+    def approve(
+        self,
+        ids: List[int],
+        private_key: Any,
+        comment: str,
+    ) -> None:
+        """
+        Sign and submit an approval for the given whitelisted addresses, all-or-nothing.
+
+        The batch is re-read through the verifying path and the hashes THOSE rows carry
+        are what gets signed, so the approver's signature covers metadata this SDK
+        checked rather than whatever a caller was handed. Same shape as
+        ``WhitelistedAssetService.approve``.
+
+        ids -> sort numerically -> ONE filtered verified page -> completeness check
+                                                                        |
+                                                                        v
+                                                    sign(JSON(hashes)) -> POST once
+
+        Any address that is missing or fails verification aborts the whole call and
+        nothing is signed: one signature covers every hash in the batch, so a partial
+        approval would mean the caller believes they approved more than they did.
+
+        Args:
+            ids: The whitelisted address IDs to approve.
+            private_key: The approver's P-256 private key.
+            comment: The approval comment.
+
+        Raises:
+            ValueError: If any argument is missing or malformed.
+            IntegrityError: If any address is missing, unverifiable, or has no hash.
+            APIError: If the API call fails.
+        """
+        if not ids:
+            raise ValueError("ids cannot be empty")
+        if private_key is None:
+            raise ValueError("private_key is required")
+        if not comment:
+            raise ValueError("comment is required")
+        for address_id in ids:
+            if not isinstance(address_id, int) or isinstance(address_id, bool) or address_id <= 0:
+                raise ValueError(
+                    f"whitelisted address ID {address_id!r} must be a positive integer"
+                )
+
+        # The endpoint requires ascending order, and sorting here also makes the signed
+        # order independent of the order the caller passed.
+        id_strings = [str(i) for i in sorted(ids)]
+
+        # ONE id-filtered page through the verifying path, not one GET per id.
+        try:
+            reply = self._api.whitelist_service_get_whitelisted_addresses(
+                limit=str(len(id_strings)),
+                offset="0",
+                rules_container_normalized=True,
+                ids=id_strings,
+                include_for_approval=True,
+            )
+            cache = self._build_rules_container_cache(reply)
+            envelopes, _ = self._verified_addresses(list(reply.result or []), cache)
+        except IntegrityError:
+            raise
+        except Exception as e:
+            raise IntegrityError(f"refusing to sign: the verified read failed: {e}") from e
+
+        by_id = {
+            str(e.verified_whitelisted_address.id): e
+            for e in envelopes
+            if e.verified_whitelisted_address is not None
+        }
+
+        hashes: List[str] = []
+        for address_id in id_strings:
+            addr = by_id.get(address_id)
+            if addr is None:
+                # Excluded, or simply absent. Either way a page that omits a row must
+                # not become an approval of fewer rows than the caller asked for.
+                raise IntegrityError(
+                    f"refusing to sign: address {address_id} was not returned by the "
+                    "verified read"
+                )
+            if addr.metadata is None or not addr.metadata.hash:
+                raise IntegrityError(
+                    f"refusing to sign: address {address_id} has no metadata hash"
+                )
+            hashes.append(addr.metadata.hash)
+
+        to_sign = json.dumps(hashes, separators=(",", ":"))
+        signature = sign_data(private_key, to_sign.encode("utf-8"))
+
+        try:
+            from taurus_protect._internal.openapi.models.tgvalidatord_approve_whitelisted_address_request import (
+                TgvalidatordApproveWhitelistedAddressRequest,
+            )
+
+            body = TgvalidatordApproveWhitelistedAddressRequest(
+                ids=id_strings, signature=signature, comment=comment
+            )
+            self._api.whitelist_service_approve_whitelisted_address(body=body)
+        except Exception as e:
+            if isinstance(e, ApiException):
+                raise self._handle_error(e)
+            raise
+
+    def _verified_addresses(
+        self,
+        rows: List[Any],
+        rules_container_cache: Dict[str, DecodedRulesContainer],
+    ) -> Tuple[List[SignedWhitelistedAddressEnvelope], List[ExcludedWhitelistedAddress]]:
+        """
+        Verify a page of address envelopes; return the survivors plus the rows withheld.
+
+        Returns ENVELOPES, not addresses: this SDK's ``WhitelistedAddress`` carries no
+        metadata (Go's does), so the hash an approver signs is only reachable here.
+
+        rows -> verify -+- ok    -> returned
+                        +- fails -> excluded + logged, list survives
+
+        LENIENT per row, but two things abort the whole call: a ContainerIntegrityError
+        (it invalidates every row judged against that container) and
+        rows-returned-but-none-surviving.
+
+        Shared by ``list`` and ``list_for_approval``. The for-approval endpoint had no
+        verified reader at all, and duplicating this loop into a second one is precisely
+        how the list paths drifted from ``get()`` in the first place.
+        """
+        verified: List[SignedWhitelistedAddressEnvelope] = []
+        excluded: List[ExcludedWhitelistedAddress] = []
+
+        for dto in rows:
+            dto_id = getattr(dto, "id", None)
+            try:
+                envelope = self._map_envelope_from_dto(dto)
+
+                cached = None
+                if envelope.rules_container_hash:
+                    cached = rules_container_cache.get(envelope.rules_container_hash)
+
+                self._verify_and_populate_envelope(
+                    envelope, dto, cached_rules_container=cached
+                )
+                if envelope.verified_whitelisted_address:
+                    verified.append(envelope)
+            except ContainerIntegrityError:
+                # Not a property of this row: the container is uninterpretable, so
+                # every row judged against it is equally unverifiable. Excluding
+                # them one by one would empty the whitelist and report success.
+                raise
+            except (IntegrityError, WhitelistError) as exc:
+                excluded.append(
+                    ExcludedWhitelistedAddress(
+                        id=str(dto_id) if dto_id is not None else None,
+                        reason=str(exc),
+                    )
+                )
+                _LOGGER.warning(
+                    "whitelisted address excluded: verification failed "
+                    "(id=%s, reason=%s)",
+                    dto_id,
+                    exc,
+                )
+
+        # Rows came back but none survived: a systemic failure, not an empty
+        # whitelist, and returning [] would be indistinguishable from one.
+        if rows and not verified:
+            raise IntegrityError(
+                f"all {len(rows)} whitelisted address(es) failed verification; "
+                f"first failure: {excluded[0].reason if excluded else 'unknown'}"
+            )
+
+        return verified, excluded
 
     def _verify_and_populate_envelope(
         self,
@@ -309,6 +601,19 @@ class WhitelistedAddressService(BaseService):
             if not container_hash or not container_base64:
                 continue
 
+            # The hash is the LABEL a row uses to pick its container, and it arrives in
+            # the same response as the container. Recompute it: otherwise a server can
+            # file container A under container B's label and steer any row to any other
+            # validly-signed container -- an older ruleset with a weaker group threshold,
+            # say. Both pass the SuperAdmin check, so signature verification alone does
+            # not catch it.
+            computed_label = _container_hash_label(container_base64)
+            if computed_label != container_hash:
+                raise ContainerIntegrityError(
+                    f"rules container hash mismatch: response labelled it "
+                    f"{container_hash} but its bytes hash to {computed_label}"
+                )
+
             # Check if we already verified this container (dedup by content)
             decoded = verified_containers.get(container_base64)
             if decoded is None:
@@ -356,19 +661,15 @@ class WhitelistedAddressService(BaseService):
         except (binascii.Error, ValueError) as e:
             raise IntegrityError(f"failed to decode rules container: {e}") from e
 
-        # Verify signatures
-        valid_count = 0
-        for sig in signatures:
-            if sig.signature and is_valid_signature(
-                rules_data, sig.signature, self._verifier._super_admin_keys
-            ):
-                valid_count += 1
-
-        if valid_count < self._verifier._min_valid_signatures:
-            raise IntegrityError(
-                f"rules container signature verification failed: only {valid_count} valid "
-                f"signatures, minimum {self._verifier._min_valid_signatures} required"
+        try:
+            verify_governance_rules_signatures(
+                rules_data,
+                signatures,
+                self._verifier._super_admin_keys,
+                self._verifier._min_valid_signatures,
             )
+        except IntegrityError as e:
+            raise IntegrityError(f"rules container signature verification failed: {e}") from e
 
         # Decode rules container
         try:

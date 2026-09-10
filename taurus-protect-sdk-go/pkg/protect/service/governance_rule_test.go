@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/model"
@@ -87,14 +88,45 @@ func TestGovernanceRulesHistoryOptions(t *testing.T) {
 func TestNewGovernanceRuleService(t *testing.T) {
 	// Test that NewGovernanceRuleService doesn't panic with nil
 	// In real usage, this would require a valid APIClient
-	defer func() {
-		if r := recover(); r != nil {
-			// Expected to panic with nil client in production code
-			// This is acceptable behavior
-		}
-	}()
+	defer func() { _ = recover() }()
 
 	// This would panic with nil, which is expected
 	// service := NewGovernanceRuleService(nil)
 	// We just verify the function signature is correct
+}
+
+// VerifyGovernanceRules returns the verified rules alongside the error, matching Java
+// and Python (Go used to return only an error, so a caller could not chain
+// verification into an assignment). These cases pin the two-value contract without
+// needing a signing identity: on failure the rules must be nil, never a half-verified
+// value a caller might go on to use.
+func TestGovernanceRuleService_VerifyGovernanceRules_ReturnsNilRulesOnFailure(t *testing.T) {
+	svc := &GovernanceRuleService{}
+
+	t.Run("no signatures", func(t *testing.T) {
+		rules, err := svc.VerifyGovernanceRules(&model.GovernanceRuleset{RulesContainer: "AA=="})
+		if err == nil {
+			t.Fatal("expected an error for rules with no signatures")
+		}
+		if rules != nil {
+			t.Errorf("rules = %#v, want nil on failure", rules)
+		}
+		var integrityErr *model.IntegrityError
+		if !errors.As(err, &integrityErr) {
+			t.Errorf("err = %T, want *model.IntegrityError", err)
+		}
+	})
+
+	t.Run("undecodable container", func(t *testing.T) {
+		rules, err := svc.VerifyGovernanceRules(&model.GovernanceRuleset{
+			RulesContainer: "not-base64!!",
+			Signatures:     []model.RuleUserSignature{{UserID: "u1", Signature: "sig"}},
+		})
+		if err == nil {
+			t.Fatal("expected an error for an undecodable rules container")
+		}
+		if rules != nil {
+			t.Errorf("rules = %#v, want nil on failure", rules)
+		}
+	})
 }

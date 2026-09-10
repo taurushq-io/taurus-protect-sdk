@@ -18,15 +18,18 @@ Example:
 """
 
 from taurus_protect.client import ProtectClient
+from taurus_protect.credentials import Credentials
 from taurus_protect.errors import (
     APIError,
     AuthenticationError,
     AuthorizationError,
+    parse_required_roles,
     ConfigurationError,
     IntegrityError,
     NotFoundError,
     RateLimitError,
     RequestMetadataError,
+    UnverifiedMetadataError,
     ValidationError,
     WhitelistError,
 )
@@ -35,14 +38,17 @@ __version__ = "1.0.0"
 
 __all__ = [
     "ProtectClient",
+    "Credentials",
     "APIError",
     "AuthenticationError",
     "AuthorizationError",
+    "parse_required_roles",
     "ConfigurationError",
     "IntegrityError",
     "NotFoundError",
     "RateLimitError",
     "RequestMetadataError",
+    "UnverifiedMetadataError",
     "ValidationError",
     "WhitelistError",
 ]

@@ -1,5 +1,9 @@
 package com.taurushq.sdk.protect.client.model;
 
+import java.util.Map;
+import java.util.HashMap;
+import com.taurushq.sdk.protect.client.helper.WhitelistHashHelper;
+import com.google.common.base.Strings;
 import com.taurushq.sdk.protect.client.model.rulescontainer.DecodedRulesContainer;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
@@ -198,26 +202,59 @@ public class SignedWhitelistedAddressEnvelope {
     }
 
     /**
-     * Sets the verified whitelisted address.
-     * This method is intended for internal use by WhitelistedAddressService.
-     * Users should not call this method directly.
+     * Marks this envelope verified, DERIVING the address from its own signed payload.
      *
-     * @param address the verified whitelisted address
-     */
-    public void setVerifiedWhitelistedAddress(WhitelistedAddress address) {
-        this.verifiedWhitelistedAddress = address;
-        this.isInitialized.set(true);
-    }
-
-    /**
-     * Sets the verified rules container.
-     * This method is intended for internal use by WhitelistedAddressService.
-     * Users should not call this method directly.
+     * <p>It does not accept an address. The previous
+     * {@code setVerifiedWhitelistedAddress(WhitelistedAddress)} was public and flipped
+     * the same {@code isInitialized} gate the getter checks, so a caller could construct
+     * an envelope, inject a fabricated address, and read it back with no exception — the
+     * "verified" marker returned attacker-chosen data. Deriving instead of accepting
+     * gives Java the property Go's {@code helper.VerifiedAsset} has: forging the marker
+     * is possible but useless, because the data still comes from the envelope's own
+     * payload.
+     *
+     * <p>Intended for WhitelistedAddressService; it must be public because that service
+     * is in another package. That is also why the full fix is the verifier extraction in
+     * {@code TODOS.md} — a witness type the verifier alone can mint. This closes the
+     * exploitable half without it.
      *
      * @param rulesContainer the verified rules container
+     * @throws WhitelistException if the signed payload is absent or unparseable
      */
-    public void setVerifiedRulesContainer(DecodedRulesContainer rulesContainer) {
+    public void markVerified(final DecodedRulesContainer rulesContainer)
+            throws WhitelistException {
+        if (this.metadata == null || Strings.isNullOrEmpty(this.metadata.getPayloadAsString())) {
+            throw new WhitelistException(
+                    "cannot mark verified: the envelope carries no signed payload");
+        }
+        WhitelistedAddress address = WhitelistHashHelper.parseWhitelistedAddressFromJson(
+                this.metadata.getPayloadAsString());
+
+        // Non-security fields, from this envelope's own DTO data. createdAt is the
+        // "created" trail entry; attributes are a key/value list. Both are allowed to
+        // come from the DTO (they are not part of the signed payload), and both live on
+        // the envelope, so deriving them here keeps the whole verified value envelope-local.
+        if (this.trails != null) {
+            for (WhitelistTrail trail : this.trails) {
+                if ("created".equals(trail.getAction())) {
+                    address.setCreatedAt(trail.getDate());
+                    break;
+                }
+            }
+        }
+        if (this.attributes != null) {
+            Map<String, Object> attrs = new HashMap<>();
+            for (Attribute attr : this.attributes) {
+                if (attr.getKey() != null) {
+                    attrs.put(attr.getKey(), attr.getValue());
+                }
+            }
+            address.setAttributes(attrs);
+        }
+
+        this.verifiedWhitelistedAddress = address;
         this.verifiedRulesContainer = rulesContainer;
+        this.isInitialized.set(true);
     }
 
     public WhitelistMetadata getMetadata() {

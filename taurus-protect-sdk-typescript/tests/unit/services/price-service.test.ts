@@ -2,7 +2,21 @@
  * Unit tests for PriceService.
  */
 
+import type { RulesContainerCache } from '../../../src/cache';
+import type { DecodedRulesContainer } from '../../../src/models/governance-rules';
 import { PriceService } from '../../../src/services/price-service';
+
+// A container with no PRICEUPDATER: this tenant does not sign prices, so verification
+// passes through. Signing itself is covered by the price-verifier tests.
+function createMockRulesCache(): jest.Mocked<RulesContainerCache> {
+  return {
+    get: jest.fn().mockResolvedValue({
+      users: [],
+      groups: [],
+    } as unknown as DecodedRulesContainer),
+    clear: jest.fn(),
+  } as unknown as jest.Mocked<RulesContainerCache>;
+}
 import { ValidationError } from '../../../src/errors';
 import type { PricesApi } from '../../../src/internal/openapi/apis/PricesApi';
 
@@ -20,7 +34,7 @@ describe('PriceService', () => {
 
   beforeEach(() => {
     mockApi = createMockApi();
-    service = new PriceService(mockApi);
+    service = new PriceService(mockApi, createMockRulesCache());
   });
 
   describe('list', () => {

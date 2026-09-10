@@ -27,12 +27,12 @@ from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 
 from taurus_protect.crypto.hashing import calculate_hex_hash
 from taurus_protect.crypto.signing import sign_data
-from taurus_protect.errors import IntegrityError, WhitelistError
+from taurus_protect.errors import ContainerIntegrityError, IntegrityError, WhitelistError
 from taurus_protect.helpers.whitelisted_address_verifier import (
     AddressVerificationResult,
     WhitelistedAddressVerifier,
-    _contains_hash,
-    _verify_hash_coverage,
+    contains_hash,
+    verify_hash_coverage,
 )
 from taurus_protect.models.governance_rules import (
     RULE_SOURCE_TYPE_INTERNAL_WALLET,
@@ -118,7 +118,13 @@ def _build_payload(
     linked_wallets=None,
     network=None,
 ):
-    """Build a whitelisted address payload dict."""
+    """
+    Build a whitelisted address payload dict.
+
+    ``network`` stays absent by default, matching real signed payloads: governance
+    rules carry a per-rule ``includeNetworkInPayload`` flag and the captured
+    production payload omits the field.
+    """
     payload = {
         "currency": currency,
         "addressType": "individual",
@@ -391,6 +397,28 @@ class TestStep2RulesContainerSignatures:
         with pytest.raises(IntegrityError, match="rules container signature verification failed"):
             verifier.verify_whitelisted_address(envelope, rc_dec, us_dec)
 
+    def test_one_superadmin_key_cannot_meet_threshold_two(self, superadmin_keys, user1_keys):
+        """Two entries from ONE SuperAdmin key must not satisfy a 2-of-N threshold.
+
+        ECDSA is randomized and user_id is server-supplied, so counting entries (or
+        deduping by user_id) lets a single compromised key clear any threshold.
+        """
+        sa_priv, sa_pub = superadmin_keys
+        u_priv, u_pub = user1_keys
+
+        envelope, rc_dec, _ = _build_full_envelope(u_priv, u_pub, sa_priv, sa_pub)
+        rules_data = base64.b64decode(envelope.rules_container)
+
+        def one_key_two_labels(b64_data):
+            return [
+                RuleUserSignature(user_id="superadmin-1", signature=sign_data(sa_priv, rules_data)),
+                RuleUserSignature(user_id="superadmin-2", signature=sign_data(sa_priv, rules_data)),
+            ]
+
+        verifier = WhitelistedAddressVerifier([sa_pub], min_valid_signatures=2)
+        with pytest.raises(IntegrityError, match="only 1 distinct valid signers found"):
+            verifier.verify_whitelisted_address(envelope, rc_dec, one_key_two_labels)
+
     def test_signature_decode_failure_raises(self, superadmin_keys, user1_keys):
         """Failed signature decode raises IntegrityError."""
         sa_priv, sa_pub = superadmin_keys
@@ -446,7 +474,7 @@ class TestStep4HashCoverage:
                 hashes=["other", target],
             )
         ]
-        assert _verify_hash_coverage(target, sigs) is True
+        assert verify_hash_coverage(target, sigs) is True
 
     def test_hash_not_found(self):
         """Hash not in any signatures -> False."""
@@ -456,11 +484,11 @@ class TestStep4HashCoverage:
                 hashes=["other"],
             )
         ]
-        assert _verify_hash_coverage("missing", sigs) is False
+        assert verify_hash_coverage("missing", sigs) is False
 
     def test_empty_signatures(self):
         """Empty signatures list -> False."""
-        assert _verify_hash_coverage("abc", []) is False
+        assert verify_hash_coverage("abc", []) is False
 
     def test_no_signed_address_raises(self, superadmin_keys, user1_keys):
         """No signed_address raises IntegrityError."""
@@ -956,6 +984,76 @@ class TestRuleLines:
         result = verifier.verify_whitelisted_address(envelope, rc_decoder_with_lines, us_dec)
         assert result is not None
 
+    def test_untyped_source_cell_aborts_instead_of_using_defaults(
+        self, superadmin_keys, user1_keys
+    ):
+        """A source cell this SDK cannot type must fail closed, not fall back.
+
+        A container signed by a validatord newer than this SDK can carry a source cell
+        the decoder could only preserve verbatim. Such a line simply failed to match,
+        so verification fell through to the container defaults — approving the address
+        against a weaker quorum than its governance line demands, silently.
+        """
+        sa_priv, sa_pub = superadmin_keys
+        u_priv, u_pub = user1_keys
+
+        payload = _build_payload(linked_internal_addresses=[])
+        envelope, _, us_dec = _build_full_envelope(
+            u_priv, u_pub, sa_priv, sa_pub,
+            payload_dict=payload,
+            linked_wallets=[InternalWallet(id=1, path="m/44/60/0")],
+        )
+
+        def rc_decoder_raw_source(b64):
+            return DecodedRulesContainer(
+                users=[
+                    RuleUser(
+                        id="user1@bank.com",
+                        public_key_pem=_public_key_to_pem(u_pub),
+                        roles=["USER"],
+                    )
+                ],
+                groups=[RuleGroup(id="approvers", user_ids=["user1@bank.com"])],
+                address_whitelisting_rules=[
+                    AddressWhitelistingRules(
+                        currency="ETH",
+                        network="mainnet",
+                        # Permissive default that would let the address through.
+                        parallel_thresholds=[
+                            SequentialThresholds(
+                                thresholds=[
+                                    GroupThreshold(group_id="approvers", minimum_signatures=1)
+                                ]
+                            )
+                        ],
+                        lines=[
+                            AddressWhitelistingLine(
+                                # Preserved verbatim: this SDK could not type it.
+                                cells=[RuleSource(type=0, raw=b"\x08\x63")],
+                                parallel_thresholds=[
+                                    SequentialThresholds(
+                                        thresholds=[
+                                            GroupThreshold(
+                                                group_id="admins", minimum_signatures=5
+                                            )
+                                        ]
+                                    )
+                                ],
+                            )
+                        ],
+                    )
+                ],
+            )
+
+        verifier = WhitelistedAddressVerifier([sa_pub])
+        with pytest.raises(ContainerIntegrityError) as exc:
+            verifier.verify_whitelisted_address(envelope, rc_decoder_raw_source, us_dec)
+        assert "cannot interpret" in str(exc.value)
+
+        # Must remain catchable as an IntegrityError for existing handlers.
+        with pytest.raises(IntegrityError):
+            verifier.verify_whitelisted_address(envelope, rc_decoder_raw_source, us_dec)
+
     def test_linked_addresses_present_skips_lines(self, superadmin_keys, user1_keys):
         """When linked internal addresses exist, rule lines are NOT checked."""
         sa_priv, sa_pub = superadmin_keys
@@ -1083,20 +1181,20 @@ class TestRuleLines:
 
 
 class TestContainsHash:
-    """Tests for _contains_hash helper."""
+    """Tests for contains_hash helper."""
 
     def test_hash_found(self):
-        assert _contains_hash(["abc", "def"], "def") is True
+        assert contains_hash(["abc", "def"], "def") is True
 
     def test_hash_not_found(self):
-        assert _contains_hash(["abc", "def"], "xyz") is False
+        assert contains_hash(["abc", "def"], "xyz") is False
 
     def test_empty_list(self):
-        assert _contains_hash([], "abc") is False
+        assert contains_hash([], "abc") is False
 
 
 class TestVerifyHashCoverage:
-    """Tests for _verify_hash_coverage helper."""
+    """Tests for verify_hash_coverage helper."""
 
     def test_found_in_first_signature(self):
         sigs = [
@@ -1105,7 +1203,7 @@ class TestVerifyHashCoverage:
                 hashes=["target"],
             )
         ]
-        assert _verify_hash_coverage("target", sigs) is True
+        assert verify_hash_coverage("target", sigs) is True
 
     def test_found_in_second_signature(self):
         sigs = [
@@ -1118,7 +1216,7 @@ class TestVerifyHashCoverage:
                 hashes=["target"],
             ),
         ]
-        assert _verify_hash_coverage("target", sigs) is True
+        assert verify_hash_coverage("target", sigs) is True
 
     def test_not_found_returns_false(self):
         sigs = [
@@ -1127,7 +1225,7 @@ class TestVerifyHashCoverage:
                 hashes=["nope"],
             )
         ]
-        assert _verify_hash_coverage("target", sigs) is False
+        assert verify_hash_coverage("target", sigs) is False
 
 
 # =============================================================================

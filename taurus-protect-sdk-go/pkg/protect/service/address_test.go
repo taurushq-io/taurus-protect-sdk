@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"testing"
 
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/model"
@@ -17,7 +18,7 @@ func TestAddressService_GetAddress_EmptyID(t *testing.T) {
 		errMapper: NewErrorMapper(),
 	}
 
-	_, err := svc.GetAddress(nil, "")
+	_, err := svc.GetAddress(context.TODO(), "")
 	if err == nil {
 		t.Error("GetAddress() with empty ID should return error")
 	}
@@ -32,7 +33,7 @@ func TestAddressService_CreateAddress_NilRequest(t *testing.T) {
 		errMapper: NewErrorMapper(),
 	}
 
-	_, err := svc.CreateAddress(nil, nil)
+	_, err := svc.CreateAddress(context.TODO(), nil)
 	if err == nil {
 		t.Error("CreateAddress() with nil request should return error")
 	}
@@ -47,7 +48,7 @@ func TestAddressService_CreateAddress_EmptyWalletID(t *testing.T) {
 		errMapper: NewErrorMapper(),
 	}
 
-	_, err := svc.CreateAddress(nil, &model.CreateAddressRequest{})
+	_, err := svc.CreateAddress(context.TODO(), &model.CreateAddressRequest{})
 	if err == nil {
 		t.Error("CreateAddress() with empty walletID should return error")
 	}

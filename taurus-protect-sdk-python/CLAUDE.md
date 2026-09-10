@@ -11,7 +11,7 @@
 ./build.sh           # Default: install + unit tests
 ./build.sh unit      # Unit tests only
 ./build.sh build     # Build package
-./build.sh lint      # black, isort, flake8, mypy
+./build.sh lint      # black, isort, flake8, mypy — ALREADY RED ON MASTER, see below
 ./build.sh format    # Format code
 ./build.sh generate  # OpenAPI + protobuf code generation
 ./build.sh clean     # Clean artifacts
@@ -22,6 +22,22 @@
 **Single test:** `./build.sh unit-one <pattern>` (e.g., `test_approve`, `TestRequestService`)
 
 **IMPORTANT:** Always use `./build.sh unit` (activates venv with protobuf), NOT bare `python -m pytest` (uses system Python). pytest needs `-o "addopts="` to override coverage flags without pytest-cov.
+
+### `./build.sh lint` has never passed — do not chase it
+
+Measured on committed master: **96 files fail flake8** (mostly E501 at the 100-char limit), **79 files
+would be reformatted by black**, and **mypy reports 3008 errors in 124 files**. It is abandoned, not a
+gate. Reformatting the package to chase it is a repo-wide project and would bury a review in churn.
+
+What is still worth doing on a change: keep *new* files free of **real** findings (F401 dead imports,
+F841 unused locals) and leave E501 alone, since the surrounding code already exceeds it. Check just
+your files:
+
+```bash
+.venv/bin/python -m flake8 <paths> --max-line-length=100 | grep -v E501
+```
+
+The unit suite is the real signal: `.venv/bin/python -m pytest tests/unit -o "addopts=" -q`.
 
 ## Architecture
 
@@ -58,7 +74,7 @@ The ProtectClient provides lazy-initialized properties for all services:
 
 **Transaction/Request Management**: `audits`, `changes`, `fees`, `prices`
 
-**Advanced Features**: `air_gap`, `staking`, `whitelisted_contracts`, `business_rules`, `reservations`, `multi_factor_signature`
+**Advanced Features**: `air_gap`, `staking`, `whitelisted_contracts` (**writes only** — reads live on `whitelisted_assets`, the verified reader of the same endpoint), `business_rules`, `reservations`, `multi_factor_signature`
 
 **Administrative**: `users`, `groups`, `visibility_groups`, `config`, `webhooks`, `webhook_calls`, `tags`
 
@@ -179,6 +195,30 @@ Services are exported in `services/__init__.py`. The TaurusNetworkClient is NOT 
 
 ## Testing
 
+### Governance test facts that cost time to find
+
+- **The container encoder is `rules_container_to_base64`, in
+  `taurus_protect/mappers/rules_container_encode.py`** — re-exported from
+  `taurus_protect.mappers`, so import it from there. It is NOT in
+  `mappers/governance_rules.py` (that file holds the *decode* side,
+  `rules_container_from_base64`), and it is not named `container_to_base64` or
+  `to_base64`; grepping those finds nothing.
+- **`GovernanceRuleService.__init__` takes FOUR args**:
+  `(api_client, governance_rules_api, super_admin_keys, min_valid_signatures)` — the
+  api_client *and* the api. For a unit test, a `MagicMock()` for the first and a
+  `MagicMock()` whose `rule_service_get_rules()` returns a reply works; the keys must be
+  real `EllipticCurvePublicKey`s (`ec.generate_private_key(ec.SECP256R1()).public_key()`).
+- **The reply DTO needs `rules_container`, `rules_signatures`, `locked`** —
+  `_map_rules_from_dto` reads those; signature DTOs need `user_id` and `signature`.
+- **Governance rules are verified TWICE**: once in `get_rules()` and again in
+  `get_decoded_rules_container()`. So a test asserting that verification happens stays
+  green if you remove only one site — take out both when checking it is non-vacuous.
+- **Use a wire-valid container when testing that verification runs.** A malformed blob
+  raises `IntegrityError` from the decoder, so the test passes whether verification ran
+  or not. `TestRulesContainerCacheVerification` keeps a
+  `test_the_container_decodes_so_only_signatures_can_fail` guard beside its two
+  verification tests for exactly this reason — this trap bit once already.
+
 ### Running Tests
 
 Use `./build.sh unit` for all unit tests. Use `./build.sh unit-one <pattern>` for specific tests (e.g., `test_approve`, `TestRequestService`).
@@ -217,6 +257,22 @@ E2E tests are in `tests/e2e/`, with `conftest.py` delegating to testutil (uses `
 
 ## Build Troubleshooting
 
+### `build.sh` DELETES `.venv` when pip is unusable — and offline it cannot rebuild it
+
+`build.sh` probes pip and, on failure, logs `Existing .venv is broken (pip not usable) -- recreating` and
+**replaces the venv**. In an offline container the fresh venv then has no `pytest`, so `./build.sh unit` dies
+with `pytest: command not found` — and any previously working interpreter is already gone. It destroys state to
+diagnose it.
+
+Recovery without network, from the `uv` cache (`uv` is on PATH; wheels for pytest, cryptography, pydantic,
+protobuf, urllib3 are cached):
+```bash
+uv pip install --offline --python .venv/bin/python -e ".[dev]"
+.venv/bin/python -m pytest tests/unit -o "addopts=" -q     # -o addopts= drops the coverage flags
+```
+Run tests via `.venv/bin/python -m pytest` afterwards rather than `build.sh unit`, which re-probes pip. Note
+`conftest.py` imports `cryptography`, so pytest alone is not enough — install the `[dev]` extra, not just pytest.
+
 ### `generate-openapi.sh` Pydantic-fix sed is macOS-only
 
 Line 116 of `scripts/generate-openapi.sh` uses `sed -i '' 's/.../.../' file` (BSD sed). On Linux GNU sed treats the `''` as the input file path and prints `sed: can't read s/...` for every model file. The script **continues anyway** and reports success, but the Pydantic v2 fix never lands and the SDK fails at runtime with `RuntimeError: Unable to apply constraint 'strict' to schema of type 'none'`.
@@ -242,6 +298,57 @@ For best development experience (live code changes without reinstall), upgrade p
 ```bash
 pip3 install --upgrade pip
 ```
+
+## Verification surface added in the 2026-09-04 pass
+
+- **`UnverifiedMetadataError(RequestMetadataError)`** (`taurus_protect/errors.py`, exported from
+  the package root). `RequestMetadata._require_verified()` gates `_get_payload_value`, so
+  `get_source_address` / `get_destination_address` / `get_amount` raise rather than returning
+  `None` on metadata nothing verified. Metadata with no payload is NOT an error.
+- **`RequestService._verify_and_mark`** is the single place verification and the
+  `hash_verified` flag are set together. Keeping them apart is what let `get()` verify and then
+  return a request whose flag was still `False`.
+- **The hash-comparison pair lives in `helpers/whitelist_hash_helper.py`**: `verify_hash_coverage`
+  and `contains_hash`. Both verifiers carried their own copies and they disagreed — the address
+  one returned on the first match, the asset one did not. Do not re-add a local copy.
+- **`resolve_rule_key`** (same module) picks the `(blockchain, network)` pair from the signed
+  payload; `MAX_PAYLOAD_BYTES` bounds it first.
+- **`WhitelistedAsset` gained `decimals` and `token_id`**, sourced from the verified payload
+  only. Java and TypeScript already exposed them.
+- The list path is **lenient**: an unverifiable envelope is excluded and logged rather than
+  raising, and rows-returned-but-none-surviving raises `IntegrityError`.
+
+### The address payload fixture deliberately omits `network`
+
+`_build_payload(network=None)` in `tests/unit/helpers/test_whitelisted_address_verifier.py` is
+correct, not an oversight: real signed payloads omit `network` unless the rule sets
+`includeNetworkInPayload`. Don't "fix" the default — it is what keeps the fallback path covered.
+
+## Verification surface added in the 2026-09-07 pass
+
+Cross-SDK rules are in the repo-root `CLAUDE.md`. Python-specific:
+
+- **`helpers/price_verifier.py`** — `price_signed_bytes` / `verify_price` / `verify_prices`.
+  `models/statistics.py` gained `PriceSignature` and `Price.signatures` (it had no signature
+  field at all); the forward ref needs `List` imported in that module.
+- **`key_fingerprint` is no longer `_`-prefixed** in `helpers/signature_verifier.py` — both
+  verifiers' `_verify_group_threshold` key their signer `set` on it.
+- **`whitelist_integrity_helper`'s `verify` parameter is DELETED**, and its three functions are
+  off `helpers/__init__.py`'s public surface. `verify=False` skipped everything and
+  `verify=True` ran step 1 of six — exactly the skip-verification path the repo records as
+  removed. Its own internal caller passed `verify=True` and had to be fixed with it.
+- **The asset verifier no longer shadows the DTO chain.** `lookup_blockchain = asset.blockchain
+  or dto_blockchain` fed the payload's own value back in as the "DTO side", so
+  `resolve_rule_key`'s payload-vs-DTO mismatch check could never fire. A test that calls the
+  inner method directly does **not** gate this — the shadowing lived in the caller, so drive it
+  through `verify_whitelisted_asset`.
+- `asset_service.get_addresses` maps to the domain `Address` (it returned raw generated DTOs)
+  and verifies each HSM signature. Its three `except` funnels had to widen to
+  `isinstance(e, (APIError, IntegrityError, ValueError))` — otherwise the new `IntegrityError`
+  was re-wrapped as a **retryable** `ServerError`. The same funnel bug remains elsewhere; see
+  `TODOS.md`.
+- **A bare `MagicMock` metadata makes `hash_verified` truthy**, so an approve test can satisfy
+  a hash-verified gate by accident and prove nothing. Set the attribute explicitly.
 
 ## Lessons Learned
 
@@ -320,3 +427,77 @@ If `pyproject.toml` says `requires-python = ">=3.9"`, never use PEP 604 syntax (
 ### Python __init__.py Exports
 
 All exception classes users may catch must be in `__all__`: `APIError`, `AuthenticationError`, `AuthorizationError`, `ConfigurationError`, `IntegrityError`, `NotFoundError`, `RateLimitError`, `RequestMetadataError`, `ValidationError`, `WhitelistError`.
+
+### Credentials — client construction (positional-arg footgun)
+
+`ProtectClient.create` is `create(host, credentials=None, api_key=None, api_secret=None, super_admin_keys_pem=None, min_valid_signatures=1, …)`. The api-key params are **deprecated keyword** args, so a positional `create(host, api_key, api_secret)` now MISBINDS the key string to `credentials` and fails. Use `credentials=Credentials.api_key(k, s)` (preferred) or keyword `api_key=…, api_secret=…`. `Credentials` (`taurus_protect/credentials.py`) exposes `api_key` / `bearer_token` / `bearer_token_provider`; SuperAdmin keys are always required (no keys-optional bearer path). `create_from_pem` forwards api_key/api_secret as **keywords** to avoid the same misbind.
+
+### Deleting a service-local model class leaves two orphans
+
+Some domain models live **inside** their service module rather than under `models/` —
+`WhitelistedContract` was defined in `services/contract_whitelisting_service.py`. Removing one
+means two more edits the interpreter will not prompt for until import time:
+
+- **`services/__init__.py`** re-exports it twice: in the `from … import (…)` block *and* in
+  `__all__`. Missing either is an `ImportError` on the whole package.
+- **A test module may exist solely for it.** `tests/unit/mappers/test_contract_whitelist.py`
+  was 42 lines testing only that class, so it became a collection error rather than a failure —
+  pytest reports `Interrupted: 1 error during collection` and runs **nothing**, which looks like
+  a broken environment, not a stale test.
+
+Also clear `__pycache__` after deleting a test file (`find tests -name __pycache__ -type d
+-exec rm -rf {} +`); a stale `.pyc` for a removed module keeps showing up in greps.
+
+### Extracting a method: re-indent explicitly, never by prefix replacement
+
+Pulling a loop out of a method into a new one means dedenting one level. A blanket
+`line.replace('            ', '        ')` corrupts every line nested DEEPER than the base,
+because it rewrites the first match anywhere in the leading whitespace — the symptom is
+`IndentationError: expected an indented block after 'if' statement`, several lines away
+from where you were working. Re-indent by stripping a fixed count from the line start, or
+paste the body with the target indentation.
+
+### `WhitelistedAddressService.__init__` takes `whitelisting_api`
+
+Not `address_whitelisting_api` — the keyword differs from the class name and from the
+asset service's `pledge_api`/`api` conventions. A wrong kwarg is a `TypeError` at
+construction inside the test, which reads as a broken fixture rather than a typo.
+
+### Append new list-filter params, don't insert them
+
+`TransactionService.list()` / `export_csv()` gained `blockchain` and `network` (the API accepts both
+and Go/TS already exposed them; this SDK hardcoded `None`). They are appended **after** `offset`
+rather than grouped with the other filters, because inserting a parameter mid-signature silently
+rebinds any positional call — the same footgun as `ProtectClient.create` above. Prefer appending, or
+make new params keyword-only.
+
+### `WhitelistedAsset` is the envelope here (accepted difference)
+
+Go, Java and TS split asset-from-envelope and expose a separate envelope getter. Python merged them:
+`WhitelistedAsset` already carries `metadata`, `rules_container`, `rules_signatures` and
+`signed_contract_address`, so a caller has raw access from `get()`. **Do not add a
+`get_envelope()`** — it would return the same object under a second name. Recorded in the report's
+"Remaining known differences".
+
+### Governance Rules Typed Mapper — protobuf unknown-field capture (upb backend)
+
+The governance-rules mappers (`mappers/governance_rules.py`, `mappers/rules_container_encode.py`, `mappers/rule_cell_codec.py`) DO parse protobuf via `taurus_protect._internal.proto.request_reply_pb2` — they implement the cross-SDK typed governance API (see repo-root `CLAUDE.md`).
+
+For schema-evolution losslessness, unknown protobuf fields must be preserved per node. **The installed `protobuf` runtime uses the C/upb backend, where `msg.UnknownFields()` raises `NotImplementedError`.** Capture unknowns without that API: re-parse the message, `ClearField` every known field, then `SerializeToString` — what remains is the unknown-field bytes. Store them on the Pydantic node (`unknown_fields: bytes`) and on encode reattach with `node_pb.MergeFromString(unknown_bytes)` (merges only the unknown-to-us fields — no known-field duplication). Cross-SDK cell byte-parity is enforced by `tests/unit/mappers/test_governance_cell_vectors.py` against `scripts/resources/governance-cell-vectors.json`.
+
+**Serialization must be deterministic.** `rules_container_to_bytes`, `_rule_source_to_bytes` and both
+encode entry points in `mappers/rules_container_json.py` call `SerializeToString(deterministic=True)`.
+Without it, `map<string, bytes> properties` (present at five levels) emits in unspecified order, so the
+same container encodes differently across runs and differs from the other SDKs. The JSON bridge was
+missing the flag even though this note already said "add it to any new encode entry point" — the
+bytes it produces are what a governance proposal is signed over, so **check every new encode path
+against this rule, not just the typed encoder.**
+
+**Catch specific protobuf errors, never bare `Exception`.** The codec and mapper paths catch
+`DecodeError` (from `google.protobuf.message`) plus `UnicodeDecodeError`/`ValueError` where a cell
+payload is decoded as UTF-8 — a cell field is protobuf `bytes`, so non-UTF-8 content is legal on the
+wire and must degrade that one cell to a `RawCell` rather than abort the container.
+
+**`capture_unknown` is needed on nested nodes too**, including the four rule-detail sub-messages and
+the whitelisting `RuleSource` (outer message, the `Any`-arm payload check, and the decoded inner
+payload). See the repo-root `CLAUDE.md` for the shared vectors that pin all of this.

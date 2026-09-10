@@ -20,13 +20,16 @@ func TestPaginateAllWhitelistedAddresses(t *testing.T) {
 
 	// Fetch all whitelisted addresses using pagination
 	for {
-		addresses, pagination, err := client.WhitelistedAddresses().ListWhitelistedAddresses(ctx, &model.ListWhitelistedAddressesOptions{
+		listResult, err := client.WhitelistedAddresses().ListWhitelistedAddresses(ctx, &model.ListWhitelistedAddressesOptions{
 			Limit:  pageSize,
 			Offset: offset,
 		})
 		if err != nil {
 			t.Fatalf("ListWhitelistedAddresses(offset=%d) error = %v", offset, err)
 		}
+
+		addresses := listResult.Addresses
+		pagination := listResult.Pagination
 
 		allAddresses = append(allAddresses, addresses...)
 		t.Logf("Fetched %d whitelisted addresses (offset=%d)", len(addresses), offset)
@@ -57,12 +60,14 @@ func TestListWhitelistedAddresses(t *testing.T) {
 
 	ctx := context.Background()
 
-	addresses, _, err := client.WhitelistedAddresses().ListWhitelistedAddresses(ctx, &model.ListWhitelistedAddressesOptions{
+	listResult, err := client.WhitelistedAddresses().ListWhitelistedAddresses(ctx, &model.ListWhitelistedAddressesOptions{
 		Limit: 10,
 	})
 	if err != nil {
 		t.Fatalf("ListWhitelistedAddresses error = %v", err)
 	}
+
+	addresses := listResult.Addresses
 
 	t.Logf("Found %d whitelisted addresses", len(addresses))
 	for _, a := range addresses {
@@ -140,12 +145,14 @@ func TestGetWhitelistedAddress(t *testing.T) {
 	ctx := context.Background()
 
 	// First list addresses to find a valid ID
-	addresses, _, err := client.WhitelistedAddresses().ListWhitelistedAddresses(ctx, &model.ListWhitelistedAddressesOptions{
+	listResult, err := client.WhitelistedAddresses().ListWhitelistedAddresses(ctx, &model.ListWhitelistedAddressesOptions{
 		Limit: 1,
 	})
 	if err != nil {
 		t.Fatalf("ListWhitelistedAddresses error = %v", err)
 	}
+
+	addresses := listResult.Addresses
 
 	if len(addresses) == 0 {
 		t.Skip("No whitelisted addresses available for testing")
@@ -170,13 +177,16 @@ func TestListWhitelistedAddressesByBlockchain(t *testing.T) {
 	ctx := context.Background()
 
 	// List addresses filtered by blockchain ETH
-	addresses, pagination, err := client.WhitelistedAddresses().ListWhitelistedAddresses(ctx, &model.ListWhitelistedAddressesOptions{
+	listResult, err := client.WhitelistedAddresses().ListWhitelistedAddresses(ctx, &model.ListWhitelistedAddressesOptions{
 		Blockchain: "ETH",
 		Limit:      10,
 	})
 	if err != nil {
 		t.Fatalf("ListWhitelistedAddresses(blockchain=ETH) error = %v", err)
 	}
+
+	addresses := listResult.Addresses
+	pagination := listResult.Pagination
 
 	t.Logf("Listed %d whitelisted addresses for blockchain ETH", len(addresses))
 	if pagination != nil {
@@ -201,7 +211,7 @@ func TestListWhitelistedAddressesByBlockchainAndNetwork(t *testing.T) {
 	ctx := context.Background()
 
 	// List addresses filtered by blockchain ETH and network mainnet
-	addresses, pagination, err := client.WhitelistedAddresses().ListWhitelistedAddresses(ctx, &model.ListWhitelistedAddressesOptions{
+	listResult, err := client.WhitelistedAddresses().ListWhitelistedAddresses(ctx, &model.ListWhitelistedAddressesOptions{
 		Blockchain: "ETH",
 		Network:    "mainnet",
 		Limit:      10,
@@ -209,6 +219,9 @@ func TestListWhitelistedAddressesByBlockchainAndNetwork(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListWhitelistedAddresses(blockchain=ETH, network=mainnet) error = %v", err)
 	}
+
+	addresses := listResult.Addresses
+	pagination := listResult.Pagination
 
 	t.Logf("Listed %d whitelisted addresses for blockchain ETH, network mainnet", len(addresses))
 	if pagination != nil {

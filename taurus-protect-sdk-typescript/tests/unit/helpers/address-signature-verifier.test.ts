@@ -1,9 +1,12 @@
 /**
  * Unit tests for address-signature-verifier.ts.
  *
- * Tests HSM signature verification for addresses:
- * - verifyAddressSignature(): single address verification
- * - verifyAddressSignatures(): batch address verification
+ * Tests HSM signature verification for addresses.
+ *
+ * Both helpers THROW on failure rather than returning booleans, matching the Go,
+ * Java and Python peers. The boolean contract they replaced could not distinguish
+ * "nothing to verify" from "verification failed", and the batch form returned an
+ * array a caller could ignore entirely — silently accepting unverified addresses.
  */
 
 import * as crypto from "crypto";
@@ -100,163 +103,124 @@ function buildRulesContainerWithNonHsmUser(publicKeyPem: string): DecodedRulesCo
 // =============================================================================
 
 describe("verifyAddressSignature", () => {
-  it("should return true for a valid HSM signature", () => {
+  it("passes for a valid HSM signature", () => {
     const { privateKey, publicKey } = generateP256KeyPair();
-    const pem = encodePublicKeyPem(publicKey);
-    const rulesContainer = buildRulesContainer(pem);
+    const rulesContainer = buildRulesContainer(encodePublicKeyPem(publicKey));
 
     const address = "0xabc123def456";
     const sig = signData(privateKey, Buffer.from(address, "utf-8"));
 
-    expect(verifyAddressSignature(address, sig, rulesContainer)).toBe(true);
+    expect(() => verifyAddressSignature(address, sig, rulesContainer)).not.toThrow();
   });
 
-  it("should return false for empty signature", () => {
+  it("throws when the signature is empty", () => {
     const { publicKey } = generateP256KeyPair();
-    const pem = encodePublicKeyPem(publicKey);
-    const rulesContainer = buildRulesContainer(pem);
+    const rulesContainer = buildRulesContainer(encodePublicKeyPem(publicKey));
 
-    expect(verifyAddressSignature("0xabc", "", rulesContainer)).toBe(false);
+    expect(() => verifyAddressSignature("0xabc", "", rulesContainer)).toThrow(IntegrityError);
+    expect(() => verifyAddressSignature("0xabc", "", rulesContainer)).toThrow(/has no signature/);
   });
 
-  it("should throw IntegrityError when HSM public key is not found", () => {
-    const rulesContainer = buildEmptyRulesContainer();
-
-    expect(() => {
-      verifyAddressSignature("0xabc", "some-sig", rulesContainer);
-    }).toThrow(IntegrityError);
-    expect(() => {
-      verifyAddressSignature("0xabc", "some-sig", rulesContainer);
-    }).toThrow("HSM public key not found");
-  });
-
-  it("should throw IntegrityError when no user has HSMSLOT role", () => {
-    const { publicKey } = generateP256KeyPair();
-    const pem = encodePublicKeyPem(publicKey);
-    const rulesContainer = buildRulesContainerWithNonHsmUser(pem);
-
-    expect(() => {
-      verifyAddressSignature("0xabc", "some-sig", rulesContainer);
-    }).toThrow(IntegrityError);
-    expect(() => {
-      verifyAddressSignature("0xabc", "some-sig", rulesContainer);
-    }).toThrow("HSM public key not found");
-  });
-
-  it("should return false for invalid signature data", () => {
-    const { publicKey } = generateP256KeyPair();
-    const pem = encodePublicKeyPem(publicKey);
-    const rulesContainer = buildRulesContainer(pem);
-
-    // A 64-byte random signature that won't verify
-    const fakeSig = Buffer.alloc(64, 0x42).toString("base64");
-
-    expect(verifyAddressSignature("0xabc", fakeSig, rulesContainer)).toBe(false);
-  });
-
-  it("should return false when signature is for a different address", () => {
+  // Absent before: the helper never checked the address at all, so an empty
+  // address was verified against whatever signature happened to be supplied.
+  it("throws when the blockchain address is empty", () => {
     const { privateKey, publicKey } = generateP256KeyPair();
-    const pem = encodePublicKeyPem(publicKey);
-    const rulesContainer = buildRulesContainer(pem);
+    const rulesContainer = buildRulesContainer(encodePublicKeyPem(publicKey));
+    const sig = signData(privateKey, Buffer.from("", "utf-8"));
 
-    const sig = signData(privateKey, Buffer.from("original-address", "utf-8"));
-
-    expect(verifyAddressSignature("different-address", sig, rulesContainer)).toBe(false);
+    expect(() => verifyAddressSignature("", sig, rulesContainer)).toThrow(
+      /has no blockchain address/
+    );
   });
 
-  it("should verify signature against correct address encoding (UTF-8)", () => {
-    const { privateKey, publicKey } = generateP256KeyPair();
-    const pem = encodePublicKeyPem(publicKey);
-    const rulesContainer = buildRulesContainer(pem);
+  it("throws for invalid signature data", () => {
+    const { publicKey } = generateP256KeyPair();
+    const rulesContainer = buildRulesContainer(encodePublicKeyPem(publicKey));
 
-    // Unicode address for edge case
-    const address = "addr_with_unicode_\u00e9";
+    expect(() =>
+      verifyAddressSignature("0xabc", "bm90LWEtc2lnbmF0dXJl", rulesContainer)
+    ).toThrow(IntegrityError);
+  });
+
+  it("throws when the signature is for a different address", () => {
+    const { privateKey, publicKey } = generateP256KeyPair();
+    const rulesContainer = buildRulesContainer(encodePublicKeyPem(publicKey));
+    const sig = signData(privateKey, Buffer.from("0xaaa", "utf-8"));
+
+    expect(() => verifyAddressSignature("0xbbb", sig, rulesContainer)).toThrow(
+      /verification failed/
+    );
+  });
+
+  it("throws when no HSM key is present in the rules container", () => {
+    const { privateKey } = generateP256KeyPair();
+    const sig = signData(privateKey, Buffer.from("0xabc", "utf-8"));
+
+    expect(() =>
+      verifyAddressSignature("0xabc", sig, buildEmptyRulesContainer())
+    ).toThrow(IntegrityError);
+  });
+
+  it("verifies against the UTF-8 encoding of the address", () => {
+    const { privateKey, publicKey } = generateP256KeyPair();
+    const rulesContainer = buildRulesContainer(encodePublicKeyPem(publicKey));
+
+    const address = "tz1VSUr8wwNhLAzempoch5d6hLRiTh8Cjcjb";
     const sig = signData(privateKey, Buffer.from(address, "utf-8"));
 
-    expect(verifyAddressSignature(address, sig, rulesContainer)).toBe(true);
+    expect(() => verifyAddressSignature(address, sig, rulesContainer)).not.toThrow();
+  });
+
+  it("names the address id in the error when one is supplied", () => {
+    const { publicKey } = generateP256KeyPair();
+    const rulesContainer = buildRulesContainer(encodePublicKeyPem(publicKey));
+
+    expect(() => verifyAddressSignature("0xabc", "", rulesContainer, 42)).toThrow(
+      /Address 42 has no signature/
+    );
   });
 });
 
-// =============================================================================
-// verifyAddressSignatures (batch)
-// =============================================================================
-
 describe("verifyAddressSignatures", () => {
-  it("should verify multiple addresses", () => {
+  it("passes when every address verifies", () => {
     const { privateKey, publicKey } = generateP256KeyPair();
-    const pem = encodePublicKeyPem(publicKey);
-    const rulesContainer = buildRulesContainer(pem);
+    const rulesContainer = buildRulesContainer(encodePublicKeyPem(publicKey));
 
-    const addr1 = "0xaddr1";
-    const addr2 = "0xaddr2";
-    const sig1 = signData(privateKey, Buffer.from(addr1, "utf-8"));
-    const sig2 = signData(privateKey, Buffer.from(addr2, "utf-8"));
+    const addresses = ["0xaaa", "0xbbb"].map((address) => ({
+      address,
+      signature: signData(privateKey, Buffer.from(address, "utf-8")),
+    }));
 
-    const results = verifyAddressSignatures(
-      [
-        { address: addr1, signature: sig1 },
-        { address: addr2, signature: sig2 },
-      ],
-      rulesContainer
-    );
-
-    expect(results).toEqual([true, true]);
+    expect(() => verifyAddressSignatures(addresses, rulesContainer)).not.toThrow();
   });
 
-  it("should return false for addresses with undefined signature", () => {
-    const { publicKey } = generateP256KeyPair();
-    const pem = encodePublicKeyPem(publicKey);
-    const rulesContainer = buildRulesContainer(pem);
-
-    const results = verifyAddressSignatures(
-      [{ address: "0xabc", signature: undefined }],
-      rulesContainer
-    );
-
-    expect(results).toEqual([false]);
-  });
-
-  it("should return mixed results for mixed valid/invalid signatures", () => {
+  // The batch form used to return booleans, so a caller who ignored the array
+  // accepted every unverified address without noticing.
+  it("throws on the first address that does not verify", () => {
     const { privateKey, publicKey } = generateP256KeyPair();
-    const pem = encodePublicKeyPem(publicKey);
-    const rulesContainer = buildRulesContainer(pem);
+    const rulesContainer = buildRulesContainer(encodePublicKeyPem(publicKey));
 
-    const goodAddr = "0xgood";
-    const goodSig = signData(privateKey, Buffer.from(goodAddr, "utf-8"));
-    const badSig = Buffer.alloc(64, 0x42).toString("base64");
+    const good = "0xaaa";
+    const addresses = [
+      { address: good, signature: signData(privateKey, Buffer.from(good, "utf-8")), id: 1 },
+      { address: "0xbbb", signature: signData(privateKey, Buffer.from("0xccc", "utf-8")), id: 2 },
+    ];
 
-    const results = verifyAddressSignatures(
-      [
-        { address: goodAddr, signature: goodSig },
-        { address: "0xbad", signature: badSig },
-      ],
-      rulesContainer
+    expect(() => verifyAddressSignatures(addresses, rulesContainer)).toThrow(
+      /verification failed for address 2/
     );
-
-    expect(results).toEqual([true, false]);
   });
 
-  it("should return empty array for empty input", () => {
+  it("throws for an address whose signature is undefined", () => {
     const { publicKey } = generateP256KeyPair();
-    const pem = encodePublicKeyPem(publicKey);
-    const rulesContainer = buildRulesContainer(pem);
+    const rulesContainer = buildRulesContainer(encodePublicKeyPem(publicKey));
 
-    const results = verifyAddressSignatures([], rulesContainer);
-
-    expect(results).toEqual([]);
+    expect(() =>
+      verifyAddressSignatures([{ address: "0xaaa", signature: undefined }], rulesContainer)
+    ).toThrow(/has no signature/);
   });
 
-  it("should return all false when HSM key is missing (catches IntegrityError)", () => {
-    const rulesContainer = buildEmptyRulesContainer();
-
-    const results = verifyAddressSignatures(
-      [
-        { address: "0xabc", signature: "some-sig" },
-        { address: "0xdef", signature: "other-sig" },
-      ],
-      rulesContainer
-    );
-
-    expect(results).toEqual([false, false]);
+  it("accepts an empty list", () => {
+    expect(() => verifyAddressSignatures([], buildEmptyRulesContainer())).not.toThrow();
   });
 });

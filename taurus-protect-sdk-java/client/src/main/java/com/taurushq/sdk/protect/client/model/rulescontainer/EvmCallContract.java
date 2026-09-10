@@ -10,7 +10,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  *
  * @see TransactionRuleDetails
  */
-public class EvmCallContract {
+public class EvmCallContract extends RulesNode {
 
     /**
      * The contract type (e.g., "GENERIC", "ERC20", "CMTAT", "CMTA20").

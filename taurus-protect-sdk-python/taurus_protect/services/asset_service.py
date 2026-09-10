@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
+from taurus_protect.helpers.address_signature_verifier import verify_address_signature
 from taurus_protect.mappers._base import safe_bool, safe_int, safe_string
+from taurus_protect.mappers.address import address_from_dto
+from taurus_protect.models.address import Address
 from taurus_protect.models.blockchain import Asset
 from taurus_protect.models.pagination import Pagination
 from taurus_protect.services._base import BaseService
@@ -74,16 +77,30 @@ class AssetService(BaseService):
         >>> print(f"Decimals: {asset.decimals}")
     """
 
-    def __init__(self, api_client: Any, assets_api: Any) -> None:
+    def __init__(self, api_client: Any, assets_api: Any, rules_cache: Any) -> None:
         """
         Initialize asset service.
+
+        Address signature verification is mandatory: get_addresses returns the same
+        Address entity AddressService verifies, signature and all, and used to hand back
+        the raw generated DTOs unverified — so the mandatory verification there could be
+        walked around by asking for the same rows here.
 
         Args:
             api_client: The OpenAPI client instance.
             assets_api: The AssetsAPI service from OpenAPI client.
+            rules_cache: Rules container cache supplying the HSM key. Required.
+
+        Raises:
+            ValueError: If rules_cache is None.
         """
         super().__init__(api_client)
+        if rules_cache is None:
+            raise ValueError(
+                "rules_cache cannot be None - address signature verification is mandatory"
+            )
         self._assets_api = assets_api
+        self._rules_cache = rules_cache
 
     def list(
         self,
@@ -136,9 +153,12 @@ class AssetService(BaseService):
 
             return assets, pagination
         except Exception as e:
-            from taurus_protect.errors import APIError
+            from taurus_protect.errors import APIError, IntegrityError
 
-            if isinstance(e, (APIError, ValueError)):
+            # IntegrityError is NOT an APIError, so without naming it here a failed
+            # address signature check would be remapped to a retryable ServerError and a
+            # caller following isRetryable() would retry a suspected forgery.
+            if isinstance(e, (APIError, IntegrityError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -250,9 +270,12 @@ class AssetService(BaseService):
 
             return result or [], pagination
         except Exception as e:
-            from taurus_protect.errors import APIError
+            from taurus_protect.errors import APIError, IntegrityError
 
-            if isinstance(e, (APIError, ValueError)):
+            # IntegrityError is NOT an APIError, so without naming it here a failed
+            # address signature check would be remapped to a retryable ServerError and a
+            # caller following isRetryable() would retry a suspected forgery.
+            if isinstance(e, (APIError, IntegrityError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -261,7 +284,7 @@ class AssetService(BaseService):
         currency: str,
         limit: int = 50,
         offset: int = 0,
-    ) -> Tuple[List[Any], Optional[Pagination]]:
+    ) -> Tuple[List[Address], Optional[Pagination]]:
         """
         Get address balances for a specific asset.
 
@@ -296,7 +319,15 @@ class AssetService(BaseService):
             )
             resp = self._assets_api.wallet_service_get_asset_addresses(body=body)
 
-            result = getattr(resp, "result", None) or getattr(resp, "addresses", [])
+            raw = getattr(resp, "result", None) or getattr(resp, "addresses", []) or []
+            addresses = [address_from_dto(dto) for dto in raw]
+
+            # Fail-fast, as AddressService does: one unverifiable address is not a row to
+            # skip past when the caller is choosing where funds go.
+            if addresses:
+                rules_container = self._rules_cache.get_decoded_rules_container()
+                for address in addresses:
+                    verify_address_signature(address, rules_container)
 
             pagination = self._extract_pagination(
                 total_items=getattr(resp, "total_items", None) or getattr(resp, "totalItems", None),
@@ -304,10 +335,13 @@ class AssetService(BaseService):
                 limit=limit,
             )
 
-            return result or [], pagination
+            return addresses, pagination
         except Exception as e:
-            from taurus_protect.errors import APIError
+            from taurus_protect.errors import APIError, IntegrityError
 
-            if isinstance(e, (APIError, ValueError)):
+            # IntegrityError is NOT an APIError, so without naming it here a failed
+            # address signature check would be remapped to a retryable ServerError and a
+            # caller following isRetryable() would retry a suspected forgery.
+            if isinstance(e, (APIError, IntegrityError, ValueError)):
                 raise
             raise self._handle_error(e) from e

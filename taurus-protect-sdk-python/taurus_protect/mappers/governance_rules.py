@@ -7,24 +7,39 @@ import json
 import logging
 from typing import Any, Dict, List, Optional
 
+from google.protobuf.message import DecodeError
+
+from taurus_protect._strict_base64 import strict_b64decode
 from taurus_protect.errors import IntegrityError
 from taurus_protect.models.governance_rules import (
+    RULE_SOURCE_TYPE_ANY,
+    RULE_SOURCE_TYPE_ANY_EXCHANGE,
+    RULE_SOURCE_TYPE_EXCHANGE,
+    RULE_SOURCE_TYPE_EXTERNAL_ADDRESS,
+    RULE_SOURCE_TYPE_INTERNAL_ADDRESS,
     RULE_SOURCE_TYPE_INTERNAL_WALLET,
     AddressWhitelistingLine,
     AddressWhitelistingRules,
+    CashSettlement,
     ContractAddressWhitelistingRules,
+    CosmosDetails,
     DecodedRulesContainer,
+    EvmCallContract,
     GroupThreshold,
     RuleColumn,
     RuleGroup,
     RuleLine,
     RuleSource,
+    RuleSourceExchange,
+    RuleSourceExternalAddress,
+    RuleSourceInternalAddress,
     RuleSourceInternalWallet,
     RuleUser,
     RuleUserSignature,
     SequentialThresholds,
     TransactionRuleDetails,
     TransactionRules,
+    XtzCallContract,
 )
 
 _logger = logging.getLogger(__name__)
@@ -48,26 +63,36 @@ def _try_protobuf_decode(data: bytes) -> Optional[DecodedRulesContainer]:
     except ImportError as e:
         _logger.debug("Protobuf import failed (using JSON fallback): %s", e)
         return None
-    except Exception as e:
-        # Log the full error for debugging
+    except DecodeError as e:
+        # The payload is not protobuf at all — fall through to the JSON decoder.
         _logger.warning("Protobuf parsing failed: %s", e)
         return None
 
 
+def _enum_name(wrapper: Any, value: int) -> str:
+    """Enum number -> value name; decimal string for values unknown to this SDK (passthrough)."""
+    try:
+        return wrapper.Name(value)
+    except ValueError:
+        return str(value)
+
+
 def _rules_container_from_proto(pb: Any) -> DecodedRulesContainer:
-    """Convert a protobuf RulesContainer to the model."""
+    """Convert a protobuf RulesContainer to the model (lossless)."""
     from taurus_protect._internal.proto import request_reply_pb2
+    from taurus_protect.mappers.rules_container_encode import capture_unknown
 
     users = []
     for u in pb.users:
-        # Convert enum integer values to string names using Role.Name()
-        roles = [request_reply_pb2.Role.Name(role) for role in u.roles]
+        roles = [_enum_name(request_reply_pb2.Role, role) for role in u.roles]
         users.append(
             RuleUser(
                 id=u.id,
                 name=getattr(u, "name", None),
                 public_key_pem=u.publicKey,
                 roles=roles,
+                properties=dict(u.properties),
+                unknown_fields=capture_unknown(u),
             )
         )
 
@@ -77,43 +102,38 @@ def _rules_container_from_proto(pb: Any) -> DecodedRulesContainer:
             RuleGroup(
                 id=g.id,
                 name=getattr(g, "name", None),
-                user_ids=(
-                    list(g.userIds) if hasattr(g, "userIds") else list(getattr(g, "user_ids", []))
-                ),
+                user_ids=list(g.userIds),
+                properties=dict(g.properties),
+                unknown_fields=capture_unknown(g),
             )
         )
 
     address_whitelisting_rules = []
     for r in pb.addressWhitelistingRules:
-        parallel_thresholds = [_sequential_thresholds_from_proto(pt) for pt in r.parallelThresholds]
-        lines = [_address_whitelisting_line_from_proto(line) for line in r.lines]
         address_whitelisting_rules.append(
             AddressWhitelistingRules(
                 currency=r.currency,
                 network=r.network,
-                parallel_thresholds=parallel_thresholds,
-                lines=lines,
+                parallel_thresholds=[_sequential_thresholds_from_proto(pt) for pt in r.parallelThresholds],
+                lines=[_address_whitelisting_line_from_proto(line) for line in r.lines],
+                properties=dict(r.properties),
+                unknown_fields=capture_unknown(r),
             )
         )
 
     contract_address_whitelisting_rules = []
     for r in pb.contractAddressWhitelistingRules:
-        parallel_thresholds = [_sequential_thresholds_from_proto(pt) for pt in r.parallelThresholds]
-        # Convert protobuf Blockchain enum int to string name (e.g., 5 -> "ETH")
-        # Same as Java's blockchain.name() via @Named("blockchainToString")
-        blockchain_name = request_reply_pb2.Blockchain.Name(r.blockchain)
         contract_address_whitelisting_rules.append(
             ContractAddressWhitelistingRules(
-                blockchain=blockchain_name,
+                blockchain=_enum_name(request_reply_pb2.Blockchain, r.blockchain),
                 network=r.network,
-                parallel_thresholds=parallel_thresholds,
+                parallel_thresholds=[_sequential_thresholds_from_proto(pt) for pt in r.parallelThresholds],
+                properties=dict(r.properties),
+                unknown_fields=capture_unknown(r),
             )
         )
 
-    # Parse transaction rules
-    transaction_rules = []
-    for tr in pb.transactionRules:
-        transaction_rules.append(_transaction_rules_from_proto(tr))
+    transaction_rules = [_transaction_rules_from_proto(tr) for tr in pb.transactionRules]
 
     return DecodedRulesContainer(
         users=users,
@@ -125,52 +145,81 @@ def _rules_container_from_proto(pb: Any) -> DecodedRulesContainer:
         contract_address_whitelisting_rules=contract_address_whitelisting_rules,
         enforced_rules_hash=pb.enforcedRulesHash,
         timestamp=pb.timestamp,
-        hsm_slot_id=pb.hsmSlotId if hasattr(pb, "hsmSlotId") else 0,
+        minimum_commitment_signatures=pb.minimumCommitmentSignatures,
+        engine_identities=list(pb.engineIdentities),
+        hsm_slot_id=pb.hsmSlotId,
+        properties=dict(pb.properties),
+        unknown_fields=capture_unknown(pb),
     )
 
 
 def _transaction_rules_from_proto(pb_tr: Any) -> TransactionRules:
-    """Convert protobuf TransactionRules to model."""
+    """Convert protobuf TransactionRules to model (typed cells)."""
     from taurus_protect._internal.proto import request_reply_pb2
+    from taurus_protect.mappers.rule_cell_codec import rule_cell_from_bytes
+    from taurus_protect.mappers.rules_container_encode import capture_unknown
 
+    _CT = request_reply_pb2.RulesContainer.ColumnType
     columns = []
     for col in pb_tr.columns:
-        col_type = str(col.type) if hasattr(col, "type") else None
-        columns.append(RuleColumn(type=col_type))
+        columns.append(
+            RuleColumn(
+                type=_enum_name(_CT, col.type),
+                name=col.name,
+                metadata_key=col.metadataKey,
+                unknown_fields=capture_unknown(col),
+            )
+        )
 
     lines = []
     for line in pb_tr.lines:
-        cells = [str(c) for c in line.cells] if hasattr(line, "cells") else []
-        parallel_thresholds = [
-            _sequential_thresholds_from_proto(pt)
-            for pt in line.parallelThresholds
-        ] if hasattr(line, "parallelThresholds") else []
-        lines.append(RuleLine(cells=cells, parallel_thresholds=parallel_thresholds))
+        cells = []
+        for i, cell_bytes in enumerate(line.cells):
+            col_type = columns[i].type if i < len(columns) else ""
+            cells.append(rule_cell_from_bytes(col_type or "", cell_bytes))
+        lines.append(
+            RuleLine(
+                cells=cells,
+                parallel_thresholds=[_sequential_thresholds_from_proto(pt) for pt in line.parallelThresholds],
+                priority=line.priority,
+                properties=dict(line.properties),
+                unknown_fields=capture_unknown(line),
+            )
+        )
 
     details = None
-    if hasattr(pb_tr, "details") and pb_tr.details:
-        # domain and sub_domain are protobuf enums (RuleDomain, RuleSubDomain) —
-        # convert to string names to match Java SDK's domain.name() behavior.
-        # Use try/except for unknown enum values (API may add new values before
-        # proto definitions are regenerated).
+    if pb_tr.HasField("details"):
+        d = pb_tr.details
         _TRD = request_reply_pb2.RulesContainer.TransactionRules.TransactionRuleDetails
-        domain_val = pb_tr.details.domain if hasattr(pb_tr.details, "domain") else 0
-        sub_domain_val = pb_tr.details.subDomain if hasattr(pb_tr.details, "subDomain") else 0
-        domain_name = None
-        if domain_val:
-            try:
-                domain_name = _TRD.RuleDomain.Name(domain_val)
-            except ValueError:
-                domain_name = str(domain_val)
-        sub_domain_name = None
-        if sub_domain_val:
-            try:
-                sub_domain_name = _TRD.RuleSubDomain.Name(sub_domain_val)
-            except ValueError:
-                sub_domain_name = str(sub_domain_val)
+        evm = None
+        if d.HasField("evmCallContract"):
+            evm = EvmCallContract(contract_type=d.evmCallContract.contractType,
+                                  method_signature=d.evmCallContract.methodSignature,
+                                  unknown_fields=capture_unknown(d.evmCallContract))
+        xtz = None
+        if d.HasField("xtzCallContract"):
+            xtz = XtzCallContract(contract_type=d.xtzCallContract.contractType,
+                                  method_signature=d.xtzCallContract.methodSignature,
+                                  unknown_fields=capture_unknown(d.xtzCallContract))
+        cash = None
+        if d.HasField("cashSettlement"):
+            cash = CashSettlement(provider=d.cashSettlement.provider,
+                                  request_type=d.cashSettlement.requestType,
+                                  unknown_fields=capture_unknown(d.cashSettlement))
+        cosmos = None
+        if d.HasField("cosmosDetails"):
+            cosmos = CosmosDetails(method_signatures=list(d.cosmosDetails.methodSignatures),
+                                   unknown_fields=capture_unknown(d.cosmosDetails))
         details = TransactionRuleDetails(
-            domain=domain_name,
-            sub_domain=sub_domain_name,
+            domain=_enum_name(_TRD.RuleDomain, d.domain),
+            sub_domain=_enum_name(_TRD.RuleSubDomain, d.subDomain),
+            blockchain=d.blockchain,
+            network=d.network,
+            evm_call_contract=evm,
+            xtz_call_contract=xtz,
+            cash_settlement=cash,
+            cosmos_details=cosmos,
+            unknown_fields=capture_unknown(d),
         )
 
     return TransactionRules(
@@ -178,62 +227,113 @@ def _transaction_rules_from_proto(pb_tr: Any) -> TransactionRules:
         columns=columns,
         lines=lines,
         details=details,
+        unknown_fields=capture_unknown(pb_tr),
     )
 
 
 def _address_whitelisting_line_from_proto(pb_line: Any) -> AddressWhitelistingLine:
     """Convert protobuf AddressWhitelistingRules.Line to model."""
-    cells = []
-    for cell_bytes in pb_line.cells:
-        source = _rule_source_from_bytes(cell_bytes)
-        if source is not None:
-            cells.append(source)
+    from taurus_protect.mappers.rules_container_encode import capture_unknown
 
-    parallel_thresholds = [
-        _sequential_thresholds_from_proto(pt) for pt in pb_line.parallelThresholds
-    ]
-
+    cells = [_rule_source_from_bytes(cell_bytes) for cell_bytes in pb_line.cells]
     return AddressWhitelistingLine(
         cells=cells,
-        parallel_thresholds=parallel_thresholds,
+        parallel_thresholds=[_sequential_thresholds_from_proto(pt) for pt in pb_line.parallelThresholds],
+        properties=dict(pb_line.properties),
+        unknown_fields=capture_unknown(pb_line),
     )
 
 
-def _rule_source_from_bytes(data: bytes) -> Optional[RuleSource]:
-    """Decode a RuleSource from serialized protobuf bytes."""
-    try:
-        from taurus_protect._internal.proto import request_reply_pb2
+def _rule_source_from_bytes(data: bytes) -> RuleSource:
+    """Decode a RuleSource, keeping anything not reproducible byte-for-byte verbatim.
 
+    Mirrors the cell codec's lossless guard. An unknown-field check alone is too
+    weak: a non-canonical encoding carries no unknown field yet still re-encodes
+    differently. An explicitly-present zero-length payload (``08 01 12 00``) decodes
+    to the same typed value as an absent one (``08 01``), so re-emitting the typed
+    form would drop two bytes from a container the SuperAdmins signed.
+    """
+    typed = _rule_source_from_bytes_typed(data)
+    if typed is None:
+        return RuleSource(type=0, raw=data)
+
+    from taurus_protect.mappers.rules_container_encode import _rule_source_to_bytes
+
+    try:
+        if _rule_source_to_bytes(typed) != data:
+            return RuleSource(type=0, raw=data)
+    except (DecodeError, ValueError, TypeError):
+        return RuleSource(type=0, raw=data)
+    return typed
+
+
+def _rule_source_from_bytes_typed(data: bytes) -> Optional[RuleSource]:
+    """Decode a RuleSource into its typed form, or None when it cannot be typed."""
+    from taurus_protect._internal.proto import request_reply_pb2
+
+    try:
         pb_source = request_reply_pb2.RuleSource()
         pb_source.ParseFromString(data)
-
-        source_type = int(pb_source.type)
-        internal_wallet = None
-
-        if source_type == RULE_SOURCE_TYPE_INTERNAL_WALLET and pb_source.payload:
-            try:
-                pb_wallet = request_reply_pb2.RuleSourceInternalWallet()
-                pb_wallet.ParseFromString(pb_source.payload)
-                internal_wallet = RuleSourceInternalWallet(path=pb_wallet.path)
-            except Exception:
-                pass
-
-        return RuleSource(type=source_type, internal_wallet=internal_wallet)
-    except Exception:
+    except DecodeError:
         return None
+
+    from taurus_protect.mappers.rules_container_encode import capture_unknown
+
+    # A schema-newer field on the source itself cannot be represented by the typed
+    # model, so keep the bytes verbatim rather than dropping it on the next encode.
+    if capture_unknown(pb_source):
+        return None
+
+    t = int(pb_source.type)
+    try:
+        if t == RULE_SOURCE_TYPE_INTERNAL_WALLET and pb_source.payload:
+            m = request_reply_pb2.RuleSourceInternalWallet.FromString(pb_source.payload)
+            if capture_unknown(m):
+                return None
+            return RuleSource(type=t, internal_wallet=RuleSourceInternalWallet(path=m.path))
+        if t == RULE_SOURCE_TYPE_INTERNAL_ADDRESS and pb_source.payload:
+            m = request_reply_pb2.RuleSourceInternalAddress.FromString(pb_source.payload)
+            if capture_unknown(m):
+                return None
+            return RuleSource(type=t, internal_address=RuleSourceInternalAddress(address=m.address, path=m.path))
+        if t == RULE_SOURCE_TYPE_EXCHANGE and pb_source.payload:
+            m = request_reply_pb2.RuleSourceExchange.FromString(pb_source.payload)
+            if capture_unknown(m):
+                return None
+            return RuleSource(type=t, exchange=RuleSourceExchange(label=m.label))
+        if t == RULE_SOURCE_TYPE_EXTERNAL_ADDRESS and pb_source.payload:
+            m = request_reply_pb2.RuleSourceExternalAddress.FromString(pb_source.payload)
+            if capture_unknown(m):
+                return None
+            return RuleSource(type=t, external_address=RuleSourceExternalAddress(address=m.address, memo=m.memo))
+    except DecodeError:
+        return None
+
+    # Payload-less arms: a present payload is data this SDK would discard.
+    if t in (RULE_SOURCE_TYPE_ANY, RULE_SOURCE_TYPE_ANY_EXCHANGE) and pb_source.payload:
+        return None
+
+    if t in (RULE_SOURCE_TYPE_INTERNAL_WALLET, RULE_SOURCE_TYPE_INTERNAL_ADDRESS,
+             RULE_SOURCE_TYPE_EXCHANGE, RULE_SOURCE_TYPE_EXTERNAL_ADDRESS,
+             RULE_SOURCE_TYPE_ANY, RULE_SOURCE_TYPE_ANY_EXCHANGE):
+        return RuleSource(type=t)
+    # source type newer than this SDK: preserve verbatim
+    return None
 
 
 def _sequential_thresholds_from_proto(pb: Any) -> SequentialThresholds:
     """Convert protobuf SequentialThresholds to model."""
-    thresholds = []
-    for t in pb.thresholds:
-        thresholds.append(
-            GroupThreshold(
-                group_id=t.groupId,
-                minimum_signatures=t.minimumSignatures,
-            )
+    from taurus_protect.mappers.rules_container_encode import capture_unknown
+
+    thresholds = [
+        GroupThreshold(
+            group_id=t.groupId,
+            minimum_signatures=t.minimumSignatures,
+            unknown_fields=capture_unknown(t),
         )
-    return SequentialThresholds(thresholds=thresholds)
+        for t in pb.thresholds
+    ]
+    return SequentialThresholds(thresholds=thresholds, unknown_fields=capture_unknown(pb))
 
 
 def rules_container_from_base64(base64_data: str) -> DecodedRulesContainer:
@@ -256,7 +356,7 @@ def rules_container_from_base64(base64_data: str) -> DecodedRulesContainer:
         return DecodedRulesContainer()
 
     try:
-        decoded = base64.b64decode(base64_data)
+        decoded = strict_b64decode(base64_data)
 
         # Try protobuf first
         result = _try_protobuf_decode(decoded)
@@ -377,11 +477,13 @@ def _parse_transaction_rules(
 
         lines = []
         for line_data in item.get("lines", []):
-            cells = line_data.get("cells", [])
+            # JSON fallback (used only when protobuf decode fails): transaction-rule
+            # cells are typed and column-scoped, which the JSON shape does not carry,
+            # so leave them empty here. The protobuf path is the lossless one.
             parallel_thresholds = _parse_sequential_thresholds(
                 line_data.get("parallelThresholds", line_data.get("parallel_thresholds", []))
             )
-            lines.append(RuleLine(cells=cells, parallel_thresholds=parallel_thresholds))
+            lines.append(RuleLine(cells=[], parallel_thresholds=parallel_thresholds))
 
         details = None
         details_data = item.get("details")
@@ -524,7 +626,7 @@ def user_signatures_from_base64(base64_data: str) -> List[RuleUserSignature]:
         return []
 
     try:
-        decoded = base64.b64decode(base64_data)
+        decoded = strict_b64decode(base64_data)
 
         # Try protobuf first
         result = _try_protobuf_decode_signatures(decoded)

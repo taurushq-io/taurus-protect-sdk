@@ -42,7 +42,7 @@ func main() {
     // Create client
     client, err := protect.NewClient(
         host,
-        protect.WithCredentials(apiKey, apiSecret),
+        protect.WithCredentials(protect.APIKeyCredentials(apiKey, apiSecret)),
     )
     if err != nil {
         log.Fatalf("Failed to create client: %v", err)
@@ -88,7 +88,7 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...
 
     return protect.NewClient(
         host,
-        protect.WithCredentials(apiKey, apiSecret),
+        protect.WithCredentials(protect.APIKeyCredentials(apiKey, apiSecret)),
         protect.WithSuperAdminKeysPEM(superAdminKeys),
         protect.WithMinValidSignatures(2),
         protect.WithRulesCacheTTL(10 * time.Minute),
@@ -116,21 +116,24 @@ func createClientFromEnv() (*protect.Client, error) {
     apiKey := os.Getenv("TAURUS_API_KEY")
     apiSecret := os.Getenv("TAURUS_API_SECRET")
 
-    opts := []protect.ClientOption{
-        protect.WithCredentials(apiKey, apiSecret),
+    opts := []protect.Option{
+        protect.WithCredentials(protect.APIKeyCredentials(apiKey, apiSecret)),
     }
 
-    // Optional SuperAdmin keys
-    if keysEnv := os.Getenv("TAURUS_SUPERADMIN_KEYS"); keysEnv != "" {
-        keys := strings.Split(keysEnv, "|||") // Use delimiter for multiple PEM keys
-        opts = append(opts, protect.WithSuperAdminKeysPEM(keys))
-
-        minSigs := 2
-        if v := os.Getenv("TAURUS_MIN_SIGNATURES"); v != "" {
-            minSigs, _ = strconv.Atoi(v)
-        }
-        opts = append(opts, protect.WithMinValidSignatures(minSigs))
+    // SuperAdmin keys are MANDATORY for every auth mechanism — NewClient fails without
+    // them, because client-side rules verification is not optional.
+    keysEnv := os.Getenv("TAURUS_SUPERADMIN_KEYS")
+    if keysEnv == "" {
+        return nil, fmt.Errorf("TAURUS_SUPERADMIN_KEYS is required")
     }
+    keys := strings.Split(keysEnv, "|||") // Use delimiter for multiple PEM keys
+    opts = append(opts, protect.WithSuperAdminKeysPEM(keys))
+
+    minSigs := 2
+    if v := os.Getenv("TAURUS_MIN_SIGNATURES"); v != "" {
+        minSigs, _ = strconv.Atoi(v)
+    }
+    opts = append(opts, protect.WithMinValidSignatures(minSigs))
 
     // Optional cache TTL
     if ttlEnv := os.Getenv("TAURUS_CACHE_TTL_SECONDS"); ttlEnv != "" {

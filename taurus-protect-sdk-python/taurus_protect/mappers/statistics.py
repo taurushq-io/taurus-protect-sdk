@@ -9,6 +9,7 @@ from taurus_protect.models.statistics import (
     PortfolioStatistics,
     Price,
     PriceHistoryPoint,
+    PriceSignature,
     Score,
 )
 
@@ -39,6 +40,13 @@ def price_from_dto(dto: Any) -> Optional[Price]:
         source=getattr(dto, "source", None),
         created_at=safe_datetime(getattr(dto, "creation_date", None)),
         updated_at=safe_datetime(getattr(dto, "update_date", None)),
+        signatures=[
+            PriceSignature(
+                user_id=getattr(sig, "user_id", None),
+                signature=getattr(sig, "signature", None),
+            )
+            for sig in (getattr(dto, "signatures", None) or [])
+        ],
     )
 
 

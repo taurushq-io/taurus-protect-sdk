@@ -240,4 +240,104 @@ class GovernanceRuleServiceTest {
         assertThrows(IllegalArgumentException.class, () ->
                 service.getRulesHistory(-1));
     }
+
+    // --- proposal lifecycle validation ---
+
+    @Test
+    void updateRulesProposal_throwsOnNullContainer() {
+        GovernanceRuleService service = new GovernanceRuleService(
+                apiClient, apiExceptionMapper, superAdminKeys, 1);
+
+        assertThrows(NullPointerException.class, () ->
+                service.updateRulesProposal(null));
+    }
+
+    @Test
+    void approveRulesProposal_throwsOnNullPrivateKey() {
+        GovernanceRuleService service = new GovernanceRuleService(
+                apiClient, apiExceptionMapper, superAdminKeys, 1);
+
+        assertThrows(NullPointerException.class, () ->
+                service.approveRulesProposal(null, "comment",
+                        String.join("", Collections.nCopies(64, "a"))));
+    }
+
+    /**
+     * The pin is mandatory: an empty one would restore the unpinned behaviour silently,
+     * where a server able to shape responses obtains a GENUINE SuperAdmin signature over
+     * a container of its choosing by answering the review call and the re-fetch inside
+     * approveRulesProposal differently.
+     *
+     * <p>Checked AFTER the null-key check, so argument errors keep reporting as argument
+     * errors (the same ordering rule approveRequests follows).
+     */
+    @Test
+    void approveRulesProposal_requiresAPin() {
+        GovernanceRuleService service = new GovernanceRuleService(
+                apiClient, apiExceptionMapper, superAdminKeys, 1);
+        assertThrows(IllegalArgumentException.class, () ->
+                service.approveRulesProposal(keyPair1.getPrivate(), "comment", ""));
+        assertThrows(IllegalArgumentException.class, () ->
+                service.approveRulesProposal(keyPair1.getPrivate(), "comment", null));
+    }
+
+    /**
+     * proposalContainerHash digests the DECODED container bytes, so it is stable across
+     * base64 re-encodings and matches exactly what approveRulesProposal signs.
+     *
+     * <p>Not to be confused with the row-to-container label used by the whitelist list
+     * paths, which is validatord's convention over the base64 TEXT. Both are SHA-256
+     * digests of the same document, which is what makes the mix-up silent -- this one is
+     * client-side only and never reaches the wire.
+     */
+    @Test
+    void proposalContainerHash_digestsTheDecodedBytes() throws Exception {
+        GovernanceRuleService service = new GovernanceRuleService(
+                apiClient, apiExceptionMapper, superAdminKeys, 1);
+
+        byte[] raw = {0x08, 0x01};
+        GovernanceRules rules = new GovernanceRules();
+        rules.setRulesContainer(java.util.Base64.getEncoder().encodeToString(raw));
+
+        java.security.MessageDigest sha = java.security.MessageDigest.getInstance("SHA-256");
+        StringBuilder expected = new StringBuilder();
+        for (byte b : sha.digest(raw)) {
+            expected.append(String.format("%02x", b));
+        }
+        assertEquals(expected.toString(), service.proposalContainerHash(rules));
+    }
+
+    /** A ruleset with no container has nothing to pin. */
+    @Test
+    void proposalContainerHash_rejectsAnEmptyContainer() {
+        GovernanceRuleService service = new GovernanceRuleService(
+                apiClient, apiExceptionMapper, superAdminKeys, 1);
+
+        assertThrows(IntegrityException.class, () ->
+                service.proposalContainerHash(new GovernanceRules()));
+    }
+
+    /**
+     * The single-argument verifyGovernanceRules is the cross-SDK shape — Go, Python and
+     * TypeScript all take only the rules and read the threshold from the service. This
+     * SDK exposed only the two-argument form, which lets a caller verify against a
+     * threshold different from the one the rest of the service enforces. The overload
+     * must use the configured threshold, so a rules object with no signatures fails for
+     * the same reason under both forms.
+     */
+    @Test
+    void verifyGovernanceRules_singleArgUsesTheConfiguredThreshold() {
+        GovernanceRuleService service = new GovernanceRuleService(
+                apiClient, apiExceptionMapper, superAdminKeys, 1);
+
+        GovernanceRules rules = new GovernanceRules();
+        rules.setRulesContainer("AA==");
+
+        IntegrityException fromOverload = assertThrows(IntegrityException.class, () ->
+                service.verifyGovernanceRules(rules));
+        IntegrityException fromExplicit = assertThrows(IntegrityException.class, () ->
+                service.verifyGovernanceRules(rules, 1));
+
+        assertEquals(fromExplicit.getMessage(), fromOverload.getMessage());
+    }
 }

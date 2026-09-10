@@ -19,12 +19,21 @@ from typing import TYPE_CHECKING, Callable, List, Optional
 
 from cryptography.exceptions import InvalidSignature
 
+from taurus_protect._strict_base64 import strict_b64decode
 from taurus_protect.crypto.hashing import calculate_hex_hash
 from taurus_protect.crypto.signing import verify_signature
 from taurus_protect.errors import IntegrityError, WhitelistError
 from taurus_protect.helpers.constant_time import constant_time_compare
-from taurus_protect.helpers.signature_verifier import is_valid_signature
-from taurus_protect.helpers.whitelist_hash_helper import compute_asset_legacy_hashes
+from taurus_protect.helpers.signature_verifier import (
+    key_fingerprint,
+    verify_governance_rules_signatures,
+)
+from taurus_protect.helpers.whitelist_hash_helper import (
+    compute_asset_legacy_hashes,
+    contains_hash,
+    resolve_rule_key,
+    verify_hash_coverage,
+)
 from taurus_protect.models.governance_rules import (
     DecodedRulesContainer,
     RuleUserSignature,
@@ -66,6 +75,25 @@ class WhitelistedAssetVerifier:
         self._super_admin_keys = super_admin_keys
         self._min_valid_signatures = min_valid_signatures
 
+    # 5-step verification for a whitelisted asset, plus the parse that makes it usable.
+    #
+    #   envelope ──▶ 1 hash ──▶ 2 SuperAdmin sigs ──▶ 3 decode rules
+    #                                                      │
+    #                6 parse VERIFIED payload ◀── 5 thresholds ◀── 4 coverage
+    #                           │                       │                │
+    #                           ▼                       │      returns the hash it
+    #                    returned to caller             │      matched, which is
+    #                                                   │      what step 5 checks
+    #                                                   ▼
+    #                                per group: DISTINCT signers, keyed on the
+    #                                container's public key, never the entry's userId
+    #
+    # Steps 1-5 prove the envelope is authentic; step 6 is what stops an unsigned
+    # value reaching the caller. Assets use ContractAddressWhitelistingRules and the
+    # ASSET legacy hashes (isNFT / kindType) — not the address ones.
+    #
+    # Steps 1-5 run here; step 6 runs in services/whitelisted_asset_service.py,
+    # which maps the asset from the payload this verifier just cleared.
     def verify_whitelisted_asset(
         self,
         asset: WhitelistedAsset,
@@ -117,14 +145,14 @@ class WhitelistedAssetVerifier:
         # Step 4: Verify hash coverage
         verified_hash = self._verify_hash_in_signed_hashes(asset)
 
-        # Step 5: Verify whitelist signatures
-        # Use DTO blockchain/network for rules lookup when payload values are missing.
-        # This matches Java SDK behavior where the envelope's DTO fields are used
-        # to locate the correct governance rules for verification.
-        lookup_blockchain = asset.blockchain or dto_blockchain
-        lookup_network = asset.network or dto_network
+        # Step 5: Verify whitelist signatures.
+        #
+        # The DTO values are passed through unchanged. `asset.blockchain` is sourced FROM
+        # the payload, so substituting it here fed resolve_rule_key the payload on both
+        # sides and its payload-vs-DTO mismatch check could never fire. Go, Java and
+        # TypeScript all pass the genuine DTO values.
         self._verify_whitelist_signatures(
-            asset, rules_container, verified_hash, lookup_blockchain, lookup_network
+            asset, rules_container, verified_hash, dto_blockchain, dto_network
         )
 
         return AssetVerificationResult(rules_container=rules_container)
@@ -170,23 +198,19 @@ class WhitelistedAssetVerifier:
 
         # Decode rules container data
         try:
-            rules_data = base64.b64decode(asset.rules_container)
+            rules_data = strict_b64decode(asset.rules_container)
         except (binascii.Error, ValueError) as e:
             raise IntegrityError(f"failed to decode rules container: {e}") from e
 
-        # Verify signatures
-        valid_count = 0
-        for sig in signatures:
-            if sig.signature and is_valid_signature(
-                rules_data, sig.signature, self._super_admin_keys
-            ):
-                valid_count += 1
-
-        if valid_count < self._min_valid_signatures:
-            raise IntegrityError(
-                f"rules container signature verification failed: only {valid_count} valid signatures, "
-                f"minimum {self._min_valid_signatures} required"
+        try:
+            verify_governance_rules_signatures(
+                rules_data,
+                signatures,
+                self._super_admin_keys,
+                self._min_valid_signatures,
             )
+        except IntegrityError as e:
+            raise IntegrityError(f"rules container signature verification failed: {e}") from e
 
     def _decode_rules_container(
         self,
@@ -260,9 +284,12 @@ class WhitelistedAssetVerifier:
         """
         metadata_hash = verified_hash
 
-        # Use provided lookup values or fall back to asset fields
-        blockchain = lookup_blockchain or asset.blockchain
-        network = lookup_network or asset.network
+        # Keyed off the SIGNED payload, not the response. See the address verifier.
+        blockchain, network = resolve_rule_key(
+            asset.metadata.payload_as_string if asset.metadata else None,
+            lookup_blockchain or asset.blockchain,
+            lookup_network or asset.network,
+        )
 
         # Find matching contract address whitelisting rules
         whitelist_rules = rules_container.find_contract_address_whitelisting_rules(
@@ -380,11 +407,27 @@ class WhitelistedAssetVerifier:
                 return f"group '{group_id}' has no users but requires {min_sigs} signature(s)"
             return None  # min_signatures == 0, so empty group is OK
 
+        # A populated group with a zero threshold is a malformed container, not a
+        # group anyone may satisfy. There is no post-loop threshold check -- the
+        # only success exit is inside the loop after an increment -- so a zero
+        # here silently means "one signature suffices", turning a 2-of-N group
+        # into 1-of-N. Fail closed.
+        if min_sigs <= 0:
+            return (
+                f"group '{group_id}' has {len(group.user_ids)} user(s) but requires "
+                "0 signature(s): minimum_signatures must be positive"
+            )
+
         # Build set for faster lookup
         group_user_id_set = set(group.user_ids)
 
-        # Count valid signatures from users in this group
-        valid_count = 0
+        # Count DISTINCT signers, not signature entries.
+        #
+        # The entries come from the server-supplied userSignatures blob, so counting
+        # them let a duplicated entry from one group member satisfy an N-of-M group.
+        # Keyed on the container-resolved public key rather than the server-supplied
+        # user_id, so one compromised key shared by two IDs counts once.
+        signers: set = set()
         skipped_reasons = []
 
         for sig_idx, sig in enumerate(signatures):
@@ -397,9 +440,13 @@ class WhitelistedAssetVerifier:
                 continue  # Signer not in this group - not an error
 
             # Check that metadata hash is covered by this signature (constant-time)
-            if not _contains_hash(sig.hashes, metadata_hash):
+            if not contains_hash(sig.hashes, metadata_hash):
+                # Carries the hash and the covered list, matching Go, Java and TS:
+                # a hash is SHA-256 of a payload the caller already holds, and
+                # without it a threshold failure is undebuggable.
                 skipped_reasons.append(
-                    f"user '{sig_user_id}' signature does not cover metadata hash"
+                    f"user '{sig_user_id}' signature does not cover metadata hash "
+                    f"'{metadata_hash}' (signed hashes={sig.hashes})"
                 )
                 continue
 
@@ -429,8 +476,8 @@ class WhitelistedAssetVerifier:
                     hashes_data,
                     sig.user_signature.signature,
                 ):
-                    valid_count += 1
-                    if valid_count >= min_sigs:
+                    signers.add(key_fingerprint(public_key))
+                    if len(signers) >= min_sigs:
                         return None  # Threshold met
                 else:
                     skipped_reasons.append(f"user '{sig_user_id}' signature verification failed")
@@ -439,52 +486,9 @@ class WhitelistedAssetVerifier:
 
         # Threshold not met
         message = (
-            f"group '{group_id}' requires {min_sigs} signature(s) but only {valid_count} valid"
+            f"group '{group_id}' requires {min_sigs} distinct signer(s) "
+            f"but only {len(signers)} valid"
         )
         if skipped_reasons:
             message += f" [{'; '.join(skipped_reasons)}]"
         return message
-
-
-def _contains_hash(hash_list: list, target_hash: str) -> bool:
-    """
-    Check if target_hash is in hash_list using constant-time comparison.
-
-    Iterates all entries to avoid timing side-channel leaks.
-
-    Args:
-        hash_list: List of hash strings to search.
-        target_hash: The hash to find.
-
-    Returns:
-        True if the hash is found.
-    """
-    found = False
-    for h in hash_list:
-        if hmac.compare_digest(target_hash, h):
-            found = True
-    return found
-
-
-def verify_hash_coverage(metadata_hash: str, signatures: list) -> bool:
-    """
-    Check if the metadata hash is covered by at least one signature.
-
-    Uses constant-time comparison to prevent timing side-channel attacks.
-
-    Args:
-        metadata_hash: The hash to find.
-        signatures: List of WhitelistSignatureEntry objects.
-
-    Returns:
-        True if hash is found in any signature's hashes list.
-    """
-    # Use constant-time comparison to prevent timing attacks
-    # Don't early return - check all hashes to maintain constant time
-    found = False
-    for sig in signatures:
-        for h in sig.hashes:
-            if hmac.compare_digest(metadata_hash, h):
-                found = True
-                # Continue checking to maintain constant time
-    return found

@@ -68,7 +68,10 @@ describe('requestFromDto', () => {
     expect(result!.id).toBe(1);
   });
 
-  it('should not include metadata when hash is missing', () => {
+  // A payload with no hash must reach verification, which rejects it. Dropping
+  // the whole metadata object here meant the payload was silently discarded and
+  // nothing ever complained.
+  it('keeps metadata carrying a payload but no hash, so verification can reject it', () => {
     const dto = {
       id: '1',
       metadata: {
@@ -79,6 +82,15 @@ describe('requestFromDto', () => {
 
     const result = requestFromDto(dto as any);
     expect(result).toBeDefined();
+    expect(result!.metadata).toBeDefined();
+    expect(result!.metadata!.payloadAsString).toBe('something');
+    expect(result!.metadata!.hash).toBe('');
+  });
+
+  it('omits metadata that carries neither a hash nor a payload', () => {
+    const dto = { id: '1', metadata: { hash: undefined, payloadAsString: undefined } };
+
+    const result = requestFromDto(dto as any);
     expect(result!.metadata).toBeUndefined();
   });
 

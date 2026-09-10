@@ -349,7 +349,7 @@ class APIError extends Error {
 |-----------|-------------|-------------|
 | `ValidationError` | 400 | Input validation failed |
 | `AuthenticationError` | 401 | Invalid or missing credentials |
-| `AuthorizationError` | 403 | Insufficient permissions |
+| `AuthorizationError` | 403 | Insufficient permissions; `requiredRoles` names the roles that would satisfy the check |
 | `NotFoundError` | 404 | Resource not found |
 | `RateLimitError` | 429 | Rate limit exceeded |
 | `ServerError` | 5xx | Server-side error |
@@ -377,8 +377,7 @@ import {
 try {
   const client = ProtectClient.create({
     host: 'https://protect.example.com',
-    apiKey: 'your-api-key',
-    apiSecret: 'your-hex-secret',
+    credentials: Credentials.apiKey('your-api-key', 'your-hex-secret'),
   });
 
   const wallet = await client.wallets.get('wallet-123');
@@ -549,3 +548,30 @@ import { Settlement, SharedAddressAsset } from '@taurushq/protect-sdk';
 - [Java SDK Documentation](../../taurus-protect-sdk-java/docs/) - Java SDK reference
 - [Go SDK Documentation](../../taurus-protect-sdk-go/docs/) - Go SDK reference
 - [Python SDK Documentation](../../taurus-protect-sdk-python/docs/) - Python SDK reference
+
+## AuthorizationError.requiredRoles
+
+A 403 is raised as `AuthorizationError`, which exposes `requiredRoles: readonly string[]`.
+
+```typescript
+try {
+  await client.wallets.create(/* ... */);
+} catch (error) {
+  if (error instanceof AuthorizationError) {
+    console.log(
+      error.requiredRoles.length > 0
+        ? `Permission denied; requires one of: ${error.requiredRoles.join(', ')}`
+        : 'Permission denied'
+    );
+  }
+}
+```
+
+The error carries the **roles that would satisfy the failed check**, so a caller can say
+which role to request instead of only "forbidden". The list is empty when the denial was
+not role-based (a disabled endpoint, a visibility restriction). One entry means that role
+is required; several mean any one of them suffices.
+
+> Surface the role list, never the server's message. The role names are safe to display;
+> the surrounding text is server-controlled. A consumer that forwards errors into another
+> system should render roles through an allowlist (the roles are lowercase alphanumeric).

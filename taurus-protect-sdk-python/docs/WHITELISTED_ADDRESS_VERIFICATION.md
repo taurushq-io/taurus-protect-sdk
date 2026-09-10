@@ -20,7 +20,7 @@ This verification is performed automatically by `WhitelistedAddressService` when
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                    5-STEP VERIFICATION PIPELINE                              │
+│                    6-STEP VERIFICATION PIPELINE                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 
     Step 1: Verify Metadata Hash
@@ -44,8 +44,8 @@ This verification is performed automatically by `WhitelistedAddressService` when
     ┌─────────────────────────────────────────────────────────────────────────┐
     │  For each signature in rulesSignatures:                                 │
     │    Verify ECDSA signature against SuperAdmin public keys                │
-    │    Count valid signatures                                               │
-    │  Require: validCount >= minValidSignatures                              │
+    │    Record the fingerprint of each key that verifies                     │
+    │  Require: distinct signing keys >= minValidSignatures                   │
     │                                                                         │
     │  ┌─────────────────┐       ┌───────────────────────┐                   │
     │  │ rulesContainer  │       │ SuperAdmin Keys [N]   │                   │
@@ -95,8 +95,10 @@ This verification is performed automatically by `WhitelistedAddressService` when
     │  Determine applicable thresholds (rule lines or default)                │
     │  For each parallel threshold path (OR logic):                           │
     │    For each group threshold (AND logic):                                │
-    │      Count valid signatures from group members                          │
-    │      Require: count >= threshold.minimumSignatures                      │
+    │      For each signature covering the hash Step 4 matched:               │
+    │        Verify with the user's key FROM the container, then              │
+    │        add that key fingerprint to a set of signers                     │
+    │      Require: len(signers) >= threshold.minimum_signatures              │
     │  At least one path must succeed                                         │
     │                                                                         │
     │  ┌─────────────────────────────────────────────────────────────────┐   │
@@ -109,6 +111,14 @@ This verification is performed automatically by `WhitelistedAddressService` when
     │  │                     ├── groupId                                 │   │
     │  │                     └── minimumSignatures                       │   │
     │  └─────────────────────────────────────────────────────────────────┘   │
+    └─────────────────────────────────────────────────────────────────────────┘
+                                          │
+                                          ▼
+    Step 6: Parse WhitelistedAddress from the VERIFIED Payload
+    ┌─────────────────────────────────────────────────────────────────────────┐
+    │  Steps 1-5 prove the envelope is authentic; step 6 is what stops an      │
+    │  unsigned value reaching the caller. Security-critical fields are read   │
+    │  ONLY from the verified payload — never back-filled from the DTO.        │
     └─────────────────────────────────────────────────────────────────────────┘
                                           │
                                           ▼
@@ -143,9 +153,21 @@ if not constant_time_compare(computed_hash, envelope.metadata.hash):
 
 Ensures the governance rules were signed by trusted SuperAdmins.
 
+
+> **Counted by signing key, not by entry.** ECDSA is randomized, so one SuperAdmin key can
+> emit unlimited valid signatures over the same container, and `userId` is server-supplied.
+> A signer is identified by a SHA-256 hash of its encoded public key, so a key configured
+> twice — or appearing under several user IDs — counts once.
+
+The SDK performs this step for you. Do not hand-roll the loop — counting signature entries
+is what lets one key clear any threshold. Call the shared helper, which is the single place
+the threshold is evaluated:
+
 ```python
 import base64
-from taurus_protect.helpers.signature_verifier import is_valid_signature
+
+from taurus_protect.errors import IntegrityError
+from taurus_protect.helpers.signature_verifier import verify_governance_rules_signatures
 
 # Decode rules container data
 rules_data = base64.b64decode(envelope.rules_container)
@@ -153,17 +175,13 @@ rules_data = base64.b64decode(envelope.rules_container)
 # Decode signatures (protobuf UserSignatures)
 signatures = user_signatures_decoder(envelope.rules_signatures)
 
-# Count valid signatures
-valid_count = 0
-for sig in signatures:
-    if sig.signature and is_valid_signature(rules_data, sig.signature, super_admin_keys):
-        valid_count += 1
-
-if valid_count < min_valid_signatures:
-    raise IntegrityError(
-        f"rules container signature verification failed: only {valid_count} valid signatures, "
-        f"minimum {min_valid_signatures} required"
+try:
+    verify_governance_rules_signatures(
+        rules_data, signatures, super_admin_keys, min_valid_signatures
     )
+except IntegrityError as e:
+    # e reports how many distinct signers were found versus required.
+    raise IntegrityError(f"rules container signature verification failed: {e}") from e
 ```
 
 ### Step 3: Decode Rules Container
@@ -218,10 +236,32 @@ The verifier first checks whether wallet-specific rule lines should be used. Rul
 
 If a matching rule line is found for the linked wallet's path, its thresholds are used. Otherwise, the default `parallel_thresholds` from the `AddressWhitelistingRules` are used.
 
+> **Counted by signer, not by signature entry.** ECDSA is randomized, and both the signature
+> entries and the `user_id` they carry are server-supplied, so counting entries would let a
+> duplicated or re-signed entry from one group member satisfy an N-of-M group and promote an
+> under-approved address to approved. A signer is identified by a fingerprint of the public key
+> **the verified container holds for that user** — never by the entry's `user_id` — so two user
+> IDs sharing one key count once: that is one compromised secret. Same counting rule as
+> `min_valid_signatures` in Step 2; what differs is the scope (one group's members vs the
+> tenant's SuperAdmins).
+
+The hash each signature must cover is the one **Step 4 matched** (`verified_hash`), which may be
+a legacy variant rather than `metadata.hash`.
+
 ```python
-# Find matching address whitelisting rules for this blockchain/network
+# Which rules judge this address comes from the SIGNED PAYLOAD, never the DTO.
+# Nothing binds the DTO to the signatures, and an empty blockchain is a wildcard,
+# so a response setting it to "" would select the broadest (global-default) tier.
+# resolve_rule_key errors on an absent chain and on a payload/DTO disagreement;
+# the network falls back to the DTO only when the payload carries none, because
+# the per-rule include_network_in_payload flag is commonly off.
+blockchain, network = resolve_rule_key(
+    envelope.metadata.payload_as_string, envelope.blockchain, envelope.network
+)
+
+# Find matching address whitelisting rules for that pair
 whitelist_rules = rules_container.find_address_whitelisting_rules(
-    envelope.blockchain, envelope.network
+    blockchain, network
 )
 
 # Determine applicable thresholds (wallet-specific line or default)
@@ -236,12 +276,30 @@ for path in parallel_thresholds:
         group = rules_container.find_group_by_id(group_threshold.group_id)
         min_sigs = group_threshold.get_min_signatures()
 
-        # Count valid signatures from this group's members
-        valid_count = count_valid_group_signatures(
-            group, signatures, metadata_hash, rules_container
-        )
+        # Count DISTINCT SIGNERS from this group's members, never entries
+        group_user_ids = set(group.user_ids)
+        signers = set()
 
-        if valid_count < min_sigs:
+        for sig in signatures:
+            user_id = sig.user_signature.user_id
+            if user_id not in group_user_ids:
+                continue  # not a member of this group - not an error
+
+            # verified_hash is what Step 4 matched (possibly a legacy variant)
+            if not contains_hash(sig.hashes, verified_hash):
+                continue
+
+            user = rules_container.find_user_by_id(user_id)
+            # The key comes from the VERIFIED container, never from the entry
+            public_key = rules_container.get_user_public_key(user.public_key_pem)
+            hashes_data = json.dumps(sig.hashes, separators=(",", ":")).encode("utf-8")
+
+            if verify_signature(public_key, hashes_data, sig.user_signature.signature):
+                signers.add(key_fingerprint(public_key))
+                if len(signers) >= min_sigs:
+                    break  # threshold met
+
+        if len(signers) < min_sigs:
             all_groups_satisfied = False
             break
 
@@ -250,6 +308,24 @@ for path in parallel_thresholds:
 
 raise WhitelistError("No approval path satisfied")
 ```
+
+---
+
+### Step 6: Parse WhitelistedAddress from the Verified Payload
+
+**Purpose:** Return only values that were actually covered by the verified signatures.
+
+**Process:**
+1. Parse `metadata.payload_as_string` (the verified source) into the `WhitelistedAddress`
+2. Security-critical fields — `address`, `label`, `memo`, `customer_id`, `address_type`,
+   `blockchain`, `network` — are read **only** from that payload
+3. When the payload omits a field the result is `None`; it is never back-filled from the
+   unverified DTO
+4. Non-security fields (`status`, `action`, `rule`, `created_at`) may come from the DTO
+
+**Security:** Steps 1-5 prove the envelope is authentic; this step is what stops an
+attacker-supplied label or address reaching the caller. Implemented in
+`helpers/whitelist_integrity_helper.py`.
 
 ---
 
@@ -307,7 +383,7 @@ is_valid = verify_signature(public_key, data, signature_b64)
 When SuperAdmin keys are configured, verification happens automatically:
 
 ```python
-from taurus_protect import ProtectClient
+from taurus_protect import Credentials, ProtectClient
 
 super_admin_keys = [
     "-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----",
@@ -316,8 +392,7 @@ super_admin_keys = [
 
 with ProtectClient.create(
     host="https://api.protect.taurushq.com",
-    api_key=api_key,
-    api_secret=api_secret,
+    credentials=Credentials.api_key(api_key, api_secret),
     super_admin_keys_pem=super_admin_keys,
     min_valid_signatures=2,
 ) as client:

@@ -16,7 +16,6 @@ from taurus_protect.services.change_service import ChangeService
 from taurus_protect.services.config_service import ConfigService
 from taurus_protect.services.contract_whitelisting_service import (
     ContractWhitelistingService,
-    WhitelistedContract,
 )
 from taurus_protect.services.currency_service import CurrencyService
 from taurus_protect.services.exchange_service import ExchangeService
@@ -103,5 +102,4 @@ __all__ = [
     "WebhookService",
     "WhitelistedAddressService",
     "WhitelistedAssetService",
-    "WhitelistedContract",
 ]

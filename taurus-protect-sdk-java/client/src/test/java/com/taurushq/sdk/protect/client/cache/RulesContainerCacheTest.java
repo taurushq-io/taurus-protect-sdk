@@ -1,6 +1,11 @@
 package com.taurushq.sdk.protect.client.cache;
 
 import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
+import com.taurushq.sdk.protect.client.mapper.RulesContainerMapper;
+import com.taurushq.sdk.protect.client.model.GovernanceRules;
+import com.taurushq.sdk.protect.client.model.IntegrityException;
+import com.taurushq.sdk.protect.client.model.RuleUserSignature;
+import com.taurushq.sdk.protect.client.model.rulescontainer.DecodedRulesContainer;
 import com.taurushq.sdk.protect.client.service.GovernanceRuleService;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -119,5 +124,62 @@ class RulesContainerCacheTest {
             // Expected - API call fails (ApiException or IllegalArgumentException)
         }
         assertFalse(cache.isCacheValid());
+    }
+
+    // --- Rules container verification (cross-SDK invariant) ---
+
+    /**
+     * The cache supplies the HSM public key that address signature verification
+     * trusts, so the container it holds must have its SuperAdmin signatures verified
+     * before anything reads it. An unverified container makes that check pass against
+     * whatever key the container carries.
+     *
+     * <p>TypeScript had drifted off this invariant: its cache fetched through the
+     * generated API and the raw mapper, skipping verification entirely, and nothing in
+     * any SDK tested the path. Asserted here on {@code getDecodedRulesContainer(rules)}
+     * because that is the ONLY method the cache fetches through
+     * ({@code RulesContainerCache} lines 229 and 237) and this suite has no HTTP stub
+     * or mocking library to drive the cache offline.
+     *
+     * <p>The container is wire-valid on purpose: a malformed one would throw
+     * IntegrityException from {@code parseFrom} instead, so the test would pass whether
+     * or not verification ran.
+     */
+    @Test
+    void getDecodedRulesContainer_refusesAContainerWithNoSignatures() {
+        GovernanceRules rules = new GovernanceRules();
+        rules.setRulesContainer(wireValidContainer());
+        rules.setRulesSignatures(Collections.<RuleUserSignature>emptyList());
+
+        assertThrows(IntegrityException.class, () ->
+                governanceRuleService.getDecodedRulesContainer(rules));
+    }
+
+    @Test
+    void getDecodedRulesContainer_refusesSignaturesFromAnUnconfiguredKey() {
+        RuleUserSignature signature = new RuleUserSignature();
+        signature.setUserId("attacker");
+        signature.setSignature("YmFkLXNpZy1ub3QtZWNkc2E=");
+
+        GovernanceRules rules = new GovernanceRules();
+        rules.setRulesContainer(wireValidContainer());
+        rules.setRulesSignatures(Collections.singletonList(signature));
+
+        assertThrows(IntegrityException.class, () ->
+                governanceRuleService.getDecodedRulesContainer(rules));
+    }
+
+    /** Guards the two tests above from passing on a proto parse error instead. */
+    @Test
+    void wireValidContainer_decodesCleanly() throws Exception {
+        DecodedRulesContainer decoded =
+                RulesContainerMapper.INSTANCE.fromBase64String(wireValidContainer());
+        assertEquals(2, decoded.getMinimumDistinctUserSignatures());
+    }
+
+    private static String wireValidContainer() {
+        DecodedRulesContainer container = new DecodedRulesContainer();
+        container.setMinimumDistinctUserSignatures(2);
+        return RulesContainerMapper.INSTANCE.toBase64String(container);
     }
 }

@@ -12,7 +12,8 @@ import com.taurushq.sdk.protect.client.model.Job;
 import com.taurushq.sdk.protect.client.model.Webhook;
 import com.taurushq.sdk.protect.client.model.WebhookCallResult;
 import com.taurushq.sdk.protect.client.model.WebhookResult;
-import com.taurushq.sdk.protect.client.model.WhitelistedContractAddressResult;
+import com.taurushq.sdk.protect.client.model.WhitelistException;
+import com.taurushq.sdk.protect.client.model.WhitelistedAssetResult;
 import com.taurushq.sdk.protect.client.model.ApiRequestCursor;
 import com.taurushq.sdk.protect.client.model.PageRequest;
 import com.taurushq.sdk.protect.client.model.taurusnetwork.LendingAgreementResult;
@@ -274,15 +275,15 @@ class ExtendedServicesIntegrationTest {
     }
 
     // =========================================================================
-    // ContractWhitelistingService
+    // WhitelistedAssetService
     // =========================================================================
 
     @Test
-    void listWhitelistedContracts() throws ApiException {
-        WhitelistedContractAddressResult result = client.getContractWhitelistingService()
-                .getWhitelistedContracts(null, null, null, null, null, null);
+    void listWhitelistedContracts() throws ApiException, WhitelistException {
+        WhitelistedAssetResult result = client.getWhitelistedAssetService()
+                .getWhitelistedAssets(10, 0, null, null, null, null, null, null);
 
         assertNotNull(result);
-        System.out.println("Found " + result.getContracts().size() + " whitelisted contracts");
+        System.out.println("Found " + result.getAssets().size() + " whitelisted contracts");
     }
 }

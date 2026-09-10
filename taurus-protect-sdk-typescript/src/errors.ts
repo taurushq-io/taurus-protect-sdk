@@ -203,6 +203,13 @@ export class AuthenticationError extends APIError {
  */
 export class AuthorizationError extends APIError {
   /**
+   * Roles that would satisfy the failed check, letting a caller say which role to
+   * ask for instead of just "forbidden". Empty when the denial was not role-based.
+   * One entry is a required role; several mean any one of them suffices.
+   */
+  public readonly requiredRoles: readonly string[];
+
+  /**
    * Constructs an AuthorizationError with the specified details.
    *
    * @param message - Human-readable error message
@@ -218,7 +225,41 @@ export class AuthorizationError extends APIError {
   ) {
     super(403, errorCode, message, body, undefined, cause);
     this.name = "AuthorizationError";
+    this.requiredRoles = parseRequiredRoles(message);
   }
+}
+
+/**
+ * Matches how Taurus-PROTECT reports a failed role check, for both its all-of and
+ * any-of checks.
+ *
+ * Unanchored on purpose: the server wraps the gRPC status, so this arrives as
+ * "pre-filter failed: ... desc = one of the '...' role is required". Anchoring it
+ * matches nothing.
+ */
+const REQUIRED_ROLES_RE = /one of the '([^']*)' role is required/;
+
+/**
+ * Extracts the roles named in a 403 message. Role names are lowercase alphanumeric,
+ * so " - " is an unambiguous separator.
+ *
+ * @param message - The server error message
+ * @returns The roles named, or an empty array when the message is not a role check
+ */
+export function parseRequiredRoles(message: string | undefined): string[] {
+  if (!message) {
+    return [];
+  }
+
+  const match = REQUIRED_ROLES_RE.exec(message);
+  if (match === null) {
+    return [];
+  }
+
+  return match[1]
+    .split(" - ")
+    .map((role) => role.trim())
+    .filter((role) => role.length > 0);
 }
 
 /**
@@ -372,6 +413,33 @@ export class IntegrityError extends Error {
 }
 
 /**
+ * The governance rules container carries something this SDK cannot interpret.
+ *
+ * Deliberately distinct from a per-row failure. A caller listing whitelisted
+ * addresses excludes a row that fails its own integrity check and keeps the rest,
+ * but an uninterpretable container invalidates EVERY row judged against it, so the
+ * whole call must fail instead. Collapsing the two lets a schema-newer container
+ * empty a whitelist while reporting success.
+ *
+ * Extends {@link IntegrityError} so existing `instanceof IntegrityError` handlers
+ * keep working, while `instanceof ContainerIntegrityError` can single it out.
+ */
+export class ContainerIntegrityError extends IntegrityError {
+  constructor(message: string, cause?: Error) {
+    super(message, cause);
+    this.name = "ContainerIntegrityError";
+
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor);
+    }
+  }
+
+  override toString(): string {
+    return `ContainerIntegrityError: ${this.message}`;
+  }
+}
+
+/**
  * Whitelisted address/asset verification failure.
  *
  * This exception indicates that whitelist verification failed, which may be due to:
@@ -465,6 +533,32 @@ export class RequestMetadataError extends Error {
    */
   override toString(): string {
     return `RequestMetadataError: ${this.message}`;
+  }
+}
+
+/**
+ * Thrown when a request metadata payload is read before verification cleared it.
+ *
+ * Distinct from a plain {@link RequestMetadataError}, which means "this key is not
+ * in the payload". Those are different facts: one says the field is absent, the
+ * other says nothing about the payload can be trusted yet. Collapsing them lets a
+ * verification failure read as an absent source address.
+ *
+ * Extends `RequestMetadataError` so existing catch blocks keep working; check for
+ * this type first where the distinction matters.
+ */
+export class UnverifiedMetadataError extends RequestMetadataError {
+  constructor(message: string, cause?: Error) {
+    super(message, cause);
+    this.name = "UnverifiedMetadataError";
+
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor);
+    }
+  }
+
+  override toString(): string {
+    return `UnverifiedMetadataError: ${this.message}`;
   }
 }
 

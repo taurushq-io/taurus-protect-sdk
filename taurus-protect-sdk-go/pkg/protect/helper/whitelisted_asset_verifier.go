@@ -16,6 +16,8 @@ type WhitelistedAssetVerifier struct {
 }
 
 // NewWhitelistedAssetVerifier creates a new verifier with the given configuration.
+//
+// Accepts an empty key set on purpose — see NewWhitelistedAddressVerifier.
 func NewWhitelistedAssetVerifier(superAdminKeys []*ecdsa.PublicKey, minValidSignatures int) *WhitelistedAssetVerifier {
 	return &WhitelistedAssetVerifier{
 		superAdminKeys:     superAdminKeys,
@@ -32,6 +34,57 @@ type AssetVerificationResult struct {
 	VerifiedHash string
 }
 
+// 5-step verification for a whitelisted asset, plus the parse that makes it usable.
+//
+//	envelope ──▶ 1 hash ──▶ 2 SuperAdmin sigs ──▶ 3 decode rules
+//	                                                   │
+//	             6 parse VERIFIED payload ◀── 5 thresholds ◀── 4 coverage
+//	                        │                       │                │
+//	                        ▼                       │      returns the hash it
+//	                 returned to caller             │      matched, which is
+//	                                                │      what step 5 checks
+//	                                                ▼
+//	                             per group: DISTINCT signers, keyed on the
+//	                             container's public key, never the entry's userId
+//
+// Steps 1-5 prove the envelope is authentic; step 6 is what stops an unsigned
+// value reaching the caller. Assets use ContractAddressWhitelistingRules and the
+// ASSET legacy hashes (isNFT / kindType) — not the address ones.
+//
+// Steps 1-5 run here; step 6 runs in service/whitelisted_asset.go, which calls
+// ParseWhitelistedAssetFromJSON on the payload this verifier just cleared.
+// VerifiedAsset is proof that an asset went through VerifyWhitelistedAsset.
+//
+// Its fields are unexported, so a value built outside this package carries nothing:
+// Asset() returns nil. That is the same guarantee RequestMetadata.entries already
+// gives — unverified input yields zero values — with the difference that a function
+// taking a VerifiedAsset now SAYS so in its signature instead of a comment.
+//
+// Be precise about the limit: Go permits `helper.VerifiedAsset{}` from another
+// package. What it does not permit is populating it. A forged value is therefore
+// useless rather than unforgeable, which is the same security property.
+//
+// It proves verification RAN, not that it ran against the right keys or thresholds —
+// a structural guard against forgetting to call the verifier, not a cryptographic one.
+type VerifiedAsset struct {
+	asset *model.WhitelistedAsset
+	rules *model.DecodedRulesContainer
+	hash  string
+}
+
+// Asset returns the asset parsed from the verified payload, or nil for a value this
+// package did not produce.
+func (v VerifiedAsset) Asset() *model.WhitelistedAsset { return v.asset }
+
+// RulesContainer returns the decoded, SuperAdmin-verified rules container.
+func (v VerifiedAsset) RulesContainer() *model.DecodedRulesContainer { return v.rules }
+
+// VerifiedHash returns the hash that was matched, which may be a legacy variant.
+func (v VerifiedAsset) VerifiedHash() string { return v.hash }
+
+// IsVerified reports whether this value came from the verifier.
+func (v VerifiedAsset) IsVerified() bool { return v.asset != nil }
+
 // VerifyWhitelistedAsset performs the complete 5-step verification of a whitelisted asset.
 // This implements the same verification flow as the Java SDK.
 //
@@ -44,10 +97,13 @@ type AssetVerificationResult struct {
 //
 // The function does not mutate the input asset. If a legacy hash was matched during
 // verification, it is returned in the result's VerifiedHash field.
+// If cachedRulesContainer is non-nil, steps 2-3 are skipped — already done when the
+// page's cache was built.
 func (v *WhitelistedAssetVerifier) VerifyWhitelistedAsset(
 	asset *model.WhitelistedAsset,
 	rulesContainerDecoder func(base64Data string) (*model.DecodedRulesContainer, error),
 	userSignaturesDecoder func(base64Data string) ([]*model.RuleUserSignature, error),
+	cachedRulesContainer ...*model.DecodedRulesContainer,
 ) (*AssetVerificationResult, error) {
 	if asset == nil {
 		return nil, fmt.Errorf("whitelisted asset cannot be nil")
@@ -61,15 +117,22 @@ func (v *WhitelistedAssetVerifier) VerifyWhitelistedAsset(
 		return nil, err
 	}
 
-	// Step 2: Verify rules container signatures
-	if err := v.verifyRulesContainerSignatures(asset, userSignaturesDecoder); err != nil {
-		return nil, err
-	}
+	var rulesContainer *model.DecodedRulesContainer
+	if len(cachedRulesContainer) > 0 && cachedRulesContainer[0] != nil {
+		// Steps 2-3 already done during cache building
+		rulesContainer = cachedRulesContainer[0]
+	} else {
+		// Step 2: Verify rules container signatures
+		if err := v.verifyRulesContainerSignatures(asset, userSignaturesDecoder); err != nil {
+			return nil, err
+		}
 
-	// Step 3: Decode rules container
-	rulesContainer, err := v.decodeRulesContainer(asset, rulesContainerDecoder)
-	if err != nil {
-		return nil, err
+		// Step 3: Decode rules container
+		var err error
+		rulesContainer, err = v.decodeRulesContainer(asset, rulesContainerDecoder)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Step 4: Verify hash coverage
@@ -88,6 +151,24 @@ func (v *WhitelistedAssetVerifier) VerifyWhitelistedAsset(
 		RulesContainer: rulesContainer,
 		VerifiedHash:   verifiedHash,
 	}, nil
+}
+
+// VerifyAndDecodeRulesContainer performs steps 2-3 for one container, so the service can
+// build its per-page cache instead of re-verifying per row.
+func (v *WhitelistedAssetVerifier) VerifyAndDecodeRulesContainer(
+	rulesContainerBase64 string,
+	rulesSignaturesBase64 string,
+	rulesContainerDecoder func(base64Data string) (*model.DecodedRulesContainer, error),
+	userSignaturesDecoder func(base64Data string) ([]*model.RuleUserSignature, error),
+) (*model.DecodedRulesContainer, error) {
+	return VerifyAndDecodeRulesContainer(
+		rulesContainerBase64,
+		rulesSignaturesBase64,
+		v.superAdminKeys,
+		v.minValidSignatures,
+		rulesContainerDecoder,
+		userSignaturesDecoder,
+	)
 }
 
 // verifyMetadataHash verifies that the computed hash matches the provided hash.
@@ -214,12 +295,18 @@ func (v *WhitelistedAssetVerifier) verifyWhitelistSignatures(
 	metadataHash string,
 ) error {
 
+	// Keyed off the SIGNED payload, not the response. See the address verifier.
+	blockchain, network, err := resolveRuleKeyFor(asset.Metadata, asset.Blockchain, asset.Network)
+	if err != nil {
+		return err
+	}
+
 	// Find matching contract address whitelisting rules
-	whitelistRules := rulesContainer.FindContractAddressWhitelistingRules(asset.Blockchain, asset.Network)
+	whitelistRules := rulesContainer.FindContractAddressWhitelistingRules(blockchain, network)
 	if whitelistRules == nil {
 		return &model.WhitelistError{
 			Message: fmt.Sprintf("no contract address whitelisting rules found for blockchain=%s network=%s",
-				asset.Blockchain, asset.Network),
+				blockchain, network),
 		}
 	}
 
@@ -230,7 +317,7 @@ func (v *WhitelistedAssetVerifier) verifyWhitelistSignatures(
 	}
 
 	// Try to verify all paths (OR logic - only one needs to succeed)
-	pathFailures := v.tryVerifyAllPaths(parallelThresholds, rulesContainer, asset.SignedContractAddress.Signatures, metadataHash)
+	pathFailures := tryVerifyAllPaths(parallelThresholds, rulesContainer, asset.SignedContractAddress.Signatures, metadataHash)
 	if len(pathFailures) > 0 {
 		return &model.WhitelistError{
 			Message: fmt.Sprintf("signature verification failed for whitelisted asset (ID: %s): "+
@@ -242,142 +329,25 @@ func (v *WhitelistedAssetVerifier) verifyWhitelistSignatures(
 	return nil
 }
 
-// tryVerifyAllPaths tries to verify all parallel threshold paths.
-// Returns empty slice if verification passed, or list of failure messages if all paths failed.
-func (v *WhitelistedAssetVerifier) tryVerifyAllPaths(
-	parallelThresholds []*model.SequentialThresholds,
-	rulesContainer *model.DecodedRulesContainer,
-	signatures []model.WhitelistSignature,
-	metadataHash string,
-) []string {
-	// Pre-compute JSON serialization of each signature's hashes array once,
-	// so it can be reused across all group threshold checks.
-	hashesJSONMap := precomputeHashesJSON(signatures)
+// The step-5 threshold walk lives in group_threshold.go, shared with the address verifier.
 
-	var pathFailures []string
-
-	for i, seqThreshold := range parallelThresholds {
-		err := v.verifySequentialThresholds(seqThreshold, rulesContainer, signatures, metadataHash, hashesJSONMap)
-		if err == nil {
-			return nil // Verification passed
-		}
-		pathFailures = append(pathFailures, fmt.Sprintf("Path %d: %s", i+1, err.Error()))
+// VerifyAsset is the witness-returning form of VerifyWhitelistedAsset.
+//
+// Prefer it in new code: a caller holding a VerifiedAsset cannot have skipped
+// verification, whereas one holding a *model.WhitelistedAsset might have. The
+// *AssetVerificationResult form is kept because existing callers return it.
+func (v *WhitelistedAssetVerifier) VerifyAsset(
+	asset *model.WhitelistedAsset,
+	rulesContainerDecoder func(base64Data string) (*model.DecodedRulesContainer, error),
+	userSignaturesDecoder func(base64Data string) ([]*model.RuleUserSignature, error),
+) (VerifiedAsset, error) {
+	result, err := v.VerifyWhitelistedAsset(asset, rulesContainerDecoder, userSignaturesDecoder)
+	if err != nil {
+		return VerifiedAsset{}, err
 	}
-
-	return pathFailures
-}
-
-// verifySequentialThresholds verifies all group thresholds in a sequential threshold path.
-func (v *WhitelistedAssetVerifier) verifySequentialThresholds(
-	seqThreshold *model.SequentialThresholds,
-	rulesContainer *model.DecodedRulesContainer,
-	signatures []model.WhitelistSignature,
-	metadataHash string,
-	hashesJSONMap map[int][]byte,
-) error {
-	if seqThreshold == nil || len(seqThreshold.Thresholds) == 0 {
-		return &model.IntegrityError{Message: "no group thresholds defined"}
-	}
-
-	// ALL group thresholds must be satisfied (AND logic)
-	for _, groupThreshold := range seqThreshold.Thresholds {
-		if err := v.verifyGroupThreshold(groupThreshold, rulesContainer, signatures, metadataHash, hashesJSONMap); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// verifyGroupThreshold verifies that a group threshold is met.
-func (v *WhitelistedAssetVerifier) verifyGroupThreshold(
-	groupThreshold *model.GroupThreshold,
-	rulesContainer *model.DecodedRulesContainer,
-	signatures []model.WhitelistSignature,
-	metadataHash string,
-	hashesJSONMap map[int][]byte,
-) error {
-	groupID := groupThreshold.GroupID
-	minSigs := groupThreshold.MinimumSignatures
-
-	group := rulesContainer.FindGroupByID(groupID)
-	if group == nil {
-		return &model.IntegrityError{
-			Message: fmt.Sprintf("group '%s' not found in rules container", groupID),
-		}
-	}
-
-	if len(group.UserIDs) == 0 {
-		if minSigs > 0 {
-			return &model.IntegrityError{
-				Message: fmt.Sprintf("group '%s' has no users but requires %d signature(s)", groupID, minSigs),
-			}
-		}
-		return nil // minSignatures == 0, so empty group is OK
-	}
-
-	// Build set for faster lookup
-	groupUserIDSet := make(map[string]bool)
-	for _, uid := range group.UserIDs {
-		groupUserIDSet[uid] = true
-	}
-
-	// Count valid signatures from users in this group
-	validCount := 0
-	var skippedReasons []string
-
-	for i, sig := range signatures {
-		if sig.UserSignature == nil {
-			skippedReasons = append(skippedReasons, "signature has nil userSig")
-			continue
-		}
-
-		sigUserID := sig.UserSignature.UserID
-		if !groupUserIDSet[sigUserID] {
-			continue // Signer not in this group - not an error, just not relevant
-		}
-
-		// Check that metadata hash is covered by this signature
-		if !containsHash(sig.Hashes, metadataHash) {
-			skippedReasons = append(skippedReasons, fmt.Sprintf(
-				"user '%s' signature does not cover metadata hash '%s' (signed hashes=%v)",
-				sigUserID, metadataHash, sig.Hashes))
-			continue
-		}
-
-		user := rulesContainer.FindUserByID(sigUserID)
-		if user == nil {
-			skippedReasons = append(skippedReasons, fmt.Sprintf("user '%s' not found in rules container", sigUserID))
-			continue
-		}
-		if user.PublicKey == nil {
-			skippedReasons = append(skippedReasons, fmt.Sprintf("user '%s' has no public key", sigUserID))
-			continue
-		}
-
-		// Use pre-computed JSON-encoded hashes array
-		hashesJSON, ok := hashesJSONMap[i]
-		if !ok {
-			skippedReasons = append(skippedReasons, fmt.Sprintf("failed to marshal hashes for user '%s'", sigUserID))
-			continue
-		}
-
-		valid, err := crypto.VerifySignature(user.PublicKey, hashesJSON, sig.UserSignature.Signature)
-		if err != nil || !valid {
-			skippedReasons = append(skippedReasons, fmt.Sprintf("user '%s' signature verification failed", sigUserID))
-			continue
-		}
-
-		validCount++
-		if validCount >= minSigs {
-			return nil // Threshold met
-		}
-	}
-
-	// Threshold not met
-	message := fmt.Sprintf("group '%s' requires %d signature(s) but only %d valid", groupID, minSigs, validCount)
-	if len(skippedReasons) > 0 {
-		message += " [" + strings.Join(skippedReasons, "; ") + "]"
-	}
-	return &model.IntegrityError{Message: message}
+	return VerifiedAsset{
+		asset: asset,
+		rules: result.RulesContainer,
+		hash:  result.VerifiedHash,
+	}, nil
 }

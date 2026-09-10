@@ -15,7 +15,9 @@ class TestGetCurrent:
     def _make_service(self) -> tuple:
         api_client = MagicMock()
         prices_api = MagicMock()
-        service = PriceService(api_client=api_client, prices_api=prices_api)
+        service = PriceService(
+            api_client=api_client, prices_api=prices_api, rules_cache=MagicMock()
+        )
         return service, prices_api
 
     def test_returns_empty_when_no_result(self) -> None:
@@ -58,7 +60,9 @@ class TestGetHistorical:
     def _make_service(self) -> tuple:
         api_client = MagicMock()
         prices_api = MagicMock()
-        service = PriceService(api_client=api_client, prices_api=prices_api)
+        service = PriceService(
+            api_client=api_client, prices_api=prices_api, rules_cache=MagicMock()
+        )
         return service, prices_api
 
     def test_raises_on_empty_base_currency(self) -> None:

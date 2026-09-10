@@ -44,8 +44,40 @@ func (s *TransactionService) ListTransactions(ctx context.Context, opts *model.L
 		if opts.Blockchain != "" {
 			req = req.Blockchain(opts.Blockchain)
 		}
+		if opts.Network != "" {
+			req = req.Network(opts.Network)
+		}
 		if opts.Query != "" {
 			req = req.Query(opts.Query)
+		}
+		if opts.FromDate != nil {
+			req = req.From(*opts.FromDate)
+		}
+		if opts.ToDate != nil {
+			req = req.To(*opts.ToDate)
+		}
+		// Exact selectors. Query also matches hash and transaction id, but as a
+		// six-column ILIKE scan — prefer these when the value is known exactly.
+		if len(opts.IDs) > 0 {
+			req = req.Ids(opts.IDs)
+		}
+		if len(opts.Hashes) > 0 {
+			req = req.Hashes(opts.Hashes)
+		}
+		if len(opts.TransactionIDs) > 0 {
+			req = req.TransactionIds(opts.TransactionIDs)
+		}
+		if opts.Address != "" {
+			req = req.Address(opts.Address)
+		}
+		if opts.Source != "" {
+			req = req.Source(opts.Source)
+		}
+		if opts.Destination != "" {
+			req = req.Destination(opts.Destination)
+		}
+		if opts.AmountAbove != "" {
+			req = req.AmountAbove(opts.AmountAbove)
 		}
 	}
 
@@ -92,7 +124,7 @@ func (s *TransactionService) GetTransaction(ctx context.Context, txID string) (*
 		return nil, s.errMapper.MapError(err, httpResp)
 	}
 
-	if resp.Result == nil || len(resp.Result) == 0 {
+	if len(resp.Result) == 0 {
 		return nil, fmt.Errorf("transaction not found")
 	}
 
@@ -115,7 +147,7 @@ func (s *TransactionService) GetTransactionByHash(ctx context.Context, hash stri
 		return nil, s.errMapper.MapError(err, httpResp)
 	}
 
-	if resp.Result == nil || len(resp.Result) == 0 {
+	if len(resp.Result) == 0 {
 		return nil, fmt.Errorf("transaction not found")
 	}
 

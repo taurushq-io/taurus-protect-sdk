@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"errors"
 	"testing"
 
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/crypto"
@@ -17,7 +18,7 @@ func TestNewWhitelistedAddressVerifier(t *testing.T) {
 	t.Run("with keys", func(t *testing.T) {
 		v := NewWhitelistedAddressVerifier(keys, 1)
 		if v == nil {
-			t.Error("NewWhitelistedAddressVerifier() returned nil")
+			t.Fatal("NewWhitelistedAddressVerifier() returned nil")
 		}
 		if len(v.superAdminKeys) != 1 {
 			t.Errorf("superAdminKeys length = %d, want 1", len(v.superAdminKeys))
@@ -30,7 +31,7 @@ func TestNewWhitelistedAddressVerifier(t *testing.T) {
 	t.Run("with nil keys", func(t *testing.T) {
 		v := NewWhitelistedAddressVerifier(nil, 0)
 		if v == nil {
-			t.Error("NewWhitelistedAddressVerifier() returned nil")
+			t.Fatal("NewWhitelistedAddressVerifier() returned nil")
 		}
 		if len(v.superAdminKeys) != 0 {
 			t.Errorf("superAdminKeys length = %d, want 0", len(v.superAdminKeys))
@@ -199,7 +200,10 @@ func TestGetApplicableThresholds(t *testing.T) {
 			LinkedInternalAddresses: []model.InternalAddress{{ID: 1}},
 			LinkedWallets:           []model.InternalWallet{{ID: 1, Path: "m/44/60/0"}},
 		}
-		result := v.getApplicableThresholds(rules, addr)
+		result, err := v.getApplicableThresholds(rules, addr)
+		if err != nil {
+			t.Fatalf("getApplicableThresholds: %v", err)
+		}
 		if len(result) != 1 || result[0].Thresholds[0].GroupID != "default" {
 			t.Error("expected default thresholds when linked addresses present")
 		}
@@ -212,7 +216,10 @@ func TestGetApplicableThresholds(t *testing.T) {
 				{ID: 2, Path: "m/44/60/1"},
 			},
 		}
-		result := v.getApplicableThresholds(rules, addr)
+		result, err := v.getApplicableThresholds(rules, addr)
+		if err != nil {
+			t.Fatalf("getApplicableThresholds: %v", err)
+		}
 		if len(result) != 1 || result[0].Thresholds[0].GroupID != "default" {
 			t.Error("expected default thresholds when multiple wallets present")
 		}
@@ -222,7 +229,10 @@ func TestGetApplicableThresholds(t *testing.T) {
 		addr := &model.WhitelistedAddress{
 			LinkedWallets: []model.InternalWallet{{ID: 1, Path: "m/44/60/0"}},
 		}
-		result := v.getApplicableThresholds(rules, addr)
+		result, err := v.getApplicableThresholds(rules, addr)
+		if err != nil {
+			t.Fatalf("getApplicableThresholds: %v", err)
+		}
 		if len(result) != 1 || result[0].Thresholds[0].GroupID != "line-specific" {
 			t.Error("expected line-specific thresholds when wallet path matches")
 		}
@@ -232,9 +242,48 @@ func TestGetApplicableThresholds(t *testing.T) {
 		addr := &model.WhitelistedAddress{
 			LinkedWallets: []model.InternalWallet{{ID: 1, Path: "m/44/60/999"}},
 		}
-		result := v.getApplicableThresholds(rules, addr)
+		result, err := v.getApplicableThresholds(rules, addr)
+		if err != nil {
+			t.Fatalf("getApplicableThresholds: %v", err)
+		}
 		if len(result) != 1 || result[0].Thresholds[0].GroupID != "default" {
 			t.Error("expected default thresholds when no line matches")
+		}
+	})
+
+	// A container signed by a validatord newer than this SDK can carry a source cell
+	// the decoder could only preserve verbatim. Before this guard, such a line simply
+	// failed to match, and verification fell through to the container defaults — so an
+	// address whose governance line demanded a stricter quorum was approved against a
+	// weaker one, with no error. Fail closed instead.
+	t.Run("untypeable source cell aborts instead of falling back to defaults", func(t *testing.T) {
+		rulesWithRawSource := &model.AddressWhitelistingRules{
+			Currency:           rules.Currency,
+			Network:            rules.Network,
+			ParallelThresholds: rules.ParallelThresholds,
+			Lines: []*model.AddressWhitelistingLine{
+				{
+					// Preserved verbatim: this SDK could not type it.
+					Cells:              []*model.RuleSource{{Raw: []byte{0x08, 0x63}}},
+					ParallelThresholds: lineThresholds,
+				},
+			},
+		}
+		addr := &model.WhitelistedAddress{
+			LinkedWallets: []model.InternalWallet{{ID: 1, Path: "m/44/60/0"}},
+		}
+
+		result, err := v.getApplicableThresholds(rulesWithRawSource, addr)
+		if err == nil {
+			t.Fatalf("expected a container integrity error, got thresholds %+v", result)
+		}
+		var containerErr *model.ContainerIntegrityError
+		if !errors.As(err, &containerErr) {
+			t.Fatalf("error = %T (%v), want *model.ContainerIntegrityError", err, err)
+		}
+		// It must remain matchable as an integrity failure for existing callers.
+		if !errors.Is(err, &model.IntegrityError{}) {
+			t.Error("a container integrity error should still satisfy errors.Is(*IntegrityError)")
 		}
 	})
 }
@@ -323,18 +372,15 @@ func TestMatchesWalletPath(t *testing.T) {
 }
 
 func TestVerifySequentialThresholds_NilInput(t *testing.T) {
-	key, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	v := NewWhitelistedAddressVerifier([]*ecdsa.PublicKey{&key.PublicKey}, 1)
-
 	t.Run("nil threshold", func(t *testing.T) {
-		err := v.verifySequentialThresholds(nil, nil, nil, "hash", nil)
+		err := verifySequentialThresholds(nil, nil, nil, "hash", nil)
 		if err == nil {
 			t.Error("expected error for nil threshold")
 		}
 	})
 
 	t.Run("empty thresholds", func(t *testing.T) {
-		err := v.verifySequentialThresholds(&model.SequentialThresholds{}, nil, nil, "hash", nil)
+		err := verifySequentialThresholds(&model.SequentialThresholds{}, nil, nil, "hash", nil)
 		if err == nil {
 			t.Error("expected error for empty thresholds")
 		}

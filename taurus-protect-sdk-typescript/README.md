@@ -39,13 +39,18 @@ yarn add @taurushq/protect-sdk
 ### Client Initialization
 
 ```typescript
-import { ProtectClient } from '@taurushq/protect-sdk';
+import { Credentials, ProtectClient } from '@taurushq/protect-sdk';
 
-// Basic initialization
+// SuperAdmin public keys are required — client-side rules verification is mandatory.
+const superAdminKeys = [
+  '-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...\n-----END PUBLIC KEY-----',
+];
+
 const client = ProtectClient.create({
   host: 'https://api.protect.taurushq.com',
-  apiKey: 'your-api-key',
-  apiSecret: 'your-api-secret-hex',
+  credentials: Credentials.apiKey('your-api-key', 'your-api-secret-hex'),
+  superAdminKeysPem: superAdminKeys,
+  minValidSignatures: 1,
 });
 
 // Use the client
@@ -58,34 +63,17 @@ for (const wallet of wallets.items) {
 client.close();
 ```
 
-For production use with SuperAdmin key verification:
-
-```typescript
-import { ProtectClient } from '@taurushq/protect-sdk';
-
-const superAdminKeys = [
-  '-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...\n-----END PUBLIC KEY-----',
-  '-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...\n-----END PUBLIC KEY-----',
-];
-
-const client = ProtectClient.create({
-  host: 'https://api.protect.taurushq.com',
-  apiKey: 'your-api-key',
-  apiSecret: 'your-api-secret-hex',
-  superAdminKeysPem: superAdminKeys,
-  minValidSignatures: 2,
-});
-
-// All governance rule verifications will require 2 valid signatures
-```
+Build the credentials with `Credentials.apiKey(key, secret)` for TPV1-HMAC, or
+`Credentials.bearerTokenProvider(fn)` for a per-request Bearer token. Raise
+`minValidSignatures` for multi-signature governance verification.
 
 See [Authentication](docs/AUTHENTICATION.md) for more initialization options.
 
 ## Services
 
-The SDK provides 43 services (38 core + 5 TaurusNetwork), with 26 available as high-level wrappers via ProtectClient getters and the remainder accessible through low-level OpenAPI APIs.
+The SDK provides 43 services (38 core + 5 TaurusNetwork), all available as high-level wrappers — 38 via `ProtectClient` getters and 5 via the `taurusNetwork` namespace. Low-level OpenAPI APIs remain available alongside them.
 
-### High-Level Services (26 via ProtectClient getters)
+### High-Level Services (38 via ProtectClient getters, plus 5 on the TaurusNetwork namespace)
 
 These services provide domain models, validation, and simplified interfaces.
 
@@ -118,24 +106,18 @@ These services provide domain models, validation, and simplified interfaces.
 | `StatisticsService` | `client.statistics` | Platform statistics |
 | `TokenMetadataService` | `client.tokenMetadata` | Token metadata information |
 
-### Low-Level API Access (for services without high-level wrappers)
+### Low-Level API Access
 
-Some features are available only through low-level OpenAPI-generated APIs:
+Each generated OpenAPI API is also reachable directly (`client.walletsApi`,
+`client.addressesApi`, …) for endpoints the high-level services do not wrap yet.
 
-| API | Access | Purpose |
-|-----|--------|---------|
-| `ChangesApi` | `client.changesApi` | Configuration change tracking |
-| `BusinessRulesApi` | `client.businessRulesApi` | Business rule management |
-| `ReservationsApi` | `client.reservationsApi` | Balance reservations |
-| `MultiFactorSignatureApi` | `client.multiFactorSignatureApi` | Multi-factor signature operations |
-| `ContractWhitelistingApi` | `client.contractWhitelistingApi` | Smart contract whitelisting |
-| `StakingApi` | `client.stakingApi` | Multi-chain staking information |
-| `ActionsApi` | `client.actionsApi` | Action management |
-| `BlockchainApi` | `client.blockchainApi` | Blockchain information |
-| `FiatApi` | `client.fiatApi` | Fiat currency operations |
-| `ScoresApi` | `client.scoresApi` | Risk scoring operations |
-| `UserDeviceApi` | `client.userDeviceApi` | User device management |
-| `WebhookCallsApi` | `client.webhookCallsApi` | Webhook call history |
+Prefer the high-level services: they map DTOs to domain models and, on the security paths,
+verify signatures. The raw APIs do neither.
+
+`client.governanceRulesApi` is deliberately **not** exposed. Governance rules are the
+tenant's security policy: the raw API returns an unverified DTO on read and accepts an
+arbitrary base64 blob on write, which would make client-side verification opt-out in this
+SDK alone. Use `client.governanceRules`.
 
 ### TaurusNetwork APIs (5 APIs)
 
@@ -156,12 +138,12 @@ See [Services Reference](docs/SERVICES.md) for complete API documentation.
 ### List Wallets
 
 ```typescript
-import { ProtectClient } from '@taurushq/protect-sdk';
+import { Credentials, ProtectClient } from '@taurushq/protect-sdk';
 
 const client = ProtectClient.create({
   host: 'https://api.protect.taurushq.com',
-  apiKey: 'your-api-key',
-  apiSecret: 'your-api-secret-hex',
+  credentials: Credentials.apiKey('your-api-key', 'your-api-secret-hex'),
+  superAdminKeysPem: ['-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----'],
 });
 
 // List wallets with pagination
@@ -325,7 +307,7 @@ export PROTECT_API_SECRET="your-hex-encoded-secret"
 
 ## Low-Level API Access
 
-In addition to the high-level services, the SDK provides direct access to 56 OpenAPI-generated APIs:
+In addition to the high-level services, the SDK provides direct access to 61 OpenAPI-generated APIs:
 
 ```typescript
 // Direct API access for advanced use cases

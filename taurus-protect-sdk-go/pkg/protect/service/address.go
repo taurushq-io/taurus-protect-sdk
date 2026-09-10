@@ -85,9 +85,41 @@ func (s *AddressService) ListAddresses(ctx context.Context, opts *model.ListAddr
 		if opts.Offset > 0 {
 			req = req.Offset(fmt.Sprintf("%d", opts.Offset))
 		}
+		// Query matches address, alternate address, comment, label and customer id.
 		if opts.Query != "" {
 			req = req.Query(opts.Query)
 		}
+		if len(opts.AddressIDs) > 0 {
+			req = req.AddressIds(opts.AddressIDs)
+		}
+		if len(opts.Addresses) > 0 {
+			req = req.Addresses(opts.Addresses)
+		}
+		if opts.Blockchain != "" {
+			req = req.Blockchain(opts.Blockchain)
+		}
+		if opts.Network != "" {
+			req = req.Network(opts.Network)
+		}
+		if len(opts.TagIDs) > 0 {
+			req = req.TagIDs(opts.TagIDs)
+		}
+		if opts.OnlyPositiveBalance {
+			req = req.OnlyPositiveBalance(true)
+		}
+		if opts.BalanceAbove != "" {
+			req = req.BalanceAbove(opts.BalanceAbove)
+		}
+		if opts.BalanceBelow != "" {
+			req = req.BalanceBelow(opts.BalanceBelow)
+		}
+		if opts.SortBy != "" {
+			req = req.SortBy(opts.SortBy)
+		}
+		if opts.SortOrder != "" {
+			req = req.SortOrder(opts.SortOrder)
+		}
+		req = applyAddressScoreFilter(req, opts.Score)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -246,4 +278,44 @@ func (s *AddressService) GetAddressProofOfReserve(ctx context.Context, addressID
 	}
 
 	return mapper.ProofOfReserveFromDTO(resp.Result), nil
+}
+
+// applyAddressScoreFilter wires the scoreFilter group. The flat scoreProvider /
+// scoreInBelow / coinfirmScoreGreater parameters the client also exposes are
+// deprecated in favour of these.
+//
+// A nil filter sets nothing: a zero-valued struct would send empty provider
+// parameters on every address call.
+func applyAddressScoreFilter(
+	req openapi.ApiWalletServiceGetAddressesRequest,
+	f *model.AddressScoreFilter,
+) openapi.ApiWalletServiceGetAddressesRequest {
+	if f == nil {
+		return req
+	}
+	if f.Provider != "" {
+		req = req.ScoreFilterScoreProvider(f.Provider)
+	}
+	if f.ScorechainInBelow != "" {
+		req = req.ScoreFilterScorechainFiltersScoreInBelow(f.ScorechainInBelow)
+	}
+	if f.ScorechainOutBelow != "" {
+		req = req.ScoreFilterScorechainFiltersScoreOutBelow(f.ScorechainOutBelow)
+	}
+	if f.ScorechainExclusive {
+		req = req.ScoreFilterScorechainFiltersScoreExclusive(true)
+	}
+	if f.CoinfirmScoreGreater != "" {
+		req = req.ScoreFilterCoinfirmFiltersScoreGreater(f.CoinfirmScoreGreater)
+	}
+	if f.ChainalysisScoreGreater != "" {
+		req = req.ScoreFilterChainalysisFiltersScoreGreater(f.ChainalysisScoreGreater)
+	}
+	if f.EllipticScoreGreater != "" {
+		req = req.ScoreFilterEllipticFiltersScoreGreater(f.EllipticScoreGreater)
+	}
+	if f.TRMLabsScoreGreater != "" {
+		req = req.ScoreFilterTrmlabsFiltersScoreGreater(f.TRMLabsScoreGreater)
+	}
+	return req
 }

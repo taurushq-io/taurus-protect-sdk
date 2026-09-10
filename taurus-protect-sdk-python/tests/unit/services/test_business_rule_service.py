@@ -151,3 +151,36 @@ class TestBusinessRuleServiceListByCurrency:
 
         call_kwargs = api.rule_service_get_business_rules_v2.call_args
         assert call_kwargs.kwargs["currency_ids"] == ["ETH"]
+
+
+class TestUpdateTransactionsEnabled:
+    """The transactions-enabled kill switch existed only in the Go SDK, even though the
+    generated op is present in all four and tg-protect-mcpd drives it."""
+
+    def _make_service(self) -> tuple:
+        api_client = MagicMock()
+        business_rules_api = MagicMock()
+        service = BusinessRuleService(
+            api_client=api_client, business_rules_api=business_rules_api
+        )
+        return service, business_rules_api
+
+    def test_sends_disabled_flag(self) -> None:
+        service, api = self._make_service()
+
+        service.update_transactions_enabled(False)
+
+        body = api.rule_service_update_transactions_enabled_business_rule.call_args.kwargs[
+            "body"
+        ]
+        assert body.enabled is False
+
+    def test_sends_enabled_flag(self) -> None:
+        service, api = self._make_service()
+
+        service.update_transactions_enabled(True)
+
+        body = api.rule_service_update_transactions_enabled_business_rule.call_args.kwargs[
+            "body"
+        ]
+        assert body.enabled is True

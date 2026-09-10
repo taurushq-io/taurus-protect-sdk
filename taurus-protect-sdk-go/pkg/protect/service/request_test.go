@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/crypto"
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/model"
 )
 
@@ -136,9 +137,9 @@ func TestRequestService_CreateOutgoingRequest_ValidWithToWhitelistedAddressID(t 
 
 func TestVerifyRequestHash_NilMetadata(t *testing.T) {
 	r := &model.Request{ID: "1"}
-	err := verifyRequestHash(r)
+	err := r.Metadata.VerifyAndMaterialise()
 	if err != nil {
-		t.Errorf("verifyRequestHash() with nil metadata should return nil, got %v", err)
+		t.Errorf("VerifyAndMaterialise() with nil metadata should return nil, got %v", err)
 	}
 }
 
@@ -147,9 +148,9 @@ func TestVerifyRequestHash_EmptyHashAndPayload(t *testing.T) {
 		ID:       "1",
 		Metadata: &model.RequestMetadata{Hash: "", PayloadAsString: ""},
 	}
-	err := verifyRequestHash(r)
+	err := r.Metadata.VerifyAndMaterialise()
 	if err != nil {
-		t.Errorf("verifyRequestHash() with empty hash and payload should return nil, got %v", err)
+		t.Errorf("VerifyAndMaterialise() with empty hash and payload should return nil, got %v", err)
 	}
 }
 
@@ -161,31 +162,33 @@ func TestVerifyRequestHash_EmptyProvidedHash(t *testing.T) {
 			PayloadAsString: "test-payload",
 		},
 	}
-	err := verifyRequestHash(r)
+	err := r.Metadata.VerifyAndMaterialise()
 	if err == nil {
-		t.Fatal("verifyRequestHash() with empty provided hash should return error")
+		t.Fatal("VerifyAndMaterialise() with empty provided hash should return error")
 	}
 	var intErr *model.IntegrityError
 	if !errors.As(err, &intErr) {
-		t.Fatalf("verifyRequestHash() error should be IntegrityError, got %T", err)
+		t.Fatalf("VerifyAndMaterialise() error should be IntegrityError, got %T", err)
 	}
-	if !strings.Contains(intErr.Message, "non-empty") {
-		t.Errorf("error message should mention non-empty, got %q", intErr.Message)
+	if !strings.Contains(intErr.Message, "hash is missing") {
+		t.Errorf("error message should name the missing hash, got %q", intErr.Message)
 	}
 }
 
 func TestVerifyRequestHash_ValidHash(t *testing.T) {
-	// SHA-256("test-payload") = 6f06dd0e26608013eff30bb1e951cda7de3fdd9e78e907470e0dd5c0ed25e273
+	// A real payload is a JSON array of entries; verification now also materialises
+	// it, so a non-array string would verify and then fail to parse.
+	payload := `[{"key":"currency","value":"BTC"}]`
 	r := &model.Request{
 		ID: "1",
 		Metadata: &model.RequestMetadata{
-			Hash:            "6f06dd0e26608013eff30bb1e951cda7de3fdd9e78e907470e0dd5c0ed25e273",
-			PayloadAsString: "test-payload",
+			Hash:            crypto.CalculateHexHash(payload),
+			PayloadAsString: payload,
 		},
 	}
-	err := verifyRequestHash(r)
+	err := r.Metadata.VerifyAndMaterialise()
 	if err != nil {
-		t.Errorf("verifyRequestHash() with valid hash should return nil, got %v", err)
+		t.Errorf("VerifyAndMaterialise() with valid hash should return nil, got %v", err)
 	}
 }
 
@@ -197,13 +200,13 @@ func TestVerifyRequestHash_MismatchedHash(t *testing.T) {
 			PayloadAsString: "test-payload",
 		},
 	}
-	err := verifyRequestHash(r)
+	err := r.Metadata.VerifyAndMaterialise()
 	if err == nil {
-		t.Fatal("verifyRequestHash() with mismatched hash should return error")
+		t.Fatal("VerifyAndMaterialise() with mismatched hash should return error")
 	}
 	var intErr *model.IntegrityError
 	if !errors.As(err, &intErr) {
-		t.Fatalf("verifyRequestHash() error should be IntegrityError, got %T", err)
+		t.Fatalf("VerifyAndMaterialise() error should be IntegrityError, got %T", err)
 	}
 	if !strings.Contains(intErr.Message, "request hash verification failed") {
 		t.Errorf("error message should mention verification failed, got %q", intErr.Message)

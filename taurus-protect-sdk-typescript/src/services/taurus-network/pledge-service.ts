@@ -869,7 +869,7 @@ export class PledgeService extends BaseService {
     }
 
     return this.execute(async () => {
-      const response = await this.pledgeApi.taurusNetworkServiceApprovePledgeActions({
+      await this.pledgeApi.taurusNetworkServiceApprovePledgeActions({
         body: {
           ids: actionIds,
           signature,

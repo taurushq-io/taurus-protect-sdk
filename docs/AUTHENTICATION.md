@@ -6,15 +6,46 @@ This document describes the authentication and security model used by the Taurus
 
 The Taurus-PROTECT platform uses a multi-layer security model:
 
-1. **TPV1 Authentication** - HMAC-based API request signing
+1. **Client authentication** - TPV1 HMAC request signing, or a Bearer token
 2. **SuperAdmin Verification** - ECDSA signature verification for governance rules
 3. **Data Integrity** - SHA-256 hash verification for payloads
 
 ---
 
+## Authentication mechanisms (`Credentials`)
+
+All four SDKs construct the client with a single `Credentials` sum-type rather than
+scattered api-key/bearer parameters. Three variants are available, aligned across the SDKs:
+
+| Variant | Purpose |
+|---------|---------|
+| `apiKey(key, secret)` | TPV1-HMAC request signing (see below) |
+| `bearerToken(token)` | A single static Bearer token, for single-user or CLI use |
+| `bearerTokenProvider(fn)` | A Bearer token resolved **per request**, so one client can serve many callers each carrying their own token |
+
+Factory names follow each language's conventions: Java/TypeScript
+`Credentials.apiKey` / `.bearerToken` / `.bearerTokenProvider`; Python
+`Credentials.api_key` / `.bearer_token` / `.bearer_token_provider`; Go
+`protect.APIKeyCredentials` / `BearerTokenCredentials` / `BearerTokenProviderCredentials`.
+
+Bearer credentials send `Authorization: Bearer <token>` on every request. An empty token is
+rejected at construction, and a provider that returns an empty token fails the request
+rather than sending an empty credential — a failed refresh reports itself instead of
+surfacing as an opaque 401.
+
+> **SuperAdmin public keys are MANDATORY for every mechanism**, api-key and bearer alike.
+> There is no keys-optional path and no way to skip client-side rules verification: the
+> client constructor rejects an empty key set. See "SuperAdmin Public Keys" below.
+
+The flat api-key parameters on the client constructors are retained but **deprecated** —
+they build an api-key `Credentials` internally. New code should pass `Credentials`.
+
+---
+
 ## TPV1 Authentication Scheme
 
-All API requests are signed using the TPV1 (Taurus Protocol Version 1) scheme. This provides:
+Requests authenticated with api-key `Credentials` are signed using the TPV1
+(Taurus Protocol Version 1) scheme. This provides:
 
 - **Authentication** - Proves the request came from a valid API key holder
 - **Integrity** - Ensures the request hasn't been tampered with
@@ -59,7 +90,9 @@ TPV1 <ApiKey> <Nonce> <Timestamp> <Method> <Host> <Path> <Query> <ContentType> <
 
 ### Automatic Handling
 
-All SDKs handle TPV1 signing automatically. You only need to provide credentials during client initialization.
+All SDKs handle TPV1 signing automatically. You only need to provide credentials during
+client initialization. TPV1 signing applies only to api-key `Credentials`; bearer
+credentials neither read nor sign the request body.
 
 ---
 
@@ -67,10 +100,15 @@ All SDKs handle TPV1 signing automatically. You only need to provide credentials
 
 ### Required Credentials
 
+For api-key `Credentials`:
+
 | Credential | Format | Description |
 |------------|--------|-------------|
 | API Key | UUID | Identifies the API caller |
 | API Secret | Hex string | Secret key for HMAC signing |
+
+For bearer `Credentials`, a token issued by your identity provider replaces both. In every
+case SuperAdmin public keys are required as well.
 
 ### Obtaining Credentials
 
@@ -130,10 +168,16 @@ When initializing an SDK client, you can provide SuperAdmin public keys to enabl
 │  For each signature:                                     │
 │    1. Decode base64 signature                           │
 │    2. Verify against SuperAdmin public keys             │
-│    3. Count valid signatures                            │
-│  Require: validCount >= minValidSignatures              │
+│    3. Record the signing key's fingerprint              │
+│  Require: distinct signing keys >= minValidSignatures    │
 └─────────────────────────────────────────────────────────┘
 ```
+
+> `minValidSignatures` counts **distinct signing keys**, never signature entries. ECDSA is
+> randomized, so one key can emit unlimited valid signatures over the same container, and
+> `userId` is server-supplied — so neither entries nor user IDs can gate the count. A signer
+> is identified by a SHA-256 hash of its encoded public key; a key configured twice counts
+> once.
 
 ---
 

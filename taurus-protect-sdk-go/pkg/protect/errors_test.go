@@ -4,28 +4,31 @@ import (
 	"errors"
 	"testing"
 	"time"
+
+	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/model"
+	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/service"
 )
 
 func TestAPIError_Error(t *testing.T) {
 	tests := []struct {
-		name    string
-		err     *APIError
-		want    string
+		name string
+		err  *APIError
+		want string
 	}{
 		{
-			name:    "with message",
-			err:     &APIError{Message: "test error", Code: 400},
-			want:    "test error (code=400)",
+			name: "with message",
+			err:  &APIError{Message: "test error", Code: 400},
+			want: "test error (code=400)",
 		},
 		{
-			name:    "with description",
-			err:     &APIError{Description: "test description", Code: 500},
-			want:    "test description (code=500)",
+			name: "with description",
+			err:  &APIError{Description: "test description", Code: 500},
+			want: "test description (code=500)",
 		},
 		{
-			name:    "without message or description",
-			err:     &APIError{Code: 404},
-			want:    "API error (code=404)",
+			name: "without message or description",
+			err:  &APIError{Code: 404},
+			want: "API error (code=404)",
 		},
 	}
 
@@ -105,9 +108,9 @@ func TestAPIError_IsServerError(t *testing.T) {
 
 func TestAPIError_SuggestedRetryDelay(t *testing.T) {
 	tests := []struct {
-		name       string
-		err        *APIError
-		wantMin    time.Duration
+		name    string
+		err     *APIError
+		wantMin time.Duration
 	}{
 		{
 			name:    "rate limit default",
@@ -245,56 +248,71 @@ func TestWhitelistError(t *testing.T) {
 	}
 }
 
-func TestErrorFactoryFunctions(t *testing.T) {
-	t.Run("ValidationError", func(t *testing.T) {
-		err := ValidationError("invalid input", nil)
-		if err.Code != 400 {
-			t.Errorf("ValidationError code = %d, want 400", err.Code)
+// This package used to declare its own APIError / IntegrityError / WhitelistError
+// structs alongside the ones the SDK actually returns, so every check below silently
+// matched nothing: services return service.APIError and the verification helpers return
+// model.IntegrityError. The types are aliases now. These assertions pin that, because a
+// regression re-introducing a parallel type disables every documented errors.Is /
+// errors.As branch without failing anything.
+func TestSentinelsMatchTheErrorsServicesActuallyReturn(t *testing.T) {
+	t.Run("status sentinels match a mapper-shaped error", func(t *testing.T) {
+		notFound := &service.APIError{Code: 404, Message: "wallet not found"}
+		if !errors.Is(notFound, ErrNotFound) {
+			t.Error("errors.Is(serviceErr, ErrNotFound) = false, want true")
+		}
+		if errors.Is(notFound, ErrValidation) {
+			t.Error("a 404 must not match ErrValidation")
+		}
+		for _, code := range []int{500, 502, 503} {
+			if !errors.Is(&service.APIError{Code: code}, ErrServer) {
+				t.Errorf("code %d must match ErrServer", code)
+			}
 		}
 	})
 
-	t.Run("AuthenticationError", func(t *testing.T) {
-		err := AuthenticationError("invalid token", nil)
-		if err.Code != 401 {
-			t.Errorf("AuthenticationError code = %d, want 401", err.Code)
+	t.Run("rate limit exposes retry hints", func(t *testing.T) {
+		rateLimited := &service.APIError{Code: 429, RetryAfter: 5 * time.Second}
+		if !errors.Is(rateLimited, ErrRateLimit) {
+			t.Error("a 429 must match ErrRateLimit")
+		}
+		if !rateLimited.IsRetryable() {
+			t.Error("a 429 must be retryable")
+		}
+		if got := rateLimited.SuggestedRetryDelay(); got != 5*time.Second {
+			t.Errorf("SuggestedRetryDelay() = %v, want 5s", got)
 		}
 	})
 
-	t.Run("AuthorizationError", func(t *testing.T) {
-		err := AuthorizationError("access denied", nil)
-		if err.Code != 403 {
-			t.Errorf("AuthorizationError code = %d, want 403", err.Code)
+	t.Run("the typed 403 is reachable as both itself and the base error", func(t *testing.T) {
+		authz := &service.AuthorizationError{
+			APIError:      &service.APIError{Code: 403, Message: "denied"},
+			RequiredRoles: []string{"admin"},
+		}
+		got, ok := IsAuthorizationError(authz)
+		if !ok {
+			t.Fatal("IsAuthorizationError() = false, want true")
+		}
+		if len(got.RequiredRoles) != 1 || got.RequiredRoles[0] != "admin" {
+			t.Errorf("RequiredRoles = %v, want [admin]", got.RequiredRoles)
+		}
+		if _, ok := IsAPIError(authz); !ok {
+			t.Error("IsAPIError() must also match the typed 403")
+		}
+		if !errors.Is(authz, ErrAuthorization) {
+			t.Error("a 403 must match ErrAuthorization")
 		}
 	})
 
-	t.Run("NotFoundError", func(t *testing.T) {
-		err := NotFoundError("wallet not found", nil)
-		if err.Code != 404 {
-			t.Errorf("NotFoundError code = %d, want 404", err.Code)
+	t.Run("verification failures match their sentinels", func(t *testing.T) {
+		if !IsIntegrityError(&model.IntegrityError{Message: "hash mismatch"}) {
+			t.Error("IsIntegrityError() = false for a verifier-produced error")
 		}
-	})
-
-	t.Run("RateLimitError", func(t *testing.T) {
-		err := RateLimitError("too many requests", 5*time.Second, nil)
-		if err.Code != 429 {
-			t.Errorf("RateLimitError code = %d, want 429", err.Code)
+		whitelist := &model.WhitelistError{Message: "not whitelisted"}
+		if !IsWhitelistError(whitelist) {
+			t.Error("IsWhitelistError() = false for a verifier-produced error")
 		}
-		if err.RetryAfter != 5*time.Second {
-			t.Errorf("RateLimitError RetryAfter = %v, want 5s", err.RetryAfter)
-		}
-	})
-
-	t.Run("ServerError", func(t *testing.T) {
-		err := ServerError(502, "bad gateway", nil)
-		if err.Code != 502 {
-			t.Errorf("ServerError code = %d, want 502", err.Code)
-		}
-	})
-
-	t.Run("ServerError clamps code", func(t *testing.T) {
-		err := ServerError(400, "should be 500", nil)
-		if err.Code != 500 {
-			t.Errorf("ServerError should clamp code to 500, got %d", err.Code)
+		if IsIntegrityError(whitelist) {
+			t.Error("a whitelist error must not match ErrIntegrity")
 		}
 	})
 }

@@ -124,9 +124,13 @@ describe("verifySignature", () => {
     const data = Buffer.from("test data");
     const signature = signData(keyPair.privateKey, data);
 
-    // Corrupt the signature by changing a character
+    // Corrupt the signature by changing a character. Pick a replacement that differs
+    // from the original: ECDSA is randomized, so a fixed replacement character is a
+    // no-op roughly one run in 64 and the test passes for the wrong reason.
     const corrupted =
-      signature.substring(0, 5) + "X" + signature.substring(6);
+      signature.substring(0, 5) +
+      (signature[5] === "X" ? "Y" : "X") +
+      signature.substring(6);
     expect(verifySignature(keyPair.publicKey, data, corrupted)).toBe(false);
   });
 

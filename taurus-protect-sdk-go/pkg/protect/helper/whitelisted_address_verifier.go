@@ -2,7 +2,6 @@ package helper
 
 import (
 	"crypto/ecdsa"
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -17,6 +16,11 @@ type WhitelistedAddressVerifier struct {
 }
 
 // NewWhitelistedAddressVerifier creates a new verifier with the given configuration.
+//
+// Accepts an empty key set on purpose: only step 2 uses the keys, so steps 1, 5 and 6
+// are verifiable without them. A keyless verifier fails closed in
+// VerifyGovernanceRulesSignatures; clientConfig.validate rejects one earlier still.
+// Making this a panic would assert an invariant the type does not have.
 func NewWhitelistedAddressVerifier(superAdminKeys []*ecdsa.PublicKey, minValidSignatures int) *WhitelistedAddressVerifier {
 	return &WhitelistedAddressVerifier{
 		superAdminKeys:     superAdminKeys,
@@ -110,52 +114,22 @@ func (v *WhitelistedAddressVerifier) VerifyWhitelistedAddress(
 	}, nil
 }
 
-// VerifyAndDecodeRulesContainer verifies SuperAdmin signatures on a rules container
-// and decodes it. This performs steps 2-3 of the verification flow for a single
-// rules container, used by the service to build the normalized cache.
+// VerifyAndDecodeRulesContainer performs steps 2-3 for one container, so the service can
+// build its per-page cache.
 func (v *WhitelistedAddressVerifier) VerifyAndDecodeRulesContainer(
 	rulesContainerBase64 string,
 	rulesSignaturesBase64 string,
 	rulesContainerDecoder func(base64Data string) (*model.DecodedRulesContainer, error),
 	userSignaturesDecoder func(base64Data string) ([]*model.RuleUserSignature, error),
 ) (*model.DecodedRulesContainer, error) {
-	if rulesContainerBase64 == "" {
-		return nil, &model.IntegrityError{Message: "rulesContainer is empty"}
-	}
-	if rulesSignaturesBase64 == "" {
-		return nil, &model.IntegrityError{Message: "rulesSignatures is empty"}
-	}
-
-	// Decode and verify signatures
-	signatures, err := userSignaturesDecoder(rulesSignaturesBase64)
-	if err != nil {
-		return nil, &model.IntegrityError{
-			Message: fmt.Sprintf("failed to decode rules signatures: %v", err),
-		}
-	}
-
-	rulesData, err := DecodeBase64(rulesContainerBase64)
-	if err != nil {
-		return nil, &model.IntegrityError{
-			Message: fmt.Sprintf("failed to decode rules container: %v", err),
-		}
-	}
-
-	if err := VerifyGovernanceRulesSignatures(rulesData, signatures, v.superAdminKeys, v.minValidSignatures); err != nil {
-		return nil, &model.IntegrityError{
-			Message: fmt.Sprintf("rules container signature verification failed: %v", err),
-		}
-	}
-
-	// Decode rules container
-	container, err := rulesContainerDecoder(rulesContainerBase64)
-	if err != nil {
-		return nil, &model.IntegrityError{
-			Message: fmt.Sprintf("failed to decode rules container: %v", err),
-		}
-	}
-
-	return container, nil
+	return VerifyAndDecodeRulesContainer(
+		rulesContainerBase64,
+		rulesSignaturesBase64,
+		v.superAdminKeys,
+		v.minValidSignatures,
+		rulesContainerDecoder,
+		userSignaturesDecoder,
+	)
 }
 
 // verifyMetadataHash verifies that the computed hash matches the provided hash.
@@ -280,23 +254,34 @@ func (v *WhitelistedAddressVerifier) verifyWhitelistSignatures(
 	rulesContainer *model.DecodedRulesContainer,
 	metadataHash string,
 ) error {
+	// Which rules judge this address is decided by the SIGNED payload, not by the
+	// surrounding response. A DTO that set blockchain="" would select the
+	// global-default tier — broader than the rule the address belongs to.
+	blockchain, network, err := resolveRuleKeyFor(addr.Metadata, addr.Blockchain, addr.Network)
+	if err != nil {
+		return err
+	}
+
 	// Find matching address whitelisting rules
-	whitelistRules := rulesContainer.FindAddressWhitelistingRules(addr.Blockchain, addr.Network)
+	whitelistRules := rulesContainer.FindAddressWhitelistingRules(blockchain, network)
 	if whitelistRules == nil {
 		return &model.WhitelistError{
 			Message: fmt.Sprintf("no address whitelisting rules found for blockchain=%s network=%s",
-				addr.Blockchain, addr.Network),
+				blockchain, network),
 		}
 	}
 
 	// Determine which thresholds to use based on rule lines
-	parallelThresholds := v.getApplicableThresholds(whitelistRules, addr)
+	parallelThresholds, err := v.getApplicableThresholds(whitelistRules, addr)
+	if err != nil {
+		return err
+	}
 	if len(parallelThresholds) == 0 {
 		return &model.WhitelistError{Message: "no threshold rules defined"}
 	}
 
 	// Try to verify all paths (OR logic - only one needs to succeed)
-	pathFailures := v.tryVerifyAllPaths(parallelThresholds, rulesContainer, addr.SignedAddress.Signatures, metadataHash)
+	pathFailures := tryVerifyAllPaths(parallelThresholds, rulesContainer, addr.SignedAddress.Signatures, metadataHash)
 	if len(pathFailures) > 0 {
 		return &model.WhitelistError{
 			Message: fmt.Sprintf("signature verification failed for whitelisted address (ID: %s): "+
@@ -310,10 +295,20 @@ func (v *WhitelistedAddressVerifier) verifyWhitelistSignatures(
 
 // getApplicableThresholds determines which thresholds to use based on rule lines.
 // Checks rule lines only when: NO linked addresses AND exactly 1 linked wallet.
+//
+// Returns a ContainerIntegrityError when a line carries a source cell this SDK could
+// not type. Falling through to the container defaults in that case is the dangerous
+// path: the line might be the one that matches, and its thresholds might be stricter
+// than the default, so the address would be verified against a quorum governance
+// never granted it — silently, with no error.
+//
+//	line source typed ──┬─ matches wallet path ─▶ line thresholds
+//	                    └─ no match ────────────▶ container defaults
+//	line source RAW ─────────────────────────────▶ ContainerIntegrityError
 func (v *WhitelistedAddressVerifier) getApplicableThresholds(
 	rules *model.AddressWhitelistingRules,
 	addr *model.WhitelistedAddress,
-) []*model.SequentialThresholds {
+) ([]*model.SequentialThresholds, error) {
 	hasLinkedAddresses := len(addr.LinkedInternalAddresses) > 0
 	walletCount := len(addr.LinkedWallets)
 
@@ -324,15 +319,36 @@ func (v *WhitelistedAddressVerifier) getApplicableThresholds(
 		walletPath := addr.LinkedWallets[0].Path
 
 		// Find matching line by wallet path
-		for _, line := range rules.Lines {
+		for i, line := range rules.Lines {
+			if lineHasUntypedSource(line) {
+				return nil, &model.ContainerIntegrityError{
+					Message: fmt.Sprintf(
+						"address whitelisting rules for blockchain=%s network=%s line %d carry a "+
+							"source cell this SDK version cannot interpret; refusing to fall back to "+
+							"the container default thresholds, which may be weaker than the line's. "+
+							"Upgrade the SDK to match the validatord that signed this container",
+						rules.Currency, rules.Network, i),
+				}
+			}
 			if v.matchesWalletPath(line, walletPath) {
-				return line.ParallelThresholds
+				return line.ParallelThresholds, nil
 			}
 		}
 	}
 
 	// Fallback to default thresholds
-	return rules.ParallelThresholds
+	return rules.ParallelThresholds, nil
+}
+
+// lineHasUntypedSource reports whether the line's source cell was preserved verbatim
+// because this SDK could not decode it into the typed model. matchesWalletPath reads
+// Cells[0], so that is the cell whose meaning must be known.
+func lineHasUntypedSource(line *model.AddressWhitelistingLine) bool {
+	if line == nil || len(line.Cells) == 0 {
+		return false
+	}
+	source := line.Cells[0]
+	return source != nil && len(source.Raw) > 0
 }
 
 // matchesWalletPath checks if a rule line matches the given wallet path.
@@ -353,168 +369,5 @@ func (v *WhitelistedAddressVerifier) matchesWalletPath(line *model.AddressWhitel
 	return walletPath != "" && walletPath == source.InternalWallet.Path
 }
 
-// precomputeHashesJSON pre-computes JSON serialization of each signature's hashes array.
-// This avoids redundant json.Marshal calls when the same signature is checked
-// across multiple group thresholds in the verification loops.
-// Returns a map from signature index to marshaled JSON bytes.
-// If marshaling fails for a signature, that index is absent from the map.
-func precomputeHashesJSON(signatures []model.WhitelistSignature) map[int][]byte {
-	result := make(map[int][]byte, len(signatures))
-	for i, sig := range signatures {
-		hashesJSON, err := json.Marshal(sig.Hashes)
-		if err == nil {
-			result[i] = hashesJSON
-		}
-	}
-	return result
-}
-
-// tryVerifyAllPaths tries to verify all parallel threshold paths.
-// Returns empty slice if verification passed, or list of failure messages if all paths failed.
-func (v *WhitelistedAddressVerifier) tryVerifyAllPaths(
-	parallelThresholds []*model.SequentialThresholds,
-	rulesContainer *model.DecodedRulesContainer,
-	signatures []model.WhitelistSignature,
-	metadataHash string,
-) []string {
-	// Pre-compute JSON serialization of each signature's hashes array once,
-	// so it can be reused across all group threshold checks.
-	hashesJSONMap := precomputeHashesJSON(signatures)
-
-	var pathFailures []string
-
-	for i, seqThreshold := range parallelThresholds {
-		err := v.verifySequentialThresholds(seqThreshold, rulesContainer, signatures, metadataHash, hashesJSONMap)
-		if err == nil {
-			return nil // Verification passed
-		}
-		pathFailures = append(pathFailures, fmt.Sprintf("Path %d: %s", i+1, err.Error()))
-	}
-
-	return pathFailures
-}
-
-// verifySequentialThresholds verifies all group thresholds in a sequential threshold path.
-func (v *WhitelistedAddressVerifier) verifySequentialThresholds(
-	seqThreshold *model.SequentialThresholds,
-	rulesContainer *model.DecodedRulesContainer,
-	signatures []model.WhitelistSignature,
-	metadataHash string,
-	hashesJSONMap map[int][]byte,
-) error {
-	if seqThreshold == nil || len(seqThreshold.Thresholds) == 0 {
-		return &model.IntegrityError{Message: "no group thresholds defined"}
-	}
-
-	// ALL group thresholds must be satisfied (AND logic)
-	for _, groupThreshold := range seqThreshold.Thresholds {
-		if err := v.verifyGroupThreshold(groupThreshold, rulesContainer, signatures, metadataHash, hashesJSONMap); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// verifyGroupThreshold verifies that a group threshold is met.
-func (v *WhitelistedAddressVerifier) verifyGroupThreshold(
-	groupThreshold *model.GroupThreshold,
-	rulesContainer *model.DecodedRulesContainer,
-	signatures []model.WhitelistSignature,
-	metadataHash string,
-	hashesJSONMap map[int][]byte,
-) error {
-	groupID := groupThreshold.GroupID
-	minSigs := groupThreshold.MinimumSignatures
-
-	group := rulesContainer.FindGroupByID(groupID)
-	if group == nil {
-		return &model.IntegrityError{
-			Message: fmt.Sprintf("group '%s' not found in rules container", groupID),
-		}
-	}
-
-	if len(group.UserIDs) == 0 {
-		if minSigs > 0 {
-			return &model.IntegrityError{
-				Message: fmt.Sprintf("group '%s' has no users but requires %d signature(s)", groupID, minSigs),
-			}
-		}
-		return nil // minSignatures == 0, so empty group is OK
-	}
-
-	// Build set for faster lookup
-	groupUserIDSet := make(map[string]bool)
-	for _, uid := range group.UserIDs {
-		groupUserIDSet[uid] = true
-	}
-
-	// Count valid signatures from users in this group
-	validCount := 0
-	var skippedReasons []string
-
-	for i, sig := range signatures {
-		if sig.UserSignature == nil {
-			skippedReasons = append(skippedReasons, "signature has nil userSig")
-			continue
-		}
-
-		sigUserID := sig.UserSignature.UserID
-		if !groupUserIDSet[sigUserID] {
-			continue // Signer not in this group - not an error, just not relevant
-		}
-
-		// Check that metadata hash is covered by this signature
-		if !containsHash(sig.Hashes, metadataHash) {
-			skippedReasons = append(skippedReasons, fmt.Sprintf(
-				"user '%s' signature does not cover metadata hash '%s' (signed hashes=%v)",
-				sigUserID, metadataHash, sig.Hashes))
-			continue
-		}
-
-		user := rulesContainer.FindUserByID(sigUserID)
-		if user == nil {
-			skippedReasons = append(skippedReasons, fmt.Sprintf("user '%s' not found in rules container", sigUserID))
-			continue
-		}
-		if user.PublicKey == nil {
-			skippedReasons = append(skippedReasons, fmt.Sprintf("user '%s' has no public key", sigUserID))
-			continue
-		}
-
-		// Use pre-computed JSON-encoded hashes array
-		hashesJSON, ok := hashesJSONMap[i]
-		if !ok {
-			skippedReasons = append(skippedReasons, fmt.Sprintf("failed to marshal hashes for user '%s'", sigUserID))
-			continue
-		}
-
-		valid, err := crypto.VerifySignature(user.PublicKey, hashesJSON, sig.UserSignature.Signature)
-		if err != nil || !valid {
-			skippedReasons = append(skippedReasons, fmt.Sprintf("user '%s' signature verification failed", sigUserID))
-			continue
-		}
-
-		validCount++
-		if validCount >= minSigs {
-			return nil // Threshold met
-		}
-	}
-
-	// Threshold not met
-	message := fmt.Sprintf("group '%s' requires %d signature(s) but only %d valid", groupID, minSigs, validCount)
-	if len(skippedReasons) > 0 {
-		message += " [" + strings.Join(skippedReasons, "; ") + "]"
-	}
-	return &model.IntegrityError{Message: message}
-}
-
-// containsHash checks if a hash is in the list (using constant-time comparison).
-func containsHash(hashes []string, hash string) bool {
-	for _, h := range hashes {
-		if ConstantTimeCompare(h, hash) {
-			return true
-		}
-	}
-	return false
-}
+// containsHash lives in signature_verifier.go, beside VerifyHashCoverage.
+// The step-5 threshold walk lives in group_threshold.go, shared with the asset verifier.

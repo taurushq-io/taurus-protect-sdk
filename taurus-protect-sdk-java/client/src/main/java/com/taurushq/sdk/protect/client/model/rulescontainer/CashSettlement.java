@@ -10,7 +10,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  *
  * @see TransactionRuleDetails
  */
-public class CashSettlement {
+public class CashSettlement extends RulesNode {
 
     /**
      * The cash settlement provider (e.g., banking partner identifier).

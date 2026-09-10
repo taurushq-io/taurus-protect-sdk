@@ -6,7 +6,7 @@
 
 import { NotFoundError, ValidationError } from "../errors";
 import type { TransactionsApi } from "../internal/openapi/apis/TransactionsApi";
-import { transactionFromDto, transactionsFromDto } from "../mappers/transaction";
+import { transactionsFromDto } from "../mappers/transaction";
 import type { Pagination, PaginatedResult } from "../models/pagination";
 import type { ListTransactionsOptions, Transaction } from "../models/transaction";
 import { BaseService } from "./base";

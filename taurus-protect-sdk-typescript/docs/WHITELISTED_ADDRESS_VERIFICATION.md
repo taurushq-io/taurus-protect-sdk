@@ -4,7 +4,7 @@ This document explains the cryptographic integrity verification process for whit
 
 ## Overview
 
-The SDK implements a **6-step cryptographic verification pipeline** to ensure whitelisted addresses are authentic and properly approved according to governance rules. Verification is available via `WhitelistedAddressService.withVerification()` - callers can choose between basic retrieval or full cryptographic verification.
+The SDK implements a **6-step cryptographic verification pipeline** to ensure whitelisted addresses are authentic and properly approved according to governance rules. Verification is **always enforced** — `client.whitelistedAddresses` wires the verifying service, and every read path (`get`, `list`, `getEnvelope`) runs the full pipeline. There is no unverified accessor.
 
 ## Verification Flow
 
@@ -56,7 +56,7 @@ The SDK implements a **6-step cryptographic verification pipeline** to ensure wh
                                     |
                                     v
 +---------------------------------------------------------------------+
-|         STEP 6: Parse WhitelistedAddress from Payload               |
+|         STEP 6: Parse WhitelistedAddress from VERIFIED Payload      |
 |  Parse verified payload JSON into WhitelistedAddress model          |
 |  Return WhitelistedAddressVerificationResult                        |
 +---------------------------------------------------------------------+
@@ -96,9 +96,15 @@ if (!constantTimeCompare(computedHash, envelope.metadata.hash)) {
 **Process:**
 1. Decode `rulesSignatures` from Base64 using `userSignaturesDecoder`
 2. Decode `rulesContainer` from Base64 to raw bytes
-3. For each signature, verify against SuperAdmin public keys using `isValidSignature()`
-4. Count valid signatures
-5. Require `validCount >= minValidSignatures`
+3. Verify each signature against the SuperAdmin public keys
+4. Record the fingerprint of each key that verifies
+5. Require the number of **distinct signing keys** to be at least `minValidSignatures`
+
+> **Counted by signing key, not by entry.** ECDSA is randomized, so one SuperAdmin key can
+> emit unlimited valid signatures over the same container, and `userId` is server-supplied.
+> A signer is identified by a SHA-256 hash of its encoded public key, so a key configured
+> twice — or appearing under several user IDs — counts once. The threshold is evaluated in
+> one place: the SDK's shared signature-verifier helper.
 
 **Cryptographic Algorithm:** ECDSA P-256 with raw r||s signature format (64 bytes)
 
@@ -164,19 +170,35 @@ ParallelThresholds (OR paths)
    - Find group by ID in rules container
    - For each signature from a user in this group:
      - Check user is in group
-     - Check signature covers metadata hash
-     - Get user's public key from rules container
+     - Check the signature covers **the hash Step 4 matched** — `verifyHashInSignedHashes`
+       returns it, and it may be a legacy variant rather than `metadata.hash`
+     - Get the user's public key **from the verified rules container**
      - Verify signature: `ECDSA(JSON(hashes[]), userPublicKey)`
-   - Count valid signatures
-   - Require `validCount >= minimumSignatures`
+     - Add that key's fingerprint to a `Set` of signers
+   - Require `signers.size >= minimumSignatures`
+
+> **Counted by signer, not by signature entry.** ECDSA is randomized, and both the signature
+> entries and the `userId` they carry are server-supplied, so counting entries would let a
+> duplicated or re-signed entry from one group member satisfy an N-of-M group and promote an
+> under-approved address to approved. A signer is identified by a fingerprint of the public key
+> **the verified container holds for that user** — never by the entry's `userId` — so two user
+> IDs sharing one key count once: that is one compromised secret. Same counting rule as
+> `minValidSignatures` in Step 2; what differs is the scope (one group's members vs the
+> tenant's SuperAdmins).
 
 **Signature Data Format:** JSON array of hashes, then ECDSA signed.
 
 ```typescript
+const signers = new Set<string>();
+// ...for each signature from a user in this group:
 const hashesJson = JSON.stringify(sig.hashes);
 const hashesData = Buffer.from(hashesJson, 'utf-8');
 if (verifySignature(publicKey, hashesData, sig.userSignature.signature)) {
-  validCount++;
+  // publicKey came from the verified container, not from the entry
+  signers.add(keyFingerprint(publicKey));
+  if (signers.size >= minSigs) {
+    return null; // threshold met
+  }
 }
 ```
 
@@ -203,6 +225,24 @@ const withoutLabels = payloadAsString.replace(/,"label":"[^"]*"}/g, '}');
 let withoutBoth = payloadAsString.replace(/,"label":"[^"]*"}/g, '}');
 withoutBoth = withoutBoth.replace(/,"contractType":"[^"]*"/g, '');
 ```
+
+### Step 6: Parse WhitelistedAddress from the Verified Payload
+
+**Purpose:** Return only values that were actually covered by the verified signatures.
+
+**Process:**
+1. Parse `metadata.payloadAsString` (the verified source) into the `WhitelistedAddress`
+2. Security-critical fields — `address`, `label`, `memo`, `customerId`, `addressType`,
+   `blockchain`, `network` — are read **only** from that payload
+3. When the payload omits a field the result is `undefined`; it is never back-filled from
+   the unverified DTO
+4. Non-security fields (`status`, `action`, `rule`, `createdAt`) may come from the DTO
+
+**Security:** Steps 1-5 prove the envelope is authentic; this step is what stops an
+attacker-supplied label or address reaching the caller. Implemented in
+`src/helpers/whitelisted-address-verifier.ts`.
+
+---
 
 ## Cryptographic Primitives
 
@@ -244,18 +284,17 @@ withoutBoth = withoutBoth.replace(/,"contractType":"[^"]*"/g, '');
 
 ## Usage Examples
 
-### Basic Retrieval (No Verification)
+### Retrieval (verification is automatic)
 
 ```typescript
-import { ProtectClient } from '@taurushq/protect-sdk';
+import { Credentials, ProtectClient } from '@taurushq/protect-sdk';
 
 const client = ProtectClient.create({
   host: 'https://protect.example.com',
-  apiKey: 'your-api-key',
-  apiSecret: 'your-hex-secret',
+  credentials: Credentials.apiKey('your-api-key', 'your-hex-secret'),
 });
 
-// Get address without verification
+// Runs the full 6-step verification; throws IntegrityError if it fails
 const address = await client.whitelistedAddresses.get('123');
 console.log(`Address: ${address.address}`);
 ```

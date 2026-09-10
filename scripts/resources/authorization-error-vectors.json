@@ -1,0 +1,57 @@
+[
+  {
+    "description": "wrapped gRPC status as actually returned by the server (observed on GetBusinessRulesV2)",
+    "message": "pre-filter failed: common filters failed while constructing authcontext: rpc error: code = PermissionDenied desc = one of the 'admin - adminreadonly' role is required",
+    "expected_roles": [
+      "admin",
+      "adminreadonly"
+    ]
+  },
+  {
+    "description": "OneOf check failed, two roles",
+    "message": "one of the 'admin - adminreadonly' role is required",
+    "expected_roles": [
+      "admin",
+      "adminreadonly"
+    ]
+  },
+  {
+    "description": "AllOf check failed, single role",
+    "message": "one of the 'tpuser' role is required",
+    "expected_roles": [
+      "tpuser"
+    ]
+  },
+  {
+    "description": "OneOf check failed, three roles",
+    "message": "one of the 'admin - adminreadonly - superadminreadonly' role is required",
+    "expected_roles": [
+      "admin",
+      "adminreadonly",
+      "superadminreadonly"
+    ]
+  },
+  {
+    "description": "generic permission denied, not role-based",
+    "message": "This endpoint has been disabled",
+    "expected_roles": []
+  },
+  {
+    "description": "empty message",
+    "message": "",
+    "expected_roles": []
+  },
+  {
+    "description": "role list padded with extra whitespace",
+    "message": "one of the ' admin  -  adminreadonly ' role is required",
+    "expected_roles": [
+      "admin",
+      "adminreadonly"
+    ]
+  },
+  {
+    "description": "prose shape present but role list empty",
+    "message": "one of the '' role is required",
+    "expected_roles": []
+  }
+]

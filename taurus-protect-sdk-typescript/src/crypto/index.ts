@@ -32,3 +32,6 @@ export { signData, verifySignature } from "./signing";
 
 // TPV1 authentication
 export { TPV1Auth, calculateSignedHeader } from "./tpv1";
+
+// Error classification
+export { isCryptoVerificationError } from "./errors";

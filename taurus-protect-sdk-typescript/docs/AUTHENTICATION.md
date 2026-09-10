@@ -34,15 +34,34 @@ The SDK handles TPV1 signing automatically through middleware. You only need to 
 
 ## Client Initialization
 
-### Basic Setup
+### Authentication mechanisms
+
+Build the auth mechanism with `Credentials` and pass it as `credentials`:
+
+- `Credentials.apiKey(apiKey, apiSecret)` — static TPV1-HMAC.
+- `Credentials.bearerToken(token)` — a single static Bearer token.
+- `Credentials.bearerTokenProvider(fn)` — a Bearer token resolved per request.
+
+SuperAdmin public keys are **required** regardless of the mechanism — client-side
+governance rules verification is mandatory.
+
+> **A client must not be shared across a trust boundary.** The rules-container cache is a
+> single slot shared by every caller of one client. On a cache hit no request is issued, so
+> a second caller receives the container fetched with the first caller's token and their own
+> authorization for the governance read is never exercised. Governance containers are
+> tenant-wide and SuperAdmin-signed, so this is not a cross-tenant leak — but with a
+> per-request token provider, build **one client per tenant**. `tg-protect-mcpd`'s
+> `tenantClientRegistry` is the reference pattern.
+
 
 ```typescript
-import { ProtectClient } from '@taurushq/protect-sdk';
+import { Credentials, ProtectClient } from '@taurushq/protect-sdk';
 
 const client = ProtectClient.create({
   host: 'https://api.protect.taurushq.com',
-  apiKey: 'your-api-key-uuid',
-  apiSecret: 'your-api-secret-hex',
+  credentials: Credentials.apiKey('your-api-key-uuid', 'your-api-secret-hex'),
+  superAdminKeysPem: ['-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----'], // required
+  minValidSignatures: 2,
 });
 
 try {
@@ -53,12 +72,15 @@ try {
 }
 ```
 
+The examples below pass the flat `apiKey`/`apiSecret` fields directly; those are
+**deprecated** — prefer `credentials`.
+
 ### With SuperAdmin Key Verification
 
 For enhanced security with governance rules and whitelisted address verification:
 
 ```typescript
-import { ProtectClient } from '@taurushq/protect-sdk';
+import { Credentials, ProtectClient } from '@taurushq/protect-sdk';
 
 // SuperAdmin public keys in PEM format
 const superAdmin1 = `-----BEGIN PUBLIC KEY-----
@@ -71,8 +93,7 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...
 
 const client = ProtectClient.create({
   host: 'https://api.protect.taurushq.com',
-  apiKey: 'your-api-key-uuid',
-  apiSecret: 'your-api-secret-hex',
+  credentials: Credentials.apiKey('your-api-key-uuid', 'your-api-secret-hex'),
   superAdminKeysPem: [superAdmin1, superAdmin2],
   minValidSignatures: 2,
 });
@@ -83,8 +104,7 @@ const client = ProtectClient.create({
 ```typescript
 const client = ProtectClient.create({
   host: 'https://api.protect.taurushq.com',
-  apiKey: 'your-api-key-uuid',
-  apiSecret: 'your-api-secret-hex',
+  credentials: Credentials.apiKey('your-api-key-uuid', 'your-api-secret-hex'),
   superAdminKeysPem: [superAdmin1, superAdmin2],
   minValidSignatures: 2,
   rulesCacheTtlMs: 600000, // 10 minutes
@@ -107,7 +127,7 @@ const client = ProtectClient.create({
 ## Environment-Based Configuration
 
 ```typescript
-import { ProtectClient } from '@taurushq/protect-sdk';
+import { Credentials, ProtectClient } from '@taurushq/protect-sdk';
 import * as fs from 'fs';
 
 function createClientFromEnv(): ProtectClient {
@@ -115,14 +135,12 @@ function createClientFromEnv(): ProtectClient {
   const apiKey = process.env.TAURUS_API_KEY!;
   const apiSecret = process.env.TAURUS_API_SECRET!;
 
-  // Optional: Load SuperAdmin keys from files
-  const keysPath = process.env.TAURUS_SUPERADMIN_KEYS_PATH;
-  let superAdminKeysPem: string[] | undefined;
-  if (keysPath) {
-    superAdminKeysPem = keysPath
-      .split(',')
-      .map((p) => fs.readFileSync(p.trim(), 'utf-8'));
-  }
+  // SuperAdmin keys are REQUIRED for every auth mechanism — `superAdminKeysPem` is a
+  // required config field, because client-side verification is not optional.
+  const keysPath = process.env.TAURUS_SUPERADMIN_KEYS_PATH!;
+  const superAdminKeysPem: string[] = keysPath
+    .split(',')
+    .map((p) => fs.readFileSync(p.trim(), 'utf-8'));
 
   const minValidSignatures = parseInt(
     process.env.TAURUS_MIN_SIGNATURES || '2',
@@ -131,8 +149,7 @@ function createClientFromEnv(): ProtectClient {
 
   return ProtectClient.create({
     host,
-    apiKey,
-    apiSecret,
+    credentials: Credentials.apiKey(apiKey, apiSecret),
     superAdminKeysPem,
     minValidSignatures,
   });
@@ -268,10 +285,16 @@ SuperAdmin keys are typically provided by your Taurus-PROTECT administrator. You
 |  For each signature:                                       |
 |    1. Decode base64 signature                             |
 |    2. Verify against SuperAdmin public keys               |
-|    3. Count valid signatures (track distinct user IDs)    |
-|  Require: validCount >= minValidSignatures                |
+|    3. Record the signing key's fingerprint                |
+|  Require: distinct signing keys >= minValidSignatures     |
 +-----------------------------------------------------------+
 ```
+
+> `minValidSignatures` counts **distinct signing keys**, never signature entries. ECDSA is
+> randomized, so one key can emit unlimited valid signatures over the same container, and
+> `userId` is server-supplied — so neither entries nor user IDs can gate the count. A signer
+> is identified by a SHA-256 hash of its encoded public key; a key configured twice counts
+> once.
 
 ### Verification with GovernanceRuleService
 

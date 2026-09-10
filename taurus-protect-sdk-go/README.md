@@ -50,10 +50,16 @@ The SDK requires the following packages (installed automatically):
 ```go
 import "github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect"
 
-// Basic initialization
+// SuperAdmin public keys are required — client-side rules verification is mandatory.
+superAdminKeys := []string{
+    "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...\n-----END PUBLIC KEY-----",
+}
+
 client, err := protect.NewClient(
     "https://api.protect.taurushq.com",
-    protect.WithCredentials(apiKey, apiSecret),
+    protect.WithCredentials(protect.APIKeyCredentials(apiKey, apiSecret)),
+    protect.WithSuperAdminKeysPEM(superAdminKeys),
+    protect.WithMinValidSignatures(1),
 )
 if err != nil {
     log.Fatal(err)
@@ -64,29 +70,9 @@ defer client.Close()
 wallets, _, err := client.Wallets().ListWallets(ctx, nil)
 ```
 
-For production use with SuperAdmin key verification:
-
-```go
-import "github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect"
-
-superAdminKeys := []string{
-    "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...\n-----END PUBLIC KEY-----",
-    "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...\n-----END PUBLIC KEY-----",
-}
-
-client, err := protect.NewClient(
-    "https://api.protect.taurushq.com",
-    protect.WithCredentials(apiKey, apiSecret),
-    protect.WithSuperAdminKeysPEM(superAdminKeys),
-    protect.WithMinValidSignatures(2),
-)
-if err != nil {
-    log.Fatal(err)
-}
-defer client.Close()
-
-// All governance rule verifications will require 2 valid signatures
-```
+Build the credentials with `protect.APIKeyCredentials(apiKey, apiSecret)` for TPV1-HMAC,
+or `protect.BearerTokenProviderCredentials(fn)` for a per-request Bearer token. Raise
+`WithMinValidSignatures` for multi-signature governance verification.
 
 See [Authentication](docs/AUTHENTICATION.md) for more initialization options.
 
@@ -201,16 +187,16 @@ if err != nil {
 }
 
 // Get requests pending approval
-requests, _, err := client.Requests().ListRequestsForApproval(ctx, &model.ListRequestsOptions{
-    Limit: 10,
+result, err := client.Requests().ListRequestsForApproval(ctx, &model.ListRequestsOptions{
+    PageSize: 10,
 })
 if err != nil {
     return err
 }
 
-if len(requests) > 0 {
+if len(result.Requests) > 0 {
     // Approve with ECDSA signature
-    signedCount, err := client.Requests().ApproveRequests(ctx, requests, privateKey)
+    signedCount, err := client.Requests().ApproveRequests(ctx, result.Requests, privateKey)
     if err != nil {
         return err
     }
@@ -226,11 +212,11 @@ me, err := client.TaurusNetwork().Participants().GetMyParticipant(ctx)
 if err != nil {
     return err
 }
-fmt.Printf("Participant: %s\n", me.Name)
+fmt.Printf("Participant: %s\n", me.Participant.Name)
 
 // List pledges
 pledges, cursor, err := client.TaurusNetwork().Pledges().ListPledges(ctx, &taurusnetwork.ListPledgesOptions{
-    Limit: 10,
+    PageSize: 10,
 })
 if err != nil {
     return err
@@ -240,10 +226,11 @@ for _, pledge := range pledges {
 }
 
 // List shared addresses
-addresses, _, err := client.TaurusNetwork().Sharing().ListSharedAddresses(ctx, nil)
+shared, err := client.TaurusNetwork().Sharing().ListSharedAddresses(ctx, nil)
 if err != nil {
     return err
 }
+fmt.Printf("Shared addresses: %d\n", len(shared.SharedAddresses))
 ```
 
 ### Error Handling

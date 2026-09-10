@@ -82,8 +82,12 @@ Contains the cryptographically signed details of a request.
 | Property | Description |
 |----------|-------------|
 | `hash` | SHA-256 hash of the payload |
-| `payload` | Parsed transaction details (source, destination, amount) |
 | `payloadAsString` | Raw JSON string for verification |
+
+> A parsed `payload` object is **intentionally not exposed** by any of the four SDKs.
+> Security-critical fields must be read from the verified payload string, so handing out a
+> pre-parsed convenience object invites callers to trust values that were never covered by
+> the hash. Parse `payloadAsString` yourself after verifying `hash`.
 
 ### Transaction
 
@@ -295,6 +299,46 @@ ParallelThresholds (OR paths - any path can succeed)
 ```
 
 ---
+
+## Governance Rules: Typed Model vs JSON Bridge
+
+Governance rules travel as a base64 protobuf blob (`rulesContainer`). All four SDKs expose
+two ways to work with it, and the difference matters for security.
+
+**The typed path (use this).** `DecodedRulesContainer` plus the `RuleCell` union (36 cell
+types across 9 column families, with a `RawCell` fallback) gives a checked, lossless view:
+unknown protobuf fields are preserved per node, unknown cell types survive as `RawCell` and
+re-encode verbatim, and the encoder strips the server-controlled `enforcedRulesHash` and
+`timestamp`. Writes go through `updateRulesProposal(container)`, which encodes the typed
+container itself — a caller never supplies raw bytes.
+
+**The JSON bridge (an escape hatch).** `rulesContainerJsonFromBase64` /
+`rulesContainerBase64FromJson` (and the per-message `ruleMessageJsonFromBase64` /
+`ruleMessageBase64FromJson`) convert between the blob and canonical protobuf JSON. They
+exist so a tool or an agent can author rules as JSON rather than as typed objects.
+
+Two properties to know before using it:
+
+- **It is not typed.** The bridge runs protobuf-JSON over the raw message, so rule cells
+  appear as opaque base64 and the `RuleCell` union is bypassed entirely. Nothing validates
+  that a cell makes sense for its column.
+- **It is not lossless.** protobuf-JSON has no representation for unknown fields, so a
+  container built by a newer server loses its schema-newer data on the way through JSON.
+  The typed path preserves it; this one does not.
+
+The safe pattern is to author in JSON and then **decode back into the typed container
+before submitting**, so the typed encoder produces the bytes that get signed:
+
+| | Go | Java | Python | TypeScript |
+|---|---|---|---|---|
+| blob to JSON | `RulesContainerJSONFromBase64` | `rulesContainerJsonFromBase64` | `rules_container_json_from_base64` | `rulesContainerJsonFromBase64` |
+| JSON to blob | `RulesContainerBase64FromJSON` | `rulesContainerBase64FromJson` | `rules_container_base64_from_json` | `rulesContainerBase64FromJson` |
+| blob to typed | `RulesContainerFromBase64` | `RulesContainerMapper.fromBytes` | `rules_container_from_base64` | `rulesContainerFromBase64` |
+
+Encoding is deterministic in all four: the container carries `map<string, bytes>
+properties` at five levels, and map order is unspecified unless forced, so the same rules
+would otherwise encode to different bytes per run and per SDK — and these are the bytes
+SuperAdmins sign.
 
 ## Related Documentation
 

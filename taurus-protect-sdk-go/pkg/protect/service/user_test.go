@@ -52,11 +52,7 @@ func TestUserService_ListUsers_NilOptions(t *testing.T) {
 		errMapper: NewErrorMapper(),
 	}
 
-	defer func() {
-		if r := recover(); r == nil {
-			// If no panic, the test passed validation stage
-		}
-	}()
+	defer func() { _ = recover() }()
 
 	_, _ = svc.ListUsers(nil, nil)
 }
@@ -68,11 +64,7 @@ func TestUserService_GetMe(t *testing.T) {
 		errMapper: NewErrorMapper(),
 	}
 
-	defer func() {
-		if r := recover(); r == nil {
-			// If no panic, the test passed validation stage
-		}
-	}()
+	defer func() { _ = recover() }()
 
 	_, _ = svc.GetMe(nil)
 }

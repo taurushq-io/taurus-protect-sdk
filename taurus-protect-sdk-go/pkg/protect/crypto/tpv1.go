@@ -172,7 +172,7 @@ func DecodePublicKeyPEM(pemData string) (*ecdsa.PublicKey, error) {
 	// Validate curve is P-256 (secp256r1) - reject weaker curves
 	if ecdsaPub.Curve != elliptic.P256() {
 		curveName := "unknown"
-		if ecdsaPub.Curve != nil && ecdsaPub.Curve.Params() != nil {
+		if ecdsaPub.Curve != nil && ecdsaPub.Params() != nil {
 			curveName = ecdsaPub.Curve.Params().Name
 		}
 		return nil, fmt.Errorf("only P-256 curve is supported, got %s", curveName)

@@ -56,6 +56,13 @@ taurus-protect-sdk-typescript/node_modules
 *api*key*
 *.secret
 *credentials*
+# The Credentials auth API is source, not a secret — *credentials* would hide it in all four SDKs.
+!taurus-protect-sdk-go/pkg/protect/credentials*.go
+!taurus-protect-sdk-java/client/src/main/java/com/taurushq/sdk/protect/client/Credentials.java
+!taurus-protect-sdk-python/taurus_protect/credentials.py
+!taurus-protect-sdk-python/tests/unit/test_credentials.py
+!taurus-protect-sdk-typescript/src/credentials.ts
+!taurus-protect-sdk-typescript/tests/unit/credentials.test.ts
 .env*
 *.pem
 *.key
@@ -65,5 +72,6 @@ test.properties
 ### AI ###
 #.claude
 #CLAUDE.md
+CLAUDE.local.md
 settings.local.json
 .claude/tasks/

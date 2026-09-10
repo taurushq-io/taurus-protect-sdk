@@ -7,6 +7,8 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from taurus_protect.models.pagination import Pagination
+
 
 class InternalAddress(BaseModel):
     """An internal address linked to a whitelisted address."""
@@ -217,6 +219,17 @@ class WhitelistedAsset(BaseModel):
     blockchain: Optional[str] = Field(default=None, description="Blockchain")
     network: Optional[str] = Field(default=None, description="Network")
     contract_address: Optional[str] = Field(default=None, description="Token contract")
+    decimals: Optional[int] = Field(
+        default=None,
+        description=(
+            "Token decimal precision, from the verified payload. Security-critical: "
+            "it scales every amount denominated in this asset, so it is never taken "
+            "from the DTO. Java and TypeScript already exposed it; this SDK did not."
+        ),
+    )
+    token_id: Optional[str] = Field(
+        default=None, description="Token identifier within a contract (NFTs)"
+    )
     status: Optional[str] = Field(default=None, description="Whitelisting status")
     action: Optional[str] = Field(default=None, description="Action type")
     rule: Optional[str] = Field(default=None, description="Governance rule")
@@ -232,6 +245,46 @@ class WhitelistedAsset(BaseModel):
     )
     business_rule_enabled: bool = Field(
         default=False, description="Whether business rule is enabled"
+    )
+
+    model_config = {"frozen": True}
+
+
+class ExcludedWhitelistedAddress(BaseModel):
+    """A row dropped from a list because it failed integrity verification, and why."""
+
+    id: Optional[str] = Field(
+        default=None, description="The address ID, or None when the row carried no usable ID"
+    )
+    reason: str = Field(description="Why the row failed verification")
+
+    model_config = {"frozen": True}
+
+
+class WhitelistedAddressListResult(BaseModel):
+    """Result of a paginated whitelisted-address list query.
+
+    Verification is lenient by design: a row that cannot be verified is excluded
+    rather than failing the whole call, because one bad row used to deny access to
+    every good one -- and listing is how an operator finds the bad row. Excluding
+    stays fail-closed, since an omitted destination cannot be selected.
+
+    The omission is REPORTED, not just logged: a caller cannot read the SDK's logger,
+    and a shortened list must never be mistaken for a complete one.
+    """
+
+    addresses: List[WhitelistedAddress] = Field(
+        default_factory=list, description="Verified addresses in the current page"
+    )
+    pagination: Optional[Pagination] = Field(
+        default=None,
+        description=(
+            "Page window, with total_items already reduced by the number of excluded "
+            "rows so has_more stays honest"
+        ),
+    )
+    excluded_unverified: List[ExcludedWhitelistedAddress] = Field(
+        default_factory=list, description="Rows dropped from addresses, with the reason"
     )
 
     model_config = {"frozen": True}

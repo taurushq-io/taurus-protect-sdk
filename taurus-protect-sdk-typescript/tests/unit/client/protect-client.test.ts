@@ -113,7 +113,10 @@ describe("ProtectClient", () => {
 
       it("should accept minValidSignatures configuration", () => {
         client = ProtectClient.create(
-          createValidConfig({ minValidSignatures: 3 })
+          createValidConfig({
+            superAdminKeysPem: [TEST_SUPER_ADMIN_KEY_PEM, TEST_SUPER_ADMIN_KEY_PEM, TEST_SUPER_ADMIN_KEY_PEM],
+            minValidSignatures: 3,
+          })
         );
         expect(client.minValidSignatures).toBe(3);
       });
@@ -296,7 +299,10 @@ describe("ProtectClient", () => {
     describe("minValidSignatures", () => {
       it("should return configured minValidSignatures", () => {
         client = ProtectClient.create(
-          createValidConfig({ minValidSignatures: 3 })
+          createValidConfig({
+            superAdminKeysPem: [TEST_SUPER_ADMIN_KEY_PEM, TEST_SUPER_ADMIN_KEY_PEM, TEST_SUPER_ADMIN_KEY_PEM],
+            minValidSignatures: 3,
+          })
         );
         expect(client.minValidSignatures).toBe(3);
       });
@@ -335,12 +341,72 @@ describe("ProtectClient", () => {
     });
   });
 
+  // ===== Governance Bypass Tests =====
+
+  // Governance rules are the tenant's security policy. The raw API returns an unverified
+  // DTO on read and accepts an arbitrary base64 blob on write, so exposing it publicly
+  // made the verification-mandatory invariant opt-out in this SDK alone (Go keeps its
+  // generated client under `internal/`, unreachable by construction). Only the verified,
+  // typed service path may be public.
+  describe("governance low-level API is not publicly reachable", () => {
+    let client: ProtectClient;
+
+    beforeEach(() => {
+      client = ProtectClient.create(createValidConfig());
+    });
+
+    afterEach(() => {
+      client.close();
+    });
+
+    it("exposes no governanceRulesApi accessor anywhere on the client", () => {
+      expect("governanceRulesApi" in client).toBe(false);
+      expect(
+        (client as unknown as Record<string, unknown>).governanceRulesApi
+      ).toBeUndefined();
+    });
+
+    it("still exposes the verified governanceRules service", () => {
+      expect(client.governanceRules).toBeDefined();
+    });
+  });
+
+  // ===== Whitelisted Address Bypass Tests =====
+
+  // A whitelisted address is the destination a transfer is allowed to reach, so every
+  // read must run the 6-step verification against the SuperAdmin-signed rules container.
+  // The raw AddressWhitelistingApi returns the unverified envelope straight off the wire —
+  // attacker-controllable `address`/`label`/`memo` with no signature check — so it must
+  // not be publicly reachable. Same shape as the governance hole above; Go hides its
+  // generated client under `internal/`, Python under `_internal`, Java never exposes it.
+  describe("whitelisted-address low-level API is not publicly reachable", () => {
+    let client: ProtectClient;
+
+    beforeEach(() => {
+      client = ProtectClient.create(createValidConfig());
+    });
+
+    afterEach(() => {
+      client.close();
+    });
+
+    it("exposes no addressWhitelistingApi accessor anywhere on the client", () => {
+      expect("addressWhitelistingApi" in client).toBe(false);
+      expect(
+        (client as unknown as Record<string, unknown>).addressWhitelistingApi
+      ).toBeUndefined();
+    });
+
+    it("still exposes the verified whitelistedAddresses service", () => {
+      expect(client.whitelistedAddresses).toBeDefined();
+    });
+  });
+
   // ===== Low-Level API Accessors Tests =====
 
   describe("low-level API accessors", () => {
     const apiGetters = [
       "actionsApi",
-      "addressWhitelistingApi",
       "addressesApi",
       "airGapApi",
       "assetsApi",
@@ -360,7 +426,8 @@ describe("ProtectClient", () => {
       "feeApi",
       "feePayersApi",
       "fiatApi",
-      "governanceRulesApi",
+      // governanceRulesApi is deliberately absent — see the "governance low-level API
+      // is not publicly reachable" test below.
       "groupsApi",
       "healthApi",
       "jobsApi",
@@ -418,8 +485,10 @@ describe("ProtectClient", () => {
       );
     });
 
-    it("should have 56 API getters available", () => {
-      expect(apiGetters.length).toBe(56);
+    // 54, not 56: governanceRulesApi and addressWhitelistingApi were both removed from
+    // the public surface, so each entity is reachable only through its verified service.
+    it("should have 54 API getters available", () => {
+      expect(apiGetters.length).toBe(54);
     });
   });
 
@@ -811,7 +880,13 @@ describe("ProtectClient", () => {
 
     it("should return GovernanceRuleService instance with expected methods", () => {
       const svc = client.governanceRules;
-      expect(typeof svc.get).toBe("function");
+      // Named getRules/getRulesById/getRulesProposal/getRulesHistory to match Java, Go
+      // and Python; this SDK used the bare get/getById/getProposal/getHistory.
+      expect(typeof svc.getRules).toBe("function");
+      expect(typeof svc.getRulesById).toBe("function");
+      expect(typeof svc.getRulesProposal).toBe("function");
+      expect(typeof svc.getRulesHistory).toBe("function");
+      expect(typeof svc.getPublicKeys).toBe("function");
     });
   });
 
@@ -889,11 +964,12 @@ describe("ProtectClient", () => {
       expect(client).toBeDefined();
     });
 
-    it("should handle minValidSignatures of large value", () => {
-      client = ProtectClient.create(
-        createValidConfig({ minValidSignatures: 1000000 })
-      );
-      expect(client.minValidSignatures).toBe(1000000);
+    // A threshold no key set can satisfy is a configuration error, not a large
+     // value to accept: such a client verifies nothing and fails at every call.
+    it("rejects a minValidSignatures larger than the configured key count", () => {
+      expect(() =>
+        ProtectClient.create(createValidConfig({ minValidSignatures: 1000000 }))
+      ).toThrow(/cannot exceed number of SuperAdmin keys/);
     });
 
     it("should handle rulesCacheTtlMs of large value", () => {

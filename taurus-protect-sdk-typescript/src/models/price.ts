@@ -14,6 +14,13 @@ import type { Currency } from './currency';
  * metadata about the rate source, precision, and price changes. Prices are
  * used for portfolio valuation, transaction display, and reporting.
  */
+export interface PriceSignature {
+  /** The signing user's ID */
+  readonly userId?: string;
+  /** Base64-encoded ECDSA signature over the canonical price form */
+  readonly signature?: string;
+}
+
 export interface Price {
   /** The blockchain this price applies to (e.g., "ethereum", "bitcoin") */
   readonly blockchain?: string;
@@ -25,6 +32,8 @@ export interface Price {
   readonly decimals?: string;
   /** The exchange rate value (amount of currencyTo per unit of currencyFrom) */
   readonly rate?: string;
+  /** PRICEUPDATER signatures over the canonical price form */
+  readonly signatures?: PriceSignature[];
   /** The percentage price change over the last 24 hours */
   readonly changePercent24Hour?: string;
   /** The data source for this price (e.g., "coingecko", "cryptocompare") */

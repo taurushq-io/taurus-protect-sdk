@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.taurushq.sdk.protect.client.helper.AssetHashHelper;
 import com.taurushq.sdk.protect.client.helper.SignatureVerifier;
+import com.taurushq.sdk.protect.client.helper.WhitelistHashHelper;
 import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
 import com.taurushq.sdk.protect.client.mapper.RulesContainerMapper;
 import com.taurushq.sdk.protect.client.mapper.WhitelistedAssetMapper;
@@ -16,6 +17,7 @@ import com.taurushq.sdk.protect.client.model.WhitelistException;
 import com.taurushq.sdk.protect.client.model.WhitelistSignature;
 import com.taurushq.sdk.protect.client.model.WhitelistUserSignature;
 import com.taurushq.sdk.protect.client.model.WhitelistedAsset;
+import com.taurushq.sdk.protect.client.model.WhitelistedAssetResult;
 import com.taurushq.sdk.protect.client.model.rulescontainer.ContractAddressWhitelistingRules;
 import com.taurushq.sdk.protect.client.model.rulescontainer.DecodedRulesContainer;
 import com.taurushq.sdk.protect.client.model.rulescontainer.GroupThreshold;
@@ -25,21 +27,29 @@ import com.taurushq.sdk.protect.client.model.rulescontainer.SequentialThresholds
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import com.taurushq.sdk.protect.openapi.api.ContractWhitelistingApi;
 import com.taurushq.sdk.protect.openapi.auth.CryptoTPV1;
+import com.taurushq.sdk.protect.openapi.model.TgvalidatordApproveWhitelistedContractAddressRequest;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetSignedWhitelistedContractAddressEnvelopeReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetSignedWhitelistedContractAddressEnvelopesReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordSignedWhitelistedContractAddressEnvelope;
 
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -180,34 +190,226 @@ public class WhitelistedAssetService {
     public List<SignedWhitelistedAssetEnvelope> getWhitelistedAssets(int limit, int offset,
                                                                       String blockchain, String network)
             throws ApiException, WhitelistException {
+        return getWhitelistedAssets(limit, offset, blockchain, network,
+                null, null, null, null).getAssets();
+    }
+
+    /**
+     * Gets a page of whitelisted asset envelopes with the full filter set and the page total.
+     *
+     * @param limit              the maximum number of results
+     * @param offset             the offset for pagination
+     * @param blockchain         filter by blockchain (e.g., "ETH", "BTC"), or null
+     * @param network            filter by network (e.g., "mainnet", "testnet"), or null
+     * @param query              search across address, symbol and name, or null
+     * @param includeForApproval include assets pending approval, or null
+     * @param kindTypes          filter by contract kind ("nft", "token"), or null
+     * @param ids                filter by specific whitelisted asset IDs, or null
+     * @return the page of verified asset envelopes and the total item count
+     * @throws ApiException       if the API call fails
+     * @throws WhitelistException if verification fails
+     */
+    public WhitelistedAssetResult getWhitelistedAssets(int limit, int offset,
+                                                        String blockchain, String network,
+                                                        String query, Boolean includeForApproval,
+                                                        List<String> kindTypes, List<String> ids)
+            throws ApiException, WhitelistException {
         try {
             TgvalidatordGetSignedWhitelistedContractAddressEnvelopesReply reply =
                     contractWhitelistingApi.whitelistServiceGetWhitelistedContracts(
                             String.valueOf(limit),
                             String.valueOf(offset),
-                            null,       // query
-                            blockchain, // blockchain
-                            null,       // includeForApproval
-                            network,    // network
-                            null,       // isNFT
-                            null,       // whitelistedContractAddressIds
-                            null);      // kindTypes
+                            query,
+                            blockchain,
+                            includeForApproval,
+                            network,
+                            null,       // isNFT — deprecated, superseded by kindTypes
+                            ids,
+                            kindTypes);
 
-            if (reply.getResult() == null) {
-                return new ArrayList<>();
+            return toVerifiedResult(reply);
+        } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
+            throw apiExceptionMapper.toApiException(e);
+        }
+    }
+
+    /**
+     * Re-reads a batch of assets through the verifying list path, filtered by id, and
+     * returns them keyed by id.
+     *
+     * <pre>
+     *   ids -&gt; ONE filtered page -&gt; verify every row -&gt; map by id
+     * </pre>
+     *
+     * <p>One round trip and one rules-container fetch for the whole batch. The per-id
+     * GET this replaced cost both per id, so a 50-id approval was 50 sequential round
+     * trips each running the full verification chain.
+     *
+     * <p>Package-private so the completeness behaviour can be tested directly.
+     *
+     * @param ids the ids to re-read
+     * @return the verified envelopes keyed by id
+     * @throws ApiException       if the API call fails
+     * @throws WhitelistException if verification fails
+     */
+    java.util.Map<String, SignedWhitelistedAssetEnvelope> verifiedAssetsById(final List<String> ids)
+            throws ApiException, WhitelistException {
+        WhitelistedAssetResult result = getWhitelistedAssets(
+                ids.size(), 0, null, null, null, Boolean.TRUE, null, ids);
+
+        java.util.Map<String, SignedWhitelistedAssetEnvelope> byId = new java.util.HashMap<>();
+        for (SignedWhitelistedAssetEnvelope envelope : result.getAssets()) {
+            // The id lives on the ENVELOPE: getWhitelistedAsset() is gated on
+            // verification having run, so reading through it here would couple the key
+            // to that gate for no reason.
+            if (envelope != null) {
+                byId.put(String.valueOf(envelope.getId()), envelope);
             }
+        }
+        return byId;
+    }
 
-            List<SignedWhitelistedAssetEnvelope> envelopes = new ArrayList<>();
+    /**
+     * Gets a page of whitelisted assets awaiting approval, verified as in
+     * {@link #getWhitelistedAssets(int, int)}.
+     * <p>
+     * Without this the only reader of the for-approval endpoint was the unverified
+     * contract-whitelisting service, so the rows an approver inspects before whitelisting a
+     * contract address were never checked against governance.
+     *
+     * @param limit  the maximum number of results
+     * @param offset the offset for pagination
+     * @param ids    filter by specific whitelisted asset IDs, or null
+     * @return the page of verified asset envelopes and the total item count
+     * @throws ApiException       if the API call fails
+     * @throws WhitelistException if verification fails
+     */
+    public WhitelistedAssetResult getWhitelistedAssetsForApproval(int limit, int offset,
+                                                                   List<String> ids)
+            throws ApiException, WhitelistException {
+        try {
+            TgvalidatordGetSignedWhitelistedContractAddressEnvelopesReply reply =
+                    contractWhitelistingApi.whitelistServiceGetWhitelistedContractsForApproval(
+                            String.valueOf(limit),
+                            String.valueOf(offset),
+                            ids);
+
+            return toVerifiedResult(reply);
+        } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
+            throw apiExceptionMapper.toApiException(e);
+        }
+    }
+
+    /**
+     * Signs and submits an approval for the given whitelisted assets, all-or-nothing.
+     * <p>
+     * Each asset is re-read through the verified path and the hashes THOSE rows carry are
+     * what gets signed, so the approver's signature covers metadata this SDK checked rather
+     * than whatever a caller was handed.
+     * {@link ContractWhitelistingService#approveWhitelistedContracts} takes an opaque
+     * signature over hashes nothing verified.
+     * <p>
+     * Any asset that is missing or fails verification aborts the whole call and nothing is
+     * signed: one signature covers every hash in the batch, so a partial approval would mean
+     * the caller believes they approved more than they did.
+     *
+     * @param ids        the whitelisted asset IDs to approve
+     * @param privateKey the approver's P-256 private key
+     * @param comment    the approval comment
+     * @throws ApiException       if the API call fails
+     * @throws WhitelistException if any asset is missing or fails verification
+     */
+    public void approveWhitelistedAssets(final List<Long> ids, final PrivateKey privateKey,
+                                         final String comment) throws ApiException, WhitelistException {
+        checkNotNull(ids, "ids cannot be null");
+        checkArgument(!ids.isEmpty(), "ids cannot be empty");
+        checkNotNull(privateKey, "privateKey cannot be null");
+        checkArgument(!Strings.isNullOrEmpty(comment), "comment is required");
+        ids.forEach(id -> checkArgument(id != null && id > 0,
+                "whitelisted asset id cannot be zero or negative"));
+
+        // Sorted on a COPY, as the request-approval path does, so the signed order is
+        // independent of the order the caller passed and their list is not mutated.
+        List<Long> sorted = new ArrayList<>(ids);
+        Collections.sort(sorted);
+
+        // ONE id-filtered page through the verifying list path, not one GET per id. The
+        // list path verifies every row and fetches the rules container once per call, so
+        // a 50-id approval costs one round trip and one container fetch instead of fifty
+        // of each. includeForApproval is required: the rows being approved are pending,
+        // so the default list does not return them.
+        List<String> idStrings = sorted.stream().map(String::valueOf).collect(Collectors.toList());
+        java.util.Map<String, SignedWhitelistedAssetEnvelope> byId =
+                verifiedAssetsById(idStrings);
+
+        List<String> hashes = new ArrayList<>(sorted.size());
+        for (String id : idStrings) {
+            SignedWhitelistedAssetEnvelope envelope = byId.get(id);
+            if (envelope == null) {
+                // A page that silently omits a row must not become an approval of fewer
+                // rows than the caller asked for.
+                throw new IntegrityException(String.format(
+                        "refusing to sign: asset %s was not returned by the verified read", id));
+            }
+            if (envelope.getMetadata() == null
+                    || Strings.isNullOrEmpty(envelope.getMetadata().getHash())) {
+                throw new IntegrityException(String.format(
+                        "refusing to sign: asset %s has no metadata hash", id));
+            }
+            hashes.add(envelope.getMetadata().getHash());
+        }
+
+        String toSign = GSON.toJson(hashes);
+        TgvalidatordApproveWhitelistedContractAddressRequest request =
+                new TgvalidatordApproveWhitelistedContractAddressRequest();
+        request.setIds(sorted.stream().map(String::valueOf).collect(Collectors.toList()));
+        request.setComment(comment);
+        try {
+            request.setSignature(CryptoTPV1.calculateBase64Signature(
+                    privateKey, toSign.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException ex) {
+            ApiException e = new ApiException();
+            e.setCode(400);
+            e.setError("ClientInvalidRequest");
+            e.setMessage("unable to sign the array of whitelisted asset hashes");
+            e.setOriginalException(ex);
+            throw e;
+        }
+
+        try {
+            contractWhitelistingApi.whitelistServiceApproveWhitelistedContract(request);
+        } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
+            throw apiExceptionMapper.toApiException(e);
+        }
+    }
+
+    /**
+     * Maps and fully verifies every row of a reply.
+     */
+    private WhitelistedAssetResult toVerifiedResult(
+            TgvalidatordGetSignedWhitelistedContractAddressEnvelopesReply reply)
+            throws WhitelistException {
+        WhitelistedAssetResult result = new WhitelistedAssetResult();
+        List<SignedWhitelistedAssetEnvelope> envelopes = new ArrayList<>();
+
+        if (reply.getResult() != null) {
             for (TgvalidatordSignedWhitelistedContractAddressEnvelope dto : reply.getResult()) {
                 SignedWhitelistedAssetEnvelope envelope =
                         WhitelistedAssetMapper.INSTANCE.fromDTO(dto);
                 initializeEnvelope(envelope);
                 envelopes.add(envelope);
             }
-            return envelopes;
-        } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
-            throw apiExceptionMapper.toApiException(e);
         }
+
+        result.setAssets(envelopes);
+        if (reply.getTotalItems() != null) {
+            try {
+                result.setTotalItems(Long.parseLong(reply.getTotalItems()));
+            } catch (NumberFormatException e) {
+                result.setTotalItems(0L);
+            }
+        }
+        return result;
     }
 
     /**
@@ -215,6 +417,25 @@ public class WhitelistedAssetService {
      * After this method completes, the envelope's getWhitelistedAsset() will return
      * the verified asset.
      */
+    // 5-step verification for a whitelisted asset, plus the parse that makes it usable.
+    //
+    //   envelope ──▶ 1 hash ──▶ 2 SuperAdmin sigs ──▶ 3 decode rules
+    //                                                      │
+    //                6 parse VERIFIED payload ◀── 5 thresholds ◀── 4 coverage
+    //                           │                       │                │
+    //                           ▼                       │      returns the hash it
+    //                    returned to caller             │      matched, which is
+    //                                                   │      what step 5 checks
+    //                                                   ▼
+    //                                per group: DISTINCT signers, keyed on the
+    //                                container's public key, never the entry's userId
+    //
+    // Steps 1-5 prove the envelope is authentic; step 6 is what stops an unsigned
+    // value reaching the caller. Assets use ContractAddressWhitelistingRules and the
+    // ASSET legacy hashes (isNFT / kindType) — not the address ones.
+    //
+    // All six run here in initializeEnvelope, which ends by calling
+    // AssetHashHelper.parseWhitelistedAssetFromJson.
     private void initializeEnvelope(SignedWhitelistedAssetEnvelope envelope) throws WhitelistException {
         // Precondition checks
         if (envelope.getSignedAsset() == null || envelope.getSignedAsset().getPayload() == null) {
@@ -235,18 +456,15 @@ public class WhitelistedAssetService {
         DecodedRulesContainer rulesContainer = decodeRulesContainer(envelope);
 
         // Step 4: Verify metadata.hash is in signed hashes list
-        verifyHashInSignedHashes(envelope);
+        String verifiedHash = verifyHashInSignedHashes(envelope);
 
         // Step 5: Verify whitelist signatures are valid per governance rules
-        verifyWhitelistSignatures(envelope, rulesContainer);
+        verifyWhitelistSignatures(envelope, rulesContainer, verifiedHash);
 
-        // Step 6: Parse WhitelistedAsset from verified payloadAsString (signed fields)
-        WhitelistedAsset asset = AssetHashHelper.parseWhitelistedAssetFromJson(
-                envelope.getMetadata().getPayloadAsString());
-
-        // Store verified data in envelope
-        envelope.setVerifiedWhitelistedAsset(asset);
-        envelope.setVerifiedRulesContainer(rulesContainer);
+        // Step 6: the envelope DERIVES the asset from its own signed payloadAsString.
+        // It used to be parsed here and handed to a public setter, which meant the
+        // "verified" marker could be flipped with an asset the caller chose.
+        envelope.markVerified(rulesContainer);
     }
 
     /**
@@ -302,24 +520,15 @@ public class WhitelistedAssetService {
 
         // Verify signatures against the rulesContainer bytes
         byte[] rulesData = Base64.getDecoder().decode(envelope.getRulesContainer());
-        int validCount = 0;
-
-        for (RuleUserSignature sig : signatures) {
-            if (Strings.isNullOrEmpty(sig.getSignature())) {
-                continue;
-            }
-            if (SignatureVerifier.isValidSignature(rulesData, sig.getSignature(), superAdminPublicKeys)) {
-                validCount++;
-            }
-        }
-
-        if (validCount < minValidSignatures) {
+        try {
+            SignatureVerifier.verifyGovernanceRulesSignatures(rulesData, signatures,
+                    superAdminPublicKeys, minValidSignatures);
+        } catch (IntegrityException e) {
             if (LOGGER.isLoggable(java.util.logging.Level.WARNING)) {
                 LOGGER.warning("Rules container verification failed: insufficient valid signatures");
             }
-            throw new IntegrityException(String.format(
-                    "Rules container verification failed: only %d valid signatures found, minimum %d required",
-                    validCount, minValidSignatures));
+            throw new IntegrityException(
+                    "Rules container verification failed: " + e.getMessage(), e);
         }
         if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
             LOGGER.fine("Rules container signature verification succeeded");
@@ -343,23 +552,23 @@ public class WhitelistedAssetService {
      * For backward compatibility, also tries alternative hashes for assets signed
      * before certain fields were added to the schema.
      */
-    private void verifyHashInSignedHashes(SignedWhitelistedAssetEnvelope envelope)
+    private String verifyHashInSignedHashes(SignedWhitelistedAssetEnvelope envelope)
             throws WhitelistException {
         String metadataHash = envelope.getMetadata().getHash();
         List<WhitelistSignature> signatures = envelope.getSignedAsset().getSignatures();
 
         // First, try the provided hash directly
-        if (hashExistsInSignatures(metadataHash, signatures)) {
-            return; // Found - verification passed
+        if (SignatureVerifier.verifyHashCoverage(metadataHash, signatures)) {
+            return metadataHash;
         }
 
         // If not found, try alternative hashes for backward compatibility
         // (handles assets signed before schema changes)
         for (String legacyHash : computeLegacyHashes(envelope.getMetadata().getPayloadAsString())) {
-            if (hashExistsInSignatures(legacyHash, signatures)) {
-                // Update the metadata hash so subsequent verification steps use the correct hash
-                envelope.getMetadata().setHash(legacyHash);
-                return; // Found with legacy hash
+            if (SignatureVerifier.verifyHashCoverage(legacyHash, signatures)) {
+                // Returned rather than written back onto the caller's envelope:
+                // verification must not mutate its input.
+                return legacyHash;
             }
         }
 
@@ -415,26 +624,50 @@ public class WhitelistedAssetService {
         return new ArrayList<>(uniqueHashes);
     }
 
-    private boolean hashExistsInSignatures(String hash, List<WhitelistSignature> signatures) {
-        for (WhitelistSignature sig : signatures) {
-            if (sig.getHashes() != null && sig.getHashes().contains(hash)) {
-                return true;
-            }
+    /**
+     * Encodes each signature's hashes array to its signed JSON form, once.
+     *
+     * <p>Keyed by position in {@code signatures}, mirroring the Go, Python and
+     * TypeScript verifiers. A signature whose hashes cannot be encoded is simply
+     * absent from the map and is skipped by the caller.
+     */
+    private Map<Integer, byte[]> precomputeHashesJson(List<WhitelistSignature> signatures) {
+        Map<Integer, byte[]> encoded = new HashMap<>();
+        if (signatures == null) {
+            return encoded;
         }
-        return false;
+        for (int i = 0; i < signatures.size(); i++) {
+            WhitelistSignature sig = signatures.get(i);
+            if (sig == null || sig.getHashes() == null) {
+                continue;
+            }
+            encoded.put(i, GSON.toJson(sig.getHashes()).getBytes(StandardCharsets.UTF_8));
+        }
+        return encoded;
     }
 
     /**
      * Verifies whitelist signatures according to governance rules threshold requirements.
      */
     private void verifyWhitelistSignatures(SignedWhitelistedAssetEnvelope envelope,
-                                           DecodedRulesContainer rulesContainer)
+                                           DecodedRulesContainer rulesContainer,
+                                           String metadataHash)
             throws WhitelistException {
-        String metadataHash = envelope.getMetadata().getHash();
+        // Serialised once here, not per signature inside the group loop: that loop
+        // runs for every group of every parallel path, so the same array was being
+        // re-encoded path x group x signature times right next to the ECDSA verify.
+        // Go, Python and TypeScript all precompute this map.
+        Map<Integer, byte[]> hashesJsonBySignature =
+                precomputeHashesJson(envelope.getSignedAsset().getSignatures());
+
+        // Keyed off the SIGNED payload, not the response. See the address service.
+        String[] ruleKey = WhitelistHashHelper.resolveRuleKey(
+                envelope.getMetadata().getPayloadAsString(),
+                envelope.getBlockchain(), envelope.getNetwork());
 
         // Find matching contract address whitelisting rules
         ContractAddressWhitelistingRules whitelistRules = rulesContainer.findContractAddressWhitelistingRules(
-                envelope.getBlockchain(), envelope.getNetwork());
+                ruleKey[0], ruleKey[1]);
         if (whitelistRules == null) {
             throw new WhitelistException("no contract address whitelisting rules found for blockchain="
                     + envelope.getBlockchain() + " network=" + envelope.getNetwork());
@@ -449,7 +682,7 @@ public class WhitelistedAssetService {
         // Try to verify all paths
         List<String> pathFailures = tryVerifyAllPaths(
                 parallelThresholds, rulesContainer, envelope.getSignedAsset().getSignatures(),
-                metadataHash);
+                metadataHash, hashesJsonBySignature);
         if (!pathFailures.isEmpty()) {
             throw new WhitelistException("signature verification failed for whitelisted asset (ID: "
                     + envelope.getId() + ") : no approval path satisfied the threshold requirements. "
@@ -465,12 +698,14 @@ public class WhitelistedAssetService {
     private List<String> tryVerifyAllPaths(List<SequentialThresholds> parallelThresholds,
                                            DecodedRulesContainer rulesContainer,
                                            List<WhitelistSignature> signatures,
-                                           String metadataHash) {
+                                           String metadataHash,
+                                           Map<Integer, byte[]> hashesJsonBySignature) {
         List<String> pathFailures = new ArrayList<>();
         for (int i = 0; i < parallelThresholds.size(); i++) {
             SequentialThresholds seqThreshold = parallelThresholds.get(i);
             try {
-                verifySequentialThresholds(seqThreshold, rulesContainer, signatures, metadataHash);
+                verifySequentialThresholds(seqThreshold, rulesContainer, signatures, metadataHash,
+                        hashesJsonBySignature);
                 return Collections.emptyList();  // Verification passed
             } catch (IntegrityException e) {
                 pathFailures.add("Path " + (i + 1) + ": " + sanitizeVerificationError(e));
@@ -498,7 +733,8 @@ public class WhitelistedAssetService {
     private void verifySequentialThresholds(SequentialThresholds seqThreshold,
                                             DecodedRulesContainer rulesContainer,
                                             List<WhitelistSignature> signatures,
-                                            String metadataHash) {
+                                            String metadataHash,
+                                            Map<Integer, byte[]> hashesJsonBySignature) {
         List<GroupThreshold> thresholds = seqThreshold.getThresholds();
         if (thresholds == null || thresholds.isEmpty()) {
             throw new IntegrityException("no group thresholds defined");
@@ -506,7 +742,8 @@ public class WhitelistedAssetService {
 
         // ALL group thresholds must be satisfied (AND logic)
         for (GroupThreshold groupThreshold : thresholds) {
-            verifyGroupThreshold(groupThreshold, rulesContainer, signatures, metadataHash);
+            verifyGroupThreshold(groupThreshold, rulesContainer, signatures, metadataHash,
+                    hashesJsonBySignature);
         }
     }
 
@@ -518,7 +755,8 @@ public class WhitelistedAssetService {
     private void verifyGroupThreshold(GroupThreshold groupThreshold,
                                       DecodedRulesContainer rulesContainer,
                                       List<WhitelistSignature> signatures,
-                                      String metadataHash) {
+                                      String metadataHash,
+                                      Map<Integer, byte[]> hashesJsonBySignature) {
         String groupId = groupThreshold.getGroupId();
         int minSigs = groupThreshold.getMinimumSignatures();
 
@@ -538,14 +776,31 @@ public class WhitelistedAssetService {
             return; // minSignatures == 0, so empty group is OK
         }
 
+        // A populated group with a zero threshold is a malformed container, not a
+        // group anyone may satisfy. There is no post-loop threshold check -- the
+        // only success exit is inside the loop after an increment -- so a zero here
+        // silently means "one signature suffices", turning a 2-of-N group into
+        // 1-of-N. Fail closed.
+        if (minSigs <= 0) {
+            throw new IntegrityException(
+                    String.format("group '%s' has %d user(s) but requires 0 signature(s): "
+                            + "minimumSignatures must be positive", groupId, groupUserIds.size()));
+        }
+
         // Convert to set for faster lookup
         Set<String> groupUserIdSet = new HashSet<>(groupUserIds);
 
-        // Count valid signatures from users in this group
-        int validCount = 0;
+        // Count DISTINCT signers, not signature entries.
+        //
+        // The entries come from the server-supplied userSignatures blob, so counting them
+        // let a duplicated entry from one group member satisfy an N-of-M group. Keyed on
+        // the container-resolved public key rather than the server-supplied userId, so one
+        // compromised key shared by two IDs counts once.
+        Set<String> signers = new HashSet<>();
         List<String> skippedReasons = new ArrayList<>();
 
-        for (WhitelistSignature sig : signatures) {
+        for (int i = 0; i < signatures.size(); i++) {
+            WhitelistSignature sig = signatures.get(i);
             WhitelistUserSignature userSig = sig.getSignature();
             if (userSig == null) {
                 skippedReasons.add("signature has null userSig");
@@ -559,7 +814,7 @@ public class WhitelistedAssetService {
 
             // Check that metadata hash is covered by this signature
             List<String> hashes = sig.getHashes();
-            if (hashes == null || !hashes.contains(metadataHash)) {
+            if (!SignatureVerifier.containsHash(hashes, metadataHash)) {
                 skippedReasons.add(String.format(
                         "user '%s' signature does not cover metadata hash '%s' (signed hashes=%s)",
                         sigUserId, metadataHash, hashes));
@@ -576,14 +831,17 @@ public class WhitelistedAssetService {
                 continue;
             }
 
-            // Verify signature against JSON-encoded hashes array
-            String hashesJson = GSON.toJson(hashes);
-            byte[] hashesBytes = hashesJson.getBytes(StandardCharsets.UTF_8);
+            // Verify signature against the JSON-encoded hashes array
+            byte[] hashesBytes = hashesJsonBySignature.get(i);
+            if (hashesBytes == null) {
+                skippedReasons.add(String.format("failed to encode hashes for user '%s'", sigUserId));
+                continue;
+            }
 
             if (SignatureVerifier.verifySignature(hashesBytes, userSig.getSignature(),
                     user.getPublicKey())) {
-                validCount++;
-                if (validCount >= minSigs) {
+                signers.add(SignatureVerifier.keyFingerprint(user.getPublicKey()));
+                if (signers.size() >= minSigs) {
                     return; // Threshold met
                 }
             } else {
@@ -593,8 +851,8 @@ public class WhitelistedAssetService {
 
         // Threshold not met
         StringBuilder message = new StringBuilder();
-        message.append(String.format("group '%s' requires %d signature(s) but only %d valid",
-                groupId, minSigs, validCount));
+        message.append(String.format("group '%s' requires %d distinct signer(s) but only %d valid",
+                groupId, minSigs, signers.size()));
         if (!skippedReasons.isEmpty()) {
             message.append(" [").append(String.join("; ", skippedReasons)).append("]");
         }

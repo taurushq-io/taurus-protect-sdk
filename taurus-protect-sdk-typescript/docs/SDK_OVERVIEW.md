@@ -74,8 +74,9 @@ The `ProtectClient` class is the main entry point that developers interact with.
 - **Configuration Validation** - Validates host URL, API credentials at creation time
 
 **Key Properties:**
-- 56 low-level API accessors (e.g., `walletsApi`, `addressesApi`)
-- 26 high-level service getters (e.g., `wallets`, `addresses`)
+- 60 low-level API accessors (e.g., `walletsApi`, `addressesApi`); `governanceRulesApi` is
+  deliberately not among them, so governance reads stay signature-verified
+- 38 high-level service getters (e.g., `wallets`, `addresses`), plus 5 on the `taurusNetwork` namespace
 - TaurusNetwork namespace for low-level Taurus Network API access
 - Additional service classes in `src/services/` available for direct instantiation
 
@@ -107,7 +108,7 @@ src/services/
 └── index.ts                   # Service exports
 ```
 
-**Service Count:** 26 high-level services accessible via ProtectClient getters. Additional service classes exist in `src/services/` (including TaurusNetwork services) for direct instantiation.
+**Service Count:** 43 high-level services — 38 accessible via `ProtectClient` getters and 5 via the `taurusNetwork` namespace. Every service is wired as a getter.
 
 ### Models Layer
 
@@ -177,7 +178,7 @@ Verification utilities:
 Auto-generated from OpenAPI specifications using `openapi-generator-cli`. Contains:
 
 - HTTP client implementation (fetch-based)
-- API endpoint classes (56 APIs)
+- API endpoint classes (61 generated APIs)
 - DTO classes (Data Transfer Objects)
 - Runtime configuration
 
@@ -195,8 +196,7 @@ Auto-generated from OpenAPI specifications using `openapi-generator-cli`. Contai
 ```typescript
 const client = ProtectClient.create({
   host: 'https://your-protect-instance.example.com',
-  apiKey: 'your-api-key',
-  apiSecret: 'your-hex-encoded-secret',
+  credentials: Credentials.apiKey('your-api-key', 'your-hex-encoded-secret'),
   superAdminKeysPem: ['-----BEGIN PUBLIC KEY-----...'],
   minValidSignatures: 2,
 });
@@ -331,7 +331,7 @@ This regenerates:
 
 ## Available Services
 
-### Client Service Getters (26 high-level services)
+### Client Service Getters (38 on ProtectClient + 5 on taurusNetwork)
 
 These services are accessible directly as getters on `ProtectClient`:
 
@@ -373,33 +373,22 @@ These services are accessible directly as getters on `ProtectClient`:
 **Specialized Services (1):**
 - `tokenMetadata` - Token metadata
 
-### Service Classes Without Client Getters
+### TaurusNetwork Services
 
-These service classes exist in `src/services/` and can be instantiated directly, but do not have getters on `ProtectClient`:
+The `taurusNetwork` namespace exposes both high-level services and the generated APIs:
 
-- `WebhookCallService` - Webhook call history
-- `StakingService` - Staking operations
-- `ContractWhitelistingService` - Contract whitelisting
-- `ReservationService` - Balance reservations
-- `MultiFactorSignatureService` - MFA signatures
-- `BusinessRuleService` - Business rule management
-- `ChangeService` - Change tracking
-- `BlockchainService` - Blockchain information
-- `FiatService` - Fiat currency operations
-- `ScoreService` - Risk scores
-- `UserDeviceService` - User device management
-- `ActionService` - Action management
+| High-level service | Low-level API |
+|---|---|
+| `taurusNetwork.participants` | `taurusNetwork.participantApi` |
+| `taurusNetwork.pledges` | `taurusNetwork.pledgeApi` |
+| `taurusNetwork.lending` | `taurusNetwork.lendingApi` |
+| `taurusNetwork.settlements` | `taurusNetwork.settlementApi` |
+| `taurusNetwork.sharing` | `taurusNetwork.sharedAddressAssetApi` |
 
-These features are also accessible via the low-level OpenAPI-generated APIs (e.g., `client.businessRulesApi`, `client.stakingApi`).
-
-### TaurusNetwork APIs (5 low-level APIs)
-
-TaurusNetwork provides low-level API access (not high-level service wrappers):
-- `taurusNetwork.participantApi` - Participant management
-- `taurusNetwork.pledgeApi` - Pledge lifecycle
-- `taurusNetwork.lendingApi` - Loan offers and agreements
-- `taurusNetwork.settlementApi` - Settlement operations
-- `taurusNetwork.sharedAddressAssetApi` - Address/asset sharing
+Every service class in `src/services/` has a `ProtectClient` getter — an earlier version of
+this document listed twelve as having none, which was wrong in both directions: the getters
+exist, and the suggested workaround (reach for `client.businessRulesApi` instead) skipped
+the DTO mapping and, on the security paths, the signature verification the services perform.
 
 ## Related Documentation
 

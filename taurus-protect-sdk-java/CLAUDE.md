@@ -18,6 +18,15 @@
 
 **Single test:** `./build.sh unit-one ClassName#methodName` (e.g., `RequestServiceTest#testApprove`)
 
+**Build/test without `mvn clean` (this environment):** `./build.sh` runs `mvn clean compile` first, and `clean` fails deleting the large generated `proto/target/classes/.../proto/v1` dir (owned by the dev user — not a permission issue, the delete just chokes). `build.sh` also needs `java` on **PATH**, not just `JAVA_HOME`. Iterate against the already-installed `proto`/`openapi` `1.0-SNAPSHOT` artifacts in `~/.m2` instead:
+```bash
+export JAVA_HOME=/workspace/java/jdk-17.0.19+10 && export PATH="$JAVA_HOME/bin:$PATH"
+mvn test -o -pl client -Dspotbugs.skip=true -Dpmd.skip=true -Dcheckstyle.skip=true            # whole client suite
+mvn test -o -pl client -Dtest='FooTest,BarTest' -Dspotbugs.skip=true -Dpmd.skip=true -Dcheckstyle.skip=true
+mvn compile -o -pl client -D...                                                                 # main only (fast MapStruct check)
+```
+`-o` (offline) + `-pl client` (no `-am`) skips the proto/openapi rebuild. Piping `mvn` to `tail`/`head` buffers output until exit — redirect to a file and poll.
+
 ## Architecture
 
 Three modules:
@@ -49,7 +58,7 @@ The ProtectClient provides lazy-initialized getters for all services:
 
 **Transaction/Request Management**: `getAuditService()`, `getChangeService()`, `getFeeService()`, `getPriceService()`
 
-**Advanced Features**: `getAirGapService()`, `getStakingService()`, `getContractWhitelistingService()`, `getBusinessRuleService()`, `getReservationService()`
+**Advanced Features**: `getAirGapService()`, `getStakingService()`, `getContractWhitelistingService()` (**writes only** — reads live on `getWhitelistedAssetService()`, the verified reader of the same endpoint), `getBusinessRuleService()`, `getReservationService()`
 
 **Administrative**: `getUserService()`, `getGroupService()`, `getVisibilityGroupService()`, `getConfigService()`, `getWebhookService()`, `getWebhookCallsService()`, `getTagService()`
 
@@ -81,13 +90,32 @@ client.taurusNetwork().sharing()        // Address/Asset sharing
 ## Static Analysis
 
 Code must pass SpotBugs, PMD, and Checkstyle. The openapi module is excluded from these checks. Checkstyle config is in
-`checkstyle.xml`. PMD excludes generated mappers (`*Impl.java`). Only do static analysis when a user explicitly asks for
-it.
+`checkstyle.xml`. PMD excludes generated mappers (`*Impl.java`).
+
+```bash
+mvn checkstyle:check pmd:check spotbugs:check -pl client     # NO -o: spotbugs needs to fetch findsecbugs
+```
+
+**`spotbugs:check` fails in offline mode** — `findsecbugs-plugin` is not in the local `~/.m2` cache, and
+`-o` aborts before any analysis. Maven Central is reachable; see the repo-root `CLAUDE.local.md`.
+
+Baselines on committed master: **Checkstyle 0** (a real gate — a violation is a regression), PMD 10
+(already red), SpotBugs 0. Run these on any non-trivial change: `RuleCell.java` alone carried 37 PMD
+violations that nobody saw because the file was untracked.
 
 **Common PMD/SpotBugs patterns to handle:**
 
-- **Empty catch blocks**: PMD requires a comment inside the catch block body (not just a Javadoc), or use
-  `@SuppressWarnings("PMD.EmptyCatchBlock")` for intentional empty catches
+- **Empty catch blocks**: a comment inside the body is **NOT** enough for this ruleset — PMD flags
+  commented empty catches too. Either give the body a statement (`continue;` in a retry loop) or use
+  `@SuppressWarnings("PMD.EmptyCatchBlock")` on the enclosing method
+- **GuardLogStatement**: every `LOGGER.log/warning/fine` needs an `if (LOGGER.isLoggable(Level.X))` guard
+- **IdenticalCatchBranches**: merge them with multi-catch (`catch (A | B e)`) — but keep a branch separate
+  when it behaves differently, e.g. `NoSuchAlgorithmException` in `SignatureVerifier` must keep failing fast
+- **PreserveStackTrace**: when translating an exception, chain the cause (`ex.initCause(e)`)
+- **MethodLength (Checkstyle, max 150)**: `RuleCellCodec.encode` / `decodeTyped` are exhaustive switches
+  over the 36 cell types and hit the limit. They are kept under it by extracting the integer families into
+  `encodeIntegerCell` / `decodeIntegerCell` — extract another family rather than raising the limit, and
+  re-run the golden-vector suite afterwards to prove the wire bytes did not move
 - **ConstantsInInterface**: MapStruct mapper interfaces use `INSTANCE` constant - suppress with
   `@SuppressWarnings("PMD.ConstantsInInterface")`
 - **Redundant null checks**: SpotBugs flags null checks on fields marked `@Nonnull` in OpenAPI models - respect the API
@@ -97,6 +125,49 @@ it.
 
 ## Testing
 
+### Unit test deps are JUnit ONLY — no Mockito, no HTTP stub library
+
+`client/pom.xml` declares `junit-jupiter-engine` and `junit-jupiter` and nothing else for
+test scope. There is no Mockito, no WireMock, no MockWebServer, and no `HttpServer`-based
+stub anywhere in `client/src/test/java`. Consequences when writing a test:
+
+- **You cannot mock a service or stub the transport.** A test that needs a service to
+  return canned data has to construct the real object and drive the method that takes the
+  data as an argument. Concretely: the rules-container verification gate asserts on
+  `governanceRuleService.getDecodedRulesContainer(rules)` with a hand-built
+  `GovernanceRules`, because `RulesContainerCache` can only be driven through a live
+  `ApiClient`. Say so in the test comment rather than implying full-path coverage.
+- A `GovernanceRuleService` for tests is `new GovernanceRuleService(new ApiClient(), new
+  ApiExceptionMapper(), keys, minValidSignatures)` — see `RulesContainerCacheTest`'s
+  `@BeforeAll`, which generates a real P-256 key via BouncyCastle.
+
+### Building a rules container in a test
+
+`RulesContainerMapper.INSTANCE.toBase64String(container)` /
+`.fromBase64String(base64)`. `fromBase64String` throws the checked
+`com.google.protobuf.InvalidProtocolBufferException`, so a test calling it needs
+`throws Exception` — a compile error, but one that reads as unrelated to the test.
+
+**Use a wire-valid container when testing that verification runs.** The model's
+`getDecodedRulesContainer` verifies and *then* `parseFrom`s, so a malformed blob throws
+`IntegrityException` from the parse whether verification ran or not — the test passes
+either way. `RulesContainerCacheTest.wireValidContainer_decodesCleanly` exists to hold
+that guarantee; keep it beside the verification tests.
+
+### Shared cross-SDK fixtures: the loader lives in `testutil`
+
+`testutil/SignedFixtures.load()` is the single reader of
+`scripts/resources/verification-signed-fixtures.json` — public, and in `testutil` rather than
+beside either consumer, because the file's two sections are exercised from **different
+packages**: the SuperAdmin threshold against `helper.SignatureVerifier`
+(`helper/SignedFixturesTest`), and the per-group one against a **package-private service
+method** (`service/SignedFixturesGroupThresholdTest`), since whitelist verification lives in
+the services here and not in `helper/`.
+
+That split is why there are two test classes for one file. Do not duplicate the loader to
+avoid it: `load()` carries the per-section count assertion that is the file's own
+"was this section actually consumed?" guard, and two copies is how the two would drift on it.
+
 ### Test Configuration
 
 Credentials are loaded from `client/src/test/resources/test.properties` (git-ignored), with environment variable overrides. Copy `test.properties.sample` to get started. The `TestConfig` class (in `testutil` package) loads identities with multi-identity support (API creds, private keys, SuperAdmin public keys).
@@ -104,6 +175,12 @@ Credentials are loaded from `client/src/test/resources/test.properties` (git-ign
 ### Integration Tests
 
 Integration tests are located in `client/src/test/java/.../integration/` and are excluded from default test runs via surefire (`**/*IntegrationTest.java`).
+
+**They are still COMPILED by `mvn test`** — surefire excludes them from *running*, not from
+compilation — so a public-API removal that breaks one surfaces as a normal build failure here.
+That is not true of the sibling SDKs (Go's `go build` skips `_test.go` entirely, TS's `tsc`
+excludes `tests/`), so a cross-SDK deletion needs the per-language sweep in the repo-root
+`CLAUDE.md` → "Deleting from a public surface".
 
 **Structure:**
 - Shared test utilities live in `testutil/` package: `TestConfig.java` (config) and `TestHelper.java` (helpers like `skipIfNotEnabled()`, `getTestClient()`)
@@ -138,6 +215,35 @@ export PROTECT_API_SECRET="your-secret"
 - `PROTECT_API_HOST` - API host URL
 - `PROTECT_API_KEY` - API key
 - `PROTECT_API_SECRET` - API secret (hex-encoded)
+
+### Gson cannot deserialize the domain models under JDK 17 — use reflection in a test
+
+`new Gson().fromJson(json, Request.class)` fails with `JsonIO Failed making field
+'java.time.OffsetDateTime#dateTime' accessible`. The surefire add-opens profile only opens
+`java.base/java.lang` (for `Throwable.detailMessage`), and `java.time` internals stay
+closed — so any model carrying an `OffsetDateTime` is un-deserializable by Gson here, and
+most of them do.
+
+This matters when a test needs to forge a private field, e.g. proving `approveRequests`
+re-verifies rather than trusting `RequestMetadata.hashVerified` (private, no setter). Gson
+would be the realistic attack path but cannot build the object, so set the field directly:
+
+```java
+Field f = RequestMetadata.class.getDeclaredField("hashVerified");
+f.setAccessible(true);
+f.setBoolean(md, true);
+```
+
+`setAccessible` works because the class is the SDK's own, not `java.base`. Catch
+`ReflectiveOperationException` and `fail(...)` with a message naming the field, so a rename
+reports as a stale test rather than a mysterious skip.
+
+### A DTO fixture needs a status label or the mapper rejects it
+
+`RequestMapper.INSTANCE.fromDTO(dto)` throws `IllegalArgumentException: Request status label
+must not be null or empty`. So a `TgvalidatordRequest` fixture built for a metadata test
+still needs `dto.setStatus("APPROVING")` — the failure names status, not the thing you were
+testing, which reads as an unrelated break.
 
 ### JDK 9+ surefire add-opens (JDK-conditional)
 
@@ -196,7 +302,114 @@ Key model classes and their actual field names (to avoid compilation errors):
 - `AuditService.getAuditTrails(...)` - returns `AuditTrailResult`, not `List<AuditTrail>`
 - `ProtectClient.create(...)` - always requires SuperAdmin keys; use `createFromPem()` for PEM-encoded keys
 
+## Verification surface added in the 2026-09-04 pass
+
+- **`UnverifiedMetadataException extends RequestMetadataException`.** `RequestMetadata` no
+  longer parses in `setPayloadAsString` — that ran at MapStruct mapping time, before anything
+  could reject the payload, and threw `NullPointerException` on a null one. Parsing is now lazy
+  inside `verifiedPayload()`, which throws unless `hashVerified` is set. Every extraction method
+  routes through it.
+- **`SignatureVerifier.containsHash`** is the per-signature half of the hash-comparison pair.
+  Both whitelist services carried their own `List.contains` copies — `String.equals`, not
+  constant-time, early-returning — while `verifyHashCoverage` sat in `helper/` with **zero
+  callers**. All four sites now route through the helper.
+- **`WhitelistHashHelper.resolveRuleKey`** returns the `(blockchain, network)` pair from the
+  signed payload as a two-element array.
+- **`approveRequests`/`approveRequest` gained 3-argument overloads** taking a comment. Overloads
+  rather than a changed signature, matching how `TransactionService` handles its extra filters.
+- **The approve sort works on a copy.** It sorted the caller's list in place, which mutated
+  their argument and threw `UnsupportedOperationException` on an immutable one.
+- **Whitelist verification still lives in the services, not `helper/`.** That is exactly where
+  the non-constant-time comparisons hid. Only the crypto helpers were relocated; the full
+  extraction is written up in `TODOS.md`, and the alignment report records the layering as an
+  accepted difference *with that TODO as the plan to stop accepting it*.
+
+## Verification surface added in the 2026-09-07 pass
+
+Cross-SDK rules are in the repo-root `CLAUDE.md`. Java-specific:
+
+- **`RequestMetadata.setHashVerified` is GONE.** It was `public`, and the payload gate read
+  only that flag, so any caller could unlock real payload data from metadata nothing verified.
+  `public boolean verifyAndMaterialise()` replaces it: it performs the hash check and sets the
+  flag in one operation, so the two cannot be separated. A package-private setter was not an
+  option — `RequestMetadata` (`…client.model`) and `RequestService` (`…client.service`) are in
+  different packages. `RequestService.verifyMetadataHash` is now a one-line delegate.
+- **`helper/PriceVerifier.java`** + `model/PriceSignature.java` + `signatures` on `Price`. Note
+  `PriceMapper` carries `@Mapping(target = "signatures", ignore = true)`: the generated
+  `TgvalidatordCurrencyPrice` has no such field even though `apis.swagger.json` declares it —
+  a stale-snapshot symptom, so populating it needs codegen, not a mapper change.
+- **`SignatureVerifier.keyFingerprint` is `public static`**, and both services'
+  `verifyGroupThreshold` is package-private so its tests can reach it.
+- **`model/WhitelistedAssetResult`** exists because the asset list had no page total while the
+  contract list did. Its `hasMore(currentOffset, pageSize)` is overflow-safe
+  (`totalItems > currentOffset && totalItems - currentOffset > pageSize`), deliberately unlike
+  the deleted `WhitelistedContractAddressResult`'s `(currentOffset + pageSize) < totalItems`.
+- **Ordering matters in `approveRequests`.** Java checks metadata *before* `privateKey`, the
+  reverse of Go, so the new hash-verified refusal sits **after** `checkNotNull(privateKey)` —
+  otherwise `approveRequests_throwsOnNullPrivateKey` starts failing on the wrong error.
+- **Test-fixture trap:** `requestWith` builds RAW mapped rows, some deliberately tampered.
+  Blanket-verifying them at construction breaks the test whose subject is the service dropping
+  them. Leave that fixture unverified.
+- Service happy-paths are not unit-testable here (JUnit only, no Mockito or HTTP stub), so this
+  pass's Java coverage is on the models and on argument validation — say so in the test rather
+  than implying full-path coverage.
+
 ## Lessons Learned (Non-Security)
+
+### AuthorizationException derives requiredRoles in its constructors
+
+`AuthorizationException(message, ...)` calls the static `parseRequiredRoles(message)` itself, so
+`ApiExceptionMapper.createTypedException` needed no change — it already passes `parsed.getMessage()`. Keep the
+derivation in the exception: putting it in the mapper would leave directly-constructed exceptions with empty
+roles. `getRequiredRoles()` returns an unmodifiable list. See the cross-SDK contract in the repo-root CLAUDE.md.
+
+### Client Authentication (Credentials)
+
+`Credentials` (`client/.../client/Credentials.java`) is an abstract sum-type with static factories `apiKey(k,s)` / `bearerToken(t)` / `bearerTokenProvider(sup)` and a package-private `applyTo(ApiClient)`. `ProtectClient.create(host, Credentials, keys, minSig[, ttl])` and `builder().credentials(Credentials)` are the clean path; the flat `create(host, apiKey, apiSecret, …)` and builder `credentials(k,s)`/`apiKey`/`apiSecret` are `@Deprecated` (delegate to `Credentials.apiKey`). `createFromPem` is NOT deprecated (a PEM-decoding convenience). SuperAdmin keys are mandatory for every mechanism — enforced because the Governance/WhitelistedAddress/WhitelistedAsset service constructors already `checkArgument(!superAdminPublicKeys.isEmpty())` (no service change was needed for the keys-mandatory decision). `@Deprecated` is safe: `pom.xml` sets `failOnWarnings=false` + `failOnError=false`, so deprecation warnings across the test suite don't fail the build.
+
+### Building a whitelist signature entry in a test — three Java-only shapes
+
+`hashes` is a `private final List<String>` initialised inline, exposed only through `getHashes()`.
+Populate it with `getHashes().add(...)` / `addAll(...)`; `setHashes(...)` does not exist and reaching
+for it is a compile error, not a silent no-op.
+
+The other two bite when porting a fixture from another SDK, because **this SDK is the outlier
+on both** (the four-way comparison is in the repo-root `CLAUDE.md` → "Signed fixtures"; keep
+the two in step):
+
+- **`WhitelistUserSignature.signature` is `byte[]`, not a base64 `String`.** Go, Python and
+  TypeScript all hold base64, so a shared JSON fixture must be `Base64.getDecoder().decode(...)`d
+  here and consumed verbatim there.
+- **The nested setter is `WhitelistSignature.setSignature(WhitelistUserSignature)`** — not
+  `setUserSignature`. The getter is `getSignature()` and returns the nested object, so the name
+  reads like the raw signature and is not.
+
+`RuleUser` accepts either form: `setPublicKeyPem(String)` or
+`setPublicKey(CryptoTPV1.decodePublicKey(pem))`. The verifiers read `getPublicKey()`, so a
+PEM-only fixture user silently contributes nothing to a threshold — set the decoded key.
+
+### Cross-SDK surface added here (keep it)
+
+- `SignatureVerifier.verifyHashCoverage(hash, signatures)` — Java was the only SDK without it, so
+  callers were comparing hashes by hand, which is exactly where a non constant-time compare creeps
+  in. The loop deliberately does **not** break on a match: returning early leaks which signature
+  matched through timing.
+- `BusinessRuleService.updateTransactionsEnabled(boolean)` — the transactions kill switch, previously
+  Go-only even though the generated op exists in all four.
+- `TransactionService.getTransactions(...)` / `exportTransactions(...)` gained 8-argument overloads
+  carrying `blockchain` + `network`; the 6-argument forms delegate with nulls, so no caller breaks.
+  **8 params is exactly `ParameterNumber max` in `checkstyle.xml`** — a ninth filter needs an options
+  object, not another parameter.
+- `GovernanceRuleService.verifyGovernanceRules(rules)` — single-argument overload using the configured
+  threshold, which is the cross-SDK shape.
+
+### JUnit fails fast — one `@Test` per invariant
+
+`SignatureVerifierTest` packed all five `minValidSignatures` distinct-key cases into a single `@Test`
+with sequential asserts. JUnit stops at the first failure, so a break in case 2 meant cases 3-5 never
+ran and the report showed one failure instead of four. They are five separate tests now (Go uses
+`t.Run` subtests and Python/TS separate tests for the same reason). Shared signatures live in a small
+private `Fixture` class rather than being recomputed per test.
 
 ### Thread-Safe Lazy Initialization
 
@@ -250,6 +463,37 @@ for (Attribute attr : envelope.getAttributes()) {
 }
 ```
 
+**Java 9+ *APIs* are the sharper edge, and `source`/`target` do NOT catch them.** `var` is a
+syntax error under `-source 8`, so it fails everywhere. A Java 9+ *library method* does not:
+`source`/`target` only pick the language level and bytecode version, while javac still links
+against the **running** JDK's class library. So on a JDK 17 dev machine `List.of(...)` (Java 9)
+and `"a".repeat(n)` (Java 11) compile clean, every local gate stays green, and the build breaks
+only on a real JDK 8 — which is what shipped in `GovernanceRuleServiceTest` and
+`AuthorizationErrorVectorsTest`.
+
+Java 8 equivalents: `Arrays.asList(...)` for `List.of` (the house style — 158 uses in
+`client/src/test`), `String.join("", Collections.nCopies(n, s))` for `String.repeat`. Also absent
+in 8: `Map.of`/`Set.of`/`Map.entry`, `String.isBlank`/`strip`/`lines`, `Optional.isEmpty`,
+`Stream.toList`, `Files.readString`/`writeString`, `InputStream.readAllBytes`.
+
+**Now enforced locally** by a `maven.compiler.release` property in the `jdk9-plus-release`
+profile in `client/pom.xml`, which pins the class library to 8 as well and turns the above into
+a compile error on a JDK 9+ machine. Verified by reintroducing `"a".repeat(64)` and getting the
+same `cannot find symbol: method repeat(int)` on JDK 17 that a JDK 8 build reports.
+
+Two things not to change about it:
+
+- **It is JDK-conditional, and must stay so** — the JDK 8 javac has no such flag. Same
+  `<jdk>[9,)</jdk>` pattern as `jdk9-plus-add-opens` beside it, so on a JDK 8 machine both are
+  inactive and nothing changes. `maven.compiler.release` stays **unset** in the parent
+  `pom.xml` properties for that reason.
+- **It is scoped to the `client` module on purpose.** Setting it in the parent, where it also
+  reaches the generated `openapi`/`proto` modules, makes MapStruct fail in a *full reactor*
+  build with `No implementation was created for WhitelistedAddressMapper ... erroneous element
+  ...Whitelist.WhitelistedAddressOrBuilder` — while `mvn -pl client` against those modules'
+  installed jars passes, so the breakage only appears in `./build.sh`. `client` is the
+  hand-written module, so that is also where the rule is worth enforcing.
+
 ### MapStruct Version Policy
 
 Always use stable releases. Current stable: `1.6.3`. Never use `-Beta`, `-RC`, or `-SNAPSHOT` versions in production SDKs.
@@ -275,3 +519,42 @@ BusinessRuleResult result = client.getBusinessRuleService().getBusinessRules(cur
 **Problem:** `close()` uses reflection to access private `apiSecret` field in `ApiKeyTPV1Auth`. If OpenAPI internals change, this breaks silently.
 
 **Solution:** Added `ProtectClientTest.testSecretCleanupReflectionTarget()` that validates the field exists, is `byte[]` type, and is accessible. This test catches breakage from OpenAPI regeneration.
+
+### Governance Rules Typed Mapper (`RulesContainerMapper` + `RuleCellCodec`)
+
+Implements the cross-SDK typed governance API (see repo-root `CLAUDE.md` → "Governance Rules Typed API"). Java-specific choices:
+
+- **Cells stay `List<ByteString>` on `RuleLine`**; the typed `RuleCell` union is decoded/encoded via a standalone `RuleCellCodec`, NOT auto-decoded into the model. MapStruct maps each `Line` independently and can't see the sibling `columns` needed to type a cell, so a typed `List<RuleCell>` field is impractical. Users call `RuleCellCodec.decode(columnType, bytes)`.
+- `RuleCell` is one file: an abstract base + nested `public static final` subclasses (Java 8 — no sealed/records), with `equals`/`hashCode` via commons-lang3 `EqualsBuilder`/`HashCodeBuilder` reflection.
+- Lossless plumbing: all 15 container nodes extend `RulesNode` (unknownFields) / `RulesNodeWithProperties` (+`properties` map). MapStruct populates them via `@Mapping(target="unknownFields", expression="java(unknownBytes(proto))")` on every `fromProto` — this MUST be explicit because `unknownFields` name-clashes with protobuf's own `Message.getUnknownFields()` (returns `UnknownFieldSet`, not `ByteString`) and auto-mapping is a hard compile error. Encode is hand-written `toProto`/`toBytes`/`toBase64String` default methods that re-attach unknown fields via `builder.setUnknownFields(UnknownFieldSet.parseFrom(bytes))` and strip `enforcedRulesHash`/`timestamp`.
+- `RuleSource` carries a `raw` `ByteString` fallback: whitelisting source cells that don't round-trip byte-identically keep their verbatim bytes.
+- **`CosmosDetails` is a node class, not a flattened list.** It was `List<String> cosmosMethodSignatures`
+  on `TransactionRuleDetails`, which made unknown-field preservation structurally impossible for that
+  sub-message. It is now `CosmosDetails extends RulesNode` with `getMethodSignatures()`, matching the
+  other three SDKs. MapStruct needs an **explicit** `fromProto(...CosmosDetails)` with
+  `@Mapping(source = "methodSignaturesList", target = "methodSignatures")` plus the usual
+  `unknownFields` expression — without its own method, auto-mapping hits the `UnknownFieldSet` vs
+  `ByteString` name clash and fails to compile.
+- **Encode is deterministic**: `toBytes` goes through `deterministicBytes(Message)`, which writes via a
+  `CodedOutputStream` with `useDeterministicSerialization()`. Plain `toByteArray()` emits
+  `map<string, bytes> properties` in unspecified order, so the same container would encode to different
+  bytes across runs and differently from the other SDKs. Don't reintroduce `toByteArray()` on the
+  container path — **and that includes the JSON bridge**: `RulesContainerJsonMapper` used plain
+  `toByteArray()` in both `rulesContainerBase64FromJson` and `ruleMessageBase64FromJson`, which made
+  the bytes a proposal is signed over order-dependent. It now delegates to
+  `RulesContainerMapper.INSTANCE.deterministicBytes(...)` via a private static helper — `deterministicBytes`
+  is an interface `default` method, so it is only reachable through `INSTANCE`, not statically. Keep the
+  single implementation; do not copy the serializer.
+- **Nested rule-detail unknown fields are re-attached on encode.** `toProtoDetails` builds each nested
+  builder and calls `reattach(builder, node.getUnknownFields())` before `setX(...)`. Decode captured them
+  all along; the encode side used to drop them.
+- **`AddressWhitelistingRules.includeNetworkInPayload` is a model-only field with NO proto backing** — there is no `setIncludeNetworkInPayload` on the proto builder; don't try to encode it.
+
+**Governance test-authoring notes:**
+- `RuleCellCodec.cellFamily(RawCell)` returns the cell's `columnType` (not `""`); `decode(unknownColumn, emptyBytes)` returns a `RawCell` (not null).
+- Container-level enums are **numeric-passthrough, matching the other three SDKs**: decode reads the `*Value` int accessors (`typeValue`, `domainValue`, `subDomainValue`, `blockchainValue`, `rolesValueList`) and renders a value this SDK does not know as its decimal string — `UNRECOGNIZED` does not carry the number, so sourcing the enum itself would lose it. `enumValue(EnumClass, name)` resolves a known name, passes a decimal string through, returns `0` for null/empty, and **throws `IllegalArgumentException`** on a name that is neither; `rolesFromStrings` passes unknown role numbers through rather than dropping the role. Port Go's enum passthrough and authored-error tests — they apply here now.
+- The cell-level `blockchainToInt` is **private** and throws `NumberFormatException` on a non-numeric, non-enum name; it is numeric-passthrough like the container-level enums.
+- `RuleCellCodec.magnitude` / `fromMagnitude` are **package-private statics** — call them directly from a same-package `RuleCellCodecTest`.
+- `RuleCell` has reflection-based `equals`, so `assertEquals(expectedCell, decoded)` works; `RuleSource` has **no** `equals` — compare field-by-field (getType + variant getter) or by re-encoded bytes.
+- Inject per-node unknown fields with `RequestReply.<Node>.newBuilder()...setUnknownFields(UnknownFieldSet.newBuilder().addField(500, Field.newBuilder().addVarint(42).build()).build())`, then assert each decoded model node's `hasUnknownFields()`.
+- Service tests stay validation-only (project forbids Mockito — no network stubs); the encode/decode paths are covered via the mapper tests.

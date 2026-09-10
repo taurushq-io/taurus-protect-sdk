@@ -33,8 +33,10 @@
  *   - The integrity chain: payloadAsString → hash → signature is preserved
  */
 
+import { createHash } from "crypto";
 import { calculateHexHash } from "../crypto";
 import { constantTimeCompare } from "./constant-time";
+import { IntegrityError } from "../errors";
 import type {
   WhitelistedAddress,
   InternalAddress,
@@ -340,17 +342,162 @@ export function verifyHashCoverage(
   metadataHash: string,
   signatures: Array<{ hashes: string[] }>
 ): boolean {
-  // SECURITY: Use constant-time comparison and avoid early return
-  // to prevent timing attacks from revealing hash position
   let found = false;
   for (const sig of signatures) {
-    for (const hash of sig.hashes ?? []) {
-      if (constantTimeCompare(metadataHash, hash)) {
-        found = true;
-      }
-      // Note: We intentionally do NOT early return here to maintain
-      // constant time regardless of match position
+    if (containsHash(sig.hashes, metadataHash)) {
+      found = true;
+      // No break: returning on a match would leak its position through timing.
     }
   }
   return found;
+}
+
+/**
+ * Reports whether one signature's hashes list covers `hash`.
+ *
+ * The per-signature half of the pair; {@link verifyHashCoverage} asks the same
+ * question across every signature. These two are the ONLY places this SDK compares
+ * hash strings — each verifier used to carry its own private copy.
+ *
+ * SECURITY: constant-time, and the loop does not break early.
+ *
+ * @param hashes - the hashes a signature covers
+ * @param hash - the hash to look for
+ * @returns true when the list covers the hash
+ */
+export function containsHash(
+  hashes: string[] | undefined,
+  hash: string
+): boolean {
+  if (!hashes || !hash) {
+    return false;
+  }
+
+  let found = false;
+  for (const candidate of hashes) {
+    if (constantTimeCompare(hash, candidate)) {
+      found = true;
+      // No break, as above.
+    }
+  }
+  return found;
+}
+
+/**
+ * Maximum size of a signed payload before it is parsed.
+ *
+ * The payload is hash-checked in step 1 but not AUTHENTICATED until step 5's
+ * signatures verify, so anything parsed in between is still attacker-influenced.
+ * A generous ceiling that only stops a hostile response consuming memory.
+ */
+export const MAX_PAYLOAD_BYTES = 1 << 20;
+
+/**
+ * Returns the (blockchain, network) pair that selects the governance rules, taken
+ * from the SIGNED payload rather than the surrounding DTO.
+ *
+ * The DTO is free-floating: nothing binds it to the signatures, so a response that
+ * set blockchain to empty would steer verification to the global-default rule tier,
+ * which is broader than the rule the entity belongs to. The payload pair is at
+ * least hash-bound to the material step 5 checks.
+ *
+ * Addresses name the chain `currency`; assets name it `blockchain`. Both are
+ * accepted so one helper serves both flows.
+ *
+ * The chain is always in the payload. The NETWORK is not: governance rules carry a
+ * per-rule `includeNetworkInPayload` flag, and real signed payloads omit `network`
+ * when it is off. Requiring it would reject correctly-signed addresses, so the DTO
+ * network is used only when the payload has none.
+ *
+ * @param payloadAsString - the signed payload
+ * @param dtoBlockchain - the blockchain the response claims
+ * @param dtoNetwork - the network the response claims
+ * @returns the pair to look rules up with
+ * @throws {@link IntegrityError} if the payload omits the chain — never treated as
+ *   a wildcard, because an empty value matches every tier — or if the payload and
+ *   the DTO disagree on a field the payload does carry
+ */
+export function resolveRuleKey(
+  payloadAsString: string | undefined,
+  dtoBlockchain: string | undefined,
+  dtoNetwork: string | undefined
+): { blockchain: string; network: string } {
+  if (!payloadAsString) {
+    throw new IntegrityError("cannot resolve governance rule key: payload is empty");
+  }
+  if (payloadAsString.length > MAX_PAYLOAD_BYTES) {
+    throw new IntegrityError(
+      `cannot resolve governance rule key: payload exceeds ${MAX_PAYLOAD_BYTES} bytes`
+    );
+  }
+
+  let payload: Record<string, unknown>;
+  try {
+    const parsed: unknown = JSON.parse(payloadAsString);
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      throw new IntegrityError(
+        "cannot resolve governance rule key: payload is not an object"
+      );
+    }
+    payload = parsed as Record<string, unknown>;
+  } catch (error) {
+    if (error instanceof IntegrityError) {
+      throw error;
+    }
+    throw new IntegrityError(
+      `cannot resolve governance rule key: ${error instanceof Error ? error.message : "unknown error"}`
+    );
+  }
+
+  const blockchain = String(payload.blockchain ?? payload.currency ?? "");
+  let network = String(payload.network ?? "");
+
+  if (!blockchain) {
+    throw new IntegrityError(
+      "signed payload does not carry a blockchain; " +
+        "refusing to fall back to a wildcard rule"
+    );
+  }
+
+  // Only reachable when includeNetworkInPayload is off for this rule.
+  const networkFromPayload = network !== "";
+  if (!networkFromPayload) {
+    network = dtoNetwork ?? "";
+  }
+
+  if (dtoBlockchain && dtoBlockchain.toLowerCase() !== blockchain.toLowerCase()) {
+    throw new IntegrityError(
+      `blockchain disagrees between the signed payload (${blockchain}) and the response (${dtoBlockchain})`
+    );
+  }
+  if (networkFromPayload && dtoNetwork && dtoNetwork.toLowerCase() !== network.toLowerCase()) {
+    throw new IntegrityError(
+      `network disagrees between the signed payload (${network}) and the response (${dtoNetwork})`
+    );
+  }
+
+  return { blockchain, network };
+}
+
+/**
+ * Recomputes the label validatord files a normalized rules container under, so a row's
+ * `rulesContainerHash` resolves only to bytes that really hash to it.
+ *
+ * The convention is validatord's, at `internal/api/v1/whitelist-controller.go`:
+ *
+ * ```go
+ * h := base64.StdEncoding.EncodeToString(crypto.Sha256([]byte(e.GetRulesContainer())))
+ * ```
+ *
+ * Note what is hashed. `GetRulesContainer()` is ALREADY a base64 string there, so the
+ * digest is over the base64 TEXT, not over the decoded protobuf, and the output is
+ * base64 rather than hex. Decoding the container first and hashing the protobuf yields a
+ * different value and would reject every container, breaking all list calls.
+ *
+ * Do not confuse it with `enforcedRulesHash`, which is `base64(SHA256(raw protobuf))` and
+ * is a backlink to a ruleset's predecessor rather than its own identity. Both are 44-char
+ * base64 SHA-256 digests, so mixing them up is silent.
+ */
+export function containerHashLabel(containerBase64: string): string {
+  return createHash("sha256").update(containerBase64, "utf-8").digest("base64");
 }

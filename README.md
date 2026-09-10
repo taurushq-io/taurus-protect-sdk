@@ -11,9 +11,11 @@ For concepts shared across all SDKs, see [docs/](docs/):
 | Document | Description |
 |----------|-------------|
 | [Key Concepts](docs/CONCEPTS.md) | Domain model, entities, relationships, request lifecycle |
-| [Authentication](docs/AUTHENTICATION.md) | TPV1 authentication protocol, security best practices |
+| [Authentication](docs/AUTHENTICATION.md) | Authentication mechanisms (`Credentials`), SuperAdmin keys, security best practices |
 | [Integrity Verification](docs/INTEGRITY_VERIFICATION.md) | Cryptographic verification flows |
+| [Business Rules](docs/BUSINESS_RULES.md) | Business rules, change approval system, entity scopes |
 | [Postman Integration](docs/POSTMAN_INTEGRATION.md) | Postman collections — Bearer and HMAC auth, request signing setup |
+| [SDK Alignment Report](docs/SDK_ALIGNMENT_REPORT.md) | Cross-SDK alignment report (services, security, models, documentation) |
 
 ### SDK-Specific Documentation
 
@@ -30,9 +32,11 @@ For concepts shared across all SDKs, see [docs/](docs/):
 taurus-protect-sdk/
 ├── docs/                              # Common documentation
 │   ├── CONCEPTS.md                    # Domain model (shared)
-│   ├── AUTHENTICATION.md              # TPV1 protocol (shared)
+│   ├── AUTHENTICATION.md              # Auth mechanisms & SuperAdmin keys (shared)
 │   ├── INTEGRITY_VERIFICATION.md      # Verification flows (shared)
-│   └── POSTMAN_INTEGRATION.md         # Postman collections setup (shared)
+│   ├── BUSINESS_RULES.md              # Business rules & change approval (shared)
+│   ├── POSTMAN_INTEGRATION.md         # Postman collections setup (shared)
+│   └── SDK_ALIGNMENT_REPORT.md        # Cross-SDK alignment report
 ├── postman/                           # Postman collection files
 │   ├── Bearer Authentication.postman_collection.json
 │   └── Hmac Based Authentication.postman_collection.json
@@ -72,7 +76,7 @@ cd taurus-protect-sdk-java
 
 ## Go SDK
 
-**Requirements:** Go 1.21+ (runtime), Java 11+ (code generation), protoc + protoc-gen-go (protobuf)
+**Requirements:** Go 1.24+ (runtime), Java 11+ (code generation), protoc + protoc-gen-go (protobuf)
 
 ```bash
 cd taurus-protect-sdk-go
@@ -125,7 +129,7 @@ cd taurus-protect-sdk-typescript
 
 | Aspect | Java | Go | Python | TypeScript |
 |--------|------|-----|--------|------------|
-| **Language Version** | Java 8+ | Go 1.21+ | Python 3.9+ | Node.js 18+ |
+| **Language Version** | Java 8+ | Go 1.24+ | Python 3.9+ | Node.js 18+ |
 | **Build Tool** | Maven | `go` tool | pip/setuptools | npm |
 | **HTTP Client** | OkHttp | Standard `net/http` | urllib3 | fetch API |
 | **DTO Mapping** | MapStruct (compile-time) | Manual functions | Manual functions + Pydantic models | Manual functions |
@@ -157,7 +161,7 @@ All SDKs generate code from the same specifications:
 ### OpenAPI Specification
 - **Location**: `scripts/resources/swagger/apis.swagger.json`
 - **Format**: Swagger 2.0 / OpenAPI 2.0
-- **Content**: 56 REST API services
+- **Content**: 61 REST API services
 
 ### Protocol Buffer Schemas
 - **Location**: `scripts/resources/proto/schema/`

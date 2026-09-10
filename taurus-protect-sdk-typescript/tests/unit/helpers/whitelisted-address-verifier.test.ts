@@ -13,12 +13,13 @@
 import * as crypto from "crypto";
 
 import { calculateHexHash, signData, encodePublicKeyPem } from "../../../src/crypto";
-import { IntegrityError, WhitelistError } from "../../../src/errors";
+import { ContainerIntegrityError, IntegrityError, WhitelistError } from "../../../src/errors";
 import { WhitelistedAddressVerifier } from "../../../src/helpers/whitelisted-address-verifier";
 import type {
   DecodedRulesContainer,
   RuleUserSignature,
 } from "../../../src/models/governance-rules";
+import { RuleSourceType } from "../../../src/models/governance-rules";
 import type {
   SignedWhitelistedAddressEnvelope,
 } from "../../../src/models/whitelisted-address";
@@ -174,6 +175,7 @@ function buildFullAddressFixture(overrides?: {
             ],
           },
         ],
+        lines: [],
       },
     ],
     contractAddressWhitelistingRules: [],
@@ -584,6 +586,7 @@ describe("WhitelistedAddressVerifier - Step 5: Whitelist Signatures", () => {
           parallelThresholds: [
             { thresholds: [{ groupId: "approvers", minimumSignatures: 1, threshold: 0 }] },
           ],
+          lines: [],
         },
       ],
       contractAddressWhitelistingRules: [],
@@ -617,6 +620,7 @@ describe("WhitelistedAddressVerifier - Step 5: Whitelist Signatures", () => {
           currency: "ETH",
           network: "mainnet",
           parallelThresholds: [],
+          lines: [],
         },
       ],
       contractAddressWhitelistingRules: [],
@@ -656,6 +660,7 @@ describe("WhitelistedAddressVerifier - Step 5: Whitelist Signatures", () => {
           parallelThresholds: [
             { thresholds: [{ groupId: "approvers", minimumSignatures: 2, threshold: 0 }] },
           ],
+          lines: [],
         },
       ],
       contractAddressWhitelistingRules: [],
@@ -775,6 +780,7 @@ describe("WhitelistedAddressVerifier - End-to-End", () => {
               ],
             },
           ],
+          lines: [],
         },
       ],
       contractAddressWhitelistingRules: [],
@@ -827,6 +833,7 @@ describe("WhitelistedAddressVerifier - End-to-End", () => {
             // Path 2: will pass
             { thresholds: [{ groupId: "approvers", minimumSignatures: 1, threshold: 0 }] },
           ],
+          lines: [],
         },
       ],
       contractAddressWhitelistingRules: [],
@@ -868,6 +875,7 @@ describe("WhitelistedAddressVerifier - End-to-End", () => {
             { thresholds: [{ groupId: "team_a", minimumSignatures: 1, threshold: 0 }] },
             { thresholds: [{ groupId: "team_b", minimumSignatures: 1, threshold: 0 }] },
           ],
+          lines: [],
         },
       ],
       contractAddressWhitelistingRules: [],
@@ -941,7 +949,7 @@ describe("WhitelistedAddressVerifier - Rule Lines", () => {
           // Lines with wallet-specific thresholds
           lines: [
             {
-              cells: [{ type: "INTERNAL_WALLET", internalWallet: { path: "ETH/wallet1" } }],
+              cells: [{ type: RuleSourceType.InternalWallet, internalWallet: { path: "ETH/wallet1" } }],
               parallelThresholds: [
                 { thresholds: [{ groupId: "wallet_approvers", minimumSignatures: 1, threshold: 0 }] },
               ],
@@ -971,6 +979,89 @@ describe("WhitelistedAddressVerifier - Rule Lines", () => {
     );
     expect(result).toBeDefined();
     expect(result.verifiedWhitelistedAddress.blockchain).toBe("ETH");
+  });
+
+  // A container signed by a validatord newer than this SDK can carry a source cell
+  // the decoder could only preserve verbatim. Such a line simply failed to match, so
+  // verification fell through to the container defaults — approving the address
+  // against a weaker quorum than its governance line demands, silently.
+  it("aborts instead of falling back to defaults when a source cell cannot be typed", () => {
+    const f = buildFullAddressFixture();
+    const { privateKey: u2Priv, publicKey: u2Pub } = generateP256KeyPair();
+    const u2Pem = keyToPem(u2Pub);
+
+    const hashes = [f.envelope.metadata.hash];
+    const u2Sig = signData(u2Priv, Buffer.from(JSON.stringify(hashes), "utf-8"));
+
+    // One wallet, no linked addresses: the rule-line path is taken.
+    const envelopeWithWallet: SignedWhitelistedAddressEnvelope = {
+      ...f.envelope,
+      linkedInternalAddresses: [],
+      linkedWallets: [{ id: 1, path: "ETH/wallet1", label: "My Wallet" }],
+      signedAddress: {
+        payload: undefined,
+        signatures: [
+          {
+            userSignature: {
+              userId: "user2@bank.com",
+              signature: u2Sig,
+              comment: undefined,
+            },
+            hashes,
+          },
+        ],
+      },
+    };
+
+    const rawSourceDecoder = (_b64: string): DecodedRulesContainer => ({
+      users: [
+        { id: "user2@bank.com", name: "User 2", publicKeyPem: u2Pem, roles: ["USER"] },
+      ],
+      groups: [
+        { id: "wallet_approvers", name: "Wallet Approvers", userIds: ["user2@bank.com"] },
+      ],
+      transactionRules: [],
+      addressWhitelistingRules: [
+        {
+          currency: "ETH",
+          network: "mainnet",
+          // A permissive default that would otherwise let the address through.
+          parallelThresholds: [
+            { thresholds: [{ groupId: "wallet_approvers", minimumSignatures: 1, threshold: 0 }] },
+          ],
+          lines: [
+            {
+              // Preserved verbatim: this SDK could not type it.
+              cells: [{ type: RuleSourceType.Unknown, raw: new Uint8Array([0x08, 0x63]) }],
+              parallelThresholds: [
+                { thresholds: [{ groupId: "admins", minimumSignatures: 5, threshold: 0 }] },
+              ],
+            },
+          ],
+        } as any,
+      ],
+      contractAddressWhitelistingRules: [],
+      minimumDistinctUserSignatures: 0,
+      minimumDistinctGroupSignatures: 0,
+      enforcedRulesHash: "",
+      timestamp: 0,
+      hsmSlotId: 0,
+      minimumCommitmentSignatures: 0,
+      engineIdentities: [],
+    });
+
+    const verifier = new WhitelistedAddressVerifier({
+      superAdminKeysPem: [f.saPem],
+      minValidSignatures: 1,
+    });
+
+    expect(() =>
+      verifier.verify(envelopeWithWallet, rawSourceDecoder, f.userSignaturesDecoder)
+    ).toThrow(ContainerIntegrityError);
+    // Must remain catchable as an IntegrityError for existing handlers.
+    expect(() =>
+      verifier.verify(envelopeWithWallet, rawSourceDecoder, f.userSignaturesDecoder)
+    ).toThrow(IntegrityError);
   });
 
   it("should use default thresholds when multiple wallets are linked", () => {

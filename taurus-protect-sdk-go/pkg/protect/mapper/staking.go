@@ -130,13 +130,13 @@ func FTMValidatorInfoFromDTO(dto *openapi.TgvalidatordGetFTMValidatorInfoReply) 
 	}
 
 	return &model.FTMValidatorInfo{
-		ValidatorID:          safeString(dto.ValidatorID),
-		Address:              safeString(dto.Address),
-		IsActive:             safeBool(dto.IsActive),
-		TotalStake:           safeString(dto.TotalStake),
-		SelfStake:            safeString(dto.SelfStake),
+		ValidatorID:           safeString(dto.ValidatorID),
+		Address:               safeString(dto.Address),
+		IsActive:              safeBool(dto.IsActive),
+		TotalStake:            safeString(dto.TotalStake),
+		SelfStake:             safeString(dto.SelfStake),
 		DeactivatedAtDateUnix: safeString(dto.DeactivatedAtDateUnix),
-		CreatedAtDateUnix:    safeString(dto.CreatedAtDateUnix),
+		CreatedAtDateUnix:     safeString(dto.CreatedAtDateUnix),
 	}
 }
 

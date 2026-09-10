@@ -6,21 +6,35 @@ import (
 	"strconv"
 
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/internal/openapi"
+	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/cache"
+	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/helper"
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/mapper"
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/model"
 )
 
 // AssetService provides asset balance retrieval operations.
 type AssetService struct {
-	api       *openapi.AssetsAPIService
-	errMapper *ErrorMapper
+	api        *openapi.AssetsAPIService
+	errMapper  *ErrorMapper
+	rulesCache *cache.RulesContainerCache
 }
 
-// NewAssetService creates a new AssetService.
-func NewAssetService(client *openapi.APIClient) *AssetService {
+// NewAssetService creates a new AssetService with mandatory address signature
+// verification.
+//
+// GetAssetAddresses returns the same Address entity AddressService does, signature and
+// all, and used to hand it over unverified — so the mandatory verification on
+// AddressService could be walked around by asking for the same rows here.
+//
+// Panics if rulesCache is nil, as NewAddressService does.
+func NewAssetService(client *openapi.APIClient, rulesCache *cache.RulesContainerCache) *AssetService {
+	if rulesCache == nil {
+		panic("rulesCache cannot be nil - address signature verification is mandatory")
+	}
 	return &AssetService{
-		api:       client.AssetsAPI,
-		errMapper: NewErrorMapper(),
+		api:        client.AssetsAPI,
+		errMapper:  NewErrorMapper(),
+		rulesCache: rulesCache,
 	}
 }
 
@@ -83,8 +97,25 @@ func (s *AssetService) GetAssetAddresses(ctx context.Context, req *model.GetAsse
 		return nil, s.errMapper.MapError(err, httpResp)
 	}
 
+	addresses := mapper.AddressesFromDTO(resp.Addresses)
+
+	// Fail-fast, as AddressService does: one unverifiable address is not a row to skip
+	// past when the caller is choosing where funds go.
+	rulesContainer, err := s.rulesCache.Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if rulesContainer == nil {
+		return nil, &model.IntegrityError{
+			Message: "rules container required for address signature verification",
+		}
+	}
+	if err := helper.VerifyAddressSignatures(addresses, rulesContainer); err != nil {
+		return nil, err
+	}
+
 	result := &model.GetAssetAddressesResult{
-		Addresses: mapper.AddressesFromDTO(resp.Addresses),
+		Addresses: addresses,
 	}
 
 	// Parse total items

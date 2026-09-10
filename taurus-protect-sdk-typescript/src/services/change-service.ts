@@ -296,6 +296,9 @@ export class ChangeService extends BaseService {
 
     return this.execute(async () => {
       const dto = createChangeRequestToDto(request);
+      // The generated body type does not match the mapped DTO shape; the cast is the
+      // existing contract with the OpenAPI client.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const response = await this.changesApi.changeServiceCreateChange({ body: dto as any });
       const resp = response as Record<string, unknown>;
       const result = resp.result as Record<string, unknown> | undefined;

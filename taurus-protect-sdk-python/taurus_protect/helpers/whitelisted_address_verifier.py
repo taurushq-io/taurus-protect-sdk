@@ -13,19 +13,25 @@ from __future__ import annotations
 
 import base64
 import binascii
-import hmac
 import json
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Callable, List, Optional
 
 from cryptography.exceptions import InvalidSignature
 
+from taurus_protect._strict_base64 import strict_b64decode
 from taurus_protect.crypto.hashing import calculate_hex_hash
 from taurus_protect.crypto.signing import verify_signature
-from taurus_protect.errors import IntegrityError, WhitelistError
+from taurus_protect.errors import ContainerIntegrityError, IntegrityError, WhitelistError
 from taurus_protect.helpers.constant_time import constant_time_compare
-from taurus_protect.helpers.signature_verifier import is_valid_signature
+from taurus_protect.helpers.signature_verifier import (
+    key_fingerprint,
+    verify_governance_rules_signatures,
+)
 from taurus_protect.helpers.whitelist_hash_helper import (
+    contains_hash,
+    resolve_rule_key,
+    verify_hash_coverage,
     compute_legacy_hashes,
     parse_whitelisted_address_from_json,
 )
@@ -54,6 +60,18 @@ class AddressVerificationResult:
     rules_container: DecodedRulesContainer
     verified_hash: str
     verified_whitelisted_address: WhitelistedAddress
+
+
+def _line_has_untyped_source(line: AddressWhitelistingLine) -> bool:
+    """True when the line's source cell was preserved verbatim, not typed.
+
+    ``_matches_wallet_path`` reads ``cells[0]``, so that is the cell whose meaning
+    must be known before a match/no-match verdict can be trusted.
+    """
+    if line is None or not line.cells:
+        return False
+    source = line.cells[0]
+    return source is not None and bool(getattr(source, "raw", None))
 
 
 class WhitelistedAddressVerifier:
@@ -185,23 +203,19 @@ class WhitelistedAddressVerifier:
 
         # Decode rules container data
         try:
-            rules_data = base64.b64decode(envelope.rules_container)
+            rules_data = strict_b64decode(envelope.rules_container)
         except (binascii.Error, ValueError) as e:
             raise IntegrityError(f"failed to decode rules container: {e}") from e
 
-        # Verify signatures
-        valid_count = 0
-        for sig in signatures:
-            if sig.signature and is_valid_signature(
-                rules_data, sig.signature, self._super_admin_keys
-            ):
-                valid_count += 1
-
-        if valid_count < self._min_valid_signatures:
-            raise IntegrityError(
-                f"rules container signature verification failed: only {valid_count} valid signatures, "
-                f"minimum {self._min_valid_signatures} required"
+        try:
+            verify_governance_rules_signatures(
+                rules_data,
+                signatures,
+                self._super_admin_keys,
+                self._min_valid_signatures,
             )
+        except IntegrityError as e:
+            raise IntegrityError(f"rules container signature verification failed: {e}") from e
 
     def _decode_rules_container(
         self,
@@ -238,13 +252,13 @@ class WhitelistedAddressVerifier:
         metadata_hash = envelope.metadata.hash
 
         # Try the provided hash first using constant-time comparison
-        if _verify_hash_coverage(metadata_hash, signatures):
+        if verify_hash_coverage(metadata_hash, signatures):
             return metadata_hash
 
         # Try legacy hashes for backward compatibility
         legacy_hashes = compute_legacy_hashes(envelope.metadata.payload_as_string)
         for legacy_hash in legacy_hashes:
-            if _verify_hash_coverage(legacy_hash, signatures):
+            if verify_hash_coverage(legacy_hash, signatures):
                 return legacy_hash
 
         raise IntegrityError("metadata hash is not covered by any signature")
@@ -260,8 +274,14 @@ class WhitelistedAddressVerifier:
 
         Step 5 of the verification flow.
         """
-        blockchain = envelope.blockchain
-        network = envelope.network
+        # Which rules judge this address is decided by the SIGNED payload, not by
+        # the surrounding response. A DTO with an empty blockchain would select the
+        # global-default tier -- broader than the rule the address belongs to.
+        blockchain, network = resolve_rule_key(
+            envelope.metadata.payload_as_string if envelope.metadata else None,
+            envelope.blockchain,
+            envelope.network,
+        )
 
         # Find matching address whitelisting rules
         whitelist_rules = rules_container.find_address_whitelisting_rules(
@@ -325,7 +345,24 @@ class WhitelistedAddressVerifier:
             wallet_path = envelope.linked_wallets[0].path
 
             # Find matching line by wallet path
-            for line in rules.lines:
+            for index, line in enumerate(rules.lines):
+                # A source cell this SDK could not type might be the one that
+                # matches. Falling through to the container defaults would verify
+                # the address against a quorum governance never granted it —
+                # silently, with no error. Fail closed instead.
+                #
+                #   source typed --+- matches path -> line thresholds
+                #                  +- no match ----> container defaults
+                #   source RAW ------------------->  ContainerIntegrityError
+                if _line_has_untyped_source(line):
+                    raise ContainerIntegrityError(
+                        f"address whitelisting rules for blockchain={rules.currency} "
+                        f"network={rules.network} line {index} carry a source cell this "
+                        "SDK version cannot interpret; refusing to fall back to the "
+                        "container default thresholds, which may be weaker than the "
+                        "line's. Upgrade the SDK to match the validatord that signed "
+                        "this container"
+                    )
                 if self._matches_wallet_path(line, wallet_path):
                     return line.parallel_thresholds
 
@@ -435,11 +472,27 @@ class WhitelistedAddressVerifier:
                 return f"group '{group_id}' has no users but requires {min_sigs} signature(s)"
             return None  # min_signatures == 0, so empty group is OK
 
+        # A populated group with a zero threshold is a malformed container, not a
+        # group anyone may satisfy. There is no post-loop threshold check -- the
+        # only success exit is inside the loop after an increment -- so a zero
+        # here silently means "one signature suffices", turning a 2-of-N group
+        # into 1-of-N. Fail closed.
+        if min_sigs <= 0:
+            return (
+                f"group '{group_id}' has {len(group.user_ids)} user(s) but requires "
+                "0 signature(s): minimum_signatures must be positive"
+            )
+
         # Build set for faster lookup
         group_user_id_set = set(group.user_ids)
 
-        # Count valid signatures from users in this group
-        valid_count = 0
+        # Count DISTINCT signers, not signature entries.
+        #
+        # The entries come from the server-supplied userSignatures blob, so counting
+        # them let a duplicated entry from one group member satisfy an N-of-M group.
+        # Keyed on the container-resolved public key rather than the server-supplied
+        # user_id, so one compromised key shared by two IDs counts once.
+        signers: set = set()
         skipped_reasons = []
 
         for sig_idx, sig in enumerate(signatures):
@@ -452,9 +505,13 @@ class WhitelistedAddressVerifier:
                 continue  # Signer not in this group - not an error
 
             # Check that metadata hash is covered by this signature
-            if not _contains_hash(sig.hashes, metadata_hash):
+            if not contains_hash(sig.hashes, metadata_hash):
+                # Carries the hash and the covered list, matching Go, Java and TS:
+                # a hash is SHA-256 of a payload the caller already holds, and
+                # without it a threshold failure is undebuggable.
                 skipped_reasons.append(
-                    f"user '{sig_user_id}' signature does not cover metadata hash"
+                    f"user '{sig_user_id}' signature does not cover metadata hash "
+                    f"'{metadata_hash}' (signed hashes={sig.hashes})"
                 )
                 continue
 
@@ -484,8 +541,8 @@ class WhitelistedAddressVerifier:
                     hashes_data,
                     sig.user_signature.signature,
                 ):
-                    valid_count += 1
-                    if valid_count >= min_sigs:
+                    signers.add(key_fingerprint(public_key))
+                    if len(signers) >= min_sigs:
                         return None  # Threshold met
                 else:
                     skipped_reasons.append(f"user '{sig_user_id}' signature verification failed")
@@ -494,33 +551,9 @@ class WhitelistedAddressVerifier:
 
         # Threshold not met
         message = (
-            f"group '{group_id}' requires {min_sigs} signature(s) but only {valid_count} valid"
+            f"group '{group_id}' requires {min_sigs} distinct signer(s) "
+            f"but only {len(signers)} valid"
         )
         if skipped_reasons:
             message += f" [{'; '.join(skipped_reasons)}]"
         return message
-
-
-def _verify_hash_coverage(
-    metadata_hash: str, signatures: List[WhitelistSignatureEntry]
-) -> bool:
-    """
-    Check if the metadata hash is covered by at least one signature.
-
-    Uses constant-time comparison to prevent timing side-channel attacks.
-    """
-    found = False
-    for sig in signatures:
-        for h in sig.hashes:
-            if hmac.compare_digest(metadata_hash, h):
-                found = True
-                # Continue checking to maintain constant time
-    return found
-
-
-def _contains_hash(hashes: List[str], target: str) -> bool:
-    """Check if a hash is in the list using constant-time comparison."""
-    for h in hashes:
-        if hmac.compare_digest(h, target):
-            return True
-    return False

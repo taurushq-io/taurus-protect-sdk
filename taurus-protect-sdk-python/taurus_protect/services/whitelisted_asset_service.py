@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 
 from taurus_protect._internal.openapi.exceptions import ApiException
+from taurus_protect.crypto.signing import sign_data
 from taurus_protect.models.pagination import Pagination
 from taurus_protect.models.whitelisted_address import (
     SignedContractAddress,
@@ -120,6 +122,9 @@ class WhitelistedAssetService(BaseService):
         network: Optional[str] = None,
         limit: int = 50,
         offset: int = 0,
+        *,
+        ids: Optional[List[str]] = None,
+        include_for_approval: bool = False,
     ) -> Tuple[List[WhitelistedAsset], Optional[Pagination]]:
         """
         List whitelisted assets.
@@ -151,6 +156,8 @@ class WhitelistedAssetService(BaseService):
                 network=network,
                 limit=str(limit),
                 offset=str(offset),
+                whitelisted_contract_address_ids=ids or None,
+                include_for_approval=include_for_approval or None,
             )
 
             assets: List[WhitelistedAsset] = []
@@ -166,6 +173,159 @@ class WhitelistedAssetService(BaseService):
                 limit,
             )
             return assets, pagination
+        except Exception as e:
+            if isinstance(e, ApiException):
+                raise self._handle_error(e)
+            raise
+
+    def list_for_approval(
+        self,
+        ids: Optional[List[str]] = None,
+        limit: int = 50,
+        offset: int = 0,
+    ) -> Tuple[List[WhitelistedAsset], Optional[Pagination]]:
+        """
+        List whitelisted assets awaiting approval, verified as in list().
+
+        Without this the only reader of the for-approval endpoint was the unverified
+        contract-whitelisting service, so the rows an approver inspects before
+        whitelisting a contract address were never checked against governance.
+
+        Args:
+            ids: Filter by specific whitelisted asset IDs.
+            limit: Maximum number of assets to return.
+            offset: Offset for pagination.
+
+        Returns:
+            Tuple of (assets list, pagination info).
+
+        Raises:
+            IntegrityError: If verification fails for any asset.
+            WhitelistError: If signature thresholds are not met.
+            APIError: If the API call fails.
+        """
+        if limit <= 0:
+            raise ValueError("limit must be positive")
+        if offset < 0:
+            raise ValueError("offset cannot be negative")
+
+        try:
+            reply = self._api.whitelist_service_get_whitelisted_contracts_for_approval(
+                ids=ids,
+                limit=str(limit),
+                offset=str(offset),
+            )
+
+            assets: List[WhitelistedAsset] = []
+            if reply.result:
+                for dto in reply.result:
+                    asset = self._map_asset_from_dto(dto)
+                    self._verify_asset(asset, dto=dto)
+                    assets.append(asset)
+
+            pagination = self._extract_pagination(
+                getattr(reply, "total_items", None),
+                offset,
+                limit,
+            )
+            return assets, pagination
+        except Exception as e:
+            if isinstance(e, ApiException):
+                raise self._handle_error(e)
+            raise
+
+    def approve(
+        self,
+        ids: List[int],
+        private_key: Any,
+        comment: str,
+    ) -> None:
+        """
+        Sign and submit an approval for the given whitelisted assets, all-or-nothing.
+
+        Each asset is re-read through the verified path and the hashes THOSE rows carry
+        are what gets signed, so the approver's signature covers metadata this SDK
+        checked rather than whatever a caller was handed.
+        ``ContractWhitelistingService.approve_whitelisted_contracts`` takes an opaque
+        signature over hashes nothing verified.
+
+        Any asset that is missing or fails verification aborts the whole call and nothing
+        is signed: one signature covers every hash in the batch, so a partial approval
+        would mean the caller believes they approved more than they did.
+
+        Args:
+            ids: The whitelisted asset IDs to approve.
+            private_key: The approver's P-256 private key.
+            comment: The approval comment.
+
+        Raises:
+            ValueError: If any argument is missing or malformed.
+            IntegrityError: If any asset is missing, unverifiable, or has no hash.
+            APIError: If the API call fails.
+        """
+        if not ids:
+            raise ValueError("ids cannot be empty")
+        if private_key is None:
+            raise ValueError("private_key is required")
+        if not comment:
+            raise ValueError("comment is required")
+        for asset_id in ids:
+            if not isinstance(asset_id, int) or isinstance(asset_id, bool) or asset_id <= 0:
+                raise ValueError(f"whitelisted asset ID {asset_id!r} must be a positive integer")
+
+        from taurus_protect.errors import IntegrityError
+
+        # Sorted numerically, as the request-approval path does, so the signed order is
+        # independent of the order the caller passed.
+        sorted_ids = sorted(ids)
+
+        # ONE id-filtered page through the verifying list path, not one GET per id. The
+        # list path verifies every row and fetches the rules container once per call, so
+        # a 50-id approval costs one round trip and one container fetch instead of fifty
+        # of each. include_for_approval is required: the rows being approved are pending,
+        # so the default list does not return them.
+        id_strings = [str(i) for i in sorted_ids]
+        try:
+            verified, _ = self.list(
+                limit=len(id_strings),
+                ids=id_strings,
+                include_for_approval=True,
+            )
+        except Exception as e:
+            raise IntegrityError(f"refusing to sign: the verified read failed: {e}") from e
+
+        by_id = {str(asset.id): asset for asset in verified if asset is not None}
+
+        hashes: List[str] = []
+        for asset_id in id_strings:
+            asset = by_id.get(asset_id)
+            if asset is None:
+                # A page that silently omits a row must not become an approval of fewer
+                # rows than the caller asked for.
+                raise IntegrityError(
+                    f"refusing to sign: asset {asset_id} was not returned by the "
+                    "verified read"
+                )
+            if asset.metadata is None or not asset.metadata.hash:
+                raise IntegrityError(
+                    f"refusing to sign: asset {asset_id} has no metadata hash"
+                )
+            hashes.append(asset.metadata.hash)
+
+        to_sign = json.dumps(hashes, separators=(",", ":"))
+        signature = sign_data(private_key, to_sign.encode("utf-8"))
+
+        try:
+            from taurus_protect._internal.openapi.models.tgvalidatord_approve_whitelisted_contract_address_request import (
+                TgvalidatordApproveWhitelistedContractAddressRequest,
+            )
+
+            body = TgvalidatordApproveWhitelistedContractAddressRequest(
+                ids=[str(i) for i in sorted_ids],
+                signature=signature,
+                comment=comment,
+            )
+            self._api.whitelist_service_approve_whitelisted_contract(body=body)
         except Exception as e:
             if isinstance(e, ApiException):
                 raise self._handle_error(e)
@@ -303,6 +463,8 @@ class WhitelistedAssetService(BaseService):
             blockchain=payload.get("blockchain") or payload.get("Blockchain"),
             network=payload.get("network") or payload.get("Network"),
             contract_address=payload.get("contract_address") or payload.get("contractAddress"),
+            decimals=payload.get("decimals"),
+            token_id=payload.get("token_id") or payload.get("tokenId"),
             # Non-security fields can come from DTO
             status=getattr(dto, "status", None),
             action=getattr(dto, "action", None),

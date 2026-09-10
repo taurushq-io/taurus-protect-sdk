@@ -72,7 +72,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * The client implements {@link AutoCloseable} to ensure proper cleanup of sensitive
  * credentials when no longer needed. It is recommended to use try-with-resources:
  * <pre>{@code
- * try (ProtectClient client = ProtectClient.create(host, apiKey, apiSecret, keys, 2)) {
+ * try (ProtectClient client = ProtectClient.create(host, Credentials.apiKey(apiKey, apiSecret), keys, 2)) {
  *     // Use the client
  *     Wallet wallet = client.getWalletService().getWallet(123);
  * }
@@ -127,23 +127,29 @@ public final class ProtectClient implements AutoCloseable {
     private final TaurusNetworkClient taurusNetworkClient;
 
 
-    private ProtectClient(String host, String apiKey, String apiSecret,
+    private ProtectClient(String host, Credentials credentials,
                           List<PublicKey> superAdminPublicKeys,
                           int minValidSignatures,
                           long rulesContainerCacheTtlMs) throws ApiKeyTPV1Exception {
 
         checkArgument(!Strings.isNullOrEmpty(host), "host cannot be null or empty");
-        checkArgument(!Strings.isNullOrEmpty(apiKey), "apiKey cannot be null or empty");
-        checkArgument(!Strings.isNullOrEmpty(apiSecret), "apiSecret cannot be null or empty");
+        checkNotNull(credentials, "credentials cannot be null");
         checkArgument(minValidSignatures > 0, "minValidSignatures must be greater than zero");
+        checkNotNull(superAdminPublicKeys, "superAdminPublicKeys cannot be null");
+        checkArgument(!superAdminPublicKeys.isEmpty(), "superAdminPublicKeys cannot be empty");
+        // A threshold above the number of configured keys can never be satisfied, so the
+        // client would verify nothing and fail at every call site instead of here. Go and
+        // Python reject it at construction; this SDK and TypeScript did not.
+        checkArgument(minValidSignatures <= superAdminPublicKeys.size(),
+                "minValidSignatures (%s) cannot exceed number of SuperAdmin keys (%s)",
+                minValidSignatures, superAdminPublicKeys.size());
         checkArgument(rulesContainerCacheTtlMs > 0, "rulesContainerCacheTtlMs must be positive");
 
         this.superAdminPublicKeys = superAdminPublicKeys;
 
         openApiClient = new ApiClient();
         openApiClient.setBasePath(host);
-        openApiClient.setApiKeyTPV1(apiKey);
-        openApiClient.setApiSecretTPV1(apiSecret);
+        credentials.applyTo(openApiClient);
         openApiClient.setLenientOnJson(false);
         openApiClient.setDebugging(false);
 
@@ -155,7 +161,6 @@ public final class ProtectClient implements AutoCloseable {
         this.scoreService = new ScoreService(openApiClient, apiExceptionMapper);
         this.balanceService = new BalanceService(openApiClient, apiExceptionMapper);
         this.userService = new UserService(openApiClient, apiExceptionMapper);
-        this.priceService = new PriceService(openApiClient, apiExceptionMapper);
         this.changeService = new ChangeService(openApiClient, apiExceptionMapper);
         this.businessRuleService = new BusinessRuleService(openApiClient, apiExceptionMapper);
         this.governanceRuleService = new GovernanceRuleService(openApiClient, apiExceptionMapper, superAdminPublicKeys, minValidSignatures);
@@ -179,7 +184,6 @@ public final class ProtectClient implements AutoCloseable {
         this.feePayerService = new FeePayerService(openApiClient, apiExceptionMapper);
         this.configService = new ConfigService(openApiClient, apiExceptionMapper);
         this.actionService = new ActionService(openApiClient, apiExceptionMapper);
-        this.assetService = new AssetService(openApiClient, apiExceptionMapper);
         this.multiFactorSignatureService = new MultiFactorSignatureService(openApiClient, apiExceptionMapper);
         this.visibilityGroupService = new VisibilityGroupService(openApiClient, apiExceptionMapper);
         this.webhookCallsService = new WebhookCallsService(openApiClient, apiExceptionMapper);
@@ -198,6 +202,10 @@ public final class ProtectClient implements AutoCloseable {
 
         // Create address service with cache (depends on rulesContainerCache)
         this.addressService = new AddressService(openApiClient, apiExceptionMapper, rulesContainerCache);
+        // Prices verify against the PRICEUPDATER keys in the same container.
+        this.priceService = new PriceService(openApiClient, apiExceptionMapper, rulesContainerCache);
+        // Asset addresses are the same entity, so they verify against the same cache.
+        this.assetService = new AssetService(openApiClient, apiExceptionMapper, rulesContainerCache);
     }
 
     /**
@@ -207,7 +215,7 @@ public final class ProtectClient implements AutoCloseable {
      * <pre>{@code
      * ProtectClient client = ProtectClient.builder()
      *     .host("https://api.protect.taurushq.com")
-     *     .credentials(apiKey, apiSecret)
+     *     .credentials(Credentials.apiKey(apiKey, apiSecret))
      *     .superAdminKeysPem(pemKeys)
      *     .minValidSignatures(2)
      *     .build();
@@ -220,6 +228,24 @@ public final class ProtectClient implements AutoCloseable {
     }
 
     /**
+     * Creates a new Protect client with the given {@link Credentials} and default cache TTL.
+     *
+     * @param host                 the host
+     * @param credentials          the authentication mechanism
+     * @param superAdminPublicKeys the list of SuperAdmin public keys
+     * @param minValidSignatures   the minimum number of valid signatures required for governance rules verification
+     * @return the protect client
+     * @throws ApiKeyTPV1Exception the api key tpv 1 exception
+     */
+    public static ProtectClient create(String host, Credentials credentials,
+                                       List<PublicKey> superAdminPublicKeys,
+                                       int minValidSignatures) throws ApiKeyTPV1Exception {
+
+        return create(host, credentials, superAdminPublicKeys, minValidSignatures,
+                RulesContainerCache.DEFAULT_CACHE_TTL_MS);
+    }
+
+    /**
      * Creates a new Protect client with SuperAdmin public keys and default cache TTL.
      *
      * @param host                 the host
@@ -229,13 +255,43 @@ public final class ProtectClient implements AutoCloseable {
      * @param minValidSignatures   the minimum number of valid signatures required for governance rules verification
      * @return the protect client
      * @throws ApiKeyTPV1Exception the api key tpv 1 exception
+     * @deprecated use {@link #create(String, Credentials, List, int)} with {@link Credentials#apiKey}
      */
+    @Deprecated
     public static ProtectClient create(String host, String apiKey, String apiSecret,
                                        List<PublicKey> superAdminPublicKeys,
                                        int minValidSignatures) throws ApiKeyTPV1Exception {
 
-        return create(host, apiKey, apiSecret, superAdminPublicKeys, minValidSignatures,
+        return create(host, Credentials.apiKey(apiKey, apiSecret), superAdminPublicKeys, minValidSignatures,
                 RulesContainerCache.DEFAULT_CACHE_TTL_MS);
+    }
+
+    /**
+     * Creates a new Protect client with the given {@link Credentials} and custom cache TTL.
+     * <p>
+     * SuperAdmin keys are required regardless of the credentials mechanism, since
+     * client-side governance rules verification is mandatory.
+     *
+     * @param host                       the host
+     * @param credentials                the authentication mechanism
+     * @param superAdminPublicKeys       the list of SuperAdmin public keys
+     * @param minValidSignatures         the minimum number of valid signatures required for governance rules verification
+     * @param rulesContainerCacheTtlMs   the cache TTL for rules container in milliseconds
+     * @return the protect client
+     * @throws ApiKeyTPV1Exception the api key tpv 1 exception
+     */
+    public static ProtectClient create(String host, Credentials credentials,
+                                       List<PublicKey> superAdminPublicKeys,
+                                       int minValidSignatures,
+                                       long rulesContainerCacheTtlMs) throws ApiKeyTPV1Exception {
+
+        checkNotNull(credentials, "credentials cannot be null");
+        checkNotNull(superAdminPublicKeys, "superAdminPublicKeys cannot be null");
+        checkArgument(!superAdminPublicKeys.isEmpty(), "superAdminPublicKeys must contain at least 1 key");
+
+        return new ProtectClient(host, credentials,
+                Collections.unmodifiableList(new ArrayList<>(superAdminPublicKeys)), minValidSignatures,
+                rulesContainerCacheTtlMs);
     }
 
     /**
@@ -249,18 +305,16 @@ public final class ProtectClient implements AutoCloseable {
      * @param rulesContainerCacheTtlMs   the cache TTL for rules container in milliseconds
      * @return the protect client
      * @throws ApiKeyTPV1Exception the api key tpv 1 exception
+     * @deprecated use {@link #create(String, Credentials, List, int, long)} with {@link Credentials#apiKey}
      */
+    @Deprecated
     public static ProtectClient create(String host, String apiKey, String apiSecret,
                                        List<PublicKey> superAdminPublicKeys,
                                        int minValidSignatures,
                                        long rulesContainerCacheTtlMs) throws ApiKeyTPV1Exception {
 
-        checkNotNull(superAdminPublicKeys, "superAdminPublicKeys cannot be null");
-        checkArgument(!superAdminPublicKeys.isEmpty(), "superAdminPublicKeys must contain at least 1 key");
-
-        return new ProtectClient(host, apiKey, apiSecret,
-                Collections.unmodifiableList(new ArrayList<>(superAdminPublicKeys)), minValidSignatures,
-                rulesContainerCacheTtlMs);
+        return create(host, Credentials.apiKey(apiKey, apiSecret),
+                superAdminPublicKeys, minValidSignatures, rulesContainerCacheTtlMs);
     }
 
     /**
@@ -308,7 +362,7 @@ public final class ProtectClient implements AutoCloseable {
         for (String pem : superAdminPublicKeysPem) {
             keys.add(CryptoTPV1.decodePublicKey(pem));
         }
-        return new ProtectClient(host, apiKey, apiSecret, Collections.unmodifiableList(keys), minValidSignatures,
+        return create(host, Credentials.apiKey(apiKey, apiSecret), keys, minValidSignatures,
                 rulesContainerCacheTtlMs);
     }
 
@@ -750,9 +804,12 @@ public final class ProtectClient implements AutoCloseable {
             }
         } catch (Exception e) {
             // Log the error but don't throw - this is a best-effort cleanup
-            java.util.logging.Logger.getLogger(ProtectClient.class.getName())
-                    .warning("Failed to clear API secret during cleanup: " + e.getMessage()
-                            + ". The API secret may remain in memory until garbage collection.");
+            java.util.logging.Logger cleanupLogger =
+                    java.util.logging.Logger.getLogger(ProtectClient.class.getName());
+            if (cleanupLogger.isLoggable(java.util.logging.Level.WARNING)) {
+                cleanupLogger.warning("Failed to clear API secret during cleanup: " + e.getMessage()
+                        + ". The API secret may remain in memory until garbage collection.");
+            }
         }
     }
 

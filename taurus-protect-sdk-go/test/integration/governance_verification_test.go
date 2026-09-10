@@ -65,7 +65,7 @@ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==
 	}
 
 	_, err := protect.NewClient(host,
-		protect.WithCredentials(apiKey, apiSecret),
+		protect.WithCredentials(protect.APIKeyCredentials(apiKey, apiSecret)),
 		protect.WithSuperAdminKeysPEM(invalidKeys),
 		protect.WithMinValidSignatures(1),
 	)

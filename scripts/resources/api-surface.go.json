@@ -1,0 +1,1191 @@
+{
+  "sdk": "go",
+  "source": "pkg/protect/service",
+  "services": [
+    {
+      "name": "ActionService",
+      "methods": [
+        {
+          "name": "GetAction",
+          "signature": "GetAction(ctx context.Context, id string) (*model.Action, error)",
+          "doc": "GetAction retrieves a single action by ID."
+        },
+        {
+          "name": "ListActions",
+          "signature": "ListActions(ctx context.Context, opts *model.ListActionsOptions) (*model.ListActionsResult, error)",
+          "doc": "ListActions retrieves a list of actions with optional filtering and pagination."
+        }
+      ]
+    },
+    {
+      "name": "AddressService",
+      "methods": [
+        {
+          "name": "CreateAddress",
+          "signature": "CreateAddress(ctx context.Context, req *model.CreateAddressRequest) (*model.Address, error)",
+          "doc": "CreateAddress creates a new address in a wallet."
+        },
+        {
+          "name": "CreateAddressAttribute",
+          "signature": "CreateAddressAttribute(ctx context.Context, addressID string, key string, value string) ([]model.AddressAttribute, error)",
+          "doc": "CreateAddressAttribute creates an attribute on an address."
+        },
+        {
+          "name": "DeleteAddressAttribute",
+          "signature": "DeleteAddressAttribute(ctx context.Context, addressID string, attributeID string) error",
+          "doc": "DeleteAddressAttribute deletes an attribute from an address."
+        },
+        {
+          "name": "GetAddress",
+          "signature": "GetAddress(ctx context.Context, addressID string) (*model.Address, error)",
+          "doc": "GetAddress retrieves an address by ID with mandatory signature verification."
+        },
+        {
+          "name": "GetAddressProofOfReserve",
+          "signature": "GetAddressProofOfReserve(ctx context.Context, addressID string, challenge string) (*model.ProofOfReserve, error)",
+          "doc": "GetAddressProofOfReserve retrieves the proof of reserve for an address."
+        },
+        {
+          "name": "ListAddresses",
+          "signature": "ListAddresses(ctx context.Context, opts *model.ListAddressesOptions) ([]*model.Address, *model.Pagination, error)",
+          "doc": "ListAddresses retrieves a list of addresses with mandatory signature verification."
+        }
+      ]
+    },
+    {
+      "name": "AirGapService",
+      "methods": [
+        {
+          "name": "GetOutgoingAirGap",
+          "signature": "GetOutgoingAirGap(ctx context.Context, req *model.GetOutgoingAirGapRequest) (*model.GetOutgoingAirGapResult, error)",
+          "doc": "GetOutgoingAirGap exports HSM ready requests for cold HSM."
+        },
+        {
+          "name": "SubmitIncomingAirGap",
+          "signature": "SubmitIncomingAirGap(ctx context.Context, req *model.SubmitIncomingAirGapRequest) error",
+          "doc": "SubmitIncomingAirGap imports signed requests from the cold HSM."
+        }
+      ]
+    },
+    {
+      "name": "AssetService",
+      "methods": [
+        {
+          "name": "GetAssetAddresses",
+          "signature": "GetAssetAddresses(ctx context.Context, req *model.GetAssetAddressesRequest) (*model.GetAssetAddressesResult, error)",
+          "doc": "GetAssetAddresses retrieves address-level balances for a specific asset."
+        },
+        {
+          "name": "GetAssetWallets",
+          "signature": "GetAssetWallets(ctx context.Context, req *model.GetAssetWalletsRequest) (*model.GetAssetWalletsResult, error)",
+          "doc": "GetAssetWallets retrieves wallet-level balances for a specific asset."
+        }
+      ]
+    },
+    {
+      "name": "AuditService",
+      "methods": [
+        {
+          "name": "ExportAuditTrails",
+          "signature": "ExportAuditTrails(ctx context.Context, opts *model.ExportAuditTrailsOptions) (*model.ExportAuditTrailsResult, error)",
+          "doc": "ExportAuditTrails exports audit trails in the specified format (CSV or JSON)."
+        },
+        {
+          "name": "ListAuditTrails",
+          "signature": "ListAuditTrails(ctx context.Context, opts *model.ListAuditTrailsOptions) (*model.ListAuditTrailsResult, error)",
+          "doc": "ListAuditTrails retrieves a list of audit trails with optional filtering and pagination."
+        }
+      ]
+    },
+    {
+      "name": "BalanceService",
+      "methods": [
+        {
+          "name": "GetBalances",
+          "signature": "GetBalances(ctx context.Context, opts *model.GetBalancesOptions) (*model.GetBalancesResult, error)",
+          "doc": "GetBalances retrieves the total balances for the tenant, for each asset."
+        }
+      ]
+    },
+    {
+      "name": "BlockchainService",
+      "methods": [
+        {
+          "name": "ListBlockchains",
+          "signature": "ListBlockchains(ctx context.Context, opts *model.ListBlockchainsOptions) ([]*model.Blockchain, error)",
+          "doc": "ListBlockchains retrieves a list of all enabled blockchains."
+        }
+      ]
+    },
+    {
+      "name": "BusinessRuleService",
+      "methods": [
+        {
+          "name": "ListBusinessRules",
+          "signature": "ListBusinessRules(ctx context.Context, opts *model.ListBusinessRulesOptions) (*model.ListBusinessRulesResult, error)",
+          "doc": "ListBusinessRules retrieves a list of business rules with optional filtering and pagination."
+        },
+        {
+          "name": "UpdateTransactionsEnabled",
+          "signature": "UpdateTransactionsEnabled(ctx context.Context, req *model.UpdateTransactionsEnabledRequest) error",
+          "doc": "UpdateTransactionsEnabled toggles the transactions enabled business rule."
+        }
+      ]
+    },
+    {
+      "name": "ChangeService",
+      "methods": [
+        {
+          "name": "ApproveChange",
+          "signature": "ApproveChange(ctx context.Context, changeID string) error",
+          "doc": "ApproveChange approves a single change by ID."
+        },
+        {
+          "name": "ApproveChanges",
+          "signature": "ApproveChanges(ctx context.Context, changeIDs []string) error",
+          "doc": "ApproveChanges approves multiple changes by their IDs."
+        },
+        {
+          "name": "CreateChange",
+          "signature": "CreateChange(ctx context.Context, req *model.CreateChangeRequest) (*model.CreateChangeResult, error)",
+          "doc": "CreateChange creates a new change request."
+        },
+        {
+          "name": "GetChange",
+          "signature": "GetChange(ctx context.Context, changeID string) (*model.Change, error)",
+          "doc": "GetChange retrieves a change by ID."
+        },
+        {
+          "name": "ListChanges",
+          "signature": "ListChanges(ctx context.Context, opts *model.ListChangesOptions) (*model.ListChangesResult, error)",
+          "doc": "ListChanges retrieves a list of changes."
+        },
+        {
+          "name": "ListChangesForApproval",
+          "signature": "ListChangesForApproval(ctx context.Context, opts *model.ListChangesForApprovalOptions) (*model.ListChangesResult, error)",
+          "doc": "ListChangesForApproval retrieves a list of changes pending approval for the current user."
+        },
+        {
+          "name": "RejectChange",
+          "signature": "RejectChange(ctx context.Context, changeID string) error",
+          "doc": "RejectChange rejects a single change by ID."
+        },
+        {
+          "name": "RejectChanges",
+          "signature": "RejectChanges(ctx context.Context, changeIDs []string) error",
+          "doc": "RejectChanges rejects multiple changes by their IDs."
+        }
+      ]
+    },
+    {
+      "name": "ConfigService",
+      "methods": [
+        {
+          "name": "GetTenantConfig",
+          "signature": "GetTenantConfig(ctx context.Context) (*model.TenantConfig, error)",
+          "doc": "GetTenantConfig retrieves the configuration of the tenant for the connected user."
+        }
+      ]
+    },
+    {
+      "name": "CurrencyService",
+      "methods": [
+        {
+          "name": "GetCurrencies",
+          "signature": "GetCurrencies(ctx context.Context, opts *model.ListCurrenciesOptions) ([]*model.Currency, error)",
+          "doc": "GetCurrencies retrieves a list of all currencies."
+        },
+        {
+          "name": "GetCurrency",
+          "signature": "GetCurrency(ctx context.Context, opts *model.GetCurrencyOptions) (*model.Currency, error)",
+          "doc": "GetCurrency retrieves a single currency by its filter criteria."
+        }
+      ]
+    },
+    {
+      "name": "ExchangeService",
+      "methods": [
+        {
+          "name": "ExportExchanges",
+          "signature": "ExportExchanges(ctx context.Context, opts *model.ExportExchangesOptions) (*model.ExportExchangesResult, error)",
+          "doc": "ExportExchanges exports exchange accounts in the specified format (CSV or JSON)."
+        },
+        {
+          "name": "GetExchange",
+          "signature": "GetExchange(ctx context.Context, id string) (*model.Exchange, error)",
+          "doc": "GetExchange retrieves a single exchange account by ID."
+        },
+        {
+          "name": "ListExchangeCounterparties",
+          "signature": "ListExchangeCounterparties(ctx context.Context) (*model.ListExchangeCounterpartiesResult, error)",
+          "doc": "ListExchangeCounterparties retrieves a list of exchange counterparties with their exposure and limits."
+        },
+        {
+          "name": "ListExchanges",
+          "signature": "ListExchanges(ctx context.Context, opts *model.ListExchangesOptions) (*model.ListExchangesResult, error)",
+          "doc": "ListExchanges retrieves a list of exchange accounts with optional filtering and pagination."
+        }
+      ]
+    },
+    {
+      "name": "FeePayerService",
+      "methods": [
+        {
+          "name": "GetChecksum",
+          "signature": "GetChecksum(ctx context.Context, req *model.ChecksumRequest) (*model.ChecksumResult, error)",
+          "doc": "GetChecksum computes a checksum for the provided data."
+        },
+        {
+          "name": "GetFeePayer",
+          "signature": "GetFeePayer(ctx context.Context, id string) (*model.FeePayer, error)",
+          "doc": "GetFeePayer retrieves a single fee payer by ID."
+        },
+        {
+          "name": "ListFeePayers",
+          "signature": "ListFeePayers(ctx context.Context, opts *model.ListFeePayersOptions) (*model.ListFeePayersResult, error)",
+          "doc": "ListFeePayers retrieves a list of fee payers with optional filtering."
+        }
+      ]
+    },
+    {
+      "name": "FeeService",
+      "methods": [
+        {
+          "name": "GetFees",
+          "signature": "GetFees(ctx context.Context) (*model.GetFeesResult, error)",
+          "doc": "GetFees retrieves a list of fee estimates."
+        },
+        {
+          "name": "GetFeesV2",
+          "signature": "GetFeesV2(ctx context.Context) (*model.GetFeesV2Result, error)",
+          "doc": "GetFeesV2 retrieves a list of native currency fee estimates."
+        }
+      ]
+    },
+    {
+      "name": "FiatService",
+      "methods": [
+        {
+          "name": "GetFiatProviderAccount",
+          "signature": "GetFiatProviderAccount(ctx context.Context, id string) (*model.FiatProviderAccount, error)",
+          "doc": "GetFiatProviderAccount retrieves a fiat provider account by ID."
+        },
+        {
+          "name": "ListFiatProviderAccounts",
+          "signature": "ListFiatProviderAccounts(ctx context.Context, opts *model.ListFiatProviderAccountsOptions) (*model.ListFiatProviderAccountsResult, error)",
+          "doc": "ListFiatProviderAccounts retrieves a list of fiat provider accounts with optional filtering and pagination."
+        },
+        {
+          "name": "ListFiatProviders",
+          "signature": "ListFiatProviders(ctx context.Context) (*model.ListFiatProvidersResult, error)",
+          "doc": "ListFiatProviders retrieves a list of all enabled fiat providers and their valuations."
+        }
+      ]
+    },
+    {
+      "name": "GovernanceRuleService",
+      "methods": [
+        {
+          "name": "ApproveRulesProposal",
+          "signature": "ApproveRulesProposal(ctx context.Context, privateKey *ecdsa.PrivateKey, comment string, expectedContainerHash string) error",
+          "doc": "ApproveRulesProposal signs the pending rules proposal with a SuperAdmin"
+        },
+        {
+          "name": "DecodeProposalForReview",
+          "signature": "DecodeProposalForReview(rules *model.GovernanceRuleset) (*model.DecodedRulesContainer, error)",
+          "doc": "DecodeProposalForReview decodes a PENDING rules proposal so a SuperAdmin can inspect it"
+        },
+        {
+          "name": "GetDecodedRulesContainer",
+          "signature": "GetDecodedRulesContainer(rules *model.GovernanceRuleset) (*model.DecodedRulesContainer, error)",
+          "doc": "GetDecodedRulesContainer decodes and verifies a GovernanceRuleset's rules container."
+        },
+        {
+          "name": "GetPublicKeys",
+          "signature": "GetPublicKeys(ctx context.Context) ([]*model.SuperAdminPublicKey, error)",
+          "doc": "GetPublicKeys retrieves the list of SuperAdmin public keys."
+        },
+        {
+          "name": "GetRules",
+          "signature": "GetRules(ctx context.Context) (*model.GovernanceRuleset, error)",
+          "doc": "GetRules retrieves the currently enforced governance rules."
+        },
+        {
+          "name": "GetRulesByID",
+          "signature": "GetRulesByID(ctx context.Context, id string) (*model.GovernanceRuleset, error)",
+          "doc": "GetRulesByID retrieves a governance ruleset by its ID."
+        },
+        {
+          "name": "GetRulesHistory",
+          "signature": "GetRulesHistory(ctx context.Context, opts *model.ListRulesHistoryOptions) (*model.GovernanceRulesHistoryResult, error)",
+          "doc": "GetRulesHistory retrieves the history of governance rules with pagination."
+        },
+        {
+          "name": "GetRulesProposal",
+          "signature": "GetRulesProposal(ctx context.Context) (*model.GovernanceRuleset, error)",
+          "doc": "GetRulesProposal retrieves the proposed governance rules."
+        },
+        {
+          "name": "MinValidSignatures",
+          "signature": "MinValidSignatures() int",
+          "doc": "MinValidSignatures returns the minimum number of valid signatures required."
+        },
+        {
+          "name": "ProposalContainerHash",
+          "signature": "ProposalContainerHash(rules *model.GovernanceRuleset) (string, error)",
+          "doc": "ProposalContainerHash returns the canonical SHA-256 hex digest of a ruleset's decoded"
+        },
+        {
+          "name": "RejectRulesProposal",
+          "signature": "RejectRulesProposal(ctx context.Context, comment string) error",
+          "doc": "RejectRulesProposal rejects the pending rules proposal with a comment."
+        },
+        {
+          "name": "SuperAdminKeys",
+          "signature": "SuperAdminKeys() []*ecdsa.PublicKey",
+          "doc": "SuperAdminKeys returns the configured SuperAdmin public keys."
+        },
+        {
+          "name": "UpdateRulesProposal",
+          "signature": "UpdateRulesProposal(ctx context.Context, container *model.DecodedRulesContainer) error",
+          "doc": "UpdateRulesProposal submits a rules container as a governance proposal."
+        },
+        {
+          "name": "VerifyGovernanceRules",
+          "signature": "VerifyGovernanceRules(rules *model.GovernanceRuleset) (*model.GovernanceRuleset, error)",
+          "doc": "VerifyGovernanceRules verifies the SuperAdmin signatures on the governance rules and"
+        }
+      ]
+    },
+    {
+      "name": "GroupService",
+      "methods": [
+        {
+          "name": "ListGroups",
+          "signature": "ListGroups(ctx context.Context, opts *model.ListGroupsOptions) (*model.ListGroupsResult, error)",
+          "doc": "ListGroups retrieves a list of groups with optional filtering and pagination."
+        }
+      ]
+    },
+    {
+      "name": "HealthService",
+      "methods": [
+        {
+          "name": "GetAllHealthChecks",
+          "signature": "GetAllHealthChecks(ctx context.Context, opts *model.GetAllHealthChecksOptions) (*model.GetAllHealthChecksResult, error)",
+          "doc": "GetAllHealthChecks retrieves all health checks with optional filtering."
+        }
+      ]
+    },
+    {
+      "name": "JobService",
+      "methods": [
+        {
+          "name": "GetJob",
+          "signature": "GetJob(ctx context.Context, name string) (*model.Job, error)",
+          "doc": "GetJob retrieves a single job by name."
+        },
+        {
+          "name": "GetJobStatus",
+          "signature": "GetJobStatus(ctx context.Context, name string, id string) (*model.JobStatus, error)",
+          "doc": "GetJobStatus retrieves the status of a specific job execution."
+        },
+        {
+          "name": "ListJobs",
+          "signature": "ListJobs(ctx context.Context) ([]*model.Job, error)",
+          "doc": "ListJobs retrieves all registered jobs."
+        }
+      ]
+    },
+    {
+      "name": "MultiFactorSignatureService",
+      "methods": [
+        {
+          "name": "ApproveMultiFactorSignature",
+          "signature": "ApproveMultiFactorSignature(ctx context.Context, id string, signature string, comment string) (*model.MultiFactorSignatureApprovalResult, error)",
+          "doc": "ApproveMultiFactorSignature approves a multi-factor signature request."
+        },
+        {
+          "name": "CreateMultiFactorSignatures",
+          "signature": "CreateMultiFactorSignatures(ctx context.Context, entityIDs []string, entityType model.MultiFactorSignatureEntityType) (*model.MultiFactorSignatureResult, error)",
+          "doc": "CreateMultiFactorSignatures creates a batch of multi-factor signature requests."
+        },
+        {
+          "name": "GetMultiFactorSignatureInfo",
+          "signature": "GetMultiFactorSignatureInfo(ctx context.Context, id string) (*model.MultiFactorSignatureInfo, error)",
+          "doc": "GetMultiFactorSignatureInfo retrieves information about a multi-factor signature request."
+        },
+        {
+          "name": "RejectMultiFactorSignature",
+          "signature": "RejectMultiFactorSignature(ctx context.Context, id string, comment string) error",
+          "doc": "RejectMultiFactorSignature rejects a multi-factor signature request."
+        }
+      ]
+    },
+    {
+      "name": "PriceService",
+      "methods": [
+        {
+          "name": "Convert",
+          "signature": "Convert(ctx context.Context, opts *model.ConvertOptions) (*model.ConversionResult, error)",
+          "doc": "Convert converts an amount from one currency to other currencies."
+        },
+        {
+          "name": "ExportPriceHistory",
+          "signature": "ExportPriceHistory(ctx context.Context, opts *model.ExportPriceHistoryOptions) (*model.ExportPriceHistoryResult, error)",
+          "doc": "ExportPriceHistory exports the price history in a specified format."
+        },
+        {
+          "name": "GetPriceHistory",
+          "signature": "GetPriceHistory(ctx context.Context, opts *model.GetPriceHistoryOptions) (*model.GetPriceHistoryResult, error)",
+          "doc": "GetPriceHistory retrieves the price history for a currency pair."
+        },
+        {
+          "name": "GetPrices",
+          "signature": "GetPrices(ctx context.Context) (*model.GetPricesResult, error)",
+          "doc": "GetPrices retrieves all available currency prices."
+        }
+      ]
+    },
+    {
+      "name": "RequestService",
+      "methods": [
+        {
+          "name": "ApproveRequest",
+          "signature": "ApproveRequest(ctx context.Context, request *model.Request, privateKey *ecdsa.PrivateKey, comment ...string) (int, error)",
+          "doc": "ApproveRequest approves a single request using a private key for signing."
+        },
+        {
+          "name": "ApproveRequests",
+          "signature": "ApproveRequests(ctx context.Context, requests []*model.Request, privateKey *ecdsa.PrivateKey, comment ...string) (int, error)",
+          "doc": "ApproveRequests approves multiple requests using a private key for signing."
+        },
+        {
+          "name": "CreateCancelRequest",
+          "signature": "CreateCancelRequest(ctx context.Context, addressID string, nonce string) (*model.Request, error)",
+          "doc": "CreateCancelRequest creates a cancel request for a pending transaction."
+        },
+        {
+          "name": "CreateExternalTransferFromWalletRequest",
+          "signature": "CreateExternalTransferFromWalletRequest(ctx context.Context, fromWalletID, toWhitelistedAddressID, amount string) (*model.Request, error)",
+          "doc": "CreateExternalTransferFromWalletRequest creates an external transfer from an omnibus wallet."
+        },
+        {
+          "name": "CreateExternalTransferRequest",
+          "signature": "CreateExternalTransferRequest(ctx context.Context, fromAddressID, toWhitelistedAddressID, amount string) (*model.Request, error)",
+          "doc": "CreateExternalTransferRequest creates an external transfer to a whitelisted address."
+        },
+        {
+          "name": "CreateIncomingRequest",
+          "signature": "CreateIncomingRequest(ctx context.Context, req *model.CreateIncomingRequest) (*model.Request, error)",
+          "doc": "CreateIncomingRequest creates an incoming request to log an incoming transaction from an exchange."
+        },
+        {
+          "name": "CreateInternalTransferFromWalletRequest",
+          "signature": "CreateInternalTransferFromWalletRequest(ctx context.Context, fromWalletID, toAddressID, amount string) (*model.Request, error)",
+          "doc": "CreateInternalTransferFromWalletRequest creates an internal transfer from an omnibus wallet."
+        },
+        {
+          "name": "CreateInternalTransferRequest",
+          "signature": "CreateInternalTransferRequest(ctx context.Context, fromAddressID, toAddressID, amount string) (*model.Request, error)",
+          "doc": "CreateInternalTransferRequest creates an internal transfer request from one address to another."
+        },
+        {
+          "name": "CreateOutgoingRequest",
+          "signature": "CreateOutgoingRequest(ctx context.Context, req *model.CreateOutgoingRequest) (*model.Request, error)",
+          "doc": "CreateOutgoingRequest creates a new outgoing (withdrawal) request."
+        },
+        {
+          "name": "GetRequest",
+          "signature": "GetRequest(ctx context.Context, requestID string) (*model.Request, error)",
+          "doc": "GetRequest retrieves a request by ID with hash verification."
+        },
+        {
+          "name": "ListRequests",
+          "signature": "ListRequests(ctx context.Context, opts *model.ListRequestsOptions) (*model.RequestResult, error)",
+          "doc": "ListRequests retrieves a list of requests using cursor-based pagination."
+        },
+        {
+          "name": "ListRequestsForApproval",
+          "signature": "ListRequestsForApproval(ctx context.Context, opts *model.ListRequestsOptions) (*model.RequestResult, error)",
+          "doc": "ListRequestsForApproval retrieves requests pending approval for the current user."
+        },
+        {
+          "name": "RejectRequest",
+          "signature": "RejectRequest(ctx context.Context, requestID string, comment string) error",
+          "doc": "RejectRequest rejects a single request with a comment."
+        },
+        {
+          "name": "RejectRequests",
+          "signature": "RejectRequests(ctx context.Context, requestIDs []string, comment string) error",
+          "doc": "RejectRequests rejects multiple requests with a comment."
+        }
+      ]
+    },
+    {
+      "name": "ReservationService",
+      "methods": [
+        {
+          "name": "GetReservation",
+          "signature": "GetReservation(ctx context.Context, id string) (*model.Reservation, error)",
+          "doc": "GetReservation retrieves a single reservation by ID."
+        },
+        {
+          "name": "GetReservationUTXO",
+          "signature": "GetReservationUTXO(ctx context.Context, id string) (*model.ReservationUTXO, error)",
+          "doc": "GetReservationUTXO retrieves the UTXO associated with a reservation."
+        },
+        {
+          "name": "ListReservations",
+          "signature": "ListReservations(ctx context.Context, opts *model.ListReservationsOptions) (*model.ListReservationsResult, error)",
+          "doc": "ListReservations retrieves a list of reservations with optional filtering and pagination."
+        }
+      ]
+    },
+    {
+      "name": "ScoreService",
+      "methods": [
+        {
+          "name": "RefreshAddressScore",
+          "signature": "RefreshAddressScore(ctx context.Context, addressID string, provider string) (*model.RefreshScoreResult, error)",
+          "doc": "RefreshAddressScore refreshes the risk score for an address using the specified provider."
+        },
+        {
+          "name": "RefreshWLAScore",
+          "signature": "RefreshWLAScore(ctx context.Context, addressID string, provider string) (*model.RefreshScoreResult, error)",
+          "doc": "RefreshWLAScore refreshes the risk score for a whitelisted address using the specified provider."
+        }
+      ]
+    },
+    {
+      "name": "StakingService",
+      "methods": [
+        {
+          "name": "GetADAStakePoolInfo",
+          "signature": "GetADAStakePoolInfo(ctx context.Context, network, stakePoolID string) (*model.ADAStakePoolInfo, error)",
+          "doc": "GetADAStakePoolInfo retrieves information about an ADA stake pool."
+        },
+        {
+          "name": "GetETHValidatorsInfo",
+          "signature": "GetETHValidatorsInfo(ctx context.Context, network string, ids []string) ([]*model.ETHValidatorInfo, error)",
+          "doc": "GetETHValidatorsInfo retrieves information about ETH validators."
+        },
+        {
+          "name": "GetFTMValidatorInfo",
+          "signature": "GetFTMValidatorInfo(ctx context.Context, network, validatorAddress string) (*model.FTMValidatorInfo, error)",
+          "doc": "GetFTMValidatorInfo retrieves information about an FTM validator."
+        },
+        {
+          "name": "GetICPNeuronInfo",
+          "signature": "GetICPNeuronInfo(ctx context.Context, network, neuronID string) (*model.ICPNeuronInfo, error)",
+          "doc": "GetICPNeuronInfo retrieves information about an ICP neuron."
+        },
+        {
+          "name": "GetNEARValidatorInfo",
+          "signature": "GetNEARValidatorInfo(ctx context.Context, network, validatorAddress string) (*model.NEARValidatorInfo, error)",
+          "doc": "GetNEARValidatorInfo retrieves information about a NEAR validator."
+        },
+        {
+          "name": "GetXTZAddressStakingRewards",
+          "signature": "GetXTZAddressStakingRewards(ctx context.Context, network, addressID string, opts *model.GetXTZStakingRewardsOptions) (*model.XTZStakingReward, error)",
+          "doc": "GetXTZAddressStakingRewards retrieves staking rewards for an XTZ address."
+        },
+        {
+          "name": "ListStakeAccounts",
+          "signature": "ListStakeAccounts(ctx context.Context, opts *model.ListStakeAccountsOptions) (*model.ListStakeAccountsResult, error)",
+          "doc": "ListStakeAccounts retrieves a list of stake accounts with optional filtering and pagination."
+        }
+      ]
+    },
+    {
+      "name": "StatisticsService",
+      "methods": [
+        {
+          "name": "GetPortfolioStatistics",
+          "signature": "GetPortfolioStatistics(ctx context.Context) (*model.PortfolioStatistics, error)",
+          "doc": "GetPortfolioStatistics retrieves the global portfolio statistics."
+        },
+        {
+          "name": "GetPortfolioStatisticsHistory",
+          "signature": "GetPortfolioStatisticsHistory(ctx context.Context, opts *model.GetPortfolioStatisticsHistoryOptions) (*model.GetPortfolioStatisticsHistoryResult, error)",
+          "doc": "GetPortfolioStatisticsHistory retrieves the portfolio statistics history with optional filtering and pagination."
+        },
+        {
+          "name": "ListTagStatistics",
+          "signature": "ListTagStatistics(ctx context.Context, opts *model.ListTagStatisticsOptions) (*model.ListTagStatisticsResult, error)",
+          "doc": "ListTagStatistics retrieves a list of tag statistics with optional filtering and pagination."
+        }
+      ]
+    },
+    {
+      "name": "TagService",
+      "methods": [
+        {
+          "name": "CreateTag",
+          "signature": "CreateTag(ctx context.Context, req *model.CreateTagRequest) (string, error)",
+          "doc": "CreateTag creates a new tag and returns its ID."
+        },
+        {
+          "name": "DeleteTag",
+          "signature": "DeleteTag(ctx context.Context, id string) error",
+          "doc": "DeleteTag deletes a tag by ID."
+        },
+        {
+          "name": "ListTags",
+          "signature": "ListTags(ctx context.Context, opts *model.ListTagsOptions) ([]*model.Tag, error)",
+          "doc": "ListTags retrieves a list of tags with optional filtering."
+        }
+      ]
+    },
+    {
+      "name": "TaurusNetworkLendingService",
+      "methods": [
+        {
+          "name": "CancelLendingAgreement",
+          "signature": "CancelLendingAgreement(ctx context.Context, lendingAgreementID string) error",
+          "doc": "CancelLendingAgreement cancels a lending agreement that is not yet approved by the lender."
+        },
+        {
+          "name": "CreateLendingAgreement",
+          "signature": "CreateLendingAgreement(ctx context.Context, req *taurusnetwork.CreateLendingAgreementRequest) (*taurusnetwork.LendingAgreement, error)",
+          "doc": "CreateLendingAgreement creates a new lending agreement."
+        },
+        {
+          "name": "CreateLendingAgreementAttachment",
+          "signature": "CreateLendingAgreementAttachment(ctx context.Context, lendingAgreementID string, req *taurusnetwork.CreateLendingAgreementAttachmentRequest) error",
+          "doc": "CreateLendingAgreementAttachment creates an attachment for a lending agreement."
+        },
+        {
+          "name": "CreateLendingOffer",
+          "signature": "CreateLendingOffer(ctx context.Context, req *taurusnetwork.CreateLendingOfferRequest) (*taurusnetwork.LendingOffer, error)",
+          "doc": "CreateLendingOffer creates a new lending offer."
+        },
+        {
+          "name": "DeleteLendingOffer",
+          "signature": "DeleteLendingOffer(ctx context.Context, offerID string) error",
+          "doc": "DeleteLendingOffer deletes a lending offer by ID."
+        },
+        {
+          "name": "DeleteLendingOffers",
+          "signature": "DeleteLendingOffers(ctx context.Context) error",
+          "doc": "DeleteLendingOffers deletes all lending offers created by the current participant."
+        },
+        {
+          "name": "GetLendingAgreement",
+          "signature": "GetLendingAgreement(ctx context.Context, lendingAgreementID string) (*taurusnetwork.LendingAgreement, error)",
+          "doc": "GetLendingAgreement retrieves a lending agreement by ID."
+        },
+        {
+          "name": "GetLendingOffer",
+          "signature": "GetLendingOffer(ctx context.Context, offerID string) (*taurusnetwork.LendingOffer, error)",
+          "doc": "GetLendingOffer retrieves a lending offer by ID."
+        },
+        {
+          "name": "ListLendingAgreementAttachments",
+          "signature": "ListLendingAgreementAttachments(ctx context.Context, lendingAgreementID string) ([]*taurusnetwork.LendingAgreementAttachment, error)",
+          "doc": "ListLendingAgreementAttachments retrieves attachments for a lending agreement."
+        },
+        {
+          "name": "ListLendingAgreements",
+          "signature": "ListLendingAgreements(ctx context.Context, opts *taurusnetwork.ListLendingAgreementsOptions) (*taurusnetwork.ListLendingAgreementsResult, error)",
+          "doc": "ListLendingAgreements retrieves a list of lending agreements with optional filtering and pagination."
+        },
+        {
+          "name": "ListLendingAgreementsForApproval",
+          "signature": "ListLendingAgreementsForApproval(ctx context.Context, opts *taurusnetwork.ListLendingAgreementsForApprovalOptions) (*taurusnetwork.ListLendingAgreementsForApprovalResult, error)",
+          "doc": "ListLendingAgreementsForApproval retrieves lending agreements pending approval."
+        },
+        {
+          "name": "ListLendingOffers",
+          "signature": "ListLendingOffers(ctx context.Context, opts *taurusnetwork.ListLendingOffersOptions) (*taurusnetwork.ListLendingOffersResult, error)",
+          "doc": "ListLendingOffers retrieves a list of lending offers with optional filtering and pagination."
+        },
+        {
+          "name": "RepayLendingAgreement",
+          "signature": "RepayLendingAgreement(ctx context.Context, lendingAgreementID string, req *taurusnetwork.RepayLendingAgreementRequest) error",
+          "doc": "RepayLendingAgreement repays a lending agreement."
+        },
+        {
+          "name": "UpdateLendingAgreement",
+          "signature": "UpdateLendingAgreement(ctx context.Context, lendingAgreementID string, req *taurusnetwork.UpdateLendingAgreementRequest) error",
+          "doc": "UpdateLendingAgreement updates a lending agreement."
+        }
+      ]
+    },
+    {
+      "name": "TaurusNetworkParticipantService",
+      "methods": [
+        {
+          "name": "CreateParticipantAttribute",
+          "signature": "CreateParticipantAttribute(ctx context.Context, participantID string, req *taurusnetwork.CreateParticipantAttributeRequest) error",
+          "doc": "CreateParticipantAttribute creates an attribute for a given participant."
+        },
+        {
+          "name": "DeleteParticipantAttribute",
+          "signature": "DeleteParticipantAttribute(ctx context.Context, participantID string, attributeID string) error",
+          "doc": "DeleteParticipantAttribute deletes an attribute for a given participant."
+        },
+        {
+          "name": "GetMyParticipant",
+          "signature": "GetMyParticipant(ctx context.Context) (*taurusnetwork.GetMyParticipantResult, error)",
+          "doc": "GetMyParticipant returns the current participant linked to the tenant with additional Taurus-NETWORK settings."
+        },
+        {
+          "name": "GetParticipant",
+          "signature": "GetParticipant(ctx context.Context, participantID string, opts *taurusnetwork.GetParticipantOptions) (*taurusnetwork.TnParticipant, error)",
+          "doc": "GetParticipant returns a Taurus-NETWORK participant based on the provided ID."
+        },
+        {
+          "name": "ListParticipants",
+          "signature": "ListParticipants(ctx context.Context, opts *taurusnetwork.ListParticipantsOptions) (*taurusnetwork.ListParticipantsResult, error)",
+          "doc": "ListParticipants returns a list of visible Taurus-NETWORK participants connected to the current participant."
+        }
+      ]
+    },
+    {
+      "name": "TaurusNetworkPledgeService",
+      "methods": [
+        {
+          "name": "AddPledgeCollateral",
+          "signature": "AddPledgeCollateral(ctx context.Context, pledgeID string, req *taurusnetwork.AddPledgeCollateralRequest) (*taurusnetwork.AddPledgeCollateralResponse, error)",
+          "doc": "AddPledgeCollateral adds collateral to an existing pledge."
+        },
+        {
+          "name": "ApprovePledgeActions",
+          "signature": "ApprovePledgeActions(ctx context.Context, req *taurusnetwork.ApprovePledgeActionsRequest) (*taurusnetwork.ApprovePledgeActionsResponse, error)",
+          "doc": "ApprovePledgeActions approves one or more pledge actions."
+        },
+        {
+          "name": "CreatePledge",
+          "signature": "CreatePledge(ctx context.Context, req *taurusnetwork.CreatePledgeRequest) (*taurusnetwork.CreatePledgeResponse, error)",
+          "doc": "CreatePledge creates a new pledge."
+        },
+        {
+          "name": "GetPledge",
+          "signature": "GetPledge(ctx context.Context, pledgeID string) (*taurusnetwork.Pledge, error)",
+          "doc": "GetPledge retrieves a pledge by ID."
+        },
+        {
+          "name": "InitiateWithdrawPledge",
+          "signature": "InitiateWithdrawPledge(ctx context.Context, pledgeID string, req *taurusnetwork.InitiateWithdrawPledgeRequest) (*taurusnetwork.InitiateWithdrawPledgeResponse, error)",
+          "doc": "InitiateWithdrawPledge initiates a withdrawal from a pledge (pledgor initiates)."
+        },
+        {
+          "name": "ListPledgeActions",
+          "signature": "ListPledgeActions(ctx context.Context, opts *taurusnetwork.ListPledgeActionsOptions) ([]taurusnetwork.PledgeAction, *model.CursorPagination, error)",
+          "doc": "ListPledgeActions retrieves a list of pledge actions."
+        },
+        {
+          "name": "ListPledgeActionsForApproval",
+          "signature": "ListPledgeActionsForApproval(ctx context.Context, opts *taurusnetwork.ListPledgeActionsForApprovalOptions) ([]taurusnetwork.PledgeAction, *model.CursorPagination, error)",
+          "doc": "ListPledgeActionsForApproval retrieves a list of pledge actions pending approval."
+        },
+        {
+          "name": "ListPledgeWithdrawals",
+          "signature": "ListPledgeWithdrawals(ctx context.Context, opts *taurusnetwork.ListPledgeWithdrawalsOptions) ([]taurusnetwork.PledgeWithdrawal, *model.CursorPagination, error)",
+          "doc": "ListPledgeWithdrawals retrieves a list of pledge withdrawals."
+        },
+        {
+          "name": "ListPledges",
+          "signature": "ListPledges(ctx context.Context, opts *taurusnetwork.ListPledgesOptions) ([]*taurusnetwork.Pledge, *model.CursorPagination, error)",
+          "doc": "ListPledges retrieves a list of pledges with optional filters."
+        },
+        {
+          "name": "RejectPledge",
+          "signature": "RejectPledge(ctx context.Context, pledgeID string, req *taurusnetwork.RejectPledgeRequest) error",
+          "doc": "RejectPledge rejects a pledge."
+        },
+        {
+          "name": "RejectPledgeActions",
+          "signature": "RejectPledgeActions(ctx context.Context, req *taurusnetwork.RejectPledgeActionsRequest) error",
+          "doc": "RejectPledgeActions rejects one or more pledge actions."
+        },
+        {
+          "name": "Unpledge",
+          "signature": "Unpledge(ctx context.Context, pledgeID string) (*taurusnetwork.UnpledgeResponse, error)",
+          "doc": "Unpledge unpledges funds from a pledge."
+        },
+        {
+          "name": "UpdatePledge",
+          "signature": "UpdatePledge(ctx context.Context, pledgeID string, req *taurusnetwork.UpdatePledgeRequest) error",
+          "doc": "UpdatePledge updates a pledge's modifiable fields."
+        },
+        {
+          "name": "WithdrawPledge",
+          "signature": "WithdrawPledge(ctx context.Context, pledgeID string, req *taurusnetwork.WithdrawPledgeRequest) (*taurusnetwork.WithdrawPledgeResponse, error)",
+          "doc": "WithdrawPledge creates a withdrawal request from a pledge (pledgee initiates)."
+        }
+      ]
+    },
+    {
+      "name": "TaurusNetworkSettlementService",
+      "methods": [
+        {
+          "name": "CancelSettlement",
+          "signature": "CancelSettlement(ctx context.Context, settlementID string) error",
+          "doc": "CancelSettlement cancels a settlement."
+        },
+        {
+          "name": "CreateSettlement",
+          "signature": "CreateSettlement(ctx context.Context, req *taurusnetwork.CreateSettlementRequest) (*taurusnetwork.CreateSettlementResult, error)",
+          "doc": "CreateSettlement creates a new settlement."
+        },
+        {
+          "name": "GetSettlement",
+          "signature": "GetSettlement(ctx context.Context, settlementID string) (*taurusnetwork.Settlement, error)",
+          "doc": "GetSettlement retrieves a settlement by ID."
+        },
+        {
+          "name": "ListSettlements",
+          "signature": "ListSettlements(ctx context.Context, opts *taurusnetwork.ListSettlementsOptions) (*taurusnetwork.ListSettlementsResult, error)",
+          "doc": "ListSettlements retrieves a list of settlements with optional filtering and pagination."
+        },
+        {
+          "name": "ListSettlementsForApproval",
+          "signature": "ListSettlementsForApproval(ctx context.Context, opts *taurusnetwork.ListSettlementsForApprovalOptions) (*taurusnetwork.ListSettlementsForApprovalResult, error)",
+          "doc": "ListSettlementsForApproval retrieves a list of settlements pending approval."
+        },
+        {
+          "name": "ReplaceSettlement",
+          "signature": "ReplaceSettlement(ctx context.Context, settlementID string, req *taurusnetwork.ReplaceSettlementRequest) error",
+          "doc": "ReplaceSettlement replaces a settlement with new attributes at the target side before approval."
+        }
+      ]
+    },
+    {
+      "name": "TaurusNetworkSharingService",
+      "methods": [
+        {
+          "name": "ListSharedAddresses",
+          "signature": "ListSharedAddresses(ctx context.Context, opts *taurusnetwork.ListSharedAddressesOptions) (*taurusnetwork.ListSharedAddressesResult, error)",
+          "doc": "ListSharedAddresses retrieves a list of shared addresses with optional filtering and pagination."
+        },
+        {
+          "name": "ListSharedAssets",
+          "signature": "ListSharedAssets(ctx context.Context, opts *taurusnetwork.ListSharedAssetsOptions) (*taurusnetwork.ListSharedAssetsResult, error)",
+          "doc": "ListSharedAssets retrieves a list of shared assets with optional filtering and pagination."
+        },
+        {
+          "name": "ShareAddress",
+          "signature": "ShareAddress(ctx context.Context, request *taurusnetwork.ShareAddressRequest) error",
+          "doc": "ShareAddress shares an internal address with a Taurus-NETWORK participant."
+        },
+        {
+          "name": "ShareWhitelistedAsset",
+          "signature": "ShareWhitelistedAsset(ctx context.Context, request *taurusnetwork.ShareWhitelistedAssetRequest) error",
+          "doc": "ShareWhitelistedAsset shares an asset with a Taurus-NETWORK participant."
+        },
+        {
+          "name": "UnshareAddress",
+          "signature": "UnshareAddress(ctx context.Context, sharedAddressID string) error",
+          "doc": "UnshareAddress unshares an address with a Taurus-NETWORK participant."
+        },
+        {
+          "name": "UnshareWhitelistedAsset",
+          "signature": "UnshareWhitelistedAsset(ctx context.Context, sharedAssetID string) error",
+          "doc": "UnshareWhitelistedAsset unshares an asset with a Taurus-NETWORK participant."
+        }
+      ]
+    },
+    {
+      "name": "TokenMetadataService",
+      "methods": [
+        {
+          "name": "GetCryptoPunkMetadata",
+          "signature": "GetCryptoPunkMetadata(ctx context.Context, network, contract, tokenID string) (*model.CryptoPunkMetadata, error)",
+          "doc": "GetCryptoPunkMetadata retrieves metadata for a CryptoPunk NFT."
+        },
+        {
+          "name": "GetERCTokenMetadata",
+          "signature": "GetERCTokenMetadata(ctx context.Context, network, contract, tokenID string, opts *model.GetERCTokenMetadataOptions) (*model.ERCTokenMetadata, error)",
+          "doc": "GetERCTokenMetadata retrieves metadata for an ERC-721 or ERC-1155 token."
+        }
+      ]
+    },
+    {
+      "name": "TransactionService",
+      "methods": [
+        {
+          "name": "ExportTransactions",
+          "signature": "ExportTransactions(ctx context.Context, opts *model.ExportTransactionsOptions) (string, error)",
+          "doc": "ExportTransactions exports transactions in the specified format."
+        },
+        {
+          "name": "GetTransaction",
+          "signature": "GetTransaction(ctx context.Context, txID string) (*model.Transaction, error)",
+          "doc": "GetTransaction retrieves a transaction by ID."
+        },
+        {
+          "name": "GetTransactionByHash",
+          "signature": "GetTransactionByHash(ctx context.Context, hash string) (*model.Transaction, error)",
+          "doc": "GetTransactionByHash retrieves a transaction by its blockchain hash."
+        },
+        {
+          "name": "ListTransactions",
+          "signature": "ListTransactions(ctx context.Context, opts *model.ListTransactionsOptions) ([]*model.Transaction, *model.Pagination, error)",
+          "doc": "ListTransactions retrieves a list of transactions."
+        },
+        {
+          "name": "ListTransactionsByAddress",
+          "signature": "ListTransactionsByAddress(ctx context.Context, address string, opts *model.ListTransactionsByAddressOptions) ([]*model.Transaction, *model.Pagination, error)",
+          "doc": "ListTransactionsByAddress retrieves a list of transactions for a specific address."
+        }
+      ]
+    },
+    {
+      "name": "UserDeviceService",
+      "methods": [
+        {
+          "name": "ApprovePairing",
+          "signature": "ApprovePairing(ctx context.Context, pairingID string, req *model.ApprovePairingRequest) error",
+          "doc": "ApprovePairing approves a user device pairing request (Step 3)."
+        },
+        {
+          "name": "CreatePairing",
+          "signature": "CreatePairing(ctx context.Context) (*model.CreatePairingResult, error)",
+          "doc": "CreatePairing creates a new user device pairing request (Step 1)."
+        },
+        {
+          "name": "GetPairingStatus",
+          "signature": "GetPairingStatus(ctx context.Context, pairingID string, nonce string) (*model.PairingStatusResult, error)",
+          "doc": "GetPairingStatus retrieves the status of a user device pairing request."
+        },
+        {
+          "name": "StartPairing",
+          "signature": "StartPairing(ctx context.Context, pairingID string, req *model.StartPairingRequest) error",
+          "doc": "StartPairing starts a user device pairing request (Step 2)."
+        }
+      ]
+    },
+    {
+      "name": "UserService",
+      "methods": [
+        {
+          "name": "CreateUserAttribute",
+          "signature": "CreateUserAttribute(ctx context.Context, userID, key, value string) error",
+          "doc": "CreateUserAttribute creates an attribute for a user."
+        },
+        {
+          "name": "GetMe",
+          "signature": "GetMe(ctx context.Context) (*model.User, error)",
+          "doc": "GetMe retrieves the currently authenticated user."
+        },
+        {
+          "name": "GetUser",
+          "signature": "GetUser(ctx context.Context, id string) (*model.User, error)",
+          "doc": "GetUser retrieves a user by ID."
+        },
+        {
+          "name": "GetUsersByEmail",
+          "signature": "GetUsersByEmail(ctx context.Context, emails []string) ([]*model.User, error)",
+          "doc": "GetUsersByEmail retrieves users by their email addresses."
+        },
+        {
+          "name": "ListUsers",
+          "signature": "ListUsers(ctx context.Context, opts *model.ListUsersOptions) (*model.ListUsersResult, error)",
+          "doc": "ListUsers retrieves a list of users with optional filtering."
+        }
+      ]
+    },
+    {
+      "name": "VisibilityGroupService",
+      "methods": [
+        {
+          "name": "GetUsersByVisibilityGroupID",
+          "signature": "GetUsersByVisibilityGroupID(ctx context.Context, visibilityGroupID string) ([]*model.User, error)",
+          "doc": "GetUsersByVisibilityGroupID retrieves users in a visibility group by its ID."
+        },
+        {
+          "name": "ListVisibilityGroups",
+          "signature": "ListVisibilityGroups(ctx context.Context) ([]*model.VisibilityGroup, error)",
+          "doc": "ListVisibilityGroups retrieves a list of all restricted visibility groups."
+        }
+      ]
+    },
+    {
+      "name": "WalletService",
+      "methods": [
+        {
+          "name": "CreateWallet",
+          "signature": "CreateWallet(ctx context.Context, req *model.CreateWalletRequest) (*model.Wallet, error)",
+          "doc": "CreateWallet creates a new wallet."
+        },
+        {
+          "name": "CreateWalletAttribute",
+          "signature": "CreateWalletAttribute(ctx context.Context, walletID, key, value string) error",
+          "doc": "CreateWalletAttribute creates a custom attribute on a wallet."
+        },
+        {
+          "name": "DeleteWalletAttribute",
+          "signature": "DeleteWalletAttribute(ctx context.Context, walletID, attributeID string) error",
+          "doc": "DeleteWalletAttribute deletes a custom attribute from a wallet."
+        },
+        {
+          "name": "GetWallet",
+          "signature": "GetWallet(ctx context.Context, walletID string) (*model.Wallet, error)",
+          "doc": "GetWallet retrieves a wallet by ID."
+        },
+        {
+          "name": "GetWalletBalanceHistory",
+          "signature": "GetWalletBalanceHistory(ctx context.Context, walletID string, intervalHours int) ([]*model.BalanceHistoryPoint, error)",
+          "doc": "GetWalletBalanceHistory retrieves balance history for a wallet."
+        },
+        {
+          "name": "GetWalletTokens",
+          "signature": "GetWalletTokens(ctx context.Context, walletID string, opts *model.GetWalletTokensOptions) ([]*model.AssetBalance, error)",
+          "doc": "GetWalletTokens retrieves token balances for a wallet."
+        },
+        {
+          "name": "ListWallets",
+          "signature": "ListWallets(ctx context.Context, opts *model.ListWalletsOptions) ([]*model.Wallet, *model.Pagination, error)",
+          "doc": "ListWallets retrieves a list of wallets."
+        }
+      ]
+    },
+    {
+      "name": "WebhookCallService",
+      "methods": [
+        {
+          "name": "ListWebhookCalls",
+          "signature": "ListWebhookCalls(ctx context.Context, opts *model.ListWebhookCallsOptions) (*model.ListWebhookCallsResult, error)",
+          "doc": "ListWebhookCalls retrieves a list of webhook calls with optional filtering and pagination."
+        }
+      ]
+    },
+    {
+      "name": "WebhookService",
+      "methods": [
+        {
+          "name": "CreateWebhook",
+          "signature": "CreateWebhook(ctx context.Context, req *model.CreateWebhookRequest) (*model.CreateWebhookResult, error)",
+          "doc": "CreateWebhook creates a new webhook configuration."
+        },
+        {
+          "name": "DeleteWebhook",
+          "signature": "DeleteWebhook(ctx context.Context, id string) error",
+          "doc": "DeleteWebhook deletes a webhook configuration by ID."
+        },
+        {
+          "name": "ListWebhooks",
+          "signature": "ListWebhooks(ctx context.Context, opts *model.ListWebhooksOptions) (*model.ListWebhooksResult, error)",
+          "doc": "ListWebhooks retrieves a list of webhooks with optional filtering and pagination."
+        },
+        {
+          "name": "UpdateWebhookStatus",
+          "signature": "UpdateWebhookStatus(ctx context.Context, id string, enabled bool) (*model.Webhook, error)",
+          "doc": "UpdateWebhookStatus updates a webhook's status (enabled/disabled)."
+        }
+      ]
+    },
+    {
+      "name": "WhitelistedAddressService",
+      "methods": [
+        {
+          "name": "ApproveWhitelistedAddresses",
+          "signature": "ApproveWhitelistedAddresses(ctx context.Context, ids []string, privateKey *ecdsa.PrivateKey, comment string) error",
+          "doc": "ApproveWhitelistedAddresses signs and submits an approval for the given whitelisted"
+        },
+        {
+          "name": "GetWhitelistedAddress",
+          "signature": "GetWhitelistedAddress(ctx context.Context, id string) (*model.WhitelistedAddress, error)",
+          "doc": "GetWhitelistedAddress retrieves a whitelisted address by ID."
+        },
+        {
+          "name": "GetWhitelistedAddressEnvelope",
+          "signature": "GetWhitelistedAddressEnvelope(ctx context.Context, id string) (*model.WhitelistedAddressEnvelope, error)",
+          "doc": "GetWhitelistedAddressEnvelope retrieves a whitelisted address envelope by ID and performs"
+        },
+        {
+          "name": "ListWhitelistedAddresses",
+          "signature": "ListWhitelistedAddresses(ctx context.Context, opts *model.ListWhitelistedAddressesOptions) (*model.WhitelistedAddressResult, error)",
+          "doc": "ListWhitelistedAddresses retrieves a list of whitelisted addresses, verifying every"
+        },
+        {
+          "name": "ListWhitelistedAddressesForApproval",
+          "signature": "ListWhitelistedAddressesForApproval(ctx context.Context, opts *model.ListWhitelistedAddressesForApprovalOptions) (*model.WhitelistedAddressResult, error)",
+          "doc": "ListWhitelistedAddressesForApproval retrieves whitelisted addresses awaiting approval,"
+        }
+      ]
+    },
+    {
+      "name": "WhitelistedAssetService",
+      "methods": [
+        {
+          "name": "ApproveWhitelistedAssets",
+          "signature": "ApproveWhitelistedAssets(ctx context.Context, ids []string, privateKey *ecdsa.PrivateKey, comment string) error",
+          "doc": "ApproveWhitelistedAssets signs and submits an approval for the given whitelisted"
+        },
+        {
+          "name": "GetWhitelistedAsset",
+          "signature": "GetWhitelistedAsset(ctx context.Context, id string) (*model.WhitelistedAsset, error)",
+          "doc": "GetWhitelistedAsset retrieves a whitelisted asset by ID."
+        },
+        {
+          "name": "GetWhitelistedAssetEnvelope",
+          "signature": "GetWhitelistedAssetEnvelope(ctx context.Context, id string) (*model.WhitelistedAssetEnvelope, error)",
+          "doc": "GetWhitelistedAssetEnvelope retrieves a whitelisted asset envelope by ID and performs"
+        },
+        {
+          "name": "ListWhitelistedAssets",
+          "signature": "ListWhitelistedAssets(ctx context.Context, opts *model.ListWhitelistedAssetsOptions) ([]*model.WhitelistedAsset, *model.Pagination, error)",
+          "doc": "ListWhitelistedAssets retrieves a list of whitelisted assets."
+        },
+        {
+          "name": "ListWhitelistedAssetsForApproval",
+          "signature": "ListWhitelistedAssetsForApproval(ctx context.Context, opts *model.ListWhitelistedAssetsForApprovalOptions) ([]*model.WhitelistedAsset, *model.Pagination, error)",
+          "doc": "ListWhitelistedAssetsForApproval retrieves assets awaiting approval, verified the same"
+        }
+      ]
+    },
+    {
+      "name": "WhitelistedContractService",
+      "methods": [
+        {
+          "name": "ApproveWhitelistedContract",
+          "signature": "ApproveWhitelistedContract(ctx context.Context, ids []string, signature string, comment string) error",
+          "doc": "ApproveWhitelistedContract approves whitelisted contracts."
+        },
+        {
+          "name": "CreateWhitelistedContract",
+          "signature": "CreateWhitelistedContract(ctx context.Context, req *model.CreateWhitelistedContractRequest) (string, error)",
+          "doc": "CreateWhitelistedContract creates a new whitelisted contract."
+        },
+        {
+          "name": "CreateWhitelistedContractAttribute",
+          "signature": "CreateWhitelistedContractAttribute(ctx context.Context, contractID string, req *model.CreateWhitelistedContractAttributeRequest) ([]model.WhitelistedContractAttribute, error)",
+          "doc": "CreateWhitelistedContractAttribute creates an attribute on a whitelisted contract."
+        },
+        {
+          "name": "CreateWhitelistedContractAttributes",
+          "signature": "CreateWhitelistedContractAttributes(ctx context.Context, contractID string, reqs []model.CreateWhitelistedContractAttributeRequest) ([]model.WhitelistedContractAttribute, error)",
+          "doc": "CreateWhitelistedContractAttributes creates multiple attributes on a whitelisted contract."
+        },
+        {
+          "name": "DeleteWhitelistedContract",
+          "signature": "DeleteWhitelistedContract(ctx context.Context, id string, comment string) (string, error)",
+          "doc": "DeleteWhitelistedContract deletes a whitelisted contract."
+        },
+        {
+          "name": "DeleteWhitelistedContractAttribute",
+          "signature": "DeleteWhitelistedContractAttribute(ctx context.Context, contractID string, attributeID string) error",
+          "doc": "DeleteWhitelistedContractAttribute deletes an attribute from a whitelisted contract."
+        },
+        {
+          "name": "GetWhitelistedContractAttribute",
+          "signature": "GetWhitelistedContractAttribute(ctx context.Context, contractID string, attributeID string) (*model.WhitelistedContractAttribute, error)",
+          "doc": "GetWhitelistedContractAttribute retrieves an attribute from a whitelisted contract."
+        },
+        {
+          "name": "RejectWhitelistedContract",
+          "signature": "RejectWhitelistedContract(ctx context.Context, ids []string, comment string) error",
+          "doc": "RejectWhitelistedContract rejects whitelisted contracts."
+        },
+        {
+          "name": "UpdateWhitelistedContract",
+          "signature": "UpdateWhitelistedContract(ctx context.Context, id string, req *model.UpdateWhitelistedContractRequest) (string, error)",
+          "doc": "UpdateWhitelistedContract updates an existing whitelisted contract."
+        }
+      ]
+    }
+  ]
+}

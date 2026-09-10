@@ -341,3 +341,30 @@ wallet, err := client.Wallets().GetWallet(ctx, walletID)
 - [Java SDK Documentation](../../taurus-protect-sdk-java/docs/) - Java SDK reference
 - [Python SDK Documentation](../../taurus-protect-sdk-python/docs/) - Python SDK reference
 - [TypeScript SDK Documentation](../../taurus-protect-sdk-typescript/docs/) - TypeScript SDK reference
+
+## AuthorizationError.RequiredRoles
+
+An HTTP 403 is mapped to `*service.AuthorizationError`, which embeds `*service.APIError`
+and adds `RequiredRoles []string`. It defines `Unwrap`, so `errors.As` matches both the
+typed 403 and the base `*service.APIError` — match with `errors.As`, not a bare type
+assertion.
+
+```go
+var authErr *service.AuthorizationError
+if errors.As(err, &authErr) {
+    if len(authErr.RequiredRoles) > 0 {
+        log.Printf("permission denied; requires one of: %v", authErr.RequiredRoles)
+    } else {
+        log.Print("permission denied")
+    }
+}
+```
+
+The error carries the **roles that would satisfy the failed check**, so a caller can say
+which role to request instead of only "forbidden". The list is empty when the denial was
+not role-based (a disabled endpoint, a visibility restriction). One entry means that role
+is required; several mean any one of them suffices.
+
+> Surface the role list, never the server's message. The role names are safe to display;
+> the surrounding text is server-controlled. A consumer that forwards errors into another
+> system should render roles through an allowlist (the roles are lowercase alphanumeric).

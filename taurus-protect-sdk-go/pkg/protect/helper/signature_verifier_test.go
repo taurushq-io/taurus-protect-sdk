@@ -138,8 +138,12 @@ func TestIsValidSignature(t *testing.T) {
 		t.Fatalf("Failed to sign: %v", err)
 	}
 
-	// Encode signature in the expected format (r || s as raw bytes)
-	sigBytes := append(r.Bytes(), s.Bytes()...)
+	// Encode signature in the expected format (r || s as raw bytes).
+	// Both halves must be padded to 32 bytes: r and s are uniform in [1, n-1], so
+	// roughly one signature in 128 has a leading zero byte that Bytes() drops,
+	// yielding 63 bytes and a spuriously failing test. Every other signature in
+	// this file already pads; this one did not.
+	sigBytes := append(padTo32Bytes(r.Bytes()), padTo32Bytes(s.Bytes())...)
 	validSig := base64.StdEncoding.EncodeToString(sigBytes)
 
 	t.Run("valid signature", func(t *testing.T) {
@@ -169,6 +173,70 @@ func TestIsValidSignature(t *testing.T) {
 			t.Error("IsValidSignature() = true with no public keys")
 		}
 	})
+}
+
+// The threshold counts distinct signing keys. Counting signature entries instead
+// would let one compromised key satisfy any threshold, since ECDSA is randomized
+// and a single key can emit unlimited distinct valid signatures over the same data.
+func TestVerifyGovernanceRulesSignaturesCountsDistinctSigners(t *testing.T) {
+	newKey := func() *ecdsa.PrivateKey {
+		k, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		if err != nil {
+			t.Fatalf("generate key: %v", err)
+		}
+		return k
+	}
+	key1, key2, unconfigured := newKey(), newKey(), newKey()
+	rulesData := []byte("test rules data")
+
+	sign := func(k *ecdsa.PrivateKey) string {
+		hash := sha256.Sum256(rulesData)
+		r, s, err := ecdsa.Sign(rand.Reader, k, hash[:])
+		if err != nil {
+			t.Fatalf("sign: %v", err)
+		}
+		return base64.StdEncoding.EncodeToString(append(padTo32Bytes(r.Bytes()), padTo32Bytes(s.Bytes())...))
+	}
+	entry := func(user, sig string) *model.RuleUserSignature {
+		return &model.RuleUserSignature{UserID: user, Signature: sig}
+	}
+
+	both := []*ecdsa.PublicKey{&key1.PublicKey, &key2.PublicKey}
+	oneKeyTwice := []*ecdsa.PublicKey{&key1.PublicKey, &key1.PublicKey}
+	repeated := sign(key1)
+
+	tests := []struct {
+		name       string
+		signatures []*model.RuleUserSignature
+		keys       []*ecdsa.PublicKey
+		threshold  int
+		wantErr    bool
+	}{
+		{"two distinct signers meet threshold two",
+			[]*model.RuleUserSignature{entry("u1", sign(key1)), entry("u2", sign(key2))}, both, 2, false},
+		{"two signatures from one key do not meet threshold two",
+			[]*model.RuleUserSignature{entry("u1", sign(key1)), entry("u1-again", sign(key1))}, both, 2, true},
+		{"two signatures from one key still meet threshold one",
+			[]*model.RuleUserSignature{entry("u1", sign(key1)), entry("u1-again", sign(key1))}, both, 1, false},
+		{"identical signature repeated counts once",
+			[]*model.RuleUserSignature{entry("u1", repeated), entry("u1-replay", repeated)}, both, 2, true},
+		{"same key configured twice counts once",
+			[]*model.RuleUserSignature{entry("u1", sign(key1)), entry("u1-again", sign(key1))}, oneKeyTwice, 2, true},
+		{"signature from an unconfigured key contributes nothing",
+			[]*model.RuleUserSignature{entry("u1", sign(key1)), entry("stranger", sign(unconfigured))}, both, 2, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := VerifyGovernanceRulesSignatures(rulesData, tt.signatures, tt.keys, tt.threshold)
+			if tt.wantErr && err == nil {
+				t.Fatalf("VerifyGovernanceRulesSignatures() = nil, want an error")
+			}
+			if !tt.wantErr && err != nil {
+				t.Fatalf("VerifyGovernanceRulesSignatures() = %v, want nil", err)
+			}
+		})
+	}
 }
 
 func TestVerifyGovernanceRulesSignatures(t *testing.T) {
@@ -217,11 +285,20 @@ func TestVerifyGovernanceRulesSignatures(t *testing.T) {
 		}
 	})
 
-	t.Run("zero threshold with signatures", func(t *testing.T) {
-		// Even with zero threshold, function requires signatures to be provided
+	t.Run("zero threshold is rejected", func(t *testing.T) {
+		// A zero threshold makes the "distinct signers < threshold" test vacuously
+		// false, so accepting it would report success having matched no signer at
+		// all. Java, Python and TypeScript reject it; this used to pass here.
 		err := VerifyGovernanceRulesSignatures(rulesData, signatures, publicKeys, 0)
-		if err != nil {
-			t.Errorf("VerifyGovernanceRulesSignatures() error for zero threshold: %v", err)
+		if err == nil {
+			t.Error("VerifyGovernanceRulesSignatures() expected error for zero threshold")
+		}
+	})
+
+	t.Run("negative threshold is rejected", func(t *testing.T) {
+		err := VerifyGovernanceRulesSignatures(rulesData, signatures, publicKeys, -1)
+		if err == nil {
+			t.Error("VerifyGovernanceRulesSignatures() expected error for negative threshold")
 		}
 	})
 
@@ -246,3 +323,62 @@ func padTo32Bytes(b []byte) []byte {
 // Note: isValidECDSASignature is an unexported function, so we test it indirectly
 // through the exported IsValidSignature function. The tests above cover the
 // underlying ECDSA verification logic.
+
+// VerifyGovernanceRules is the helper-level convenience the other three SDKs expose
+// (Java SignatureVerifier.verifyGovernanceRules, Python verify_governance_rules, TS
+// verifyGovernanceRules): it takes the ruleset and decodes the container itself, so a
+// caller outside the service layer does not have to. Only the *Signatures core existed
+// here, while this package's CLAUDE.md already listed the missing name.
+func TestVerifyGovernanceRules_DecodesContainerAndChecksThreshold(t *testing.T) {
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("generate key: %v", err)
+	}
+	keys := []*ecdsa.PublicKey{&key.PublicKey}
+
+	rulesData := []byte("test rules data")
+	hash := sha256.Sum256(rulesData)
+	r, s, err := ecdsa.Sign(rand.Reader, key, hash[:])
+	if err != nil {
+		t.Fatalf("sign: %v", err)
+	}
+	signature := base64.StdEncoding.EncodeToString(append(padTo32Bytes(r.Bytes()), padTo32Bytes(s.Bytes())...))
+
+	validRules := func() *model.GovernanceRuleset {
+		return &model.GovernanceRuleset{
+			RulesContainer: base64.StdEncoding.EncodeToString(rulesData),
+			Signatures:     []model.RuleUserSignature{{UserID: "admin1", Signature: signature}},
+		}
+	}
+
+	if err := VerifyGovernanceRules(validRules(), 1, keys); err != nil {
+		t.Fatalf("valid rules rejected: %v", err)
+	}
+
+	// Threshold above the number of distinct signers must fail.
+	if err := VerifyGovernanceRules(validRules(), 2, keys); err == nil {
+		t.Error("expected failure when the threshold exceeds the distinct signer count")
+	}
+
+	for name, tc := range map[string]struct {
+		rules *model.GovernanceRuleset
+		min   int
+		keys  []*ecdsa.PublicKey
+	}{
+		"nil rules":            {nil, 1, keys},
+		"non-positive minimum": {validRules(), 0, keys},
+		"no keys":              {validRules(), 1, nil},
+		"empty container":      {&model.GovernanceRuleset{Signatures: validRules().Signatures}, 1, keys},
+		"no signatures":        {&model.GovernanceRuleset{RulesContainer: validRules().RulesContainer}, 1, keys},
+		"undecodable container": {&model.GovernanceRuleset{
+			RulesContainer: "not-base64!!",
+			Signatures:     validRules().Signatures,
+		}, 1, keys},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if err := VerifyGovernanceRules(tc.rules, tc.min, tc.keys); err == nil {
+				t.Error("expected an error")
+			}
+		})
+	}
+}

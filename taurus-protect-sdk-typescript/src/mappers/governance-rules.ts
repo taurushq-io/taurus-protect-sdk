@@ -4,6 +4,7 @@
 
 import type { TgvalidatordRules } from "../internal/openapi/models/TgvalidatordRules";
 import type { TgvalidatordRulesTrail } from "../internal/openapi/models/TgvalidatordRulesTrail";
+import type { GetPublicKeysReplyPublicKey } from "../internal/openapi/models/GetPublicKeysReplyPublicKey";
 import type { TgvalidatordRuleUserSignature } from "../internal/openapi/models/TgvalidatordRuleUserSignature";
 import {
   type DecodedRulesContainer,
@@ -17,11 +18,13 @@ import {
   type RuleUserSignature,
   type RulesTrail,
   type GovernanceRules,
+  type SuperAdminPublicKey,
   createEmptyRulesContainer,
 } from "../models/governance-rules";
 import { safeBoolDefault, safeDate, safeMap, safeString } from "./base";
 import { IntegrityError } from "../errors";
 import { tryDecodeProtobufRulesContainer } from "./protobuf-rules-container";
+import { strictBase64Decode } from "../helpers/strict-base64";
 
 /**
  * Decodes a base64-encoded rules container.
@@ -41,7 +44,7 @@ export function rulesContainerFromBase64(base64Data: string): DecodedRulesContai
   // Decode base64 to bytes
   let decoded: Uint8Array;
   try {
-    decoded = Buffer.from(base64Data, 'base64');
+    decoded = strictBase64Decode(base64Data);
   } catch (error) {
     // Invalid base64 encoding - this is a security-critical failure
     throw new IntegrityError(
@@ -103,10 +106,17 @@ function parseRulesContainerFromDict(data: Record<string, unknown>): DecodedRule
     []
   ) as Record<string, unknown>[];
   for (const ruleData of transactionRulesData) {
+    // JSON fallback path (used only when protobuf decode fails): thresholds live
+    // on lines in the typed model, so carry any legacy rule-level thresholds on a
+    // single cell-less line. The protobuf path is the lossless one.
     const parallelThresholds = parseSequentialThresholds(
       getArray(ruleData, 'parallelThresholds') ?? getArray(ruleData, 'parallel_thresholds') ?? []
     );
-    transactionRules.push({ parallelThresholds });
+    transactionRules.push({
+      key: getString(ruleData, 'key') ?? getString(ruleData, 'rulesKey') ?? '',
+      columns: [],
+      lines: parallelThresholds.length > 0 ? [{ cells: [], parallelThresholds, priority: 0 }] : [],
+    });
   }
 
   // Parse address whitelisting rules
@@ -124,6 +134,7 @@ function parseRulesContainerFromDict(data: Record<string, unknown>): DecodedRule
       currency: getString(ruleData, 'currency'),
       network: getString(ruleData, 'network'),
       parallelThresholds,
+      lines: [],
     });
   }
 
@@ -227,10 +238,21 @@ export function userSignaturesFromBase64(base64Data: string): RuleUserSignature[
     return [];
   }
 
-  const decodedBytes = Buffer.from(base64Data, 'base64');
+  // Strict decoding, but this function's contract is to report a parse failure as "no
+  // signatures" rather than throwing. That stays fail-closed: an empty list satisfies no
+  // threshold, so ambiguous input can never contribute a signature towards one.
+  let decodedBytes: Buffer;
+  try {
+    decodedBytes = strictBase64Decode(base64Data);
+  } catch {
+    return [];
+  }
 
   // Try protobuf first (primary format, matches Java/Go SDKs)
   try {
+    // Loaded lazily on purpose: protobuf decoding is the primary path but must not be a
+    // hard static dependency, so the JSON fallback still works without the generated module.
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { UserSignatures: PbUserSignatures } = require('../internal/proto/request_reply') as typeof import('../internal/proto/request_reply');
     const pbSigs = PbUserSignatures.decode(decodedBytes);
     if (pbSigs.signatures && pbSigs.signatures.length > 0) {
@@ -362,4 +384,34 @@ export function governanceRulesArrayFromDto(
   dtos: TgvalidatordRules[] | null | undefined
 ): GovernanceRules[] {
   return safeMap(dtos, governanceRulesFromDto);
+}
+
+/**
+ * Maps a SuperAdmin public key DTO to its domain model.
+ *
+ * @param dto - The public key DTO
+ * @returns The SuperAdminPublicKey, or undefined when the DTO is absent
+ */
+export function superAdminPublicKeyFromDto(
+  dto: GetPublicKeysReplyPublicKey | null | undefined
+): SuperAdminPublicKey | undefined {
+  if (!dto) {
+    return undefined;
+  }
+  return {
+    userId: safeString(dto.userID) ?? "",
+    publicKey: safeString(dto.publicKey) ?? "",
+  };
+}
+
+/**
+ * Maps an array of SuperAdmin public key DTOs to domain models.
+ *
+ * @param dtos - The array of public key DTOs
+ * @returns Array of SuperAdminPublicKey models (undefined entries filtered out)
+ */
+export function superAdminPublicKeysFromDto(
+  dtos: GetPublicKeysReplyPublicKey[] | null | undefined
+): SuperAdminPublicKey[] {
+  return safeMap(dtos, superAdminPublicKeyFromDto);
 }

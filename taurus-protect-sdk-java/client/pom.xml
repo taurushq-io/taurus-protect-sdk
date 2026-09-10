@@ -26,6 +26,11 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java-util</artifactId>
+            <version>${protobuf-version}</version>
+        </dependency>
+        <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
             <version>${commons-codec-version}</version>
@@ -100,6 +105,27 @@
     </build>
 
     <profiles>
+        <!-- source/target 8 still compiles against the CURRENT JDK's class library, so on a
+             JDK 9+ machine a Java 9+ API (List.of, String.repeat) resolves fine and the break
+             only surfaces on a real JDK 8. The release flag pins the class library to 8 too,
+             turning that into a local compile error. It is unknown to the JDK 8 javac, hence
+             the JDK-conditional profile.
+
+             Scoped to this module on purpose: it is the hand-written one. Applying it to the
+             generated openapi/proto modules makes MapStruct fail to resolve the reactor's
+             proto classes ("No implementation was created ... erroneous element
+             Whitelist.WhitelistedAddressOrBuilder"), which does not happen against their
+             installed jars. Verify with: mvn help:active-profiles -pl client -->
+        <profile>
+            <id>jdk9-plus-release</id>
+            <activation>
+                <jdk>[9,)</jdk>
+            </activation>
+            <properties>
+                <maven.compiler.release>${java.version}</maven.compiler.release>
+            </properties>
+        </profile>
+
         <!-- JDK 9+ enforces strong encapsulation; Gson needs java.lang opened
              to deserialize ApiException (extends Exception) in ApiExceptionMapperTest.
              The flag is rejected by the JDK 8 launcher, so it is only added on JDK 9+. -->

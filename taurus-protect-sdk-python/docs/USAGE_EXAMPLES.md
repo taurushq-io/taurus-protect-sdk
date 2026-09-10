@@ -22,13 +22,12 @@ This document provides comprehensive Python code examples for the Taurus-PROTECT
 ### Basic Initialization
 
 ```python
-from taurus_protect import ProtectClient
+from taurus_protect import Credentials, ProtectClient
 
 # Using context manager (recommended)
 with ProtectClient.create(
     host="https://api.protect.taurushq.com",
-    api_key="your-api-key",
-    api_secret="your-api-secret-hex",
+    credentials=Credentials.api_key("your-api-key", "your-api-secret-hex"),
 ) as client:
     # Client is automatically closed when exiting the block
     wallets, _ = client.wallets.list()
@@ -38,7 +37,7 @@ with ProtectClient.create(
 ### With SuperAdmin Key Verification
 
 ```python
-from taurus_protect import ProtectClient
+from taurus_protect import Credentials, ProtectClient
 
 # Load SuperAdmin public keys (ECDSA P-256 in PEM format)
 super_admin_keys = [
@@ -52,8 +51,7 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...
 
 with ProtectClient.create(
     host="https://api.protect.taurushq.com",
-    api_key="your-api-key",
-    api_secret="your-api-secret-hex",
+    credentials=Credentials.api_key("your-api-key", "your-api-secret-hex"),
     super_admin_keys_pem=super_admin_keys,
     min_valid_signatures=2,  # Require 2-of-N signatures
     rules_cache_ttl=300.0,   # Cache rules for 5 minutes
@@ -67,14 +65,13 @@ with ProtectClient.create(
 
 ```python
 import os
-from taurus_protect import ProtectClient
+from taurus_protect import Credentials, ProtectClient
 
 def create_client_from_env() -> ProtectClient:
     """Create a client using environment variables."""
     return ProtectClient.create(
         host=os.environ["PROTECT_API_HOST"],
-        api_key=os.environ["PROTECT_API_KEY"],
-        api_secret=os.environ["PROTECT_API_SECRET"],
+        credentials=Credentials.api_key(os.environ["PROTECT_API_KEY"], os.environ["PROTECT_API_SECRET"]),
     )
 
 # Usage
@@ -86,13 +83,12 @@ with create_client_from_env() as client:
 ### Manual Resource Management
 
 ```python
-from taurus_protect import ProtectClient
+from taurus_protect import Credentials, ProtectClient
 
 # Without context manager (remember to close!)
 client = ProtectClient.create(
     host="https://api.protect.taurushq.com",
-    api_key="your-api-key",
-    api_secret="your-api-secret-hex",
+    credentials=Credentials.api_key("your-api-key", "your-api-secret-hex"),
 )
 
 try:
@@ -108,7 +104,7 @@ finally:
 ### List All Wallets
 
 ```python
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     # Simple listing
     wallets, pagination = client.wallets.list(limit=50, offset=0)
 
@@ -123,7 +119,7 @@ with ProtectClient.create(host, api_key, api_secret) as client:
 ### Find Wallets by Name
 
 ```python
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     wallets, _ = client.wallets.get_by_name("Trading", limit=10)
     for wallet in wallets:
         print(f"{wallet.name}: {wallet.id}")
@@ -134,7 +130,7 @@ with ProtectClient.create(host, api_key, api_secret) as client:
 ```python
 from taurus_protect.models import ListWalletsOptions
 
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     options = ListWalletsOptions(
         currency="ETH",
         exclude_disabled=True,
@@ -150,7 +146,7 @@ with ProtectClient.create(host, api_key, api_secret) as client:
 ```python
 from taurus_protect.models import CreateWalletRequest
 
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     # Using request object
     request = CreateWalletRequest(
         blockchain="ETH",
@@ -175,7 +171,7 @@ with ProtectClient.create(host, api_key, api_secret) as client:
 ### Wallet Attributes
 
 ```python
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     # Add custom attribute
     client.wallets.create_attribute(
         wallet_id=123,
@@ -187,7 +183,7 @@ with ProtectClient.create(host, api_key, api_secret) as client:
 ### Balance History
 
 ```python
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     # Get balance history with 1-hour intervals
     history = client.wallets.get_balance_history(
         wallet_id=123,
@@ -200,7 +196,7 @@ with ProtectClient.create(host, api_key, api_secret) as client:
 ### Token Balances
 
 ```python
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     # Get all token balances for a wallet
     tokens = client.wallets.get_tokens(wallet_id=123, limit=100)
     for token in tokens:
@@ -214,7 +210,7 @@ with ProtectClient.create(host, api_key, api_secret) as client:
 ### List Addresses
 
 ```python
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     # List addresses for a specific wallet
     addresses, pagination = client.addresses.list(
         wallet_id=123,
@@ -233,7 +229,7 @@ with ProtectClient.create(host, api_key, api_secret) as client:
 ### Get Single Address
 
 ```python
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     # Address signature is automatically verified
     address = client.addresses.get(address_id=456)
     print(f"Address: {address.address}")
@@ -245,7 +241,7 @@ with ProtectClient.create(host, api_key, api_secret) as client:
 ```python
 from taurus_protect.models import CreateAddressRequest
 
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     request = CreateAddressRequest(
         wallet_id="123",
         label="Customer Deposit",
@@ -266,7 +262,7 @@ with ProtectClient.create(host, api_key, api_secret) as client:
 ### Address Attributes
 
 ```python
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     # Add attribute
     client.addresses.create_attribute(
         address_id=456,
@@ -284,7 +280,7 @@ with ProtectClient.create(host, api_key, api_secret) as client:
 ### Proof of Reserve
 
 ```python
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     # Get cryptographic proof of reserve
     proof = client.addresses.get_proof_of_reserve(
         address_id=456,
@@ -301,13 +297,13 @@ with ProtectClient.create(host, api_key, api_secret) as client:
 
 ```python
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
-from taurus_protect import ProtectClient
+from taurus_protect import Credentials, ProtectClient
 
 # Load your approval private key
 with open("approval_key.pem", "rb") as f:
     private_key = load_pem_private_key(f.read(), password=None)
 
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     # Step 1: Create a transfer request
     request = client.requests.create_internal_transfer(
         from_address_id=123,
@@ -333,7 +329,7 @@ with ProtectClient.create(host, api_key, api_secret) as client:
 ### Create Different Transfer Types
 
 ```python
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     # Internal transfer (address to address)
     internal = client.requests.create_internal_transfer(
         from_address_id=123,
@@ -372,7 +368,7 @@ with ProtectClient.create(host, api_key, api_secret) as client:
 ### Reject Requests
 
 ```python
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     # Reject single request
     client.requests.reject_request(
         request_id=12345,
@@ -391,7 +387,7 @@ with ProtectClient.create(host, api_key, api_secret) as client:
 ```python
 from taurus_protect.models import RequestStatus
 
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     # Get only approved requests (ready for broadcast)
     approved, _ = client.requests.list(
         statuses=[RequestStatus.APPROVED, RequestStatus.BROADCAST],
@@ -420,7 +416,7 @@ with ProtectClient.create(host, api_key, api_secret) as client:
 ```python
 from datetime import datetime, timedelta
 
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     # Get recent transactions
     transactions, pagination = client.transactions.list(
         limit=100,
@@ -442,7 +438,7 @@ with ProtectClient.create(host, api_key, api_secret) as client:
 ### Get Balances
 
 ```python
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     balances, _ = client.balances.list()
     for balance in balances:
         print(f"{balance.currency}: {balance.total_confirmed}")
@@ -455,7 +451,7 @@ with ProtectClient.create(host, api_key, api_secret) as client:
 ### List Whitelisted Addresses
 
 ```python
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     addresses, pagination = client.whitelisted_addresses.list(limit=50)
     for addr in addresses:
         print(f"Whitelisted: {addr.name}")
@@ -467,7 +463,8 @@ with ProtectClient.create(host, api_key, api_secret) as client:
 ### Get Verified Whitelisted Address
 
 ```python
-with ProtectClient.create(host, api_key, api_secret,
+with ProtectClient.create(host,
+                          credentials=Credentials.api_key(api_key, api_secret),
                           super_admin_keys_pem=super_admin_keys,
                           min_valid_signatures=2) as client:
     # Address is automatically verified (6-step verification)
@@ -482,7 +479,7 @@ with ProtectClient.create(host, api_key, api_secret,
 ### Participant Management
 
 ```python
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     # Get my participant info
     me = client.taurus_network.participants.get_my_participant()
     print(f"I am: {me.name} (ID: {me.id})")
@@ -501,7 +498,7 @@ from taurus_protect.models.taurus_network import (
     ListPledgesOptions,
 )
 
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     # Create a pledge
     request = CreatePledgeRequest(
         shared_address_id="shared-addr-123",
@@ -534,7 +531,7 @@ with ProtectClient.create(host, api_key, api_secret) as client:
 ```python
 from taurus_protect.models.taurus_network import CreateSharedAddressRequest
 
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     # List shared addresses
     addresses, _ = client.taurus_network.sharing.list_shared_addresses()
     for addr in addresses:
@@ -582,7 +579,7 @@ def get_all_wallets(client) -> List[Wallet]:
     return all_wallets
 
 # Usage
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     wallets = get_all_wallets(client)
     print(f"Total wallets: {len(wallets)}")
 ```
@@ -609,7 +606,7 @@ def iter_wallets(client, page_size: int = 100) -> Iterator[Wallet]:
         offset += page_size
 
 # Usage
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     for wallet in iter_wallets(client):
         print(f"Processing wallet: {wallet.name}")
 ```
@@ -689,7 +686,7 @@ def fetch_wallet_safely(client, wallet_id: int):
     raise Exception("Max retries exceeded")
 
 # Usage
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     wallet = fetch_wallet_safely(client, 123)
     if wallet:
         print(f"Wallet: {wallet.name}")
@@ -700,7 +697,7 @@ with ProtectClient.create(host, api_key, api_secret) as client:
 ```python
 from taurus_protect.errors import APIError
 
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials) as client:
     try:
         wallet = client.wallets.get(123)
     except APIError as e:
@@ -716,7 +713,8 @@ with ProtectClient.create(host, api_key, api_secret) as client:
 ```python
 from taurus_protect.errors import IntegrityError, WhitelistError
 
-with ProtectClient.create(host, api_key, api_secret,
+with ProtectClient.create(host,
+                          credentials=Credentials.api_key(api_key, api_secret),
                           super_admin_keys_pem=super_admin_keys) as client:
     try:
         address = client.whitelisted_addresses.get(123)

@@ -8,8 +8,8 @@
  * ```typescript
  * const client = ProtectClient.create({
  *   host: 'https://your-protect-instance.example.com',
- *   apiKey: 'your-api-key',
- *   apiSecret: 'your-hex-encoded-secret',
+ *   credentials: Credentials.apiKey('your-api-key', 'your-hex-encoded-secret'),
+ *   superAdminKeysPem: ['-----BEGIN PUBLIC KEY-----...'],
  * });
  *
  * // Access low-level APIs
@@ -85,8 +85,8 @@ import {
   WebhookCallsApi,
   WebhooksApi,
 } from "./internal/openapi/apis";
-import { ConfigurationError, ServerError } from "./errors";
-import { createTPV1Middleware } from "./transport";
+import { ConfigurationError } from "./errors";
+import { Credentials } from "./credentials";
 
 // Import service classes
 import { AddressService } from "./services/address-service";
@@ -158,19 +158,27 @@ export interface ProtectClientConfig {
   host: string;
 
   /**
-   * The API key for authentication.
+   * The authentication mechanism. Build one with Credentials.apiKey,
+   * Credentials.bearerToken, or Credentials.bearerTokenProvider.
    */
-  apiKey: string;
+  credentials?: Credentials;
+
+  /**
+   * The API key for authentication.
+   * @deprecated use `credentials: Credentials.apiKey(apiKey, apiSecret)`
+   */
+  apiKey?: string;
 
   /**
    * The API secret in hexadecimal format.
+   * @deprecated use `credentials: Credentials.apiKey(apiKey, apiSecret)`
    */
-  apiSecret: string;
+  apiSecret?: string;
 
   /**
-   * SuperAdmin public keys in PEM format for signature verification.
-   * Required for integrity verification of whitelisted addresses and assets.
-   * At least one key must be provided.
+   * SuperAdmin public keys in PEM format for signature verification. Required
+   * (regardless of the auth mechanism) for integrity verification of governance
+   * rules, whitelisted addresses, and assets.
    */
   superAdminKeysPem: string[];
 
@@ -481,17 +489,26 @@ export class ProtectClient {
   // Rules container cache for signature verification
   private _rulesCache?: RulesContainerCache;
 
+  // The middleware array shared with apiConfiguration; emptied by close().
+  private readonly authMiddleware: Middleware[];
+
   /**
    * Private constructor - use ProtectClient.create() instead.
    */
-  private constructor(config: ProtectClientConfig) {
+  private constructor(config: ProtectClientConfig, credentials: Credentials) {
     this.config = config;
 
-    // Build middleware chain
+    // The credentials build the auth middleware: TPV1-HMAC signing, or an
+    // Authorization: Bearer header (token resolved per request). create()
+    // guarantees a credentials value.
     const middleware: Middleware[] = [
-      createTPV1Middleware(config.apiKey, config.apiSecret),
+      credentials.toMiddleware(),
       ...(config.middleware ?? []),
     ];
+
+    // Kept so close() can empty it: Configuration shares this array instance, and the
+    // auth closure inside it is what actually holds the secret.
+    this.authMiddleware = middleware;
 
     // Create OpenAPI configuration
     this.apiConfiguration = new Configuration({
@@ -511,8 +528,8 @@ export class ProtectClient {
    * ```typescript
    * const client = ProtectClient.create({
    *   host: 'https://protect.example.com',
-   *   apiKey: 'your-api-key',
-   *   apiSecret: 'your-hex-secret',
+   *   credentials: Credentials.apiKey('your-api-key', 'your-hex-secret'),
+   *   superAdminKeysPem: ['-----BEGIN PUBLIC KEY-----...'],
    * });
    * ```
    */
@@ -520,12 +537,6 @@ export class ProtectClient {
     // Validate configuration
     if (!config.host) {
       throw new ConfigurationError("host is required");
-    }
-    if (!config.apiKey) {
-      throw new ConfigurationError("apiKey is required");
-    }
-    if (!config.apiSecret) {
-      throw new ConfigurationError("apiSecret is required");
     }
 
     // Validate host URL
@@ -535,14 +546,13 @@ export class ProtectClient {
       throw new ConfigurationError(`Invalid host URL: ${config.host}`);
     }
 
-    // Validate API secret is valid hex
-    if (!/^[0-9a-fA-F]+$/.test(config.apiSecret)) {
-      throw new ConfigurationError(
-        "apiSecret must be a valid hexadecimal string"
-      );
-    }
+    // Resolve the auth mechanism. The deprecated flat apiKey/apiSecret build a
+    // Credentials (which validates them).
+    const credentials =
+      config.credentials ??
+      Credentials.apiKey(config.apiKey ?? "", config.apiSecret ?? "");
 
-    // Validate superAdminKeysPem is non-empty
+    // SuperAdmin keys are mandatory regardless of the mechanism.
     if (!config.superAdminKeysPem || config.superAdminKeysPem.length === 0) {
       throw new ConfigurationError(
         "superAdminKeysPem is required: at least one SuperAdmin public key must be provided for integrity verification"
@@ -556,7 +566,20 @@ export class ProtectClient {
       );
     }
 
-    return new ProtectClient(config);
+    // A threshold above the number of configured keys can never be satisfied, so
+    // the client would verify nothing and fail at every call site instead of here.
+    // Go and Python reject it at construction; this SDK and Java did not.
+    if (
+      config.minValidSignatures !== undefined &&
+      config.minValidSignatures > config.superAdminKeysPem.length
+    ) {
+      throw new ConfigurationError(
+        `minValidSignatures (${config.minValidSignatures}) cannot exceed ` +
+          `number of SuperAdmin keys (${config.superAdminKeysPem.length})`
+      );
+    }
+
+    return new ProtectClient(config, credentials);
   }
 
   /**
@@ -578,14 +601,24 @@ export class ProtectClient {
     }
     this.closed = true;
 
-    // SECURITY: Best-effort secret wiping
-    // Attempt to overwrite the API secret in the config
-    // Note: JavaScript/Node.js GC may retain copies - this is defense-in-depth
+    // SECURITY: drop every client-held reference to the credential material.
+    //
+    // The secret is captured inside the auth middleware closure, and JavaScript cannot
+    // zero a captured string — so the only thing that helps is making it unreachable.
+    // Emptying this array (the same instance apiConfiguration holds) removes the auth
+    // closure from the client's object graph, leaving it GC-eligible. Overwriting
+    // config.apiSecret alone did NOT do this: under the supported `credentials:` path
+    // that field is undefined, so nothing was released at all.
+    //
+    // A Credentials instance the caller still holds keeps its own copy; that is the
+    // caller's reference to release, not the client's.
+    this.authMiddleware.length = 0;
+
+    // The deprecated flat api-key path stores the secret on the config object too.
     try {
       if (this.config.apiSecret) {
-        // Overwrite the string reference with zeros
-        // Note: JavaScript strings are immutable, so this only replaces the reference
-        // The original string may still exist in memory until GC runs
+        // JavaScript strings are immutable, so this only replaces the reference; the
+        // original may persist until GC runs.
         const secretLength = this.config.apiSecret.length;
         (this.config as { apiSecret: string }).apiSecret = '0'.repeat(secretLength);
       }
@@ -789,9 +822,27 @@ export class ProtectClient {
   }
 
   /**
-   * Low-level Address Whitelisting API access.
+   * Address Whitelisting API — deliberately NOT public.
+   *
+   * SECURITY: a whitelisted address is the destination a transfer is allowed to reach, so
+   * every read must run the 6-step verification against the SuperAdmin-signed rules
+   * container. This raw API offers none of it: `whitelistServiceGetWhitelistedAddress`
+   * and its list siblings return the unverified envelope straight off the wire, so a
+   * caller reaching it gets attacker-controllable `address`/`label`/`memo` values with no
+   * signature check — the same opt-out shape that made `governanceRulesApi` a hole in this
+   * SDK alone. Go keeps the generated client under `internal/`, Python under `_internal`,
+   * and Java never exposes it.
+   *
+   * Use `client.whitelistedAddresses` (WhitelistedAddressService), the one verified reader.
+   *
+   * Named differently from the removed public `addressWhitelistingApi` getter on purpose:
+   * `private` is erased at runtime, so keeping the old name would leave
+   * `"addressWhitelistingApi" in client` true and make the reachability test vacuous.
+   * `governanceApi()` was renamed from `governanceRulesApi` for the same reason.
+   *
+   * @internal
    */
-  get addressWhitelistingApi(): AddressWhitelistingApi {
+  private rawAddressWhitelistingApi(): AddressWhitelistingApi {
     this.ensureOpen();
     if (!this._addressWhitelistingApi) {
       this._addressWhitelistingApi = new AddressWhitelistingApi(
@@ -1019,9 +1070,22 @@ export class ProtectClient {
   }
 
   /**
-   * Low-level Governance Rules API access.
+   * Governance Rules API — deliberately NOT public.
+   *
+   * SECURITY: governance rules are the tenant's security policy, so every read must be
+   * signature-verified against the SuperAdmin keys and every write must go through the
+   * typed container. This raw API offers neither: `ruleServiceGetRules` returns an
+   * unverified DTO, and `ruleServiceUpdateRulesProposal` accepts an arbitrary base64
+   * blob, bypassing the lossless encoder. Exposing it publicly made the
+   * verification-mandatory invariant opt-out in this SDK alone — Go keeps the generated
+   * client under `internal/`, where callers cannot reach it at all.
+   *
+   * Use `client.governanceRules` (GovernanceRuleService), which verifies on read and
+   * encodes the typed DecodedRulesContainer on write.
+   *
+   * @internal
    */
-  get governanceRulesApi(): GovernanceRulesApi {
+  private governanceApi(): GovernanceRulesApi {
     this.ensureOpen();
     if (!this._governanceRulesApi) {
       this._governanceRulesApi = new GovernanceRulesApi(this.apiConfiguration);
@@ -1415,28 +1479,28 @@ export class ProtectClient {
    * Gets the rules container cache for address signature verification.
    *
    * The cache is lazily initialized on first access and shared across services.
-   * It requires GovernanceRulesApi to fetch the rules container.
+   *
+   * Fetches through {@link governanceRules}, NOT the generated API: that service
+   * verifies the SuperAdmin signatures before decoding. Calling
+   * `ruleServiceGetRules` here instead decoded the container unverified and
+   * discarded `rulesSignatures` entirely, so AddressService trusted an HSM public
+   * key nothing had authenticated — anyone able to influence that response could
+   * substitute their own key and have attacker-chosen addresses verify clean.
+   * Go, Java and Python all fetch through their governance service; this SDK was
+   * the outlier.
    *
    * @internal
    */
   private getRulesCache(): RulesContainerCache {
     if (!this._rulesCache) {
-      const governanceApi = this.governanceRulesApi;
+      // Captured once, as the previous implementation captured its API instance.
+      // The provider runs on every cache miss, and `governanceRules` is a lazy
+      // getter that calls ensureOpen() — re-reading it per fetch would make a
+      // closed client surface as a cache-refresh failure instead of at the call
+      // site the caller actually made.
+      const governanceRules = this.governanceRules;
       this._rulesCache = new RulesContainerCache(
-        async () => {
-          // Fetch rules container from governance rules API
-          const response = await governanceApi.ruleServiceGetRules();
-          const rulesBase64 = response.result?.rulesContainer;
-          if (!rulesBase64) {
-            throw new ServerError("No rules container returned from API");
-          }
-          // Decode the rules container from base64
-          // Import the mapper function dynamically to avoid circular deps
-          const { rulesContainerFromBase64 } = await import(
-            "./mappers/governance-rules"
-          );
-          return rulesContainerFromBase64(rulesBase64);
-        },
+        () => governanceRules.getDecodedRulesContainer(),
         this.rulesCacheTtlMs
       );
     }
@@ -1490,8 +1554,10 @@ export class ProtectClient {
     this.ensureOpen();
     if (!this._addressService) {
       // RulesContainerCache is required — address signature verification is mandatory.
-      // The rules container must be verified by SuperAdmin keys before trusting the
-      // HSM public key it contains, so SuperAdmin keys must be configured.
+      // The cache verifies the container's SuperAdmin signatures before anything reads
+      // the HSM public key out of it (see getRulesCache), which is why the keys have to
+      // be configured. This check used to be the ONLY thing standing behind that
+      // sentence: the cache decoded without verifying, so configured keys went unused.
       if (!this.config.superAdminKeysPem || this.config.superAdminKeysPem.length === 0) {
         throw new ConfigurationError(
           "superAdminKeysPem must be configured to use AddressService — " +
@@ -1555,7 +1621,7 @@ export class ProtectClient {
   get assets(): AssetService {
     this.ensureOpen();
     if (!this._assetService) {
-      this._assetService = new AssetService(this.assetsApi);
+      this._assetService = new AssetService(this.assetsApi, this.getRulesCache());
     }
     return this._assetService;
   }
@@ -1800,7 +1866,7 @@ export class ProtectClient {
   get prices(): PriceService {
     this.ensureOpen();
     if (!this._priceService) {
-      this._priceService = new PriceService(this.pricesApi);
+      this._priceService = new PriceService(this.pricesApi, this.getRulesCache());
     }
     return this._priceService;
   }
@@ -1937,7 +2003,7 @@ export class ProtectClient {
           : [];
 
       this._governanceRuleService = new GovernanceRuleService(
-        this.governanceRulesApi,
+        this.governanceApi(),
         {
           superAdminKeys,
           minValidSignatures: this.config.minValidSignatures ?? 1,
@@ -1957,7 +2023,7 @@ export class ProtectClient {
     this.ensureOpen();
     if (!this._whitelistedAddressService) {
       this._whitelistedAddressService = WhitelistedAddressService.withVerification(
-        this.addressWhitelistingApi,
+        this.rawAddressWhitelistingApi(),
         {
           superAdminKeysPem: this.config.superAdminKeysPem,
           minValidSignatures: this.config.minValidSignatures ?? 1,

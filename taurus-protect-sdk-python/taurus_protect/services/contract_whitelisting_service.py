@@ -2,41 +2,15 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, List, Optional
 
 from taurus_protect._internal.openapi.exceptions import ApiException
-from taurus_protect.models.pagination import Pagination
 from taurus_protect.services._base import BaseService
 
 if TYPE_CHECKING:
     from taurus_protect._internal.openapi.api.contract_whitelisting_api import (
         ContractWhitelistingApi,
     )
-
-
-class WhitelistedContract:
-    """A whitelisted smart contract."""
-
-    def __init__(
-        self,
-        id: str,
-        address: Optional[str] = None,
-        name: Optional[str] = None,
-        blockchain: Optional[str] = None,
-        network: Optional[str] = None,
-        abi: Optional[str] = None,
-        status: Optional[str] = None,
-        created_at: Optional[datetime] = None,
-    ):
-        self.id = id
-        self.address = address
-        self.name = name
-        self.blockchain = blockchain
-        self.network = network
-        self.abi = abi
-        self.status = status
-        self.created_at = created_at
 
 
 class ContractWhitelistingService(BaseService):
@@ -54,61 +28,6 @@ class ContractWhitelistingService(BaseService):
     ) -> None:
         super().__init__(api_client)
         self._api = contract_whitelisting_api
-
-    def get(self, contract_id: int) -> WhitelistedContract:
-        """Get a whitelisted contract by ID."""
-        if contract_id <= 0:
-            raise ValueError("contract_id must be positive")
-
-        try:
-            reply = self._api.whitelist_service_get_whitelisted_contract(str(contract_id))
-            result = reply.result
-            if result is None:
-                from taurus_protect.errors import NotFoundError
-
-                raise NotFoundError(f"Whitelisted contract {contract_id} not found")
-            return self._map_contract_from_dto(result)
-        except Exception as e:
-            if isinstance(e, ApiException):
-                raise self._handle_error(e)
-            raise
-
-    def list(
-        self,
-        blockchain: Optional[str] = None,
-        network: Optional[str] = None,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> Tuple[List[WhitelistedContract], Optional[Pagination]]:
-        """List whitelisted contracts."""
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
-
-        try:
-            reply = self._api.whitelist_service_get_whitelisted_contracts(
-                blockchain=blockchain,
-                network=network,
-                limit=str(limit),
-                offset=str(offset),
-            )
-
-            contracts: List[WhitelistedContract] = []
-            if reply.result:
-                for dto in reply.result:
-                    contracts.append(self._map_contract_from_dto(dto))
-
-            pagination = self._extract_pagination(
-                getattr(reply, "total_items", None),
-                offset,
-                limit,
-            )
-            return contracts, pagination
-        except Exception as e:
-            if isinstance(e, ApiException):
-                raise self._handle_error(e)
-            raise
 
     def create(
         self,
@@ -166,6 +85,11 @@ class ContractWhitelistingService(BaseService):
 
         Requires a cryptographic signature computed over the metadata hashes
         of the contracts being approved.
+
+        .. deprecated::
+            The signature is an opaque blob over hashes nothing verified, so the caller
+            cannot know what they signed. Use ``WhitelistedAssetService.approve``, which
+            re-reads and verifies the rows first.
 
         Args:
             contract_ids: List of contract IDs to approve.
@@ -283,16 +207,3 @@ class ContractWhitelistingService(BaseService):
                     return None
                 raise self._handle_error(e)
             raise
-
-    @staticmethod
-    def _map_contract_from_dto(dto: Any) -> WhitelistedContract:
-        return WhitelistedContract(
-            id=str(getattr(dto, "id", "")),
-            address=getattr(dto, "address", None),
-            name=getattr(dto, "name", None),
-            blockchain=getattr(dto, "blockchain", None),
-            network=getattr(dto, "network", None),
-            abi=getattr(dto, "abi", None),
-            status=getattr(dto, "status", None),
-            created_at=getattr(dto, "created_at", None) or getattr(dto, "createdAt", None),
-        )

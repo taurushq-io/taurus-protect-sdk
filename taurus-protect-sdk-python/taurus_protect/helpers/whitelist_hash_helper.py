@@ -32,12 +32,13 @@ This ensures:
 
 from __future__ import annotations
 
+import hmac
 import json
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from taurus_protect.crypto.hashing import calculate_hex_hash
-from taurus_protect.errors import WhitelistError
+from taurus_protect.errors import IntegrityError, WhitelistError
 from taurus_protect.models.whitelisted_address import (
     InternalAddress,
     InternalWallet,
@@ -317,3 +318,140 @@ def _parse_linked_wallets(arr: List[Dict[str, Any]]) -> List[InternalWallet]:
                 )
             )
     return result
+
+
+# Maximum size of a signed payload before it is parsed.
+#
+# The payload is hash-checked in step 1 but not AUTHENTICATED until step 5's
+# signatures verify, so anything parsed in between is still attacker-influenced.
+# A generous ceiling that only stops a hostile response consuming memory.
+MAX_PAYLOAD_BYTES = 1 << 20
+
+
+def resolve_rule_key(
+    payload_as_string: Optional[str],
+    dto_blockchain: Optional[str],
+    dto_network: Optional[str],
+) -> Tuple[str, str]:
+    """
+    Return the (blockchain, network) pair that selects the governance rules.
+
+    Taken from the SIGNED payload rather than the surrounding DTO. The DTO is
+    free-floating: nothing binds it to the signatures, so a response that set
+    blockchain to empty would steer verification to the global-default rule tier,
+    which is broader than the rule the entity belongs to. The payload pair is at
+    least hash-bound to the material step 5 checks.
+
+    Addresses name the chain ``currency``; assets name it ``blockchain``. Both are
+    accepted so one helper serves both flows.
+
+    The chain is always in the payload. The NETWORK is not: governance rules carry a
+    per-rule ``includeNetworkInPayload`` flag, and real signed payloads omit
+    ``network`` when it is off. Requiring it would reject correctly-signed
+    addresses, so the DTO network is used only when the payload has none.
+
+    Args:
+        payload_as_string: The signed payload.
+        dto_blockchain: The blockchain the response claims, may be None or empty.
+        dto_network: The network the response claims, may be None or empty.
+
+    Returns:
+        The (blockchain, network) pair to look rules up with.
+
+    Raises:
+        IntegrityError: If the payload omits the chain -- never treated as a
+            wildcard, because an empty value matches every tier -- or if the
+            payload and the DTO disagree on a field the payload does carry.
+    """
+    if not payload_as_string:
+        raise IntegrityError("cannot resolve governance rule key: payload is empty")
+    if len(payload_as_string) > MAX_PAYLOAD_BYTES:
+        raise IntegrityError(
+            f"cannot resolve governance rule key: payload exceeds {MAX_PAYLOAD_BYTES} bytes"
+        )
+
+    try:
+        payload = json.loads(payload_as_string)
+    except (json.JSONDecodeError, TypeError) as exc:
+        raise IntegrityError(f"cannot resolve governance rule key: {exc}") from exc
+
+    if not isinstance(payload, dict):
+        raise IntegrityError("cannot resolve governance rule key: payload is not an object")
+
+    blockchain = payload.get("blockchain") or payload.get("currency") or ""
+    network = payload.get("network") or ""
+
+    if not blockchain:
+        raise IntegrityError(
+            "signed payload does not carry a blockchain; "
+            "refusing to fall back to a wildcard rule"
+        )
+
+    # Only reachable when include_network_in_payload is off for this rule.
+    network_from_payload = bool(network)
+    if not network_from_payload:
+        network = dto_network or ""
+
+    if dto_blockchain and dto_blockchain.lower() != blockchain.lower():
+        raise IntegrityError(
+            f"blockchain disagrees between the signed payload ({blockchain}) "
+            f"and the response ({dto_blockchain})"
+        )
+    if network_from_payload and dto_network and dto_network.lower() != network.lower():
+        raise IntegrityError(
+            f"network disagrees between the signed payload ({network}) "
+            f"and the response ({dto_network})"
+        )
+
+    return blockchain, network
+
+
+def contains_hash(hashes: Optional[List[str]], target: str) -> bool:
+    """
+    Check whether one signature's hashes list covers ``target``.
+
+    The per-signature half of the pair; :func:`verify_hash_coverage` asks the same
+    question across every signature. These two are the ONLY places this SDK compares
+    hash strings. The verifiers used to carry their own copies, and they had drifted:
+    the address copy returned on the first match while the asset copy did not.
+
+    Constant-time, and the loop does not break early.
+
+    Args:
+        hashes: The hashes a signature covers, may be None.
+        target: The hash to look for.
+
+    Returns:
+        True when the list covers the hash.
+    """
+    if not hashes or not target:
+        return False
+
+    found = False
+    for h in hashes:
+        if h is not None and hmac.compare_digest(target, h):
+            found = True
+            # No break: returning on a match would leak its position through timing.
+    return found
+
+
+def verify_hash_coverage(metadata_hash: str, signatures) -> bool:
+    """
+    Check whether the metadata hash is covered by at least one signature.
+
+    Args:
+        metadata_hash: The hash to find.
+        signatures: Signature entries, each exposing ``hashes``.
+
+    Returns:
+        True when at least one signature covers the hash.
+    """
+    if not metadata_hash or not signatures:
+        return False
+
+    found = False
+    for sig in signatures:
+        if contains_hash(getattr(sig, "hashes", None), metadata_hash):
+            found = True
+            # No break, as above.
+    return found

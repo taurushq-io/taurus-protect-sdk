@@ -117,6 +117,15 @@ export interface RequestMetadata {
   readonly hash: string;
   /** The raw payload used for hash computation */
   readonly payloadAsString: string | undefined;
+  /**
+   * True when `hash` was checked against sha256(payloadAsString).
+   *
+   * This is CONSISTENCY, not authenticity: it proves the payload string was not
+   * altered without also updating the hash, which is the attack the note below
+   * describes. It does not prove the pair came from Taurus-PROTECT, since requests
+   * carry no client-verifiable signature.
+   */
+  readonly hashVerified?: boolean;
   // SECURITY: payload field intentionally omitted - use payloadAsString only.
   // Use JSON.parse(payloadAsString) for secure data extraction.
 }

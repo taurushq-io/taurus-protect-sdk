@@ -18,6 +18,21 @@ type WhitelistedAsset struct {
 	Blockchain string `json:"blockchain,omitempty"`
 	// Network is the network type (e.g., "mainnet", "testnet").
 	Network string `json:"network,omitempty"`
+	// ContractAddress is the on-chain address of the token contract.
+	//
+	// This and the four fields below identify the asset and are sourced ONLY from
+	// the cryptographically verified payload — never from the DTO. They did not
+	// exist on this type at all, which left a Go caller unable to obtain the
+	// verified identity of an asset while Java and TypeScript both exposed it.
+	ContractAddress string `json:"contract_address,omitempty"`
+	// Name is the token name (e.g., "USD Coin").
+	Name string `json:"name,omitempty"`
+	// Symbol is the token symbol (e.g., "USDC").
+	Symbol string `json:"symbol,omitempty"`
+	// Decimals is the number of decimal places the token uses.
+	Decimals int32 `json:"decimals,omitempty"`
+	// TokenID identifies a specific token within a contract (NFTs).
+	TokenID string `json:"token_id,omitempty"`
 	// Rule is the governance rule applied.
 	Rule string `json:"rule,omitempty"`
 	// RulesContainer is the rules container ID.
@@ -207,6 +222,17 @@ type ListWhitelistedAssetsOptions struct {
 	IncludeForApproval bool
 	// KindTypes filters by contract kind type ("nft" or "token").
 	KindTypes []string
+	// IDs filters by specific whitelisted asset IDs.
+	IDs []string
+}
+
+// ListWhitelistedAssetsForApprovalOptions holds filters for listing assets awaiting
+// approval. The endpoint accepts only these three.
+type ListWhitelistedAssetsForApprovalOptions struct {
+	// Limit is the maximum number of assets to return (max 100).
+	Limit int64
+	// Offset is the number of assets to skip.
+	Offset int64
 	// IDs filters by specific whitelisted asset IDs.
 	IDs []string
 }

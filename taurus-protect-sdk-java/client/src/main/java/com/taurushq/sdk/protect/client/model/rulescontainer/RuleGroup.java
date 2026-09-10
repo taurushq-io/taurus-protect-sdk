@@ -15,7 +15,7 @@ import java.util.List;
  * @see GroupThreshold
  * @see DecodedRulesContainer
  */
-public class RuleGroup {
+public class RuleGroup extends RulesNodeWithProperties {
 
     /**
      * Unique identifier for the group within the rules container.

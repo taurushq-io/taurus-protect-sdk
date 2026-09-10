@@ -1,9 +1,14 @@
 package model
 
 import (
+	"crypto/subtle"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"strconv"
 	"time"
+
+	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/crypto"
 )
 
 // RequestStatus represents the status of a transaction request.
@@ -240,6 +245,17 @@ type Request struct {
 }
 
 // RequestMetadata contains metadata about a request.
+//
+//	PayloadAsString ──sha256──▶ compare with Hash ──┬─ mismatch ─▶ IntegrityError
+//	                                                └─ match ────▶ parse ──▶ entries
+//	                                                                        HashVerified
+//
+//	accessors (GetSourceAddress, GetAmount, …) read `entries` ONLY.
+//	No verification ⇒ empty entries ⇒ zero values. That is the guarantee.
+//
+// HashVerified is ADVISORY, not a gate for signing. It is a serialized field, so a
+// RequestMetadata decoded from JSON can claim true; RequestService.ApproveRequests
+// therefore calls VerifyAndMaterialise again rather than reading the flag.
 type RequestMetadata struct {
 	// Hash is the metadata hash.
 	Hash string `json:"hash,omitempty"`
@@ -247,6 +263,92 @@ type RequestMetadata struct {
 	// See ParsePayloadEntries() for secure data extraction from verified source.
 	// PayloadAsString is the payload serialized as a string.
 	PayloadAsString string `json:"payload_as_string,omitempty"`
+
+	// entries is the parsed payload. Unexported on purpose: only
+	// VerifyAndMaterialise sets it, so no code path can produce structured data
+	// without having verified the hash first. Exporting it would make that a rule
+	// someone has to remember instead of something the compiler enforces.
+	entries []PayloadEntry
+
+	// HashVerified reports that Hash matched sha256(PayloadAsString).
+	//
+	// ADVISORY only: the signing path re-verifies rather than trusting this, because
+	// the field is serialized and a decoded RequestMetadata can claim true.
+	//
+	// This is CONSISTENCY, not authenticity: it proves the payload string was not
+	// altered without also updating the hash, which is the attack ParsePayloadEntries
+	// documents. It does NOT prove the pair came from Taurus-PROTECT — requests carry
+	// no client-verifiable signature, so an interceptor rewriting both fields still
+	// passes. Named for exactly what it proves.
+	HashVerified bool `json:"hash_verified,omitempty"`
+}
+
+// VerifyAndMaterialise checks Hash against sha256(PayloadAsString) and, only on
+// success, parses the verified string into entries.
+//
+// The two steps are one function deliberately. They used to be separate — a
+// verifyRequestHash in the service layer, and a lazy parse in every accessor — and
+// the list paths simply never called the first, so unverified payloads reached
+// callers with no error and no flag. Keeping them fused is what stops that
+// recurring.
+//
+// Metadata carrying neither Hash nor PayloadAsString is not an error: a request in
+// an early status has no metadata yet. It stays unverified, with no entries.
+func (m *RequestMetadata) VerifyAndMaterialise() error {
+	if m == nil || (m.Hash == "" && m.PayloadAsString == "") {
+		return nil
+	}
+
+	// A hash with no payload is the dangerous shape: there is nothing to check it
+	// against, so passing would mean accepting whatever the response claimed.
+	if m.PayloadAsString == "" {
+		return &IntegrityError{
+			Message: "request hash verification failed: hash exists but payload is missing",
+		}
+	}
+	if m.Hash == "" {
+		return &IntegrityError{
+			Message: "request hash verification failed: payload present but hash is missing",
+		}
+	}
+
+	// No `computed == ""` guard: CalculateHexHash always returns 64 hex characters,
+	// so that arm was unreachable.
+	computed := crypto.CalculateHexHash(m.PayloadAsString)
+	// subtle directly, not helper.ConstantTimeCompare: helper imports model, so the
+	// reverse would cycle. The helper is a one-line wrapper over this anyway.
+	if subtle.ConstantTimeCompare([]byte(computed), []byte(m.Hash)) != 1 {
+		return &IntegrityError{
+			Message: fmt.Sprintf("request hash verification failed: computed=%s, provided=%s", computed, m.Hash),
+		}
+	}
+
+	entries, err := parsePayloadEntries(m.PayloadAsString)
+	if err != nil {
+		// The hash matched, so the string is authentic-as-received but malformed.
+		// Surfacing it beats the previous behaviour of swallowing the error and
+		// returning an empty field, which reads identically to "not present".
+		return &IntegrityError{
+			Message: fmt.Sprintf("request payload is verified but unparseable: %v", err),
+		}
+	}
+
+	m.entries = entries
+	m.HashVerified = true
+	return nil
+}
+
+// parsePayloadEntries decodes the payload array. Shared by VerifyAndMaterialise and
+// the ParsePayloadEntries fallback.
+func parsePayloadEntries(payload string) ([]PayloadEntry, error) {
+	if payload == "" {
+		return nil, nil
+	}
+	var entries []PayloadEntry
+	if err := json.Unmarshal([]byte(payload), &entries); err != nil {
+		return nil, err
+	}
+	return entries, nil
 }
 
 // RequestAttribute represents a custom attribute on a request.
@@ -295,10 +397,21 @@ type ListRequestsOptions struct {
 	PageSize int
 	// Cursor is the base64-encoded cursor for the current page (from RequestResult.NextCursor).
 	Cursor string
-	// Status filters by request status.
-	Status string
+	// Statuses filters by request status. The endpoint takes a list; a single
+	// status is a list of one.
+	Statuses []string
+	// IDs filters to specific Taurus request IDs.
+	IDs []string
+	// Types filters by request type.
+	Types []string
+	// ExternalRequestIDs filters by the caller-supplied idempotency key.
+	ExternalRequestIDs []string
 	// Currency filters by currency.
 	Currency string
+	// FromDate filters by request creation date (inclusive lower bound).
+	FromDate *time.Time
+	// ToDate filters by request creation date (inclusive upper bound).
+	ToDate *time.Time
 }
 
 // RequestResult contains the result of a paginated request list query.
@@ -309,6 +422,10 @@ type RequestResult struct {
 	NextCursor string
 	// HasNext indicates whether more pages are available.
 	HasNext bool
+	// ExcludedUnverified names requests dropped from Requests because their
+	// metadata failed integrity verification. A shortened list must never be
+	// mistaken for a complete one, so the omission is reported rather than silent.
+	ExcludedUnverified []string
 }
 
 // CreateIncomingRequest contains parameters for creating an incoming request from an exchange.
@@ -437,16 +554,42 @@ func (v *PayloadEntryValue) GetFloat64(keys ...string) float64 {
 // An attacker intercepting API responses could modify the payload object
 // (e.g., change a destination address) while leaving payloadAsString unchanged.
 // The hash would still verify, but the client would extract tampered data.
+// Metadata the SDK returned carries entries materialised by VerifyAndMaterialise,
+// and only those carry the guarantee above. The fallback parse exists for metadata
+// a caller built by hand; it verifies nothing, and is the one remaining route to
+// unverified structure. The security-sensitive accessors below do NOT use it.
 func (m *RequestMetadata) ParsePayloadEntries() ([]PayloadEntry, error) {
-	if m == nil || m.PayloadAsString == "" {
+	if m == nil {
 		return nil, nil
 	}
-
-	var entries []PayloadEntry
-	if err := json.Unmarshal([]byte(m.PayloadAsString), &entries); err != nil {
-		return nil, err
+	if len(m.entries) > 0 {
+		return m.entries, nil
 	}
-	return entries, nil
+	return parsePayloadEntries(m.PayloadAsString)
+}
+
+// ErrMetadataUnverified is returned by the payload accessors when the metadata
+// carries a payload that verification has not cleared.
+//
+// It exists so a caller can tell "this field is not in the payload" (empty value,
+// nil error) from "I could not verify this payload at all" (this error). Those are
+// different facts and returning "" for both let a verification failure read as an
+// absent source address, which is a decision a caller might act on.
+var ErrMetadataUnverified = errors.New("request metadata payload has not been verified")
+
+// requireVerified reports whether the payload accessors may serve data.
+//
+// Metadata with no payload at all is not an error: a request in an early status
+// has nothing to verify and nothing to read. Metadata WITH a payload that was
+// never verified is the dangerous case, and the only one that errors.
+func (m *RequestMetadata) requireVerified() error {
+	if m == nil {
+		return nil
+	}
+	if !m.HashVerified && m.PayloadAsString != "" {
+		return ErrMetadataUnverified
+	}
+	return nil
 }
 
 // GetPayloadValue retrieves a value from the payload by key.
@@ -456,11 +599,13 @@ func (m *RequestMetadata) ParsePayloadEntries() ([]PayloadEntry, error) {
 // extracts data from PayloadAsString (the cryptographically verified source).
 // See ParsePayloadEntries() documentation for security rationale.
 func (m *RequestMetadata) GetPayloadValue(key string) *PayloadEntryValue {
-	entries, err := m.ParsePayloadEntries()
-	if err != nil || entries == nil {
+	// entries ONLY — never ParsePayloadEntries. Reading the fallback here would let
+	// every accessor below return data from metadata nobody verified, which is the
+	// defect this design exists to make impossible.
+	if m == nil {
 		return nil
 	}
-	for _, entry := range entries {
+	for _, entry := range m.entries {
 		if entry.Key == key {
 			return NewPayloadEntryValue(entry.Value)
 		}
@@ -468,52 +613,65 @@ func (m *RequestMetadata) GetPayloadValue(key string) *PayloadEntryValue {
 	return nil
 }
 
-// GetSourceAddress extracts the source blockchain address from the metadata payload.
-// Returns an empty string if the source address is not found.
-func (m *RequestMetadata) GetSourceAddress() string {
+// GetSourceAddress extracts the source blockchain address from the verified payload.
+// Returns an empty string with a nil error when the payload has no source address,
+// and ErrMetadataUnverified when the payload was never verified.
+func (m *RequestMetadata) GetSourceAddress() (string, error) {
+	if err := m.requireVerified(); err != nil {
+		return "", err
+	}
 	val := m.GetPayloadValue("source")
 	if val == nil {
-		return ""
+		return "", nil
 	}
-	return val.GetString("payload", "address")
+	return val.GetString("payload", "address"), nil
 }
 
-// GetDestinationAddress extracts the destination blockchain address from the metadata payload.
-// Returns an empty string if the destination address is not found.
-func (m *RequestMetadata) GetDestinationAddress() string {
+// GetDestinationAddress extracts the destination blockchain address from the verified
+// payload. See GetSourceAddress for the empty-versus-unverified distinction.
+func (m *RequestMetadata) GetDestinationAddress() (string, error) {
+	if err := m.requireVerified(); err != nil {
+		return "", err
+	}
 	val := m.GetPayloadValue("destination")
 	if val == nil {
-		return ""
+		return "", nil
 	}
-	return val.GetString("payload", "address")
+	return val.GetString("payload", "address"), nil
 }
 
 // GetMetadataCurrency extracts the currency from the metadata payload.
 // Returns an empty string if the currency is not found.
-func (m *RequestMetadata) GetMetadataCurrency() string {
+func (m *RequestMetadata) GetMetadataCurrency() (string, error) {
+	if err := m.requireVerified(); err != nil {
+		return "", err
+	}
 	val := m.GetPayloadValue("currency")
 	if val == nil {
-		return ""
+		return "", nil
 	}
 	// Currency value is directly a string, not a nested object
 	if s, ok := val.raw.(string); ok {
-		return s
+		return s, nil
 	}
-	return ""
+	return "", nil
 }
 
 // GetMetadataRequestID extracts the request ID from the metadata payload.
 // Returns 0 if the request ID is not found.
-func (m *RequestMetadata) GetMetadataRequestID() int64 {
+func (m *RequestMetadata) GetMetadataRequestID() (int64, error) {
+	if err := m.requireVerified(); err != nil {
+		return 0, err
+	}
 	val := m.GetPayloadValue("request_id")
 	if val == nil {
-		return 0
+		return 0, nil
 	}
 	// Request ID is directly a number, not a nested object
 	if f, ok := val.raw.(float64); ok {
-		return int64(f)
+		return int64(f), nil
 	}
-	return 0
+	return 0, nil
 }
 
 // RequestMetadataAmount contains amount details from the metadata payload.
@@ -550,14 +708,17 @@ func jsonValueToString(v interface{}) string {
 
 // GetAmount extracts the amount details from the metadata payload.
 // Returns nil if the amount is not found.
-func (m *RequestMetadata) GetAmount() *RequestMetadataAmount {
+func (m *RequestMetadata) GetAmount() (*RequestMetadataAmount, error) {
+	if err := m.requireVerified(); err != nil {
+		return nil, err
+	}
 	val := m.GetPayloadValue("amount")
 	if val == nil {
-		return nil
+		return nil, nil
 	}
 	v := val.AsMap()
 	if v == nil {
-		return nil
+		return nil, nil
 	}
 
 	amount := &RequestMetadataAmount{}
@@ -580,5 +741,5 @@ func (m *RequestMetadata) GetAmount() *RequestMetadataAmount {
 		amount.CurrencyTo = s
 	}
 
-	return amount
+	return amount, nil
 }

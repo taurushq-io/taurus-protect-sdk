@@ -296,16 +296,16 @@ func TestCurrencyInfoFromDTO(t *testing.T) {
 
 func TestCurrencyInfoFromDTO_BooleanFields(t *testing.T) {
 	tests := []struct {
-		name      string
-		isToken   *bool
-		isERC20   *bool
-		isNFT     *bool
-		isFiat    *bool
-		enabled   *bool
-		wantToken bool
-		wantERC20 bool
-		wantNFT   bool
-		wantFiat  bool
+		name        string
+		isToken     *bool
+		isERC20     *bool
+		isNFT       *bool
+		isFiat      *bool
+		enabled     *bool
+		wantToken   bool
+		wantERC20   bool
+		wantNFT     bool
+		wantFiat    bool
 		wantEnabled bool
 	}{
 		{

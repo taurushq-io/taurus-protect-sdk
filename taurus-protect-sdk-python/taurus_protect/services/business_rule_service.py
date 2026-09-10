@@ -165,3 +165,32 @@ class BusinessRuleService(BaseService):
             current_page=current_page,
             page_request=page_request,
         )
+
+    def update_transactions_enabled(self, enabled: bool) -> None:
+        """Enable or disable transaction processing for the tenant.
+
+        This is the transactions-enabled business rule — the kill switch that
+        tg-protect-mcpd drives — so it must exist in every SDK. Peer of Go
+        BusinessRuleService.UpdateTransactionsEnabled, Java updateTransactionsEnabled
+        and TS updateTransactionsEnabled.
+
+        Args:
+            enabled: True to allow transactions, False to halt them.
+
+        Raises:
+            APIError: If the API request fails.
+        """
+        from taurus_protect._internal.openapi.models.tgvalidatord_update_transactions_enabled_business_rule_request import (  # noqa: E501
+            TgvalidatordUpdateTransactionsEnabledBusinessRuleRequest,
+        )
+
+        body = TgvalidatordUpdateTransactionsEnabledBusinessRuleRequest(enabled=enabled)
+
+        try:
+            self._api.rule_service_update_transactions_enabled_business_rule(body=body)
+        except Exception as e:
+            from taurus_protect.errors import APIError
+
+            if isinstance(e, (APIError, ValueError)):
+                raise
+            raise self._handle_error(e) from e

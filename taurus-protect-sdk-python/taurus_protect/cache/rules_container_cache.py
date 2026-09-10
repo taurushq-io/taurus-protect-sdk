@@ -108,15 +108,24 @@ class RulesContainerCache:
         # Network I/O happens OUTSIDE the lock to prevent deadlocks
         try:
             new_container = self._fetch_rules_container()
-        finally:
+        except BaseException:
+            # Nothing to publish, but the single-flight slot must be released or
+            # every waiter blocks forever on a fetch that will never complete.
             with self._condition:
                 self._fetching = False
                 self._condition.notify_all()
+            raise
 
-        # Update cache under lock
+        # Publish BEFORE clearing _fetching and waking anyone. A waiter that wakes to
+        # an expired cache with _fetching already false concludes no fetch is in
+        # flight and starts its own — N fetches instead of one, which is precisely
+        # what this class exists to prevent. Go publishes c.rules before
+        # close(c.fetchCh) and Java assigns before notifyAll() for the same reason.
         with self._condition:
             self._cached_container = new_container
             self._cache_timestamp_mono = time.monotonic()
+            self._fetching = False
+            self._condition.notify_all()
             return new_container
 
     def invalidate(self) -> None:
@@ -137,15 +146,18 @@ class RulesContainerCache:
         # Network I/O happens OUTSIDE the lock
         try:
             new_container = self._fetch_rules_container()
-        finally:
+        except BaseException:
             with self._condition:
                 self._fetching = False
                 self._condition.notify_all()
+            raise
 
-        # Update cache under lock
+        # Publish before waking waiters — see get_decoded_rules_container.
         with self._condition:
             self._cached_container = new_container
             self._cache_timestamp_mono = time.monotonic()
+            self._fetching = False
+            self._condition.notify_all()
 
     def is_cache_valid(self) -> bool:
         """

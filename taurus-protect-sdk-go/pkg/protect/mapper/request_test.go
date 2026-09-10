@@ -76,12 +76,10 @@ func TestRequestFromDTO(t *testing.T) {
 func TestRequestFromDTO_WithMetadata(t *testing.T) {
 	hash := "abc123"
 	payloadString := `{"key":"value"}`
-	payload := map[string]interface{}{"key": "value"}
 	dto := &openapi.TgvalidatordRequest{
 		Metadata: &openapi.TgvalidatordMetadata{
 			Hash:            &hash,
 			PayloadAsString: &payloadString,
-			Payload:         payload,
 		},
 	}
 
@@ -199,11 +197,9 @@ func TestMetadataFromDTO(t *testing.T) {
 			dto: func() *openapi.TgvalidatordMetadata {
 				hash := "hash123"
 				payloadAsString := `{"data":"test"}`
-				payload := map[string]interface{}{"data": "test"}
 				return &openapi.TgvalidatordMetadata{
 					Hash:            &hash,
 					PayloadAsString: &payloadAsString,
-					Payload:         payload,
 				}
 			}(),
 		},

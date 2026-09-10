@@ -125,6 +125,39 @@ class TestList:
 
         assert len(transactions) == 1
 
+    def test_list_forwards_blockchain_and_network_filters(self) -> None:
+        """The API accepts blockchain and network on GetTransactions, and the Go and TS
+        SDKs expose both. This SDK hardcoded them to None, so the filters were
+        unreachable and a caller silently got every chain back."""
+        service, api = self._make_service()
+
+        reply = MagicMock()
+        reply.result = []
+        reply.total_items = "0"
+        api.transaction_service_get_transactions.return_value = reply
+
+        with patch(
+            "taurus_protect.services.transaction_service.map_transactions",
+            return_value=[],
+        ):
+            service.list(blockchain="ETH", network="mainnet")
+
+        kwargs = api.transaction_service_get_transactions.call_args.kwargs
+        assert kwargs["blockchain"] == "ETH"
+        assert kwargs["network"] == "mainnet"
+
+    def test_export_csv_forwards_blockchain_and_network_filters(self) -> None:
+        service, api = self._make_service()
+        reply = MagicMock()
+        reply.result = "id,amount\n"
+        api.transaction_service_export_transactions.return_value = reply
+
+        service.export_csv(blockchain="ETH", network="mainnet")
+
+        kwargs = api.transaction_service_export_transactions.call_args.kwargs
+        assert kwargs["blockchain"] == "ETH"
+        assert kwargs["network"] == "mainnet"
+
     def test_list_raises_for_invalid_limit(self) -> None:
         service, _ = self._make_service()
 

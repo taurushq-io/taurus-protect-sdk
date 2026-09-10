@@ -17,7 +17,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  * @see RuleLine
  * @see TransactionRules
  */
-public class RuleColumn {
+public class RuleColumn extends RulesNode {
 
     /**
      * The column type (e.g., "RuleSource", "RuleDestination", "RuleFiatAmount").

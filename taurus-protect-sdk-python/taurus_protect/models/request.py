@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from taurus_protect.errors import UnverifiedMetadataError
 from taurus_protect.models.currency import Currency
 
 
@@ -156,6 +157,16 @@ class RequestMetadata(BaseModel):
 
     hash: Optional[str] = Field(default=None, description="SHA-256 hash of payload_as_string")
     payload_as_string: Optional[str] = Field(default=None, description="Verified JSON payload")
+    hash_verified: bool = Field(
+        default=False,
+        description=(
+            "True when hash was checked against sha256(payload_as_string). This is "
+            "CONSISTENCY, not authenticity: it proves the payload string was not "
+            "altered without also updating the hash, which is the attack described "
+            "above. It does not prove the pair came from Taurus-PROTECT, since "
+            "requests carry no client-verifiable signature."
+        ),
+    )
 
     model_config = {"frozen": True}
 
@@ -169,8 +180,29 @@ class RequestMetadata(BaseModel):
         except (json.JSONDecodeError, TypeError):
             return []
 
+    def _require_verified(self) -> None:
+        """
+        Refuse to serve payload data that verification has not cleared.
+
+        Exists so a caller can tell "this field is not in the payload" (None) from
+        "I could not verify this payload at all" (UnverifiedMetadataError). Those are
+        different facts, and returning None for both let a verification failure read
+        as an absent source address.
+
+        Metadata with no payload is not an error: a request in an early status has
+        nothing to verify and nothing to read.
+
+        Raises:
+            UnverifiedMetadataError: If a payload is present but unverified.
+        """
+        if not self.hash_verified and self.payload_as_string:
+            raise UnverifiedMetadataError(
+                "request metadata payload has not been verified"
+            )
+
     def _get_payload_value(self, key: str) -> Any:
-        """Get the value for a given key from payload entries."""
+        """Get the value for a given key from the verified payload entries."""
+        self._require_verified()
         for entry in self._parse_payload_entries():
             if isinstance(entry, dict) and entry.get("key") == key:
                 return entry.get("value")

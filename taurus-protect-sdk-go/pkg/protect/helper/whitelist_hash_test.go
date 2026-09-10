@@ -1,16 +1,19 @@
 package helper
 
 import (
+	"errors"
 	"strings"
 	"testing"
+
+	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/model"
 )
 
 func TestComputeLegacyHashes(t *testing.T) {
 	tests := []struct {
-		name           string
-		payload        string
-		expectHashes   int
-		containsCheck  string // If set, at least one hash should be computed from a payload containing this string removed
+		name          string
+		payload       string
+		expectHashes  int
+		containsCheck string // If set, at least one hash should be computed from a payload containing this string removed
 	}{
 		{
 			name:         "empty payload",
@@ -23,21 +26,21 @@ func TestComputeLegacyHashes(t *testing.T) {
 			expectHashes: 0,
 		},
 		{
-			name:           "with contract type",
-			payload:        `{"currency":"ETH","address":"0x123","contractType":"ERC20"}`,
-			expectHashes:   1,
-			containsCheck:  "contractType",
+			name:          "with contract type",
+			payload:       `{"currency":"ETH","address":"0x123","contractType":"ERC20"}`,
+			expectHashes:  1,
+			containsCheck: "contractType",
 		},
 		{
-			name:           "with labels in linked addresses",
-			payload:        `{"currency":"ETH","linkedInternalAddresses":[{"id":1,"label":"test"}]}`,
-			expectHashes:   1,
-			containsCheck:  `"label"`,
+			name:          "with labels in linked addresses",
+			payload:       `{"currency":"ETH","linkedInternalAddresses":[{"id":1,"label":"test"}]}`,
+			expectHashes:  1,
+			containsCheck: `"label"`,
 		},
 		{
-			name:          "with both contract type and labels",
-			payload:       `{"currency":"ETH","contractType":"ERC20","linkedInternalAddresses":[{"id":1,"label":"test"}]}`,
-			expectHashes:  3, // contractType only, labels only, both removed
+			name:         "with both contract type and labels",
+			payload:      `{"currency":"ETH","contractType":"ERC20","linkedInternalAddresses":[{"id":1,"label":"test"}]}`,
+			expectHashes: 3, // contractType only, labels only, both removed
 		},
 	}
 
@@ -276,10 +279,10 @@ func TestLabelInObjectPattern(t *testing.T) {
 
 func TestComputeAssetLegacyHashes(t *testing.T) {
 	tests := []struct {
-		name           string
-		payload        string
-		expectHashes   int
-		containsCheck  string // If set, at least one hash should be computed from a payload containing this string removed
+		name          string
+		payload       string
+		expectHashes  int
+		containsCheck string // If set, at least one hash should be computed from a payload containing this string removed
 	}{
 		{
 			name:         "empty payload",
@@ -292,22 +295,22 @@ func TestComputeAssetLegacyHashes(t *testing.T) {
 			expectHashes: 0,
 		},
 		{
-			name:           "with isNFT only",
-			payload:        `{"currency":"ETH","address":"0x123","isNFT":true}`,
-			expectHashes:   1,
-			containsCheck:  "isNFT",
+			name:          "with isNFT only",
+			payload:       `{"currency":"ETH","address":"0x123","isNFT":true}`,
+			expectHashes:  1,
+			containsCheck: "isNFT",
 		},
 		{
-			name:           "with isNFT false",
-			payload:        `{"currency":"ETH","address":"0x123","isNFT":false}`,
-			expectHashes:   1,
-			containsCheck:  "isNFT",
+			name:          "with isNFT false",
+			payload:       `{"currency":"ETH","address":"0x123","isNFT":false}`,
+			expectHashes:  1,
+			containsCheck: "isNFT",
 		},
 		{
-			name:           "with kindType only",
-			payload:        `{"currency":"ETH","kindType":"fungible","address":"0x123"}`,
-			expectHashes:   1,
-			containsCheck:  "kindType",
+			name:          "with kindType only",
+			payload:       `{"currency":"ETH","kindType":"fungible","address":"0x123"}`,
+			expectHashes:  1,
+			containsCheck: "kindType",
 		},
 		{
 			name:         "with both isNFT and kindType",
@@ -444,3 +447,196 @@ func TestCheckHashesSignature(t *testing.T) {
 	})
 }
 
+// TestParseWhitelistedAssetFromJSON pins step 6 of the asset flow. The Go asset
+// service used to mark a DTO-built object as verified, so this parser — and the
+// identifying fields it produces — did not exist here at all.
+func TestParseWhitelistedAssetFromJSON(t *testing.T) {
+	t.Run("parses every identifying field", func(t *testing.T) {
+		payload := `{"blockchain":"ETH","network":"mainnet","contractAddress":"0xA0b8","name":"USD Coin","symbol":"USDC","decimals":6,"tokenId":"42"}`
+
+		asset, err := ParseWhitelistedAssetFromJSON(payload)
+		if err != nil {
+			t.Fatalf("ParseWhitelistedAssetFromJSON() error: %v", err)
+		}
+		if asset.Blockchain != "ETH" || asset.Network != "mainnet" {
+			t.Errorf("blockchain/network = %q/%q, want ETH/mainnet", asset.Blockchain, asset.Network)
+		}
+		if asset.ContractAddress != "0xA0b8" {
+			t.Errorf("ContractAddress = %q, want 0xA0b8", asset.ContractAddress)
+		}
+		if asset.Name != "USD Coin" || asset.Symbol != "USDC" {
+			t.Errorf("name/symbol = %q/%q, want USD Coin/USDC", asset.Name, asset.Symbol)
+		}
+		if asset.Decimals != 6 {
+			t.Errorf("Decimals = %d, want 6", asset.Decimals)
+		}
+		if asset.TokenID != "42" {
+			t.Errorf("TokenID = %q, want 42", asset.TokenID)
+		}
+	})
+
+	t.Run("empty payload is an error, not an empty asset", func(t *testing.T) {
+		if _, err := ParseWhitelistedAssetFromJSON(""); err == nil {
+			t.Error("ParseWhitelistedAssetFromJSON() expected error for empty payload")
+		}
+	})
+
+	t.Run("malformed JSON is an error", func(t *testing.T) {
+		if _, err := ParseWhitelistedAssetFromJSON(`{"blockchain":`); err == nil {
+			t.Error("ParseWhitelistedAssetFromJSON() expected error for malformed JSON")
+		}
+	})
+
+	t.Run("absent fields stay empty rather than being invented", func(t *testing.T) {
+		asset, err := ParseWhitelistedAssetFromJSON(`{"blockchain":"ETH"}`)
+		if err != nil {
+			t.Fatalf("ParseWhitelistedAssetFromJSON() error: %v", err)
+		}
+		if asset.Symbol != "" || asset.ContractAddress != "" || asset.Decimals != 0 {
+			t.Errorf("absent fields should be zero, got symbol=%q contract=%q decimals=%d",
+				asset.Symbol, asset.ContractAddress, asset.Decimals)
+		}
+	})
+
+	// The whole point of step 6: identity comes from the signed bytes, so a DTO
+	// claiming a different chain cannot influence what the caller receives.
+	t.Run("payload wins over any DTO-supplied value", func(t *testing.T) {
+		asset, err := ParseWhitelistedAssetFromJSON(`{"blockchain":"ETH","network":"mainnet","symbol":"USDC"}`)
+		if err != nil {
+			t.Fatalf("ParseWhitelistedAssetFromJSON() error: %v", err)
+		}
+		if asset.Blockchain != "ETH" {
+			t.Errorf("Blockchain = %q, want ETH from the signed payload", asset.Blockchain)
+		}
+	})
+}
+
+// TestResolveRuleKey pins the rule-selection input. Which governance rules judge
+// an entity used to be decided by the surrounding DTO, which nothing binds to the
+// signatures — so a response could steer verification at a laxer rule tier.
+func TestResolveRuleKey(t *testing.T) {
+	t.Run("takes the pair from the signed payload", func(t *testing.T) {
+		bc, nw, err := ResolveRuleKey(`{"currency":"ALGO","network":"mainnet"}`, "ALGO", "mainnet")
+		if err != nil || bc != "ALGO" || nw != "mainnet" {
+			t.Errorf("got %q/%q err=%v; want ALGO/mainnet", bc, nw, err)
+		}
+	})
+
+	t.Run("accepts the asset spelling of the chain field", func(t *testing.T) {
+		bc, _, err := ResolveRuleKey(`{"blockchain":"ETH","network":"mainnet"}`, "", "")
+		if err != nil || bc != "ETH" {
+			t.Errorf("got %q err=%v; want ETH", bc, err)
+		}
+	})
+
+	// isWildcard("") is true, so an absent field would select the global-default
+	// tier — broader than the rule the entity belongs to, and silently so.
+	t.Run("absent blockchain is an error, never a wildcard", func(t *testing.T) {
+		if _, _, err := ResolveRuleKey(`{"network":"mainnet"}`, "ALGO", "mainnet"); err == nil {
+			t.Error("expected an error for a payload with no blockchain")
+		}
+	})
+
+	// Governance rules carry a per-rule includeNetworkInPayload flag; real signed
+	// payloads omit `network` when it is off, so requiring it would reject
+	// correctly-signed addresses.
+	t.Run("absent network falls back to the response value", func(t *testing.T) {
+		bc, nw, err := ResolveRuleKey(`{"currency":"ALGO"}`, "ALGO", "mainnet")
+		if err != nil || bc != "ALGO" || nw != "mainnet" {
+			t.Errorf("got %q/%q err=%v; want ALGO/mainnet", bc, nw, err)
+		}
+	})
+
+	t.Run("a DTO disagreeing with the payload is an error", func(t *testing.T) {
+		_, _, err := ResolveRuleKey(`{"currency":"ALGO","network":"mainnet"}`, "ETH", "mainnet")
+		if err == nil {
+			t.Error("expected an error when the response names a different blockchain")
+		}
+		_, _, err = ResolveRuleKey(`{"currency":"ALGO","network":"mainnet"}`, "ALGO", "testnet")
+		if err == nil {
+			t.Error("expected an error when the response names a different network")
+		}
+		// ...but only when the payload actually carries one to disagree with.
+		if _, _, err := ResolveRuleKey(`{"currency":"ALGO"}`, "ALGO", "testnet"); err != nil {
+			t.Errorf("unexpected error when the payload omits network: %v", err)
+		}
+	})
+
+	t.Run("casing differences are not a disagreement", func(t *testing.T) {
+		if _, _, err := ResolveRuleKey(`{"currency":"ALGO","network":"mainnet"}`, "algo", "MainNet"); err != nil {
+			t.Errorf("unexpected error for a case-only difference: %v", err)
+		}
+	})
+
+	t.Run("an empty DTO value is not a disagreement", func(t *testing.T) {
+		if _, _, err := ResolveRuleKey(`{"currency":"ALGO","network":"mainnet"}`, "", ""); err != nil {
+			t.Errorf("unexpected error when the response omits the pair: %v", err)
+		}
+	})
+
+	t.Run("empty and malformed payloads are errors", func(t *testing.T) {
+		if _, _, err := ResolveRuleKey("", "ALGO", "mainnet"); err == nil {
+			t.Error("expected an error for an empty payload")
+		}
+		if _, _, err := ResolveRuleKey(`{"currency":`, "ALGO", "mainnet"); err == nil {
+			t.Error("expected an error for a malformed payload")
+		}
+	})
+
+	t.Run("an oversized payload is rejected before parsing", func(t *testing.T) {
+		huge := `{"currency":"ALGO","network":"` + strings.Repeat("x", MaxPayloadBytes) + `"}`
+		if _, _, err := ResolveRuleKey(huge, "ALGO", "mainnet"); err == nil {
+			t.Error("expected an error for a payload over the size bound")
+		}
+	})
+}
+
+// The exported parsers bound the payload themselves. Caller ordering happens to protect
+// them too, which is why this needs a test: removing the bound would break nothing visible.
+func TestStep6Parsers_RejectAnOversizedPayload(t *testing.T) {
+	filler := strings.Repeat("x", MaxPayloadBytes)
+
+	t.Run("address", func(t *testing.T) {
+		huge := `{"currency":"ALGO","network":"mainnet","address":"` + filler + `"}`
+		addr, err := ParseWhitelistedAddressFromJSON(huge)
+		if err == nil {
+			t.Fatal("expected an error for a payload over the size bound")
+		}
+		if addr != nil {
+			t.Error("expected no address to be returned alongside the error")
+		}
+		var integrityErr *model.IntegrityError
+		if !errors.As(err, &integrityErr) {
+			t.Errorf("expected an IntegrityError, got %T", err)
+		}
+	})
+
+	t.Run("asset", func(t *testing.T) {
+		huge := `{"blockchain":"ETH","network":"mainnet","contractAddress":"` + filler + `"}`
+		asset, err := ParseWhitelistedAssetFromJSON(huge)
+		if err == nil {
+			t.Fatal("expected an error for a payload over the size bound")
+		}
+		if asset != nil {
+			t.Error("expected no asset to be returned alongside the error")
+		}
+		var integrityErr *model.IntegrityError
+		if !errors.As(err, &integrityErr) {
+			t.Errorf("expected an IntegrityError, got %T", err)
+		}
+	})
+
+	t.Run("a payload at the bound still parses", func(t *testing.T) {
+		// Off-by-one guard: the check is `>`, so exactly MaxPayloadBytes must pass.
+		const prefix = `{"currency":"ALGO","address":"`
+		const suffix = `"}`
+		pad := strings.Repeat("x", MaxPayloadBytes-len(prefix)-len(suffix))
+		atBound := prefix + pad + suffix
+		if len(atBound) != MaxPayloadBytes {
+			t.Fatalf("test setup: built %d bytes, want %d", len(atBound), MaxPayloadBytes)
+		}
+		if _, err := ParseWhitelistedAddressFromJSON(atBound); err != nil {
+			t.Errorf("a payload exactly at the bound must parse, got %v", err)
+		}
+	})
+}

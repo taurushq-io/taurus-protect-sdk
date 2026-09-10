@@ -1,0 +1,1171 @@
+{
+  "sdk": "java",
+  "source": "client/src/main/java/.../client/service",
+  "services": [
+    {
+      "name": "ActionService",
+      "methods": [
+        {
+          "name": "getAction",
+          "signature": "getAction(String): ActionEnvelope",
+          "doc": ""
+        },
+        {
+          "name": "getActions",
+          "signature": "getActions(): List<ActionEnvelope>",
+          "doc": ""
+        },
+        {
+          "name": "getActions",
+          "signature": "getActions(String, String, List<String>): List<ActionEnvelope>",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "AddressService",
+      "methods": [
+        {
+          "name": "createAddress",
+          "signature": "createAddress(CreateAddressRequest): Address",
+          "doc": ""
+        },
+        {
+          "name": "createAddress",
+          "signature": "createAddress(long, String, String, String): Address",
+          "doc": ""
+        },
+        {
+          "name": "createAddressAttribute",
+          "signature": "createAddressAttribute(long, String, String): void",
+          "doc": ""
+        },
+        {
+          "name": "deleteAddressAttribute",
+          "signature": "deleteAddressAttribute(long, long): void",
+          "doc": ""
+        },
+        {
+          "name": "getAddress",
+          "signature": "getAddress(long): Address",
+          "doc": ""
+        },
+        {
+          "name": "getAddressProofOfReserve",
+          "signature": "getAddressProofOfReserve(long, String): TgvalidatordProofOfReserve",
+          "doc": ""
+        },
+        {
+          "name": "getAddresses",
+          "signature": "getAddresses(long, int, int): List<Address>",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "AirGapService",
+      "methods": [
+        {
+          "name": "getOutgoingAirGap",
+          "signature": "getOutgoingAirGap(List<String>): File",
+          "doc": ""
+        },
+        {
+          "name": "submitIncomingAirGap",
+          "signature": "submitIncomingAirGap(String): void",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "AssetService",
+      "methods": [
+        {
+          "name": "getAssetAddresses",
+          "signature": "getAssetAddresses(String): List<Address>",
+          "doc": ""
+        },
+        {
+          "name": "getAssetAddresses",
+          "signature": "getAssetAddresses(String, String, String, String): List<Address>",
+          "doc": ""
+        },
+        {
+          "name": "getAssetWallets",
+          "signature": "getAssetWallets(String): List<Wallet>",
+          "doc": ""
+        },
+        {
+          "name": "getAssetWallets",
+          "signature": "getAssetWallets(String, String): List<Wallet>",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "AuditService",
+      "methods": [
+        {
+          "name": "exportAuditTrails",
+          "signature": "exportAuditTrails(String, List<String>, List<String>, OffsetDateTime, OffsetDateTime, String): String",
+          "doc": ""
+        },
+        {
+          "name": "getAuditTrails",
+          "signature": "getAuditTrails(String, List<String>, List<String>, OffsetDateTime, OffsetDateTime, ApiRequestCursor): AuditTrailResult",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "BalanceService",
+      "methods": [
+        {
+          "name": "getBalances",
+          "signature": "getBalances(ApiRequestCursor): BalanceResult",
+          "doc": ""
+        },
+        {
+          "name": "getBalances",
+          "signature": "getBalances(String, ApiRequestCursor): BalanceResult",
+          "doc": ""
+        },
+        {
+          "name": "getNFTCollectionBalances",
+          "signature": "getNFTCollectionBalances(String, String, ApiRequestCursor): NFTCollectionBalanceResult",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "BlockchainService",
+      "methods": [
+        {
+          "name": "getBlockchains",
+          "signature": "getBlockchains(): List<BlockchainInfo>",
+          "doc": ""
+        },
+        {
+          "name": "getBlockchains",
+          "signature": "getBlockchains(String, String, Boolean): List<BlockchainInfo>",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "BusinessRuleService",
+      "methods": [
+        {
+          "name": "getBusinessRules",
+          "signature": "getBusinessRules(ApiRequestCursor): BusinessRuleResult",
+          "doc": ""
+        },
+        {
+          "name": "getBusinessRulesByCurrency",
+          "signature": "getBusinessRulesByCurrency(String, ApiRequestCursor): BusinessRuleResult",
+          "doc": ""
+        },
+        {
+          "name": "getBusinessRulesByWallet",
+          "signature": "getBusinessRulesByWallet(long, ApiRequestCursor): BusinessRuleResult",
+          "doc": ""
+        },
+        {
+          "name": "updateTransactionsEnabled",
+          "signature": "updateTransactionsEnabled(boolean): void",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "ChangeService",
+      "methods": [
+        {
+          "name": "approveChange",
+          "signature": "approveChange(String): void",
+          "doc": ""
+        },
+        {
+          "name": "approveChanges",
+          "signature": "approveChanges(List<String>): void",
+          "doc": ""
+        },
+        {
+          "name": "createChange",
+          "signature": "createChange(CreateChangeRequest): String",
+          "doc": ""
+        },
+        {
+          "name": "getChange",
+          "signature": "getChange(String): Change",
+          "doc": ""
+        },
+        {
+          "name": "getChanges",
+          "signature": "getChanges(String, String, ApiRequestCursor): ChangeResult",
+          "doc": ""
+        },
+        {
+          "name": "getChangesForApproval",
+          "signature": "getChangesForApproval(ApiRequestCursor): ChangeResult",
+          "doc": ""
+        },
+        {
+          "name": "rejectChange",
+          "signature": "rejectChange(String): void",
+          "doc": ""
+        },
+        {
+          "name": "rejectChanges",
+          "signature": "rejectChanges(List<String>): void",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "ConfigService",
+      "methods": [
+        {
+          "name": "getTenantConfig",
+          "signature": "getTenantConfig(): TenantConfig",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "ContractWhitelistingService",
+      "methods": [
+        {
+          "name": "approveWhitelistedContracts",
+          "signature": "approveWhitelistedContracts(List<String>, String, String): void",
+          "doc": ""
+        },
+        {
+          "name": "createAttribute",
+          "signature": "createAttribute(String, String, String, String, String, String): List<Attribute>",
+          "doc": ""
+        },
+        {
+          "name": "createWhitelistedContract",
+          "signature": "createWhitelistedContract(String, String, String, String, String, int, String, String): String",
+          "doc": ""
+        },
+        {
+          "name": "deleteWhitelistedContract",
+          "signature": "deleteWhitelistedContract(String, String): String",
+          "doc": ""
+        },
+        {
+          "name": "getAttribute",
+          "signature": "getAttribute(String, String): Attribute",
+          "doc": ""
+        },
+        {
+          "name": "updateWhitelistedContract",
+          "signature": "updateWhitelistedContract(String, String, String, int): void",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "CurrencyService",
+      "methods": [
+        {
+          "name": "getBaseCurrency",
+          "signature": "getBaseCurrency(): Currency",
+          "doc": ""
+        },
+        {
+          "name": "getCurrencies",
+          "signature": "getCurrencies(): List<Currency>",
+          "doc": ""
+        },
+        {
+          "name": "getCurrencies",
+          "signature": "getCurrencies(boolean, boolean): List<Currency>",
+          "doc": ""
+        },
+        {
+          "name": "getCurrency",
+          "signature": "getCurrency(String): Currency",
+          "doc": ""
+        },
+        {
+          "name": "getCurrencyByBlockchain",
+          "signature": "getCurrencyByBlockchain(String, String): Currency",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "ExchangeService",
+      "methods": [
+        {
+          "name": "exportExchanges",
+          "signature": "exportExchanges(String): String",
+          "doc": ""
+        },
+        {
+          "name": "getExchange",
+          "signature": "getExchange(String): Exchange",
+          "doc": ""
+        },
+        {
+          "name": "getExchangeCounterparties",
+          "signature": "getExchangeCounterparties(): List<ExchangeCounterparty>",
+          "doc": ""
+        },
+        {
+          "name": "getExchangeWithdrawalFee",
+          "signature": "getExchangeWithdrawalFee(String, String, String): ExchangeWithdrawalFee",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "FeePayerService",
+      "methods": [
+        {
+          "name": "getFeePayer",
+          "signature": "getFeePayer(String): FeePayer",
+          "doc": ""
+        },
+        {
+          "name": "getFeePayers",
+          "signature": "getFeePayers(): List<FeePayer>",
+          "doc": ""
+        },
+        {
+          "name": "getFeePayers",
+          "signature": "getFeePayers(Integer, Integer, List<String>, String, String): List<FeePayer>",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "FeeService",
+      "methods": [
+        {
+          "name": "getFees",
+          "signature": "getFees(): List<Fee>",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "FiatService",
+      "methods": [
+        {
+          "name": "getFiatProviderAccount",
+          "signature": "getFiatProviderAccount(String): FiatProviderAccount",
+          "doc": ""
+        },
+        {
+          "name": "getFiatProviderAccounts",
+          "signature": "getFiatProviderAccounts(String, String, String, String, ApiRequestCursor): FiatProviderAccountResult",
+          "doc": ""
+        },
+        {
+          "name": "getFiatProviderCounterpartyAccount",
+          "signature": "getFiatProviderCounterpartyAccount(String): FiatProviderCounterpartyAccount",
+          "doc": ""
+        },
+        {
+          "name": "getFiatProviderCounterpartyAccounts",
+          "signature": "getFiatProviderCounterpartyAccounts(String, String, String, String, ApiRequestCursor): FiatProviderCounterpartyAccountResult",
+          "doc": ""
+        },
+        {
+          "name": "getFiatProviderOperation",
+          "signature": "getFiatProviderOperation(String): FiatProviderOperation",
+          "doc": ""
+        },
+        {
+          "name": "getFiatProviderOperations",
+          "signature": "getFiatProviderOperations(String, String, String, ApiRequestCursor): FiatProviderOperationResult",
+          "doc": ""
+        },
+        {
+          "name": "getFiatProviders",
+          "signature": "getFiatProviders(): List<FiatProvider>",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "GovernanceRuleService",
+      "methods": [
+        {
+          "name": "approveRulesProposal",
+          "signature": "approveRulesProposal(PrivateKey, String, String): void",
+          "doc": ""
+        },
+        {
+          "name": "decodeProposalForReview",
+          "signature": "decodeProposalForReview(GovernanceRules): DecodedRulesContainer",
+          "doc": ""
+        },
+        {
+          "name": "getDecodedRulesContainer",
+          "signature": "getDecodedRulesContainer(GovernanceRules): DecodedRulesContainer",
+          "doc": ""
+        },
+        {
+          "name": "getMinValidSignatures",
+          "signature": "getMinValidSignatures(): int",
+          "doc": ""
+        },
+        {
+          "name": "getPublicKeys",
+          "signature": "getPublicKeys(): List<SuperAdminPublicKey>",
+          "doc": ""
+        },
+        {
+          "name": "getRules",
+          "signature": "getRules(): GovernanceRules",
+          "doc": ""
+        },
+        {
+          "name": "getRulesById",
+          "signature": "getRulesById(String): GovernanceRules",
+          "doc": ""
+        },
+        {
+          "name": "getRulesHistory",
+          "signature": "getRulesHistory(int): GovernanceRulesHistoryResult",
+          "doc": ""
+        },
+        {
+          "name": "getRulesHistory",
+          "signature": "getRulesHistory(int, byte[]): GovernanceRulesHistoryResult",
+          "doc": ""
+        },
+        {
+          "name": "getRulesProposal",
+          "signature": "getRulesProposal(): GovernanceRules",
+          "doc": ""
+        },
+        {
+          "name": "getSuperAdminPublicKeys",
+          "signature": "getSuperAdminPublicKeys(): List<PublicKey>",
+          "doc": ""
+        },
+        {
+          "name": "proposalContainerHash",
+          "signature": "proposalContainerHash(GovernanceRules): String",
+          "doc": ""
+        },
+        {
+          "name": "rejectRulesProposal",
+          "signature": "rejectRulesProposal(String): void",
+          "doc": ""
+        },
+        {
+          "name": "updateRulesProposal",
+          "signature": "updateRulesProposal(DecodedRulesContainer): void",
+          "doc": ""
+        },
+        {
+          "name": "verifyGovernanceRules",
+          "signature": "verifyGovernanceRules(GovernanceRules): GovernanceRules",
+          "doc": ""
+        },
+        {
+          "name": "verifyGovernanceRules",
+          "signature": "verifyGovernanceRules(GovernanceRules, int): GovernanceRules",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "GroupService",
+      "methods": [
+        {
+          "name": "getGroups",
+          "signature": "getGroups(): List<Group>",
+          "doc": ""
+        },
+        {
+          "name": "getGroups",
+          "signature": "getGroups(String, String, List<String>, List<String>, String): List<Group>",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "HealthService",
+      "methods": [
+        {
+          "name": "getAllHealthChecks",
+          "signature": "getAllHealthChecks(): HealthCheck",
+          "doc": ""
+        },
+        {
+          "name": "getAllHealthChecks",
+          "signature": "getAllHealthChecks(String, Boolean): HealthCheck",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "JobService",
+      "methods": [
+        {
+          "name": "getJob",
+          "signature": "getJob(String): Job",
+          "doc": ""
+        },
+        {
+          "name": "getJobStatus",
+          "signature": "getJobStatus(String, String): JobStatus",
+          "doc": ""
+        },
+        {
+          "name": "getJobs",
+          "signature": "getJobs(): List<Job>",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "MultiFactorSignatureService",
+      "methods": [
+        {
+          "name": "approveMultiFactorSignature",
+          "signature": "approveMultiFactorSignature(String, String, String): MultiFactorSignatureApprovalResult",
+          "doc": ""
+        },
+        {
+          "name": "createMultiFactorSignatures",
+          "signature": "createMultiFactorSignatures(List<String>, TgvalidatordMultiFactorSignaturesEntityType): MultiFactorSignatureResult",
+          "doc": ""
+        },
+        {
+          "name": "getMultiFactorSignatureInfo",
+          "signature": "getMultiFactorSignatureInfo(String): MultiFactorSignatureInfo",
+          "doc": ""
+        },
+        {
+          "name": "rejectMultiFactorSignature",
+          "signature": "rejectMultiFactorSignature(String, String): void",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "PriceService",
+      "methods": [
+        {
+          "name": "convert",
+          "signature": "convert(String, String, List<String>): List<ConversionResult>",
+          "doc": ""
+        },
+        {
+          "name": "getPriceHistory",
+          "signature": "getPriceHistory(String, String, int): List<PriceHistoryPoint>",
+          "doc": ""
+        },
+        {
+          "name": "getPrices",
+          "signature": "getPrices(): List<Price>",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "RequestService",
+      "methods": [
+        {
+          "name": "approveRequest",
+          "signature": "approveRequest(Request, PrivateKey): int",
+          "doc": ""
+        },
+        {
+          "name": "approveRequest",
+          "signature": "approveRequest(Request, PrivateKey, String): int",
+          "doc": ""
+        },
+        {
+          "name": "approveRequests",
+          "signature": "approveRequests(List<Request>, PrivateKey): int",
+          "doc": ""
+        },
+        {
+          "name": "approveRequests",
+          "signature": "approveRequests(List<Request>, PrivateKey, String): int",
+          "doc": ""
+        },
+        {
+          "name": "createCancelRequest",
+          "signature": "createCancelRequest(long, long): Request",
+          "doc": ""
+        },
+        {
+          "name": "createExternalTransferFromWalletRequest",
+          "signature": "createExternalTransferFromWalletRequest(long, long, BigInteger): Request",
+          "doc": ""
+        },
+        {
+          "name": "createExternalTransferRequest",
+          "signature": "createExternalTransferRequest(long, long, BigInteger): Request",
+          "doc": ""
+        },
+        {
+          "name": "createIncomingRequest",
+          "signature": "createIncomingRequest(long, long, BigInteger): Request",
+          "doc": ""
+        },
+        {
+          "name": "createInternalTransferFromWalletRequest",
+          "signature": "createInternalTransferFromWalletRequest(long, long, BigInteger): Request",
+          "doc": ""
+        },
+        {
+          "name": "createInternalTransferRequest",
+          "signature": "createInternalTransferRequest(long, long, BigInteger): Request",
+          "doc": ""
+        },
+        {
+          "name": "getRequest",
+          "signature": "getRequest(long): Request",
+          "doc": ""
+        },
+        {
+          "name": "getRequests",
+          "signature": "getRequests(OffsetDateTime, OffsetDateTime, String, List<RequestStatus>, ApiRequestCursor): RequestResult",
+          "doc": ""
+        },
+        {
+          "name": "getRequestsForApproval",
+          "signature": "getRequestsForApproval(ApiRequestCursor): RequestResult",
+          "doc": ""
+        },
+        {
+          "name": "rejectRequest",
+          "signature": "rejectRequest(long, String): void",
+          "doc": ""
+        },
+        {
+          "name": "rejectRequests",
+          "signature": "rejectRequests(List<Long>, String): void",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "ReservationService",
+      "methods": [
+        {
+          "name": "getReservation",
+          "signature": "getReservation(String): Reservation",
+          "doc": ""
+        },
+        {
+          "name": "getReservationUtxo",
+          "signature": "getReservationUtxo(String): ReservationUtxo",
+          "doc": ""
+        },
+        {
+          "name": "getReservations",
+          "signature": "getReservations(): List<Reservation>",
+          "doc": ""
+        },
+        {
+          "name": "getReservations",
+          "signature": "getReservations(String, String, String, List<String>, String): List<Reservation>",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "ScoreService",
+      "methods": [
+        {
+          "name": "refreshAddressScore",
+          "signature": "refreshAddressScore(long, String): List<Score>",
+          "doc": ""
+        },
+        {
+          "name": "refreshWhitelistedAddressScore",
+          "signature": "refreshWhitelistedAddressScore(long, String): List<Score>",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "StakingService",
+      "methods": [
+        {
+          "name": "getADAStakePoolInfo",
+          "signature": "getADAStakePoolInfo(String, String): ADAStakePoolInfo",
+          "doc": ""
+        },
+        {
+          "name": "getETHValidatorsInfo",
+          "signature": "getETHValidatorsInfo(String, List<String>): List<ETHValidatorInfo>",
+          "doc": ""
+        },
+        {
+          "name": "getFTMValidatorInfo",
+          "signature": "getFTMValidatorInfo(String, String): FTMValidatorInfo",
+          "doc": ""
+        },
+        {
+          "name": "getICPNeuronInfo",
+          "signature": "getICPNeuronInfo(String, String): ICPNeuronInfo",
+          "doc": ""
+        },
+        {
+          "name": "getNEARValidatorInfo",
+          "signature": "getNEARValidatorInfo(String, String): NEARValidatorInfo",
+          "doc": ""
+        },
+        {
+          "name": "getStakeAccounts",
+          "signature": "getStakeAccounts(String, String, String, ApiRequestCursor): StakeAccountResult",
+          "doc": ""
+        },
+        {
+          "name": "getXTZStakingRewards",
+          "signature": "getXTZStakingRewards(String, String, OffsetDateTime, OffsetDateTime): XTZStakingRewards",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "StatisticsService",
+      "methods": [
+        {
+          "name": "getPortfolioStatistics",
+          "signature": "getPortfolioStatistics(): PortfolioStatistics",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "TagService",
+      "methods": [
+        {
+          "name": "createTag",
+          "signature": "createTag(String, String): Tag",
+          "doc": ""
+        },
+        {
+          "name": "deleteTag",
+          "signature": "deleteTag(String): void",
+          "doc": ""
+        },
+        {
+          "name": "getTags",
+          "signature": "getTags(): List<Tag>",
+          "doc": ""
+        },
+        {
+          "name": "getTags",
+          "signature": "getTags(List<String>, String): List<Tag>",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "TaurusNetworkLendingService",
+      "methods": [
+        {
+          "name": "getLendingAgreement",
+          "signature": "getLendingAgreement(String): LendingAgreement",
+          "doc": ""
+        },
+        {
+          "name": "getLendingAgreements",
+          "signature": "getLendingAgreements(String, ApiRequestCursor): LendingAgreementResult",
+          "doc": ""
+        },
+        {
+          "name": "getLendingOffer",
+          "signature": "getLendingOffer(String): LendingOffer",
+          "doc": ""
+        },
+        {
+          "name": "getLendingOffers",
+          "signature": "getLendingOffers(List<String>, String, String, String, ApiRequestCursor): LendingOfferResult",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "TaurusNetworkParticipantService",
+      "methods": [
+        {
+          "name": "get",
+          "signature": "get(String, Boolean): Participant",
+          "doc": ""
+        },
+        {
+          "name": "getMyParticipant",
+          "signature": "getMyParticipant(): Participant",
+          "doc": ""
+        },
+        {
+          "name": "list",
+          "signature": "list(List<String>, Boolean): List<Participant>",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "TaurusNetworkPledgeService",
+      "methods": [
+        {
+          "name": "get",
+          "signature": "get(String): Pledge",
+          "doc": ""
+        },
+        {
+          "name": "list",
+          "signature": "list(String, String, List<String>, String, String, ApiRequestCursor): PledgeResult",
+          "doc": ""
+        },
+        {
+          "name": "listWithdrawals",
+          "signature": "listWithdrawals(String, String, String, ApiRequestCursor): PledgeWithdrawalResult",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "TaurusNetworkSettlementService",
+      "methods": [
+        {
+          "name": "getSettlement",
+          "signature": "getSettlement(String): Settlement",
+          "doc": ""
+        },
+        {
+          "name": "getSettlements",
+          "signature": "getSettlements(String, List<String>, String, ApiRequestCursor): SettlementResult",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "TaurusNetworkSharingService",
+      "methods": [
+        {
+          "name": "listSharedAddresses",
+          "signature": "listSharedAddresses(String, String, String, String, String, List<String>, String, ApiRequestCursor): SharedAddressResult",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "TokenMetadataService",
+      "methods": [
+        {
+          "name": "getERCTokenMetadata",
+          "signature": "getERCTokenMetadata(String, String, String, Boolean, String): TokenMetadata",
+          "doc": ""
+        },
+        {
+          "name": "getEVMERCTokenMetadata",
+          "signature": "getEVMERCTokenMetadata(String, String, String, Boolean, String): TokenMetadata",
+          "doc": ""
+        },
+        {
+          "name": "getFATokenMetadata",
+          "signature": "getFATokenMetadata(String, String, String, Boolean): TokenMetadata",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "TransactionService",
+      "methods": [
+        {
+          "name": "exportTransactions",
+          "signature": "exportTransactions(OffsetDateTime, OffsetDateTime, String, String, String, String, int, int): String",
+          "doc": ""
+        },
+        {
+          "name": "exportTransactions",
+          "signature": "exportTransactions(OffsetDateTime, OffsetDateTime, String, String, int, int): String",
+          "doc": ""
+        },
+        {
+          "name": "getTransactionByHash",
+          "signature": "getTransactionByHash(String): Transaction",
+          "doc": ""
+        },
+        {
+          "name": "getTransactionById",
+          "signature": "getTransactionById(long): Transaction",
+          "doc": ""
+        },
+        {
+          "name": "getTransactions",
+          "signature": "getTransactions(OffsetDateTime, OffsetDateTime, String, String, String, String, int, int): List<Transaction>",
+          "doc": ""
+        },
+        {
+          "name": "getTransactions",
+          "signature": "getTransactions(OffsetDateTime, OffsetDateTime, String, String, int, int): List<Transaction>",
+          "doc": ""
+        },
+        {
+          "name": "getTransactionsByAddress",
+          "signature": "getTransactionsByAddress(String, int, int): List<Transaction>",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "UserDeviceService",
+      "methods": [
+        {
+          "name": "approvePairing",
+          "signature": "approvePairing(String, String): void",
+          "doc": ""
+        },
+        {
+          "name": "createPairing",
+          "signature": "createPairing(): UserDevicePairing",
+          "doc": ""
+        },
+        {
+          "name": "getPairingStatus",
+          "signature": "getPairingStatus(String, String): UserDevicePairingInfo",
+          "doc": ""
+        },
+        {
+          "name": "startPairing",
+          "signature": "startPairing(String, String, String): void",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "UserService",
+      "methods": [
+        {
+          "name": "createUserAttribute",
+          "signature": "createUserAttribute(long, String, String): void",
+          "doc": ""
+        },
+        {
+          "name": "getMe",
+          "signature": "getMe(): User",
+          "doc": ""
+        },
+        {
+          "name": "getUsers",
+          "signature": "getUsers(int, int): List<User>",
+          "doc": ""
+        },
+        {
+          "name": "getUsersByEmail",
+          "signature": "getUsersByEmail(List<String>): List<User>",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "VisibilityGroupService",
+      "methods": [
+        {
+          "name": "getUsersByVisibilityGroup",
+          "signature": "getUsersByVisibilityGroup(String): List<User>",
+          "doc": ""
+        },
+        {
+          "name": "getVisibilityGroups",
+          "signature": "getVisibilityGroups(): List<VisibilityGroup>",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "WalletService",
+      "methods": [
+        {
+          "name": "createWallet",
+          "signature": "createWallet(CreateWalletRequest): Wallet",
+          "doc": ""
+        },
+        {
+          "name": "createWallet",
+          "signature": "createWallet(String, String, String, boolean): Wallet",
+          "doc": ""
+        },
+        {
+          "name": "createWallet",
+          "signature": "createWallet(String, String, String, boolean, String): Wallet",
+          "doc": ""
+        },
+        {
+          "name": "createWallet",
+          "signature": "createWallet(String, String, String, boolean, String, String): Wallet",
+          "doc": ""
+        },
+        {
+          "name": "createWalletAttribute",
+          "signature": "createWalletAttribute(long, String, String): void",
+          "doc": ""
+        },
+        {
+          "name": "getWallet",
+          "signature": "getWallet(long): Wallet",
+          "doc": ""
+        },
+        {
+          "name": "getWalletBalanceHistory",
+          "signature": "getWalletBalanceHistory(long, int): List<BalanceHistoryPoint>",
+          "doc": ""
+        },
+        {
+          "name": "getWalletTokens",
+          "signature": "getWalletTokens(long, int): List<AssetBalance>",
+          "doc": ""
+        },
+        {
+          "name": "getWallets",
+          "signature": "getWallets(int, int): List<Wallet>",
+          "doc": ""
+        },
+        {
+          "name": "getWalletsByName",
+          "signature": "getWalletsByName(String, int, int): List<Wallet>",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "WebhookCallsService",
+      "methods": [
+        {
+          "name": "getWebhookCalls",
+          "signature": "getWebhookCalls(String, String, String, String, ApiRequestCursor): WebhookCallResult",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "WebhookService",
+      "methods": [
+        {
+          "name": "createWebhook",
+          "signature": "createWebhook(String, String, String): Webhook",
+          "doc": ""
+        },
+        {
+          "name": "deleteWebhook",
+          "signature": "deleteWebhook(String): void",
+          "doc": ""
+        },
+        {
+          "name": "getWebhooks",
+          "signature": "getWebhooks(String, String, ApiRequestCursor): WebhookResult",
+          "doc": ""
+        },
+        {
+          "name": "updateWebhookStatus",
+          "signature": "updateWebhookStatus(String, WebhookStatus): Webhook",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "WhitelistedAddressService",
+      "methods": [
+        {
+          "name": "approveWhitelistedAddresses",
+          "signature": "approveWhitelistedAddresses(List<Long>, PrivateKey, String): void",
+          "doc": ""
+        },
+        {
+          "name": "getWhitelistedAddress",
+          "signature": "getWhitelistedAddress(long): WhitelistedAddress",
+          "doc": ""
+        },
+        {
+          "name": "getWhitelistedAddressEnvelope",
+          "signature": "getWhitelistedAddressEnvelope(long): SignedWhitelistedAddressEnvelope",
+          "doc": ""
+        },
+        {
+          "name": "getWhitelistedAddresses",
+          "signature": "getWhitelistedAddresses(int, int): List<SignedWhitelistedAddressEnvelope>",
+          "doc": ""
+        },
+        {
+          "name": "getWhitelistedAddresses",
+          "signature": "getWhitelistedAddresses(int, int, String): List<SignedWhitelistedAddressEnvelope>",
+          "doc": ""
+        },
+        {
+          "name": "getWhitelistedAddresses",
+          "signature": "getWhitelistedAddresses(int, int, String, String): List<SignedWhitelistedAddressEnvelope>",
+          "doc": ""
+        },
+        {
+          "name": "getWhitelistedAddresses",
+          "signature": "getWhitelistedAddresses(int, int, String, String, boolean): List<SignedWhitelistedAddressEnvelope>",
+          "doc": ""
+        },
+        {
+          "name": "getWhitelistedAddressesForApproval",
+          "signature": "getWhitelistedAddressesForApproval(int, int, List<String>, Boolean): WhitelistedAddressListResult",
+          "doc": ""
+        },
+        {
+          "name": "getWhitelistedAddressesWithExclusions",
+          "signature": "getWhitelistedAddressesWithExclusions(int, int, String, String, boolean): WhitelistedAddressListResult",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "WhitelistedAssetService",
+      "methods": [
+        {
+          "name": "approveWhitelistedAssets",
+          "signature": "approveWhitelistedAssets(List<Long>, PrivateKey, String): void",
+          "doc": ""
+        },
+        {
+          "name": "getWhitelistedAsset",
+          "signature": "getWhitelistedAsset(long): WhitelistedAsset",
+          "doc": ""
+        },
+        {
+          "name": "getWhitelistedAssetEnvelope",
+          "signature": "getWhitelistedAssetEnvelope(long): SignedWhitelistedAssetEnvelope",
+          "doc": ""
+        },
+        {
+          "name": "getWhitelistedAssets",
+          "signature": "getWhitelistedAssets(int, int): List<SignedWhitelistedAssetEnvelope>",
+          "doc": ""
+        },
+        {
+          "name": "getWhitelistedAssets",
+          "signature": "getWhitelistedAssets(int, int, String): List<SignedWhitelistedAssetEnvelope>",
+          "doc": ""
+        },
+        {
+          "name": "getWhitelistedAssets",
+          "signature": "getWhitelistedAssets(int, int, String, String): List<SignedWhitelistedAssetEnvelope>",
+          "doc": ""
+        },
+        {
+          "name": "getWhitelistedAssets",
+          "signature": "getWhitelistedAssets(int, int, String, String, String, Boolean, List<String>, List<String>): WhitelistedAssetResult",
+          "doc": ""
+        },
+        {
+          "name": "getWhitelistedAssetsForApproval",
+          "signature": "getWhitelistedAssetsForApproval(int, int, List<String>): WhitelistedAssetResult",
+          "doc": ""
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,7 @@
 package com.taurushq.sdk.protect.client.model;
 
+import com.taurushq.sdk.protect.client.helper.AssetHashHelper;
+import com.google.common.base.Strings;
 import com.taurushq.sdk.protect.client.model.rulescontainer.DecodedRulesContainer;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
@@ -236,26 +238,35 @@ public class SignedWhitelistedAssetEnvelope {
     }
 
     /**
-     * Sets the verified whitelisted asset.
-     * This method is intended for internal use by WhitelistedAssetService.
-     * Users should not call this method directly.
+     * Marks this envelope verified, DERIVING the asset from its own signed payload.
      *
-     * @param asset the verified whitelisted asset
-     */
-    public void setVerifiedWhitelistedAsset(WhitelistedAsset asset) {
-        this.verifiedWhitelistedAsset = asset;
-        this.isInitialized.set(true);
-    }
-
-    /**
-     * Sets the verified rules container.
-     * This method is intended for internal use by WhitelistedAssetService.
-     * Users should not call this method directly.
+     * <p>It does not accept an asset. The previous
+     * {@code setVerifiedWhitelistedAsset(WhitelistedAsset)} was public and flipped the
+     * same {@code isInitialized} gate {@link #getWhitelistedAsset()} checks, so a caller
+     * could construct an envelope, inject a fabricated asset, and read it back with no
+     * exception — the "verified" marker returned attacker-chosen data. Deriving instead
+     * of accepting gives Java the property Go's {@code helper.VerifiedAsset} has:
+     * forging the marker is possible but useless, because the data still comes from the
+     * envelope's own payload.
+     *
+     * <p>Intended for WhitelistedAssetService; it must be public because that service is
+     * in another package. That is also why the full fix is the verifier extraction in
+     * {@code TODOS.md} — a witness type the verifier alone can mint. This closes the
+     * exploitable half without it.
      *
      * @param rulesContainer the verified rules container
+     * @throws WhitelistException if the signed payload is absent or unparseable
      */
-    public void setVerifiedRulesContainer(DecodedRulesContainer rulesContainer) {
+    public void markVerified(final DecodedRulesContainer rulesContainer)
+            throws WhitelistException {
+        if (this.metadata == null || Strings.isNullOrEmpty(this.metadata.getPayloadAsString())) {
+            throw new WhitelistException(
+                    "cannot mark verified: the envelope carries no signed payload");
+        }
+        this.verifiedWhitelistedAsset =
+                AssetHashHelper.parseWhitelistedAssetFromJson(this.metadata.getPayloadAsString());
         this.verifiedRulesContainer = rulesContainer;
+        this.isInitialized.set(true);
     }
 
     /**

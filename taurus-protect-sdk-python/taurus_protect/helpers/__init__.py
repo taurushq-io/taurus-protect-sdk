@@ -8,6 +8,7 @@ from taurus_protect.helpers.constant_time import (
 from taurus_protect.helpers.signature_verifier import (
     is_valid_signature,
     verify_governance_rules,
+    verify_governance_rules_signatures,
     verify_raw_signature,
 )
 from taurus_protect.helpers.whitelist_hash_helper import (
@@ -16,11 +17,8 @@ from taurus_protect.helpers.whitelist_hash_helper import (
     compute_whitelist_hash,
     parse_whitelisted_address_from_json,
 )
-from taurus_protect.helpers.whitelist_integrity_helper import (
-    extract_whitelisted_address_from_envelope,
-    verify_envelope_field_match,
-    verify_whitelist_envelope,
-)
+# whitelist_integrity_helper is deliberately NOT re-exported: its checks cover step 1
+# of six, and WhitelistedAddressService is the only route that runs the whole chain.
 from taurus_protect.helpers.whitelisted_address_verifier import (
     AddressVerificationResult,
     WhitelistedAddressVerifier,
@@ -37,6 +35,7 @@ __all__ = [
     "constant_time_compare_bytes",
     # Governance rules verification
     "verify_governance_rules",
+    "verify_governance_rules_signatures",
     "is_valid_signature",
     "verify_raw_signature",
     # Address signature verification
@@ -54,7 +53,4 @@ __all__ = [
     "compute_asset_legacy_hashes",
     "parse_whitelisted_address_from_json",
     # Whitelist integrity helpers
-    "verify_whitelist_envelope",
-    "extract_whitelisted_address_from_envelope",
-    "verify_envelope_field_match",
 ]

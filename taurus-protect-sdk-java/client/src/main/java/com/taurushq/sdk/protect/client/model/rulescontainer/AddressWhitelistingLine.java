@@ -15,7 +15,7 @@ import java.util.List;
  * @see RuleSource
  * @see SequentialThresholds
  */
-public class AddressWhitelistingLine {
+public class AddressWhitelistingLine extends RulesNodeWithProperties {
 
     /**
      * Source restriction cells defining when this line applies.

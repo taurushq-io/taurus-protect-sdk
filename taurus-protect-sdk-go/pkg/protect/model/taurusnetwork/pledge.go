@@ -41,14 +41,14 @@ type PledgeDurationSetup struct {
 
 // PledgeAttribute represents a key-value attribute on a pledge.
 type PledgeAttribute struct {
-	ID                   string `json:"id"`
-	Key                  string `json:"key"`
-	Value                string `json:"value"`
-	Owner                string `json:"owner"`
-	Type                 string `json:"type"`
-	Subtype              string `json:"subtype"`
-	ContentType          string `json:"contentType"`
-	IsTaurusNetworkShared bool  `json:"isTaurusNetworkShared"`
+	ID                    string `json:"id"`
+	Key                   string `json:"key"`
+	Value                 string `json:"value"`
+	Owner                 string `json:"owner"`
+	Type                  string `json:"type"`
+	Subtype               string `json:"subtype"`
+	ContentType           string `json:"contentType"`
+	IsTaurusNetworkShared bool   `json:"isTaurusNetworkShared"`
 }
 
 // PledgeTrail represents a trail entry for a pledge.
@@ -65,19 +65,19 @@ type PledgeTrail struct {
 
 // PledgeWithdrawal represents a withdrawal from a pledge.
 type PledgeWithdrawal struct {
-	ID                         string                   `json:"id"`
-	PledgeID                   string                   `json:"pledgeID"`
-	DestinationSharedAddressID string                   `json:"destinationSharedAddressID"`
-	Amount                     string                   `json:"amount"`
-	Status                     string                   `json:"status"`
-	TxHash                     string                   `json:"txHash"`
-	TxID                       string                   `json:"txID"`
-	RequestID                  string                   `json:"requestID"`
-	TxBlockNumber              string                   `json:"txBlockNumber"`
-	InitiatorParticipantID     string                   `json:"initiatorParticipantID"`
-	ExternalReferenceID        string                   `json:"externalReferenceID"`
-	Trails                     []PledgeWithdrawalTrail  `json:"trails,omitempty"`
-	CreatedAt                  time.Time                `json:"createdAt"`
+	ID                         string                  `json:"id"`
+	PledgeID                   string                  `json:"pledgeID"`
+	DestinationSharedAddressID string                  `json:"destinationSharedAddressID"`
+	Amount                     string                  `json:"amount"`
+	Status                     string                  `json:"status"`
+	TxHash                     string                  `json:"txHash"`
+	TxID                       string                  `json:"txID"`
+	RequestID                  string                  `json:"requestID"`
+	TxBlockNumber              string                  `json:"txBlockNumber"`
+	InitiatorParticipantID     string                  `json:"initiatorParticipantID"`
+	ExternalReferenceID        string                  `json:"externalReferenceID"`
+	Trails                     []PledgeWithdrawalTrail `json:"trails,omitempty"`
+	CreatedAt                  time.Time               `json:"createdAt"`
 }
 
 // PledgeWithdrawalTrail represents a trail entry for a pledge withdrawal.
@@ -93,19 +93,19 @@ type PledgeWithdrawalTrail struct {
 
 // PledgeAction represents an action on a pledge.
 type PledgeAction struct {
-	ID                  string              `json:"id"`
-	PledgeID            string              `json:"pledgeID"`
-	ActionType          string              `json:"actionType"`
-	Status              string              `json:"status"`
-	Metadata            *model.RequestMetadata    `json:"metadata,omitempty"`
-	Rule                string              `json:"rule"`
-	Approvers           *model.Approvers          `json:"approvers,omitempty"`
-	NeedsApprovalFrom   []string            `json:"needsApprovalFrom,omitempty"`
-	Envelope            string              `json:"envelope"`
-	PledgeWithdrawalID  string              `json:"pledgeWithdrawalID"`
-	Trails              []PledgeActionTrail `json:"trails,omitempty"`
-	CreatedAt           time.Time           `json:"createdAt"`
-	LastApprovalDate    time.Time           `json:"lastApprovalDate"`
+	ID                 string                 `json:"id"`
+	PledgeID           string                 `json:"pledgeID"`
+	ActionType         string                 `json:"actionType"`
+	Status             string                 `json:"status"`
+	Metadata           *model.RequestMetadata `json:"metadata,omitempty"`
+	Rule               string                 `json:"rule"`
+	Approvers          *model.Approvers       `json:"approvers,omitempty"`
+	NeedsApprovalFrom  []string               `json:"needsApprovalFrom,omitempty"`
+	Envelope           string                 `json:"envelope"`
+	PledgeWithdrawalID string                 `json:"pledgeWithdrawalID"`
+	Trails             []PledgeActionTrail    `json:"trails,omitempty"`
+	CreatedAt          time.Time              `json:"createdAt"`
+	LastApprovalDate   time.Time              `json:"lastApprovalDate"`
 }
 
 // Note: We use model.RequestMetadata for metadata since it has the same structure.
@@ -128,14 +128,14 @@ type PledgeActionTrail struct {
 
 // CreatePledgeRequest represents a request to create a new pledge.
 type CreatePledgeRequest struct {
-	SharedAddressID      string                          `json:"sharedAddressID"`
-	CurrencyID           string                          `json:"currencyID"`
-	Amount               string                          `json:"amount"`
-	PledgeType           string                          `json:"pledgeType"`
-	ExternalReferenceID  string                          `json:"externalReferenceId,omitempty"`
-	ReconciliationNote   string                          `json:"reconciliationNote,omitempty"`
-	PledgeDurationSetup  *CreatePledgeDurationSetup      `json:"pledgeDurationSetup,omitempty"`
-	KeyValueAttributes   []KeyValue                      `json:"keyValueAttributes,omitempty"`
+	SharedAddressID     string                     `json:"sharedAddressID"`
+	CurrencyID          string                     `json:"currencyID"`
+	Amount              string                     `json:"amount"`
+	PledgeType          string                     `json:"pledgeType"`
+	ExternalReferenceID string                     `json:"externalReferenceId,omitempty"`
+	ReconciliationNote  string                     `json:"reconciliationNote,omitempty"`
+	PledgeDurationSetup *CreatePledgeDurationSetup `json:"pledgeDurationSetup,omitempty"`
+	KeyValueAttributes  []KeyValue                 `json:"keyValueAttributes,omitempty"`
 }
 
 // CreatePledgeDurationSetup represents the duration setup for a new pledge.

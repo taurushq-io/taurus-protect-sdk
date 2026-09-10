@@ -190,4 +190,3 @@ func BalanceHistoryPointsFromDTO(dtos []openapi.TgvalidatordBalanceHistoryPoint)
 	}
 	return points
 }
-

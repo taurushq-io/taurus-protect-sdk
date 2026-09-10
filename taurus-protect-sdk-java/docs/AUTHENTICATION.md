@@ -33,7 +33,44 @@ The SDK handles TPV1 signing automatically. You only need to provide credentials
 
 ## Client Initialization
 
-### Using PEM-Encoded Keys (Recommended)
+### Authentication mechanisms
+
+Build the auth mechanism with `Credentials` and pass it to `ProtectClient.create` or
+`builder().credentials(...)`:
+
+- `Credentials.apiKey(apiKey, apiSecret)` — static TPV1-HMAC.
+- `Credentials.bearerToken(token)` — a single static Bearer token.
+- `Credentials.bearerTokenProvider(supplier)` — a Bearer token resolved per request.
+
+> **A client must not be shared across a trust boundary.** The rules-container cache is a
+> single slot shared by every caller of one client. On a cache hit no request is issued, so
+> a second caller receives the container fetched with the first caller's token and their own
+> authorization for the governance read is never exercised. Governance containers are
+> tenant-wide and SuperAdmin-signed, so this is not a cross-tenant leak — but with a
+> per-request token provider, build **one client per tenant**. `tg-protect-mcpd`'s
+> `tenantClientRegistry` is the reference pattern.
+
+
+SuperAdmin public keys are **required** regardless of the mechanism — client-side
+governance rules verification is mandatory.
+
+```java
+import com.taurushq.sdk.protect.client.Credentials;
+import com.taurushq.sdk.protect.client.ProtectClient;
+
+ProtectClient client = ProtectClient.builder()
+    .host("https://api.taurus-protect.com")
+    .credentials(Credentials.apiKey("your-api-key-uuid", "your-api-secret-hex"))
+    .superAdminKeysPem(superAdminKeysPem)   // required
+    .minValidSignatures(2)
+    .build();
+```
+
+The examples below use `Credentials`. The flat api-key parameters on the constructors are
+retained but **deprecated**; `createFromPem` is a PEM-decoding convenience and is not
+deprecated.
+
+### Using PEM-Encoded Keys
 
 ```java
 import com.taurushq.sdk.protect.client.ProtectClient;
@@ -55,6 +92,7 @@ ProtectClient client = ProtectClient.createFromPem(
 ### Using PublicKey Objects
 
 ```java
+import com.taurushq.sdk.protect.client.Credentials;
 import com.taurushq.sdk.protect.client.ProtectClient;
 import com.taurushq.sdk.protect.openapi.auth.CryptoTPV1;
 import java.security.PublicKey;
@@ -65,8 +103,7 @@ List<PublicKey> superAdminKeys = CryptoTPV1.decodePublicKeys(pemKeysList);
 
 ProtectClient client = ProtectClient.create(
     "https://api.taurus-protect.com",
-    "your-api-key-uuid",
-    "your-api-secret-hex",
+    Credentials.apiKey("your-api-key-uuid", "your-api-secret-hex"),
     superAdminKeys,
     2                                            // Minimum valid signatures
 );
@@ -77,8 +114,7 @@ ProtectClient client = ProtectClient.create(
 ```java
 ProtectClient client = ProtectClient.create(
     host,
-    apiKey,
-    apiSecret,
+    Credentials.apiKey(apiKey, apiSecret),
     superAdminKeys,
     minValidSignatures,
     600000L                                      // Rules cache TTL in milliseconds (10 min)
@@ -218,10 +254,16 @@ SuperAdmin keys are typically provided by your Taurus PROTECT administrator. You
 │  For each signature:                                     │
 │    1. Decode base64 signature                           │
 │    2. Verify against SuperAdmin public keys             │
-│    3. Count valid signatures                            │
-│  Require: validCount >= minValidSignatures              │
+│    3. Record the signing key's fingerprint              │
+│  Require: distinct signing keys >= minValidSignatures    │
 └─────────────────────────────────────────────────────────┘
 ```
+
+> `minValidSignatures` counts **distinct signing keys**, never signature entries. ECDSA is
+> randomized, so one key can emit unlimited valid signatures over the same container, and
+> `userId` is server-supplied — so neither entries nor user IDs can gate the count. A signer
+> is identified by a SHA-256 hash of its encoded public key; a key configured twice counts
+> once.
 
 ## Request Approval Signing
 

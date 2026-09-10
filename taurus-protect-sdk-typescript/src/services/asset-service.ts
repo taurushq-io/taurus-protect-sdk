@@ -4,7 +4,9 @@
  * Provides methods for querying asset balances at address and wallet levels.
  */
 
-import { ValidationError } from '../errors';
+import type { RulesContainerCache } from '../cache';
+import { ConfigurationError, ValidationError } from '../errors';
+import { verifyAddressSignature } from '../helpers';
 import type { AssetsApi } from '../internal/openapi/apis/AssetsApi';
 import { addressesFromDto } from '../mappers/address';
 import { walletsFromDto } from '../mappers/wallet';
@@ -64,15 +66,29 @@ export interface GetAssetWalletsOptions {
  */
 export class AssetService extends BaseService {
   private readonly assetsApi: AssetsApi;
+  private readonly rulesCache: RulesContainerCache;
 
   /**
    * Creates a new AssetService instance.
    *
+   * Address signature verification is MANDATORY: getAssetAddresses returns the same
+   * Address entity AddressService does, signature and all, and used to hand it over
+   * unverified — so the mandatory verification there could be walked around by asking
+   * for the same rows here.
+   *
    * @param assetsApi - The AssetsApi instance from the OpenAPI client
+   * @param rulesCache - Rules container cache for signature verification (required)
+   * @throws ConfigurationError if rulesCache is not provided
    */
-  constructor(assetsApi: AssetsApi) {
+  constructor(assetsApi: AssetsApi, rulesCache: RulesContainerCache) {
     super();
+    if (!rulesCache) {
+      throw new ConfigurationError(
+        "RulesContainerCache is required for AssetService — address signature verification is mandatory"
+      );
+    }
     this.assetsApi = assetsApi;
+    this.rulesCache = rulesCache;
   }
 
   /**
@@ -118,7 +134,23 @@ export class AssetService extends BaseService {
         },
       });
 
-      return addressesFromDto(response.addresses);
+      const addresses = addressesFromDto(response.addresses);
+
+      // Fail-fast, as AddressService does: one unverifiable address is not a row to
+      // skip past when the caller is choosing where funds go.
+      if (addresses.length > 0) {
+        const rules = await this.rulesCache.get();
+        for (const address of addresses) {
+          verifyAddressSignature(
+            address.address,
+            address.signature ?? "",
+            rules,
+            address.id
+          );
+        }
+      }
+
+      return addresses;
     });
   }
 

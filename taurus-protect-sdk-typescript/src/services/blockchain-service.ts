@@ -6,7 +6,7 @@
 
 import { NotFoundError, ValidationError } from '../errors';
 import type { BlockchainApi } from '../internal/openapi/apis/BlockchainApi';
-import { blockchainFromDto, blockchainsFromDto } from '../mappers/blockchain';
+import { blockchainsFromDto } from '../mappers/blockchain';
 import type { Blockchain, ListBlockchainsOptions } from '../models/blockchain';
 import { BaseService } from './base';
 

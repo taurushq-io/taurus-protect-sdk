@@ -67,7 +67,7 @@ func (s *AirGapService) GetOutgoingAirGap(ctx context.Context, req *model.GetOut
 	if file == nil {
 		return nil, fmt.Errorf("no data returned from air-gap export")
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	data, err := io.ReadAll(file)
 	if err != nil {

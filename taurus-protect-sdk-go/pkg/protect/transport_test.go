@@ -22,7 +22,7 @@ func TestTPV1Transport_RoundTrip(t *testing.T) {
 			t.Errorf("Authorization header should start with TPV1-HMAC-SHA256, got: %s", auth)
 		}
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
+		_, _ = w.Write([]byte("OK"))
 	}))
 	defer server.Close()
 
@@ -43,7 +43,7 @@ func TestTPV1Transport_RoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("StatusCode = %v, want %v", resp.StatusCode, http.StatusOK)
@@ -79,7 +79,7 @@ func TestTPV1Transport_RoundTrip_WithBody(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Do() error = %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if string(receivedBody) != body {
 		t.Errorf("Body = %v, want %v", string(receivedBody), body)
@@ -110,7 +110,7 @@ func TestTPV1Transport_RoundTrip_DefaultTransport(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("StatusCode = %v, want %v", resp.StatusCode, http.StatusOK)
@@ -142,7 +142,7 @@ func TestTPV1Transport_RoundTrip_AuthHeaderFormat(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Get() error = %v", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Check header format
 	if !strings.Contains(authHeader, "ApiKey=my-api-key") {

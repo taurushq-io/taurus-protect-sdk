@@ -602,6 +602,7 @@ export function roleToJSON(object: Role): string {
 export interface Status {
   code: Status_StatusCode;
   message: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum Status_StatusCode {
@@ -656,6 +657,7 @@ export interface Traces {
   children: Traces[];
   /** offset against parent, in ms */
   offset: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface EncryptedRepliesContainer {
@@ -664,6 +666,7 @@ export interface EncryptedRepliesContainer {
   ciphertext: Uint8Array;
   /** hmac-sha256(key,ciphertext) */
   mac: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SignedRepliesEnvelope {
@@ -685,10 +688,12 @@ export interface SignedRepliesEnvelope {
     | undefined;
   /** Traces are always sent decrypted, not taken into account in the encrypted container */
   traces: Traces | undefined;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface Replies {
   replies: Reply[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface Reply {
@@ -697,6 +702,7 @@ export interface Reply {
   status: Status | undefined;
   payloadType: Reply_PayloadType;
   payload: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum Reply_PayloadType {
@@ -893,6 +899,7 @@ export interface MonitoringResponse {
   payload: string;
   /** b64_encode of ECDSA-SHA256 over P256 of payload */
   signature: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ProofOfReserveResponse {
@@ -904,6 +911,7 @@ export interface ProofOfReserveResponse {
   publicKey: Uint8Array;
   challenge: string;
   challengeResponse: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum ProofOfReserveResponse_Curve {
@@ -998,17 +1006,20 @@ export function proofOfReserveResponse_CipherToJSON(object: ProofOfReserveRespon
 
 export interface TransactionsResponse {
   transactions: TransactionsResponse_Transaction[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface TransactionsResponse_Transaction {
   id: string;
   transaction: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SourceInternalWallet {
   id: number;
   name: string;
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SourceInternalAddress {
@@ -1016,11 +1027,13 @@ export interface SourceInternalAddress {
   address: string;
   label: string;
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SourceExchange {
   id: number;
   label: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SourceFiatProviderAccount {
@@ -1030,6 +1043,7 @@ export interface SourceFiatProviderAccount {
   accountType: string;
   /** true if this is a counterparty account, false if this is a provider account */
   isCounterparty: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 /**
@@ -1042,11 +1056,13 @@ export interface SourceExternalAddress {
   address: string;
   label: string;
   memo: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface Source {
   type: Source_SourceType;
   payload: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 /** 1:1 mapping between enum and payload */
@@ -1111,6 +1127,7 @@ export interface DestinationInternalAddress {
   address: string;
   label: string;
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface DestinationExternalAddress {
@@ -1118,6 +1135,7 @@ export interface DestinationExternalAddress {
   address: string;
   label: string;
   memo: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface DestinationExchangeAddress {
@@ -1127,6 +1145,7 @@ export interface DestinationExchangeAddress {
   exchangeAccountId: number;
   exchangeAccountLabel: string;
   memo: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface DestinationFiatProviderAccount {
@@ -1136,6 +1155,7 @@ export interface DestinationFiatProviderAccount {
   accountType: string;
   /** true if this is a counterparty account, false if this is a provider account */
   isCounterparty: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface DestinationContractAddress {
@@ -1144,11 +1164,13 @@ export interface DestinationContractAddress {
   name: string;
   symbol: string;
   blockchain: Blockchain;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface Destination {
   type: Destination_DestinationType;
   payload: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 /** 1:1 mapping between enum and payload */
@@ -1210,6 +1232,7 @@ export function destination_DestinationTypeToJSON(object: Destination_Destinatio
 
 export interface WhitelistedContractAddressArray {
   addresses: DestinationContractAddress[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 /** Contains the common metadata of every blockchain transaction type */
@@ -1222,6 +1245,7 @@ export interface RequestMetadata {
   column: string;
   /** metadata must be commited by a second party */
   DeprecatedSecondaryCommit: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum RequestMetadata_MetadataType {
@@ -1344,42 +1368,51 @@ export function requestMetadata_MetadataTypeToJSON(object: RequestMetadata_Metad
 export interface RequestMetadata_ArrayElems {
   type: RequestMetadata_MetadataType;
   value: Uint8Array[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RequestMetadata_TupleElems {
   elems: RequestMetadata_TupleElems_Elem[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RequestMetadata_TupleElems_Elem {
   type: RequestMetadata_MetadataType;
   value: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RequestMetadata_XOperation {
   operation: string;
   arguments: RequestMetadata_XOperation_Arg[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RequestMetadata_XOperation_Arg {
   type: RequestMetadata_MetadataType;
   value: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SignedBigInt {
   negative: boolean;
   payload: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface BytesArray {
   payload: Uint8Array[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface BigIntArray {
   payload: Uint8Array[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface StringArray {
   payload: string[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface Amount {
@@ -1391,16 +1424,19 @@ export interface Amount {
   currencyTo: string;
   /** signatures of the sha256 hash of a json serialized string ({"blockchain":"ETH","currencyFrom":"BNB","currencyTo":"CHF","decimals":"18", "rate":"123.1000"}) by user with the role "priceupdater" */
   signatures: UserSignature[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface UserSignatures {
   signatures: UserSignature[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface UserSignature {
   userId: string;
   signature: Uint8Array;
   comment: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SignedRequestsEnvelope {
@@ -1420,6 +1456,7 @@ export interface SignedRequestsEnvelope {
     | undefined;
   /** Always sent in cleartext, not contained within the encrypted container */
   enableTracing: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface EncryptedSignedRequestsEnvelope {
@@ -1432,6 +1469,7 @@ export interface EncryptedSignedRequestsEnvelope {
   ecPoint: Uint8Array;
   /** hmac-sha256(key,ciphertext) */
   mac: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RequestsEnvelope {
@@ -1443,6 +1481,7 @@ export interface RequestsEnvelope {
   /** contains a serialized "RulesContainer" message */
   rules: Uint8Array;
   requests: RequestEnvelope[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 /** This message is used for routing to the right cylinder */
@@ -1455,6 +1494,7 @@ export interface RequestEnvelope {
   payload: Uint8Array;
   network: RequestEnvelope_Network;
   networkId: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum RequestEnvelope_Network {
@@ -1953,6 +1993,7 @@ export function requestEnvelope_PayloadTypeToJSON(object: RequestEnvelope_Payloa
 export interface RequestSignature {
   signature: UserSignature | undefined;
   hashes: string[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface HMACRequest {
@@ -1963,6 +2004,7 @@ export interface HMACRequest {
   payload: Uint8Array;
   signatures: RequestSignature[];
   metadata: RequestMetadata[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 /** 1:1 mapping between PayloadType and serialized Message */
@@ -2010,6 +2052,7 @@ export interface NoSignatureNeededRequest {
   type: NoSignatureNeededRequest_RequestType;
   signatures: RequestSignature[];
   metadata: RequestMetadata[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum NoSignatureNeededRequest_RequestType {
@@ -2097,12 +2140,14 @@ export interface Commitment {
    * This is meant to prevent passing off one type of commitment as another.
    */
   signatures: UserSignature[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface TnPledgeActionRequest {
   action: TnPledgeActionRequest_PledgeAction;
   signatures: RequestSignature[];
   metadata: RequestMetadata[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum TnPledgeActionRequest_PledgeAction {
@@ -2163,6 +2208,7 @@ export function tnPledgeActionRequest_PledgeActionToJSON(object: TnPledgeActionR
 }
 
 export interface MonitoringRequest {
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface TransactionRequest {
@@ -2173,6 +2219,7 @@ export interface TransactionRequest {
   signatures: RequestSignature[];
   metadata: RequestMetadata[];
   commitment: Commitment | undefined;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 /**
@@ -2822,23 +2869,27 @@ export interface BundleTransactionRequest {
   id: string;
   bundle: TransactionRequest[];
   signatures: RequestSignature[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface AddressResponse {
   address: string;
   signature: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface CantonAddressRequest {
   prefix: string;
   path: string;
   forParticipantID: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface CantonAddressResponse {
   party: string;
   partySignature: Uint8Array;
   signedTopologyTransactions: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface CantonTransaction {
@@ -2850,11 +2901,13 @@ export interface CantonTransaction {
   choiceArguments: Uint8Array;
   commandID: string;
   party: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface CantonTransactionsRequest {
   kind: CantonTransactionsRequest_CantonOperationKind;
   transactions: CantonTransaction[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum CantonTransactionsRequest_CantonOperationKind {
@@ -2904,6 +2957,7 @@ export interface CantonProofOfReserveRequest {
   path: string;
   prefix: string;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ICPAddressResponse {
@@ -2911,29 +2965,35 @@ export interface ICPAddressResponse {
   accountIdentifierSignature: Uint8Array;
   principal: string;
   subAccount: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ICPProofOfReserveRequest {
   path: string;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ICPAddressRequest {
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ICPRequestsRequest {
   requests: ICPRequest[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ICPRequestsResponse {
   requests: ICPRequestsResponse_ICPRequestResponse[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ICPRequestsResponse_ICPRequestResponse {
   id: string;
   operationRequest: string;
   statusRequest: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ICPTransfer {
@@ -2943,6 +3003,7 @@ export interface ICPTransfer {
   fee: number;
   memo: number;
   createdAtTime: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ICPTransferToStake {
@@ -2951,58 +3012,70 @@ export interface ICPTransferToStake {
   fee: number;
   memo: number;
   createdAtTime: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ICPFollow {
   from: string;
   followees: number[];
   topic: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ICPClaimOrRefresh {
   from: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ICPSetAutoStakeRewards {
   from: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ICPSetDissolveDelay {
   from: string;
   nowTimestampSeconds: number;
   delayTimestampSeconds: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ICPSpawn {
   from: string;
   nonce: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ICPDisburseToPrimary {
   from: string;
   nonce: number;
   amount: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ICPStartDissolving {
   from: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ICPDisburse {
   from: string;
   amount: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ICPListNeurons {
   from: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ICPRefreshVotingPower {
   from: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ICPDisburseMaturityToPrimary {
   from: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 /**
@@ -3024,6 +3097,7 @@ export interface ICRC1Transfer {
   createdAtTime: number;
   natAmount: Uint8Array;
   natFee: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ICPRequest {
@@ -3040,6 +3114,7 @@ export interface ICPRequest {
    * This as been added in case we're updating the HSM before validatord, we need to return proto by default
    */
   encodeAsCandid: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum ICPRequest_ICPRequestKind {
@@ -3170,14 +3245,17 @@ export function iCPRequest_ICPRequestKindToJSON(object: ICPRequest_ICPRequestKin
 export interface NEARProofOfReserveRequest {
   path: string;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface NEARAddressRequest {
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface NEARTransactionsRequest {
   transactions: NEARTransaction[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface NEARTransaction {
@@ -3188,6 +3266,7 @@ export interface NEARTransaction {
   blockHash: string;
   amount: Uint8Array;
   isNonceSet: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface NEARDepositAndStakeRequest {
@@ -3199,6 +3278,7 @@ export interface NEARDepositAndStakeRequest {
   amount: Uint8Array;
   gas: number;
   isNonceSet: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface NEARUnstakeRequest {
@@ -3210,6 +3290,7 @@ export interface NEARUnstakeRequest {
   amount: Uint8Array;
   gas: number;
   isNonceSet: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface NEARWithdrawRequest {
@@ -3221,10 +3302,12 @@ export interface NEARWithdrawRequest {
   amount: Uint8Array;
   gas: number;
   isNonceSet: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ADAAddressRequest {
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ADAInput {
@@ -3232,36 +3315,43 @@ export interface ADAInput {
   hash: Uint8Array;
   index: number;
   value: ADAValue | undefined;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ADANativeAsset {
   name: Uint8Array;
   amount: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ADAAssetPolicy {
   policyId: Uint8Array;
   assets: ADANativeAsset[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ADAValue {
   amount: number;
   policies: ADAAssetPolicy[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ADAOutput {
   address: string;
   value: ADAValue | undefined;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ADAChangeOutput {
   path: string;
   value: ADAValue | undefined;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ADAWithdrawal {
   path: string;
   amount: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ADATransactionRequest {
@@ -3271,6 +3361,7 @@ export interface ADATransactionRequest {
   changeOutput: ADAChangeOutput | undefined;
   ttl: number;
   fee: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ADAWithdrawalRequest {
@@ -3280,12 +3371,14 @@ export interface ADAWithdrawalRequest {
   changeOutput: ADAChangeOutput | undefined;
   ttl: number;
   fee: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ADADrep {
   drepType: ADADrep_DRepType;
   /** CIP-0129 drepid to whom we are we delegating votes to, empty for Abstain or NoConfidence types */
   drep: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum ADADrep_DRepType {
@@ -3345,6 +3438,7 @@ export interface ADADelegationRequest {
   keyDeposit: number;
   /** If set we include a drep vote delegation as well */
   drep: ADADrep | undefined;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ADAUndelegationRequest {
@@ -3356,6 +3450,7 @@ export interface ADAUndelegationRequest {
   fee: number;
   /** Deposit amount refunded by stake deregistration */
   keyDeposit: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ADAVoteDelegationRequest {
@@ -3365,11 +3460,13 @@ export interface ADAVoteDelegationRequest {
   drep: ADADrep | undefined;
   ttl: number;
   fee: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ADAProofOfReserveRequest {
   path: string;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ADAProofOfReserveResponse {
@@ -3382,12 +3479,14 @@ export interface ADAProofOfReserveResponse {
   /** public key for the curve. For p256 x::y, for ed25519, 32byte pubkey. */
   stakePublicKey: Uint8Array;
   stakeChallengeResponse: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMAsset {
   type: XLMAsset_AssetType;
   alphanum: XLMAsset_Alphanum | undefined;
   pool: XLMAsset_LiquidityPoolParams | undefined;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum XLMAsset_AssetType {
@@ -3438,6 +3537,7 @@ export function xLMAsset_AssetTypeToJSON(object: XLMAsset_AssetType): string {
 export interface XLMAsset_Alphanum {
   assetID: string;
   issuer: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 /** ConstantProductParams on Stellar XDR */
@@ -3448,6 +3548,7 @@ export interface XLMAsset_LiquidityPoolParams {
     | undefined;
   /** Fee is in basis points, so the actual rate is (fee/100)%. Example fee = 1 is 0.01% */
   fee: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMLedgerEntry {
@@ -3457,6 +3558,7 @@ export interface XLMLedgerEntry {
   offerId: number;
   dataName: string;
   claimableBalanceID: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum XLMLedgerEntry_LedgerEntryType {
@@ -3521,6 +3623,7 @@ export interface XLMTransactionDetails {
   isSequenceSet: boolean;
   /** path of internal address sponsoring `from` account base reserve cost for the underlying operation */
   sponsoredBy: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMMintAssetRequest {
@@ -3528,12 +3631,14 @@ export interface XLMMintAssetRequest {
   assetId: string;
   amount: number;
   destination: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMChangeTrustRequest {
   details: XLMTransactionDetails | undefined;
   asset: XLMAsset | undefined;
   limit: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMSetTrustlineFlagsRequest {
@@ -3542,10 +3647,12 @@ export interface XLMSetTrustlineFlagsRequest {
   asset: XLMAsset | undefined;
   setFlags: number;
   clearFlags: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMPaymentsRequest {
   payments: XLMPayment[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMPayment {
@@ -3567,6 +3674,7 @@ export interface XLMPayment {
     | undefined;
   /** as in details */
   sponsoredBy: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum XLMPayment_Operation {
@@ -3605,23 +3713,27 @@ export function xLMPayment_OperationToJSON(object: XLMPayment_Operation): string
 export interface XLMAddressRequest {
   /** BIP 44 path */
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMProofOfReserveRequest {
   path: string;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMSetOptionsRequest {
   details: XLMTransactionDetails | undefined;
   setFlags: number;
   clearFlags: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMManageDataRequest {
   details: XLMTransactionDetails | undefined;
   name: string;
   valueData: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMClaimPredicate {
@@ -3636,6 +3748,7 @@ export interface XLMClaimPredicate {
    */
   predicateAbsBefore?: XLMClaimPredicate_PredicateAbsBefore | undefined;
   predicateRelBefore?: XLMClaimPredicate_PredicateRelBefore | undefined;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum XLMClaimPredicate_ClaimPredicateType {
@@ -3684,19 +3797,23 @@ export function xLMClaimPredicate_ClaimPredicateTypeToJSON(object: XLMClaimPredi
 
 /** void */
 export interface XLMClaimPredicate_PredicateUnconditional {
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMClaimPredicate_PredicateAbsBefore {
   absBefore: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMClaimPredicate_PredicateRelBefore {
   relBefore: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMClaimant {
   versionKind: XLMClaimant_VersionKind;
   v0?: XLMClaimant_ClaimantV0 | undefined;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum XLMClaimant_VersionKind {
@@ -3729,6 +3846,7 @@ export function xLMClaimant_VersionKindToJSON(object: XLMClaimant_VersionKind): 
 export interface XLMClaimant_ClaimantV0 {
   destination: string;
   claimPredicate: XLMClaimPredicate | undefined;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMCreateClaimableBalanceRequest {
@@ -3736,21 +3854,25 @@ export interface XLMCreateClaimableBalanceRequest {
   asset: XLMAsset | undefined;
   amount: number;
   claimant: XLMClaimant | undefined;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMClaimClaimableBalanceRequest {
   details: XLMTransactionDetails | undefined;
   claimableBalanceID: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMClawbackClaimableBalanceRequest {
   details: XLMTransactionDetails | undefined;
   claimableBalanceID: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMRevokeSponsorshipRequest {
   details: XLMTransactionDetails | undefined;
   entry: XLMLedgerEntry | undefined;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMClawbackRequest {
@@ -3758,11 +3880,13 @@ export interface XLMClawbackRequest {
   destination: string;
   asset: XLMAsset | undefined;
   amount: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMPrice {
   numerator: number;
   denominator: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMLiquidityPoolDepositRequest {
@@ -3778,6 +3902,7 @@ export interface XLMLiquidityPoolDepositRequest {
     | undefined;
   /** maximum depositA/depositB */
   maxPrice: XLMPrice | undefined;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMLiquidityPoolWithdrawRequest {
@@ -3787,6 +3912,7 @@ export interface XLMLiquidityPoolWithdrawRequest {
   amount: number;
   minAmountA: number;
   minAmountB: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMPathPaymentSendRequest {
@@ -3797,6 +3923,7 @@ export interface XLMPathPaymentSendRequest {
   path: XLMAsset[];
   srcAmount: number;
   minDstAmount: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMPathPaymentReceiveRequest {
@@ -3807,6 +3934,7 @@ export interface XLMPathPaymentReceiveRequest {
   path: XLMAsset[];
   dstAmount: number;
   maxSrcAmount: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XLMOfferRequest {
@@ -3817,6 +3945,7 @@ export interface XLMOfferRequest {
   price: XLMPrice | undefined;
   offerId: number;
   kind: XLMOfferRequest_OfferKind;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum XLMOfferRequest_OfferKind {
@@ -3860,6 +3989,7 @@ export function xLMOfferRequest_OfferKindToJSON(object: XLMOfferRequest_OfferKin
 
 export interface XRPPaymentsRequest {
   payments: XRPPayment[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XRPPayment {
@@ -3872,15 +4002,18 @@ export interface XRPPayment {
   amount: number;
   id: string;
   isSequenceSet: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XRPAddressRequest {
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XRPProofOfReserveRequest {
   path: string;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XTZRevealRequest {
@@ -3890,10 +4023,12 @@ export interface XTZRevealRequest {
   fee: number;
   counter: Uint8Array;
   gasLimit: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XTZDelegationsRequest {
   delegations: XTZDelegation[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XTZDelegation {
@@ -3905,10 +4040,12 @@ export interface XTZDelegation {
   gasLimit: Uint8Array;
   delegate: string;
   isNonceSet: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XTZTransactionsRequest {
   transactions: XTZTransaction[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XTZTransaction {
@@ -3923,10 +4060,12 @@ export interface XTZTransaction {
   to: string;
   parameters: Uint8Array;
   isNonceSet: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XTZFA12TransfersRequest {
   transfers: XTZFA12Transfer[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XTZFA12Transfer {
@@ -3941,10 +4080,12 @@ export interface XTZFA12Transfer {
   to: string;
   contract: string;
   isNonceSet: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XTZFA2TransfersRequest {
   transfers: XTZFA2Transfer[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XTZFA2Transfer {
@@ -3960,6 +4101,7 @@ export interface XTZFA2Transfer {
   contract: string;
   tokenId: Uint8Array;
   isNonceSet: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XTZCreateContractRequest {
@@ -3975,6 +4117,7 @@ export interface XTZCreateContractRequest {
   code: Uint8Array;
   storage: Uint8Array;
   isNonceSet: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XTZStakeRequest {
@@ -3986,6 +4129,7 @@ export interface XTZStakeRequest {
   gasLimit: Uint8Array;
   amount: number;
   isNonceSet: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XTZUnstakeRequest {
@@ -3997,6 +4141,7 @@ export interface XTZUnstakeRequest {
   gasLimit: Uint8Array;
   amount: number;
   isNonceSet: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XTZFinalizeUnstakeRequest {
@@ -4007,25 +4152,30 @@ export interface XTZFinalizeUnstakeRequest {
   counter: Uint8Array;
   gasLimit: Uint8Array;
   isNonceSet: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XTZAddressRequest {
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XTZProofOfReserveRequest {
   path: string;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface XTZBlockHeaderRequest {
   id: string;
   path: string;
   payload: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ETHTransactionsRequest {
   transactions: ETHTransaction[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ETHTransaction {
@@ -4039,6 +4189,7 @@ export interface ETHTransaction {
   id: string;
   isNonceSet: boolean;
   chainId: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ETHCreateContractRequest {
@@ -4051,32 +4202,38 @@ export interface ETHCreateContractRequest {
   id: string;
   isNonceSet: boolean;
   chainId: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ETHAddressRequest {
   /** BIP 44 path */
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ETHProofOfReserveRequest {
   path: string;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ETHTransactionsResponse {
   transactions: ETHTransactionsResponse_ETHTransactionResponse[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ETHTransactionsResponse_ETHTransactionResponse {
   id: string;
   transaction: string;
   publicKey: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ETHSignTextRequest {
   id: string;
   from: string;
   message: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ETHSignTextResponse {
@@ -4084,10 +4241,12 @@ export interface ETHSignTextResponse {
   /** r::s */
   signature: Uint8Array;
   publicKey: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ETHWrappedTransactionsRequest {
   transactions: ETHWrappedTransaction[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ETHWrappedTransaction {
@@ -4103,6 +4262,7 @@ export interface ETHWrappedTransaction {
   forwarder: string;
   deadline: number;
   forwarderKind: ETHWrappedTransaction_ForwarderKind;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum ETHWrappedTransaction_ForwarderKind {
@@ -4147,22 +4307,26 @@ export interface ETHWrappedCreateContractRequest {
   id: string;
   isNonceSet: boolean;
   creator: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ETHWrappedTransactionsResponse {
   transactions: ETHWrappedTransactionsResponse_ETHWrappedTransactionResponse[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ETHWrappedTransactionsResponse_ETHWrappedTransactionResponse {
   id: string;
   transaction: string;
   publicKey: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ETHWrappedCreateContractResponse {
   id: string;
   transaction: string;
   publicKey: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface BTCInput {
@@ -4172,11 +4336,13 @@ export interface BTCInput {
   outputIndex: number;
   value: number;
   sequenceNumber: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface BTCOutput {
   destination: string;
   amount: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface BTCChangeOutput {
@@ -4184,6 +4350,7 @@ export interface BTCChangeOutput {
   path: string;
   addressType: BTCAddressType;
   amount: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface BTCTransactionRequest {
@@ -4195,6 +4362,7 @@ export interface BTCTransactionRequest {
   hashType: BTCSigHashType;
   id: string;
   size: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface BTCAddressRequest {
@@ -4202,6 +4370,7 @@ export interface BTCAddressRequest {
   path: string;
   /** P2PKH or P2SH-P2WPKH */
   addressType: BTCAddressType;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface BTCProofOfReserveRequest {
@@ -4209,6 +4378,7 @@ export interface BTCProofOfReserveRequest {
   /** P2PKH or P2SH-P2WPKH */
   addressType: BTCAddressType;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface BTCSignTextRequest {
@@ -4217,6 +4387,7 @@ export interface BTCSignTextRequest {
   from: string;
   /** message to sign, without the "\x18Bitcoin Signed Message:\n" prefix */
   message: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface BTCSignTextResponse {
@@ -4224,6 +4395,7 @@ export interface BTCSignTextResponse {
   /** 64 bytes signature r::s */
   signature: Uint8Array;
   publicKey: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface LTCInput {
@@ -4233,11 +4405,13 @@ export interface LTCInput {
   outputIndex: number;
   value: number;
   sequenceNumber: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface LTCOutput {
   destination: string;
   amount: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface LTCChangeOutput {
@@ -4245,6 +4419,7 @@ export interface LTCChangeOutput {
   path: string;
   addressType: LTCAddressType;
   amount: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface LTCTransactionRequest {
@@ -4255,6 +4430,7 @@ export interface LTCTransactionRequest {
   lockTime: number;
   hashType: LTCSigHashType;
   id: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface LTCAddressRequest {
@@ -4262,6 +4438,7 @@ export interface LTCAddressRequest {
   path: string;
   /** P2PKH or P2SH-P2WPKH */
   addressType: LTCAddressType;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface LTCProofOfReserveRequest {
@@ -4269,6 +4446,7 @@ export interface LTCProofOfReserveRequest {
   /** P2PKH or P2SH-P2WPKH */
   addressType: LTCAddressType;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface BCHInput {
@@ -4278,11 +4456,13 @@ export interface BCHInput {
   outputIndex: number;
   value: number;
   sequenceNumber: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface BCHOutput {
   destination: string;
   amount: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface BCHChangeOutput {
@@ -4290,6 +4470,7 @@ export interface BCHChangeOutput {
   path: string;
   addressType: BCHAddressType;
   amount: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface BCHTransactionRequest {
@@ -4300,6 +4481,7 @@ export interface BCHTransactionRequest {
   lockTime: number;
   hashType: BCHSigHashType;
   id: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface BCHAddressRequest {
@@ -4307,6 +4489,7 @@ export interface BCHAddressRequest {
   path: string;
   /** P2PKH or P2SH-P2WPKH */
   addressType: BCHAddressType;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface BCHProofOfReserveRequest {
@@ -4314,6 +4497,7 @@ export interface BCHProofOfReserveRequest {
   /** P2PKH or P2SH-P2WPKH */
   addressType: BCHAddressType;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface DOTExtrinsic {
@@ -4334,6 +4518,7 @@ export interface DOTExtrinsic {
   /** bigint */
   fee: Uint8Array;
   network: DOTExtrinsic_Network;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum DOTExtrinsic_Network {
@@ -4384,10 +4569,12 @@ export function dOTExtrinsic_NetworkToJSON(object: DOTExtrinsic_Network): string
 export interface DOTAddressRequest {
   /** BIP 44 path */
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface DOTTransactionsRequest {
   transactions: DOTTransaction[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface DOTTransaction {
@@ -4399,56 +4586,67 @@ export interface DOTTransaction {
     | undefined;
   /** Switch between transfer_keep_alive and transfer */
   unsafe: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface DOTProofOfReserveRequest {
   path: string;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface DOTPayoutStakersRequest {
   validator: string;
   era: number;
   extrinsic: DOTExtrinsic | undefined;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface DOTBondRequest {
   amount: Uint8Array;
   staked: boolean;
   extrinsic: DOTExtrinsic | undefined;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface DOTUnbondRequest {
   amount: Uint8Array;
   extrinsic: DOTExtrinsic | undefined;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface DOTBondExtraRequest {
   amount: Uint8Array;
   extrinsic: DOTExtrinsic | undefined;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface DOTChillRequest {
   extrinsic: DOTExtrinsic | undefined;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface DOTNominateRequest {
   nominees: string[];
   extrinsic: DOTExtrinsic | undefined;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface DOTWithdrawUnbondedRequest {
   s: number;
   extrinsic: DOTExtrinsic | undefined;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface TAOAddressRequest {
   /** BIP 44 path */
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface TAOTransactionsRequest {
   transactions: TAOTransaction[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface TAOTransaction {
@@ -4460,11 +4658,13 @@ export interface TAOTransaction {
     | undefined;
   /** Switch between transfer_keep_alive and transfer */
   unsafe: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface TAOProofOfReserveRequest {
   path: string;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface TAOAddStakeRequest {
@@ -4472,6 +4672,7 @@ export interface TAOAddStakeRequest {
   destination: string;
   amount: Uint8Array;
   extrinsic: DOTExtrinsic | undefined;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface TAORemoveStakeRequest {
@@ -4479,10 +4680,12 @@ export interface TAORemoveStakeRequest {
   destination: string;
   amount: Uint8Array;
   extrinsic: DOTExtrinsic | undefined;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface FTMTransactionsRequest {
   transactions: FTMTransaction[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface FTMTransaction {
@@ -4495,16 +4698,19 @@ export interface FTMTransaction {
   /** bytes payload = 7; */
   id: string;
   isNonceSet: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface FTMAddressRequest {
   /** BIP 44 path */
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface FTMProofOfReserveRequest {
   path: string;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface FTMStakingDelegateRequest {
@@ -4513,6 +4719,7 @@ export interface FTMStakingDelegateRequest {
   operation: FTMStakingDelegateRequest_FTMDelegateOperation;
   withdrawalId: number;
   withdrawalAmount: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum FTMStakingDelegateRequest_FTMDelegateOperation {
@@ -4562,6 +4769,7 @@ export interface FTMStakingClaimRewardsRequest {
   tx: FTMTransaction | undefined;
   validatorId: number;
   restake: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface FTMStakingLockRequest {
@@ -4570,6 +4778,7 @@ export interface FTMStakingLockRequest {
   operation: FTMStakingLockRequest_FTMLockOperation;
   duration: number;
   lockAmount: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum FTMStakingLockRequest_FTMLockOperation {
@@ -4613,16 +4822,19 @@ export function fTMStakingLockRequest_FTMLockOperationToJSON(object: FTMStakingL
 
 export interface FTMTransactionsResponse {
   transactions: FTMTransactionsResponse_FTMTransactionResponse[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface FTMTransactionsResponse_FTMTransactionResponse {
   id: string;
   transaction: string;
   publicKey: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SonicTransactionsRequest {
   transactions: SonicTransaction[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SonicTransaction {
@@ -4635,16 +4847,19 @@ export interface SonicTransaction {
   /** bytes payload = 7; */
   id: string;
   isNonceSet: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SonicAddressRequest {
   /** BIP 44 path */
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SonicProofOfReserveRequest {
   path: string;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SonicStakingDelegateRequest {
@@ -4653,6 +4868,7 @@ export interface SonicStakingDelegateRequest {
   operation: SonicStakingDelegateRequest_SonicDelegateOperation;
   withdrawalId: number;
   withdrawalAmount: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum SonicStakingDelegateRequest_SonicDelegateOperation {
@@ -4702,20 +4918,24 @@ export interface SonicStakingClaimRewardsRequest {
   tx: SonicTransaction | undefined;
   validatorId: number;
   restake: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SonicTransactionsResponse {
   transactions: SonicTransactionsResponse_SonicTransactionResponse[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SonicTransactionsResponse_SonicTransactionResponse {
   id: string;
   transaction: string;
   publicKey: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ALGOTransactionsRequest {
   transactions: ALGOTransaction[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ALGOTransactionMaterial {
@@ -4729,6 +4949,7 @@ export interface ALGOTransactionMaterial {
   gh: Uint8Array;
   /** max 1kb */
   note: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ALGOTransaction {
@@ -4738,16 +4959,19 @@ export interface ALGOTransaction {
   amount: number;
   material: ALGOTransactionMaterial | undefined;
   id: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ALGOAddressRequest {
   /** BIP 44 path */
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ALGOProofOfReserveRequest {
   path: string;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ALGOAssetOptinRequest {
@@ -4756,10 +4980,12 @@ export interface ALGOAssetOptinRequest {
   assetID: number;
   material: ALGOTransactionMaterial | undefined;
   id: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ALGOAssetTransferRequest {
   transfers: ALGOAssetTransfer[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface ALGOAssetTransfer {
@@ -4770,17 +4996,20 @@ export interface ALGOAssetTransfer {
   amount: number;
   material: ALGOTransactionMaterial | undefined;
   id: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface HederaAddressRequest {
   shardNum: number;
   realmNum: number;
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface HederaTransactionsRequest {
   kind: HederaTransactionsRequest_OperationKind;
   transactions: HederaTransaction[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum HederaTransactionsRequest_OperationKind {
@@ -5132,11 +5361,13 @@ export interface HederaAccount {
   shardNum: number;
   realmNum: number;
   accountID: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface HederaTimestamp {
   seconds: number;
   nanos: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface HederaTransaction {
@@ -5149,6 +5380,7 @@ export interface HederaTransaction {
   ttlSeconds: number;
   memo: string;
   operation: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface HederaProofOfReserveRequest {
@@ -5156,16 +5388,19 @@ export interface HederaProofOfReserveRequest {
   realmNum: number;
   path: string;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SOLAddressRequest {
   /** BIP 44 path */
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SOLProofOfReserveRequest {
   path: string;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SOLCleanupDerivedAccountRequest {
@@ -5175,10 +5410,12 @@ export interface SOLCleanupDerivedAccountRequest {
   program: string;
   amount: number;
   id: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SOLTransfersRequest {
   transfers: SOLTransfer[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SOLTransfer {
@@ -5193,6 +5430,7 @@ export interface SOLTransfer {
   computePrice: number;
   /** in compute units */
   computeBudget: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SOLDelegateStakeRequest {
@@ -5207,6 +5445,7 @@ export interface SOLDelegateStakeRequest {
   computeBudget: number;
   /** index of the derivation path for the stake account */
   derivationIndex: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SOLDeactivateStakeRequest {
@@ -5217,6 +5456,7 @@ export interface SOLDeactivateStakeRequest {
   computeBudget: number;
   /** index of the derivation path for the stake account */
   derivationIndex: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SOLPartialDeactivateStakeRequest {
@@ -5234,6 +5474,7 @@ export interface SOLPartialDeactivateStakeRequest {
   id: string;
   computePrice: number;
   computeBudget: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SOLWithdrawStakeRequest {
@@ -5245,6 +5486,7 @@ export interface SOLWithdrawStakeRequest {
   computeBudget: number;
   /** index of the derivation path for the stake account */
   derivationIndex: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SOLMergeStakeRequest {
@@ -5257,6 +5499,7 @@ export interface SOLMergeStakeRequest {
   id: string;
   computePrice: number;
   computeBudget: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SOLTokenCreateRequest {
@@ -5273,6 +5516,7 @@ export interface SOLTokenCreateRequest {
   computePrice: number;
   computeBudget: number;
   enableFreeze: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SOLTokenMintRequest {
@@ -5287,6 +5531,7 @@ export interface SOLTokenMintRequest {
   id: string;
   computePrice: number;
   computeBudget: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SOLTokenBurnRequest {
@@ -5299,6 +5544,7 @@ export interface SOLTokenBurnRequest {
   id: string;
   computePrice: number;
   computeBudget: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 /** SOLTokenFreezeAccountRequest also handles the unfreeze (thaw) operation */
@@ -5313,6 +5559,7 @@ export interface SOLTokenFreezeAccountRequest {
   id: string;
   computePrice: number;
   computeBudget: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum SOLTokenFreezeAccountRequest_OperationKind {
@@ -5354,6 +5601,7 @@ export function sOLTokenFreezeAccountRequest_OperationKindToJSON(
 
 export interface SOLTokenTransfersRequest {
   transfers: SOLTokenTransfer[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SOLTokenTransfer {
@@ -5372,17 +5620,20 @@ export interface SOLTokenTransfer {
   computeBudget: number;
   /** optional. if set, rule SOLTokenTransferWithFeepayer is required. */
   feepayer: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface CosmosAddressRequest {
   path: string;
   prefix: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface CosmosProofOfReserveRequest {
   path: string;
   prefix: string;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface CosmosRequestDetails {
@@ -5399,32 +5650,38 @@ export interface CosmosRequestDetails {
   isNonceSet: boolean;
   isRawRequest: boolean;
   isTransferRequest: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface CosmosSigner {
   path: string;
   sequence: number;
   accountNumber: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface CosmosMessage {
   url: string;
   payload: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 /** Generic call requests */
 export interface CosmosGenericCallRequest {
   details: CosmosRequestDetails | undefined;
   messages: CosmosMessage[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface CosmosCancelRequest {
   details: CosmosRequestDetails | undefined;
   addressPrefix: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface PolygonTransactionsRequest {
   transactions: PolygonTransaction[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface PolygonTransaction {
@@ -5438,6 +5695,7 @@ export interface PolygonTransaction {
   id: string;
   isNonceSet: boolean;
   chainId: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface PolygonCreateContractRequest {
@@ -5450,32 +5708,38 @@ export interface PolygonCreateContractRequest {
   id: string;
   isNonceSet: boolean;
   chainId: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface PolygonAddressRequest {
   /** BIP 44 path */
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface PolygonProofOfReserveRequest {
   path: string;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface PolygonTransactionsResponse {
   transactions: PolygonTransactionsResponse_PolygonTransactionResponse[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface PolygonTransactionsResponse_PolygonTransactionResponse {
   id: string;
   transaction: string;
   publicKey: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface PolygonSignTextRequest {
   id: string;
   from: string;
   message: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface PolygonSignTextResponse {
@@ -5483,10 +5747,12 @@ export interface PolygonSignTextResponse {
   /** r::s */
   signature: Uint8Array;
   publicKey: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface PolygonWrappedTransactionsRequest {
   transactions: PolygonWrappedTransaction[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface PolygonWrappedTransaction {
@@ -5500,6 +5766,7 @@ export interface PolygonWrappedTransaction {
   id: string;
   isNonceSet: boolean;
   forwarder: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface PolygonWrappedCreateContractRequest {
@@ -5511,26 +5778,31 @@ export interface PolygonWrappedCreateContractRequest {
   id: string;
   isNonceSet: boolean;
   creator: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface PolygonWrappedTransactionsResponse {
   transactions: PolygonWrappedTransactionsResponse_PolygonWrappedTransactionResponse[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface PolygonWrappedTransactionsResponse_PolygonWrappedTransactionResponse {
   id: string;
   transaction: string;
   publicKey: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface PolygonWrappedCreateContractResponse {
   id: string;
   transaction: string;
   publicKey: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface AvaxCChainTransactionsRequest {
   transactions: AvaxCChainTransaction[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface AvaxCChainTransaction {
@@ -5544,6 +5816,7 @@ export interface AvaxCChainTransaction {
   id: string;
   isNonceSet: boolean;
   chainId: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface AvaxCChainCreateContractRequest {
@@ -5556,32 +5829,38 @@ export interface AvaxCChainCreateContractRequest {
   id: string;
   isNonceSet: boolean;
   chainId: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface AvaxCChainAddressRequest {
   /** BIP 44 path */
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface AvaxCChainProofOfReserveRequest {
   path: string;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface AvaxCChainTransactionsResponse {
   transactions: AvaxCChainTransactionsResponse_AvaxCChainTransactionResponse[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface AvaxCChainTransactionsResponse_AvaxCChainTransactionResponse {
   id: string;
   transaction: string;
   publicKey: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface AvaxCChainSignTextRequest {
   id: string;
   from: string;
   message: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface AvaxCChainSignTextResponse {
@@ -5589,10 +5868,12 @@ export interface AvaxCChainSignTextResponse {
   /** r::s */
   signature: Uint8Array;
   publicKey: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface AvaxCChainWrappedTransactionsRequest {
   transactions: AvaxCChainWrappedTransaction[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface AvaxCChainWrappedTransaction {
@@ -5606,6 +5887,7 @@ export interface AvaxCChainWrappedTransaction {
   id: string;
   isNonceSet: boolean;
   forwarder: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface AvaxCChainWrappedCreateContractRequest {
@@ -5617,22 +5899,26 @@ export interface AvaxCChainWrappedCreateContractRequest {
   id: string;
   isNonceSet: boolean;
   creator: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface AvaxCChainWrappedTransactionsResponse {
   transactions: AvaxCChainWrappedTransactionsResponse_AvaxCChainWrappedTransactionResponse[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface AvaxCChainWrappedTransactionsResponse_AvaxCChainWrappedTransactionResponse {
   id: string;
   transaction: string;
   publicKey: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface AvaxCChainWrappedCreateContractResponse {
   id: string;
   transaction: string;
   publicKey: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface DOGEInput {
@@ -5642,11 +5928,13 @@ export interface DOGEInput {
   outputIndex: number;
   value: number;
   sequenceNumber: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface DOGEOutput {
   destination: string;
   amount: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface DOGEChangeOutput {
@@ -5654,6 +5942,7 @@ export interface DOGEChangeOutput {
   path: string;
   addressType: DOGEAddressType;
   amount: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface DOGETransactionRequest {
@@ -5663,6 +5952,7 @@ export interface DOGETransactionRequest {
   lockTime: number;
   hashType: DOGESigHashType;
   id: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface DOGEAddressRequest {
@@ -5670,6 +5960,7 @@ export interface DOGEAddressRequest {
   path: string;
   /** currently only P2PKH */
   addressType: DOGEAddressType;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface DOGEProofOfReserveRequest {
@@ -5677,10 +5968,12 @@ export interface DOGEProofOfReserveRequest {
   /** currently only P2PKH */
   addressType: DOGEAddressType;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface MinaAddressRequest {
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface MinaTxCommon {
@@ -5692,40 +5985,48 @@ export interface MinaTxCommon {
   networkId: number;
   networkPrefix: Uint8Array;
   source: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface MinaPayment {
   common: MinaTxCommon | undefined;
   destination: string;
   amount: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface MinaPaymentsRequest {
   payments: MinaPayment[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface MinaDelegationRequest {
   common: MinaTxCommon | undefined;
   delegate: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface MinaProofOfReserveRequest {
   path: string;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface TRONAddressRequest {
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface TRONProofOfReserveRequest {
   path: string;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface TRONTransactionsRequest {
   kind: TRONTransactionsRequest_OperationKind;
   transactions: TRONTransaction[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum TRONTransactionsRequest_OperationKind {
@@ -5778,20 +6079,24 @@ export interface TRONTransaction {
   feeLimit: number;
   data: Uint8Array;
   operation: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface TRONTransactionsResponse {
   transactions: TRONTransactionsResponse_TRONTransactionResponse[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface TRONTransactionsResponse_TRONTransactionResponse {
   id: string;
   transaction: string;
   publicKey: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface FilecoinTransactionsRequest {
   transactions: FilecoinTransaction[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface FilecoinTransaction {
@@ -5812,28 +6117,33 @@ export interface FilecoinTransaction {
   gasPremium: Uint8Array;
   /** (gasLimit * gasPremium goes to the miner), should be gasFeeCap - baseFee */
   isNonceSet: boolean;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface FilecoinAddressRequest {
   /** BIP 44 path */
   path: string;
   addressType: FilecoinAddressType;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface FilecoinProofOfReserveRequest {
   path: string;
   addressType: FilecoinAddressType;
   challenge: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface FilecoinTransactionsResponse {
   transactions: FilecoinTransactionsResponse_FilecoinTransactionResponse[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface FilecoinTransactionsResponse_FilecoinTransactionResponse {
   id: string;
   transaction: string;
   publicKey: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface User {
@@ -5841,45 +6151,54 @@ export interface User {
   publicKey: string;
   roles: Role[];
   properties: { [key: string]: Uint8Array };
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface User_PropertiesEntry {
   key: string;
   value: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface Group {
   id: string;
   userIds: string[];
   properties: { [key: string]: Uint8Array };
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface Group_PropertiesEntry {
   key: string;
   value: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RuleSourceInternalWallet {
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RuleSourceInternalAddress {
   address: string;
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RuleSourceExchange {
   label: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RuleSourceExternalAddress {
   address: string;
   memo: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RuleSource {
   type: RuleSource_RuleSourceType;
   payload: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 /** 1:1 mapping between enum and payload message */
@@ -5948,16 +6267,19 @@ export function ruleSource_RuleSourceTypeToJSON(object: RuleSource_RuleSourceTyp
 
 export interface RuleDestinationInternalWallet {
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RuleDestinationInternalAddress {
   address: string;
   path: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RuleDestinationExternalAddress {
   address: string;
   memo: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RuleDestinationContractAddress {
@@ -5965,16 +6287,19 @@ export interface RuleDestinationContractAddress {
   name: string;
   symbol: string;
   blockchain: Blockchain;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RuleDestinationExchange {
   label: string;
   memo: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RuleDestination {
   type: RuleDestination_RuleDestinationType;
   payload: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 /** 1:1 mapping between enum and payload */
@@ -6065,6 +6390,7 @@ export function ruleDestination_RuleDestinationTypeToJSON(object: RuleDestinatio
 export interface RuleWhitelistedContract {
   type: RuleWhitelistedContract_RuleWhitelistedContractType;
   payload: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum RuleWhitelistedContract_RuleWhitelistedContractType {
@@ -6109,6 +6435,7 @@ export function ruleWhitelistedContract_RuleWhitelistedContractTypeToJSON(
 export interface RuleIntegerGreater {
   type: RuleIntegerGreater_RuleIntegerGreaterType;
   payload: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 /** 1:1 mapping between enum and payload message */
@@ -6158,6 +6485,7 @@ export function ruleIntegerGreater_RuleIntegerGreaterTypeToJSON(
 export interface RuleUIntegerGreater {
   type: RuleUIntegerGreater_RuleUIntegerGreaterType;
   payload: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 /** 1:1 mapping between enum and payload message */
@@ -6215,11 +6543,13 @@ export interface RuleFiatAmountRange {
   minAmount: string;
   /** a string, containing a "double" to ease processing in the HSM (Inclusive range) */
   maxAmount: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RuleFiatAmount {
   type: RuleFiatAmount_RuleFiatAmountType;
   payload: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 /** 1:1 mapping between enum and payload message */
@@ -6268,6 +6598,7 @@ export function ruleFiatAmount_RuleFiatAmountTypeToJSON(object: RuleFiatAmount_R
 export interface RuleStringEqual {
   type: RuleStringEqual_RuleStringEqualType;
   payload: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 /** 1:1 mapping between enum and payload message */
@@ -6315,11 +6646,13 @@ export function ruleStringEqual_RuleStringEqualTypeToJSON(object: RuleStringEqua
 
 export interface RuleStringArrayEqualValue {
   values: string[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RuleStringArrayEqual {
   type: RuleStringArrayEqual_RuleStringArrayEqualType;
   payload: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 /** 1:1 mapping between enum and payload message */
@@ -6372,6 +6705,7 @@ export function ruleStringArrayEqual_RuleStringArrayEqualTypeToJSON(
 export interface RuleBytesEqual {
   type: RuleBytesEqual_RuleBytesEqualType;
   payload: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 /** 1:1 mapping between enum and payload message */
@@ -6420,10 +6754,12 @@ export function ruleBytesEqual_RuleBytesEqualTypeToJSON(object: RuleBytesEqual_R
 export interface GroupThreshold {
   groupId: string;
   minimumSignatures: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface SequentialThresholds {
   thresholds: GroupThreshold[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RulesContainer {
@@ -6444,6 +6780,7 @@ export interface RulesContainer {
   engineIdentities: string[];
   /** HSM slot ID that these rules are intended for. When this changes, rules must be re-signed. */
   hsmSlotId: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum RulesContainer_ColumnType {
@@ -6531,6 +6868,7 @@ export interface RulesContainer_Column {
   type: RulesContainer_ColumnType;
   name: string;
   metadataKey: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RulesContainer_Line {
@@ -6541,11 +6879,13 @@ export interface RulesContainer_Line {
   properties: { [key: string]: Uint8Array };
   /** used to sort rules, 0 is the lowest priority */
   priority: number;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RulesContainer_Line_PropertiesEntry {
   key: string;
   value: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RulesContainer_TransactionRules {
@@ -6556,6 +6896,7 @@ export interface RulesContainer_TransactionRules {
   /** array is sorted */
   lines: RulesContainer_Line[];
   details: RulesContainer_TransactionRules_TransactionRuleDetails | undefined;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RulesContainer_TransactionRules_TransactionRuleDetails {
@@ -6567,6 +6908,7 @@ export interface RulesContainer_TransactionRules_TransactionRuleDetails {
   xtzCallContract: RulesContainer_TransactionRules_TransactionRuleDetails_XtzCallContract | undefined;
   cashSettlement: RulesContainer_TransactionRules_TransactionRuleDetails_CashSettlement | undefined;
   cosmosDetails: RulesContainer_TransactionRules_TransactionRuleDetails_CosmosDetails | undefined;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export enum RulesContainer_TransactionRules_TransactionRuleDetails_RuleDomain {
@@ -7239,20 +7581,24 @@ export interface RulesContainer_TransactionRules_TransactionRuleDetails_EvmCallC
   /** GENERIC, ERC20, CMTAT, CMTA20... */
   contractType: string;
   methodSignature: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RulesContainer_TransactionRules_TransactionRuleDetails_XtzCallContract {
   contractType: string;
   methodSignature: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RulesContainer_TransactionRules_TransactionRuleDetails_CashSettlement {
   provider: string;
   requestType: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RulesContainer_TransactionRules_TransactionRuleDetails_CosmosDetails {
   methodSignatures: string[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RulesContainer_AddressWhitelistingRules {
@@ -7266,6 +7612,7 @@ export interface RulesContainer_AddressWhitelistingRules {
    * at list level.
    */
   lines: RulesContainer_AddressWhitelistingRules_Line[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RulesContainer_AddressWhitelistingRules_Line {
@@ -7274,16 +7621,19 @@ export interface RulesContainer_AddressWhitelistingRules_Line {
   /** rule output */
   parallelThresholds: SequentialThresholds[];
   properties: { [key: string]: Uint8Array };
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RulesContainer_AddressWhitelistingRules_Line_PropertiesEntry {
   key: string;
   value: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RulesContainer_AddressWhitelistingRules_PropertiesEntry {
   key: string;
   value: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RulesContainer_ContractAddressWhitelistingRules {
@@ -7291,11 +7641,13 @@ export interface RulesContainer_ContractAddressWhitelistingRules {
   parallelThresholds: SequentialThresholds[];
   properties: { [key: string]: Uint8Array };
   network: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RulesContainer_ContractAddressWhitelistingRules_PropertiesEntry {
   key: string;
   value: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RulesContainer_Policy {
@@ -7303,19 +7655,22 @@ export interface RulesContainer_Policy {
   label: string;
   parallelThresholds: SequentialThresholds[];
   description: string;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RulesContainer_Policies {
   policies: RulesContainer_Policy[];
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 export interface RulesContainer_PropertiesEntry {
   key: string;
   value: Uint8Array;
+  _unknownFields?: { [key: number]: Uint8Array[] } | undefined;
 }
 
 function createBaseStatus(): Status {
-  return { code: 0, message: "" };
+  return { code: 0, message: "", _unknownFields: {} };
 }
 
 export const Status = {
@@ -7325,6 +7680,19 @@ export const Status = {
     }
     if (message.message !== "") {
       writer.uint32(18).string(message.message);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -7354,7 +7722,17 @@ export const Status = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -7389,7 +7767,7 @@ export const Status = {
 };
 
 function createBaseTraces(): Traces {
-  return { function: "", duration: 0, children: [], offset: 0 };
+  return { function: "", duration: 0, children: [], offset: 0, _unknownFields: {} };
 }
 
 export const Traces = {
@@ -7405,6 +7783,19 @@ export const Traces = {
     }
     if (message.offset !== 0) {
       writer.uint32(32).uint64(message.offset);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -7448,7 +7839,17 @@ export const Traces = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -7493,7 +7894,7 @@ export const Traces = {
 };
 
 function createBaseEncryptedRepliesContainer(): EncryptedRepliesContainer {
-  return { iv: new Uint8Array(0), ciphertext: new Uint8Array(0), mac: new Uint8Array(0) };
+  return { iv: new Uint8Array(0), ciphertext: new Uint8Array(0), mac: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const EncryptedRepliesContainer = {
@@ -7506,6 +7907,19 @@ export const EncryptedRepliesContainer = {
     }
     if (message.mac.length !== 0) {
       writer.uint32(26).bytes(message.mac);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -7542,7 +7956,17 @@ export const EncryptedRepliesContainer = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -7589,6 +8013,7 @@ function createBaseSignedRepliesEnvelope(): SignedRepliesEnvelope {
     payload: new Uint8Array(0),
     encryptedRepliesEnvelope: undefined,
     traces: undefined,
+    _unknownFields: {},
   };
 }
 
@@ -7611,6 +8036,19 @@ export const SignedRepliesEnvelope = {
     }
     if (message.traces !== undefined) {
       Traces.encode(message.traces, writer.uint32(8010).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -7668,7 +8106,17 @@ export const SignedRepliesEnvelope = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -7732,13 +8180,26 @@ export const SignedRepliesEnvelope = {
 };
 
 function createBaseReplies(): Replies {
-  return { replies: [] };
+  return { replies: [], _unknownFields: {} };
 }
 
 export const Replies = {
   encode(message: Replies, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.replies) {
       Reply.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -7761,7 +8222,17 @@ export const Replies = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -7791,7 +8262,7 @@ export const Replies = {
 };
 
 function createBaseReply(): Reply {
-  return { id: "", status: undefined, payloadType: 0, payload: new Uint8Array(0) };
+  return { id: "", status: undefined, payloadType: 0, payload: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const Reply = {
@@ -7807,6 +8278,19 @@ export const Reply = {
     }
     if (message.payload.length !== 0) {
       writer.uint32(34).bytes(message.payload);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -7850,7 +8334,17 @@ export const Reply = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -7897,7 +8391,7 @@ export const Reply = {
 };
 
 function createBaseMonitoringResponse(): MonitoringResponse {
-  return { payload: "", signature: "" };
+  return { payload: "", signature: "", _unknownFields: {} };
 }
 
 export const MonitoringResponse = {
@@ -7907,6 +8401,19 @@ export const MonitoringResponse = {
     }
     if (message.signature !== "") {
       writer.uint32(18).string(message.signature);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -7936,7 +8443,17 @@ export const MonitoringResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -7979,6 +8496,7 @@ function createBaseProofOfReserveResponse(): ProofOfReserveResponse {
     publicKey: new Uint8Array(0),
     challenge: "",
     challengeResponse: new Uint8Array(0),
+    _unknownFields: {},
   };
 }
 
@@ -8004,6 +8522,19 @@ export const ProofOfReserveResponse = {
     }
     if (message.challengeResponse.length !== 0) {
       writer.uint32(58).bytes(message.challengeResponse);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -8068,7 +8599,17 @@ export const ProofOfReserveResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -8130,13 +8671,26 @@ export const ProofOfReserveResponse = {
 };
 
 function createBaseTransactionsResponse(): TransactionsResponse {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const TransactionsResponse = {
   encode(message: TransactionsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transactions) {
       TransactionsResponse_Transaction.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -8159,7 +8713,17 @@ export const TransactionsResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -8191,7 +8755,7 @@ export const TransactionsResponse = {
 };
 
 function createBaseTransactionsResponse_Transaction(): TransactionsResponse_Transaction {
-  return { id: "", transaction: "" };
+  return { id: "", transaction: "", _unknownFields: {} };
 }
 
 export const TransactionsResponse_Transaction = {
@@ -8201,6 +8765,19 @@ export const TransactionsResponse_Transaction = {
     }
     if (message.transaction !== "") {
       writer.uint32(18).string(message.transaction);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -8230,7 +8807,17 @@ export const TransactionsResponse_Transaction = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -8265,7 +8852,7 @@ export const TransactionsResponse_Transaction = {
 };
 
 function createBaseSourceInternalWallet(): SourceInternalWallet {
-  return { id: 0, name: "", path: "" };
+  return { id: 0, name: "", path: "", _unknownFields: {} };
 }
 
 export const SourceInternalWallet = {
@@ -8278,6 +8865,19 @@ export const SourceInternalWallet = {
     }
     if (message.path !== "") {
       writer.uint32(26).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -8314,7 +8914,17 @@ export const SourceInternalWallet = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -8354,7 +8964,7 @@ export const SourceInternalWallet = {
 };
 
 function createBaseSourceInternalAddress(): SourceInternalAddress {
-  return { id: 0, address: "", label: "", path: "" };
+  return { id: 0, address: "", label: "", path: "", _unknownFields: {} };
 }
 
 export const SourceInternalAddress = {
@@ -8370,6 +8980,19 @@ export const SourceInternalAddress = {
     }
     if (message.path !== "") {
       writer.uint32(34).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -8413,7 +9036,17 @@ export const SourceInternalAddress = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -8458,7 +9091,7 @@ export const SourceInternalAddress = {
 };
 
 function createBaseSourceExchange(): SourceExchange {
-  return { id: 0, label: "" };
+  return { id: 0, label: "", _unknownFields: {} };
 }
 
 export const SourceExchange = {
@@ -8468,6 +9101,19 @@ export const SourceExchange = {
     }
     if (message.label !== "") {
       writer.uint32(18).string(message.label);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -8497,7 +9143,17 @@ export const SourceExchange = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -8532,7 +9188,7 @@ export const SourceExchange = {
 };
 
 function createBaseSourceFiatProviderAccount(): SourceFiatProviderAccount {
-  return { id: "", label: "", accountType: "", isCounterparty: false };
+  return { id: "", label: "", accountType: "", isCounterparty: false, _unknownFields: {} };
 }
 
 export const SourceFiatProviderAccount = {
@@ -8548,6 +9204,19 @@ export const SourceFiatProviderAccount = {
     }
     if (message.isCounterparty !== false) {
       writer.uint32(32).bool(message.isCounterparty);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -8591,7 +9260,17 @@ export const SourceFiatProviderAccount = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -8636,7 +9315,7 @@ export const SourceFiatProviderAccount = {
 };
 
 function createBaseSourceExternalAddress(): SourceExternalAddress {
-  return { id: 0, address: "", label: "", memo: "" };
+  return { id: 0, address: "", label: "", memo: "", _unknownFields: {} };
 }
 
 export const SourceExternalAddress = {
@@ -8652,6 +9331,19 @@ export const SourceExternalAddress = {
     }
     if (message.memo !== "") {
       writer.uint32(34).string(message.memo);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -8695,7 +9387,17 @@ export const SourceExternalAddress = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -8740,7 +9442,7 @@ export const SourceExternalAddress = {
 };
 
 function createBaseSource(): Source {
-  return { type: 0, payload: new Uint8Array(0) };
+  return { type: 0, payload: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const Source = {
@@ -8750,6 +9452,19 @@ export const Source = {
     }
     if (message.payload.length !== 0) {
       writer.uint32(18).bytes(message.payload);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -8779,7 +9494,17 @@ export const Source = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -8814,7 +9539,7 @@ export const Source = {
 };
 
 function createBaseDestinationInternalAddress(): DestinationInternalAddress {
-  return { id: 0, address: "", label: "", path: "" };
+  return { id: 0, address: "", label: "", path: "", _unknownFields: {} };
 }
 
 export const DestinationInternalAddress = {
@@ -8830,6 +9555,19 @@ export const DestinationInternalAddress = {
     }
     if (message.path !== "") {
       writer.uint32(34).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -8873,7 +9611,17 @@ export const DestinationInternalAddress = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -8918,7 +9666,7 @@ export const DestinationInternalAddress = {
 };
 
 function createBaseDestinationExternalAddress(): DestinationExternalAddress {
-  return { id: 0, address: "", label: "", memo: "" };
+  return { id: 0, address: "", label: "", memo: "", _unknownFields: {} };
 }
 
 export const DestinationExternalAddress = {
@@ -8934,6 +9682,19 @@ export const DestinationExternalAddress = {
     }
     if (message.memo !== "") {
       writer.uint32(34).string(message.memo);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -8977,7 +9738,17 @@ export const DestinationExternalAddress = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -9022,7 +9793,15 @@ export const DestinationExternalAddress = {
 };
 
 function createBaseDestinationExchangeAddress(): DestinationExchangeAddress {
-  return { id: 0, address: "", label: "", exchangeAccountId: 0, exchangeAccountLabel: "", memo: "" };
+  return {
+    id: 0,
+    address: "",
+    label: "",
+    exchangeAccountId: 0,
+    exchangeAccountLabel: "",
+    memo: "",
+    _unknownFields: {},
+  };
 }
 
 export const DestinationExchangeAddress = {
@@ -9044,6 +9823,19 @@ export const DestinationExchangeAddress = {
     }
     if (message.memo !== "") {
       writer.uint32(50).string(message.memo);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -9101,7 +9893,17 @@ export const DestinationExchangeAddress = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -9156,7 +9958,7 @@ export const DestinationExchangeAddress = {
 };
 
 function createBaseDestinationFiatProviderAccount(): DestinationFiatProviderAccount {
-  return { id: "", label: "", accountType: "", isCounterparty: false };
+  return { id: "", label: "", accountType: "", isCounterparty: false, _unknownFields: {} };
 }
 
 export const DestinationFiatProviderAccount = {
@@ -9172,6 +9974,19 @@ export const DestinationFiatProviderAccount = {
     }
     if (message.isCounterparty !== false) {
       writer.uint32(32).bool(message.isCounterparty);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -9215,7 +10030,17 @@ export const DestinationFiatProviderAccount = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -9260,7 +10085,7 @@ export const DestinationFiatProviderAccount = {
 };
 
 function createBaseDestinationContractAddress(): DestinationContractAddress {
-  return { id: 0, address: "", name: "", symbol: "", blockchain: 0 };
+  return { id: 0, address: "", name: "", symbol: "", blockchain: 0, _unknownFields: {} };
 }
 
 export const DestinationContractAddress = {
@@ -9279,6 +10104,19 @@ export const DestinationContractAddress = {
     }
     if (message.blockchain !== 0) {
       writer.uint32(40).int32(message.blockchain);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -9329,7 +10167,17 @@ export const DestinationContractAddress = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -9379,7 +10227,7 @@ export const DestinationContractAddress = {
 };
 
 function createBaseDestination(): Destination {
-  return { type: 0, payload: new Uint8Array(0) };
+  return { type: 0, payload: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const Destination = {
@@ -9389,6 +10237,19 @@ export const Destination = {
     }
     if (message.payload.length !== 0) {
       writer.uint32(18).bytes(message.payload);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -9418,7 +10279,17 @@ export const Destination = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -9453,13 +10324,26 @@ export const Destination = {
 };
 
 function createBaseWhitelistedContractAddressArray(): WhitelistedContractAddressArray {
-  return { addresses: [] };
+  return { addresses: [], _unknownFields: {} };
 }
 
 export const WhitelistedContractAddressArray = {
   encode(message: WhitelistedContractAddressArray, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.addresses) {
       DestinationContractAddress.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -9482,7 +10366,17 @@ export const WhitelistedContractAddressArray = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -9514,7 +10408,14 @@ export const WhitelistedContractAddressArray = {
 };
 
 function createBaseRequestMetadata(): RequestMetadata {
-  return { key: "", type: 0, value: new Uint8Array(0), column: "", DeprecatedSecondaryCommit: false };
+  return {
+    key: "",
+    type: 0,
+    value: new Uint8Array(0),
+    column: "",
+    DeprecatedSecondaryCommit: false,
+    _unknownFields: {},
+  };
 }
 
 export const RequestMetadata = {
@@ -9533,6 +10434,19 @@ export const RequestMetadata = {
     }
     if (message.DeprecatedSecondaryCommit !== false) {
       writer.uint32(40).bool(message.DeprecatedSecondaryCommit);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -9583,7 +10497,17 @@ export const RequestMetadata = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -9635,7 +10559,7 @@ export const RequestMetadata = {
 };
 
 function createBaseRequestMetadata_ArrayElems(): RequestMetadata_ArrayElems {
-  return { type: 0, value: [] };
+  return { type: 0, value: [], _unknownFields: {} };
 }
 
 export const RequestMetadata_ArrayElems = {
@@ -9645,6 +10569,19 @@ export const RequestMetadata_ArrayElems = {
     }
     for (const v of message.value) {
       writer.uint32(18).bytes(v!);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -9674,7 +10611,17 @@ export const RequestMetadata_ArrayElems = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -9709,13 +10656,26 @@ export const RequestMetadata_ArrayElems = {
 };
 
 function createBaseRequestMetadata_TupleElems(): RequestMetadata_TupleElems {
-  return { elems: [] };
+  return { elems: [], _unknownFields: {} };
 }
 
 export const RequestMetadata_TupleElems = {
   encode(message: RequestMetadata_TupleElems, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.elems) {
       RequestMetadata_TupleElems_Elem.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -9738,7 +10698,17 @@ export const RequestMetadata_TupleElems = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -9770,7 +10740,7 @@ export const RequestMetadata_TupleElems = {
 };
 
 function createBaseRequestMetadata_TupleElems_Elem(): RequestMetadata_TupleElems_Elem {
-  return { type: 0, value: new Uint8Array(0) };
+  return { type: 0, value: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const RequestMetadata_TupleElems_Elem = {
@@ -9780,6 +10750,19 @@ export const RequestMetadata_TupleElems_Elem = {
     }
     if (message.value.length !== 0) {
       writer.uint32(18).bytes(message.value);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -9809,7 +10792,17 @@ export const RequestMetadata_TupleElems_Elem = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -9844,7 +10837,7 @@ export const RequestMetadata_TupleElems_Elem = {
 };
 
 function createBaseRequestMetadata_XOperation(): RequestMetadata_XOperation {
-  return { operation: "", arguments: [] };
+  return { operation: "", arguments: [], _unknownFields: {} };
 }
 
 export const RequestMetadata_XOperation = {
@@ -9854,6 +10847,19 @@ export const RequestMetadata_XOperation = {
     }
     for (const v of message.arguments) {
       RequestMetadata_XOperation_Arg.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -9883,7 +10889,17 @@ export const RequestMetadata_XOperation = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -9920,7 +10936,7 @@ export const RequestMetadata_XOperation = {
 };
 
 function createBaseRequestMetadata_XOperation_Arg(): RequestMetadata_XOperation_Arg {
-  return { type: 0, value: new Uint8Array(0) };
+  return { type: 0, value: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const RequestMetadata_XOperation_Arg = {
@@ -9930,6 +10946,19 @@ export const RequestMetadata_XOperation_Arg = {
     }
     if (message.value.length !== 0) {
       writer.uint32(18).bytes(message.value);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -9959,7 +10988,17 @@ export const RequestMetadata_XOperation_Arg = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -9994,7 +11033,7 @@ export const RequestMetadata_XOperation_Arg = {
 };
 
 function createBaseSignedBigInt(): SignedBigInt {
-  return { negative: false, payload: new Uint8Array(0) };
+  return { negative: false, payload: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const SignedBigInt = {
@@ -10004,6 +11043,19 @@ export const SignedBigInt = {
     }
     if (message.payload.length !== 0) {
       writer.uint32(18).bytes(message.payload);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -10033,7 +11085,17 @@ export const SignedBigInt = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -10068,13 +11130,26 @@ export const SignedBigInt = {
 };
 
 function createBaseBytesArray(): BytesArray {
-  return { payload: [] };
+  return { payload: [], _unknownFields: {} };
 }
 
 export const BytesArray = {
   encode(message: BytesArray, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.payload) {
       writer.uint32(10).bytes(v!);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -10097,7 +11172,17 @@ export const BytesArray = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -10127,13 +11212,26 @@ export const BytesArray = {
 };
 
 function createBaseBigIntArray(): BigIntArray {
-  return { payload: [] };
+  return { payload: [], _unknownFields: {} };
 }
 
 export const BigIntArray = {
   encode(message: BigIntArray, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.payload) {
       writer.uint32(10).bytes(v!);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -10156,7 +11254,17 @@ export const BigIntArray = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -10186,13 +11294,26 @@ export const BigIntArray = {
 };
 
 function createBaseStringArray(): StringArray {
-  return { payload: [] };
+  return { payload: [], _unknownFields: {} };
 }
 
 export const StringArray = {
   encode(message: StringArray, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.payload) {
       writer.uint32(10).string(v!);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -10215,7 +11336,17 @@ export const StringArray = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -10253,6 +11384,7 @@ function createBaseAmount(): Amount {
     currencyFrom: "",
     currencyTo: "",
     signatures: [],
+    _unknownFields: {},
   };
 }
 
@@ -10278,6 +11410,19 @@ export const Amount = {
     }
     for (const v of message.signatures) {
       UserSignature.encode(v!, writer.uint32(58).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -10342,7 +11487,17 @@ export const Amount = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -10404,13 +11559,26 @@ export const Amount = {
 };
 
 function createBaseUserSignatures(): UserSignatures {
-  return { signatures: [] };
+  return { signatures: [], _unknownFields: {} };
 }
 
 export const UserSignatures = {
   encode(message: UserSignatures, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.signatures) {
       UserSignature.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -10433,7 +11601,17 @@ export const UserSignatures = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -10465,7 +11643,7 @@ export const UserSignatures = {
 };
 
 function createBaseUserSignature(): UserSignature {
-  return { userId: "", signature: new Uint8Array(0), comment: "" };
+  return { userId: "", signature: new Uint8Array(0), comment: "", _unknownFields: {} };
 }
 
 export const UserSignature = {
@@ -10478,6 +11656,19 @@ export const UserSignature = {
     }
     if (message.comment !== "") {
       writer.uint32(26).string(message.comment);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -10514,7 +11705,17 @@ export const UserSignature = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -10560,6 +11761,7 @@ function createBaseSignedRequestsEnvelope(): SignedRequestsEnvelope {
     payload: new Uint8Array(0),
     encryptedPayload: undefined,
     enableTracing: false,
+    _unknownFields: {},
   };
 }
 
@@ -10579,6 +11781,19 @@ export const SignedRequestsEnvelope = {
     }
     if (message.enableTracing !== false) {
       writer.uint32(8008).bool(message.enableTracing);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -10629,7 +11844,17 @@ export const SignedRequestsEnvelope = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -10691,6 +11916,7 @@ function createBaseEncryptedSignedRequestsEnvelope(): EncryptedSignedRequestsEnv
     ciphertext: new Uint8Array(0),
     ecPoint: new Uint8Array(0),
     mac: new Uint8Array(0),
+    _unknownFields: {},
   };
 }
 
@@ -10710,6 +11936,19 @@ export const EncryptedSignedRequestsEnvelope = {
     }
     if (message.mac.length !== 0) {
       writer.uint32(42).bytes(message.mac);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -10760,7 +11999,17 @@ export const EncryptedSignedRequestsEnvelope = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -10810,7 +12059,7 @@ export const EncryptedSignedRequestsEnvelope = {
 };
 
 function createBaseRequestsEnvelope(): RequestsEnvelope {
-  return { ts: 0, slot: 0, rulesSignatures: [], rules: new Uint8Array(0), requests: [] };
+  return { ts: 0, slot: 0, rulesSignatures: [], rules: new Uint8Array(0), requests: [], _unknownFields: {} };
 }
 
 export const RequestsEnvelope = {
@@ -10829,6 +12078,19 @@ export const RequestsEnvelope = {
     }
     for (const v of message.requests) {
       RequestEnvelope.encode(v!, writer.uint32(42).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -10879,7 +12141,17 @@ export const RequestsEnvelope = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -10933,7 +12205,16 @@ export const RequestsEnvelope = {
 };
 
 function createBaseRequestEnvelope(): RequestEnvelope {
-  return { id: "", ts: 0, blockchain: 0, payloadType: 0, payload: new Uint8Array(0), network: 0, networkId: "" };
+  return {
+    id: "",
+    ts: 0,
+    blockchain: 0,
+    payloadType: 0,
+    payload: new Uint8Array(0),
+    network: 0,
+    networkId: "",
+    _unknownFields: {},
+  };
 }
 
 export const RequestEnvelope = {
@@ -10958,6 +12239,19 @@ export const RequestEnvelope = {
     }
     if (message.networkId !== "") {
       writer.uint32(58).string(message.networkId);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -11022,7 +12316,17 @@ export const RequestEnvelope = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -11082,7 +12386,7 @@ export const RequestEnvelope = {
 };
 
 function createBaseRequestSignature(): RequestSignature {
-  return { signature: undefined, hashes: [] };
+  return { signature: undefined, hashes: [], _unknownFields: {} };
 }
 
 export const RequestSignature = {
@@ -11092,6 +12396,19 @@ export const RequestSignature = {
     }
     for (const v of message.hashes) {
       writer.uint32(18).string(v!);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -11121,7 +12438,17 @@ export const RequestSignature = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -11158,7 +12485,7 @@ export const RequestSignature = {
 };
 
 function createBaseHMACRequest(): HMACRequest {
-  return { type: 0, label: "", payload: new Uint8Array(0), signatures: [], metadata: [] };
+  return { type: 0, label: "", payload: new Uint8Array(0), signatures: [], metadata: [], _unknownFields: {} };
 }
 
 export const HMACRequest = {
@@ -11177,6 +12504,19 @@ export const HMACRequest = {
     }
     for (const v of message.metadata) {
       RequestMetadata.encode(v!, writer.uint32(42).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -11227,7 +12567,17 @@ export const HMACRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -11281,7 +12631,7 @@ export const HMACRequest = {
 };
 
 function createBaseNoSignatureNeededRequest(): NoSignatureNeededRequest {
-  return { type: 0, signatures: [], metadata: [] };
+  return { type: 0, signatures: [], metadata: [], _unknownFields: {} };
 }
 
 export const NoSignatureNeededRequest = {
@@ -11294,6 +12644,19 @@ export const NoSignatureNeededRequest = {
     }
     for (const v of message.metadata) {
       RequestMetadata.encode(v!, writer.uint32(26).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -11330,7 +12693,17 @@ export const NoSignatureNeededRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -11374,7 +12747,7 @@ export const NoSignatureNeededRequest = {
 };
 
 function createBaseCommitment(): Commitment {
-  return { kind: 0, commitment: new Uint8Array(0), intent: new Uint8Array(0), signatures: [] };
+  return { kind: 0, commitment: new Uint8Array(0), intent: new Uint8Array(0), signatures: [], _unknownFields: {} };
 }
 
 export const Commitment = {
@@ -11390,6 +12763,19 @@ export const Commitment = {
     }
     for (const v of message.signatures) {
       UserSignature.encode(v!, writer.uint32(34).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -11433,7 +12819,17 @@ export const Commitment = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -11480,7 +12876,7 @@ export const Commitment = {
 };
 
 function createBaseTnPledgeActionRequest(): TnPledgeActionRequest {
-  return { action: 0, signatures: [], metadata: [] };
+  return { action: 0, signatures: [], metadata: [], _unknownFields: {} };
 }
 
 export const TnPledgeActionRequest = {
@@ -11493,6 +12889,19 @@ export const TnPledgeActionRequest = {
     }
     for (const v of message.metadata) {
       RequestMetadata.encode(v!, writer.uint32(26).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -11529,7 +12938,17 @@ export const TnPledgeActionRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -11573,11 +12992,24 @@ export const TnPledgeActionRequest = {
 };
 
 function createBaseMonitoringRequest(): MonitoringRequest {
-  return {};
+  return { _unknownFields: {} };
 }
 
 export const MonitoringRequest = {
-  encode(_: MonitoringRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+  encode(message: MonitoringRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
+    }
     return writer;
   },
 
@@ -11592,7 +13024,17 @@ export const MonitoringRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -11616,7 +13058,14 @@ export const MonitoringRequest = {
 };
 
 function createBaseTransactionRequest(): TransactionRequest {
-  return { payloadType: 0, payload: new Uint8Array(0), signatures: [], metadata: [], commitment: undefined };
+  return {
+    payloadType: 0,
+    payload: new Uint8Array(0),
+    signatures: [],
+    metadata: [],
+    commitment: undefined,
+    _unknownFields: {},
+  };
 }
 
 export const TransactionRequest = {
@@ -11635,6 +13084,19 @@ export const TransactionRequest = {
     }
     if (message.commitment !== undefined) {
       Commitment.encode(message.commitment, writer.uint32(66).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -11685,7 +13147,17 @@ export const TransactionRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -11741,7 +13213,7 @@ export const TransactionRequest = {
 };
 
 function createBaseBundleTransactionRequest(): BundleTransactionRequest {
-  return { id: "", bundle: [], signatures: [] };
+  return { id: "", bundle: [], signatures: [], _unknownFields: {} };
 }
 
 export const BundleTransactionRequest = {
@@ -11754,6 +13226,19 @@ export const BundleTransactionRequest = {
     }
     for (const v of message.signatures) {
       RequestSignature.encode(v!, writer.uint32(26).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -11790,7 +13275,17 @@ export const BundleTransactionRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -11834,7 +13329,7 @@ export const BundleTransactionRequest = {
 };
 
 function createBaseAddressResponse(): AddressResponse {
-  return { address: "", signature: new Uint8Array(0) };
+  return { address: "", signature: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const AddressResponse = {
@@ -11844,6 +13339,19 @@ export const AddressResponse = {
     }
     if (message.signature.length !== 0) {
       writer.uint32(18).bytes(message.signature);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -11873,7 +13381,17 @@ export const AddressResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -11908,7 +13426,7 @@ export const AddressResponse = {
 };
 
 function createBaseCantonAddressRequest(): CantonAddressRequest {
-  return { prefix: "", path: "", forParticipantID: "" };
+  return { prefix: "", path: "", forParticipantID: "", _unknownFields: {} };
 }
 
 export const CantonAddressRequest = {
@@ -11921,6 +13439,19 @@ export const CantonAddressRequest = {
     }
     if (message.forParticipantID !== "") {
       writer.uint32(26).string(message.forParticipantID);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -11957,7 +13488,17 @@ export const CantonAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -11997,7 +13538,12 @@ export const CantonAddressRequest = {
 };
 
 function createBaseCantonAddressResponse(): CantonAddressResponse {
-  return { party: "", partySignature: new Uint8Array(0), signedTopologyTransactions: new Uint8Array(0) };
+  return {
+    party: "",
+    partySignature: new Uint8Array(0),
+    signedTopologyTransactions: new Uint8Array(0),
+    _unknownFields: {},
+  };
 }
 
 export const CantonAddressResponse = {
@@ -12010,6 +13556,19 @@ export const CantonAddressResponse = {
     }
     if (message.signedTopologyTransactions.length !== 0) {
       writer.uint32(26).bytes(message.signedTopologyTransactions);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -12046,7 +13605,17 @@ export const CantonAddressResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -12096,6 +13665,7 @@ function createBaseCantonTransaction(): CantonTransaction {
     choiceArguments: new Uint8Array(0),
     commandID: "",
     party: "",
+    _unknownFields: {},
   };
 }
 
@@ -12121,6 +13691,19 @@ export const CantonTransaction = {
     }
     if (message.party !== "") {
       writer.uint32(8018).string(message.party);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -12185,7 +13768,17 @@ export const CantonTransaction = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -12247,7 +13840,7 @@ export const CantonTransaction = {
 };
 
 function createBaseCantonTransactionsRequest(): CantonTransactionsRequest {
-  return { kind: 0, transactions: [] };
+  return { kind: 0, transactions: [], _unknownFields: {} };
 }
 
 export const CantonTransactionsRequest = {
@@ -12257,6 +13850,19 @@ export const CantonTransactionsRequest = {
     }
     for (const v of message.transactions) {
       CantonTransaction.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -12286,7 +13892,17 @@ export const CantonTransactionsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -12323,7 +13939,7 @@ export const CantonTransactionsRequest = {
 };
 
 function createBaseCantonProofOfReserveRequest(): CantonProofOfReserveRequest {
-  return { path: "", prefix: "", challenge: "" };
+  return { path: "", prefix: "", challenge: "", _unknownFields: {} };
 }
 
 export const CantonProofOfReserveRequest = {
@@ -12336,6 +13952,19 @@ export const CantonProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(26).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -12372,7 +14001,17 @@ export const CantonProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -12412,7 +14051,13 @@ export const CantonProofOfReserveRequest = {
 };
 
 function createBaseICPAddressResponse(): ICPAddressResponse {
-  return { accountIdentifier: "", accountIdentifierSignature: new Uint8Array(0), principal: "", subAccount: "" };
+  return {
+    accountIdentifier: "",
+    accountIdentifierSignature: new Uint8Array(0),
+    principal: "",
+    subAccount: "",
+    _unknownFields: {},
+  };
 }
 
 export const ICPAddressResponse = {
@@ -12428,6 +14073,19 @@ export const ICPAddressResponse = {
     }
     if (message.subAccount !== "") {
       writer.uint32(34).string(message.subAccount);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -12471,7 +14129,17 @@ export const ICPAddressResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -12518,7 +14186,7 @@ export const ICPAddressResponse = {
 };
 
 function createBaseICPProofOfReserveRequest(): ICPProofOfReserveRequest {
-  return { path: "", challenge: "" };
+  return { path: "", challenge: "", _unknownFields: {} };
 }
 
 export const ICPProofOfReserveRequest = {
@@ -12528,6 +14196,19 @@ export const ICPProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(18).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -12557,7 +14238,17 @@ export const ICPProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -12592,13 +14283,26 @@ export const ICPProofOfReserveRequest = {
 };
 
 function createBaseICPAddressRequest(): ICPAddressRequest {
-  return { path: "" };
+  return { path: "", _unknownFields: {} };
 }
 
 export const ICPAddressRequest = {
   encode(message: ICPAddressRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.path !== "") {
       writer.uint32(10).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -12621,7 +14325,17 @@ export const ICPAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -12649,13 +14363,26 @@ export const ICPAddressRequest = {
 };
 
 function createBaseICPRequestsRequest(): ICPRequestsRequest {
-  return { requests: [] };
+  return { requests: [], _unknownFields: {} };
 }
 
 export const ICPRequestsRequest = {
   encode(message: ICPRequestsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.requests) {
       ICPRequest.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -12678,7 +14405,17 @@ export const ICPRequestsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -12710,13 +14447,26 @@ export const ICPRequestsRequest = {
 };
 
 function createBaseICPRequestsResponse(): ICPRequestsResponse {
-  return { requests: [] };
+  return { requests: [], _unknownFields: {} };
 }
 
 export const ICPRequestsResponse = {
   encode(message: ICPRequestsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.requests) {
       ICPRequestsResponse_ICPRequestResponse.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -12739,7 +14489,17 @@ export const ICPRequestsResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -12771,7 +14531,7 @@ export const ICPRequestsResponse = {
 };
 
 function createBaseICPRequestsResponse_ICPRequestResponse(): ICPRequestsResponse_ICPRequestResponse {
-  return { id: "", operationRequest: "", statusRequest: "" };
+  return { id: "", operationRequest: "", statusRequest: "", _unknownFields: {} };
 }
 
 export const ICPRequestsResponse_ICPRequestResponse = {
@@ -12784,6 +14544,19 @@ export const ICPRequestsResponse_ICPRequestResponse = {
     }
     if (message.statusRequest !== "") {
       writer.uint32(26).string(message.statusRequest);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -12820,7 +14593,17 @@ export const ICPRequestsResponse_ICPRequestResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -12860,7 +14643,7 @@ export const ICPRequestsResponse_ICPRequestResponse = {
 };
 
 function createBaseICPTransfer(): ICPTransfer {
-  return { from: "", to: "", amount: 0, fee: 0, memo: 0, createdAtTime: 0 };
+  return { from: "", to: "", amount: 0, fee: 0, memo: 0, createdAtTime: 0, _unknownFields: {} };
 }
 
 export const ICPTransfer = {
@@ -12882,6 +14665,19 @@ export const ICPTransfer = {
     }
     if (message.createdAtTime !== 0) {
       writer.uint32(48).uint64(message.createdAtTime);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -12939,7 +14735,17 @@ export const ICPTransfer = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -12994,7 +14800,7 @@ export const ICPTransfer = {
 };
 
 function createBaseICPTransferToStake(): ICPTransferToStake {
-  return { from: "", amount: 0, fee: 0, memo: 0, createdAtTime: 0 };
+  return { from: "", amount: 0, fee: 0, memo: 0, createdAtTime: 0, _unknownFields: {} };
 }
 
 export const ICPTransferToStake = {
@@ -13013,6 +14819,19 @@ export const ICPTransferToStake = {
     }
     if (message.createdAtTime !== 0) {
       writer.uint32(40).uint64(message.createdAtTime);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -13063,7 +14882,17 @@ export const ICPTransferToStake = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -13113,7 +14942,7 @@ export const ICPTransferToStake = {
 };
 
 function createBaseICPFollow(): ICPFollow {
-  return { from: "", followees: [], topic: 0 };
+  return { from: "", followees: [], topic: 0, _unknownFields: {} };
 }
 
 export const ICPFollow = {
@@ -13128,6 +14957,19 @@ export const ICPFollow = {
     writer.ldelim();
     if (message.topic !== 0) {
       writer.uint32(24).uint64(message.topic);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -13174,7 +15016,17 @@ export const ICPFollow = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -13216,13 +15068,26 @@ export const ICPFollow = {
 };
 
 function createBaseICPClaimOrRefresh(): ICPClaimOrRefresh {
-  return { from: "" };
+  return { from: "", _unknownFields: {} };
 }
 
 export const ICPClaimOrRefresh = {
   encode(message: ICPClaimOrRefresh, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.from !== "") {
       writer.uint32(10).string(message.from);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -13245,7 +15110,17 @@ export const ICPClaimOrRefresh = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -13273,13 +15148,26 @@ export const ICPClaimOrRefresh = {
 };
 
 function createBaseICPSetAutoStakeRewards(): ICPSetAutoStakeRewards {
-  return { from: "" };
+  return { from: "", _unknownFields: {} };
 }
 
 export const ICPSetAutoStakeRewards = {
   encode(message: ICPSetAutoStakeRewards, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.from !== "") {
       writer.uint32(10).string(message.from);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -13302,7 +15190,17 @@ export const ICPSetAutoStakeRewards = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -13330,7 +15228,7 @@ export const ICPSetAutoStakeRewards = {
 };
 
 function createBaseICPSetDissolveDelay(): ICPSetDissolveDelay {
-  return { from: "", nowTimestampSeconds: 0, delayTimestampSeconds: 0 };
+  return { from: "", nowTimestampSeconds: 0, delayTimestampSeconds: 0, _unknownFields: {} };
 }
 
 export const ICPSetDissolveDelay = {
@@ -13343,6 +15241,19 @@ export const ICPSetDissolveDelay = {
     }
     if (message.delayTimestampSeconds !== 0) {
       writer.uint32(24).uint64(message.delayTimestampSeconds);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -13379,7 +15290,17 @@ export const ICPSetDissolveDelay = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -13419,7 +15340,7 @@ export const ICPSetDissolveDelay = {
 };
 
 function createBaseICPSpawn(): ICPSpawn {
-  return { from: "", nonce: 0 };
+  return { from: "", nonce: 0, _unknownFields: {} };
 }
 
 export const ICPSpawn = {
@@ -13429,6 +15350,19 @@ export const ICPSpawn = {
     }
     if (message.nonce !== 0) {
       writer.uint32(16).uint64(message.nonce);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -13458,7 +15392,17 @@ export const ICPSpawn = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -13493,7 +15437,7 @@ export const ICPSpawn = {
 };
 
 function createBaseICPDisburseToPrimary(): ICPDisburseToPrimary {
-  return { from: "", nonce: 0, amount: 0 };
+  return { from: "", nonce: 0, amount: 0, _unknownFields: {} };
 }
 
 export const ICPDisburseToPrimary = {
@@ -13506,6 +15450,19 @@ export const ICPDisburseToPrimary = {
     }
     if (message.amount !== 0) {
       writer.uint32(24).uint64(message.amount);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -13542,7 +15499,17 @@ export const ICPDisburseToPrimary = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -13582,13 +15549,26 @@ export const ICPDisburseToPrimary = {
 };
 
 function createBaseICPStartDissolving(): ICPStartDissolving {
-  return { from: "" };
+  return { from: "", _unknownFields: {} };
 }
 
 export const ICPStartDissolving = {
   encode(message: ICPStartDissolving, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.from !== "") {
       writer.uint32(10).string(message.from);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -13611,7 +15591,17 @@ export const ICPStartDissolving = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -13639,7 +15629,7 @@ export const ICPStartDissolving = {
 };
 
 function createBaseICPDisburse(): ICPDisburse {
-  return { from: "", amount: 0 };
+  return { from: "", amount: 0, _unknownFields: {} };
 }
 
 export const ICPDisburse = {
@@ -13649,6 +15639,19 @@ export const ICPDisburse = {
     }
     if (message.amount !== 0) {
       writer.uint32(16).uint64(message.amount);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -13678,7 +15681,17 @@ export const ICPDisburse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -13713,13 +15726,26 @@ export const ICPDisburse = {
 };
 
 function createBaseICPListNeurons(): ICPListNeurons {
-  return { from: "" };
+  return { from: "", _unknownFields: {} };
 }
 
 export const ICPListNeurons = {
   encode(message: ICPListNeurons, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.from !== "") {
       writer.uint32(10).string(message.from);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -13742,7 +15768,17 @@ export const ICPListNeurons = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -13770,13 +15806,26 @@ export const ICPListNeurons = {
 };
 
 function createBaseICPRefreshVotingPower(): ICPRefreshVotingPower {
-  return { from: "" };
+  return { from: "", _unknownFields: {} };
 }
 
 export const ICPRefreshVotingPower = {
   encode(message: ICPRefreshVotingPower, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.from !== "") {
       writer.uint32(10).string(message.from);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -13799,7 +15848,17 @@ export const ICPRefreshVotingPower = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -13827,13 +15886,26 @@ export const ICPRefreshVotingPower = {
 };
 
 function createBaseICPDisburseMaturityToPrimary(): ICPDisburseMaturityToPrimary {
-  return { from: "" };
+  return { from: "", _unknownFields: {} };
 }
 
 export const ICPDisburseMaturityToPrimary = {
   encode(message: ICPDisburseMaturityToPrimary, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.from !== "") {
       writer.uint32(10).string(message.from);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -13856,7 +15928,17 @@ export const ICPDisburseMaturityToPrimary = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -13892,6 +15974,7 @@ function createBaseICRC1Transfer(): ICRC1Transfer {
     createdAtTime: 0,
     natAmount: new Uint8Array(0),
     natFee: new Uint8Array(0),
+    _unknownFields: {},
   };
 }
 
@@ -13917,6 +16000,19 @@ export const ICRC1Transfer = {
     }
     if (message.natFee.length !== 0) {
       writer.uint32(58).bytes(message.natFee);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -13981,7 +16077,17 @@ export const ICRC1Transfer = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -14050,6 +16156,7 @@ function createBaseICPRequest(): ICPRequest {
     kind: 0,
     payload: new Uint8Array(0),
     encodeAsCandid: false,
+    _unknownFields: {},
   };
 }
 
@@ -14078,6 +16185,19 @@ export const ICPRequest = {
     }
     if (message.encodeAsCandid !== false) {
       writer.uint32(64).bool(message.encodeAsCandid);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -14149,7 +16269,17 @@ export const ICPRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -14214,7 +16344,7 @@ export const ICPRequest = {
 };
 
 function createBaseNEARProofOfReserveRequest(): NEARProofOfReserveRequest {
-  return { path: "", challenge: "" };
+  return { path: "", challenge: "", _unknownFields: {} };
 }
 
 export const NEARProofOfReserveRequest = {
@@ -14224,6 +16354,19 @@ export const NEARProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(18).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -14253,7 +16396,17 @@ export const NEARProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -14288,13 +16441,26 @@ export const NEARProofOfReserveRequest = {
 };
 
 function createBaseNEARAddressRequest(): NEARAddressRequest {
-  return { path: "" };
+  return { path: "", _unknownFields: {} };
 }
 
 export const NEARAddressRequest = {
   encode(message: NEARAddressRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.path !== "") {
       writer.uint32(10).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -14317,7 +16483,17 @@ export const NEARAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -14345,13 +16521,26 @@ export const NEARAddressRequest = {
 };
 
 function createBaseNEARTransactionsRequest(): NEARTransactionsRequest {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const NEARTransactionsRequest = {
   encode(message: NEARTransactionsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transactions) {
       NEARTransaction.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -14374,7 +16563,17 @@ export const NEARTransactionsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -14406,7 +16605,16 @@ export const NEARTransactionsRequest = {
 };
 
 function createBaseNEARTransaction(): NEARTransaction {
-  return { id: "", from: "", nonce: 0, to: "", blockHash: "", amount: new Uint8Array(0), isNonceSet: false };
+  return {
+    id: "",
+    from: "",
+    nonce: 0,
+    to: "",
+    blockHash: "",
+    amount: new Uint8Array(0),
+    isNonceSet: false,
+    _unknownFields: {},
+  };
 }
 
 export const NEARTransaction = {
@@ -14431,6 +16639,19 @@ export const NEARTransaction = {
     }
     if (message.isNonceSet !== false) {
       writer.uint32(56).bool(message.isNonceSet);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -14495,7 +16716,17 @@ export const NEARTransaction = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -14555,7 +16786,17 @@ export const NEARTransaction = {
 };
 
 function createBaseNEARDepositAndStakeRequest(): NEARDepositAndStakeRequest {
-  return { id: "", from: "", nonce: 0, to: "", blockHash: "", amount: new Uint8Array(0), gas: 0, isNonceSet: false };
+  return {
+    id: "",
+    from: "",
+    nonce: 0,
+    to: "",
+    blockHash: "",
+    amount: new Uint8Array(0),
+    gas: 0,
+    isNonceSet: false,
+    _unknownFields: {},
+  };
 }
 
 export const NEARDepositAndStakeRequest = {
@@ -14583,6 +16824,19 @@ export const NEARDepositAndStakeRequest = {
     }
     if (message.isNonceSet !== false) {
       writer.uint32(64).bool(message.isNonceSet);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -14654,7 +16908,17 @@ export const NEARDepositAndStakeRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -14719,7 +16983,17 @@ export const NEARDepositAndStakeRequest = {
 };
 
 function createBaseNEARUnstakeRequest(): NEARUnstakeRequest {
-  return { id: "", from: "", nonce: 0, to: "", blockHash: "", amount: new Uint8Array(0), gas: 0, isNonceSet: false };
+  return {
+    id: "",
+    from: "",
+    nonce: 0,
+    to: "",
+    blockHash: "",
+    amount: new Uint8Array(0),
+    gas: 0,
+    isNonceSet: false,
+    _unknownFields: {},
+  };
 }
 
 export const NEARUnstakeRequest = {
@@ -14747,6 +17021,19 @@ export const NEARUnstakeRequest = {
     }
     if (message.isNonceSet !== false) {
       writer.uint32(64).bool(message.isNonceSet);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -14818,7 +17105,17 @@ export const NEARUnstakeRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -14883,7 +17180,17 @@ export const NEARUnstakeRequest = {
 };
 
 function createBaseNEARWithdrawRequest(): NEARWithdrawRequest {
-  return { id: "", from: "", nonce: 0, to: "", blockHash: "", amount: new Uint8Array(0), gas: 0, isNonceSet: false };
+  return {
+    id: "",
+    from: "",
+    nonce: 0,
+    to: "",
+    blockHash: "",
+    amount: new Uint8Array(0),
+    gas: 0,
+    isNonceSet: false,
+    _unknownFields: {},
+  };
 }
 
 export const NEARWithdrawRequest = {
@@ -14911,6 +17218,19 @@ export const NEARWithdrawRequest = {
     }
     if (message.isNonceSet !== false) {
       writer.uint32(64).bool(message.isNonceSet);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -14982,7 +17302,17 @@ export const NEARWithdrawRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -15047,13 +17377,26 @@ export const NEARWithdrawRequest = {
 };
 
 function createBaseADAAddressRequest(): ADAAddressRequest {
-  return { path: "" };
+  return { path: "", _unknownFields: {} };
 }
 
 export const ADAAddressRequest = {
   encode(message: ADAAddressRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.path !== "") {
       writer.uint32(10).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -15076,7 +17419,17 @@ export const ADAAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -15104,7 +17457,7 @@ export const ADAAddressRequest = {
 };
 
 function createBaseADAInput(): ADAInput {
-  return { path: "", hash: new Uint8Array(0), index: 0, value: undefined };
+  return { path: "", hash: new Uint8Array(0), index: 0, value: undefined, _unknownFields: {} };
 }
 
 export const ADAInput = {
@@ -15120,6 +17473,19 @@ export const ADAInput = {
     }
     if (message.value !== undefined) {
       ADAValue.encode(message.value, writer.uint32(34).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -15163,7 +17529,17 @@ export const ADAInput = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -15210,7 +17586,7 @@ export const ADAInput = {
 };
 
 function createBaseADANativeAsset(): ADANativeAsset {
-  return { name: new Uint8Array(0), amount: 0 };
+  return { name: new Uint8Array(0), amount: 0, _unknownFields: {} };
 }
 
 export const ADANativeAsset = {
@@ -15220,6 +17596,19 @@ export const ADANativeAsset = {
     }
     if (message.amount !== 0) {
       writer.uint32(16).uint64(message.amount);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -15249,7 +17638,17 @@ export const ADANativeAsset = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -15284,7 +17683,7 @@ export const ADANativeAsset = {
 };
 
 function createBaseADAAssetPolicy(): ADAAssetPolicy {
-  return { policyId: new Uint8Array(0), assets: [] };
+  return { policyId: new Uint8Array(0), assets: [], _unknownFields: {} };
 }
 
 export const ADAAssetPolicy = {
@@ -15294,6 +17693,19 @@ export const ADAAssetPolicy = {
     }
     for (const v of message.assets) {
       ADANativeAsset.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -15323,7 +17735,17 @@ export const ADAAssetPolicy = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -15358,7 +17780,7 @@ export const ADAAssetPolicy = {
 };
 
 function createBaseADAValue(): ADAValue {
-  return { amount: 0, policies: [] };
+  return { amount: 0, policies: [], _unknownFields: {} };
 }
 
 export const ADAValue = {
@@ -15368,6 +17790,19 @@ export const ADAValue = {
     }
     for (const v of message.policies) {
       ADAAssetPolicy.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -15397,7 +17832,17 @@ export const ADAValue = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -15434,7 +17879,7 @@ export const ADAValue = {
 };
 
 function createBaseADAOutput(): ADAOutput {
-  return { address: "", value: undefined };
+  return { address: "", value: undefined, _unknownFields: {} };
 }
 
 export const ADAOutput = {
@@ -15444,6 +17889,19 @@ export const ADAOutput = {
     }
     if (message.value !== undefined) {
       ADAValue.encode(message.value, writer.uint32(18).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -15473,7 +17931,17 @@ export const ADAOutput = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -15510,7 +17978,7 @@ export const ADAOutput = {
 };
 
 function createBaseADAChangeOutput(): ADAChangeOutput {
-  return { path: "", value: undefined };
+  return { path: "", value: undefined, _unknownFields: {} };
 }
 
 export const ADAChangeOutput = {
@@ -15520,6 +17988,19 @@ export const ADAChangeOutput = {
     }
     if (message.value !== undefined) {
       ADAValue.encode(message.value, writer.uint32(18).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -15549,7 +18030,17 @@ export const ADAChangeOutput = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -15586,7 +18077,7 @@ export const ADAChangeOutput = {
 };
 
 function createBaseADAWithdrawal(): ADAWithdrawal {
-  return { path: "", amount: 0 };
+  return { path: "", amount: 0, _unknownFields: {} };
 }
 
 export const ADAWithdrawal = {
@@ -15596,6 +18087,19 @@ export const ADAWithdrawal = {
     }
     if (message.amount !== 0) {
       writer.uint32(16).uint64(message.amount);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -15625,7 +18129,17 @@ export const ADAWithdrawal = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -15660,7 +18174,7 @@ export const ADAWithdrawal = {
 };
 
 function createBaseADATransactionRequest(): ADATransactionRequest {
-  return { id: "", inputs: [], outputs: [], changeOutput: undefined, ttl: 0, fee: 0 };
+  return { id: "", inputs: [], outputs: [], changeOutput: undefined, ttl: 0, fee: 0, _unknownFields: {} };
 }
 
 export const ADATransactionRequest = {
@@ -15682,6 +18196,19 @@ export const ADATransactionRequest = {
     }
     if (message.fee !== 0) {
       writer.uint32(48).uint64(message.fee);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -15739,7 +18266,17 @@ export const ADATransactionRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -15796,7 +18333,7 @@ export const ADATransactionRequest = {
 };
 
 function createBaseADAWithdrawalRequest(): ADAWithdrawalRequest {
-  return { id: "", inputs: [], withdrawal: undefined, changeOutput: undefined, ttl: 0, fee: 0 };
+  return { id: "", inputs: [], withdrawal: undefined, changeOutput: undefined, ttl: 0, fee: 0, _unknownFields: {} };
 }
 
 export const ADAWithdrawalRequest = {
@@ -15818,6 +18355,19 @@ export const ADAWithdrawalRequest = {
     }
     if (message.fee !== 0) {
       writer.uint32(48).uint64(message.fee);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -15875,7 +18425,17 @@ export const ADAWithdrawalRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -15934,7 +18494,7 @@ export const ADAWithdrawalRequest = {
 };
 
 function createBaseADADrep(): ADADrep {
-  return { drepType: 0, drep: "" };
+  return { drepType: 0, drep: "", _unknownFields: {} };
 }
 
 export const ADADrep = {
@@ -15944,6 +18504,19 @@ export const ADADrep = {
     }
     if (message.drep !== "") {
       writer.uint32(18).string(message.drep);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -15973,7 +18546,17 @@ export const ADADrep = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -16019,6 +18602,7 @@ function createBaseADADelegationRequest(): ADADelegationRequest {
     stakePoolRegistrationCertificate: new Uint8Array(0),
     keyDeposit: 0,
     drep: undefined,
+    _unknownFields: {},
   };
 }
 
@@ -16053,6 +18637,19 @@ export const ADADelegationRequest = {
     }
     if (message.drep !== undefined) {
       ADADrep.encode(message.drep, writer.uint32(82).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -16138,7 +18735,17 @@ export const ADADelegationRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -16217,7 +18824,16 @@ export const ADADelegationRequest = {
 };
 
 function createBaseADAUndelegationRequest(): ADAUndelegationRequest {
-  return { id: "", inputs: [], changeOutput: undefined, withdrawal: undefined, ttl: 0, fee: 0, keyDeposit: 0 };
+  return {
+    id: "",
+    inputs: [],
+    changeOutput: undefined,
+    withdrawal: undefined,
+    ttl: 0,
+    fee: 0,
+    keyDeposit: 0,
+    _unknownFields: {},
+  };
 }
 
 export const ADAUndelegationRequest = {
@@ -16242,6 +18858,19 @@ export const ADAUndelegationRequest = {
     }
     if (message.keyDeposit !== 0) {
       writer.uint32(56).uint64(message.keyDeposit);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -16306,7 +18935,17 @@ export const ADAUndelegationRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -16370,7 +19009,7 @@ export const ADAUndelegationRequest = {
 };
 
 function createBaseADAVoteDelegationRequest(): ADAVoteDelegationRequest {
-  return { id: "", inputs: [], changeOutput: undefined, drep: undefined, ttl: 0, fee: 0 };
+  return { id: "", inputs: [], changeOutput: undefined, drep: undefined, ttl: 0, fee: 0, _unknownFields: {} };
 }
 
 export const ADAVoteDelegationRequest = {
@@ -16392,6 +19031,19 @@ export const ADAVoteDelegationRequest = {
     }
     if (message.fee !== 0) {
       writer.uint32(48).uint64(message.fee);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -16449,7 +19101,17 @@ export const ADAVoteDelegationRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -16506,7 +19168,7 @@ export const ADAVoteDelegationRequest = {
 };
 
 function createBaseADAProofOfReserveRequest(): ADAProofOfReserveRequest {
-  return { path: "", challenge: "" };
+  return { path: "", challenge: "", _unknownFields: {} };
 }
 
 export const ADAProofOfReserveRequest = {
@@ -16516,6 +19178,19 @@ export const ADAProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(18).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -16545,7 +19220,17 @@ export const ADAProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -16588,6 +19273,7 @@ function createBaseADAProofOfReserveResponse(): ADAProofOfReserveResponse {
     paymentChallengeResponse: new Uint8Array(0),
     stakePublicKey: new Uint8Array(0),
     stakeChallengeResponse: new Uint8Array(0),
+    _unknownFields: {},
   };
 }
 
@@ -16613,6 +19299,19 @@ export const ADAProofOfReserveResponse = {
     }
     if (message.stakeChallengeResponse.length !== 0) {
       writer.uint32(74).bytes(message.stakeChallengeResponse);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -16677,7 +19376,17 @@ export const ADAProofOfReserveResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -16741,7 +19450,7 @@ export const ADAProofOfReserveResponse = {
 };
 
 function createBaseXLMAsset(): XLMAsset {
-  return { type: 0, alphanum: undefined, pool: undefined };
+  return { type: 0, alphanum: undefined, pool: undefined, _unknownFields: {} };
 }
 
 export const XLMAsset = {
@@ -16754,6 +19463,19 @@ export const XLMAsset = {
     }
     if (message.pool !== undefined) {
       XLMAsset_LiquidityPoolParams.encode(message.pool, writer.uint32(26).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -16790,7 +19512,17 @@ export const XLMAsset = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -16834,7 +19566,7 @@ export const XLMAsset = {
 };
 
 function createBaseXLMAsset_Alphanum(): XLMAsset_Alphanum {
-  return { assetID: "", issuer: "" };
+  return { assetID: "", issuer: "", _unknownFields: {} };
 }
 
 export const XLMAsset_Alphanum = {
@@ -16844,6 +19576,19 @@ export const XLMAsset_Alphanum = {
     }
     if (message.issuer !== "") {
       writer.uint32(18).string(message.issuer);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -16873,7 +19618,17 @@ export const XLMAsset_Alphanum = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -16908,7 +19663,7 @@ export const XLMAsset_Alphanum = {
 };
 
 function createBaseXLMAsset_LiquidityPoolParams(): XLMAsset_LiquidityPoolParams {
-  return { assetA: undefined, assetB: undefined, fee: 0 };
+  return { assetA: undefined, assetB: undefined, fee: 0, _unknownFields: {} };
 }
 
 export const XLMAsset_LiquidityPoolParams = {
@@ -16921,6 +19676,19 @@ export const XLMAsset_LiquidityPoolParams = {
     }
     if (message.fee !== 0) {
       writer.uint32(24).int32(message.fee);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -16957,7 +19725,17 @@ export const XLMAsset_LiquidityPoolParams = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -17001,7 +19779,15 @@ export const XLMAsset_LiquidityPoolParams = {
 };
 
 function createBaseXLMLedgerEntry(): XLMLedgerEntry {
-  return { type: 0, account: "", asset: undefined, offerId: 0, dataName: "", claimableBalanceID: new Uint8Array(0) };
+  return {
+    type: 0,
+    account: "",
+    asset: undefined,
+    offerId: 0,
+    dataName: "",
+    claimableBalanceID: new Uint8Array(0),
+    _unknownFields: {},
+  };
 }
 
 export const XLMLedgerEntry = {
@@ -17023,6 +19809,19 @@ export const XLMLedgerEntry = {
     }
     if (message.claimableBalanceID.length !== 0) {
       writer.uint32(50).bytes(message.claimableBalanceID);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -17080,7 +19879,17 @@ export const XLMLedgerEntry = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -17149,6 +19958,7 @@ function createBaseXLMTransactionDetails(): XLMTransactionDetails {
     sequence: 0,
     isSequenceSet: false,
     sponsoredBy: "",
+    _unknownFields: {},
   };
 }
 
@@ -17180,6 +19990,19 @@ export const XLMTransactionDetails = {
     }
     if (message.sponsoredBy !== "") {
       writer.uint32(74).string(message.sponsoredBy);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -17258,7 +20081,17 @@ export const XLMTransactionDetails = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -17328,7 +20161,7 @@ export const XLMTransactionDetails = {
 };
 
 function createBaseXLMMintAssetRequest(): XLMMintAssetRequest {
-  return { details: undefined, assetId: "", amount: 0, destination: "" };
+  return { details: undefined, assetId: "", amount: 0, destination: "", _unknownFields: {} };
 }
 
 export const XLMMintAssetRequest = {
@@ -17344,6 +20177,19 @@ export const XLMMintAssetRequest = {
     }
     if (message.destination !== "") {
       writer.uint32(34).string(message.destination);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -17387,7 +20233,17 @@ export const XLMMintAssetRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -17434,7 +20290,7 @@ export const XLMMintAssetRequest = {
 };
 
 function createBaseXLMChangeTrustRequest(): XLMChangeTrustRequest {
-  return { details: undefined, asset: undefined, limit: 0 };
+  return { details: undefined, asset: undefined, limit: 0, _unknownFields: {} };
 }
 
 export const XLMChangeTrustRequest = {
@@ -17447,6 +20303,19 @@ export const XLMChangeTrustRequest = {
     }
     if (message.limit !== 0) {
       writer.uint32(24).uint64(message.limit);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -17483,7 +20352,17 @@ export const XLMChangeTrustRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -17527,7 +20406,7 @@ export const XLMChangeTrustRequest = {
 };
 
 function createBaseXLMSetTrustlineFlagsRequest(): XLMSetTrustlineFlagsRequest {
-  return { details: undefined, trustor: "", asset: undefined, setFlags: 0, clearFlags: 0 };
+  return { details: undefined, trustor: "", asset: undefined, setFlags: 0, clearFlags: 0, _unknownFields: {} };
 }
 
 export const XLMSetTrustlineFlagsRequest = {
@@ -17546,6 +20425,19 @@ export const XLMSetTrustlineFlagsRequest = {
     }
     if (message.clearFlags !== 0) {
       writer.uint32(40).uint32(message.clearFlags);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -17596,7 +20488,17 @@ export const XLMSetTrustlineFlagsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -17650,13 +20552,26 @@ export const XLMSetTrustlineFlagsRequest = {
 };
 
 function createBaseXLMPaymentsRequest(): XLMPaymentsRequest {
-  return { payments: [] };
+  return { payments: [], _unknownFields: {} };
 }
 
 export const XLMPaymentsRequest = {
   encode(message: XLMPaymentsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.payments) {
       XLMPayment.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -17679,7 +20594,17 @@ export const XLMPaymentsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -17725,6 +20650,7 @@ function createBaseXLMPayment(): XLMPayment {
     isSequenceSet: false,
     asset: undefined,
     sponsoredBy: "",
+    _unknownFields: {},
   };
 }
 
@@ -17768,6 +20694,19 @@ export const XLMPayment = {
     }
     if (message.sponsoredBy !== "") {
       writer.uint32(106).string(message.sponsoredBy);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -17874,7 +20813,17 @@ export const XLMPayment = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -17966,13 +20915,26 @@ export const XLMPayment = {
 };
 
 function createBaseXLMAddressRequest(): XLMAddressRequest {
-  return { path: "" };
+  return { path: "", _unknownFields: {} };
 }
 
 export const XLMAddressRequest = {
   encode(message: XLMAddressRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.path !== "") {
       writer.uint32(10).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -17995,7 +20957,17 @@ export const XLMAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -18023,7 +20995,7 @@ export const XLMAddressRequest = {
 };
 
 function createBaseXLMProofOfReserveRequest(): XLMProofOfReserveRequest {
-  return { path: "", challenge: "" };
+  return { path: "", challenge: "", _unknownFields: {} };
 }
 
 export const XLMProofOfReserveRequest = {
@@ -18033,6 +21005,19 @@ export const XLMProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(18).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -18062,7 +21047,17 @@ export const XLMProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -18097,7 +21092,7 @@ export const XLMProofOfReserveRequest = {
 };
 
 function createBaseXLMSetOptionsRequest(): XLMSetOptionsRequest {
-  return { details: undefined, setFlags: 0, clearFlags: 0 };
+  return { details: undefined, setFlags: 0, clearFlags: 0, _unknownFields: {} };
 }
 
 export const XLMSetOptionsRequest = {
@@ -18110,6 +21105,19 @@ export const XLMSetOptionsRequest = {
     }
     if (message.clearFlags !== 0) {
       writer.uint32(24).uint32(message.clearFlags);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -18146,7 +21154,17 @@ export const XLMSetOptionsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -18188,7 +21206,7 @@ export const XLMSetOptionsRequest = {
 };
 
 function createBaseXLMManageDataRequest(): XLMManageDataRequest {
-  return { details: undefined, name: "", valueData: new Uint8Array(0) };
+  return { details: undefined, name: "", valueData: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const XLMManageDataRequest = {
@@ -18201,6 +21219,19 @@ export const XLMManageDataRequest = {
     }
     if (message.valueData.length !== 0) {
       writer.uint32(34).bytes(message.valueData);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -18237,7 +21268,17 @@ export const XLMManageDataRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -18279,7 +21320,13 @@ export const XLMManageDataRequest = {
 };
 
 function createBaseXLMClaimPredicate(): XLMClaimPredicate {
-  return { type: 0, predicateUnconditional: undefined, predicateAbsBefore: undefined, predicateRelBefore: undefined };
+  return {
+    type: 0,
+    predicateUnconditional: undefined,
+    predicateAbsBefore: undefined,
+    predicateRelBefore: undefined,
+    _unknownFields: {},
+  };
 }
 
 export const XLMClaimPredicate = {
@@ -18296,6 +21343,19 @@ export const XLMClaimPredicate = {
     }
     if (message.predicateRelBefore !== undefined) {
       XLMClaimPredicate_PredicateRelBefore.encode(message.predicateRelBefore, writer.uint32(58).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -18339,7 +21399,17 @@ export const XLMClaimPredicate = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -18397,11 +21467,24 @@ export const XLMClaimPredicate = {
 };
 
 function createBaseXLMClaimPredicate_PredicateUnconditional(): XLMClaimPredicate_PredicateUnconditional {
-  return {};
+  return { _unknownFields: {} };
 }
 
 export const XLMClaimPredicate_PredicateUnconditional = {
-  encode(_: XLMClaimPredicate_PredicateUnconditional, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+  encode(message: XLMClaimPredicate_PredicateUnconditional, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
+    }
     return writer;
   },
 
@@ -18416,7 +21499,17 @@ export const XLMClaimPredicate_PredicateUnconditional = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -18440,13 +21533,26 @@ export const XLMClaimPredicate_PredicateUnconditional = {
 };
 
 function createBaseXLMClaimPredicate_PredicateAbsBefore(): XLMClaimPredicate_PredicateAbsBefore {
-  return { absBefore: 0 };
+  return { absBefore: 0, _unknownFields: {} };
 }
 
 export const XLMClaimPredicate_PredicateAbsBefore = {
   encode(message: XLMClaimPredicate_PredicateAbsBefore, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.absBefore !== 0) {
       writer.uint32(8).uint64(message.absBefore);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -18469,7 +21575,17 @@ export const XLMClaimPredicate_PredicateAbsBefore = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -18497,13 +21613,26 @@ export const XLMClaimPredicate_PredicateAbsBefore = {
 };
 
 function createBaseXLMClaimPredicate_PredicateRelBefore(): XLMClaimPredicate_PredicateRelBefore {
-  return { relBefore: 0 };
+  return { relBefore: 0, _unknownFields: {} };
 }
 
 export const XLMClaimPredicate_PredicateRelBefore = {
   encode(message: XLMClaimPredicate_PredicateRelBefore, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.relBefore !== 0) {
       writer.uint32(8).uint64(message.relBefore);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -18526,7 +21655,17 @@ export const XLMClaimPredicate_PredicateRelBefore = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -18554,7 +21693,7 @@ export const XLMClaimPredicate_PredicateRelBefore = {
 };
 
 function createBaseXLMClaimant(): XLMClaimant {
-  return { versionKind: 0, v0: undefined };
+  return { versionKind: 0, v0: undefined, _unknownFields: {} };
 }
 
 export const XLMClaimant = {
@@ -18564,6 +21703,19 @@ export const XLMClaimant = {
     }
     if (message.v0 !== undefined) {
       XLMClaimant_ClaimantV0.encode(message.v0, writer.uint32(18).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -18593,7 +21745,17 @@ export const XLMClaimant = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -18630,7 +21792,7 @@ export const XLMClaimant = {
 };
 
 function createBaseXLMClaimant_ClaimantV0(): XLMClaimant_ClaimantV0 {
-  return { destination: "", claimPredicate: undefined };
+  return { destination: "", claimPredicate: undefined, _unknownFields: {} };
 }
 
 export const XLMClaimant_ClaimantV0 = {
@@ -18640,6 +21802,19 @@ export const XLMClaimant_ClaimantV0 = {
     }
     if (message.claimPredicate !== undefined) {
       XLMClaimPredicate.encode(message.claimPredicate, writer.uint32(18).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -18669,7 +21844,17 @@ export const XLMClaimant_ClaimantV0 = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -18706,7 +21891,7 @@ export const XLMClaimant_ClaimantV0 = {
 };
 
 function createBaseXLMCreateClaimableBalanceRequest(): XLMCreateClaimableBalanceRequest {
-  return { details: undefined, asset: undefined, amount: 0, claimant: undefined };
+  return { details: undefined, asset: undefined, amount: 0, claimant: undefined, _unknownFields: {} };
 }
 
 export const XLMCreateClaimableBalanceRequest = {
@@ -18722,6 +21907,19 @@ export const XLMCreateClaimableBalanceRequest = {
     }
     if (message.claimant !== undefined) {
       XLMClaimant.encode(message.claimant, writer.uint32(34).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -18765,7 +21963,17 @@ export const XLMCreateClaimableBalanceRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -18816,7 +22024,7 @@ export const XLMCreateClaimableBalanceRequest = {
 };
 
 function createBaseXLMClaimClaimableBalanceRequest(): XLMClaimClaimableBalanceRequest {
-  return { details: undefined, claimableBalanceID: new Uint8Array(0) };
+  return { details: undefined, claimableBalanceID: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const XLMClaimClaimableBalanceRequest = {
@@ -18826,6 +22034,19 @@ export const XLMClaimClaimableBalanceRequest = {
     }
     if (message.claimableBalanceID.length !== 0) {
       writer.uint32(18).bytes(message.claimableBalanceID);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -18855,7 +22076,17 @@ export const XLMClaimClaimableBalanceRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -18894,7 +22125,7 @@ export const XLMClaimClaimableBalanceRequest = {
 };
 
 function createBaseXLMClawbackClaimableBalanceRequest(): XLMClawbackClaimableBalanceRequest {
-  return { details: undefined, claimableBalanceID: new Uint8Array(0) };
+  return { details: undefined, claimableBalanceID: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const XLMClawbackClaimableBalanceRequest = {
@@ -18904,6 +22135,19 @@ export const XLMClawbackClaimableBalanceRequest = {
     }
     if (message.claimableBalanceID.length !== 0) {
       writer.uint32(18).bytes(message.claimableBalanceID);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -18933,7 +22177,17 @@ export const XLMClawbackClaimableBalanceRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -18972,7 +22226,7 @@ export const XLMClawbackClaimableBalanceRequest = {
 };
 
 function createBaseXLMRevokeSponsorshipRequest(): XLMRevokeSponsorshipRequest {
-  return { details: undefined, entry: undefined };
+  return { details: undefined, entry: undefined, _unknownFields: {} };
 }
 
 export const XLMRevokeSponsorshipRequest = {
@@ -18982,6 +22236,19 @@ export const XLMRevokeSponsorshipRequest = {
     }
     if (message.entry !== undefined) {
       XLMLedgerEntry.encode(message.entry, writer.uint32(18).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -19011,7 +22278,17 @@ export const XLMRevokeSponsorshipRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -19050,7 +22327,7 @@ export const XLMRevokeSponsorshipRequest = {
 };
 
 function createBaseXLMClawbackRequest(): XLMClawbackRequest {
-  return { details: undefined, destination: "", asset: undefined, amount: 0 };
+  return { details: undefined, destination: "", asset: undefined, amount: 0, _unknownFields: {} };
 }
 
 export const XLMClawbackRequest = {
@@ -19066,6 +22343,19 @@ export const XLMClawbackRequest = {
     }
     if (message.amount !== 0) {
       writer.uint32(32).uint64(message.amount);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -19109,7 +22399,17 @@ export const XLMClawbackRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -19158,7 +22458,7 @@ export const XLMClawbackRequest = {
 };
 
 function createBaseXLMPrice(): XLMPrice {
-  return { numerator: 0, denominator: 0 };
+  return { numerator: 0, denominator: 0, _unknownFields: {} };
 }
 
 export const XLMPrice = {
@@ -19168,6 +22468,19 @@ export const XLMPrice = {
     }
     if (message.denominator !== 0) {
       writer.uint32(16).int32(message.denominator);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -19197,7 +22510,17 @@ export const XLMPrice = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -19239,6 +22562,7 @@ function createBaseXLMLiquidityPoolDepositRequest(): XLMLiquidityPoolDepositRequ
     maxAmountB: 0,
     minPrice: undefined,
     maxPrice: undefined,
+    _unknownFields: {},
   };
 }
 
@@ -19261,6 +22585,19 @@ export const XLMLiquidityPoolDepositRequest = {
     }
     if (message.maxPrice !== undefined) {
       XLMPrice.encode(message.maxPrice, writer.uint32(50).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -19318,7 +22655,17 @@ export const XLMLiquidityPoolDepositRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -19379,7 +22726,7 @@ export const XLMLiquidityPoolDepositRequest = {
 };
 
 function createBaseXLMLiquidityPoolWithdrawRequest(): XLMLiquidityPoolWithdrawRequest {
-  return { details: undefined, poolID: new Uint8Array(0), amount: 0, minAmountA: 0, minAmountB: 0 };
+  return { details: undefined, poolID: new Uint8Array(0), amount: 0, minAmountA: 0, minAmountB: 0, _unknownFields: {} };
 }
 
 export const XLMLiquidityPoolWithdrawRequest = {
@@ -19398,6 +22745,19 @@ export const XLMLiquidityPoolWithdrawRequest = {
     }
     if (message.minAmountB !== 0) {
       writer.uint32(48).int64(message.minAmountB);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -19448,7 +22808,17 @@ export const XLMLiquidityPoolWithdrawRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -19508,6 +22878,7 @@ function createBaseXLMPathPaymentSendRequest(): XLMPathPaymentSendRequest {
     path: [],
     srcAmount: 0,
     minDstAmount: 0,
+    _unknownFields: {},
   };
 }
 
@@ -19533,6 +22904,19 @@ export const XLMPathPaymentSendRequest = {
     }
     if (message.minDstAmount !== 0) {
       writer.uint32(56).uint64(message.minDstAmount);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -19597,7 +22981,17 @@ export const XLMPathPaymentSendRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -19671,6 +23065,7 @@ function createBaseXLMPathPaymentReceiveRequest(): XLMPathPaymentReceiveRequest 
     path: [],
     dstAmount: 0,
     maxSrcAmount: 0,
+    _unknownFields: {},
   };
 }
 
@@ -19696,6 +23091,19 @@ export const XLMPathPaymentReceiveRequest = {
     }
     if (message.maxSrcAmount !== 0) {
       writer.uint32(56).uint64(message.maxSrcAmount);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -19760,7 +23168,17 @@ export const XLMPathPaymentReceiveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -19834,6 +23252,7 @@ function createBaseXLMOfferRequest(): XLMOfferRequest {
     price: undefined,
     offerId: 0,
     kind: 0,
+    _unknownFields: {},
   };
 }
 
@@ -19859,6 +23278,19 @@ export const XLMOfferRequest = {
     }
     if (message.kind !== 0) {
       writer.uint32(56).int32(message.kind);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -19923,7 +23355,17 @@ export const XLMOfferRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -19991,13 +23433,26 @@ export const XLMOfferRequest = {
 };
 
 function createBaseXRPPaymentsRequest(): XRPPaymentsRequest {
-  return { payments: [] };
+  return { payments: [], _unknownFields: {} };
 }
 
 export const XRPPaymentsRequest = {
   encode(message: XRPPaymentsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.payments) {
       XRPPayment.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -20020,7 +23475,17 @@ export const XRPPaymentsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -20062,6 +23527,7 @@ function createBaseXRPPayment(): XRPPayment {
     amount: 0,
     id: "",
     isSequenceSet: false,
+    _unknownFields: {},
   };
 }
 
@@ -20093,6 +23559,19 @@ export const XRPPayment = {
     }
     if (message.isSequenceSet !== false) {
       writer.uint32(72).bool(message.isSequenceSet);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -20171,7 +23650,17 @@ export const XRPPayment = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -20243,13 +23732,26 @@ export const XRPPayment = {
 };
 
 function createBaseXRPAddressRequest(): XRPAddressRequest {
-  return { path: "" };
+  return { path: "", _unknownFields: {} };
 }
 
 export const XRPAddressRequest = {
   encode(message: XRPAddressRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.path !== "") {
       writer.uint32(10).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -20272,7 +23774,17 @@ export const XRPAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -20300,7 +23812,7 @@ export const XRPAddressRequest = {
 };
 
 function createBaseXRPProofOfReserveRequest(): XRPProofOfReserveRequest {
-  return { path: "", challenge: "" };
+  return { path: "", challenge: "", _unknownFields: {} };
 }
 
 export const XRPProofOfReserveRequest = {
@@ -20310,6 +23822,19 @@ export const XRPProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(18).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -20339,7 +23864,17 @@ export const XRPProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -20374,7 +23909,15 @@ export const XRPProofOfReserveRequest = {
 };
 
 function createBaseXTZRevealRequest(): XTZRevealRequest {
-  return { id: "", branch: "", from: "", fee: 0, counter: new Uint8Array(0), gasLimit: new Uint8Array(0) };
+  return {
+    id: "",
+    branch: "",
+    from: "",
+    fee: 0,
+    counter: new Uint8Array(0),
+    gasLimit: new Uint8Array(0),
+    _unknownFields: {},
+  };
 }
 
 export const XTZRevealRequest = {
@@ -20396,6 +23939,19 @@ export const XTZRevealRequest = {
     }
     if (message.gasLimit.length !== 0) {
       writer.uint32(50).bytes(message.gasLimit);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -20453,7 +24009,17 @@ export const XTZRevealRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -20508,13 +24074,26 @@ export const XTZRevealRequest = {
 };
 
 function createBaseXTZDelegationsRequest(): XTZDelegationsRequest {
-  return { delegations: [] };
+  return { delegations: [], _unknownFields: {} };
 }
 
 export const XTZDelegationsRequest = {
   encode(message: XTZDelegationsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.delegations) {
       XTZDelegation.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -20537,7 +24116,17 @@ export const XTZDelegationsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -20578,6 +24167,7 @@ function createBaseXTZDelegation(): XTZDelegation {
     gasLimit: new Uint8Array(0),
     delegate: "",
     isNonceSet: false,
+    _unknownFields: {},
   };
 }
 
@@ -20606,6 +24196,19 @@ export const XTZDelegation = {
     }
     if (message.isNonceSet !== false) {
       writer.uint32(64).bool(message.isNonceSet);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -20677,7 +24280,17 @@ export const XTZDelegation = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -20742,13 +24355,26 @@ export const XTZDelegation = {
 };
 
 function createBaseXTZTransactionsRequest(): XTZTransactionsRequest {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const XTZTransactionsRequest = {
   encode(message: XTZTransactionsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transactions) {
       XTZTransaction.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -20771,7 +24397,17 @@ export const XTZTransactionsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -20815,6 +24451,7 @@ function createBaseXTZTransaction(): XTZTransaction {
     to: "",
     parameters: new Uint8Array(0),
     isNonceSet: false,
+    _unknownFields: {},
   };
 }
 
@@ -20852,6 +24489,19 @@ export const XTZTransaction = {
     }
     if (message.isNonceSet !== false) {
       writer.uint32(88).bool(message.isNonceSet);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -20944,7 +24594,17 @@ export const XTZTransaction = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -21024,13 +24684,26 @@ export const XTZTransaction = {
 };
 
 function createBaseXTZFA12TransfersRequest(): XTZFA12TransfersRequest {
-  return { transfers: [] };
+  return { transfers: [], _unknownFields: {} };
 }
 
 export const XTZFA12TransfersRequest = {
   encode(message: XTZFA12TransfersRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transfers) {
       XTZFA12Transfer.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -21053,7 +24726,17 @@ export const XTZFA12TransfersRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -21097,6 +24780,7 @@ function createBaseXTZFA12Transfer(): XTZFA12Transfer {
     to: "",
     contract: "",
     isNonceSet: false,
+    _unknownFields: {},
   };
 }
 
@@ -21134,6 +24818,19 @@ export const XTZFA12Transfer = {
     }
     if (message.isNonceSet !== false) {
       writer.uint32(88).bool(message.isNonceSet);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -21226,7 +24923,17 @@ export const XTZFA12Transfer = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -21306,13 +25013,26 @@ export const XTZFA12Transfer = {
 };
 
 function createBaseXTZFA2TransfersRequest(): XTZFA2TransfersRequest {
-  return { transfers: [] };
+  return { transfers: [], _unknownFields: {} };
 }
 
 export const XTZFA2TransfersRequest = {
   encode(message: XTZFA2TransfersRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transfers) {
       XTZFA2Transfer.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -21335,7 +25055,17 @@ export const XTZFA2TransfersRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -21380,6 +25110,7 @@ function createBaseXTZFA2Transfer(): XTZFA2Transfer {
     contract: "",
     tokenId: new Uint8Array(0),
     isNonceSet: false,
+    _unknownFields: {},
   };
 }
 
@@ -21420,6 +25151,19 @@ export const XTZFA2Transfer = {
     }
     if (message.isNonceSet !== false) {
       writer.uint32(96).bool(message.isNonceSet);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -21519,7 +25263,17 @@ export const XTZFA2Transfer = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -21617,6 +25371,7 @@ function createBaseXTZCreateContractRequest(): XTZCreateContractRequest {
     code: new Uint8Array(0),
     storage: new Uint8Array(0),
     isNonceSet: false,
+    _unknownFields: {},
   };
 }
 
@@ -21657,6 +25412,19 @@ export const XTZCreateContractRequest = {
     }
     if (message.isNonceSet !== false) {
       writer.uint32(96).bool(message.isNonceSet);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -21756,7 +25524,17 @@ export const XTZCreateContractRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -21850,6 +25628,7 @@ function createBaseXTZStakeRequest(): XTZStakeRequest {
     gasLimit: new Uint8Array(0),
     amount: 0,
     isNonceSet: false,
+    _unknownFields: {},
   };
 }
 
@@ -21878,6 +25657,19 @@ export const XTZStakeRequest = {
     }
     if (message.isNonceSet !== false) {
       writer.uint32(64).bool(message.isNonceSet);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -21949,7 +25741,17 @@ export const XTZStakeRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -22023,6 +25825,7 @@ function createBaseXTZUnstakeRequest(): XTZUnstakeRequest {
     gasLimit: new Uint8Array(0),
     amount: 0,
     isNonceSet: false,
+    _unknownFields: {},
   };
 }
 
@@ -22051,6 +25854,19 @@ export const XTZUnstakeRequest = {
     }
     if (message.isNonceSet !== false) {
       writer.uint32(64).bool(message.isNonceSet);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -22122,7 +25938,17 @@ export const XTZUnstakeRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -22195,6 +26021,7 @@ function createBaseXTZFinalizeUnstakeRequest(): XTZFinalizeUnstakeRequest {
     counter: new Uint8Array(0),
     gasLimit: new Uint8Array(0),
     isNonceSet: false,
+    _unknownFields: {},
   };
 }
 
@@ -22220,6 +26047,19 @@ export const XTZFinalizeUnstakeRequest = {
     }
     if (message.isNonceSet !== false) {
       writer.uint32(56).bool(message.isNonceSet);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -22284,7 +26124,17 @@ export const XTZFinalizeUnstakeRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -22344,13 +26194,26 @@ export const XTZFinalizeUnstakeRequest = {
 };
 
 function createBaseXTZAddressRequest(): XTZAddressRequest {
-  return { path: "" };
+  return { path: "", _unknownFields: {} };
 }
 
 export const XTZAddressRequest = {
   encode(message: XTZAddressRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.path !== "") {
       writer.uint32(10).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -22373,7 +26236,17 @@ export const XTZAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -22401,7 +26274,7 @@ export const XTZAddressRequest = {
 };
 
 function createBaseXTZProofOfReserveRequest(): XTZProofOfReserveRequest {
-  return { path: "", challenge: "" };
+  return { path: "", challenge: "", _unknownFields: {} };
 }
 
 export const XTZProofOfReserveRequest = {
@@ -22411,6 +26284,19 @@ export const XTZProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(18).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -22440,7 +26326,17 @@ export const XTZProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -22475,7 +26371,7 @@ export const XTZProofOfReserveRequest = {
 };
 
 function createBaseXTZBlockHeaderRequest(): XTZBlockHeaderRequest {
-  return { id: "", path: "", payload: new Uint8Array(0) };
+  return { id: "", path: "", payload: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const XTZBlockHeaderRequest = {
@@ -22488,6 +26384,19 @@ export const XTZBlockHeaderRequest = {
     }
     if (message.payload.length !== 0) {
       writer.uint32(26).bytes(message.payload);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -22524,7 +26433,17 @@ export const XTZBlockHeaderRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -22564,13 +26483,26 @@ export const XTZBlockHeaderRequest = {
 };
 
 function createBaseETHTransactionsRequest(): ETHTransactionsRequest {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const ETHTransactionsRequest = {
   encode(message: ETHTransactionsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transactions) {
       ETHTransaction.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -22593,7 +26525,17 @@ export const ETHTransactionsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -22636,6 +26578,7 @@ function createBaseETHTransaction(): ETHTransaction {
     id: "",
     isNonceSet: false,
     chainId: 0,
+    _unknownFields: {},
   };
 }
 
@@ -22670,6 +26613,19 @@ export const ETHTransaction = {
     }
     if (message.chainId !== 0) {
       writer.uint32(80).uint64(message.chainId);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -22755,7 +26711,17 @@ export const ETHTransaction = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -22840,6 +26806,7 @@ function createBaseETHCreateContractRequest(): ETHCreateContractRequest {
     id: "",
     isNonceSet: false,
     chainId: 0,
+    _unknownFields: {},
   };
 }
 
@@ -22871,6 +26838,19 @@ export const ETHCreateContractRequest = {
     }
     if (message.chainId !== 0) {
       writer.uint32(72).uint64(message.chainId);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -22949,7 +26929,17 @@ export const ETHCreateContractRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -23019,13 +27009,26 @@ export const ETHCreateContractRequest = {
 };
 
 function createBaseETHAddressRequest(): ETHAddressRequest {
-  return { path: "" };
+  return { path: "", _unknownFields: {} };
 }
 
 export const ETHAddressRequest = {
   encode(message: ETHAddressRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.path !== "") {
       writer.uint32(10).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -23048,7 +27051,17 @@ export const ETHAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -23076,7 +27089,7 @@ export const ETHAddressRequest = {
 };
 
 function createBaseETHProofOfReserveRequest(): ETHProofOfReserveRequest {
-  return { path: "", challenge: "" };
+  return { path: "", challenge: "", _unknownFields: {} };
 }
 
 export const ETHProofOfReserveRequest = {
@@ -23086,6 +27099,19 @@ export const ETHProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(18).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -23115,7 +27141,17 @@ export const ETHProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -23150,13 +27186,26 @@ export const ETHProofOfReserveRequest = {
 };
 
 function createBaseETHTransactionsResponse(): ETHTransactionsResponse {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const ETHTransactionsResponse = {
   encode(message: ETHTransactionsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transactions) {
       ETHTransactionsResponse_ETHTransactionResponse.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -23179,7 +27228,17 @@ export const ETHTransactionsResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -23212,7 +27271,7 @@ export const ETHTransactionsResponse = {
 };
 
 function createBaseETHTransactionsResponse_ETHTransactionResponse(): ETHTransactionsResponse_ETHTransactionResponse {
-  return { id: "", transaction: "", publicKey: new Uint8Array(0) };
+  return { id: "", transaction: "", publicKey: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const ETHTransactionsResponse_ETHTransactionResponse = {
@@ -23228,6 +27287,19 @@ export const ETHTransactionsResponse_ETHTransactionResponse = {
     }
     if (message.publicKey.length !== 0) {
       writer.uint32(26).bytes(message.publicKey);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -23264,7 +27336,17 @@ export const ETHTransactionsResponse_ETHTransactionResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -23308,7 +27390,7 @@ export const ETHTransactionsResponse_ETHTransactionResponse = {
 };
 
 function createBaseETHSignTextRequest(): ETHSignTextRequest {
-  return { id: "", from: "", message: "" };
+  return { id: "", from: "", message: "", _unknownFields: {} };
 }
 
 export const ETHSignTextRequest = {
@@ -23321,6 +27403,19 @@ export const ETHSignTextRequest = {
     }
     if (message.message !== "") {
       writer.uint32(26).string(message.message);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -23357,7 +27452,17 @@ export const ETHSignTextRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -23397,7 +27502,7 @@ export const ETHSignTextRequest = {
 };
 
 function createBaseETHSignTextResponse(): ETHSignTextResponse {
-  return { id: "", signature: new Uint8Array(0), publicKey: new Uint8Array(0) };
+  return { id: "", signature: new Uint8Array(0), publicKey: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const ETHSignTextResponse = {
@@ -23410,6 +27515,19 @@ export const ETHSignTextResponse = {
     }
     if (message.publicKey.length !== 0) {
       writer.uint32(26).bytes(message.publicKey);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -23446,7 +27564,17 @@ export const ETHSignTextResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -23486,13 +27614,26 @@ export const ETHSignTextResponse = {
 };
 
 function createBaseETHWrappedTransactionsRequest(): ETHWrappedTransactionsRequest {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const ETHWrappedTransactionsRequest = {
   encode(message: ETHWrappedTransactionsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transactions) {
       ETHWrappedTransaction.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -23515,7 +27656,17 @@ export const ETHWrappedTransactionsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -23560,6 +27711,7 @@ function createBaseETHWrappedTransaction(): ETHWrappedTransaction {
     forwarder: "",
     deadline: 0,
     forwarderKind: 0,
+    _unknownFields: {},
   };
 }
 
@@ -23600,6 +27752,19 @@ export const ETHWrappedTransaction = {
     }
     if (message.forwarderKind !== 0) {
       writer.uint32(96).int32(message.forwarderKind);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -23699,7 +27864,17 @@ export const ETHWrappedTransaction = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -23795,6 +27970,7 @@ function createBaseETHWrappedCreateContractRequest(): ETHWrappedCreateContractRe
     id: "",
     isNonceSet: false,
     creator: "",
+    _unknownFields: {},
   };
 }
 
@@ -23823,6 +27999,19 @@ export const ETHWrappedCreateContractRequest = {
     }
     if (message.creator !== "") {
       writer.uint32(66).string(message.creator);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -23894,7 +28083,17 @@ export const ETHWrappedCreateContractRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -23959,13 +28158,26 @@ export const ETHWrappedCreateContractRequest = {
 };
 
 function createBaseETHWrappedTransactionsResponse(): ETHWrappedTransactionsResponse {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const ETHWrappedTransactionsResponse = {
   encode(message: ETHWrappedTransactionsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transactions) {
       ETHWrappedTransactionsResponse_ETHWrappedTransactionResponse.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -23990,7 +28202,17 @@ export const ETHWrappedTransactionsResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -24026,7 +28248,7 @@ export const ETHWrappedTransactionsResponse = {
 };
 
 function createBaseETHWrappedTransactionsResponse_ETHWrappedTransactionResponse(): ETHWrappedTransactionsResponse_ETHWrappedTransactionResponse {
-  return { id: "", transaction: "", publicKey: new Uint8Array(0) };
+  return { id: "", transaction: "", publicKey: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const ETHWrappedTransactionsResponse_ETHWrappedTransactionResponse = {
@@ -24042,6 +28264,19 @@ export const ETHWrappedTransactionsResponse_ETHWrappedTransactionResponse = {
     }
     if (message.publicKey.length !== 0) {
       writer.uint32(26).bytes(message.publicKey);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -24081,7 +28316,17 @@ export const ETHWrappedTransactionsResponse_ETHWrappedTransactionResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -24125,7 +28370,7 @@ export const ETHWrappedTransactionsResponse_ETHWrappedTransactionResponse = {
 };
 
 function createBaseETHWrappedCreateContractResponse(): ETHWrappedCreateContractResponse {
-  return { id: "", transaction: "", publicKey: new Uint8Array(0) };
+  return { id: "", transaction: "", publicKey: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const ETHWrappedCreateContractResponse = {
@@ -24138,6 +28383,19 @@ export const ETHWrappedCreateContractResponse = {
     }
     if (message.publicKey.length !== 0) {
       writer.uint32(26).bytes(message.publicKey);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -24174,7 +28432,17 @@ export const ETHWrappedCreateContractResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -24214,7 +28482,15 @@ export const ETHWrappedCreateContractResponse = {
 };
 
 function createBaseBTCInput(): BTCInput {
-  return { path: "", addressType: 0, txHash: new Uint8Array(0), outputIndex: 0, value: 0, sequenceNumber: 0 };
+  return {
+    path: "",
+    addressType: 0,
+    txHash: new Uint8Array(0),
+    outputIndex: 0,
+    value: 0,
+    sequenceNumber: 0,
+    _unknownFields: {},
+  };
 }
 
 export const BTCInput = {
@@ -24236,6 +28512,19 @@ export const BTCInput = {
     }
     if (message.sequenceNumber !== 0) {
       writer.uint32(48).uint32(message.sequenceNumber);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -24293,7 +28582,17 @@ export const BTCInput = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -24348,7 +28647,7 @@ export const BTCInput = {
 };
 
 function createBaseBTCOutput(): BTCOutput {
-  return { destination: "", amount: 0 };
+  return { destination: "", amount: 0, _unknownFields: {} };
 }
 
 export const BTCOutput = {
@@ -24358,6 +28657,19 @@ export const BTCOutput = {
     }
     if (message.amount !== 0) {
       writer.uint32(16).uint64(message.amount);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -24387,7 +28699,17 @@ export const BTCOutput = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -24422,7 +28744,7 @@ export const BTCOutput = {
 };
 
 function createBaseBTCChangeOutput(): BTCChangeOutput {
-  return { path: "", addressType: 0, amount: 0 };
+  return { path: "", addressType: 0, amount: 0, _unknownFields: {} };
 }
 
 export const BTCChangeOutput = {
@@ -24435,6 +28757,19 @@ export const BTCChangeOutput = {
     }
     if (message.amount !== 0) {
       writer.uint32(24).uint64(message.amount);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -24471,7 +28806,17 @@ export const BTCChangeOutput = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -24511,7 +28856,7 @@ export const BTCChangeOutput = {
 };
 
 function createBaseBTCTransactionRequest(): BTCTransactionRequest {
-  return { inputs: [], outputs: [], changeOutputs: [], lockTime: 0, hashType: 0, id: "", size: 0 };
+  return { inputs: [], outputs: [], changeOutputs: [], lockTime: 0, hashType: 0, id: "", size: 0, _unknownFields: {} };
 }
 
 export const BTCTransactionRequest = {
@@ -24536,6 +28881,19 @@ export const BTCTransactionRequest = {
     }
     if (message.size !== 0) {
       writer.uint32(56).uint32(message.size);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -24600,7 +28958,17 @@ export const BTCTransactionRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -24662,7 +29030,7 @@ export const BTCTransactionRequest = {
 };
 
 function createBaseBTCAddressRequest(): BTCAddressRequest {
-  return { path: "", addressType: 0 };
+  return { path: "", addressType: 0, _unknownFields: {} };
 }
 
 export const BTCAddressRequest = {
@@ -24672,6 +29040,19 @@ export const BTCAddressRequest = {
     }
     if (message.addressType !== 0) {
       writer.uint32(16).int32(message.addressType);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -24701,7 +29082,17 @@ export const BTCAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -24736,7 +29127,7 @@ export const BTCAddressRequest = {
 };
 
 function createBaseBTCProofOfReserveRequest(): BTCProofOfReserveRequest {
-  return { path: "", addressType: 0, challenge: "" };
+  return { path: "", addressType: 0, challenge: "", _unknownFields: {} };
 }
 
 export const BTCProofOfReserveRequest = {
@@ -24749,6 +29140,19 @@ export const BTCProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(26).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -24785,7 +29189,17 @@ export const BTCProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -24825,7 +29239,7 @@ export const BTCProofOfReserveRequest = {
 };
 
 function createBaseBTCSignTextRequest(): BTCSignTextRequest {
-  return { id: "", from: "", message: "" };
+  return { id: "", from: "", message: "", _unknownFields: {} };
 }
 
 export const BTCSignTextRequest = {
@@ -24838,6 +29252,19 @@ export const BTCSignTextRequest = {
     }
     if (message.message !== "") {
       writer.uint32(26).string(message.message);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -24874,7 +29301,17 @@ export const BTCSignTextRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -24914,7 +29351,7 @@ export const BTCSignTextRequest = {
 };
 
 function createBaseBTCSignTextResponse(): BTCSignTextResponse {
-  return { id: "", signature: new Uint8Array(0), publicKey: new Uint8Array(0) };
+  return { id: "", signature: new Uint8Array(0), publicKey: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const BTCSignTextResponse = {
@@ -24927,6 +29364,19 @@ export const BTCSignTextResponse = {
     }
     if (message.publicKey.length !== 0) {
       writer.uint32(26).bytes(message.publicKey);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -24963,7 +29413,17 @@ export const BTCSignTextResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -25003,7 +29463,15 @@ export const BTCSignTextResponse = {
 };
 
 function createBaseLTCInput(): LTCInput {
-  return { path: "", addressType: 0, txHash: new Uint8Array(0), outputIndex: 0, value: 0, sequenceNumber: 0 };
+  return {
+    path: "",
+    addressType: 0,
+    txHash: new Uint8Array(0),
+    outputIndex: 0,
+    value: 0,
+    sequenceNumber: 0,
+    _unknownFields: {},
+  };
 }
 
 export const LTCInput = {
@@ -25025,6 +29493,19 @@ export const LTCInput = {
     }
     if (message.sequenceNumber !== 0) {
       writer.uint32(48).uint32(message.sequenceNumber);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -25082,7 +29563,17 @@ export const LTCInput = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -25137,7 +29628,7 @@ export const LTCInput = {
 };
 
 function createBaseLTCOutput(): LTCOutput {
-  return { destination: "", amount: 0 };
+  return { destination: "", amount: 0, _unknownFields: {} };
 }
 
 export const LTCOutput = {
@@ -25147,6 +29638,19 @@ export const LTCOutput = {
     }
     if (message.amount !== 0) {
       writer.uint32(16).uint64(message.amount);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -25176,7 +29680,17 @@ export const LTCOutput = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -25211,7 +29725,7 @@ export const LTCOutput = {
 };
 
 function createBaseLTCChangeOutput(): LTCChangeOutput {
-  return { path: "", addressType: 0, amount: 0 };
+  return { path: "", addressType: 0, amount: 0, _unknownFields: {} };
 }
 
 export const LTCChangeOutput = {
@@ -25224,6 +29738,19 @@ export const LTCChangeOutput = {
     }
     if (message.amount !== 0) {
       writer.uint32(24).uint64(message.amount);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -25260,7 +29787,17 @@ export const LTCChangeOutput = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -25300,7 +29837,7 @@ export const LTCChangeOutput = {
 };
 
 function createBaseLTCTransactionRequest(): LTCTransactionRequest {
-  return { inputs: [], outputs: [], changeOutputs: [], lockTime: 0, hashType: 0, id: "" };
+  return { inputs: [], outputs: [], changeOutputs: [], lockTime: 0, hashType: 0, id: "", _unknownFields: {} };
 }
 
 export const LTCTransactionRequest = {
@@ -25322,6 +29859,19 @@ export const LTCTransactionRequest = {
     }
     if (message.id !== "") {
       writer.uint32(50).string(message.id);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -25379,7 +29929,17 @@ export const LTCTransactionRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -25436,7 +29996,7 @@ export const LTCTransactionRequest = {
 };
 
 function createBaseLTCAddressRequest(): LTCAddressRequest {
-  return { path: "", addressType: 0 };
+  return { path: "", addressType: 0, _unknownFields: {} };
 }
 
 export const LTCAddressRequest = {
@@ -25446,6 +30006,19 @@ export const LTCAddressRequest = {
     }
     if (message.addressType !== 0) {
       writer.uint32(16).int32(message.addressType);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -25475,7 +30048,17 @@ export const LTCAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -25510,7 +30093,7 @@ export const LTCAddressRequest = {
 };
 
 function createBaseLTCProofOfReserveRequest(): LTCProofOfReserveRequest {
-  return { path: "", addressType: 0, challenge: "" };
+  return { path: "", addressType: 0, challenge: "", _unknownFields: {} };
 }
 
 export const LTCProofOfReserveRequest = {
@@ -25523,6 +30106,19 @@ export const LTCProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(26).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -25559,7 +30155,17 @@ export const LTCProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -25599,7 +30205,15 @@ export const LTCProofOfReserveRequest = {
 };
 
 function createBaseBCHInput(): BCHInput {
-  return { path: "", addressType: 0, txHash: new Uint8Array(0), outputIndex: 0, value: 0, sequenceNumber: 0 };
+  return {
+    path: "",
+    addressType: 0,
+    txHash: new Uint8Array(0),
+    outputIndex: 0,
+    value: 0,
+    sequenceNumber: 0,
+    _unknownFields: {},
+  };
 }
 
 export const BCHInput = {
@@ -25621,6 +30235,19 @@ export const BCHInput = {
     }
     if (message.sequenceNumber !== 0) {
       writer.uint32(48).uint32(message.sequenceNumber);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -25678,7 +30305,17 @@ export const BCHInput = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -25733,7 +30370,7 @@ export const BCHInput = {
 };
 
 function createBaseBCHOutput(): BCHOutput {
-  return { destination: "", amount: 0 };
+  return { destination: "", amount: 0, _unknownFields: {} };
 }
 
 export const BCHOutput = {
@@ -25743,6 +30380,19 @@ export const BCHOutput = {
     }
     if (message.amount !== 0) {
       writer.uint32(16).uint64(message.amount);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -25772,7 +30422,17 @@ export const BCHOutput = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -25807,7 +30467,7 @@ export const BCHOutput = {
 };
 
 function createBaseBCHChangeOutput(): BCHChangeOutput {
-  return { path: "", addressType: 0, amount: 0 };
+  return { path: "", addressType: 0, amount: 0, _unknownFields: {} };
 }
 
 export const BCHChangeOutput = {
@@ -25820,6 +30480,19 @@ export const BCHChangeOutput = {
     }
     if (message.amount !== 0) {
       writer.uint32(24).uint64(message.amount);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -25856,7 +30529,17 @@ export const BCHChangeOutput = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -25896,7 +30579,7 @@ export const BCHChangeOutput = {
 };
 
 function createBaseBCHTransactionRequest(): BCHTransactionRequest {
-  return { inputs: [], outputs: [], changeOutputs: [], lockTime: 0, hashType: 0, id: "" };
+  return { inputs: [], outputs: [], changeOutputs: [], lockTime: 0, hashType: 0, id: "", _unknownFields: {} };
 }
 
 export const BCHTransactionRequest = {
@@ -25918,6 +30601,19 @@ export const BCHTransactionRequest = {
     }
     if (message.id !== "") {
       writer.uint32(50).string(message.id);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -25975,7 +30671,17 @@ export const BCHTransactionRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -26032,7 +30738,7 @@ export const BCHTransactionRequest = {
 };
 
 function createBaseBCHAddressRequest(): BCHAddressRequest {
-  return { path: "", addressType: 0 };
+  return { path: "", addressType: 0, _unknownFields: {} };
 }
 
 export const BCHAddressRequest = {
@@ -26042,6 +30748,19 @@ export const BCHAddressRequest = {
     }
     if (message.addressType !== 0) {
       writer.uint32(16).int32(message.addressType);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -26071,7 +30790,17 @@ export const BCHAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -26106,7 +30835,7 @@ export const BCHAddressRequest = {
 };
 
 function createBaseBCHProofOfReserveRequest(): BCHProofOfReserveRequest {
-  return { path: "", addressType: 0, challenge: "" };
+  return { path: "", addressType: 0, challenge: "", _unknownFields: {} };
 }
 
 export const BCHProofOfReserveRequest = {
@@ -26119,6 +30848,19 @@ export const BCHProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(26).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -26155,7 +30897,17 @@ export const BCHProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -26209,6 +30961,7 @@ function createBaseDOTExtrinsic(): DOTExtrinsic {
     eraBlockNumber: 0,
     fee: new Uint8Array(0),
     network: 0,
+    _unknownFields: {},
   };
 }
 
@@ -26252,6 +31005,19 @@ export const DOTExtrinsic = {
     }
     if (message.network !== 0) {
       writer.uint32(104).int32(message.network);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -26358,7 +31124,17 @@ export const DOTExtrinsic = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -26448,13 +31224,26 @@ export const DOTExtrinsic = {
 };
 
 function createBaseDOTAddressRequest(): DOTAddressRequest {
-  return { path: "" };
+  return { path: "", _unknownFields: {} };
 }
 
 export const DOTAddressRequest = {
   encode(message: DOTAddressRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.path !== "") {
       writer.uint32(10).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -26477,7 +31266,17 @@ export const DOTAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -26505,13 +31304,26 @@ export const DOTAddressRequest = {
 };
 
 function createBaseDOTTransactionsRequest(): DOTTransactionsRequest {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const DOTTransactionsRequest = {
   encode(message: DOTTransactionsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transactions) {
       DOTTransaction.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -26534,7 +31346,17 @@ export const DOTTransactionsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -26566,7 +31388,7 @@ export const DOTTransactionsRequest = {
 };
 
 function createBaseDOTTransaction(): DOTTransaction {
-  return { destination: "", amount: new Uint8Array(0), extrinsic: undefined, unsafe: false };
+  return { destination: "", amount: new Uint8Array(0), extrinsic: undefined, unsafe: false, _unknownFields: {} };
 }
 
 export const DOTTransaction = {
@@ -26582,6 +31404,19 @@ export const DOTTransaction = {
     }
     if (message.unsafe !== false) {
       writer.uint32(32).bool(message.unsafe);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -26625,7 +31460,17 @@ export const DOTTransaction = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -26672,7 +31517,7 @@ export const DOTTransaction = {
 };
 
 function createBaseDOTProofOfReserveRequest(): DOTProofOfReserveRequest {
-  return { path: "", challenge: "" };
+  return { path: "", challenge: "", _unknownFields: {} };
 }
 
 export const DOTProofOfReserveRequest = {
@@ -26682,6 +31527,19 @@ export const DOTProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(18).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -26711,7 +31569,17 @@ export const DOTProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -26746,7 +31614,7 @@ export const DOTProofOfReserveRequest = {
 };
 
 function createBaseDOTPayoutStakersRequest(): DOTPayoutStakersRequest {
-  return { validator: "", era: 0, extrinsic: undefined };
+  return { validator: "", era: 0, extrinsic: undefined, _unknownFields: {} };
 }
 
 export const DOTPayoutStakersRequest = {
@@ -26759,6 +31627,19 @@ export const DOTPayoutStakersRequest = {
     }
     if (message.extrinsic !== undefined) {
       DOTExtrinsic.encode(message.extrinsic, writer.uint32(26).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -26795,7 +31676,17 @@ export const DOTPayoutStakersRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -26837,7 +31728,7 @@ export const DOTPayoutStakersRequest = {
 };
 
 function createBaseDOTBondRequest(): DOTBondRequest {
-  return { amount: new Uint8Array(0), staked: false, extrinsic: undefined };
+  return { amount: new Uint8Array(0), staked: false, extrinsic: undefined, _unknownFields: {} };
 }
 
 export const DOTBondRequest = {
@@ -26850,6 +31741,19 @@ export const DOTBondRequest = {
     }
     if (message.extrinsic !== undefined) {
       DOTExtrinsic.encode(message.extrinsic, writer.uint32(26).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -26886,7 +31790,17 @@ export const DOTBondRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -26928,7 +31842,7 @@ export const DOTBondRequest = {
 };
 
 function createBaseDOTUnbondRequest(): DOTUnbondRequest {
-  return { amount: new Uint8Array(0), extrinsic: undefined };
+  return { amount: new Uint8Array(0), extrinsic: undefined, _unknownFields: {} };
 }
 
 export const DOTUnbondRequest = {
@@ -26938,6 +31852,19 @@ export const DOTUnbondRequest = {
     }
     if (message.extrinsic !== undefined) {
       DOTExtrinsic.encode(message.extrinsic, writer.uint32(18).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -26967,7 +31894,17 @@ export const DOTUnbondRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -27004,7 +31941,7 @@ export const DOTUnbondRequest = {
 };
 
 function createBaseDOTBondExtraRequest(): DOTBondExtraRequest {
-  return { amount: new Uint8Array(0), extrinsic: undefined };
+  return { amount: new Uint8Array(0), extrinsic: undefined, _unknownFields: {} };
 }
 
 export const DOTBondExtraRequest = {
@@ -27014,6 +31951,19 @@ export const DOTBondExtraRequest = {
     }
     if (message.extrinsic !== undefined) {
       DOTExtrinsic.encode(message.extrinsic, writer.uint32(18).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -27043,7 +31993,17 @@ export const DOTBondExtraRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -27080,13 +32040,26 @@ export const DOTBondExtraRequest = {
 };
 
 function createBaseDOTChillRequest(): DOTChillRequest {
-  return { extrinsic: undefined };
+  return { extrinsic: undefined, _unknownFields: {} };
 }
 
 export const DOTChillRequest = {
   encode(message: DOTChillRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.extrinsic !== undefined) {
       DOTExtrinsic.encode(message.extrinsic, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -27109,7 +32082,17 @@ export const DOTChillRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -27139,7 +32122,7 @@ export const DOTChillRequest = {
 };
 
 function createBaseDOTNominateRequest(): DOTNominateRequest {
-  return { nominees: [], extrinsic: undefined };
+  return { nominees: [], extrinsic: undefined, _unknownFields: {} };
 }
 
 export const DOTNominateRequest = {
@@ -27149,6 +32132,19 @@ export const DOTNominateRequest = {
     }
     if (message.extrinsic !== undefined) {
       DOTExtrinsic.encode(message.extrinsic, writer.uint32(18).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -27178,7 +32174,17 @@ export const DOTNominateRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -27215,7 +32221,7 @@ export const DOTNominateRequest = {
 };
 
 function createBaseDOTWithdrawUnbondedRequest(): DOTWithdrawUnbondedRequest {
-  return { s: 0, extrinsic: undefined };
+  return { s: 0, extrinsic: undefined, _unknownFields: {} };
 }
 
 export const DOTWithdrawUnbondedRequest = {
@@ -27225,6 +32231,19 @@ export const DOTWithdrawUnbondedRequest = {
     }
     if (message.extrinsic !== undefined) {
       DOTExtrinsic.encode(message.extrinsic, writer.uint32(18).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -27254,7 +32273,17 @@ export const DOTWithdrawUnbondedRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -27291,13 +32320,26 @@ export const DOTWithdrawUnbondedRequest = {
 };
 
 function createBaseTAOAddressRequest(): TAOAddressRequest {
-  return { path: "" };
+  return { path: "", _unknownFields: {} };
 }
 
 export const TAOAddressRequest = {
   encode(message: TAOAddressRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.path !== "") {
       writer.uint32(10).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -27320,7 +32362,17 @@ export const TAOAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -27348,13 +32400,26 @@ export const TAOAddressRequest = {
 };
 
 function createBaseTAOTransactionsRequest(): TAOTransactionsRequest {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const TAOTransactionsRequest = {
   encode(message: TAOTransactionsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transactions) {
       TAOTransaction.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -27377,7 +32442,17 @@ export const TAOTransactionsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -27409,7 +32484,7 @@ export const TAOTransactionsRequest = {
 };
 
 function createBaseTAOTransaction(): TAOTransaction {
-  return { destination: "", amount: new Uint8Array(0), extrinsic: undefined, unsafe: false };
+  return { destination: "", amount: new Uint8Array(0), extrinsic: undefined, unsafe: false, _unknownFields: {} };
 }
 
 export const TAOTransaction = {
@@ -27425,6 +32500,19 @@ export const TAOTransaction = {
     }
     if (message.unsafe !== false) {
       writer.uint32(32).bool(message.unsafe);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -27468,7 +32556,17 @@ export const TAOTransaction = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -27515,7 +32613,7 @@ export const TAOTransaction = {
 };
 
 function createBaseTAOProofOfReserveRequest(): TAOProofOfReserveRequest {
-  return { path: "", challenge: "" };
+  return { path: "", challenge: "", _unknownFields: {} };
 }
 
 export const TAOProofOfReserveRequest = {
@@ -27525,6 +32623,19 @@ export const TAOProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(18).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -27554,7 +32665,17 @@ export const TAOProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -27589,7 +32710,7 @@ export const TAOProofOfReserveRequest = {
 };
 
 function createBaseTAOAddStakeRequest(): TAOAddStakeRequest {
-  return { destination: "", amount: new Uint8Array(0), extrinsic: undefined };
+  return { destination: "", amount: new Uint8Array(0), extrinsic: undefined, _unknownFields: {} };
 }
 
 export const TAOAddStakeRequest = {
@@ -27602,6 +32723,19 @@ export const TAOAddStakeRequest = {
     }
     if (message.extrinsic !== undefined) {
       DOTExtrinsic.encode(message.extrinsic, writer.uint32(26).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -27638,7 +32772,17 @@ export const TAOAddStakeRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -27680,7 +32824,7 @@ export const TAOAddStakeRequest = {
 };
 
 function createBaseTAORemoveStakeRequest(): TAORemoveStakeRequest {
-  return { destination: "", amount: new Uint8Array(0), extrinsic: undefined };
+  return { destination: "", amount: new Uint8Array(0), extrinsic: undefined, _unknownFields: {} };
 }
 
 export const TAORemoveStakeRequest = {
@@ -27693,6 +32837,19 @@ export const TAORemoveStakeRequest = {
     }
     if (message.extrinsic !== undefined) {
       DOTExtrinsic.encode(message.extrinsic, writer.uint32(26).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -27729,7 +32886,17 @@ export const TAORemoveStakeRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -27771,13 +32938,26 @@ export const TAORemoveStakeRequest = {
 };
 
 function createBaseFTMTransactionsRequest(): FTMTransactionsRequest {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const FTMTransactionsRequest = {
   encode(message: FTMTransactionsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transactions) {
       FTMTransaction.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -27800,7 +32980,17 @@ export const FTMTransactionsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -27841,6 +33031,7 @@ function createBaseFTMTransaction(): FTMTransaction {
     amount: new Uint8Array(0),
     id: "",
     isNonceSet: false,
+    _unknownFields: {},
   };
 }
 
@@ -27869,6 +33060,19 @@ export const FTMTransaction = {
     }
     if (message.isNonceSet !== false) {
       writer.uint32(72).bool(message.isNonceSet);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -27940,7 +33144,17 @@ export const FTMTransaction = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -28005,13 +33219,26 @@ export const FTMTransaction = {
 };
 
 function createBaseFTMAddressRequest(): FTMAddressRequest {
-  return { path: "" };
+  return { path: "", _unknownFields: {} };
 }
 
 export const FTMAddressRequest = {
   encode(message: FTMAddressRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.path !== "") {
       writer.uint32(10).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -28034,7 +33261,17 @@ export const FTMAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -28062,7 +33299,7 @@ export const FTMAddressRequest = {
 };
 
 function createBaseFTMProofOfReserveRequest(): FTMProofOfReserveRequest {
-  return { path: "", challenge: "" };
+  return { path: "", challenge: "", _unknownFields: {} };
 }
 
 export const FTMProofOfReserveRequest = {
@@ -28072,6 +33309,19 @@ export const FTMProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(18).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -28101,7 +33351,17 @@ export const FTMProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -28136,7 +33396,14 @@ export const FTMProofOfReserveRequest = {
 };
 
 function createBaseFTMStakingDelegateRequest(): FTMStakingDelegateRequest {
-  return { tx: undefined, validatorId: 0, operation: 0, withdrawalId: 0, withdrawalAmount: new Uint8Array(0) };
+  return {
+    tx: undefined,
+    validatorId: 0,
+    operation: 0,
+    withdrawalId: 0,
+    withdrawalAmount: new Uint8Array(0),
+    _unknownFields: {},
+  };
 }
 
 export const FTMStakingDelegateRequest = {
@@ -28155,6 +33422,19 @@ export const FTMStakingDelegateRequest = {
     }
     if (message.withdrawalAmount.length !== 0) {
       writer.uint32(42).bytes(message.withdrawalAmount);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -28205,7 +33485,17 @@ export const FTMStakingDelegateRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -28255,7 +33545,7 @@ export const FTMStakingDelegateRequest = {
 };
 
 function createBaseFTMStakingClaimRewardsRequest(): FTMStakingClaimRewardsRequest {
-  return { tx: undefined, validatorId: 0, restake: false };
+  return { tx: undefined, validatorId: 0, restake: false, _unknownFields: {} };
 }
 
 export const FTMStakingClaimRewardsRequest = {
@@ -28268,6 +33558,19 @@ export const FTMStakingClaimRewardsRequest = {
     }
     if (message.restake !== false) {
       writer.uint32(24).bool(message.restake);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -28304,7 +33607,17 @@ export const FTMStakingClaimRewardsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -28344,7 +33657,14 @@ export const FTMStakingClaimRewardsRequest = {
 };
 
 function createBaseFTMStakingLockRequest(): FTMStakingLockRequest {
-  return { tx: undefined, validatorId: 0, operation: 0, duration: 0, lockAmount: new Uint8Array(0) };
+  return {
+    tx: undefined,
+    validatorId: 0,
+    operation: 0,
+    duration: 0,
+    lockAmount: new Uint8Array(0),
+    _unknownFields: {},
+  };
 }
 
 export const FTMStakingLockRequest = {
@@ -28363,6 +33683,19 @@ export const FTMStakingLockRequest = {
     }
     if (message.lockAmount.length !== 0) {
       writer.uint32(42).bytes(message.lockAmount);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -28413,7 +33746,17 @@ export const FTMStakingLockRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -28463,13 +33806,26 @@ export const FTMStakingLockRequest = {
 };
 
 function createBaseFTMTransactionsResponse(): FTMTransactionsResponse {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const FTMTransactionsResponse = {
   encode(message: FTMTransactionsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transactions) {
       FTMTransactionsResponse_FTMTransactionResponse.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -28492,7 +33848,17 @@ export const FTMTransactionsResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -28525,7 +33891,7 @@ export const FTMTransactionsResponse = {
 };
 
 function createBaseFTMTransactionsResponse_FTMTransactionResponse(): FTMTransactionsResponse_FTMTransactionResponse {
-  return { id: "", transaction: "", publicKey: new Uint8Array(0) };
+  return { id: "", transaction: "", publicKey: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const FTMTransactionsResponse_FTMTransactionResponse = {
@@ -28541,6 +33907,19 @@ export const FTMTransactionsResponse_FTMTransactionResponse = {
     }
     if (message.publicKey.length !== 0) {
       writer.uint32(26).bytes(message.publicKey);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -28577,7 +33956,17 @@ export const FTMTransactionsResponse_FTMTransactionResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -28621,13 +34010,26 @@ export const FTMTransactionsResponse_FTMTransactionResponse = {
 };
 
 function createBaseSonicTransactionsRequest(): SonicTransactionsRequest {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const SonicTransactionsRequest = {
   encode(message: SonicTransactionsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transactions) {
       SonicTransaction.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -28650,7 +34052,17 @@ export const SonicTransactionsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -28691,6 +34103,7 @@ function createBaseSonicTransaction(): SonicTransaction {
     amount: new Uint8Array(0),
     id: "",
     isNonceSet: false,
+    _unknownFields: {},
   };
 }
 
@@ -28719,6 +34132,19 @@ export const SonicTransaction = {
     }
     if (message.isNonceSet !== false) {
       writer.uint32(72).bool(message.isNonceSet);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -28790,7 +34216,17 @@ export const SonicTransaction = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -28855,13 +34291,26 @@ export const SonicTransaction = {
 };
 
 function createBaseSonicAddressRequest(): SonicAddressRequest {
-  return { path: "" };
+  return { path: "", _unknownFields: {} };
 }
 
 export const SonicAddressRequest = {
   encode(message: SonicAddressRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.path !== "") {
       writer.uint32(10).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -28884,7 +34333,17 @@ export const SonicAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -28912,7 +34371,7 @@ export const SonicAddressRequest = {
 };
 
 function createBaseSonicProofOfReserveRequest(): SonicProofOfReserveRequest {
-  return { path: "", challenge: "" };
+  return { path: "", challenge: "", _unknownFields: {} };
 }
 
 export const SonicProofOfReserveRequest = {
@@ -28922,6 +34381,19 @@ export const SonicProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(18).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -28951,7 +34423,17 @@ export const SonicProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -28986,7 +34468,14 @@ export const SonicProofOfReserveRequest = {
 };
 
 function createBaseSonicStakingDelegateRequest(): SonicStakingDelegateRequest {
-  return { tx: undefined, validatorId: 0, operation: 0, withdrawalId: 0, withdrawalAmount: new Uint8Array(0) };
+  return {
+    tx: undefined,
+    validatorId: 0,
+    operation: 0,
+    withdrawalId: 0,
+    withdrawalAmount: new Uint8Array(0),
+    _unknownFields: {},
+  };
 }
 
 export const SonicStakingDelegateRequest = {
@@ -29005,6 +34494,19 @@ export const SonicStakingDelegateRequest = {
     }
     if (message.withdrawalAmount.length !== 0) {
       writer.uint32(42).bytes(message.withdrawalAmount);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -29055,7 +34557,17 @@ export const SonicStakingDelegateRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -29107,7 +34619,7 @@ export const SonicStakingDelegateRequest = {
 };
 
 function createBaseSonicStakingClaimRewardsRequest(): SonicStakingClaimRewardsRequest {
-  return { tx: undefined, validatorId: 0, restake: false };
+  return { tx: undefined, validatorId: 0, restake: false, _unknownFields: {} };
 }
 
 export const SonicStakingClaimRewardsRequest = {
@@ -29120,6 +34632,19 @@ export const SonicStakingClaimRewardsRequest = {
     }
     if (message.restake !== false) {
       writer.uint32(24).bool(message.restake);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -29156,7 +34681,17 @@ export const SonicStakingClaimRewardsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -29196,13 +34731,26 @@ export const SonicStakingClaimRewardsRequest = {
 };
 
 function createBaseSonicTransactionsResponse(): SonicTransactionsResponse {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const SonicTransactionsResponse = {
   encode(message: SonicTransactionsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transactions) {
       SonicTransactionsResponse_SonicTransactionResponse.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -29225,7 +34773,17 @@ export const SonicTransactionsResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -29258,7 +34816,7 @@ export const SonicTransactionsResponse = {
 };
 
 function createBaseSonicTransactionsResponse_SonicTransactionResponse(): SonicTransactionsResponse_SonicTransactionResponse {
-  return { id: "", transaction: "", publicKey: new Uint8Array(0) };
+  return { id: "", transaction: "", publicKey: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const SonicTransactionsResponse_SonicTransactionResponse = {
@@ -29274,6 +34832,19 @@ export const SonicTransactionsResponse_SonicTransactionResponse = {
     }
     if (message.publicKey.length !== 0) {
       writer.uint32(26).bytes(message.publicKey);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -29310,7 +34881,17 @@ export const SonicTransactionsResponse_SonicTransactionResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -29354,13 +34935,26 @@ export const SonicTransactionsResponse_SonicTransactionResponse = {
 };
 
 function createBaseALGOTransactionsRequest(): ALGOTransactionsRequest {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const ALGOTransactionsRequest = {
   encode(message: ALGOTransactionsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transactions) {
       ALGOTransaction.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -29383,7 +34977,17 @@ export const ALGOTransactionsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -29415,7 +35019,16 @@ export const ALGOTransactionsRequest = {
 };
 
 function createBaseALGOTransactionMaterial(): ALGOTransactionMaterial {
-  return { fee: 0, fv: 0, lv: 0, lx: new Uint8Array(0), gen: "", gh: new Uint8Array(0), note: new Uint8Array(0) };
+  return {
+    fee: 0,
+    fv: 0,
+    lv: 0,
+    lx: new Uint8Array(0),
+    gen: "",
+    gh: new Uint8Array(0),
+    note: new Uint8Array(0),
+    _unknownFields: {},
+  };
 }
 
 export const ALGOTransactionMaterial = {
@@ -29440,6 +35053,19 @@ export const ALGOTransactionMaterial = {
     }
     if (message.note.length !== 0) {
       writer.uint32(58).bytes(message.note);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -29504,7 +35130,17 @@ export const ALGOTransactionMaterial = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -29564,7 +35200,7 @@ export const ALGOTransactionMaterial = {
 };
 
 function createBaseALGOTransaction(): ALGOTransaction {
-  return { path: "", to: "", amount: 0, material: undefined, id: "" };
+  return { path: "", to: "", amount: 0, material: undefined, id: "", _unknownFields: {} };
 }
 
 export const ALGOTransaction = {
@@ -29583,6 +35219,19 @@ export const ALGOTransaction = {
     }
     if (message.id !== "") {
       writer.uint32(42).string(message.id);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -29633,7 +35282,17 @@ export const ALGOTransaction = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -29685,13 +35344,26 @@ export const ALGOTransaction = {
 };
 
 function createBaseALGOAddressRequest(): ALGOAddressRequest {
-  return { path: "" };
+  return { path: "", _unknownFields: {} };
 }
 
 export const ALGOAddressRequest = {
   encode(message: ALGOAddressRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.path !== "") {
       writer.uint32(10).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -29714,7 +35386,17 @@ export const ALGOAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -29742,7 +35424,7 @@ export const ALGOAddressRequest = {
 };
 
 function createBaseALGOProofOfReserveRequest(): ALGOProofOfReserveRequest {
-  return { path: "", challenge: "" };
+  return { path: "", challenge: "", _unknownFields: {} };
 }
 
 export const ALGOProofOfReserveRequest = {
@@ -29752,6 +35434,19 @@ export const ALGOProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(18).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -29781,7 +35476,17 @@ export const ALGOProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -29816,7 +35521,7 @@ export const ALGOProofOfReserveRequest = {
 };
 
 function createBaseALGOAssetOptinRequest(): ALGOAssetOptinRequest {
-  return { path: "", assetID: 0, material: undefined, id: "" };
+  return { path: "", assetID: 0, material: undefined, id: "", _unknownFields: {} };
 }
 
 export const ALGOAssetOptinRequest = {
@@ -29832,6 +35537,19 @@ export const ALGOAssetOptinRequest = {
     }
     if (message.id !== "") {
       writer.uint32(34).string(message.id);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -29875,7 +35593,17 @@ export const ALGOAssetOptinRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -29922,13 +35650,26 @@ export const ALGOAssetOptinRequest = {
 };
 
 function createBaseALGOAssetTransferRequest(): ALGOAssetTransferRequest {
-  return { transfers: [] };
+  return { transfers: [], _unknownFields: {} };
 }
 
 export const ALGOAssetTransferRequest = {
   encode(message: ALGOAssetTransferRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transfers) {
       ALGOAssetTransfer.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -29951,7 +35692,17 @@ export const ALGOAssetTransferRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -29983,7 +35734,7 @@ export const ALGOAssetTransferRequest = {
 };
 
 function createBaseALGOAssetTransfer(): ALGOAssetTransfer {
-  return { path: "", to: "", assetID: 0, amount: 0, material: undefined, id: "" };
+  return { path: "", to: "", assetID: 0, amount: 0, material: undefined, id: "", _unknownFields: {} };
 }
 
 export const ALGOAssetTransfer = {
@@ -30005,6 +35756,19 @@ export const ALGOAssetTransfer = {
     }
     if (message.id !== "") {
       writer.uint32(50).string(message.id);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -30062,7 +35826,17 @@ export const ALGOAssetTransfer = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -30119,7 +35893,7 @@ export const ALGOAssetTransfer = {
 };
 
 function createBaseHederaAddressRequest(): HederaAddressRequest {
-  return { shardNum: 0, realmNum: 0, path: "" };
+  return { shardNum: 0, realmNum: 0, path: "", _unknownFields: {} };
 }
 
 export const HederaAddressRequest = {
@@ -30132,6 +35906,19 @@ export const HederaAddressRequest = {
     }
     if (message.path !== "") {
       writer.uint32(26).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -30168,7 +35955,17 @@ export const HederaAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -30208,7 +36005,7 @@ export const HederaAddressRequest = {
 };
 
 function createBaseHederaTransactionsRequest(): HederaTransactionsRequest {
-  return { kind: 0, transactions: [] };
+  return { kind: 0, transactions: [], _unknownFields: {} };
 }
 
 export const HederaTransactionsRequest = {
@@ -30218,6 +36015,19 @@ export const HederaTransactionsRequest = {
     }
     for (const v of message.transactions) {
       HederaTransaction.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -30247,7 +36057,17 @@ export const HederaTransactionsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -30284,7 +36104,7 @@ export const HederaTransactionsRequest = {
 };
 
 function createBaseHederaAccount(): HederaAccount {
-  return { shardNum: 0, realmNum: 0, accountID: 0 };
+  return { shardNum: 0, realmNum: 0, accountID: 0, _unknownFields: {} };
 }
 
 export const HederaAccount = {
@@ -30297,6 +36117,19 @@ export const HederaAccount = {
     }
     if (message.accountID !== 0) {
       writer.uint32(24).uint64(message.accountID);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -30333,7 +36166,17 @@ export const HederaAccount = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -30373,7 +36216,7 @@ export const HederaAccount = {
 };
 
 function createBaseHederaTimestamp(): HederaTimestamp {
-  return { seconds: 0, nanos: 0 };
+  return { seconds: 0, nanos: 0, _unknownFields: {} };
 }
 
 export const HederaTimestamp = {
@@ -30383,6 +36226,19 @@ export const HederaTimestamp = {
     }
     if (message.nanos !== 0) {
       writer.uint32(16).uint64(message.nanos);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -30412,7 +36268,17 @@ export const HederaTimestamp = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -30457,6 +36323,7 @@ function createBaseHederaTransaction(): HederaTransaction {
     ttlSeconds: 0,
     memo: "",
     operation: new Uint8Array(0),
+    _unknownFields: {},
   };
 }
 
@@ -30488,6 +36355,19 @@ export const HederaTransaction = {
     }
     if (message.operation.length !== 0) {
       writer.uint32(74).bytes(message.operation);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -30566,7 +36446,17 @@ export const HederaTransaction = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -30642,7 +36532,7 @@ export const HederaTransaction = {
 };
 
 function createBaseHederaProofOfReserveRequest(): HederaProofOfReserveRequest {
-  return { shardNum: 0, realmNum: 0, path: "", challenge: "" };
+  return { shardNum: 0, realmNum: 0, path: "", challenge: "", _unknownFields: {} };
 }
 
 export const HederaProofOfReserveRequest = {
@@ -30658,6 +36548,19 @@ export const HederaProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(34).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -30701,7 +36604,17 @@ export const HederaProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -30746,13 +36659,26 @@ export const HederaProofOfReserveRequest = {
 };
 
 function createBaseSOLAddressRequest(): SOLAddressRequest {
-  return { path: "" };
+  return { path: "", _unknownFields: {} };
 }
 
 export const SOLAddressRequest = {
   encode(message: SOLAddressRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.path !== "") {
       writer.uint32(10).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -30775,7 +36701,17 @@ export const SOLAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -30803,7 +36739,7 @@ export const SOLAddressRequest = {
 };
 
 function createBaseSOLProofOfReserveRequest(): SOLProofOfReserveRequest {
-  return { path: "", challenge: "" };
+  return { path: "", challenge: "", _unknownFields: {} };
 }
 
 export const SOLProofOfReserveRequest = {
@@ -30813,6 +36749,19 @@ export const SOLProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(18).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -30842,7 +36791,17 @@ export const SOLProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -30877,7 +36836,7 @@ export const SOLProofOfReserveRequest = {
 };
 
 function createBaseSOLCleanupDerivedAccountRequest(): SOLCleanupDerivedAccountRequest {
-  return { blockHash: "", path: "", seed: "", program: "", amount: 0, id: "" };
+  return { blockHash: "", path: "", seed: "", program: "", amount: 0, id: "", _unknownFields: {} };
 }
 
 export const SOLCleanupDerivedAccountRequest = {
@@ -30899,6 +36858,19 @@ export const SOLCleanupDerivedAccountRequest = {
     }
     if (message.id !== "") {
       writer.uint32(50).string(message.id);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -30956,7 +36928,17 @@ export const SOLCleanupDerivedAccountRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -31011,13 +36993,26 @@ export const SOLCleanupDerivedAccountRequest = {
 };
 
 function createBaseSOLTransfersRequest(): SOLTransfersRequest {
-  return { transfers: [] };
+  return { transfers: [], _unknownFields: {} };
 }
 
 export const SOLTransfersRequest = {
   encode(message: SOLTransfersRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transfers) {
       SOLTransfer.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -31040,7 +37035,17 @@ export const SOLTransfersRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -31072,7 +37077,17 @@ export const SOLTransfersRequest = {
 };
 
 function createBaseSOLTransfer(): SOLTransfer {
-  return { blockHash: "", path: "", to: "", amount: 0, fee: 0, id: "", computePrice: 0, computeBudget: 0 };
+  return {
+    blockHash: "",
+    path: "",
+    to: "",
+    amount: 0,
+    fee: 0,
+    id: "",
+    computePrice: 0,
+    computeBudget: 0,
+    _unknownFields: {},
+  };
 }
 
 export const SOLTransfer = {
@@ -31100,6 +37115,19 @@ export const SOLTransfer = {
     }
     if (message.computeBudget !== 0) {
       writer.uint32(64).uint64(message.computeBudget);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -31171,7 +37199,17 @@ export const SOLTransfer = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -31247,6 +37285,7 @@ function createBaseSOLDelegateStakeRequest(): SOLDelegateStakeRequest {
     computePrice: 0,
     computeBudget: 0,
     derivationIndex: 0,
+    _unknownFields: {},
   };
 }
 
@@ -31281,6 +37320,19 @@ export const SOLDelegateStakeRequest = {
     }
     if (message.derivationIndex !== 0) {
       writer.uint32(80).uint64(message.derivationIndex);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -31366,7 +37418,17 @@ export const SOLDelegateStakeRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -31441,7 +37503,7 @@ export const SOLDelegateStakeRequest = {
 };
 
 function createBaseSOLDeactivateStakeRequest(): SOLDeactivateStakeRequest {
-  return { blockHash: "", path: "", id: "", computePrice: 0, computeBudget: 0, derivationIndex: 0 };
+  return { blockHash: "", path: "", id: "", computePrice: 0, computeBudget: 0, derivationIndex: 0, _unknownFields: {} };
 }
 
 export const SOLDeactivateStakeRequest = {
@@ -31463,6 +37525,19 @@ export const SOLDeactivateStakeRequest = {
     }
     if (message.derivationIndex !== 0) {
       writer.uint32(48).uint64(message.derivationIndex);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -31520,7 +37595,17 @@ export const SOLDeactivateStakeRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -31587,6 +37672,7 @@ function createBaseSOLPartialDeactivateStakeRequest(): SOLPartialDeactivateStake
     id: "",
     computePrice: 0,
     computeBudget: 0,
+    _unknownFields: {},
   };
 }
 
@@ -31624,6 +37710,19 @@ export const SOLPartialDeactivateStakeRequest = {
     }
     if (message.computeBudget !== 0) {
       writer.uint32(88).uint64(message.computeBudget);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -31716,7 +37815,17 @@ export const SOLPartialDeactivateStakeRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -31798,7 +37907,16 @@ export const SOLPartialDeactivateStakeRequest = {
 };
 
 function createBaseSOLWithdrawStakeRequest(): SOLWithdrawStakeRequest {
-  return { blockHash: "", path: "", amount: 0, id: "", computePrice: 0, computeBudget: 0, derivationIndex: 0 };
+  return {
+    blockHash: "",
+    path: "",
+    amount: 0,
+    id: "",
+    computePrice: 0,
+    computeBudget: 0,
+    derivationIndex: 0,
+    _unknownFields: {},
+  };
 }
 
 export const SOLWithdrawStakeRequest = {
@@ -31823,6 +37941,19 @@ export const SOLWithdrawStakeRequest = {
     }
     if (message.derivationIndex !== 0) {
       writer.uint32(56).uint64(message.derivationIndex);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -31887,7 +38018,17 @@ export const SOLWithdrawStakeRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -31955,6 +38096,7 @@ function createBaseSOLMergeStakeRequest(): SOLMergeStakeRequest {
     id: "",
     computePrice: 0,
     computeBudget: 0,
+    _unknownFields: {},
   };
 }
 
@@ -31980,6 +38122,19 @@ export const SOLMergeStakeRequest = {
     }
     if (message.computeBudget !== 0) {
       writer.uint32(56).uint64(message.computeBudget);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -32044,7 +38199,17 @@ export const SOLMergeStakeRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -32120,6 +38285,7 @@ function createBaseSOLTokenCreateRequest(): SOLTokenCreateRequest {
     computePrice: 0,
     computeBudget: 0,
     enableFreeze: false,
+    _unknownFields: {},
   };
 }
 
@@ -32163,6 +38329,19 @@ export const SOLTokenCreateRequest = {
     }
     if (message.enableFreeze !== false) {
       writer.uint32(104).bool(message.enableFreeze);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -32269,7 +38448,17 @@ export const SOLTokenCreateRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -32371,6 +38560,7 @@ function createBaseSOLTokenMintRequest(): SOLTokenMintRequest {
     id: "",
     computePrice: 0,
     computeBudget: 0,
+    _unknownFields: {},
   };
 }
 
@@ -32408,6 +38598,19 @@ export const SOLTokenMintRequest = {
     }
     if (message.computeBudget !== 0) {
       writer.uint32(96).uint64(message.computeBudget);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -32500,7 +38703,17 @@ export const SOLTokenMintRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -32590,6 +38803,7 @@ function createBaseSOLTokenBurnRequest(): SOLTokenBurnRequest {
     id: "",
     computePrice: 0,
     computeBudget: 0,
+    _unknownFields: {},
   };
 }
 
@@ -32621,6 +38835,19 @@ export const SOLTokenBurnRequest = {
     }
     if (message.computeBudget !== 0) {
       writer.uint32(80).uint64(message.computeBudget);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -32699,7 +38926,17 @@ export const SOLTokenBurnRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -32780,6 +39017,7 @@ function createBaseSOLTokenFreezeAccountRequest(): SOLTokenFreezeAccountRequest 
     id: "",
     computePrice: 0,
     computeBudget: 0,
+    _unknownFields: {},
   };
 }
 
@@ -32814,6 +39052,19 @@ export const SOLTokenFreezeAccountRequest = {
     }
     if (message.computeBudget !== 0) {
       writer.uint32(80).uint64(message.computeBudget);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -32899,7 +39150,17 @@ export const SOLTokenFreezeAccountRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -32974,13 +39235,26 @@ export const SOLTokenFreezeAccountRequest = {
 };
 
 function createBaseSOLTokenTransfersRequest(): SOLTokenTransfersRequest {
-  return { transfers: [] };
+  return { transfers: [], _unknownFields: {} };
 }
 
 export const SOLTokenTransfersRequest = {
   encode(message: SOLTokenTransfersRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transfers) {
       SOLTokenTransfer.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -33003,7 +39277,17 @@ export const SOLTokenTransfersRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -33048,6 +39332,7 @@ function createBaseSOLTokenTransfer(): SOLTokenTransfer {
     computePrice: 0,
     computeBudget: 0,
     feepayer: "",
+    _unknownFields: {},
   };
 }
 
@@ -33088,6 +39373,19 @@ export const SOLTokenTransfer = {
     }
     if (message.feepayer !== "") {
       writer.uint32(106).string(message.feepayer);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -33187,7 +39485,17 @@ export const SOLTokenTransfer = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -33272,7 +39580,7 @@ export const SOLTokenTransfer = {
 };
 
 function createBaseCosmosAddressRequest(): CosmosAddressRequest {
-  return { path: "", prefix: "" };
+  return { path: "", prefix: "", _unknownFields: {} };
 }
 
 export const CosmosAddressRequest = {
@@ -33282,6 +39590,19 @@ export const CosmosAddressRequest = {
     }
     if (message.prefix !== "") {
       writer.uint32(18).string(message.prefix);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -33311,7 +39632,17 @@ export const CosmosAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -33346,7 +39677,7 @@ export const CosmosAddressRequest = {
 };
 
 function createBaseCosmosProofOfReserveRequest(): CosmosProofOfReserveRequest {
-  return { path: "", prefix: "", challenge: "" };
+  return { path: "", prefix: "", challenge: "", _unknownFields: {} };
 }
 
 export const CosmosProofOfReserveRequest = {
@@ -33359,6 +39690,19 @@ export const CosmosProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(26).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -33395,7 +39739,17 @@ export const CosmosProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -33448,6 +39802,7 @@ function createBaseCosmosRequestDetails(): CosmosRequestDetails {
     isNonceSet: false,
     isRawRequest: false,
     isTransferRequest: false,
+    _unknownFields: {},
   };
 }
 
@@ -33488,6 +39843,19 @@ export const CosmosRequestDetails = {
     }
     if (message.isTransferRequest !== false) {
       writer.uint32(96).bool(message.isTransferRequest);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -33587,7 +39955,17 @@ export const CosmosRequestDetails = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -33674,7 +40052,7 @@ export const CosmosRequestDetails = {
 };
 
 function createBaseCosmosSigner(): CosmosSigner {
-  return { path: "", sequence: 0, accountNumber: 0 };
+  return { path: "", sequence: 0, accountNumber: 0, _unknownFields: {} };
 }
 
 export const CosmosSigner = {
@@ -33687,6 +40065,19 @@ export const CosmosSigner = {
     }
     if (message.accountNumber !== 0) {
       writer.uint32(24).uint64(message.accountNumber);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -33723,7 +40114,17 @@ export const CosmosSigner = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -33763,7 +40164,7 @@ export const CosmosSigner = {
 };
 
 function createBaseCosmosMessage(): CosmosMessage {
-  return { url: "", payload: new Uint8Array(0) };
+  return { url: "", payload: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const CosmosMessage = {
@@ -33773,6 +40174,19 @@ export const CosmosMessage = {
     }
     if (message.payload.length !== 0) {
       writer.uint32(18).bytes(message.payload);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -33802,7 +40216,17 @@ export const CosmosMessage = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -33837,7 +40261,7 @@ export const CosmosMessage = {
 };
 
 function createBaseCosmosGenericCallRequest(): CosmosGenericCallRequest {
-  return { details: undefined, messages: [] };
+  return { details: undefined, messages: [], _unknownFields: {} };
 }
 
 export const CosmosGenericCallRequest = {
@@ -33847,6 +40271,19 @@ export const CosmosGenericCallRequest = {
     }
     for (const v of message.messages) {
       CosmosMessage.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -33876,7 +40313,17 @@ export const CosmosGenericCallRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -33915,7 +40362,7 @@ export const CosmosGenericCallRequest = {
 };
 
 function createBaseCosmosCancelRequest(): CosmosCancelRequest {
-  return { details: undefined, addressPrefix: "" };
+  return { details: undefined, addressPrefix: "", _unknownFields: {} };
 }
 
 export const CosmosCancelRequest = {
@@ -33925,6 +40372,19 @@ export const CosmosCancelRequest = {
     }
     if (message.addressPrefix !== "") {
       writer.uint32(18).string(message.addressPrefix);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -33954,7 +40414,17 @@ export const CosmosCancelRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -33991,13 +40461,26 @@ export const CosmosCancelRequest = {
 };
 
 function createBasePolygonTransactionsRequest(): PolygonTransactionsRequest {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const PolygonTransactionsRequest = {
   encode(message: PolygonTransactionsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transactions) {
       PolygonTransaction.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -34020,7 +40503,17 @@ export const PolygonTransactionsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -34063,6 +40556,7 @@ function createBasePolygonTransaction(): PolygonTransaction {
     id: "",
     isNonceSet: false,
     chainId: 0,
+    _unknownFields: {},
   };
 }
 
@@ -34097,6 +40591,19 @@ export const PolygonTransaction = {
     }
     if (message.chainId !== 0) {
       writer.uint32(80).uint64(message.chainId);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -34182,7 +40689,17 @@ export const PolygonTransaction = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -34267,6 +40784,7 @@ function createBasePolygonCreateContractRequest(): PolygonCreateContractRequest 
     id: "",
     isNonceSet: false,
     chainId: 0,
+    _unknownFields: {},
   };
 }
 
@@ -34298,6 +40816,19 @@ export const PolygonCreateContractRequest = {
     }
     if (message.chainId !== 0) {
       writer.uint32(72).uint64(message.chainId);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -34376,7 +40907,17 @@ export const PolygonCreateContractRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -34446,13 +40987,26 @@ export const PolygonCreateContractRequest = {
 };
 
 function createBasePolygonAddressRequest(): PolygonAddressRequest {
-  return { path: "" };
+  return { path: "", _unknownFields: {} };
 }
 
 export const PolygonAddressRequest = {
   encode(message: PolygonAddressRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.path !== "") {
       writer.uint32(10).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -34475,7 +41029,17 @@ export const PolygonAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -34503,7 +41067,7 @@ export const PolygonAddressRequest = {
 };
 
 function createBasePolygonProofOfReserveRequest(): PolygonProofOfReserveRequest {
-  return { path: "", challenge: "" };
+  return { path: "", challenge: "", _unknownFields: {} };
 }
 
 export const PolygonProofOfReserveRequest = {
@@ -34513,6 +41077,19 @@ export const PolygonProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(18).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -34542,7 +41119,17 @@ export const PolygonProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -34577,13 +41164,26 @@ export const PolygonProofOfReserveRequest = {
 };
 
 function createBasePolygonTransactionsResponse(): PolygonTransactionsResponse {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const PolygonTransactionsResponse = {
   encode(message: PolygonTransactionsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transactions) {
       PolygonTransactionsResponse_PolygonTransactionResponse.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -34608,7 +41208,17 @@ export const PolygonTransactionsResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -34643,7 +41253,7 @@ export const PolygonTransactionsResponse = {
 };
 
 function createBasePolygonTransactionsResponse_PolygonTransactionResponse(): PolygonTransactionsResponse_PolygonTransactionResponse {
-  return { id: "", transaction: "", publicKey: new Uint8Array(0) };
+  return { id: "", transaction: "", publicKey: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const PolygonTransactionsResponse_PolygonTransactionResponse = {
@@ -34659,6 +41269,19 @@ export const PolygonTransactionsResponse_PolygonTransactionResponse = {
     }
     if (message.publicKey.length !== 0) {
       writer.uint32(26).bytes(message.publicKey);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -34695,7 +41318,17 @@ export const PolygonTransactionsResponse_PolygonTransactionResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -34739,7 +41372,7 @@ export const PolygonTransactionsResponse_PolygonTransactionResponse = {
 };
 
 function createBasePolygonSignTextRequest(): PolygonSignTextRequest {
-  return { id: "", from: "", message: "" };
+  return { id: "", from: "", message: "", _unknownFields: {} };
 }
 
 export const PolygonSignTextRequest = {
@@ -34752,6 +41385,19 @@ export const PolygonSignTextRequest = {
     }
     if (message.message !== "") {
       writer.uint32(26).string(message.message);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -34788,7 +41434,17 @@ export const PolygonSignTextRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -34828,7 +41484,7 @@ export const PolygonSignTextRequest = {
 };
 
 function createBasePolygonSignTextResponse(): PolygonSignTextResponse {
-  return { id: "", signature: new Uint8Array(0), publicKey: new Uint8Array(0) };
+  return { id: "", signature: new Uint8Array(0), publicKey: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const PolygonSignTextResponse = {
@@ -34841,6 +41497,19 @@ export const PolygonSignTextResponse = {
     }
     if (message.publicKey.length !== 0) {
       writer.uint32(26).bytes(message.publicKey);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -34877,7 +41546,17 @@ export const PolygonSignTextResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -34917,13 +41596,26 @@ export const PolygonSignTextResponse = {
 };
 
 function createBasePolygonWrappedTransactionsRequest(): PolygonWrappedTransactionsRequest {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const PolygonWrappedTransactionsRequest = {
   encode(message: PolygonWrappedTransactionsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transactions) {
       PolygonWrappedTransaction.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -34946,7 +41638,17 @@ export const PolygonWrappedTransactionsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -34989,6 +41691,7 @@ function createBasePolygonWrappedTransaction(): PolygonWrappedTransaction {
     id: "",
     isNonceSet: false,
     forwarder: "",
+    _unknownFields: {},
   };
 }
 
@@ -35023,6 +41726,19 @@ export const PolygonWrappedTransaction = {
     }
     if (message.forwarder !== "") {
       writer.uint32(82).string(message.forwarder);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -35108,7 +41824,17 @@ export const PolygonWrappedTransaction = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -35192,6 +41918,7 @@ function createBasePolygonWrappedCreateContractRequest(): PolygonWrappedCreateCo
     id: "",
     isNonceSet: false,
     creator: "",
+    _unknownFields: {},
   };
 }
 
@@ -35220,6 +41947,19 @@ export const PolygonWrappedCreateContractRequest = {
     }
     if (message.creator !== "") {
       writer.uint32(66).string(message.creator);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -35291,7 +42031,17 @@ export const PolygonWrappedCreateContractRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -35356,7 +42106,7 @@ export const PolygonWrappedCreateContractRequest = {
 };
 
 function createBasePolygonWrappedTransactionsResponse(): PolygonWrappedTransactionsResponse {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const PolygonWrappedTransactionsResponse = {
@@ -35364,6 +42114,19 @@ export const PolygonWrappedTransactionsResponse = {
     for (const v of message.transactions) {
       PolygonWrappedTransactionsResponse_PolygonWrappedTransactionResponse.encode(v!, writer.uint32(10).fork())
         .ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -35388,7 +42151,17 @@ export const PolygonWrappedTransactionsResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -35427,7 +42200,7 @@ export const PolygonWrappedTransactionsResponse = {
 };
 
 function createBasePolygonWrappedTransactionsResponse_PolygonWrappedTransactionResponse(): PolygonWrappedTransactionsResponse_PolygonWrappedTransactionResponse {
-  return { id: "", transaction: "", publicKey: new Uint8Array(0) };
+  return { id: "", transaction: "", publicKey: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const PolygonWrappedTransactionsResponse_PolygonWrappedTransactionResponse = {
@@ -35443,6 +42216,19 @@ export const PolygonWrappedTransactionsResponse_PolygonWrappedTransactionRespons
     }
     if (message.publicKey.length !== 0) {
       writer.uint32(26).bytes(message.publicKey);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -35482,7 +42268,17 @@ export const PolygonWrappedTransactionsResponse_PolygonWrappedTransactionRespons
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -35526,7 +42322,7 @@ export const PolygonWrappedTransactionsResponse_PolygonWrappedTransactionRespons
 };
 
 function createBasePolygonWrappedCreateContractResponse(): PolygonWrappedCreateContractResponse {
-  return { id: "", transaction: "", publicKey: new Uint8Array(0) };
+  return { id: "", transaction: "", publicKey: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const PolygonWrappedCreateContractResponse = {
@@ -35539,6 +42335,19 @@ export const PolygonWrappedCreateContractResponse = {
     }
     if (message.publicKey.length !== 0) {
       writer.uint32(26).bytes(message.publicKey);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -35575,7 +42384,17 @@ export const PolygonWrappedCreateContractResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -35615,13 +42434,26 @@ export const PolygonWrappedCreateContractResponse = {
 };
 
 function createBaseAvaxCChainTransactionsRequest(): AvaxCChainTransactionsRequest {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const AvaxCChainTransactionsRequest = {
   encode(message: AvaxCChainTransactionsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transactions) {
       AvaxCChainTransaction.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -35644,7 +42476,17 @@ export const AvaxCChainTransactionsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -35687,6 +42529,7 @@ function createBaseAvaxCChainTransaction(): AvaxCChainTransaction {
     id: "",
     isNonceSet: false,
     chainId: 0,
+    _unknownFields: {},
   };
 }
 
@@ -35721,6 +42564,19 @@ export const AvaxCChainTransaction = {
     }
     if (message.chainId !== 0) {
       writer.uint32(80).uint64(message.chainId);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -35806,7 +42662,17 @@ export const AvaxCChainTransaction = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -35891,6 +42757,7 @@ function createBaseAvaxCChainCreateContractRequest(): AvaxCChainCreateContractRe
     id: "",
     isNonceSet: false,
     chainId: 0,
+    _unknownFields: {},
   };
 }
 
@@ -35922,6 +42789,19 @@ export const AvaxCChainCreateContractRequest = {
     }
     if (message.chainId !== 0) {
       writer.uint32(72).uint64(message.chainId);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -36000,7 +42880,17 @@ export const AvaxCChainCreateContractRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -36070,13 +42960,26 @@ export const AvaxCChainCreateContractRequest = {
 };
 
 function createBaseAvaxCChainAddressRequest(): AvaxCChainAddressRequest {
-  return { path: "" };
+  return { path: "", _unknownFields: {} };
 }
 
 export const AvaxCChainAddressRequest = {
   encode(message: AvaxCChainAddressRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.path !== "") {
       writer.uint32(10).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -36099,7 +43002,17 @@ export const AvaxCChainAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -36127,7 +43040,7 @@ export const AvaxCChainAddressRequest = {
 };
 
 function createBaseAvaxCChainProofOfReserveRequest(): AvaxCChainProofOfReserveRequest {
-  return { path: "", challenge: "" };
+  return { path: "", challenge: "", _unknownFields: {} };
 }
 
 export const AvaxCChainProofOfReserveRequest = {
@@ -36137,6 +43050,19 @@ export const AvaxCChainProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(18).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -36166,7 +43092,17 @@ export const AvaxCChainProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -36201,13 +43137,26 @@ export const AvaxCChainProofOfReserveRequest = {
 };
 
 function createBaseAvaxCChainTransactionsResponse(): AvaxCChainTransactionsResponse {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const AvaxCChainTransactionsResponse = {
   encode(message: AvaxCChainTransactionsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transactions) {
       AvaxCChainTransactionsResponse_AvaxCChainTransactionResponse.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -36232,7 +43181,17 @@ export const AvaxCChainTransactionsResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -36268,7 +43227,7 @@ export const AvaxCChainTransactionsResponse = {
 };
 
 function createBaseAvaxCChainTransactionsResponse_AvaxCChainTransactionResponse(): AvaxCChainTransactionsResponse_AvaxCChainTransactionResponse {
-  return { id: "", transaction: "", publicKey: new Uint8Array(0) };
+  return { id: "", transaction: "", publicKey: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const AvaxCChainTransactionsResponse_AvaxCChainTransactionResponse = {
@@ -36284,6 +43243,19 @@ export const AvaxCChainTransactionsResponse_AvaxCChainTransactionResponse = {
     }
     if (message.publicKey.length !== 0) {
       writer.uint32(26).bytes(message.publicKey);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -36323,7 +43295,17 @@ export const AvaxCChainTransactionsResponse_AvaxCChainTransactionResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -36367,7 +43349,7 @@ export const AvaxCChainTransactionsResponse_AvaxCChainTransactionResponse = {
 };
 
 function createBaseAvaxCChainSignTextRequest(): AvaxCChainSignTextRequest {
-  return { id: "", from: "", message: "" };
+  return { id: "", from: "", message: "", _unknownFields: {} };
 }
 
 export const AvaxCChainSignTextRequest = {
@@ -36380,6 +43362,19 @@ export const AvaxCChainSignTextRequest = {
     }
     if (message.message !== "") {
       writer.uint32(26).string(message.message);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -36416,7 +43411,17 @@ export const AvaxCChainSignTextRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -36456,7 +43461,7 @@ export const AvaxCChainSignTextRequest = {
 };
 
 function createBaseAvaxCChainSignTextResponse(): AvaxCChainSignTextResponse {
-  return { id: "", signature: new Uint8Array(0), publicKey: new Uint8Array(0) };
+  return { id: "", signature: new Uint8Array(0), publicKey: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const AvaxCChainSignTextResponse = {
@@ -36469,6 +43474,19 @@ export const AvaxCChainSignTextResponse = {
     }
     if (message.publicKey.length !== 0) {
       writer.uint32(26).bytes(message.publicKey);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -36505,7 +43523,17 @@ export const AvaxCChainSignTextResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -36545,13 +43573,26 @@ export const AvaxCChainSignTextResponse = {
 };
 
 function createBaseAvaxCChainWrappedTransactionsRequest(): AvaxCChainWrappedTransactionsRequest {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const AvaxCChainWrappedTransactionsRequest = {
   encode(message: AvaxCChainWrappedTransactionsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transactions) {
       AvaxCChainWrappedTransaction.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -36574,7 +43615,17 @@ export const AvaxCChainWrappedTransactionsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -36617,6 +43668,7 @@ function createBaseAvaxCChainWrappedTransaction(): AvaxCChainWrappedTransaction 
     id: "",
     isNonceSet: false,
     forwarder: "",
+    _unknownFields: {},
   };
 }
 
@@ -36651,6 +43703,19 @@ export const AvaxCChainWrappedTransaction = {
     }
     if (message.forwarder !== "") {
       writer.uint32(82).string(message.forwarder);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -36736,7 +43801,17 @@ export const AvaxCChainWrappedTransaction = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -36820,6 +43895,7 @@ function createBaseAvaxCChainWrappedCreateContractRequest(): AvaxCChainWrappedCr
     id: "",
     isNonceSet: false,
     creator: "",
+    _unknownFields: {},
   };
 }
 
@@ -36848,6 +43924,19 @@ export const AvaxCChainWrappedCreateContractRequest = {
     }
     if (message.creator !== "") {
       writer.uint32(66).string(message.creator);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -36919,7 +44008,17 @@ export const AvaxCChainWrappedCreateContractRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -36984,7 +44083,7 @@ export const AvaxCChainWrappedCreateContractRequest = {
 };
 
 function createBaseAvaxCChainWrappedTransactionsResponse(): AvaxCChainWrappedTransactionsResponse {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const AvaxCChainWrappedTransactionsResponse = {
@@ -36992,6 +44091,19 @@ export const AvaxCChainWrappedTransactionsResponse = {
     for (const v of message.transactions) {
       AvaxCChainWrappedTransactionsResponse_AvaxCChainWrappedTransactionResponse.encode(v!, writer.uint32(10).fork())
         .ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -37016,7 +44128,17 @@ export const AvaxCChainWrappedTransactionsResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -37055,7 +44177,7 @@ export const AvaxCChainWrappedTransactionsResponse = {
 };
 
 function createBaseAvaxCChainWrappedTransactionsResponse_AvaxCChainWrappedTransactionResponse(): AvaxCChainWrappedTransactionsResponse_AvaxCChainWrappedTransactionResponse {
-  return { id: "", transaction: "", publicKey: new Uint8Array(0) };
+  return { id: "", transaction: "", publicKey: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const AvaxCChainWrappedTransactionsResponse_AvaxCChainWrappedTransactionResponse = {
@@ -37071,6 +44193,19 @@ export const AvaxCChainWrappedTransactionsResponse_AvaxCChainWrappedTransactionR
     }
     if (message.publicKey.length !== 0) {
       writer.uint32(26).bytes(message.publicKey);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -37110,7 +44245,17 @@ export const AvaxCChainWrappedTransactionsResponse_AvaxCChainWrappedTransactionR
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -37154,7 +44299,7 @@ export const AvaxCChainWrappedTransactionsResponse_AvaxCChainWrappedTransactionR
 };
 
 function createBaseAvaxCChainWrappedCreateContractResponse(): AvaxCChainWrappedCreateContractResponse {
-  return { id: "", transaction: "", publicKey: new Uint8Array(0) };
+  return { id: "", transaction: "", publicKey: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const AvaxCChainWrappedCreateContractResponse = {
@@ -37167,6 +44312,19 @@ export const AvaxCChainWrappedCreateContractResponse = {
     }
     if (message.publicKey.length !== 0) {
       writer.uint32(26).bytes(message.publicKey);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -37203,7 +44361,17 @@ export const AvaxCChainWrappedCreateContractResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -37243,7 +44411,15 @@ export const AvaxCChainWrappedCreateContractResponse = {
 };
 
 function createBaseDOGEInput(): DOGEInput {
-  return { path: "", addressType: 0, txHash: new Uint8Array(0), outputIndex: 0, value: 0, sequenceNumber: 0 };
+  return {
+    path: "",
+    addressType: 0,
+    txHash: new Uint8Array(0),
+    outputIndex: 0,
+    value: 0,
+    sequenceNumber: 0,
+    _unknownFields: {},
+  };
 }
 
 export const DOGEInput = {
@@ -37265,6 +44441,19 @@ export const DOGEInput = {
     }
     if (message.sequenceNumber !== 0) {
       writer.uint32(48).uint32(message.sequenceNumber);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -37322,7 +44511,17 @@ export const DOGEInput = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -37377,7 +44576,7 @@ export const DOGEInput = {
 };
 
 function createBaseDOGEOutput(): DOGEOutput {
-  return { destination: "", amount: 0 };
+  return { destination: "", amount: 0, _unknownFields: {} };
 }
 
 export const DOGEOutput = {
@@ -37387,6 +44586,19 @@ export const DOGEOutput = {
     }
     if (message.amount !== 0) {
       writer.uint32(16).uint64(message.amount);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -37416,7 +44628,17 @@ export const DOGEOutput = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -37451,7 +44673,7 @@ export const DOGEOutput = {
 };
 
 function createBaseDOGEChangeOutput(): DOGEChangeOutput {
-  return { path: "", addressType: 0, amount: 0 };
+  return { path: "", addressType: 0, amount: 0, _unknownFields: {} };
 }
 
 export const DOGEChangeOutput = {
@@ -37464,6 +44686,19 @@ export const DOGEChangeOutput = {
     }
     if (message.amount !== 0) {
       writer.uint32(24).uint64(message.amount);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -37500,7 +44735,17 @@ export const DOGEChangeOutput = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -37540,7 +44785,7 @@ export const DOGEChangeOutput = {
 };
 
 function createBaseDOGETransactionRequest(): DOGETransactionRequest {
-  return { inputs: [], outputs: [], changeOutputs: [], lockTime: 0, hashType: 0, id: "" };
+  return { inputs: [], outputs: [], changeOutputs: [], lockTime: 0, hashType: 0, id: "", _unknownFields: {} };
 }
 
 export const DOGETransactionRequest = {
@@ -37562,6 +44807,19 @@ export const DOGETransactionRequest = {
     }
     if (message.id !== "") {
       writer.uint32(50).string(message.id);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -37619,7 +44877,17 @@ export const DOGETransactionRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -37676,7 +44944,7 @@ export const DOGETransactionRequest = {
 };
 
 function createBaseDOGEAddressRequest(): DOGEAddressRequest {
-  return { path: "", addressType: 0 };
+  return { path: "", addressType: 0, _unknownFields: {} };
 }
 
 export const DOGEAddressRequest = {
@@ -37686,6 +44954,19 @@ export const DOGEAddressRequest = {
     }
     if (message.addressType !== 0) {
       writer.uint32(16).int32(message.addressType);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -37715,7 +44996,17 @@ export const DOGEAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -37750,7 +45041,7 @@ export const DOGEAddressRequest = {
 };
 
 function createBaseDOGEProofOfReserveRequest(): DOGEProofOfReserveRequest {
-  return { path: "", addressType: 0, challenge: "" };
+  return { path: "", addressType: 0, challenge: "", _unknownFields: {} };
 }
 
 export const DOGEProofOfReserveRequest = {
@@ -37763,6 +45054,19 @@ export const DOGEProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(26).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -37799,7 +45103,17 @@ export const DOGEProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -37839,13 +45153,26 @@ export const DOGEProofOfReserveRequest = {
 };
 
 function createBaseMinaAddressRequest(): MinaAddressRequest {
-  return { path: "" };
+  return { path: "", _unknownFields: {} };
 }
 
 export const MinaAddressRequest = {
   encode(message: MinaAddressRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.path !== "") {
       writer.uint32(10).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -37868,7 +45195,17 @@ export const MinaAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -37905,6 +45242,7 @@ function createBaseMinaTxCommon(): MinaTxCommon {
     networkId: 0,
     networkPrefix: new Uint8Array(0),
     source: "",
+    _unknownFields: {},
   };
 }
 
@@ -37933,6 +45271,19 @@ export const MinaTxCommon = {
     }
     if (message.source !== "") {
       writer.uint32(66).string(message.source);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -38004,7 +45355,17 @@ export const MinaTxCommon = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -38069,7 +45430,7 @@ export const MinaTxCommon = {
 };
 
 function createBaseMinaPayment(): MinaPayment {
-  return { common: undefined, destination: "", amount: 0 };
+  return { common: undefined, destination: "", amount: 0, _unknownFields: {} };
 }
 
 export const MinaPayment = {
@@ -38082,6 +45443,19 @@ export const MinaPayment = {
     }
     if (message.amount !== 0) {
       writer.uint32(24).uint64(message.amount);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -38118,7 +45492,17 @@ export const MinaPayment = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -38160,13 +45544,26 @@ export const MinaPayment = {
 };
 
 function createBaseMinaPaymentsRequest(): MinaPaymentsRequest {
-  return { payments: [] };
+  return { payments: [], _unknownFields: {} };
 }
 
 export const MinaPaymentsRequest = {
   encode(message: MinaPaymentsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.payments) {
       MinaPayment.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -38189,7 +45586,17 @@ export const MinaPaymentsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -38221,7 +45628,7 @@ export const MinaPaymentsRequest = {
 };
 
 function createBaseMinaDelegationRequest(): MinaDelegationRequest {
-  return { common: undefined, delegate: "" };
+  return { common: undefined, delegate: "", _unknownFields: {} };
 }
 
 export const MinaDelegationRequest = {
@@ -38231,6 +45638,19 @@ export const MinaDelegationRequest = {
     }
     if (message.delegate !== "") {
       writer.uint32(18).string(message.delegate);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -38260,7 +45680,17 @@ export const MinaDelegationRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -38297,7 +45727,7 @@ export const MinaDelegationRequest = {
 };
 
 function createBaseMinaProofOfReserveRequest(): MinaProofOfReserveRequest {
-  return { path: "", challenge: "" };
+  return { path: "", challenge: "", _unknownFields: {} };
 }
 
 export const MinaProofOfReserveRequest = {
@@ -38307,6 +45737,19 @@ export const MinaProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(18).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -38336,7 +45779,17 @@ export const MinaProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -38371,13 +45824,26 @@ export const MinaProofOfReserveRequest = {
 };
 
 function createBaseTRONAddressRequest(): TRONAddressRequest {
-  return { path: "" };
+  return { path: "", _unknownFields: {} };
 }
 
 export const TRONAddressRequest = {
   encode(message: TRONAddressRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.path !== "") {
       writer.uint32(10).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -38400,7 +45866,17 @@ export const TRONAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -38428,7 +45904,7 @@ export const TRONAddressRequest = {
 };
 
 function createBaseTRONProofOfReserveRequest(): TRONProofOfReserveRequest {
-  return { path: "", challenge: "" };
+  return { path: "", challenge: "", _unknownFields: {} };
 }
 
 export const TRONProofOfReserveRequest = {
@@ -38438,6 +45914,19 @@ export const TRONProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(18).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -38467,7 +45956,17 @@ export const TRONProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -38502,7 +46001,7 @@ export const TRONProofOfReserveRequest = {
 };
 
 function createBaseTRONTransactionsRequest(): TRONTransactionsRequest {
-  return { kind: 0, transactions: [] };
+  return { kind: 0, transactions: [], _unknownFields: {} };
 }
 
 export const TRONTransactionsRequest = {
@@ -38512,6 +46011,19 @@ export const TRONTransactionsRequest = {
     }
     for (const v of message.transactions) {
       TRONTransaction.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -38541,7 +46053,17 @@ export const TRONTransactionsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -38588,6 +46110,7 @@ function createBaseTRONTransaction(): TRONTransaction {
     feeLimit: 0,
     data: new Uint8Array(0),
     operation: new Uint8Array(0),
+    _unknownFields: {},
   };
 }
 
@@ -38619,6 +46142,19 @@ export const TRONTransaction = {
     }
     if (message.operation.length !== 0) {
       writer.uint32(74).bytes(message.operation);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -38697,7 +46233,17 @@ export const TRONTransaction = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -38767,13 +46313,26 @@ export const TRONTransaction = {
 };
 
 function createBaseTRONTransactionsResponse(): TRONTransactionsResponse {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const TRONTransactionsResponse = {
   encode(message: TRONTransactionsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transactions) {
       TRONTransactionsResponse_TRONTransactionResponse.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -38796,7 +46355,17 @@ export const TRONTransactionsResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -38829,7 +46398,7 @@ export const TRONTransactionsResponse = {
 };
 
 function createBaseTRONTransactionsResponse_TRONTransactionResponse(): TRONTransactionsResponse_TRONTransactionResponse {
-  return { id: "", transaction: "", publicKey: new Uint8Array(0) };
+  return { id: "", transaction: "", publicKey: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const TRONTransactionsResponse_TRONTransactionResponse = {
@@ -38845,6 +46414,19 @@ export const TRONTransactionsResponse_TRONTransactionResponse = {
     }
     if (message.publicKey.length !== 0) {
       writer.uint32(26).bytes(message.publicKey);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -38881,7 +46463,17 @@ export const TRONTransactionsResponse_TRONTransactionResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -38925,13 +46517,26 @@ export const TRONTransactionsResponse_TRONTransactionResponse = {
 };
 
 function createBaseFilecoinTransactionsRequest(): FilecoinTransactionsRequest {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const FilecoinTransactionsRequest = {
   encode(message: FilecoinTransactionsRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transactions) {
       FilecoinTransaction.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -38954,7 +46559,17 @@ export const FilecoinTransactionsRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -38997,6 +46612,7 @@ function createBaseFilecoinTransaction(): FilecoinTransaction {
     gasFeeCap: new Uint8Array(0),
     gasPremium: new Uint8Array(0),
     isNonceSet: false,
+    _unknownFields: {},
   };
 }
 
@@ -39031,6 +46647,19 @@ export const FilecoinTransaction = {
     }
     if (message.isNonceSet !== false) {
       writer.uint32(80).bool(message.isNonceSet);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -39116,7 +46745,17 @@ export const FilecoinTransaction = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -39191,7 +46830,7 @@ export const FilecoinTransaction = {
 };
 
 function createBaseFilecoinAddressRequest(): FilecoinAddressRequest {
-  return { path: "", addressType: 0 };
+  return { path: "", addressType: 0, _unknownFields: {} };
 }
 
 export const FilecoinAddressRequest = {
@@ -39201,6 +46840,19 @@ export const FilecoinAddressRequest = {
     }
     if (message.addressType !== 0) {
       writer.uint32(16).int32(message.addressType);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -39230,7 +46882,17 @@ export const FilecoinAddressRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -39265,7 +46927,7 @@ export const FilecoinAddressRequest = {
 };
 
 function createBaseFilecoinProofOfReserveRequest(): FilecoinProofOfReserveRequest {
-  return { path: "", addressType: 0, challenge: "" };
+  return { path: "", addressType: 0, challenge: "", _unknownFields: {} };
 }
 
 export const FilecoinProofOfReserveRequest = {
@@ -39278,6 +46940,19 @@ export const FilecoinProofOfReserveRequest = {
     }
     if (message.challenge !== "") {
       writer.uint32(26).string(message.challenge);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -39314,7 +46989,17 @@ export const FilecoinProofOfReserveRequest = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -39354,13 +47039,26 @@ export const FilecoinProofOfReserveRequest = {
 };
 
 function createBaseFilecoinTransactionsResponse(): FilecoinTransactionsResponse {
-  return { transactions: [] };
+  return { transactions: [], _unknownFields: {} };
 }
 
 export const FilecoinTransactionsResponse = {
   encode(message: FilecoinTransactionsResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.transactions) {
       FilecoinTransactionsResponse_FilecoinTransactionResponse.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -39385,7 +47083,17 @@ export const FilecoinTransactionsResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -39420,7 +47128,7 @@ export const FilecoinTransactionsResponse = {
 };
 
 function createBaseFilecoinTransactionsResponse_FilecoinTransactionResponse(): FilecoinTransactionsResponse_FilecoinTransactionResponse {
-  return { id: "", transaction: "", publicKey: new Uint8Array(0) };
+  return { id: "", transaction: "", publicKey: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const FilecoinTransactionsResponse_FilecoinTransactionResponse = {
@@ -39436,6 +47144,19 @@ export const FilecoinTransactionsResponse_FilecoinTransactionResponse = {
     }
     if (message.publicKey.length !== 0) {
       writer.uint32(26).bytes(message.publicKey);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -39472,7 +47193,17 @@ export const FilecoinTransactionsResponse_FilecoinTransactionResponse = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -39516,7 +47247,7 @@ export const FilecoinTransactionsResponse_FilecoinTransactionResponse = {
 };
 
 function createBaseUser(): User {
-  return { id: "", publicKey: "", roles: [], properties: {} };
+  return { id: "", publicKey: "", roles: [], properties: {}, _unknownFields: {} };
 }
 
 export const User = {
@@ -39532,9 +47263,22 @@ export const User = {
       writer.int32(v);
     }
     writer.ldelim();
-    Object.entries(message.properties).forEach(([key, value]) => {
+    Object.entries(message.properties).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).forEach(([key, value]) => {
       User_PropertiesEntry.encode({ key: key as any, value }, writer.uint32(34).fork()).ldelim();
     });
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
+    }
     return writer;
   },
 
@@ -39590,7 +47334,17 @@ export const User = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -39654,7 +47408,7 @@ export const User = {
 };
 
 function createBaseUser_PropertiesEntry(): User_PropertiesEntry {
-  return { key: "", value: new Uint8Array(0) };
+  return { key: "", value: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const User_PropertiesEntry = {
@@ -39664,6 +47418,19 @@ export const User_PropertiesEntry = {
     }
     if (message.value.length !== 0) {
       writer.uint32(18).bytes(message.value);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -39693,7 +47460,17 @@ export const User_PropertiesEntry = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -39728,7 +47505,7 @@ export const User_PropertiesEntry = {
 };
 
 function createBaseGroup(): Group {
-  return { id: "", userIds: [], properties: {} };
+  return { id: "", userIds: [], properties: {}, _unknownFields: {} };
 }
 
 export const Group = {
@@ -39739,9 +47516,22 @@ export const Group = {
     for (const v of message.userIds) {
       writer.uint32(18).string(v!);
     }
-    Object.entries(message.properties).forEach(([key, value]) => {
+    Object.entries(message.properties).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).forEach(([key, value]) => {
       Group_PropertiesEntry.encode({ key: key as any, value }, writer.uint32(26).fork()).ldelim();
     });
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
+    }
     return writer;
   },
 
@@ -39780,7 +47570,17 @@ export const Group = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -39839,7 +47639,7 @@ export const Group = {
 };
 
 function createBaseGroup_PropertiesEntry(): Group_PropertiesEntry {
-  return { key: "", value: new Uint8Array(0) };
+  return { key: "", value: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const Group_PropertiesEntry = {
@@ -39849,6 +47649,19 @@ export const Group_PropertiesEntry = {
     }
     if (message.value.length !== 0) {
       writer.uint32(18).bytes(message.value);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -39878,7 +47691,17 @@ export const Group_PropertiesEntry = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -39913,13 +47736,26 @@ export const Group_PropertiesEntry = {
 };
 
 function createBaseRuleSourceInternalWallet(): RuleSourceInternalWallet {
-  return { path: "" };
+  return { path: "", _unknownFields: {} };
 }
 
 export const RuleSourceInternalWallet = {
   encode(message: RuleSourceInternalWallet, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.path !== "") {
       writer.uint32(10).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -39942,7 +47778,17 @@ export const RuleSourceInternalWallet = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -39970,7 +47816,7 @@ export const RuleSourceInternalWallet = {
 };
 
 function createBaseRuleSourceInternalAddress(): RuleSourceInternalAddress {
-  return { address: "", path: "" };
+  return { address: "", path: "", _unknownFields: {} };
 }
 
 export const RuleSourceInternalAddress = {
@@ -39980,6 +47826,19 @@ export const RuleSourceInternalAddress = {
     }
     if (message.path !== "") {
       writer.uint32(18).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -40009,7 +47868,17 @@ export const RuleSourceInternalAddress = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -40044,13 +47913,26 @@ export const RuleSourceInternalAddress = {
 };
 
 function createBaseRuleSourceExchange(): RuleSourceExchange {
-  return { label: "" };
+  return { label: "", _unknownFields: {} };
 }
 
 export const RuleSourceExchange = {
   encode(message: RuleSourceExchange, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.label !== "") {
       writer.uint32(10).string(message.label);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -40073,7 +47955,17 @@ export const RuleSourceExchange = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -40101,7 +47993,7 @@ export const RuleSourceExchange = {
 };
 
 function createBaseRuleSourceExternalAddress(): RuleSourceExternalAddress {
-  return { address: "", memo: "" };
+  return { address: "", memo: "", _unknownFields: {} };
 }
 
 export const RuleSourceExternalAddress = {
@@ -40111,6 +48003,19 @@ export const RuleSourceExternalAddress = {
     }
     if (message.memo !== "") {
       writer.uint32(18).string(message.memo);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -40140,7 +48045,17 @@ export const RuleSourceExternalAddress = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -40175,7 +48090,7 @@ export const RuleSourceExternalAddress = {
 };
 
 function createBaseRuleSource(): RuleSource {
-  return { type: 0, payload: new Uint8Array(0) };
+  return { type: 0, payload: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const RuleSource = {
@@ -40185,6 +48100,19 @@ export const RuleSource = {
     }
     if (message.payload.length !== 0) {
       writer.uint32(18).bytes(message.payload);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -40214,7 +48142,17 @@ export const RuleSource = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -40249,13 +48187,26 @@ export const RuleSource = {
 };
 
 function createBaseRuleDestinationInternalWallet(): RuleDestinationInternalWallet {
-  return { path: "" };
+  return { path: "", _unknownFields: {} };
 }
 
 export const RuleDestinationInternalWallet = {
   encode(message: RuleDestinationInternalWallet, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.path !== "") {
       writer.uint32(10).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -40278,7 +48229,17 @@ export const RuleDestinationInternalWallet = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -40306,7 +48267,7 @@ export const RuleDestinationInternalWallet = {
 };
 
 function createBaseRuleDestinationInternalAddress(): RuleDestinationInternalAddress {
-  return { address: "", path: "" };
+  return { address: "", path: "", _unknownFields: {} };
 }
 
 export const RuleDestinationInternalAddress = {
@@ -40316,6 +48277,19 @@ export const RuleDestinationInternalAddress = {
     }
     if (message.path !== "") {
       writer.uint32(18).string(message.path);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -40345,7 +48319,17 @@ export const RuleDestinationInternalAddress = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -40380,7 +48364,7 @@ export const RuleDestinationInternalAddress = {
 };
 
 function createBaseRuleDestinationExternalAddress(): RuleDestinationExternalAddress {
-  return { address: "", memo: "" };
+  return { address: "", memo: "", _unknownFields: {} };
 }
 
 export const RuleDestinationExternalAddress = {
@@ -40390,6 +48374,19 @@ export const RuleDestinationExternalAddress = {
     }
     if (message.memo !== "") {
       writer.uint32(18).string(message.memo);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -40419,7 +48416,17 @@ export const RuleDestinationExternalAddress = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -40454,7 +48461,7 @@ export const RuleDestinationExternalAddress = {
 };
 
 function createBaseRuleDestinationContractAddress(): RuleDestinationContractAddress {
-  return { address: "", name: "", symbol: "", blockchain: 0 };
+  return { address: "", name: "", symbol: "", blockchain: 0, _unknownFields: {} };
 }
 
 export const RuleDestinationContractAddress = {
@@ -40470,6 +48477,19 @@ export const RuleDestinationContractAddress = {
     }
     if (message.blockchain !== 0) {
       writer.uint32(32).int32(message.blockchain);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -40513,7 +48533,17 @@ export const RuleDestinationContractAddress = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -40558,7 +48588,7 @@ export const RuleDestinationContractAddress = {
 };
 
 function createBaseRuleDestinationExchange(): RuleDestinationExchange {
-  return { label: "", memo: "" };
+  return { label: "", memo: "", _unknownFields: {} };
 }
 
 export const RuleDestinationExchange = {
@@ -40568,6 +48598,19 @@ export const RuleDestinationExchange = {
     }
     if (message.memo !== "") {
       writer.uint32(18).string(message.memo);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -40597,7 +48640,17 @@ export const RuleDestinationExchange = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -40632,7 +48685,7 @@ export const RuleDestinationExchange = {
 };
 
 function createBaseRuleDestination(): RuleDestination {
-  return { type: 0, payload: new Uint8Array(0) };
+  return { type: 0, payload: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const RuleDestination = {
@@ -40642,6 +48695,19 @@ export const RuleDestination = {
     }
     if (message.payload.length !== 0) {
       writer.uint32(18).bytes(message.payload);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -40671,7 +48737,17 @@ export const RuleDestination = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -40706,7 +48782,7 @@ export const RuleDestination = {
 };
 
 function createBaseRuleWhitelistedContract(): RuleWhitelistedContract {
-  return { type: 0, payload: new Uint8Array(0) };
+  return { type: 0, payload: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const RuleWhitelistedContract = {
@@ -40716,6 +48792,19 @@ export const RuleWhitelistedContract = {
     }
     if (message.payload.length !== 0) {
       writer.uint32(18).bytes(message.payload);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -40745,7 +48834,17 @@ export const RuleWhitelistedContract = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -40780,7 +48879,7 @@ export const RuleWhitelistedContract = {
 };
 
 function createBaseRuleIntegerGreater(): RuleIntegerGreater {
-  return { type: 0, payload: new Uint8Array(0) };
+  return { type: 0, payload: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const RuleIntegerGreater = {
@@ -40790,6 +48889,19 @@ export const RuleIntegerGreater = {
     }
     if (message.payload.length !== 0) {
       writer.uint32(18).bytes(message.payload);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -40819,7 +48931,17 @@ export const RuleIntegerGreater = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -40854,7 +48976,7 @@ export const RuleIntegerGreater = {
 };
 
 function createBaseRuleUIntegerGreater(): RuleUIntegerGreater {
-  return { type: 0, payload: new Uint8Array(0) };
+  return { type: 0, payload: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const RuleUIntegerGreater = {
@@ -40864,6 +48986,19 @@ export const RuleUIntegerGreater = {
     }
     if (message.payload.length !== 0) {
       writer.uint32(18).bytes(message.payload);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -40893,7 +49028,17 @@ export const RuleUIntegerGreater = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -40928,7 +49073,7 @@ export const RuleUIntegerGreater = {
 };
 
 function createBaseRuleFiatAmountRange(): RuleFiatAmountRange {
-  return { minAmount: "", maxAmount: "" };
+  return { minAmount: "", maxAmount: "", _unknownFields: {} };
 }
 
 export const RuleFiatAmountRange = {
@@ -40938,6 +49083,19 @@ export const RuleFiatAmountRange = {
     }
     if (message.maxAmount !== "") {
       writer.uint32(18).string(message.maxAmount);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -40967,7 +49125,17 @@ export const RuleFiatAmountRange = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -41002,7 +49170,7 @@ export const RuleFiatAmountRange = {
 };
 
 function createBaseRuleFiatAmount(): RuleFiatAmount {
-  return { type: 0, payload: new Uint8Array(0) };
+  return { type: 0, payload: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const RuleFiatAmount = {
@@ -41012,6 +49180,19 @@ export const RuleFiatAmount = {
     }
     if (message.payload.length !== 0) {
       writer.uint32(18).bytes(message.payload);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -41041,7 +49222,17 @@ export const RuleFiatAmount = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -41076,7 +49267,7 @@ export const RuleFiatAmount = {
 };
 
 function createBaseRuleStringEqual(): RuleStringEqual {
-  return { type: 0, payload: new Uint8Array(0) };
+  return { type: 0, payload: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const RuleStringEqual = {
@@ -41086,6 +49277,19 @@ export const RuleStringEqual = {
     }
     if (message.payload.length !== 0) {
       writer.uint32(18).bytes(message.payload);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -41115,7 +49319,17 @@ export const RuleStringEqual = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -41150,13 +49364,26 @@ export const RuleStringEqual = {
 };
 
 function createBaseRuleStringArrayEqualValue(): RuleStringArrayEqualValue {
-  return { values: [] };
+  return { values: [], _unknownFields: {} };
 }
 
 export const RuleStringArrayEqualValue = {
   encode(message: RuleStringArrayEqualValue, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.values) {
       writer.uint32(10).string(v!);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -41179,7 +49406,17 @@ export const RuleStringArrayEqualValue = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -41209,7 +49446,7 @@ export const RuleStringArrayEqualValue = {
 };
 
 function createBaseRuleStringArrayEqual(): RuleStringArrayEqual {
-  return { type: 0, payload: new Uint8Array(0) };
+  return { type: 0, payload: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const RuleStringArrayEqual = {
@@ -41219,6 +49456,19 @@ export const RuleStringArrayEqual = {
     }
     if (message.payload.length !== 0) {
       writer.uint32(18).bytes(message.payload);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -41248,7 +49498,17 @@ export const RuleStringArrayEqual = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -41283,7 +49543,7 @@ export const RuleStringArrayEqual = {
 };
 
 function createBaseRuleBytesEqual(): RuleBytesEqual {
-  return { type: 0, payload: new Uint8Array(0) };
+  return { type: 0, payload: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const RuleBytesEqual = {
@@ -41293,6 +49553,19 @@ export const RuleBytesEqual = {
     }
     if (message.payload.length !== 0) {
       writer.uint32(18).bytes(message.payload);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -41322,7 +49595,17 @@ export const RuleBytesEqual = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -41357,7 +49640,7 @@ export const RuleBytesEqual = {
 };
 
 function createBaseGroupThreshold(): GroupThreshold {
-  return { groupId: "", minimumSignatures: 0 };
+  return { groupId: "", minimumSignatures: 0, _unknownFields: {} };
 }
 
 export const GroupThreshold = {
@@ -41367,6 +49650,19 @@ export const GroupThreshold = {
     }
     if (message.minimumSignatures !== 0) {
       writer.uint32(16).uint32(message.minimumSignatures);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -41396,7 +49692,17 @@ export const GroupThreshold = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -41431,13 +49737,26 @@ export const GroupThreshold = {
 };
 
 function createBaseSequentialThresholds(): SequentialThresholds {
-  return { thresholds: [] };
+  return { thresholds: [], _unknownFields: {} };
 }
 
 export const SequentialThresholds = {
   encode(message: SequentialThresholds, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.thresholds) {
       GroupThreshold.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -41460,7 +49779,17 @@ export const SequentialThresholds = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -41506,6 +49835,7 @@ function createBaseRulesContainer(): RulesContainer {
     minimumCommitmentSignatures: 0,
     engineIdentities: [],
     hsmSlotId: 0,
+    _unknownFields: {},
   };
 }
 
@@ -41535,7 +49865,7 @@ export const RulesContainer = {
     if (message.enforcedRulesHash !== "") {
       writer.uint32(66).string(message.enforcedRulesHash);
     }
-    Object.entries(message.properties).forEach(([key, value]) => {
+    Object.entries(message.properties).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).forEach(([key, value]) => {
       RulesContainer_PropertiesEntry.encode({ key: key as any, value }, writer.uint32(74).fork()).ldelim();
     });
     if (message.timestamp !== 0) {
@@ -41549,6 +49879,19 @@ export const RulesContainer = {
     }
     if (message.hsmSlotId !== 0) {
       writer.uint32(104).uint32(message.hsmSlotId);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -41662,7 +50005,17 @@ export const RulesContainer = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -41796,7 +50149,7 @@ export const RulesContainer = {
 };
 
 function createBaseRulesContainer_Column(): RulesContainer_Column {
-  return { type: 0, name: "", metadataKey: "" };
+  return { type: 0, name: "", metadataKey: "", _unknownFields: {} };
 }
 
 export const RulesContainer_Column = {
@@ -41809,6 +50162,19 @@ export const RulesContainer_Column = {
     }
     if (message.metadataKey !== "") {
       writer.uint32(26).string(message.metadataKey);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -41845,7 +50211,17 @@ export const RulesContainer_Column = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -41885,7 +50261,7 @@ export const RulesContainer_Column = {
 };
 
 function createBaseRulesContainer_Line(): RulesContainer_Line {
-  return { cells: [], parallelThresholds: [], properties: {}, priority: 0 };
+  return { cells: [], parallelThresholds: [], properties: {}, priority: 0, _unknownFields: {} };
 }
 
 export const RulesContainer_Line = {
@@ -41896,11 +50272,24 @@ export const RulesContainer_Line = {
     for (const v of message.parallelThresholds) {
       SequentialThresholds.encode(v!, writer.uint32(18).fork()).ldelim();
     }
-    Object.entries(message.properties).forEach(([key, value]) => {
+    Object.entries(message.properties).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).forEach(([key, value]) => {
       RulesContainer_Line_PropertiesEntry.encode({ key: key as any, value }, writer.uint32(26).fork()).ldelim();
     });
     if (message.priority !== 0) {
       writer.uint32(32).uint32(message.priority);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -41947,7 +50336,17 @@ export const RulesContainer_Line = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -42013,7 +50412,7 @@ export const RulesContainer_Line = {
 };
 
 function createBaseRulesContainer_Line_PropertiesEntry(): RulesContainer_Line_PropertiesEntry {
-  return { key: "", value: new Uint8Array(0) };
+  return { key: "", value: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const RulesContainer_Line_PropertiesEntry = {
@@ -42023,6 +50422,19 @@ export const RulesContainer_Line_PropertiesEntry = {
     }
     if (message.value.length !== 0) {
       writer.uint32(18).bytes(message.value);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -42052,7 +50464,17 @@ export const RulesContainer_Line_PropertiesEntry = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -42087,7 +50509,7 @@ export const RulesContainer_Line_PropertiesEntry = {
 };
 
 function createBaseRulesContainer_TransactionRules(): RulesContainer_TransactionRules {
-  return { key: "", columns: [], lines: [], details: undefined };
+  return { key: "", columns: [], lines: [], details: undefined, _unknownFields: {} };
 }
 
 export const RulesContainer_TransactionRules = {
@@ -42103,6 +50525,19 @@ export const RulesContainer_TransactionRules = {
     }
     if (message.details !== undefined) {
       RulesContainer_TransactionRules_TransactionRuleDetails.encode(message.details, writer.uint32(34).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -42146,7 +50581,17 @@ export const RulesContainer_TransactionRules = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -42208,6 +50653,7 @@ function createBaseRulesContainer_TransactionRules_TransactionRuleDetails(): Rul
     xtzCallContract: undefined,
     cashSettlement: undefined,
     cosmosDetails: undefined,
+    _unknownFields: {},
   };
 }
 
@@ -42251,6 +50697,19 @@ export const RulesContainer_TransactionRules_TransactionRuleDetails = {
         message.cosmosDetails,
         writer.uint32(66).fork(),
       ).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -42334,7 +50793,17 @@ export const RulesContainer_TransactionRules_TransactionRuleDetails = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -42431,7 +50900,7 @@ export const RulesContainer_TransactionRules_TransactionRuleDetails = {
 };
 
 function createBaseRulesContainer_TransactionRules_TransactionRuleDetails_EvmCallContract(): RulesContainer_TransactionRules_TransactionRuleDetails_EvmCallContract {
-  return { contractType: "", methodSignature: "" };
+  return { contractType: "", methodSignature: "", _unknownFields: {} };
 }
 
 export const RulesContainer_TransactionRules_TransactionRuleDetails_EvmCallContract = {
@@ -42444,6 +50913,19 @@ export const RulesContainer_TransactionRules_TransactionRuleDetails_EvmCallContr
     }
     if (message.methodSignature !== "") {
       writer.uint32(18).string(message.methodSignature);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -42476,7 +50958,17 @@ export const RulesContainer_TransactionRules_TransactionRuleDetails_EvmCallContr
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -42515,7 +51007,7 @@ export const RulesContainer_TransactionRules_TransactionRuleDetails_EvmCallContr
 };
 
 function createBaseRulesContainer_TransactionRules_TransactionRuleDetails_XtzCallContract(): RulesContainer_TransactionRules_TransactionRuleDetails_XtzCallContract {
-  return { contractType: "", methodSignature: "" };
+  return { contractType: "", methodSignature: "", _unknownFields: {} };
 }
 
 export const RulesContainer_TransactionRules_TransactionRuleDetails_XtzCallContract = {
@@ -42528,6 +51020,19 @@ export const RulesContainer_TransactionRules_TransactionRuleDetails_XtzCallContr
     }
     if (message.methodSignature !== "") {
       writer.uint32(18).string(message.methodSignature);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -42560,7 +51065,17 @@ export const RulesContainer_TransactionRules_TransactionRuleDetails_XtzCallContr
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -42599,7 +51114,7 @@ export const RulesContainer_TransactionRules_TransactionRuleDetails_XtzCallContr
 };
 
 function createBaseRulesContainer_TransactionRules_TransactionRuleDetails_CashSettlement(): RulesContainer_TransactionRules_TransactionRuleDetails_CashSettlement {
-  return { provider: "", requestType: "" };
+  return { provider: "", requestType: "", _unknownFields: {} };
 }
 
 export const RulesContainer_TransactionRules_TransactionRuleDetails_CashSettlement = {
@@ -42612,6 +51127,19 @@ export const RulesContainer_TransactionRules_TransactionRuleDetails_CashSettleme
     }
     if (message.requestType !== "") {
       writer.uint32(18).string(message.requestType);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -42644,7 +51172,17 @@ export const RulesContainer_TransactionRules_TransactionRuleDetails_CashSettleme
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -42683,7 +51221,7 @@ export const RulesContainer_TransactionRules_TransactionRuleDetails_CashSettleme
 };
 
 function createBaseRulesContainer_TransactionRules_TransactionRuleDetails_CosmosDetails(): RulesContainer_TransactionRules_TransactionRuleDetails_CosmosDetails {
-  return { methodSignatures: [] };
+  return { methodSignatures: [], _unknownFields: {} };
 }
 
 export const RulesContainer_TransactionRules_TransactionRuleDetails_CosmosDetails = {
@@ -42693,6 +51231,19 @@ export const RulesContainer_TransactionRules_TransactionRuleDetails_CosmosDetail
   ): _m0.Writer {
     for (const v of message.methodSignatures) {
       writer.uint32(10).string(v!);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -42718,7 +51269,17 @@ export const RulesContainer_TransactionRules_TransactionRuleDetails_CosmosDetail
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -42754,7 +51315,7 @@ export const RulesContainer_TransactionRules_TransactionRuleDetails_CosmosDetail
 };
 
 function createBaseRulesContainer_AddressWhitelistingRules(): RulesContainer_AddressWhitelistingRules {
-  return { currency: "", parallelThresholds: [], properties: {}, network: "", lines: [] };
+  return { currency: "", parallelThresholds: [], properties: {}, network: "", lines: [], _unknownFields: {} };
 }
 
 export const RulesContainer_AddressWhitelistingRules = {
@@ -42765,7 +51326,7 @@ export const RulesContainer_AddressWhitelistingRules = {
     for (const v of message.parallelThresholds) {
       SequentialThresholds.encode(v!, writer.uint32(18).fork()).ldelim();
     }
-    Object.entries(message.properties).forEach(([key, value]) => {
+    Object.entries(message.properties).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).forEach(([key, value]) => {
       RulesContainer_AddressWhitelistingRules_PropertiesEntry.encode(
         { key: key as any, value },
         writer.uint32(26).fork(),
@@ -42776,6 +51337,19 @@ export const RulesContainer_AddressWhitelistingRules = {
     }
     for (const v of message.lines) {
       RulesContainer_AddressWhitelistingRules_Line.encode(v!, writer.uint32(42).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -42829,7 +51403,17 @@ export const RulesContainer_AddressWhitelistingRules = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -42902,7 +51486,7 @@ export const RulesContainer_AddressWhitelistingRules = {
 };
 
 function createBaseRulesContainer_AddressWhitelistingRules_Line(): RulesContainer_AddressWhitelistingRules_Line {
-  return { cells: [], parallelThresholds: [], properties: {} };
+  return { cells: [], parallelThresholds: [], properties: {}, _unknownFields: {} };
 }
 
 export const RulesContainer_AddressWhitelistingRules_Line = {
@@ -42913,12 +51497,25 @@ export const RulesContainer_AddressWhitelistingRules_Line = {
     for (const v of message.parallelThresholds) {
       SequentialThresholds.encode(v!, writer.uint32(18).fork()).ldelim();
     }
-    Object.entries(message.properties).forEach(([key, value]) => {
+    Object.entries(message.properties).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).forEach(([key, value]) => {
       RulesContainer_AddressWhitelistingRules_Line_PropertiesEntry.encode(
         { key: key as any, value },
         writer.uint32(26).fork(),
       ).ldelim();
     });
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
+    }
     return writer;
   },
 
@@ -42957,7 +51554,17 @@ export const RulesContainer_AddressWhitelistingRules_Line = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -43022,7 +51629,7 @@ export const RulesContainer_AddressWhitelistingRules_Line = {
 };
 
 function createBaseRulesContainer_AddressWhitelistingRules_Line_PropertiesEntry(): RulesContainer_AddressWhitelistingRules_Line_PropertiesEntry {
-  return { key: "", value: new Uint8Array(0) };
+  return { key: "", value: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const RulesContainer_AddressWhitelistingRules_Line_PropertiesEntry = {
@@ -43035,6 +51642,19 @@ export const RulesContainer_AddressWhitelistingRules_Line_PropertiesEntry = {
     }
     if (message.value.length !== 0) {
       writer.uint32(18).bytes(message.value);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -43067,7 +51687,17 @@ export const RulesContainer_AddressWhitelistingRules_Line_PropertiesEntry = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -43106,7 +51736,7 @@ export const RulesContainer_AddressWhitelistingRules_Line_PropertiesEntry = {
 };
 
 function createBaseRulesContainer_AddressWhitelistingRules_PropertiesEntry(): RulesContainer_AddressWhitelistingRules_PropertiesEntry {
-  return { key: "", value: new Uint8Array(0) };
+  return { key: "", value: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const RulesContainer_AddressWhitelistingRules_PropertiesEntry = {
@@ -43119,6 +51749,19 @@ export const RulesContainer_AddressWhitelistingRules_PropertiesEntry = {
     }
     if (message.value.length !== 0) {
       writer.uint32(18).bytes(message.value);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -43148,7 +51791,17 @@ export const RulesContainer_AddressWhitelistingRules_PropertiesEntry = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -43187,7 +51840,7 @@ export const RulesContainer_AddressWhitelistingRules_PropertiesEntry = {
 };
 
 function createBaseRulesContainer_ContractAddressWhitelistingRules(): RulesContainer_ContractAddressWhitelistingRules {
-  return { blockchain: 0, parallelThresholds: [], properties: {}, network: "" };
+  return { blockchain: 0, parallelThresholds: [], properties: {}, network: "", _unknownFields: {} };
 }
 
 export const RulesContainer_ContractAddressWhitelistingRules = {
@@ -43201,7 +51854,7 @@ export const RulesContainer_ContractAddressWhitelistingRules = {
     for (const v of message.parallelThresholds) {
       SequentialThresholds.encode(v!, writer.uint32(18).fork()).ldelim();
     }
-    Object.entries(message.properties).forEach(([key, value]) => {
+    Object.entries(message.properties).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).forEach(([key, value]) => {
       RulesContainer_ContractAddressWhitelistingRules_PropertiesEntry.encode(
         { key: key as any, value },
         writer.uint32(34).fork(),
@@ -43209,6 +51862,19 @@ export const RulesContainer_ContractAddressWhitelistingRules = {
     });
     if (message.network !== "") {
       writer.uint32(42).string(message.network);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -43258,7 +51924,17 @@ export const RulesContainer_ContractAddressWhitelistingRules = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -43328,7 +52004,7 @@ export const RulesContainer_ContractAddressWhitelistingRules = {
 };
 
 function createBaseRulesContainer_ContractAddressWhitelistingRules_PropertiesEntry(): RulesContainer_ContractAddressWhitelistingRules_PropertiesEntry {
-  return { key: "", value: new Uint8Array(0) };
+  return { key: "", value: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const RulesContainer_ContractAddressWhitelistingRules_PropertiesEntry = {
@@ -43341,6 +52017,19 @@ export const RulesContainer_ContractAddressWhitelistingRules_PropertiesEntry = {
     }
     if (message.value.length !== 0) {
       writer.uint32(18).bytes(message.value);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -43373,7 +52062,17 @@ export const RulesContainer_ContractAddressWhitelistingRules_PropertiesEntry = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -43412,7 +52111,7 @@ export const RulesContainer_ContractAddressWhitelistingRules_PropertiesEntry = {
 };
 
 function createBaseRulesContainer_Policy(): RulesContainer_Policy {
-  return { id: "", label: "", parallelThresholds: [], description: "" };
+  return { id: "", label: "", parallelThresholds: [], description: "", _unknownFields: {} };
 }
 
 export const RulesContainer_Policy = {
@@ -43428,6 +52127,19 @@ export const RulesContainer_Policy = {
     }
     if (message.description !== "") {
       writer.uint32(34).string(message.description);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -43471,7 +52183,17 @@ export const RulesContainer_Policy = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -43518,13 +52240,26 @@ export const RulesContainer_Policy = {
 };
 
 function createBaseRulesContainer_Policies(): RulesContainer_Policies {
-  return { policies: [] };
+  return { policies: [], _unknownFields: {} };
 }
 
 export const RulesContainer_Policies = {
   encode(message: RulesContainer_Policies, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.policies) {
       RulesContainer_Policy.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -43547,7 +52282,17 @@ export const RulesContainer_Policies = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },
@@ -43579,7 +52324,7 @@ export const RulesContainer_Policies = {
 };
 
 function createBaseRulesContainer_PropertiesEntry(): RulesContainer_PropertiesEntry {
-  return { key: "", value: new Uint8Array(0) };
+  return { key: "", value: new Uint8Array(0), _unknownFields: {} };
 }
 
 export const RulesContainer_PropertiesEntry = {
@@ -43589,6 +52334,19 @@ export const RulesContainer_PropertiesEntry = {
     }
     if (message.value.length !== 0) {
       writer.uint32(18).bytes(message.value);
+    }
+    if (message._unknownFields !== undefined) {
+      for (const [key, values] of Object.entries(message._unknownFields)) {
+        const tag = parseInt(key, 10);
+        for (const value of values) {
+          writer.uint32(tag);
+          (writer as any)["_push"](
+            (val: Uint8Array, buf: Buffer, pos: number) => buf.set(val, pos),
+            value.length,
+            value,
+          );
+        }
+      }
     }
     return writer;
   },
@@ -43618,7 +52376,17 @@ export const RulesContainer_PropertiesEntry = {
       if ((tag & 7) === 4 || tag === 0) {
         break;
       }
+      const startPos = reader.pos;
       reader.skipType(tag & 7);
+      const buf = reader.buf.slice(startPos, reader.pos);
+
+      const list = message._unknownFields![tag];
+
+      if (list === undefined) {
+        message._unknownFields![tag] = [buf];
+      } else {
+        list.push(buf);
+      }
     }
     return message;
   },

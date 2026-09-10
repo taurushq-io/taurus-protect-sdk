@@ -9,7 +9,13 @@
 import * as crypto from "crypto";
 
 import { signData, encodePublicKeyPem } from "../../../src/crypto";
-import { isValidSignature, verifyGovernanceRules } from "../../../src/helpers/signature-verifier";
+import { ConfigurationError, IntegrityError } from "../../../src/errors";
+import {
+  isValidSignature,
+  verifyGovernanceRules,
+  verifyGovernanceRulesSignatures,
+  verifySignatureWithKey,
+} from "../../../src/helpers/signature-verifier";
 
 // =============================================================================
 // Helpers
@@ -40,6 +46,67 @@ function buildWrappedSignaturesBase64(
 ): string {
   return Buffer.from(JSON.stringify({ signatures })).toString("base64");
 }
+
+// =============================================================================
+// distinct-signer counting
+// =============================================================================
+
+// The threshold counts distinct signing keys. Counting entries — or deduping by the
+// caller-supplied userId — would let one compromised key satisfy any threshold, since
+// ECDSA is randomized and a single key can emit unlimited valid signatures.
+describe("verifyGovernanceRules distinct-signer counting", () => {
+  const rulesData = Buffer.from("governance rules payload");
+  const rulesBase64 = rulesData.toString("base64");
+
+  const key1 = generateP256KeyPair();
+  const key2 = generateP256KeyPair();
+  const unconfigured = generateP256KeyPair();
+
+  const bothPems = [keyToPem(key1.publicKey), keyToPem(key2.publicKey)];
+  const key1TwicePems = [keyToPem(key1.publicKey), keyToPem(key1.publicKey)];
+
+  it("accepts two distinct signers at threshold two", () => {
+    const sigs = buildSignaturesBase64([
+      { userId: "admin1", signature: signData(key1.privateKey, rulesData) },
+      { userId: "admin2", signature: signData(key2.privateKey, rulesData) },
+    ]);
+    expect(verifyGovernanceRules(rulesBase64, sigs, 2, bothPems)).toBe(true);
+  });
+
+  it("rejects two signatures from one key at threshold two, accepts at one", () => {
+    const sigs = buildSignaturesBase64([
+      { userId: "admin1", signature: signData(key1.privateKey, rulesData) },
+      { userId: "admin1-again", signature: signData(key1.privateKey, rulesData) },
+    ]);
+    expect(verifyGovernanceRules(rulesBase64, sigs, 2, bothPems)).toBe(false);
+    expect(verifyGovernanceRules(rulesBase64, sigs, 1, bothPems)).toBe(true);
+  });
+
+  it("counts a replayed identical signature once", () => {
+    const replayed = signData(key1.privateKey, rulesData);
+    const sigs = buildSignaturesBase64([
+      { userId: "admin1", signature: replayed },
+      { userId: "admin1-replay", signature: replayed },
+    ]);
+    expect(verifyGovernanceRules(rulesBase64, sigs, 2, bothPems)).toBe(false);
+  });
+
+  it("counts the same key configured twice once", () => {
+    const sigs = buildSignaturesBase64([
+      { userId: "admin1", signature: signData(key1.privateKey, rulesData) },
+      { userId: "admin1-again", signature: signData(key1.privateKey, rulesData) },
+    ]);
+    expect(verifyGovernanceRules(rulesBase64, sigs, 2, key1TwicePems)).toBe(false);
+  });
+
+  it("ignores a signature from an unconfigured key", () => {
+    const sigs = buildSignaturesBase64([
+      { userId: "admin1", signature: signData(key1.privateKey, rulesData) },
+      { userId: "stranger", signature: signData(unconfigured.privateKey, rulesData) },
+    ]);
+    expect(verifyGovernanceRules(rulesBase64, sigs, 2, bothPems)).toBe(false);
+  });
+});
 
 // =============================================================================
 // isValidSignature
@@ -108,12 +175,17 @@ describe("isValidSignature", () => {
 // =============================================================================
 
 describe("verifyGovernanceRules", () => {
-  it("should return true when minValidSignatures is 0", () => {
-    expect(verifyGovernanceRules("abc", "abc", 0, [])).toBe(true);
+  // Fail closed: a non-positive threshold is a misconfiguration, not "nothing to check".
+  it("should throw when minValidSignatures is 0", () => {
+    expect(() => verifyGovernanceRules("abc", "abc", 0, [])).toThrow(
+      ConfigurationError
+    );
   });
 
-  it("should return true when minValidSignatures is negative", () => {
-    expect(verifyGovernanceRules("abc", "abc", -1, [])).toBe(true);
+  it("should throw when minValidSignatures is negative", () => {
+    expect(() => verifyGovernanceRules("abc", "abc", -1, [])).toThrow(
+      ConfigurationError
+    );
   });
 
   it("should return false for empty rulesContainerBase64", () => {
@@ -274,7 +346,7 @@ describe("verifyGovernanceRules", () => {
     expect(verifyGovernanceRules(rulesB64, badStructB64, 1, [pem])).toBe(false);
   });
 
-  it("should handle signatures without userId (no dedup)", () => {
+  it("should not let one key satisfy a threshold of two, with or without userId", () => {
     const { privateKey, publicKey } = generateP256KeyPair();
     const pem = keyToPem(publicKey);
 
@@ -282,12 +354,104 @@ describe("verifyGovernanceRules", () => {
     const rulesData = Buffer.from(rulesB64, "base64");
     const sig = signData(privateKey, rulesData);
 
-    // Two signatures without userId: both should be counted
+    // Omitting userId used to bypass dedup, so one key reached any threshold. Signers
+    // are now counted by key, which no label can influence.
     const signaturesB64 = buildSignaturesBase64([
       { signature: sig },
       { signature: sig },
     ]);
 
-    expect(verifyGovernanceRules(rulesB64, signaturesB64, 2, [pem])).toBe(true);
+    expect(verifyGovernanceRules(rulesB64, signaturesB64, 2, [pem])).toBe(false);
+    expect(verifyGovernanceRules(rulesB64, signaturesB64, 1, [pem])).toBe(true);
+  });
+});
+// =============================================================================
+// verifyGovernanceRulesSignatures - the one place the threshold is evaluated
+// =============================================================================
+
+// The five distinct-signer cases are covered against the PEM wrapper above, which now
+// delegates here. These cover the core's own contract: it throws instead of returning.
+describe("verifyGovernanceRulesSignatures", () => {
+  const rulesData = Buffer.from("rules-container-bytes");
+
+  it("reports the distinct-signer shortfall, not the entry count", () => {
+    const { privateKey, publicKey } = generateP256KeyPair();
+
+    expect(() =>
+      verifyGovernanceRulesSignatures(
+        rulesData,
+        [
+          { signature: signData(privateKey, rulesData) },
+          { signature: signData(privateKey, rulesData) },
+          { signature: signData(privateKey, rulesData) },
+        ],
+        [publicKey],
+        2
+      )
+    ).toThrow("insufficient distinct valid SuperAdmin signers: got 1, need 2");
+  });
+
+  it("skips null and empty signature entries without aborting", () => {
+    const { privateKey, publicKey } = generateP256KeyPair();
+
+    expect(() =>
+      verifyGovernanceRulesSignatures(
+        rulesData,
+        [
+          { signature: undefined },
+          { signature: "" },
+          { signature: signData(privateKey, rulesData) },
+        ],
+        [publicKey],
+        1
+      )
+    ).not.toThrow();
+  });
+
+  it("throws IntegrityError when no key verifies", () => {
+    const configured = generateP256KeyPair();
+    const stranger = generateP256KeyPair();
+
+    expect(() =>
+      verifyGovernanceRulesSignatures(
+        rulesData,
+        [{ signature: signData(stranger.privateKey, rulesData) }],
+        [configured.publicKey],
+        1
+      )
+    ).toThrow(IntegrityError);
+  });
+
+  it("throws ConfigurationError on a non-positive threshold", () => {
+    const { publicKey } = generateP256KeyPair();
+
+    expect(() =>
+      verifyGovernanceRulesSignatures(rulesData, [], [publicKey], 0)
+    ).toThrow(ConfigurationError);
+  });
+});
+
+// The single-key form the other three SDKs expose (Go VerifySignatureWithKey, Java
+// verifySignature, Python verify_raw_signature). TypeScript had only the quorum-shaped
+// isValidSignature, so checking one known signer meant passing a one-element array.
+describe("verifySignatureWithKey", () => {
+  it("accepts a signature made by that key and rejects one made by another", () => {
+    const a = crypto.generateKeyPairSync("ec", { namedCurve: "P-256" });
+    const b = crypto.generateKeyPairSync("ec", { namedCurve: "P-256" });
+    const data = Buffer.from("payload");
+    const sig = signData(a.privateKey, data);
+
+    expect(verifySignatureWithKey(data, sig, a.publicKey)).toBe(true);
+    expect(verifySignatureWithKey(data, sig, b.publicKey)).toBe(false);
+  });
+
+  it("returns false for a missing key, a tampered payload or a malformed signature", () => {
+    const kp = crypto.generateKeyPairSync("ec", { namedCurve: "P-256" });
+    const data = Buffer.from("payload");
+    const sig = signData(kp.privateKey, data);
+
+    expect(verifySignatureWithKey(data, sig, undefined)).toBe(false);
+    expect(verifySignatureWithKey(Buffer.from("tampered"), sig, kp.publicKey)).toBe(false);
+    expect(verifySignatureWithKey(data, "not-base64!!", kp.publicKey)).toBe(false);
   });
 });

@@ -10,7 +10,6 @@ import (
 
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/internal/openapi"
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/crypto"
-	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/helper"
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/mapper"
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/model"
 )
@@ -19,14 +18,47 @@ import (
 type RequestService struct {
 	api       *openapi.RequestsAPIService
 	errMapper *ErrorMapper
+	logger    Logger
 }
 
 // NewRequestService creates a new RequestService.
-func NewRequestService(client *openapi.APIClient) *RequestService {
+func NewRequestService(client *openapi.APIClient, opts ...ServiceOption) *RequestService {
 	return &RequestService{
 		api:       client.RequestsAPI,
 		errMapper: NewErrorMapper(),
+		logger:    applyServiceOptions(opts).logger,
 	}
+}
+
+// verifiedRequest maps one request DTO and verifies its metadata, and is the ONLY way
+// a *model.Request is built in this package.
+//
+//	GetRequest ─────────┐
+//	List/ForApproval ───┤
+//	CreateOutgoing ─────┤
+//	CreateCancel ───────┼─▶ verifiedRequest ─▶ RequestFromDTO ─▶ VerifyAndMaterialise
+//	CreateIncoming ─────┘                                            │
+//	(+ the 4 convenience wrappers, which delegate)                   │
+//	                                          ok ◀──────────────────┴─────▶ IntegrityError
+//	                                    (entries populated)              (wrapped, names the id)
+//
+// Verification lived inline in GetRequest only. The list paths skipped it in one pass
+// and the six create paths in the next — both times because "remember to verify" was a
+// rule rather than the only available construction path. So: do NOT call
+// mapper.RequestFromDTO or mapper.RequestsFromDTO anywhere else in this file.
+//
+// The id is wrapped into the error because a failing create has already succeeded
+// server-side; the caller needs the id to reconcile rather than retrying and
+// double-creating. %w keeps the underlying *model.IntegrityError matchable.
+func (s *RequestService) verifiedRequest(dto *openapi.TgvalidatordRequest) (*model.Request, error) {
+	r := mapper.RequestFromDTO(dto)
+	if r == nil {
+		return nil, fmt.Errorf("request not found")
+	}
+	if err := r.Metadata.VerifyAndMaterialise(); err != nil {
+		return nil, fmt.Errorf("request %s: %w", r.ID, err)
+	}
+	return r, nil
 }
 
 // GetRequest retrieves a request by ID with hash verification.
@@ -45,35 +77,41 @@ func (s *RequestService) GetRequest(ctx context.Context, requestID string) (*mod
 		return nil, fmt.Errorf("request not found")
 	}
 
-	r := mapper.RequestFromDTO(resp.Result)
-
-	if err := verifyRequestHash(r); err != nil {
-		return nil, err
-	}
-
-	return r, nil
+	return s.verifiedRequest(resp.Result)
 }
 
-// verifyRequestHash verifies the integrity of a request's metadata hash.
-// Returns an IntegrityError if the hash is empty or doesn't match.
-func verifyRequestHash(r *model.Request) error {
-	if r.Metadata == nil || (r.Metadata.Hash == "" && r.Metadata.PayloadAsString == "") {
-		return nil
-	}
+// verifiedRequests keeps the rows whose metadata verifies and materialises their
+// payload, dropping the rest.
+//
+//	rows ──▶ verifiedRequest ──┬─ ok ──────▶ kept (entries populated)
+//	                           └─ error ───▶ excluded + logged + named in the result
+//
+// Excluding rather than failing the whole call keeps one corrupt row from denying
+// access to every good one; naming the exclusions keeps a shortened list from
+// reading as a complete one. Both list paths share this — duplicating it is how the
+// two drifted apart before. It takes DTOs, not models, so the mapper stays behind the
+// seam.
+func (s *RequestService) verifiedRequests(ctx context.Context, dtos []openapi.TgvalidatordRequest) ([]*model.Request, []string) {
+	kept := make([]*model.Request, 0, len(dtos))
+	var excluded []string
 
-	computedHash := crypto.CalculateHexHash(r.Metadata.PayloadAsString)
-	providedHash := r.Metadata.Hash
-	if computedHash == "" || providedHash == "" {
-		return &model.IntegrityError{
-			Message: "request hash verification failed: hash values must be non-empty",
+	for i := range dtos {
+		r, err := s.verifiedRequest(&dtos[i])
+		if err != nil {
+			id := ""
+			if dtos[i].Id != nil {
+				id = *dtos[i].Id
+			}
+			excluded = append(excluded, id)
+			s.logger.Warn(ctx, "request excluded: metadata integrity verification failed",
+				Field{Key: "resource", Value: "request"},
+				Field{Key: "request_id", Value: id},
+				Field{Key: "reason", Value: err.Error()})
+			continue
 		}
+		kept = append(kept, r)
 	}
-	if !helper.ConstantTimeCompare(computedHash, providedHash) {
-		return &model.IntegrityError{
-			Message: fmt.Sprintf("request hash verification failed: computed=%s, provided=%s", computedHash, providedHash),
-		}
-	}
-	return nil
+	return kept, excluded
 }
 
 // ListRequests retrieves a list of requests using cursor-based pagination.
@@ -88,11 +126,26 @@ func (s *RequestService) ListRequests(ctx context.Context, opts *model.ListReque
 			req = req.CursorCurrentPage(opts.Cursor)
 			req = req.CursorPageRequest("NEXT")
 		}
-		if opts.Status != "" {
-			req = req.Statuses([]string{opts.Status})
+		if len(opts.Statuses) > 0 {
+			req = req.Statuses(opts.Statuses)
+		}
+		if len(opts.IDs) > 0 {
+			req = req.Ids(opts.IDs)
+		}
+		if len(opts.Types) > 0 {
+			req = req.Types(opts.Types)
+		}
+		if len(opts.ExternalRequestIDs) > 0 {
+			req = req.ExternalRequestIDs(opts.ExternalRequestIDs)
 		}
 		if opts.Currency != "" {
 			req = req.CurrencyID(opts.Currency)
+		}
+		if opts.FromDate != nil {
+			req = req.From(*opts.FromDate)
+		}
+		if opts.ToDate != nil {
+			req = req.To(*opts.ToDate)
 		}
 	}
 
@@ -101,8 +154,10 @@ func (s *RequestService) ListRequests(ctx context.Context, opts *model.ListReque
 		return nil, s.errMapper.MapError(err, httpResp)
 	}
 
+	kept, excluded := s.verifiedRequests(ctx, resp.Result)
 	result := &model.RequestResult{
-		Requests: mapper.RequestsFromDTO(resp.Result),
+		Requests:           kept,
+		ExcludedUnverified: excluded,
 	}
 
 	if resp.Cursor != nil {
@@ -139,8 +194,10 @@ func (s *RequestService) ListRequestsForApproval(ctx context.Context, opts *mode
 		return nil, s.errMapper.MapError(err, httpResp)
 	}
 
+	kept, excluded := s.verifiedRequests(ctx, resp.Result)
 	result := &model.RequestResult{
-		Requests: mapper.RequestsFromDTO(resp.Result),
+		Requests:           kept,
+		ExcludedUnverified: excluded,
 	}
 
 	if resp.Cursor != nil {
@@ -222,7 +279,7 @@ func (s *RequestService) CreateOutgoingRequest(ctx context.Context, req *model.C
 		return nil, fmt.Errorf("failed to create request")
 	}
 
-	return mapper.RequestFromDTO(resp.Result), nil
+	return s.verifiedRequest(resp.Result)
 }
 
 // CreateInternalTransferRequest creates an internal transfer request from one address to another.
@@ -326,7 +383,7 @@ func (s *RequestService) CreateCancelRequest(ctx context.Context, addressID stri
 		return nil, fmt.Errorf("failed to create cancel request")
 	}
 
-	return mapper.RequestFromDTO(resp.Result), nil
+	return s.verifiedRequest(resp.Result)
 }
 
 // CreateIncomingRequest creates an incoming request to log an incoming transaction from an exchange.
@@ -368,12 +425,22 @@ func (s *RequestService) CreateIncomingRequest(ctx context.Context, req *model.C
 		return nil, fmt.Errorf("failed to create incoming request")
 	}
 
-	return mapper.RequestFromDTO(resp.Result), nil
+	return s.verifiedRequest(resp.Result)
 }
 
 // ApproveRequests approves multiple requests using a private key for signing.
 // The requests are sorted by ID before signing. Returns the number of requests signed.
-func (s *RequestService) ApproveRequests(ctx context.Context, requests []*model.Request, privateKey *ecdsa.PrivateKey) (int, error) {
+//
+//	requests ─▶ presence check ─▶ RE-VERIFY hash vs payload ──fail──▶ refuse, sign nothing
+//	                                          │ok
+//	                                          ▼
+//	                              numeric id ─▶ sort ─▶ sign(JSON(hashes)) ─▶ POST once
+//
+// HashVerified is deliberately NOT consulted — see the loop below.
+// The optional comment is what gets recorded against the approval. It is variadic
+// rather than a new positional parameter so existing callers keep compiling; Python
+// and TypeScript take it as an optional argument, and it used to be hardcoded here.
+func (s *RequestService) ApproveRequests(ctx context.Context, requests []*model.Request, privateKey *ecdsa.PrivateKey, comment ...string) (int, error) {
 	if len(requests) == 0 {
 		return 0, fmt.Errorf("requests list cannot be empty")
 	}
@@ -381,10 +448,26 @@ func (s *RequestService) ApproveRequests(ctx context.Context, requests []*model.
 		return 0, fmt.Errorf("privateKey cannot be nil")
 	}
 
-	// Validate all requests have metadata with hash and valid numeric IDs
+	// Validate all requests have metadata with hash and valid numeric IDs, and
+	// RE-VERIFY every hash this signature will attest to.
+	//
+	//	presence check ─▶ re-verify hash vs payload ─▶ numeric id ─▶ sort ─▶ sign once
+	//
+	// HashVerified is deliberately NOT consulted. It is a serialized field
+	// (`json:"hash_verified,omitempty"`), so a *model.Request decoded from a queue,
+	// webhook or cached blob can arrive claiming true and get an attacker-chosen hash
+	// signed by the approver's real key. Re-verification is a SHA-256 over a string we
+	// already hold — no network — and it is the same guarantee
+	// WhitelistedAssetService.ApproveWhitelistedAssets gets by re-reading, so both
+	// signing paths now rest on the same rule rather than two different ones.
 	for _, r := range requests {
 		if r.Metadata == nil || r.Metadata.Hash == "" {
 			return 0, fmt.Errorf("request %s has no metadata hash", r.ID)
+		}
+		// Ordered after the presence check so an early-status request still reports the
+		// clearer "no metadata hash".
+		if err := r.Metadata.VerifyAndMaterialise(); err != nil {
+			return 0, fmt.Errorf("refusing to sign request %s: %w", r.ID, err)
 		}
 		// Validate ID is a valid numeric value for sorting
 		if _, err := strconv.ParseInt(r.ID, 10, 64); err != nil {
@@ -427,7 +510,7 @@ func (s *RequestService) ApproveRequests(ctx context.Context, requests []*model.
 	// Submit approval
 	approveReq := openapi.TgvalidatordApproveRequestsRequest{
 		Signature: signature,
-		Comment:   "approved via taurus-protect-sdk-go",
+		Comment:   approvalComment(comment),
 		Ids:       ids,
 	}
 
@@ -447,11 +530,11 @@ func (s *RequestService) ApproveRequests(ctx context.Context, requests []*model.
 }
 
 // ApproveRequest approves a single request using a private key for signing.
-func (s *RequestService) ApproveRequest(ctx context.Context, request *model.Request, privateKey *ecdsa.PrivateKey) (int, error) {
+func (s *RequestService) ApproveRequest(ctx context.Context, request *model.Request, privateKey *ecdsa.PrivateKey, comment ...string) (int, error) {
 	if request == nil {
 		return 0, fmt.Errorf("request cannot be nil")
 	}
-	return s.ApproveRequests(ctx, []*model.Request{request}, privateKey)
+	return s.ApproveRequests(ctx, []*model.Request{request}, privateKey, comment...)
 }
 
 // RejectRequests rejects multiple requests with a comment.
@@ -484,4 +567,13 @@ func (s *RequestService) RejectRequest(ctx context.Context, requestID string, co
 		return fmt.Errorf("requestID cannot be empty")
 	}
 	return s.RejectRequests(ctx, []string{requestID}, comment)
+}
+
+// approvalComment picks the caller's comment, falling back to a default so an
+// approval always carries some rationale.
+func approvalComment(comment []string) string {
+	if len(comment) > 0 && comment[0] != "" {
+		return comment[0]
+	}
+	return "approved via taurus-protect-sdk-go"
 }

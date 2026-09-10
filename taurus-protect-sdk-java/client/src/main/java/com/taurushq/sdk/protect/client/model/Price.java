@@ -3,6 +3,8 @@ package com.taurushq.sdk.protect.client.model;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Represents a currency price/exchange rate in the Taurus Protect system.
@@ -44,6 +46,11 @@ public class Price {
     /**
      * The percentage price change over the last 24 hours.
      */
+    /**
+     * PRICEUPDATER signatures over the canonical price form.
+     */
+    private List<PriceSignature> signatures = new ArrayList<>();
+
     private String changePercent24Hour;
 
     /**
@@ -226,5 +233,23 @@ public class Price {
      */
     public void setUpdatedAt(OffsetDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    /**
+     * Returns the PRICEUPDATER signatures over this price.
+     *
+     * @return the signatures, never null
+     */
+    public List<PriceSignature> getSignatures() {
+        return signatures;
+    }
+
+    /**
+     * Sets the PRICEUPDATER signatures over this price.
+     *
+     * @param signatures the signatures to set
+     */
+    public void setSignatures(List<PriceSignature> signatures) {
+        this.signatures = signatures == null ? new ArrayList<>() : signatures;
     }
 }

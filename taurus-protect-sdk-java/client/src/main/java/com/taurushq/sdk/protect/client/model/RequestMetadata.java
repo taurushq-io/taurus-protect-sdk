@@ -1,10 +1,14 @@
 package com.taurushq.sdk.protect.client.model;
 
+import com.google.common.base.Strings;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
+import com.taurushq.sdk.protect.openapi.auth.CryptoTPV1;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.util.Map;
+
+import static org.bouncycastle.util.Strings.constantTimeAreEqual;
 
 /**
  * Represents the metadata associated with a transaction request.
@@ -61,6 +65,16 @@ public class RequestMetadata {
      */
     private String hash;
 
+    /**
+     * True when {@code hash} was checked against sha256(payloadAsString).
+     *
+     * <p>This is CONSISTENCY, not authenticity: it proves the payload string was not
+     * altered without also updating the hash, which is the attack described above. It
+     * does not prove the pair came from Taurus-PROTECT, since requests carry no
+     * client-verifiable signature.
+     */
+    private boolean hashVerified;
+
     // SECURITY: payload field intentionally omitted - use payloadAsString only.
     // The raw payload object could be tampered with by an attacker while
     // payloadAsString remains unchanged (hash still verifies). By not having
@@ -103,6 +117,62 @@ public class RequestMetadata {
         this.hash = hash;
     }
 
+    /**
+     * Returns whether the metadata hash was verified against the payload string.
+     *
+     * @return true if verified
+     */
+    public boolean isHashVerified() {
+        return hashVerified;
+    }
+
+    /**
+     * Verifies the hash against the payload and, only on success, marks this metadata
+     * verified.
+     * <p>
+     * The flag and the check that earns it are set together here, so the gate on
+     * {@code verifiedPayload()} cannot be satisfied without the check having run. A
+     * public setter made it settable by any caller, which turned the gate into a
+     * convention.
+     * <p>
+     * Metadata carrying neither hash nor payload is not an error and stays unverified:
+     * an early-status request has nothing to read.
+     *
+     * @return true if the hash was verified, false if there was nothing to verify
+     * @throws IntegrityException if the hash and payload disagree, or one is absent
+     *                            while the other is present
+     */
+    public boolean verifyAndMaterialise() {
+        if (Strings.isNullOrEmpty(hash) && Strings.isNullOrEmpty(payloadAsString)) {
+            return false;
+        }
+
+        // A hash with no payload is the dangerous shape: there is nothing to check it
+        // against, so passing would mean accepting whatever the response claimed.
+        if (Strings.isNullOrEmpty(payloadAsString)) {
+            throw new IntegrityException(
+                    "request hash verification failed: hash exists but payload is missing");
+        }
+        if (Strings.isNullOrEmpty(hash)) {
+            throw new IntegrityException(
+                    "request hash verification failed: payload present but hash is missing");
+        }
+
+        String computedHash = CryptoTPV1.calculateHexHash(payloadAsString);
+        if (computedHash == null) {
+            throw new IntegrityException(
+                    "request hash verification failed: hash values must be non-null");
+        }
+        if (!constantTimeAreEqual(computedHash, hash)) {
+            throw new IntegrityException(String.format(
+                    "request hash verification failed: computed=%s, provided=%s",
+                    computedHash, hash));
+        }
+
+        this.hashVerified = true;
+        return true;
+    }
+
     // SECURITY: getPayload() and setPayload() intentionally removed.
     // Use payloadAsJson (set via setPayloadAsString) for data extraction.
 
@@ -133,7 +203,42 @@ public class RequestMetadata {
      */
     public void setPayloadAsString(String payloadAsString) {
         this.payloadAsString = payloadAsString;
-        this.payloadAsJson = JsonParser.parseString(payloadAsString);
+        // Deliberately does NOT parse. Parsing here ran at mapping time, before any
+        // verification could reject the payload, so every accessor served data that
+        // nothing had checked. It also threw NullPointerException on a null payload
+        // instead of a typed error. Parsing now happens in verifiedPayload(), which
+        // runs only once hashVerified is set.
+        this.payloadAsJson = null;
+    }
+
+    /**
+     * Returns the parsed payload, or throws if verification has not cleared it.
+     *
+     * <p>The single gate in front of every extraction method below. Parsing is lazy
+     * so the mapper can populate the string and the service can set the flag in
+     * either order.
+     *
+     * @return the parsed payload array
+     * @throws UnverifiedMetadataException if the payload was never verified
+     * @throws RequestMetadataException    if the verified payload is not parseable
+     */
+    private JsonElement verifiedPayload() throws RequestMetadataException {
+        if (!hashVerified) {
+            throw new UnverifiedMetadataException(
+                    "request metadata payload has not been verified");
+        }
+        if (payloadAsJson == null) {
+            if (payloadAsString == null || payloadAsString.isEmpty()) {
+                throw new RequestMetadataException("metadata payload is empty");
+            }
+            try {
+                payloadAsJson = JsonParser.parseString(payloadAsString);
+            } catch (com.google.gson.JsonSyntaxException e) {
+                throw new RequestMetadataException(
+                        "metadata payload is verified but unparseable", e);
+            }
+        }
+        return payloadAsJson;
     }
 
     /**
@@ -182,7 +287,7 @@ public class RequestMetadata {
      * @throws RequestMetadataException if the source address is not found in the metadata
      */
     public String getSourceAddress() throws RequestMetadataException {
-        for (JsonElement bm : this.payloadAsJson.getAsJsonArray()) {
+        for (JsonElement bm : verifiedPayload().getAsJsonArray()) {
             Map<String, JsonElement> map = bm.getAsJsonObject().asMap();
             if ("source".equals(map.get("key").getAsString())) {
                 com.google.gson.JsonObject value = map.get("value").getAsJsonObject();
@@ -210,7 +315,7 @@ public class RequestMetadata {
      * @throws RequestMetadataException if the destination address is not found in the metadata
      */
     public String getDestinationAddress() throws RequestMetadataException {
-        for (JsonElement bm : this.payloadAsJson.getAsJsonArray()) {
+        for (JsonElement bm : verifiedPayload().getAsJsonArray()) {
             Map<String, JsonElement> map = bm.getAsJsonObject().asMap();
             if ("destination".equals(map.get("key").getAsString())) {
                 com.google.gson.JsonObject value = map.get("value").getAsJsonObject();
@@ -239,7 +344,7 @@ public class RequestMetadata {
      * @throws RequestMetadataException if the amount is not found in the metadata
      */
     public RequestMetadataAmount getAmount() throws RequestMetadataException {
-        for (JsonElement bm : this.payloadAsJson.getAsJsonArray()) {
+        for (JsonElement bm : verifiedPayload().getAsJsonArray()) {
             Map<String, JsonElement> map = bm.getAsJsonObject().asMap();
             if ("amount".equals(map.get("key").getAsString())) {
 
@@ -285,7 +390,7 @@ public class RequestMetadata {
      * @throws RequestMetadataException if the key is not found in the metadata
      */
     private String getMDString(String key) throws RequestMetadataException {
-        for (JsonElement bm : this.payloadAsJson.getAsJsonArray()) {
+        for (JsonElement bm : verifiedPayload().getAsJsonArray()) {
             Map<String, JsonElement> map = bm.getAsJsonObject().asMap();
             if (map.get("key").getAsString().equals(key)) {
                 return map.get("value").getAsString();
@@ -302,7 +407,7 @@ public class RequestMetadata {
      * @throws RequestMetadataException if the key is not found in the metadata
      */
     private long getMDLong(String key) throws RequestMetadataException {
-        for (JsonElement bm : this.payloadAsJson.getAsJsonArray()) {
+        for (JsonElement bm : verifiedPayload().getAsJsonArray()) {
             Map<String, JsonElement> map = bm.getAsJsonObject().asMap();
             if (map.get("key").getAsString().equals(key)) {
                 return map.get("value").getAsLong();

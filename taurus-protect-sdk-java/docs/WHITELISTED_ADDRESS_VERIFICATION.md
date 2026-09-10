@@ -96,8 +96,14 @@ if (!constantTimeAreEqual(computedHash, providedHash)) {
 **Process:**
 1. Decode `rulesSignatures` from Base64 to Protobuf `UserSignatures`
 2. For each signature, verify against SuperAdmin public keys
-3. Count valid signatures
-4. Require `validCount >= minValidSignatures`
+3. Record the fingerprint of each key that verifies
+4. Require the number of **distinct signing keys** to be at least `minValidSignatures`
+
+> **Counted by signing key, not by entry.** ECDSA is randomized, so one SuperAdmin key can
+> emit unlimited valid signatures over the same container, and `userId` is server-supplied.
+> A signer is identified by a SHA-256 hash of its encoded public key, so a key configured
+> twice — or appearing under several user IDs — counts once. The threshold is evaluated in
+> one place: the SDK's shared signature-verifier helper.
 
 **Cryptographic Algorithm:** SHA256withPLAIN-ECDSA
 
@@ -162,11 +168,21 @@ ParallelThresholds (OR paths)
    - Find group by ID in rules container
    - For each signature from a user in this group:
      - Check user is in group
-     - Check signature covers metadata hash
-     - Get user's public key from rules container
+     - Check the signature covers **the hash Step 4 matched** — `verifyHashInSignedHashes`
+       returns it, and it may be a legacy variant rather than `metadata.hash`
+     - Get the user's public key **from the verified rules container**
      - Verify signature: `SHA256withPLAIN-ECDSA(JSON(hashes[]), userPublicKey)`
-   - Count valid signatures
-   - Require `validCount >= minimumSignatures`
+     - Add that key's fingerprint (`SignatureVerifier.keyFingerprint`) to a `Set` of signers
+   - Require `signers.size() >= minimumSignatures`
+
+> **Counted by signer, not by signature entry.** ECDSA is randomized, and both the signature
+> entries and the `userId` they carry are server-supplied, so counting entries would let a
+> duplicated or re-signed entry from one group member satisfy an N-of-M group and promote an
+> under-approved address to approved. A signer is identified by a fingerprint of the public key
+> **the verified container holds for that user** — never by the entry's `userId` — so two user
+> IDs sharing one key count once: that is one compromised secret. Same counting rule as
+> `minValidSignatures` in Step 2; what differs is the scope (one group's members vs the
+> tenant's SuperAdmins).
 
 **Signature Data Format:** JSON array of hashes converted to UTF-8 bytes, then ECDSA signed.
 

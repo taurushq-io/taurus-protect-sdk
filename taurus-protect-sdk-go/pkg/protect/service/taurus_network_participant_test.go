@@ -303,10 +303,10 @@ func TestListParticipantsOptions_Values(t *testing.T) {
 
 func TestCreateParticipantAttributeRequest_Values(t *testing.T) {
 	tests := []struct {
-		name    string
-		key     string
-		value   string
-		share   bool
+		name  string
+		key   string
+		value string
+		share bool
 	}{
 		{
 			name:  "basic attribute",

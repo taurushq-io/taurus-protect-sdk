@@ -298,6 +298,13 @@ RequestResult getRequestsForApproval(ApiRequestCursor cursor) throws ApiExceptio
 
 Signs and approves requests using a private key.
 
+> **A request whose metadata hash has not been verified is refused** with
+> `IntegrityException`. The signature attests to those hashes, so each must be one
+> verification cleared against its payload. `RequestMetadata` has no `setHashVerified` — the
+> flag can only be set by `verifyAndMaterialise()`, which performs the hash check in the same
+> operation, so the payload accessors cannot be unlocked without the check having run. The
+> refusal is ordered after `checkNotNull(privateKey)` so argument errors stay argument errors.
+
 ```java
 int approveRequest(Request request, PrivateKey privateKey) throws ApiException
 int approveRequests(List<Request> requests, PrivateKey privateKey) throws ApiException
@@ -306,7 +313,7 @@ int approveRequests(List<Request> requests, PrivateKey privateKey) throws ApiExc
 **Parameters:**
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| request(s) | Request / List<Request> | Request(s) to approve |
+| request(s) | Request / List<Request> | Request(s) to approve (metadata must be hash-VERIFIED) |
 | privateKey | PrivateKey | User's signing key |
 
 **Returns:** Number of signatures performed
@@ -497,6 +504,14 @@ List<Score> refreshWhitelistedAddressScore(long addressId, String scoreProvider)
 
 **Location:** `client/src/main/java/com/taurushq/sdk/protect/client/service/PriceService.java`
 
+`rate` and `decimals` feed amount conversion, so an unverified price is a wrong number a
+caller acts on. `getPrices` verifies each price against the `PRICEUPDATER` keys in the
+SuperAdmin-verified rules container, which is why the service takes the
+`RulesContainerCache` as a mandatory constructor argument. Whether prices must be signed is
+the **container's** call: no `PRICEUPDATER` configured means this tenant does not sign prices
+and the price passes through; a `PRICEUPDATER` configured plus a price carrying no signatures
+throws `IntegrityException`.
+
 ### Methods
 
 ```java
@@ -507,7 +522,8 @@ List<ConversionResult> convert(String currency, BigDecimal amount, List<String> 
 
 ### Key Models
 
-- `Price` - currency pair, price, timestamp
+- `Price` - blockchain, currencyFrom, currencyTo, decimals, rate, signatures
+- `PriceSignature` - userId, signature
 - `PriceHistoryPoint` - timestamp, price
 - `ConversionResult` - target currency, converted amount
 
@@ -636,11 +652,52 @@ Decodes the rules container protobuf.
 DecodedRulesContainer getDecodedRulesContainer(GovernanceRules rules) throws ApiException
 ```
 
+#### updateRulesProposal
+
+Submits a typed rules container as a governance proposal (SuperAdmin only). The container
+is encoded to the wire format internally; the server-controlled `enforcedRulesHash` and
+`timestamp` fields are stripped. The endpoint returns no body — callers needing the
+persisted proposal should call `getRulesProposal` (note: rules reads are cached
+server-side, so an immediate read-back may be stale).
+
+```java
+void updateRulesProposal(DecodedRulesContainer container) throws ApiException
+```
+
+#### approveRulesProposal
+
+Signs the pending proposal's rules container with a SuperAdmin private key (SHA-256 +
+P-256 ECDSA, base64 raw r||s) and submits the approval. The signature binds the exact
+pending content — review it first via `getRulesProposal` + `getDecodedRulesContainer`.
+
+```java
+void approveRulesProposal(PrivateKey privateKey, String comment) throws ApiException
+```
+
+#### rejectRulesProposal
+
+Rejects the pending rules proposal with a comment (SuperAdmin only).
+
+```java
+void rejectRulesProposal(String comment) throws ApiException
+```
+
 ### Key Models
 
 - `GovernanceRules` - rulesContainer, rulesSignatures, locked, trails
-- `DecodedRulesContainer` - groups, users, thresholds, addressWhitelistingRules
+- `DecodedRulesContainer` - lossless typed rules container (users, groups, transaction and
+  whitelisting rules); round-trips through `RulesContainerMapper.toBase64String` /
+  `fromBytes`
+- `RuleCell` - typed transaction-rule cell union covering every cell type
+  (`FiatAmountAny`, `FiatAmountRange`, `SourceInternalWallet`, `StringEqualValue`, ...);
+  `RawCell` preserves cells from newer schemas verbatim. Decode and encode a cell with
+  `RuleCellCodec.decode(columnType, bytes)` / `encode(columnType, cell)` — cells stay
+  `List<ByteString>` on `RuleLine`
 - `SuperAdminPublicKey` - id, publicKey, name
+
+Cross-SDK cell wire-format parity is pinned by the shared golden vectors at
+`scripts/resources/governance-cell-vectors.json` (monorepo root), consumed by every SDK's
+test suite.
 
 ---
 
@@ -889,9 +946,17 @@ System.out.println("Total rewards: " + rewards.getTotalRewards());
 
 ## ContractWhitelistingService
 
-**Purpose:** Manages whitelisted smart contract addresses (ERC20 tokens, NFTs, FA2 tokens).
+**Purpose:** WRITE operations on whitelisted smart contract addresses (ERC20 tokens, NFTs, FA2 tokens).
 
 **Location:** `client/src/main/java/com/taurushq/sdk/protect/client/service/ContractWhitelistingService.java`
+
+> **Reads live on `WhitelistedAssetService`.** A whitelisted contract and a whitelisted asset
+> are one server entity (`/whitelists/contracts`); the `getWhitelistedContract`,
+> `getWhitelistedContracts`, `getWhitelistedContractsWithFilters` and
+> `getWhitelistedContractsForApproval` that used to sit here returned the envelope with no
+> verification, which made the verified reader avoidable. Use
+> `client.getWhitelistedAssetService().getWhitelistedAssets(...)` /
+> `.getWhitelistedAssetsForApproval(...)`, which run the six-step chain.
 
 ### Methods
 
@@ -932,43 +997,26 @@ System.out.println("Created whitelist entry: " + id);
 Approves one or more whitelisted contract addresses.
 
 ```java
+@Deprecated
 void approveWhitelistedContracts(List<String> ids, String signature, String comment) throws ApiException
 ```
 
-#### getWhitelistedContract
+> **Deprecated.** The signature is an opaque blob over hashes nothing verified, so the caller
+> cannot know what they signed. Use
+> `WhitelistedAssetService.approveWhitelistedAssets(ids, privateKey, comment)`, which re-reads
+> and verifies the rows first.
 
-Retrieves a single whitelisted contract by ID.
-
+**Example — write here, read through the verified reader:**
 ```java
-SignedWhitelistedContractAddressEnvelope getWhitelistedContract(String id) throws ApiException
-```
+String id = client.getContractWhitelistingService().createWhitelistedContract(
+    "ETH", "mainnet", "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+    "USDC", "USD Coin", 6, "erc20", null);
 
-#### getWhitelistedContracts
-
-Lists whitelisted contracts with filtering and pagination.
-
-```java
-WhitelistedContractAddressResult getWhitelistedContracts(String blockchain, String network,
-                                                          String query, Boolean isNFT,
-                                                          Integer limit, Integer offset) throws ApiException
-```
-
-**Example:**
-```java
-WhitelistedContractAddressResult result = client.getContractWhitelistingService()
-    .getWhitelistedContracts("ETH", "mainnet", null, false, 50, 0);
-for (SignedWhitelistedContractAddressEnvelope contract : result.getContracts()) {
-    System.out.println(contract.getBlockchain() + ": " + contract.getId());
+WhitelistedAssetResult result = client.getWhitelistedAssetService()
+    .getWhitelistedAssets(50, 0, "ETH", "mainnet", null, null, null, null);
+for (SignedWhitelistedAssetEnvelope asset : result.getAssets()) {
+    System.out.println(asset.getWhitelistedAsset().getContractAddress());
 }
-```
-
-#### getWhitelistedContractsForApproval
-
-Lists whitelisted contracts pending approval.
-
-```java
-WhitelistedContractAddressResult getWhitelistedContractsForApproval(List<String> ids,
-                                                                      Integer limit, Integer offset) throws ApiException
 ```
 
 #### updateWhitelistedContract
@@ -1006,15 +1054,15 @@ Attribute getAttribute(String contractId, String attributeId) throws ApiExceptio
 
 ### Key Models
 
-- `SignedWhitelistedContractAddressEnvelope` - id, blockchain, network, status, signedContractAddress, metadata, approvers, trails
-- `WhitelistedContractAddressResult` - contracts list with totalItems and pagination helpers
 - `Attribute` - key, value, contentType, type, subType
 
 ---
 
 ## WhitelistedAssetService
 
-**Purpose:** Manages whitelisted assets/contracts with cryptographic verification.
+**Purpose:** Manages whitelisted assets/contracts with cryptographic verification. **This is
+the only verified reader of `/whitelists/contracts`** — a whitelisted asset and a whitelisted
+contract are one server entity, and `ContractWhitelistingService` is write-only.
 
 **Access:** `client.getWhitelistedAssetService()`
 
@@ -1025,20 +1073,50 @@ Attribute getAttribute(String contractId, String attributeId) throws ApiExceptio
 Gets a whitelisted asset by ID with verification.
 
 ```java
-WhitelistedAsset getWhitelistedAsset(String id) throws ApiException
+WhitelistedAsset getWhitelistedAsset(long id) throws ApiException, WhitelistException
 ```
 
 #### getWhitelistedAssets
 
-Lists whitelisted assets with filtering.
+Lists whitelisted assets with filtering. The eight-argument overload returns a
+`WhitelistedAssetResult` carrying the page total; the `List`-returning overloads are kept so
+existing callers keep compiling.
 
 ```java
-WhitelistedAssetResult getWhitelistedAssets(String blockchain, String network, int limit, int offset) throws ApiException
+WhitelistedAssetResult getWhitelistedAssets(int limit, int offset,
+                                            String blockchain, String network,
+                                            String query, Boolean includeForApproval,
+                                            List<String> kindTypes, List<String> ids)
+        throws ApiException, WhitelistException
+```
+
+#### getWhitelistedAssetsForApproval
+
+Lists whitelisted assets awaiting approval, verified as in `getWhitelistedAssets`. Without
+this the only reader of the for-approval endpoint was the unverified contract service, so the
+rows an approver inspects were never checked against governance.
+
+```java
+WhitelistedAssetResult getWhitelistedAssetsForApproval(int limit, int offset, List<String> ids)
+        throws ApiException, WhitelistException
+```
+
+#### approveWhitelistedAssets
+
+Signs and submits an approval, **all-or-nothing**. Each asset is re-read and verified, and the
+hashes those rows carry are what gets signed; a row that is missing or fails verification
+aborts the whole call and nothing is signed. The API takes one signature covering the whole
+batch, so a partial approval would mean the caller believes they approved more than they did.
+
+```java
+void approveWhitelistedAssets(List<Long> ids, PrivateKey privateKey, String comment)
+        throws ApiException, WhitelistException
 ```
 
 ### Key Models
 
 - `WhitelistedAsset` - id, blockchain, network, status, metadata, signedContractAddress
+- `WhitelistedAssetResult` - assets list with totalItems and an overflow-safe `hasMore(currentOffset, pageSize)`
 
 ---
 
@@ -1050,12 +1128,12 @@ WhitelistedAssetResult getWhitelistedAssets(String blockchain, String network, i
 
 ### Methods
 
-#### getAudits
+#### getAuditTrails
 
 Lists audit events with filtering.
 
 ```java
-AuditResult getAudits(String entity, String action, OffsetDateTime from, OffsetDateTime to, ApiRequestCursor cursor) throws ApiException
+AuditResult getAuditTrails(String entity, String action, OffsetDateTime from, OffsetDateTime to, ApiRequestCursor cursor) throws ApiException
 ```
 
 ### Key Models
@@ -1094,20 +1172,20 @@ List<Fee> getFees(String currency) throws ApiException
 
 ### Methods
 
-#### getAirGapRequest
+#### getOutgoingAirGap
 
 Gets an air-gap request for offline signing.
 
 ```java
-AirGapRequest getAirGapRequest(long requestId) throws ApiException
+AirGapRequest getOutgoingAirGap(long requestId) throws ApiException
 ```
 
-#### submitAirGapSignature
+#### submitIncomingAirGap
 
 Submits a signature for an air-gap request.
 
 ```java
-void submitAirGapSignature(long requestId, String signature) throws ApiException
+void submitIncomingAirGap(long requestId, String signature) throws ApiException
 ```
 
 ---
@@ -1120,28 +1198,12 @@ void submitAirGapSignature(long requestId, String signature) throws ApiException
 
 ### Methods
 
-#### createReservation
-
-Creates a balance reservation.
-
-```java
-Reservation createReservation(long addressId, String amount, String comment) throws ApiException
-```
-
 #### getReservations
 
 Lists reservations.
 
 ```java
 ReservationResult getReservations(long addressId, ApiRequestCursor cursor) throws ApiException
-```
-
-#### cancelReservation
-
-Cancels a reservation.
-
-```java
-void cancelReservation(long reservationId) throws ApiException
 ```
 
 ### Key Models
@@ -1158,12 +1220,12 @@ void cancelReservation(long reservationId) throws ApiException
 
 ### Methods
 
-#### getMultiFactorSignatures
+#### getMultiFactorSignatureInfo
 
 Lists pending multi-factor signature requests.
 
 ```java
-List<MultiFactorSignature> getMultiFactorSignatures(ApiRequestCursor cursor) throws ApiException
+List<MultiFactorSignature> getMultiFactorSignatureInfo(ApiRequestCursor cursor) throws ApiException
 ```
 
 #### approveMultiFactorSignature
@@ -1192,14 +1254,6 @@ Lists user groups.
 List<Group> getGroups(int limit, int offset) throws ApiException
 ```
 
-#### getGroup
-
-Gets a group by ID.
-
-```java
-Group getGroup(String groupId) throws ApiException
-```
-
 ### Key Models
 
 - `Group` - id, name, members, threshold
@@ -1220,14 +1274,6 @@ Lists visibility groups.
 
 ```java
 List<VisibilityGroup> getVisibilityGroups(int limit, int offset) throws ApiException
-```
-
-#### getVisibilityGroup
-
-Gets a visibility group by ID.
-
-```java
-VisibilityGroup getVisibilityGroup(String id) throws ApiException
 ```
 
 ### Key Models
@@ -1316,15 +1362,12 @@ Tag createTag(String name, String color) throws ApiException
 
 **Access:** `client.getAssetService()`
 
+`getAssetAddresses` verifies every address's HSM signature — the same check `AddressService`
+runs — and **fails fast** on the first that does not verify. It returns the same entity, so
+returning it unverified made `AddressService`'s mandatory verification avoidable. The service
+therefore takes the `RulesContainerCache` as a mandatory constructor argument.
+
 ### Methods
-
-#### getAssets
-
-Lists assets.
-
-```java
-List<Asset> getAssets(String blockchain, String network, int limit, int offset) throws ApiException
-```
 
 ### Key Models
 
@@ -1380,12 +1423,12 @@ List<Blockchain> getBlockchains() throws ApiException
 
 ### Methods
 
-#### getExchanges
+#### getExchange
 
 Lists configured exchanges.
 
 ```java
-List<Exchange> getExchanges() throws ApiException
+List<Exchange> getExchange() throws ApiException
 ```
 
 ### Key Models
@@ -1402,12 +1445,12 @@ List<Exchange> getExchanges() throws ApiException
 
 ### Methods
 
-#### getFiatCurrencies
+#### getFiatProviderAccounts
 
 Lists supported fiat currencies.
 
 ```java
-List<FiatCurrency> getFiatCurrencies() throws ApiException
+List<FiatCurrency> getFiatProviderAccounts() throws ApiException
 ```
 
 ---
@@ -1438,12 +1481,12 @@ List<FeePayer> getFeePayers(String blockchain, String network) throws ApiExcepti
 
 ### Methods
 
-#### check
+#### getAllHealthChecks
 
 Checks API health.
 
 ```java
-HealthStatus check() throws ApiException
+HealthStatus getAllHealthChecks() throws ApiException
 ```
 
 ### Key Models
@@ -1504,12 +1547,12 @@ PortfolioStatistics getPortfolioStatistics() throws ApiException
 
 ### Methods
 
-#### getTokenMetadata
+#### getERCTokenMetadata
 
 Gets metadata for a token.
 
 ```java
-TokenMetadata getTokenMetadata(String blockchain, String network, String contractAddress) throws ApiException
+TokenMetadata getERCTokenMetadata(String blockchain, String network, String contractAddress) throws ApiException
 ```
 
 ### Key Models
@@ -1525,14 +1568,6 @@ TokenMetadata getTokenMetadata(String blockchain, String network, String contrac
 **Access:** `client.getUserDeviceService()`
 
 ### Methods
-
-#### getUserDevices
-
-Lists devices for a user.
-
-```java
-List<UserDevice> getUserDevices(String userId) throws ApiException
-```
 
 ### Key Models
 
@@ -1577,20 +1612,20 @@ Participant me = client.taurusNetwork().participants().getMyParticipant();
 System.out.println("My participant ID: " + me.getId());
 ```
 
-#### getParticipant
+#### get
 
 Retrieves a participant by ID.
 
 ```java
-Participant getParticipant(String participantId, Boolean includeTotalPledgesValuation) throws ApiException
+Participant get(String participantId, Boolean includeTotalPledgesValuation) throws ApiException
 ```
 
-#### getParticipants
+#### list
 
 Retrieves multiple participants by IDs.
 
 ```java
-List<Participant> getParticipants(List<String> participantIds, Boolean includeTotalPledgesValuation) throws ApiException
+List<Participant> list(List<String> participantIds, Boolean includeTotalPledgesValuation) throws ApiException
 ```
 
 ### Key Models
@@ -1607,20 +1642,20 @@ List<Participant> getParticipants(List<String> participantIds, Boolean includeTo
 
 ### Methods
 
-#### getPledge
+#### get
 
 Retrieves a pledge by ID.
 
 ```java
-Pledge getPledge(String pledgeId) throws ApiException
+Pledge get(String pledgeId) throws ApiException
 ```
 
-#### getPledges
+#### list
 
 Retrieves pledges with optional filtering.
 
 ```java
-PledgeResult getPledges(String ownerParticipantId, String targetParticipantId,
+PledgeResult list(String ownerParticipantId, String targetParticipantId,
                         List<String> sharedAddressIds, String currencyId,
                         String sortOrder, ApiRequestCursor cursor) throws ApiException
 ```
@@ -1635,21 +1670,13 @@ PledgeResult getPledges(String ownerParticipantId, String targetParticipantId,
 | sortOrder | String | Sort order: "ASC" or "DESC" (optional) |
 | cursor | ApiRequestCursor | Pagination cursor (optional) |
 
-#### getPledgeWithdrawals
+#### listWithdrawals
 
 Retrieves pledge withdrawals for a specific pledge.
 
 ```java
-PledgeWithdrawalResult getPledgeWithdrawals(String pledgeId, String withdrawalStatus,
+PledgeWithdrawalResult listWithdrawals(String pledgeId, String withdrawalStatus,
                                              String sortOrder, ApiRequestCursor cursor) throws ApiException
-```
-
-#### approvePledgeActions
-
-Approves pledge actions with ECDSA signature.
-
-```java
-int approvePledgeActions(List<PledgeAction> actions, PrivateKey privateKey) throws ApiException
 ```
 
 ### Key Models
@@ -1801,57 +1828,15 @@ for (Settlement settlement : result.getSettlements()) {
 
 ### Methods
 
-#### getSharedAddresses
+#### listSharedAddresses
 
 Retrieves shared addresses with optional filtering.
 
 ```java
-SharedAddressResult getSharedAddresses(String participantId, String ownerParticipantId,
+SharedAddressResult listSharedAddresses(String participantId, String ownerParticipantId,
                                         String targetParticipantId, String blockchain,
                                         String network, List<String> ids,
                                         String sortOrder, ApiRequestCursor cursor) throws ApiException
-```
-
-#### createSharedAddress
-
-Creates a shared address.
-
-```java
-SharedAddress createSharedAddress(String internalAddressId, String targetParticipantId,
-                                   List<String> permissions) throws ApiException
-```
-
-#### revokeSharedAddress
-
-Revokes a shared address.
-
-```java
-void revokeSharedAddress(String sharedAddressId) throws ApiException
-```
-
-#### getSharedAssets
-
-Retrieves shared assets with optional filtering.
-
-```java
-SharedAssetResult getSharedAssets(String participantId, ApiRequestCursor cursor) throws ApiException
-```
-
-#### createSharedAsset
-
-Creates a shared asset.
-
-```java
-SharedAsset createSharedAsset(String assetId, String targetParticipantId,
-                               List<String> permissions) throws ApiException
-```
-
-#### revokeSharedAsset
-
-Revokes a shared asset.
-
-```java
-void revokeSharedAsset(String sharedAssetId) throws ApiException
 ```
 
 ### Key Models
@@ -1934,3 +1919,334 @@ do {
 - [Authentication](AUTHENTICATION.md) - Security and signing
 - [Usage Examples](USAGE_EXAMPLES.md) - Code examples
 - [Whitelisted Address Verification](WHITELISTED_ADDRESS_VERIFICATION.md) - Verification details
+
+<!-- BEGIN GENERATED METHOD INDEX -->
+
+## Complete Method Index
+
+Generated from the java source by `scripts/api-surface/docs.py`; regenerate with
+`./build.sh docs`. Every method below exists in the SDK, and `./build.sh docs --check`
+fails if this list drifts or if the prose above documents a method that does not.
+
+43 services, 190 public methods.
+
+### ActionService
+
+- `getAction(String): ActionEnvelope`
+- `getActions(): List<ActionEnvelope>`
+- `getActions(String, String, List<String>): List<ActionEnvelope>`
+
+### AddressService
+
+- `createAddress(CreateAddressRequest): Address`
+- `createAddress(long, String, String, String): Address`
+- `createAddressAttribute(long, String, String): void`
+- `deleteAddressAttribute(long, long): void`
+- `getAddress(long): Address`
+- `getAddressProofOfReserve(long, String): TgvalidatordProofOfReserve`
+- `getAddresses(long, int, int): List<Address>`
+
+### AirGapService
+
+- `getOutgoingAirGap(List<String>): File`
+- `submitIncomingAirGap(String): void`
+
+### AssetService
+
+- `getAssetAddresses(String): List<Address>`
+- `getAssetAddresses(String, String, String, String): List<Address>`
+- `getAssetWallets(String): List<Wallet>`
+- `getAssetWallets(String, String): List<Wallet>`
+
+### AuditService
+
+- `exportAuditTrails(String, List<String>, List<String>, OffsetDateTime, OffsetDateTime, String): String`
+- `getAuditTrails(String, List<String>, List<String>, OffsetDateTime, OffsetDateTime, ApiRequestCursor): AuditTrailResult`
+
+### BalanceService
+
+- `getBalances(ApiRequestCursor): BalanceResult`
+- `getBalances(String, ApiRequestCursor): BalanceResult`
+- `getNFTCollectionBalances(String, String, ApiRequestCursor): NFTCollectionBalanceResult`
+
+### BlockchainService
+
+- `getBlockchains(): List<BlockchainInfo>`
+- `getBlockchains(String, String, Boolean): List<BlockchainInfo>`
+
+### BusinessRuleService
+
+- `getBusinessRules(ApiRequestCursor): BusinessRuleResult`
+- `getBusinessRulesByCurrency(String, ApiRequestCursor): BusinessRuleResult`
+- `getBusinessRulesByWallet(long, ApiRequestCursor): BusinessRuleResult`
+- `updateTransactionsEnabled(boolean): void`
+
+### ChangeService
+
+- `approveChange(String): void`
+- `approveChanges(List<String>): void`
+- `createChange(CreateChangeRequest): String`
+- `getChange(String): Change`
+- `getChanges(String, String, ApiRequestCursor): ChangeResult`
+- `getChangesForApproval(ApiRequestCursor): ChangeResult`
+- `rejectChange(String): void`
+- `rejectChanges(List<String>): void`
+
+### ConfigService
+
+- `getTenantConfig(): TenantConfig`
+
+### ContractWhitelistingService
+
+- `approveWhitelistedContracts(List<String>, String, String): void`
+- `createAttribute(String, String, String, String, String, String): List<Attribute>`
+- `createWhitelistedContract(String, String, String, String, String, int, String, String): String`
+- `deleteWhitelistedContract(String, String): String`
+- `getAttribute(String, String): Attribute`
+- `updateWhitelistedContract(String, String, String, int): void`
+
+### CurrencyService
+
+- `getBaseCurrency(): Currency`
+- `getCurrencies(): List<Currency>`
+- `getCurrencies(boolean, boolean): List<Currency>`
+- `getCurrency(String): Currency`
+- `getCurrencyByBlockchain(String, String): Currency`
+
+### ExchangeService
+
+- `exportExchanges(String): String`
+- `getExchange(String): Exchange`
+- `getExchangeCounterparties(): List<ExchangeCounterparty>`
+- `getExchangeWithdrawalFee(String, String, String): ExchangeWithdrawalFee`
+
+### FeePayerService
+
+- `getFeePayer(String): FeePayer`
+- `getFeePayers(): List<FeePayer>`
+- `getFeePayers(Integer, Integer, List<String>, String, String): List<FeePayer>`
+
+### FeeService
+
+- `getFees(): List<Fee>`
+
+### FiatService
+
+- `getFiatProviderAccount(String): FiatProviderAccount`
+- `getFiatProviderAccounts(String, String, String, String, ApiRequestCursor): FiatProviderAccountResult`
+- `getFiatProviderCounterpartyAccount(String): FiatProviderCounterpartyAccount`
+- `getFiatProviderCounterpartyAccounts(String, String, String, String, ApiRequestCursor): FiatProviderCounterpartyAccountResult`
+- `getFiatProviderOperation(String): FiatProviderOperation`
+- `getFiatProviderOperations(String, String, String, ApiRequestCursor): FiatProviderOperationResult`
+- `getFiatProviders(): List<FiatProvider>`
+
+### GovernanceRuleService
+
+- `approveRulesProposal(PrivateKey, String, String): void`
+- `decodeProposalForReview(GovernanceRules): DecodedRulesContainer`
+- `getDecodedRulesContainer(GovernanceRules): DecodedRulesContainer`
+- `getMinValidSignatures(): int`
+- `getPublicKeys(): List<SuperAdminPublicKey>`
+- `getRules(): GovernanceRules`
+- `getRulesById(String): GovernanceRules`
+- `getRulesHistory(int): GovernanceRulesHistoryResult`
+- `getRulesHistory(int, byte[]): GovernanceRulesHistoryResult`
+- `getRulesProposal(): GovernanceRules`
+- `getSuperAdminPublicKeys(): List<PublicKey>`
+- `proposalContainerHash(GovernanceRules): String`
+- `rejectRulesProposal(String): void`
+- `updateRulesProposal(DecodedRulesContainer): void`
+- `verifyGovernanceRules(GovernanceRules): GovernanceRules`
+- `verifyGovernanceRules(GovernanceRules, int): GovernanceRules`
+
+### GroupService
+
+- `getGroups(): List<Group>`
+- `getGroups(String, String, List<String>, List<String>, String): List<Group>`
+
+### HealthService
+
+- `getAllHealthChecks(): HealthCheck`
+- `getAllHealthChecks(String, Boolean): HealthCheck`
+
+### JobService
+
+- `getJob(String): Job`
+- `getJobStatus(String, String): JobStatus`
+- `getJobs(): List<Job>`
+
+### MultiFactorSignatureService
+
+- `approveMultiFactorSignature(String, String, String): MultiFactorSignatureApprovalResult`
+- `createMultiFactorSignatures(List<String>, TgvalidatordMultiFactorSignaturesEntityType): MultiFactorSignatureResult`
+- `getMultiFactorSignatureInfo(String): MultiFactorSignatureInfo`
+- `rejectMultiFactorSignature(String, String): void`
+
+### PriceService
+
+- `convert(String, String, List<String>): List<ConversionResult>`
+- `getPriceHistory(String, String, int): List<PriceHistoryPoint>`
+- `getPrices(): List<Price>`
+
+### RequestService
+
+- `approveRequest(Request, PrivateKey): int`
+- `approveRequest(Request, PrivateKey, String): int`
+- `approveRequests(List<Request>, PrivateKey): int`
+- `approveRequests(List<Request>, PrivateKey, String): int`
+- `createCancelRequest(long, long): Request`
+- `createExternalTransferFromWalletRequest(long, long, BigInteger): Request`
+- `createExternalTransferRequest(long, long, BigInteger): Request`
+- `createIncomingRequest(long, long, BigInteger): Request`
+- `createInternalTransferFromWalletRequest(long, long, BigInteger): Request`
+- `createInternalTransferRequest(long, long, BigInteger): Request`
+- `getRequest(long): Request`
+- `getRequests(OffsetDateTime, OffsetDateTime, String, List<RequestStatus>, ApiRequestCursor): RequestResult`
+- `getRequestsForApproval(ApiRequestCursor): RequestResult`
+- `rejectRequest(long, String): void`
+- `rejectRequests(List<Long>, String): void`
+
+### ReservationService
+
+- `getReservation(String): Reservation`
+- `getReservationUtxo(String): ReservationUtxo`
+- `getReservations(): List<Reservation>`
+- `getReservations(String, String, String, List<String>, String): List<Reservation>`
+
+### ScoreService
+
+- `refreshAddressScore(long, String): List<Score>`
+- `refreshWhitelistedAddressScore(long, String): List<Score>`
+
+### StakingService
+
+- `getADAStakePoolInfo(String, String): ADAStakePoolInfo`
+- `getETHValidatorsInfo(String, List<String>): List<ETHValidatorInfo>`
+- `getFTMValidatorInfo(String, String): FTMValidatorInfo`
+- `getICPNeuronInfo(String, String): ICPNeuronInfo`
+- `getNEARValidatorInfo(String, String): NEARValidatorInfo`
+- `getStakeAccounts(String, String, String, ApiRequestCursor): StakeAccountResult`
+- `getXTZStakingRewards(String, String, OffsetDateTime, OffsetDateTime): XTZStakingRewards`
+
+### StatisticsService
+
+- `getPortfolioStatistics(): PortfolioStatistics`
+
+### TagService
+
+- `createTag(String, String): Tag`
+- `deleteTag(String): void`
+- `getTags(): List<Tag>`
+- `getTags(List<String>, String): List<Tag>`
+
+### TaurusNetworkLendingService
+
+- `getLendingAgreement(String): LendingAgreement`
+- `getLendingAgreements(String, ApiRequestCursor): LendingAgreementResult`
+- `getLendingOffer(String): LendingOffer`
+- `getLendingOffers(List<String>, String, String, String, ApiRequestCursor): LendingOfferResult`
+
+### TaurusNetworkParticipantService
+
+- `get(String, Boolean): Participant`
+- `getMyParticipant(): Participant`
+- `list(List<String>, Boolean): List<Participant>`
+
+### TaurusNetworkPledgeService
+
+- `get(String): Pledge`
+- `list(String, String, List<String>, String, String, ApiRequestCursor): PledgeResult`
+- `listWithdrawals(String, String, String, ApiRequestCursor): PledgeWithdrawalResult`
+
+### TaurusNetworkSettlementService
+
+- `getSettlement(String): Settlement`
+- `getSettlements(String, List<String>, String, ApiRequestCursor): SettlementResult`
+
+### TaurusNetworkSharingService
+
+- `listSharedAddresses(String, String, String, String, String, List<String>, String, ApiRequestCursor): SharedAddressResult`
+
+### TokenMetadataService
+
+- `getERCTokenMetadata(String, String, String, Boolean, String): TokenMetadata`
+- `getEVMERCTokenMetadata(String, String, String, Boolean, String): TokenMetadata`
+- `getFATokenMetadata(String, String, String, Boolean): TokenMetadata`
+
+### TransactionService
+
+- `exportTransactions(OffsetDateTime, OffsetDateTime, String, String, String, String, int, int): String`
+- `exportTransactions(OffsetDateTime, OffsetDateTime, String, String, int, int): String`
+- `getTransactionByHash(String): Transaction`
+- `getTransactionById(long): Transaction`
+- `getTransactions(OffsetDateTime, OffsetDateTime, String, String, String, String, int, int): List<Transaction>`
+- `getTransactions(OffsetDateTime, OffsetDateTime, String, String, int, int): List<Transaction>`
+- `getTransactionsByAddress(String, int, int): List<Transaction>`
+
+### UserDeviceService
+
+- `approvePairing(String, String): void`
+- `createPairing(): UserDevicePairing`
+- `getPairingStatus(String, String): UserDevicePairingInfo`
+- `startPairing(String, String, String): void`
+
+### UserService
+
+- `createUserAttribute(long, String, String): void`
+- `getMe(): User`
+- `getUsers(int, int): List<User>`
+- `getUsersByEmail(List<String>): List<User>`
+
+### VisibilityGroupService
+
+- `getUsersByVisibilityGroup(String): List<User>`
+- `getVisibilityGroups(): List<VisibilityGroup>`
+
+### WalletService
+
+- `createWallet(CreateWalletRequest): Wallet`
+- `createWallet(String, String, String, boolean): Wallet`
+- `createWallet(String, String, String, boolean, String): Wallet`
+- `createWallet(String, String, String, boolean, String, String): Wallet`
+- `createWalletAttribute(long, String, String): void`
+- `getWallet(long): Wallet`
+- `getWalletBalanceHistory(long, int): List<BalanceHistoryPoint>`
+- `getWalletTokens(long, int): List<AssetBalance>`
+- `getWallets(int, int): List<Wallet>`
+- `getWalletsByName(String, int, int): List<Wallet>`
+
+### WebhookCallsService
+
+- `getWebhookCalls(String, String, String, String, ApiRequestCursor): WebhookCallResult`
+
+### WebhookService
+
+- `createWebhook(String, String, String): Webhook`
+- `deleteWebhook(String): void`
+- `getWebhooks(String, String, ApiRequestCursor): WebhookResult`
+- `updateWebhookStatus(String, WebhookStatus): Webhook`
+
+### WhitelistedAddressService
+
+- `approveWhitelistedAddresses(List<Long>, PrivateKey, String): void`
+- `getWhitelistedAddress(long): WhitelistedAddress`
+- `getWhitelistedAddressEnvelope(long): SignedWhitelistedAddressEnvelope`
+- `getWhitelistedAddresses(int, int): List<SignedWhitelistedAddressEnvelope>`
+- `getWhitelistedAddresses(int, int, String): List<SignedWhitelistedAddressEnvelope>`
+- `getWhitelistedAddresses(int, int, String, String): List<SignedWhitelistedAddressEnvelope>`
+- `getWhitelistedAddresses(int, int, String, String, boolean): List<SignedWhitelistedAddressEnvelope>`
+- `getWhitelistedAddressesForApproval(int, int, List<String>, Boolean): WhitelistedAddressListResult`
+- `getWhitelistedAddressesWithExclusions(int, int, String, String, boolean): WhitelistedAddressListResult`
+
+### WhitelistedAssetService
+
+- `approveWhitelistedAssets(List<Long>, PrivateKey, String): void`
+- `getWhitelistedAsset(long): WhitelistedAsset`
+- `getWhitelistedAssetEnvelope(long): SignedWhitelistedAssetEnvelope`
+- `getWhitelistedAssets(int, int): List<SignedWhitelistedAssetEnvelope>`
+- `getWhitelistedAssets(int, int, String): List<SignedWhitelistedAssetEnvelope>`
+- `getWhitelistedAssets(int, int, String, String): List<SignedWhitelistedAssetEnvelope>`
+- `getWhitelistedAssets(int, int, String, String, String, Boolean, List<String>, List<String>): WhitelistedAssetResult`
+- `getWhitelistedAssetsForApproval(int, int, List<String>): WhitelistedAssetResult`
+
+<!-- END GENERATED METHOD INDEX -->

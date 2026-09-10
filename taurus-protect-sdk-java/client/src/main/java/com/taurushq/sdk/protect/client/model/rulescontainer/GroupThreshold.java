@@ -11,7 +11,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  * @see RuleGroup
  * @see SequentialThresholds
  */
-public class GroupThreshold {
+public class GroupThreshold extends RulesNode {
 
     /**
      * The ID of the group this threshold applies to.

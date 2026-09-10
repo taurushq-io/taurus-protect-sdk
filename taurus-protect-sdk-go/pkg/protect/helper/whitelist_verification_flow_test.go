@@ -465,6 +465,11 @@ func TestStep5_VerifyWhitelistSignaturesSuccess(t *testing.T) {
 		ID:         "36663",
 		Blockchain: "ALGO",
 		Network:    "mainnet",
+		// Step 5 selects the governance rules from the SIGNED payload, not from
+		// the fields above, so the fixture must carry a payload naming the pair.
+		Metadata: &model.WhitelistedAssetMetadata{
+			PayloadAsString: `{"currency":"ALGO","network":"mainnet"}`,
+		},
 		SignedAddress: &model.SignedWhitelistedAddress{
 			Signatures: []model.WhitelistSignature{
 				{
@@ -519,6 +524,11 @@ func TestStep5_VerifyWhitelistSignaturesFailure(t *testing.T) {
 		ID:         "36663",
 		Blockchain: "ALGO",
 		Network:    "mainnet",
+		// Step 5 selects the governance rules from the SIGNED payload, not from
+		// the fields above, so the fixture must carry a payload naming the pair.
+		Metadata: &model.WhitelistedAssetMetadata{
+			PayloadAsString: `{"currency":"ALGO","network":"mainnet"}`,
+		},
 		SignedAddress: &model.SignedWhitelistedAddress{
 			Signatures: []model.WhitelistSignature{
 				{
@@ -592,6 +602,11 @@ func TestStep5_VerifyWhitelistSignaturesFailure_InsufficientSignatures(t *testin
 		ID:         "36663",
 		Blockchain: "ALGO",
 		Network:    "mainnet",
+		// Step 5 selects the governance rules from the SIGNED payload, not from
+		// the fields above, so the fixture must carry a payload naming the pair.
+		Metadata: &model.WhitelistedAssetMetadata{
+			PayloadAsString: `{"currency":"ALGO","network":"mainnet"}`,
+		},
 		SignedAddress: &model.SignedWhitelistedAddress{
 			Signatures: []model.WhitelistSignature{
 				{
@@ -650,6 +665,11 @@ func TestStep5_VerifyWhitelistSignaturesFailure_NoMatchingRules(t *testing.T) {
 		ID:         "36663",
 		Blockchain: "ALGO",
 		Network:    "mainnet",
+		// Step 5 selects the governance rules from the SIGNED payload, not from
+		// the fields above, so the fixture must carry a payload naming the pair.
+		Metadata: &model.WhitelistedAssetMetadata{
+			PayloadAsString: `{"currency":"ALGO","network":"mainnet"}`,
+		},
 		SignedAddress: &model.SignedWhitelistedAddress{
 			Signatures: []model.WhitelistSignature{
 				{Hashes: []string{"hash"}},
@@ -687,38 +707,6 @@ func TestStep5_VerifyWhitelistSignaturesFailure_NoMatchingRules(t *testing.T) {
 // =============================================================================
 // Helper Functions
 // =============================================================================
-
-// fixtureJSON represents the structure of the JSON fixture file.
-type fixtureJSON struct {
-	RulesSignatures         string          `json:"rulesSignatures"`
-	SignedAddressSignatures json.RawMessage `json:"signedAddressSignatures"`
-	RulesContainerJSON      json.RawMessage `json:"rulesContainerJson"`
-}
-
-// parseSuperAdminKeysFromFixture parses SuperAdmin public keys from the fixture.
-func parseSuperAdminKeysFromFixture() ([]*ecdsa.PublicKey, error) {
-	// These PEM keys are from the fixture's rulesContainerJson.users
-	superAdminKeysPEM := []string{
-		`-----BEGIN PUBLIC KEY-----
-MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEyWjh6d+PgOK3LqockShMcDMtAHIm
-itWjoVSX/FzBAWvemeaeNnYDKzEXiDDgiq2tILFL1Chdkqofhp9EdBZOlQ==
------END PUBLIC KEY-----`,
-		`-----BEGIN PUBLIC KEY-----
-MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAELJhEUNLLHgI8LiWJaeJGpaBfdvgo
-YyKsjSFyTMxECR/E+1qpzDlNNug7hDPgBPpZ3Z+U8QWjaKB4Mrbj2/kImQ==
------END PUBLIC KEY-----`,
-	}
-
-	var keys []*ecdsa.PublicKey
-	for _, pem := range superAdminKeysPEM {
-		key, err := crypto.DecodePublicKeyPEM(pem)
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode PEM: %w", err)
-		}
-		keys = append(keys, key)
-	}
-	return keys, nil
-}
 
 // loadRulesContainerFromFixture loads the rules container and signatures from the fixture.
 func loadRulesContainerFromFixture(t *testing.T) (rulesContainer, rulesSignatures string) {

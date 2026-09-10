@@ -1,0 +1,26 @@
+{
+  "sdk": "java",
+  "source": "fixture",
+  "services": [
+    {
+      "name": "WalletService",
+      "methods": [
+        {
+          "name": "getWallet",
+          "signature": "getWallet()",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "AddressService",
+      "methods": [
+        {
+          "name": "getAddress",
+          "signature": "getAddress()",
+          "doc": ""
+        }
+      ]
+    }
+  ]
+}

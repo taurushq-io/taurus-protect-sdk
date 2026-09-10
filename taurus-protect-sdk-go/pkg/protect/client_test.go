@@ -34,7 +34,7 @@ func testSuperAdminKeyOpts() []Option {
 func newTestClient(t *testing.T) *Client {
 	t.Helper()
 	client, err := NewClient("https://api.example.com",
-		WithCredentials("key", "deadbeef"),
+		WithCredentials(APIKeyCredentials("key", "deadbeef")),
 		WithSuperAdminKeys([]*ecdsa.PublicKey{&testKey.PublicKey}),
 		WithMinValidSignatures(1),
 	)
@@ -57,7 +57,7 @@ func TestNewClient(t *testing.T) {
 			name: "valid basic config",
 			host: "https://api.example.com",
 			opts: append([]Option{
-				WithCredentials("test-key", "deadbeef"),
+				WithCredentials(APIKeyCredentials("test-key", "deadbeef")),
 			}, saOpts...),
 			wantErr: false,
 		},
@@ -65,7 +65,7 @@ func TestNewClient(t *testing.T) {
 			name: "with trailing slash",
 			host: "https://api.example.com/",
 			opts: append([]Option{
-				WithCredentials("test-key", "deadbeef"),
+				WithCredentials(APIKeyCredentials("test-key", "deadbeef")),
 			}, saOpts...),
 			wantErr: false,
 		},
@@ -78,14 +78,14 @@ func TestNewClient(t *testing.T) {
 		{
 			name:    "empty host",
 			host:    "",
-			opts:    []Option{WithCredentials("test-key", "deadbeef")},
+			opts:    []Option{WithCredentials(APIKeyCredentials("test-key", "deadbeef"))},
 			wantErr: true,
 		},
 		{
 			name: "invalid api secret",
 			host: "https://api.example.com",
 			opts: []Option{
-				WithCredentials("test-key", "not-hex"),
+				WithCredentials(APIKeyCredentials("test-key", "not-hex")),
 			},
 			wantErr: true,
 		},
@@ -93,7 +93,7 @@ func TestNewClient(t *testing.T) {
 			name: "missing super admin keys",
 			host: "https://api.example.com",
 			opts: []Option{
-				WithCredentials("test-key", "deadbeef"),
+				WithCredentials(APIKeyCredentials("test-key", "deadbeef")),
 			},
 			wantErr: true,
 		},
@@ -101,7 +101,7 @@ func TestNewClient(t *testing.T) {
 			name: "with custom timeout",
 			host: "https://api.example.com",
 			opts: append([]Option{
-				WithCredentials("test-key", "deadbeef"),
+				WithCredentials(APIKeyCredentials("test-key", "deadbeef")),
 				WithHTTPTimeout(60 * time.Second),
 			}, saOpts...),
 			wantErr: false,
@@ -110,7 +110,7 @@ func TestNewClient(t *testing.T) {
 			name: "with custom http client",
 			host: "https://api.example.com",
 			opts: append([]Option{
-				WithCredentials("test-key", "deadbeef"),
+				WithCredentials(APIKeyCredentials("test-key", "deadbeef")),
 				WithHTTPClient(&http.Client{Timeout: 10 * time.Second}),
 			}, saOpts...),
 			wantErr: false,
@@ -119,7 +119,7 @@ func TestNewClient(t *testing.T) {
 			name: "with rules cache ttl",
 			host: "https://api.example.com",
 			opts: append([]Option{
-				WithCredentials("test-key", "deadbeef"),
+				WithCredentials(APIKeyCredentials("test-key", "deadbeef")),
 				WithRulesCacheTTL(10 * time.Minute),
 			}, saOpts...),
 			wantErr: false,
@@ -128,7 +128,7 @@ func TestNewClient(t *testing.T) {
 			name: "with min valid signatures but no keys",
 			host: "https://api.example.com",
 			opts: []Option{
-				WithCredentials("test-key", "deadbeef"),
+				WithCredentials(APIKeyCredentials("test-key", "deadbeef")),
 				WithMinValidSignatures(2),
 			},
 			wantErr: true,
@@ -143,7 +143,7 @@ func TestNewClient(t *testing.T) {
 				return
 			}
 			if client != nil {
-				defer client.Close()
+				defer func() { _ = client.Close() }()
 
 				if !tt.wantErr {
 					if client.HTTPClient() == nil {
@@ -156,12 +156,12 @@ func TestNewClient(t *testing.T) {
 }
 
 func TestClient_BaseURL(t *testing.T) {
-	opts := append([]Option{WithCredentials("key", "deadbeef")}, testSuperAdminKeyOpts()...)
+	opts := append([]Option{WithCredentials(APIKeyCredentials("key", "deadbeef"))}, testSuperAdminKeyOpts()...)
 	client, err := NewClient("https://api.example.com/", opts...)
 	if err != nil {
 		t.Fatalf("Failed to create client: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Trailing slash should be removed
 	if got := client.BaseURL(); got != "https://api.example.com" {
@@ -184,26 +184,11 @@ func TestClient_Close(t *testing.T) {
 }
 
 func TestWithCredentials_Validation(t *testing.T) {
-	tests := []struct {
-		name      string
-		apiKey    string
-		apiSecret string
-		wantErr   bool
-	}{
-		{"valid", "key", "deadbeef", false},
-		{"empty key", "", "deadbeef", true},
-		{"empty secret", "key", "", true},
+	if err := WithCredentials(nil)(&clientConfig{}); err == nil {
+		t.Error("WithCredentials(nil) should error")
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			opt := WithCredentials(tt.apiKey, tt.apiSecret)
-			config := &clientConfig{}
-			err := opt(config)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("WithCredentials() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
+	if err := WithCredentials(APIKeyCredentials("key", "deadbeef"))(&clientConfig{}); err != nil {
+		t.Errorf("WithCredentials(valid) error = %v", err)
 	}
 }
 
@@ -280,7 +265,7 @@ func TestWithHTTPTimeout_Validation(t *testing.T) {
 // and return the same instance on subsequent calls (singleton pattern).
 func TestClient_ServiceGetters_ReturnsSameInstance(t *testing.T) {
 	client := newTestClient(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	t.Run("Wallets", func(t *testing.T) {
 		first := client.Wallets()
@@ -716,7 +701,7 @@ func TestClient_ServiceGetters_ReturnsSameInstance(t *testing.T) {
 // return non-nil and return the same instance on subsequent calls.
 func TestTaurusNetworkClient_SubServiceGetters(t *testing.T) {
 	client := newTestClient(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	tn := client.TaurusNetwork()
 	if tn == nil {
@@ -782,7 +767,7 @@ func TestTaurusNetworkClient_SubServiceGetters(t *testing.T) {
 // TestClient_ServiceGetters_ConcurrentAccess tests thread safety of lazy initialization.
 func TestClient_ServiceGetters_ConcurrentAccess(t *testing.T) {
 	client := newTestClient(t)
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	t.Run("Wallets_ConcurrentAccess", func(t *testing.T) {
 		const numGoroutines = 100
@@ -988,7 +973,7 @@ func TestClient_ConfigurationAccessors(t *testing.T) {
 
 	t.Run("DefaultConfiguration", func(t *testing.T) {
 		client := newTestClient(t)
-		defer client.Close()
+		defer func() { _ = client.Close() }()
 
 		// MinValidSignatures should be 1 (from test helper)
 		if client.MinValidSignatures() != 1 {
@@ -1013,7 +998,7 @@ func TestClient_ConfigurationAccessors(t *testing.T) {
 
 	t.Run("MissingSuperAdminKeys", func(t *testing.T) {
 		_, err := NewClient("https://api.example.com",
-			WithCredentials("key", "deadbeef"),
+			WithCredentials(APIKeyCredentials("key", "deadbeef")),
 		)
 		if err == nil {
 			t.Fatal("NewClient() should fail without SuperAdmin keys")
@@ -1022,14 +1007,14 @@ func TestClient_ConfigurationAccessors(t *testing.T) {
 
 	t.Run("CustomMinValidSignatures", func(t *testing.T) {
 		client, err := NewClient("https://api.example.com",
-			WithCredentials("key", "deadbeef"),
+			WithCredentials(APIKeyCredentials("key", "deadbeef")),
 			WithSuperAdminKeys([]*ecdsa.PublicKey{&testKey.PublicKey}),
 			WithMinValidSignatures(1),
 		)
 		if err != nil {
 			t.Fatalf("NewClient() error = %v", err)
 		}
-		defer client.Close()
+		defer func() { _ = client.Close() }()
 
 		if client.MinValidSignatures() != 1 {
 			t.Errorf("MinValidSignatures() = %d, want 1", client.MinValidSignatures())
@@ -1039,14 +1024,14 @@ func TestClient_ConfigurationAccessors(t *testing.T) {
 	t.Run("CustomHTTPClient", func(t *testing.T) {
 		customClient := &http.Client{Timeout: 60 * time.Second}
 		opts := append([]Option{
-			WithCredentials("key", "deadbeef"),
+			WithCredentials(APIKeyCredentials("key", "deadbeef")),
 			WithHTTPClient(customClient),
 		}, saOpts...)
 		client, err := NewClient("https://api.example.com", opts...)
 		if err != nil {
 			t.Fatalf("NewClient() error = %v", err)
 		}
-		defer client.Close()
+		defer func() { _ = client.Close() }()
 
 		// HTTPClient should be non-nil (note: it wraps the custom client)
 		if client.HTTPClient() == nil {
@@ -1056,14 +1041,14 @@ func TestClient_ConfigurationAccessors(t *testing.T) {
 
 	t.Run("CustomRulesCacheTTL", func(t *testing.T) {
 		opts := append([]Option{
-			WithCredentials("key", "deadbeef"),
+			WithCredentials(APIKeyCredentials("key", "deadbeef")),
 			WithRulesCacheTTL(10 * time.Minute),
 		}, saOpts...)
 		client, err := NewClient("https://api.example.com", opts...)
 		if err != nil {
 			t.Fatalf("NewClient() error = %v", err)
 		}
-		defer client.Close()
+		defer func() { _ = client.Close() }()
 
 		// RulesCache should be initialized even with custom TTL
 		if client.RulesCache() == nil {
@@ -1073,13 +1058,13 @@ func TestClient_ConfigurationAccessors(t *testing.T) {
 
 	t.Run("BaseURL", func(t *testing.T) {
 		opts := append([]Option{
-			WithCredentials("key", "deadbeef"),
+			WithCredentials(APIKeyCredentials("key", "deadbeef")),
 		}, saOpts...)
 		client, err := NewClient("https://api.example.com/", opts...)
 		if err != nil {
 			t.Fatalf("NewClient() error = %v", err)
 		}
-		defer client.Close()
+		defer func() { _ = client.Close() }()
 
 		// Trailing slash should be trimmed
 		expected := "https://api.example.com"

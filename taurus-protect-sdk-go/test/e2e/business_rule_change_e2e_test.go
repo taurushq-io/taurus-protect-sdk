@@ -26,11 +26,11 @@ func TestBusinessRuleChangeE2E(t *testing.T) {
 	testutil.SkipIfInsufficientIdentities(t, 3)
 
 	reader := testutil.GetTestClient(t, 1)
-	defer reader.Close()
+	defer func() { _ = reader.Close() }()
 	proposer := testutil.GetTestClient(t, 2)
-	defer proposer.Close()
+	defer func() { _ = proposer.Close() }()
 	approver := testutil.GetTestClient(t, 3)
-	defer approver.Close()
+	defer func() { _ = approver.Close() }()
 
 	ctx := context.Background()
 

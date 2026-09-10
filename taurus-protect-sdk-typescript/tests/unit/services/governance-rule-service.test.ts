@@ -7,7 +7,7 @@
 
 import * as crypto from "crypto";
 import { GovernanceRuleService } from "../../../src/services/governance-rule-service";
-import { IntegrityError } from "../../../src/errors";
+import { ConfigurationError, IntegrityError } from "../../../src/errors";
 import type { GovernanceRules, RuleUserSignature } from "../../../src/models/governance-rules";
 import type { GovernanceRulesApi } from "../../../src/internal/openapi/apis/GovernanceRulesApi";
 import { signData } from "../../../src/crypto";
@@ -101,7 +101,7 @@ describe("GovernanceRuleService", () => {
 
       expect(() => service.verifyGovernanceRules(rules)).toThrow(IntegrityError);
       expect(() => service.verifyGovernanceRules(rules)).toThrow(
-        "Insufficient valid signatures: found 0, required 1"
+        "insufficient distinct valid SuperAdmin signers: got 0, need 1"
       );
     });
 
@@ -160,7 +160,7 @@ describe("GovernanceRuleService", () => {
         rulesContainer: rulesContainerBase64,
         rulesSignatures: [
           { userId: "same-user", signature: signature1 },
-          { userId: "same-user", signature: signature2 }, // Duplicate user should be ignored
+          { userId: "same-user", signature: signature2 }, // Same signing key counts once
         ],
         locked: true,
         creationDate: new Date(),
@@ -168,40 +168,142 @@ describe("GovernanceRuleService", () => {
         trails: [],
       };
 
-      // Should fail because only 1 distinct user signature is counted
+      // Should fail because only 1 distinct signing key is counted
       expect(() => service.verifyGovernanceRules(rules)).toThrow(IntegrityError);
       expect(() => service.verifyGovernanceRules(rules)).toThrow(
-        "Insufficient valid signatures: found 1, required 2"
+        "insufficient distinct valid SuperAdmin signers: got 1, need 2"
       );
     });
 
-    it("should skip verification when minValidSignatures is 0", () => {
+    it("should not let one key satisfy the threshold under different user IDs", () => {
       const mockApi = createMockGovernanceRulesApi();
+      const keyPair = generateTestKeyPair();
 
       const service = new GovernanceRuleService(mockApi, {
-        superAdminKeys: [],
-        minValidSignatures: 0, // Verification disabled
+        superAdminKeys: [keyPair.publicKey],
+        minValidSignatures: 2,
       });
 
+      const rulesContainerBase64 = Buffer.from(
+        JSON.stringify({ users: [] })
+      ).toString("base64");
+      const rulesContainerBuffer = Buffer.from(rulesContainerBase64, "base64");
+
+      // ECDSA is randomized, so one key can emit as many distinct valid signatures as
+      // the threshold demands. userId is server-supplied, so it cannot gate the count.
       const rules: GovernanceRules = {
-        rulesContainer: Buffer.from("{}").toString("base64"),
-        rulesSignatures: [], // No signatures
+        rulesContainer: rulesContainerBase64,
+        rulesSignatures: [
+          {
+            userId: "attacker-label-1",
+            signature: signData(keyPair.privateKey, rulesContainerBuffer),
+          },
+          {
+            userId: "attacker-label-2",
+            signature: signData(keyPair.privateKey, rulesContainerBuffer),
+          },
+        ],
         locked: true,
         creationDate: new Date(),
         updateDate: new Date(),
         trails: [],
       };
 
-      // Should not throw when verification is disabled
+      expect(() => service.verifyGovernanceRules(rules)).toThrow(
+        "insufficient distinct valid SuperAdmin signers: got 1, need 2"
+      );
+    });
+
+    it("should count two distinct keys as two signers", () => {
+      const mockApi = createMockGovernanceRulesApi();
+      const keyPair1 = generateTestKeyPair();
+      const keyPair2 = generateTestKeyPair();
+
+      const service = new GovernanceRuleService(mockApi, {
+        superAdminKeys: [keyPair1.publicKey, keyPair2.publicKey],
+        minValidSignatures: 2,
+      });
+
+      const rulesContainerBase64 = Buffer.from(
+        JSON.stringify({ users: [] })
+      ).toString("base64");
+      const rulesContainerBuffer = Buffer.from(rulesContainerBase64, "base64");
+
+      const rules: GovernanceRules = {
+        rulesContainer: rulesContainerBase64,
+        rulesSignatures: [
+          {
+            userId: "user1",
+            signature: signData(keyPair1.privateKey, rulesContainerBuffer),
+          },
+          {
+            userId: "user2",
+            signature: signData(keyPair2.privateKey, rulesContainerBuffer),
+          },
+        ],
+        locked: true,
+        creationDate: new Date(),
+        updateDate: new Date(),
+        trails: [],
+      };
+
       expect(() => service.verifyGovernanceRules(rules)).not.toThrow();
     });
 
-    it("should throw when no SuperAdmin keys configured", () => {
+    // This test used to assert the opposite — that a zero threshold made
+    // verifyGovernanceRules return the rules untouched. That escape hatch is the
+    // defect: a caller reaching this method is asking for verification, so answering
+    // "fine" without checking anything is the one thing it must never do.
+    it("refuses construction with a zero threshold and no keys", () => {
+      const mockApi = createMockGovernanceRulesApi();
+
+      // This was "the explicitly unverified service": constructible, and every read
+      // then gated on `minValidSignatures > 0` and returned the UNVERIFIED trust root
+      // with no error. The class is exported from the package barrel, so it was
+      // reachable by any consumer.
+      expect(
+        () =>
+          new GovernanceRuleService(mockApi, {
+            superAdminKeys: [],
+            minValidSignatures: 0,
+          })
+      ).toThrow(ConfigurationError);
+    });
+
+    it("rejects at construction when keys are supplied with a non-positive threshold", () => {
+      const mockApi = createMockGovernanceRulesApi();
+
+      // Keys present + threshold 0 reads as "verify with these", but every call site
+      // gates on `minValidSignatures > 0`, so nothing would ever be verified.
+      expect(
+        () =>
+          new GovernanceRuleService(mockApi, {
+            superAdminKeys: [generateTestKeyPair().publicKey],
+            minValidSignatures: 0,
+          })
+      ).toThrow(ConfigurationError);
+    });
+
+    it("should refuse construction when no SuperAdmin keys are configured", () => {
+      const mockApi = createMockGovernanceRulesApi();
+
+      // The throw moved to the CONSTRUCTOR: a keyless service used to be
+      // constructible and then returned the unverified trust root on every read.
+      expect(
+        () =>
+          new GovernanceRuleService(mockApi, {
+            superAdminKeys: [],
+            minValidSignatures: 1,
+          })
+      ).toThrow(ConfigurationError);
+    });
+
+    it("still rejects a ruleset carrying no signatures", () => {
       const mockApi = createMockGovernanceRulesApi();
 
       const service = new GovernanceRuleService(mockApi, {
-        superAdminKeys: [],
-        minValidSignatures: 1, // Verification enabled but no keys
+        superAdminKeys: [generateTestKeyPair().publicKey],
+        minValidSignatures: 1,
       });
 
       const rules: GovernanceRules = {
@@ -215,7 +317,7 @@ describe("GovernanceRuleService", () => {
 
       expect(() => service.verifyGovernanceRules(rules)).toThrow(IntegrityError);
       expect(() => service.verifyGovernanceRules(rules)).toThrow(
-        "No SuperAdmin keys configured for verification"
+        "insufficient distinct valid SuperAdmin signers"
       );
     });
 
@@ -265,6 +367,46 @@ describe("GovernanceRuleService", () => {
       expect(() => service.verifyGovernanceRules(rules)).toThrow(
         "No signatures found on rules"
       );
+    });
+  });
+
+  // Go, Java and Python all expose this; TypeScript had no getPublicKeys and no
+  // SuperAdminPublicKey model at all, even though tg-protect-mcpd calls it. Without it
+  // a caller cannot check that the keys it verifies against are the ones the server
+  // enforces — the usual cause of a valid container failing verification.
+  describe("getPublicKeys", () => {
+    it("maps the configured SuperAdmin keys", async () => {
+      const mockApi = createMockGovernanceRulesApi();
+      mockApi.ruleServiceGetPublicKeys.mockResolvedValue({
+        publicKeys: [
+          { userID: "u1", publicKey: "-----BEGIN PUBLIC KEY-----k1" },
+          { userID: "u2", publicKey: "-----BEGIN PUBLIC KEY-----k2" },
+        ],
+      });
+
+      const service = new GovernanceRuleService(mockApi, {
+        superAdminKeys: [generateTestKeyPair().publicKey],
+        minValidSignatures: 1,
+      });
+
+      const keys = await service.getPublicKeys();
+
+      expect(keys).toEqual([
+        { userId: "u1", publicKey: "-----BEGIN PUBLIC KEY-----k1" },
+        { userId: "u2", publicKey: "-----BEGIN PUBLIC KEY-----k2" },
+      ]);
+    });
+
+    it("returns an empty list when the server reports no keys", async () => {
+      const mockApi = createMockGovernanceRulesApi();
+      mockApi.ruleServiceGetPublicKeys.mockResolvedValue({});
+
+      const service = new GovernanceRuleService(mockApi, {
+        superAdminKeys: [generateTestKeyPair().publicKey],
+        minValidSignatures: 1,
+      });
+
+      await expect(service.getPublicKeys()).resolves.toEqual([]);
     });
   });
 });

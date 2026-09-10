@@ -2,6 +2,7 @@ package com.taurushq.sdk.protect.client.validation;
 
 import com.taurushq.sdk.protect.client.model.Request;
 import com.taurushq.sdk.protect.client.model.RequestMetadata;
+import com.taurushq.sdk.protect.openapi.auth.CryptoTPV1;
 import com.taurushq.sdk.protect.client.model.RequestMetadataAmount;
 import com.taurushq.sdk.protect.client.model.RequestStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +33,9 @@ class RequestValidatorTest {
 
         RequestMetadata metadata = new RequestMetadata();
         metadata.setPayloadAsString(PAYLOAD);
+        metadata.setHash(CryptoTPV1.calculateHexHash(PAYLOAD));
+
+        metadata.verifyAndMaterialise();
         request.setMetadata(metadata);
     }
 
@@ -1039,6 +1043,9 @@ class RequestValidatorTest {
             minimalRequest.setStatus(RequestStatus.PENDING);
             RequestMetadata metadata = new RequestMetadata();
             metadata.setPayloadAsString("[]");
+            metadata.setHash(CryptoTPV1.calculateHexHash("[]"));
+
+            metadata.verifyAndMaterialise();
             minimalRequest.setMetadata(metadata);
 
             // Fields should report "not found"

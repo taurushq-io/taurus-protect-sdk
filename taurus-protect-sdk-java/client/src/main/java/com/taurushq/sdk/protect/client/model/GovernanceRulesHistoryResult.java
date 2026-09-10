@@ -2,6 +2,7 @@ package com.taurushq.sdk.protect.client.model;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -25,9 +26,33 @@ public class GovernanceRulesHistoryResult {
     private byte[] cursor;
 
     /**
-     * The total number of items available across all pages.
+     * The total number of items available across all pages, reduced by the exclusions.
      */
     private String totalItems;
+
+    /**
+     * Entries withheld because their SuperAdmin signatures did not verify.
+     */
+    private List<ExcludedRuleset> excludedUnverified = Collections.emptyList();
+
+    /**
+     * Gets the entries withheld because their signatures did not verify, so a shortened
+     * page cannot read as a complete one.
+     *
+     * @return the excluded entries, never null
+     */
+    public List<ExcludedRuleset> getExcludedUnverified() {
+        return excludedUnverified;
+    }
+
+    /**
+     * Sets the entries withheld because their signatures did not verify.
+     *
+     * @param excludedUnverified the excluded entries
+     */
+    public void setExcludedUnverified(final List<ExcludedRuleset> excludedUnverified) {
+        this.excludedUnverified = excludedUnverified;
+    }
 
     @Override
     public String toString() {

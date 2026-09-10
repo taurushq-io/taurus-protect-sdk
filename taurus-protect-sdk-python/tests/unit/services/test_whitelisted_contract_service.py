@@ -1,4 +1,9 @@
-"""Unit tests for ContractWhitelistingService."""
+"""Unit tests for ContractWhitelistingService (write paths only).
+
+The get/list tests are gone with the methods: they returned the DTO with no verification,
+so they asserted the bypass behaved consistently. Verified reads are covered by the
+whitelisted-asset suites.
+"""
 
 from __future__ import annotations
 
@@ -9,105 +14,6 @@ import pytest
 from taurus_protect.services.contract_whitelisting_service import (
     ContractWhitelistingService,
 )
-
-
-class TestContractWhitelistingServiceGet:
-    """Tests for ContractWhitelistingService.get()."""
-
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        contract_api = MagicMock()
-        service = ContractWhitelistingService(
-            api_client=api_client, contract_whitelisting_api=contract_api
-        )
-        return service, contract_api
-
-    def test_raises_on_invalid_id(self) -> None:
-        service, _ = self._make_service()
-        with pytest.raises(ValueError, match="contract_id must be positive"):
-            service.get(contract_id=0)
-
-    def test_returns_contract(self) -> None:
-        service, api = self._make_service()
-        dto = MagicMock()
-        dto.id = "1"
-        dto.address = "0xabc"
-        dto.name = "Uniswap Router"
-        dto.blockchain = "ETH"
-        dto.network = "mainnet"
-        dto.abi = "{}"
-        dto.status = "APPROVED"
-        dto.created_at = None
-        dto.createdAt = None
-        reply = MagicMock()
-        reply.result = dto
-        api.whitelist_service_get_whitelisted_contract.return_value = reply
-
-        contract = service.get(contract_id=1)
-
-        assert contract.id == "1"
-        assert contract.address == "0xabc"
-        assert contract.name == "Uniswap Router"
-
-    def test_raises_not_found_when_none(self) -> None:
-        service, api = self._make_service()
-        reply = MagicMock()
-        reply.result = None
-        api.whitelist_service_get_whitelisted_contract.return_value = reply
-
-        from taurus_protect.errors import NotFoundError
-
-        with pytest.raises(NotFoundError):
-            service.get(contract_id=1)
-
-
-class TestContractWhitelistingServiceList:
-    """Tests for ContractWhitelistingService.list()."""
-
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        contract_api = MagicMock()
-        service = ContractWhitelistingService(
-            api_client=api_client, contract_whitelisting_api=contract_api
-        )
-        return service, contract_api
-
-    def test_raises_on_invalid_limit(self) -> None:
-        service, _ = self._make_service()
-        with pytest.raises(ValueError, match="limit must be positive"):
-            service.list(limit=0)
-
-    def test_raises_on_negative_offset(self) -> None:
-        service, _ = self._make_service()
-        with pytest.raises(ValueError, match="offset cannot be negative"):
-            service.list(offset=-1)
-
-    def test_returns_empty_when_no_results(self) -> None:
-        service, api = self._make_service()
-        reply = MagicMock()
-        reply.result = None
-        reply.total_items = None
-        api.whitelist_service_get_whitelisted_contracts.return_value = reply
-
-        contracts, pagination = service.list()
-
-        assert contracts == []
-
-    def test_passes_blockchain_filter(self) -> None:
-        service, api = self._make_service()
-        reply = MagicMock()
-        reply.result = None
-        reply.total_items = None
-        api.whitelist_service_get_whitelisted_contracts.return_value = reply
-
-        service.list(blockchain="ETH", network="mainnet")
-
-        api.whitelist_service_get_whitelisted_contracts.assert_called_once_with(
-            blockchain="ETH",
-            network="mainnet",
-            limit="50",
-            offset="0",
-        )
 
 
 class TestContractWhitelistingServiceCreate:

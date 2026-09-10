@@ -1,0 +1,15 @@
+version: "2"
+run:
+  tests: true
+linters:
+  exclusions:
+    rules:
+      # Test files use nil contexts, structural nil-checks, and unchecked errors
+      # by convention; production code stays strictly linted.
+      - path: _test\.go
+        linters:
+          - errcheck
+      - path: _test\.go
+        linters:
+          - staticcheck
+        text: SA(1012|4031|9003)

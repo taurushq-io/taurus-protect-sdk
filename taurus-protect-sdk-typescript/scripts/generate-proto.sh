@@ -97,6 +97,7 @@ generate() {
                 --ts_proto_opt=outputPartialMethods=true \
                 --ts_proto_opt=useExactTypes=false \
                 --ts_proto_opt=env=browser \
+                --ts_proto_opt=unknownFields=true \
                 "$file" 2>/dev/null || {
                     warn "Skipped: $(basename "$file") (may have unsupported imports)"
                 }
@@ -107,6 +108,31 @@ generate() {
     info "Flattening directory structure..."
     find "$OUTPUT_DIR" -mindepth 2 -name "*.ts" -exec mv {} "$OUTPUT_DIR/" \; 2>/dev/null || true
     find "$OUTPUT_DIR" -mindepth 1 -type d -empty -delete 2>/dev/null || true
+
+    # Force deterministic map ordering in the generated encoders.
+    #
+    # ts-proto emits `Object.entries(message.properties).forEach(...)`, and JavaScript
+    # enumerates integer-like keys FIRST in ascending numeric order no matter how the
+    # object was built — so a container with properties keys "2" and "10" encodes as
+    # 2,10 here while Go, Java and Python (which all sort lexicographically) encode
+    # 10,2. Those bytes are what a SuperAdmin signs on a rules proposal, so the
+    # divergence is a cross-SDK signature mismatch, not a cosmetic one.
+    #
+    # Sorting in the caller cannot fix this: no plain JS object can be made to
+    # enumerate numeric-like keys last. It has to happen at the emit site.
+    # `tests/unit/mappers/rules-container-determinism.test.ts` fails if this is lost.
+    info "Forcing deterministic properties-map ordering..."
+    local map_sites
+    map_sites=$(grep -c 'Object.entries(message.properties).forEach(' "$OUTPUT_DIR/request_reply.ts" || true)
+    if [[ "$map_sites" -gt 0 ]]; then
+        perl -pi -e 's/Object\.entries\(message\.properties\)\.forEach\(/Object.entries(message.properties).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)).forEach(/g' \
+            "$OUTPUT_DIR/request_reply.ts"
+        info "Patched $map_sites properties-map encode site(s)"
+    else
+        # Zero is suspicious: either the schema lost its map fields or ts-proto
+        # changed its codegen shape. Either way the determinism guarantee is gone.
+        info "WARNING: no properties-map encode sites found to patch — verify the determinism test still passes"
+    fi
 
     # Create index.ts to export all generated types
     info "Creating index.ts..."

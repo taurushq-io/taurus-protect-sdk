@@ -96,32 +96,31 @@ if !helper.ConstantTimeCompare(computedHash, providedHash) {
 **Process:**
 1. Decode `rulesSignatures` from the response
 2. For each signature, verify against configured SuperAdmin public keys
-3. Count valid signatures
-4. Require `validCount >= minValidSignatures`
+3. Record the fingerprint of each key that verifies
+4. Require the number of **distinct signing keys** to be at least `minValidSignatures`
+
+> **Counted by signing key, not by entry.** ECDSA is randomized, so one SuperAdmin key can
+> emit unlimited valid signatures over the same container, and `userId` is server-supplied.
+> A signer is identified by a SHA-256 hash of its encoded public key, so a key configured
+> twice — or appearing under several user IDs — counts once.
 
 **Cryptographic Algorithm:** ECDSA with P-256 curve (secp256r1)
 
-**Go Implementation:**
+**Go Implementation:** the SDK performs this step for you. Do not hand-roll the loop —
+counting signature entries is what lets one key clear any threshold. Call the shared
+helper, which is the single place the threshold is evaluated:
+
 ```go
-import "github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/crypto"
+import "github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/helper"
 
-validCount := 0
-rulesContainerBytes := []byte(rulesContainer)
-
-for _, sig := range signatures {
-    for _, pubKey := range superAdminKeys {
-        valid, err := crypto.VerifySignature(pubKey, rulesContainerBytes, sig.Signature)
-        if err == nil && valid {
-            validCount++
-            break
-        }
-    }
-}
-
-if validCount < minValidSignatures {
-    return nil, &IntegrityError{
-        Message: fmt.Sprintf("only %d valid signatures, minimum %d required",
-            validCount, minValidSignatures),
+// rulesData is the base64-decoded rules container; signatures are the decoded
+// rulesSignatures entries.
+if err := helper.VerifyGovernanceRulesSignatures(
+    rulesData, signatures, superAdminKeys, minValidSignatures,
+); err != nil {
+    // err reports how many distinct signers were found versus required.
+    return nil, &model.IntegrityError{
+        Message: fmt.Sprintf("rules container signature verification failed: %v", err),
     }
 }
 ```
@@ -210,11 +209,46 @@ ParallelThresholds (OR paths)
    - Find group by ID in rules container
    - For each signature from a user in this group:
      - Check user is in group
-     - Check signature covers metadata hash (using constant-time comparison)
-     - Get user's public key from rules container
+     - Check the signature covers **the hash Step 4 matched** — which may be a legacy variant
+       rather than `metadata.Hash` (using constant-time comparison)
+     - Get the user's public key **from the verified rules container**
      - Verify signature using ECDSA P-256
-   - Count valid signatures
-   - Require `validCount >= minimumSignatures`
+     - Add that key's fingerprint to a set of signers
+   - Require `len(signers) >= minimumSignatures`
+
+> **Counted by signer, not by signature entry.** ECDSA is randomized, and both the signature
+> entries and the `userId` they carry are server-supplied, so counting entries would let a
+> duplicated or re-signed entry from one group member satisfy an N-of-M group and promote an
+> under-approved address to approved. A signer is identified by a fingerprint of the public key
+> **the verified container holds for that user** — never by the entry's `userId` — so two user
+> IDs sharing one key count once: that is one compromised secret. Same counting rule as
+> `minValidSignatures` in Step 2; what differs is the scope (one group's members vs the
+> tenant's SuperAdmins). Evaluated in one place, `helper/group_threshold.go`.
+
+> **A populated group with `minimumSignatures == 0` is rejected as a malformed container.**
+> There is no post-loop threshold check — the only success exit is inside the loop, once the
+> signer set reaches the threshold — so a zero would silently mean "one signature suffices" and
+> turn a 2-of-N group into 1-of-N. An **empty** group with a zero threshold is fine: there is
+> nobody to sign. Returns `IntegrityError` either way it fails (`helper/group_threshold.go`).
+
+**Rule Selection Comes from the Signed Payload:**
+
+Which rules judge the address is decided by `helper.ResolveRuleKey`
+(`helper/whitelist_hash.go`), which takes the `(blockchain, network)` pair from the **signed
+payload**, not from the DTO. Nothing binds the DTO to the signatures, and `isWildcard("")` is
+true, so a response carrying an empty blockchain would select the broadest global-default tier.
+
+| Case | Outcome |
+|------|---------|
+| Payload carries no chain (neither `blockchain` nor `currency`) | `IntegrityError` — an absent chain is never treated as a wildcard |
+| Payload and DTO disagree on a field the payload carries | `IntegrityError` |
+| Payload carries no `network` | Falls back to the DTO network |
+| Rule value is empty or `Any` | Wildcard match, compared **case-insensitively** |
+
+The network fallback exists because `AddressWhitelistingRules` carries a per-rule
+`includeNetworkInPayload` flag: when it is off — the common case in captured production
+payloads — the signed payload has no `network` field at all, and requiring one would reject
+correctly-signed addresses. The payload is bounded by `MaxPayloadBytes` (1 MiB) before parsing.
 
 **Threshold Selection:**
 
@@ -239,6 +273,48 @@ When checking rule lines:
 hashesJSON, _ := json.Marshal(signature.Hashes)
 valid, err := crypto.VerifySignature(userPublicKey, hashesJSON, signature.UserSignature.Signature)
 ```
+
+### Step 6: Parse WhitelistedAddress from the Verified Payload
+
+**Purpose:** Return only values that were actually covered by the verified signatures.
+
+**Process:**
+1. Parse `metadata.payloadAsString` (the verified source) into the `model.WhitelistedAddress`
+2. Security-critical fields — `Address`, `Label`, `Memo`, `CustomerID`, `AddressType`,
+   `Blockchain`, `Network` — are read **only** from that payload
+3. When the payload omits a field the result stays empty; it is never back-filled from the
+   unverified DTO
+4. Non-security fields (`Status`, `Action`, `Rule`, `CreatedAt`) may come from the DTO
+
+**Security:** Steps 1-5 prove the envelope is authentic; this step is what stops an
+attacker-supplied label or address reaching the caller. Implemented in
+`helper/whitelisted_address_verifier.go`.
+
+### Verification on List Paths: Exclude vs Abort
+
+`GetWhitelistedAddress` fails the call on any verification failure. The list paths
+(`ListWhitelistedAddresses`, `ListWhitelistedAddressesForApproval`) are **lenient per row** —
+one unverifiable row must not deny access to every good one, and listing is how an operator
+finds the bad row. Excluding stays fail-closed: an omitted address cannot be selected as a
+destination.
+
+| Failure | Effect |
+|---------|--------|
+| A row fails its own hash or signature check | Excluded from `Addresses`, reported in `ExcludedUnverified` as `{ID, Reason}` |
+| `ContainerIntegrityError` — the rules container carries something this SDK version cannot interpret | **Aborts the whole call** |
+| No verifier configured | Aborts the whole call — it fails identically for every row |
+| Rows came back but none survived | Aborts the whole call — a filtered page must never read as an empty whitelist |
+
+A `ContainerIntegrityError` aborts because it is not a property of one row: it invalidates
+every row judged against that container, so excluding them one at a time would empty the
+whitelist and report success. Implemented in `service/whitelisted_address.go`.
+
+`Pagination.TotalItems` is **reduced by the number excluded** — the server counts rows it
+returned, the caller receives only those that verified, so reporting the server's total would
+promise rows that can never be read. `HasMore` is derived from the server's *unreduced* total,
+because the exclusion count covers this page only.
+
+---
 
 ## Data Models
 
@@ -316,10 +392,14 @@ type SequentialApproversGroup struct {
 
 ## Error Types
 
-| Error | Type | When Returned |
-|-------|------|---------------|
-| `IntegrityError` | Unchecked | Hash mismatch, insufficient signatures, cryptographic failure |
-| `WhitelistError` | Checked | Decode errors, missing data, no matching rules |
+All three are values in `pkg/protect/model`, returned as `error`; Go has no checked/unchecked
+distinction, so match on the type or on the sentinel.
+
+| Error | Detect with | When Returned |
+|-------|-------------|---------------|
+| `IntegrityError` | `protect.IsIntegrityError(err)` / `errors.Is(err, protect.ErrIntegrity)` | Step 1 hash mismatch; missing payload, hash, `rulesContainer` or `rulesSignatures`; rules-container signature or decode failure (Steps 2-3); Step 4 hash not covered by any signature; Step 5 group threshold not met, including a populated group with `minimumSignatures == 0`; rule-key resolution failure |
+| `ContainerIntegrityError` | `var e *model.ContainerIntegrityError; errors.As(err, &e)` (no `protect` alias) | The rules container carries something this SDK version cannot interpret — e.g. a rule line whose source cell did not decode into the typed model. Also satisfies `IsIntegrityError`, and aborts a whole list call rather than excluding one row |
+| `WhitelistError` | `protect.IsWhitelistError(err)` / `errors.Is(err, protect.ErrWhitelist)` | No whitelisting rules match the resolved `(blockchain, network)` pair; no thresholds defined; no approval path satisfied its thresholds (the aggregate failure, carrying every path's reasons) |
 
 ## Key Functions
 
@@ -414,14 +494,17 @@ When creating the client, configure verification parameters:
 ```go
 client, err := protect.NewClient(
     host,
-    protect.WithCredentials(apiKey, apiSecret),
+    protect.WithCredentials(protect.APIKeyCredentials(apiKey, apiSecret)),
     protect.WithSuperAdminKeysPEM(superAdminKeys),  // Required for verification
     protect.WithMinValidSignatures(2),               // Minimum SuperAdmin sigs
     protect.WithRulesCacheTTL(5 * time.Minute),     // Cache validated rules
 )
 ```
 
-If SuperAdmin keys are not configured, the client can still retrieve whitelisted addresses but won't perform cryptographic verification of the governance rules.
+SuperAdmin keys are **mandatory**: `NewClient` refuses to construct without at least one
+(`pkg/protect/options.go`), and `minValidSignatures` must be positive and no greater than the
+number of keys supplied. There is no path that retrieves whitelisted addresses without
+verifying them.
 
 ## Manual Verification
 

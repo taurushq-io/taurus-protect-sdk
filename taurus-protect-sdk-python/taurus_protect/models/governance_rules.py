@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 
 from pydantic import BaseModel, Field, PrivateAttr, field_validator
 
+from taurus_protect.models.rule_cell import RuleCell
+
 if TYPE_CHECKING:
     from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 
@@ -37,6 +39,8 @@ class RuleUser(BaseModel):
     name: Optional[str] = Field(default=None, description="User name")
     public_key_pem: Optional[str] = Field(default=None, description="PEM-encoded public key")
     roles: List[str] = Field(default_factory=list, description="User roles")
+    properties: Dict[str, bytes] = Field(default_factory=dict)
+    unknown_fields: bytes = Field(default=b"", repr=False)
 
     model_config = {"frozen": True}
 
@@ -47,6 +51,8 @@ class RuleGroup(BaseModel):
     id: Optional[str] = Field(default=None, description="Group ID")
     name: Optional[str] = Field(default=None, description="Group name")
     user_ids: List[str] = Field(default_factory=list, description="Member user IDs")
+    properties: Dict[str, bytes] = Field(default_factory=dict)
+    unknown_fields: bytes = Field(default=b"", repr=False)
 
     model_config = {"frozen": True}
 
@@ -58,6 +64,7 @@ class GroupThreshold(BaseModel):
     minimum_signatures: int = Field(default=0, description="Minimum signatures required")
     # Alias for backward compatibility
     threshold: int = Field(default=0)
+    unknown_fields: bytes = Field(default=b"", repr=False)
 
     model_config = {"frozen": True}
 
@@ -70,6 +77,7 @@ class SequentialThresholds(BaseModel):
     """Sequential approval thresholds."""
 
     thresholds: List[GroupThreshold] = Field(default_factory=list)
+    unknown_fields: bytes = Field(default=b"", repr=False)
 
     model_config = {"frozen": True}
 
@@ -82,19 +90,58 @@ class RuleSourceInternalWallet(BaseModel):
     model_config = {"frozen": True}
 
 
+class RuleSourceInternalAddress(BaseModel):
+    """Internal address specification in a rule source."""
+
+    address: Optional[str] = Field(default=None)
+    path: Optional[str] = Field(default=None)
+
+    model_config = {"frozen": True}
+
+
+class RuleSourceExchange(BaseModel):
+    """Exchange specification in a rule source."""
+
+    label: Optional[str] = Field(default=None)
+
+    model_config = {"frozen": True}
+
+
+class RuleSourceExternalAddress(BaseModel):
+    """External address specification in a rule source."""
+
+    address: Optional[str] = Field(default=None)
+    memo: Optional[str] = Field(default=None)
+
+    model_config = {"frozen": True}
+
+
 class RuleSource(BaseModel):
-    """Source specification in a whitelist rule."""
+    """Source specification in a whitelist rule.
+
+    Sources whose type/content is unknown to this SDK version keep their exact
+    wire bytes in ``raw`` and are re-emitted verbatim on encode.
+    """
 
     type: int = Field(default=0, description="Source type (0=Any, 1=InternalWallet, ...)")
     internal_wallet: Optional[RuleSourceInternalWallet] = Field(
         default=None, description="Internal wallet details (when type=1)"
     )
+    internal_address: Optional[RuleSourceInternalAddress] = Field(default=None)
+    exchange: Optional[RuleSourceExchange] = Field(default=None)
+    external_address: Optional[RuleSourceExternalAddress] = Field(default=None)
+    raw: bytes = Field(default=b"", repr=False)
 
     model_config = {"frozen": True}
 
 
-# Constant for RuleSource type matching Go's RuleSourceTypeInternalWallet
+# Constants for RuleSource.type matching the protobuf RuleSourceType enum.
+RULE_SOURCE_TYPE_ANY = 0
 RULE_SOURCE_TYPE_INTERNAL_WALLET = 1
+RULE_SOURCE_TYPE_INTERNAL_ADDRESS = 2
+RULE_SOURCE_TYPE_ANY_EXCHANGE = 3
+RULE_SOURCE_TYPE_EXCHANGE = 4
+RULE_SOURCE_TYPE_EXTERNAL_ADDRESS = 5
 
 
 class AddressWhitelistingLine(BaseModel):
@@ -104,6 +151,8 @@ class AddressWhitelistingLine(BaseModel):
     parallel_thresholds: List[SequentialThresholds] = Field(
         default_factory=list, description="Approval requirements for this line"
     )
+    properties: Dict[str, bytes] = Field(default_factory=dict)
+    unknown_fields: bytes = Field(default=b"", repr=False)
 
     model_config = {"frozen": True}
 
@@ -116,6 +165,8 @@ class AddressWhitelistingRules(BaseModel):
     parallel_thresholds: List[SequentialThresholds] = Field(default_factory=list)
     lines: List[AddressWhitelistingLine] = Field(default_factory=list)
     include_network_in_payload: bool = Field(default=False)
+    properties: Dict[str, bytes] = Field(default_factory=dict)
+    unknown_fields: bytes = Field(default=b"", repr=False)
 
     model_config = {"frozen": True}
 
@@ -126,6 +177,8 @@ class ContractAddressWhitelistingRules(BaseModel):
     blockchain: Optional[str] = Field(default=None)
     network: Optional[str] = Field(default=None)
     parallel_thresholds: List[SequentialThresholds] = Field(default_factory=list)
+    properties: Dict[str, bytes] = Field(default_factory=dict)
+    unknown_fields: bytes = Field(default=b"", repr=False)
 
     model_config = {"frozen": True}
 
@@ -133,7 +186,49 @@ class ContractAddressWhitelistingRules(BaseModel):
 class RuleColumn(BaseModel):
     """Column definition in transaction rules."""
 
-    type: Optional[str] = Field(default=None, description="Column type (e.g., AMOUNT, SOURCE)")
+    type: Optional[str] = Field(default=None, description="Column type enum value name")
+    name: Optional[str] = Field(default=None, description="Human-readable column name")
+    metadata_key: Optional[str] = Field(default=None, description="Request-metadata key matched")
+    unknown_fields: bytes = Field(default=b"", repr=False)
+
+    model_config = {"frozen": True}
+
+
+class EvmCallContract(BaseModel):
+    """EVM contract-call scoping."""
+
+    contract_type: Optional[str] = Field(default=None)
+    method_signature: Optional[str] = Field(default=None)
+    unknown_fields: bytes = Field(default=b"", repr=False)
+
+    model_config = {"frozen": True}
+
+
+class XtzCallContract(BaseModel):
+    """Tezos contract-call scoping."""
+
+    contract_type: Optional[str] = Field(default=None)
+    method_signature: Optional[str] = Field(default=None)
+    unknown_fields: bytes = Field(default=b"", repr=False)
+
+    model_config = {"frozen": True}
+
+
+class CashSettlement(BaseModel):
+    """Cash-settlement scoping."""
+
+    provider: Optional[str] = Field(default=None)
+    request_type: Optional[str] = Field(default=None)
+    unknown_fields: bytes = Field(default=b"", repr=False)
+
+    model_config = {"frozen": True}
+
+
+class CosmosDetails(BaseModel):
+    """Cosmos scoping."""
+
+    method_signatures: List[str] = Field(default_factory=list)
+    unknown_fields: bytes = Field(default=b"", repr=False)
 
     model_config = {"frozen": True}
 
@@ -143,17 +238,27 @@ class TransactionRuleDetails(BaseModel):
 
     domain: Optional[str] = Field(default=None, description="Rule domain")
     sub_domain: Optional[str] = Field(default=None, description="Rule sub-domain")
+    blockchain: Optional[str] = Field(default=None)
+    network: Optional[str] = Field(default=None)
+    evm_call_contract: Optional[EvmCallContract] = Field(default=None)
+    xtz_call_contract: Optional[XtzCallContract] = Field(default=None)
+    cash_settlement: Optional[CashSettlement] = Field(default=None)
+    cosmos_details: Optional[CosmosDetails] = Field(default=None)
+    unknown_fields: bytes = Field(default=b"", repr=False)
 
     model_config = {"frozen": True}
 
 
 class RuleLine(BaseModel):
-    """Line/row in transaction rules."""
+    """Line/row in transaction rules. Cells align positionally with the rule's columns."""
 
-    cells: List[str] = Field(default_factory=list, description="Cell values")
+    cells: List[RuleCell] = Field(default_factory=list, description="Typed cell values")
     parallel_thresholds: List[SequentialThresholds] = Field(
         default_factory=list, description="Approval requirements for this line"
     )
+    priority: int = Field(default=0)
+    properties: Dict[str, bytes] = Field(default_factory=dict)
+    unknown_fields: bytes = Field(default=b"", repr=False)
 
     model_config = {"frozen": True}
 
@@ -167,6 +272,7 @@ class TransactionRules(BaseModel):
     details: Optional[TransactionRuleDetails] = Field(
         default=None, description="Additional rule configuration"
     )
+    unknown_fields: bytes = Field(default=b"", repr=False)
 
     model_config = {"frozen": True}
 
@@ -193,6 +299,8 @@ class DecodedRulesContainer(BaseModel):
     minimum_commitment_signatures: int = Field(default=0)
     engine_identities: List[str] = Field(default_factory=list)
     hsm_slot_id: int = Field(default=0)
+    properties: Dict[str, bytes] = Field(default_factory=dict)
+    unknown_fields: bytes = Field(default=b"", repr=False)
 
     # Private fields for cached HSM key (using PrivateAttr for Pydantic compatibility)
     _hsm_public_key: Optional["EllipticCurvePublicKey"] = PrivateAttr(default=None)
@@ -372,6 +480,70 @@ class DecodedRulesContainer(BaseModel):
         """Check if a value is a wildcard (None, empty, or 'Any')."""
         return value is None or value == "" or value.lower() == "any"
 
+    def has_unknown_fields(self) -> bool:
+        """Report whether any node carries data unknown to this SDK version.
+
+        Unknown protobuf fields, raw cells, and raw whitelisting sources are
+        preserved verbatim on re-encode; a true result is a hint to upgrade the
+        SDK before editing the container.
+        """
+        if self.unknown_fields:
+            return True
+        if any(u.unknown_fields for u in self.users):
+            return True
+        if any(g.unknown_fields for g in self.groups):
+            return True
+        for tr in self.transaction_rules:
+            if tr.unknown_fields:
+                return True
+            if any(c.unknown_fields for c in tr.columns):
+                return True
+            if _rule_details_unknown(tr.details):
+                return True
+            for line in tr.lines:
+                if line.unknown_fields or _thresholds_unknown(line.parallel_thresholds):
+                    return True
+                if any(getattr(cell, "kind", None) == "RawCell" for cell in line.cells):
+                    return True
+        for awr in self.address_whitelisting_rules:
+            if awr.unknown_fields or _thresholds_unknown(awr.parallel_thresholds):
+                return True
+            for line in awr.lines:
+                if line.unknown_fields or _thresholds_unknown(line.parallel_thresholds):
+                    return True
+                if any(s.raw for s in line.cells):
+                    return True
+        for cawr in self.contract_address_whitelisting_rules:
+            if cawr.unknown_fields or _thresholds_unknown(cawr.parallel_thresholds):
+                return True
+        return False
+
+
+def _thresholds_unknown(thresholds: "List[SequentialThresholds]") -> bool:
+    for st in thresholds:
+        if st.unknown_fields or any(t.unknown_fields for t in st.thresholds):
+            return True
+    return False
+
+
+def _rule_details_unknown(details: "Optional[TransactionRuleDetails]") -> bool:
+    """Report unknown fields on the details node and each nested scoping sub-message.
+
+    Checking only the details node would report a container clean while a nested
+    contract-call scoping node carried data from a newer schema.
+    """
+    if details is None:
+        return False
+    if details.unknown_fields:
+        return True
+    nested = (
+        details.evm_call_contract,
+        details.xtz_call_contract,
+        details.cash_settlement,
+        details.cosmos_details,
+    )
+    return any(n is not None and n.unknown_fields for n in nested)
+
 
 class GovernanceRulesTrail(BaseModel):
     """Audit trail entry for governance rules changes."""
@@ -416,11 +588,36 @@ class GovernanceRules(BaseModel):
     model_config = {"frozen": False, "arbitrary_types_allowed": True}
 
 
+class ExcludedRuleset(BaseModel):
+    """A history entry withheld because its SuperAdmin signatures did not verify."""
+
+    creation_date: Optional[datetime] = Field(
+        default=None,
+        description="When the excluded ruleset was created -- the only stable identifier "
+        "a history entry carries. Named to match GovernanceRules.creation_date; Go calls "
+        "the same field CreatedAt.",
+    )
+    reason: str = Field(default="", description="Why it was excluded")
+
+    model_config = {"frozen": True}
+
+
 class GovernanceRulesHistoryResult(BaseModel):
     """Result of a governance rules history query with cursor-based pagination."""
 
-    rules: List[GovernanceRules] = Field(default_factory=list, description="Rules in this page")
+    rules: List[GovernanceRules] = Field(
+        default_factory=list, description="Rules in this page whose signatures verified"
+    )
+    excluded_unverified: List[ExcludedRuleset] = Field(
+        default_factory=list,
+        description="Entries withheld because their signatures did not verify, so a "
+        "shortened page cannot read as a complete one. History is LENIENT and does not "
+        "fail when nothing survives: a SuperAdmin key rotation makes every pre-rotation "
+        "ruleset unverifiable, and aborting would deny the whole audit trail.",
+    )
     cursor: Optional[str] = Field(default=None, description="Cursor for fetching the next page")
-    total_items: Optional[str] = Field(default=None, description="Total number of items available")
+    total_items: Optional[str] = Field(
+        default=None, description="Total number of items available, reduced by the exclusions"
+    )
 
     model_config = {"frozen": True}

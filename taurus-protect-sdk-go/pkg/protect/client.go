@@ -22,7 +22,7 @@ import (
 //
 //	client, err := protect.NewClient(
 //	    "https://api.taurus.example.com",
-//	    protect.WithCredentials(apiKey, apiSecret),
+//	    protect.WithCredentials(protect.APIKeyCredentials(apiKey, apiSecret)),
 //	    protect.WithSuperAdminKeysPEM(pemKeys),
 //	    protect.WithMinValidSignatures(2),
 //	)
@@ -40,6 +40,9 @@ type Client struct {
 	superAdminKeys     []*ecdsa.PublicKey
 	minValidSignatures int
 	rulesCache         *cache.RulesContainerCache
+	// logger is never nil: WithLogger rejects nil and the default is NoopLogger,
+	// so services can call it unguarded.
+	logger Logger
 
 	// OpenAPI client for service creation
 	apiClient *openapi.APIClient
@@ -82,8 +85,8 @@ type Client struct {
 	scores               *service.ScoreService
 	statistics           *service.StatisticsService
 	tokenMetadata        *service.TokenMetadataService
-	userDevices             *service.UserDeviceService
-	multiFactorSignature    *service.MultiFactorSignatureService
+	userDevices          *service.UserDeviceService
+	multiFactorSignature *service.MultiFactorSignatureService
 	// Taurus Network namespace client
 	taurusNetwork *TaurusNetworkClient
 }
@@ -98,7 +101,7 @@ type Client struct {
 //
 //	client, err := protect.NewClient(
 //	    "https://api.taurus.example.com",
-//	    protect.WithCredentials(apiKey, apiSecret),
+//	    protect.WithCredentials(protect.APIKeyCredentials(apiKey, apiSecret)),
 //	    protect.WithSuperAdminKeysPEM(pemKeys),
 //	    protect.WithMinValidSignatures(2),
 //	)
@@ -108,6 +111,9 @@ func NewClient(host string, opts ...Option) (*Client, error) {
 		host:          strings.TrimSuffix(host, "/"),
 		rulesCacheTTL: DefaultRulesCacheTTL,
 		httpTimeout:   DefaultHTTPTimeout,
+		// Defaulted here, not at the call sites: a nil Logger panics on first use,
+		// and first use is an error path that is rare in production.
+		logger: NoopLogger{},
 	}
 
 	// Apply options
@@ -122,20 +128,20 @@ func NewClient(host string, opts ...Option) (*Client, error) {
 		return nil, err
 	}
 
-	// Create TPV1 authentication
-	auth, err := crypto.NewTPV1Auth(config.apiKey, config.apiSecret)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create HTTP client with TPV1 transport
 	baseClient := config.httpClient
 	if baseClient == nil {
 		baseClient = &http.Client{
 			Timeout: config.httpTimeout,
 		}
 	}
-	httpClient := newHTTPClient(auth, baseClient)
+
+	// The credentials build their own authenticating HTTP client (TPV1-HMAC signs
+	// each request; bearer resolves a per-request token). auth is non-nil only for
+	// TPV1-HMAC and is wiped on Close.
+	httpClient, auth, err := config.credentials.apply(config.host, baseClient)
+	if err != nil {
+		return nil, err
+	}
 
 	// Create OpenAPI client configuration
 	apiConfig := openapi.NewConfiguration()
@@ -152,6 +158,7 @@ func NewClient(host string, opts ...Option) (*Client, error) {
 		auth:               auth,
 		superAdminKeys:     config.superAdminKeys,
 		minValidSignatures: config.minValidSignatures,
+		logger:             config.logger,
 		apiClient:          apiClient,
 	}
 
@@ -203,6 +210,14 @@ func (c *Client) MinValidSignatures() int {
 
 // RulesCache returns the rules container cache used for address signature verification.
 // This is always non-nil as address signature verification is mandatory.
+//
+// The cache is a single slot shared by every caller of this client. Under
+// BearerTokenProviderCredentials — where one client serves many callers, each with their
+// own token — a cache hit issues no request, so the second caller receives the container
+// fetched with the first caller's token and their own authorization for GetRules is never
+// exercised. Governance containers are tenant-wide and SuperAdmin-signed, so this is not
+// a cross-tenant leak, but a client MUST NOT be shared across a trust boundary. Build one
+// client per tenant; tg-protect-mcpd's tenantClientRegistry is the reference pattern.
 func (c *Client) RulesCache() *cache.RulesContainerCache {
 	return c.rulesCache
 }
@@ -254,7 +269,7 @@ func (c *Client) Requests() *service.RequestService {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.requests == nil {
-		c.requests = service.NewRequestService(c.apiClient)
+		c.requests = service.NewRequestService(c.apiClient, service.WithServiceLogger(c.logger))
 	}
 	return c.requests
 }
@@ -288,7 +303,13 @@ func (c *Client) GovernanceRules() *service.GovernanceRuleService {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.governanceRules == nil {
-		c.governanceRules = service.NewGovernanceRuleService(c.apiClient)
+		c.governanceRules = service.NewGovernanceRuleServiceWithVerification(
+			c.apiClient,
+			&service.GovernanceRuleServiceConfig{
+				SuperAdminKeys:     c.superAdminKeys,
+				MinValidSignatures: c.minValidSignatures,
+			},
+		)
 	}
 	return c.governanceRules
 }
@@ -347,6 +368,7 @@ func (c *Client) WhitelistedAddresses() *service.WhitelistedAddressService {
 				SuperAdminKeys:     c.superAdminKeys,
 				MinValidSignatures: c.minValidSignatures,
 			},
+			service.WithServiceLogger(c.logger),
 		)
 	}
 	return c.whitelistedAddresses
@@ -440,7 +462,7 @@ func (c *Client) Prices() *service.PriceService {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.prices == nil {
-		c.prices = service.NewPriceService(c.apiClient)
+		c.prices = service.NewPriceService(c.apiClient, c.rulesCache)
 	}
 	return c.prices
 }
@@ -661,7 +683,7 @@ func (c *Client) Assets() *service.AssetService {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.assets == nil {
-		c.assets = service.NewAssetService(c.apiClient)
+		c.assets = service.NewAssetService(c.apiClient, c.rulesCache)
 	}
 	return c.assets
 }

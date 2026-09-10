@@ -5,6 +5,7 @@
  * their cryptographic verification envelopes.
  */
 
+import type { Verified } from "../helpers/verified";
 import type {
   WhitelistMetadata,
   WhitelistSignatureEntry,
@@ -82,6 +83,13 @@ export interface WhitelistedAssetVerificationResult {
   readonly verifiedAsset: WhitelistedAsset;
   /** The hash that was verified. */
   readonly verifiedHash: string;
+  /**
+   * The envelope, marked as having passed verification.
+   *
+   * Anything that reads raw envelope fields takes this type rather than the bare
+   * envelope, so a read path that skipped `verify()` will not compile.
+   */
+  readonly verifiedEnvelope: Verified<SignedWhitelistedAssetEnvelope>;
 }
 
 /**

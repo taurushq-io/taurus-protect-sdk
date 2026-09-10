@@ -18,7 +18,9 @@
         <java.version>8</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
-        <!--maven.compiler.release>${java.version}</maven.compiler.release-->
+        <!-- maven.compiler.release is NOT set here on purpose: the JDK 8 javac has no such
+             flag. It is set by the jdk9-plus-release profile below, which is what makes a
+             JDK 9+ dev machine reject Java 9+ APIs instead of silently accepting them. -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <gson-fire-version>1.9.0</gson-fire-version>
@@ -240,6 +242,5 @@
 
         </plugins>
     </build>
-
 
 </project>

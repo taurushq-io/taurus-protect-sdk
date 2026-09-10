@@ -16,7 +16,7 @@ import java.util.List;
  * @see SequentialThresholds
  * @see TransactionRules
  */
-public class RuleLine {
+public class RuleLine extends RulesNodeWithProperties {
 
     /**
      * Condition cells containing encoded values to match against the corresponding columns.

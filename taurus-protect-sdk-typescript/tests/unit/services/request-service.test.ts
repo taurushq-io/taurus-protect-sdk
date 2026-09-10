@@ -224,6 +224,59 @@ describe("RequestService", () => {
       namedCurve: "P-256",
     });
 
+    // The signature covers the metadata hashes, so signing an unverified one means
+    // attesting to a payload nothing checked.
+    it("should refuse to sign a hash that does not cover its payload", async () => {
+      // The documented attack: alter the structured payload, leave the hash alone.
+      const request = createMockRequest(1);
+      const tampered: Request = {
+        ...request,
+        metadata: { ...request.metadata!, payloadAsString: '{"id":666}' },
+      };
+
+      await expect(
+        service.approveRequests([tampered], privateKey)
+      ).rejects.toThrow(IntegrityError);
+      expect(mockApi.requestServiceApproveRequests).not.toHaveBeenCalled();
+    });
+
+    // Why approveRequests re-verifies instead of trusting `hashVerified`: `readonly`
+    // is compile-time only, so this is what a Request parsed from JSON — a queue, a
+    // webhook, a cached blob — can look like. Trusting the flag gets an
+    // attacker-chosen hash signed by the approver's real key.
+    it("should refuse a forged hashVerified flag", async () => {
+      const forged = JSON.parse(
+        JSON.stringify({
+          ...createMockRequest(1),
+          metadata: {
+            hash: calculateHexHash('{"id":1}'),
+            payloadAsString: '{"id":666}',
+            hashVerified: true,
+          },
+        })
+      ) as Request;
+      expect(forged.metadata!.hashVerified).toBe(true);
+
+      await expect(
+        service.approveRequests([forged], privateKey)
+      ).rejects.toThrow(/refusing to sign request 1/);
+      expect(mockApi.requestServiceApproveRequests).not.toHaveBeenCalled();
+    });
+
+    it("should refuse the whole batch when one row is unverified", async () => {
+      const verified = createMockRequest(1);
+      const other = createMockRequest(2);
+      const unverified: Request = {
+        ...other,
+        metadata: { ...other.metadata!, payloadAsString: '{"id":666}' },
+      };
+
+      await expect(
+        service.approveRequests([verified, unverified], privateKey)
+      ).rejects.toThrow(IntegrityError);
+      expect(mockApi.requestServiceApproveRequests).not.toHaveBeenCalled();
+    });
+
     it("should sort requests by ID and sign the hash array", async () => {
       const hash1 = calculateHexHash('{"id":1}');
       const hash2 = calculateHexHash('{"id":2}');
@@ -289,7 +342,7 @@ describe("RequestService", () => {
     });
 
     it("should use custom comment when provided", async () => {
-      const request = createMockRequest(1, calculateHexHash("test"));
+      const request = createMockRequest(1);
       const reply: TgvalidatordApproveRequestsReply = {
         signedRequests: "1",
       };
@@ -311,7 +364,7 @@ describe("RequestService", () => {
     });
 
     it("should delegate to approveRequests", async () => {
-      const request = createMockRequest(1, calculateHexHash("test"));
+      const request = createMockRequest(1);
       const reply: TgvalidatordApproveRequestsReply = {
         signedRequests: "1",
       };
@@ -472,17 +525,89 @@ describe("RequestService", () => {
       ).rejects.toThrow("toWhitelistedAddressId must be positive");
     });
   });
+
+  // The defect: list() and listForApproval() returned every row without verifying
+  // any of them, while get() verified. A payload altered in transit reached the
+  // caller with no error and no flag. Rows that fail are now dropped.
+  describe("list verification", () => {
+    const good = '{"amount":"1000","currency":"ETH"}';
+
+    const listReply = (): TgvalidatordGetRequestsV2Reply => ({
+      result: [
+        {
+          id: "1",
+          type: "payment",
+          status: "CONFIRMED",
+          metadata: { hash: calculateHexHash(good), payloadAsString: good },
+        },
+        {
+          id: "2",
+          type: "payment",
+          status: "CONFIRMED",
+          // payload altered, hash left covering the original
+          metadata: { hash: calculateHexHash(good), payloadAsString: '{"amount":"999999"}' },
+        },
+        // nothing to verify yet: an early-status request
+        { id: "3", type: "payment", status: "PENDING_APPROVAL" },
+      ],
+      cursor: { currentPage: "abc123" },
+    });
+
+    beforeEach(() => {
+      jest.spyOn(console, "warn").mockImplementation(() => undefined);
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it("drops the tampered row from list()", async () => {
+      mockApi.requestServiceGetRequestsV2.mockResolvedValue(listReply());
+
+      const result = await service.list({ limit: 50 });
+
+      expect(result.requests.map((r) => r.id)).toEqual([1, 3]);
+      expect(result.requests[0].metadata?.hashVerified).toBe(true);
+      // The metadata-less row is kept, but nothing was verified on it.
+      expect(result.requests[1].metadata?.hashVerified).toBeUndefined();
+      expect(console.warn).toHaveBeenCalledTimes(1);
+    });
+
+    it("drops the tampered row from listForApproval()", async () => {
+      mockApi.requestServiceGetRequestsForApprovalV2.mockResolvedValue(listReply());
+
+      const result = await service.listForApproval({ limit: 50 });
+
+      expect(result.requests.map((r) => r.id)).toEqual([1, 3]);
+    });
+
+    it("does not leak the payload into the warning", async () => {
+      mockApi.requestServiceGetRequestsV2.mockResolvedValue(listReply());
+
+      await service.list({ limit: 50 });
+
+      const warned = (console.warn as jest.Mock).mock.calls.flat().join(" ");
+      expect(warned).not.toContain("999999");
+    });
+  });
 });
 
 // Helper function to create a mock Request
-function createMockRequest(id: number, hash: string): Request {
-  const metadata: RequestMetadata | undefined = hash
-    ? {
-        hash,
-        payloadAsString: `{"id":${id}}`,
-        // SECURITY: payload field intentionally removed - use payloadAsString
-      }
-    : undefined;
+function createMockRequest(id: number, hash?: string): Request {
+  const payloadAsString = `{"id":${id}}`;
+  // The hash DEFAULTS to the real hash of payloadAsString. approveRequests
+  // re-verifies, so a fixture carrying an arbitrary hash string describes an
+  // artefact that cannot exist and would fail for the wrong reason. Pass an explicit
+  // hash only to build a deliberate mismatch; pass "" for no metadata at all.
+  const metadata: RequestMetadata | undefined =
+    hash === ""
+      ? undefined
+      : {
+          hash: hash ?? calculateHexHash(payloadAsString),
+          payloadAsString,
+          // SECURITY: payload field intentionally removed - use payloadAsString
+          hashVerified: true,
+        };
 
   return {
     id,

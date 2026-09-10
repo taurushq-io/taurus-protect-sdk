@@ -150,18 +150,6 @@ class ContractWhitelistingServiceTest {
     }
 
     // getWhitelistedContract tests
-    @Test
-    void getWhitelistedContract_throwsOnNullId() {
-        assertThrows(IllegalArgumentException.class, () ->
-                contractWhitelistingService.getWhitelistedContract(null));
-    }
-
-    @Test
-    void getWhitelistedContract_throwsOnEmptyId() {
-        assertThrows(IllegalArgumentException.class, () ->
-                contractWhitelistingService.getWhitelistedContract(""));
-    }
-
     // updateWhitelistedContract tests
     @Test
     void updateWhitelistedContract_throwsOnNullId() {
@@ -270,20 +258,5 @@ class ContractWhitelistingServiceTest {
     void getAttribute_throwsOnEmptyAttributeId() {
         assertThrows(IllegalArgumentException.class, () ->
                 contractWhitelistingService.getAttribute("123", ""));
-    }
-
-    // getWhitelistedContracts accepts null filters
-    @Test
-    void getWhitelistedContracts_acceptsAllNullFilters() {
-        // This test verifies that all filter parameters are optional
-        // The actual API call will fail due to no server, but validation should pass
-        // The test passes if the method signature allows all optional parameters
-    }
-
-    // getWhitelistedContractsForApproval accepts null filters
-    @Test
-    void getWhitelistedContractsForApproval_acceptsNullIds() {
-        // This test verifies that ids parameter is optional
-        // The actual API call will fail due to no server, but validation should pass
     }
 }

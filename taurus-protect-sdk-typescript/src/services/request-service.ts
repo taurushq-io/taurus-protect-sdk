@@ -39,7 +39,8 @@ import type { CursorPagination } from "../models/pagination";
 import { BaseService } from "./base";
 import { IntegrityError, NotFoundError, ServerError } from "../errors";
 import { calculateHexHash, constantTimeCompare, signData } from "../crypto";
-import { requestFromDto, requestsFromDto } from "../mappers/request";
+import { requestFromDto } from "../mappers/request";
+import type { TgvalidatordRequest } from "../internal/openapi/models/TgvalidatordRequest";
 
 /**
  * Result of a list operation with cursor-based pagination.
@@ -115,23 +116,18 @@ export class RequestService extends BaseService {
         throw new NotFoundError(`Request ${requestId} not found`);
       }
 
-      const request = requestFromDto(result);
-      if (!request) {
-        throw new NotFoundError(`Request ${requestId} not found`);
-      }
-
-      // CRITICAL: Verify request hash using constant-time comparison
-      this.verifyRequestHash(request);
-
-      return request;
+      // CRITICAL: Verify request hash using constant-time comparison, and mark
+      // the result so a caller can tell a verified request from one that merely
+      // came back from the API.
+      return this.verifiedRequest(result);
     });
   }
 
   /**
    * List requests with filtering and pagination.
    *
-   * **Note:** Hash verification is NOT performed on list operations for performance.
-   * Use `get()` to fetch individual requests with full verification.
+   * Every row's metadata hash is verified. A row that fails is excluded from the
+   * result and warned about rather than failing the whole call.
    *
    * @param options - List options including filters and pagination
    * @returns Object containing requests array and cursor pagination
@@ -168,7 +164,7 @@ export class RequestService extends BaseService {
         externalRequestIDs: options.externalRequestIds,
       });
 
-      const requests = requestsFromDto(response.result);
+      const requests = this.verifiedRequests(response.result);
       const cursor = response.cursor;
 
       return {
@@ -184,8 +180,8 @@ export class RequestService extends BaseService {
   /**
    * List requests pending approval.
    *
-   * **Note:** Hash verification is NOT performed on list operations for performance.
-   * Use `get()` to fetch individual requests with full verification.
+   * Every row's metadata hash is verified. A row that fails is excluded from the
+   * result and warned about rather than failing the whole call.
    *
    * @param options - List options including filters and pagination
    * @returns Object containing requests array and cursor pagination
@@ -219,7 +215,7 @@ export class RequestService extends BaseService {
           externalRequestIDs: options.externalRequestIds,
         });
 
-      const requests = requestsFromDto(response.result);
+      const requests = this.verifiedRequests(response.result);
       const cursor = response.cursor;
 
       return {
@@ -310,6 +306,22 @@ export class RequestService extends BaseService {
       if (!request.metadata.hash) {
         throw new Error(
           `Request ${request.id} metadata hash cannot be null or empty`
+        );
+      }
+      // RE-VERIFY the hash this signature will attest to. `hashVerified` is
+      // deliberately NOT consulted: `readonly` is compile-time only, so a Request
+      // parsed from JSON (a queue, a webhook, a cached blob) can arrive claiming
+      // true and get an attacker-chosen hash signed by the approver's real key.
+      // Re-verification is a SHA-256 over a string already in hand, and it is the
+      // same rule `WhitelistedAssetService.approve` gets by re-reading -- so both
+      // signing paths rest on one rule, not two. Ordered after the presence check so
+      // an early-status request still reports the clearer absence message.
+      try {
+        this.verifyRequestHash(request);
+      } catch (err) {
+        throw new IntegrityError(
+          `refusing to sign request ${request.id}: ` +
+            `${err instanceof Error ? err.message : String(err)}`
         );
       }
     }
@@ -449,12 +461,7 @@ export class RequestService extends BaseService {
         throw new ServerError("Failed to create request: no result returned");
       }
 
-      const request = requestFromDto(result);
-      if (!request) {
-        throw new ServerError("Failed to create request: invalid response");
-      }
-
-      return request;
+      return this.verifiedRequest(result);
     });
   }
 
@@ -517,12 +524,7 @@ export class RequestService extends BaseService {
         throw new ServerError("Failed to create request: no result returned");
       }
 
-      const request = requestFromDto(result);
-      if (!request) {
-        throw new ServerError("Failed to create request: invalid response");
-      }
-
-      return request;
+      return this.verifiedRequest(result);
     });
   }
 
@@ -584,12 +586,7 @@ export class RequestService extends BaseService {
         throw new ServerError("Failed to create request: no result returned");
       }
 
-      const request = requestFromDto(result);
-      if (!request) {
-        throw new ServerError("Failed to create request: invalid response");
-      }
-
-      return request;
+      return this.verifiedRequest(result);
     });
   }
 
@@ -652,12 +649,7 @@ export class RequestService extends BaseService {
         throw new ServerError("Failed to create request: no result returned");
       }
 
-      const request = requestFromDto(result);
-      if (!request) {
-        throw new ServerError("Failed to create request: invalid response");
-      }
-
-      return request;
+      return this.verifiedRequest(result);
     });
   }
 
@@ -708,14 +700,7 @@ export class RequestService extends BaseService {
         );
       }
 
-      const request = requestFromDto(result);
-      if (!request) {
-        throw new ServerError(
-          "Failed to create cancel request: invalid response"
-        );
-      }
-
-      return request;
+      return this.verifiedRequest(result);
     });
   }
 
@@ -775,12 +760,7 @@ export class RequestService extends BaseService {
         throw new ServerError("Failed to create request: no result returned");
       }
 
-      const request = requestFromDto(result);
-      if (!request) {
-        throw new ServerError("Failed to create request: invalid response");
-      }
-
-      return request;
+      return this.verifiedRequest(result);
     });
   }
 
@@ -795,6 +775,89 @@ export class RequestService extends BaseService {
    * @param request - The request to verify
    * @throws {IntegrityError} If hash verification fails
    */
+  /**
+   * Keep only the requests whose metadata integrity verifies.
+   *
+   *   rows -> verifyRequestHash -+- ok    -> kept, marked hashVerified
+   *                              +- fails -> excluded + warned
+   *
+   * The list paths previously returned every row unverified while `get()` verified,
+   * so a payload altered in transit reached the caller with no error and no flag.
+   * Excluding rather than throwing keeps one bad row from denying access to every
+   * good one; warning keeps a shortened list from passing as a complete one.
+   *
+   * Metadata only in the warning -- an id and a reason, never the payload.
+   */
+  private verifiedRequests(dtos: TgvalidatordRequest[] | undefined): Request[] {
+    const kept: Request[] = [];
+    for (const dto of dtos ?? []) {
+      try {
+        kept.push(this.verifiedRequest(dto));
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn(
+          `request excluded: metadata integrity verification failed ` +
+            `(request_id=${dto?.id}, reason=${err instanceof Error ? err.message : String(err)})`
+        );
+        continue;
+      }
+    }
+    return kept;
+  }
+
+  /**
+   * Map one request DTO and verify its metadata. The ONLY way this class builds a
+   * `Request`.
+   *
+   *   get() ---------------+
+   *   list/listForApproval-+
+   *   create* (x6) --------+--> verifiedRequest -> requestFromDto
+   *                                             -> verifyRequestHash
+   *                                             -> markVerified
+   *                                 ok <--------+--------> IntegrityError
+   *                          (hashVerified set)          (names the request id)
+   *
+   * Verification lived in `get()` alone. The list paths skipped it in one pass and
+   * the six create paths in the next -- both times because "remember to verify" was
+   * a rule rather than the only available construction path. So do NOT call
+   * `requestFromDto` / `requestsFromDto` anywhere else in this class.
+   *
+   * The id goes into the error because a failing create has already succeeded
+   * server-side; the caller needs it to reconcile rather than retrying and creating
+   * a second request.
+   */
+  private verifiedRequest(dto: TgvalidatordRequest): Request {
+    const request = requestFromDto(dto);
+    if (!request) {
+      throw new ServerError("request not found");
+    }
+    try {
+      this.verifyRequestHash(request);
+    } catch (err) {
+      throw new IntegrityError(
+        `request ${request.id}: ${err instanceof Error ? err.message : String(err)}`
+      );
+    }
+    return this.markVerified(request);
+  }
+
+  /**
+   * Returns the request with its metadata marked verified.
+   *
+   * Verification and the flag are set together in one place. Keeping them apart is
+   * what let `get()` verify and then return a request whose `hashVerified` was
+   * still undefined, so a caller checking the flag — or an accessor reading it —
+   * could not tell a verified request from an unverified one.
+   *
+   * Fields are readonly, so this rebuilds rather than mutates.
+   */
+  private markVerified(request: Request): Request {
+    if (request.metadata && (request.metadata.hash || request.metadata.payloadAsString)) {
+      return { ...request, metadata: { ...request.metadata, hashVerified: true } };
+    }
+    return request;
+  }
+
   private verifyRequestHash(request: Request): void {
     // If no metadata, nothing to verify
     if (!request.metadata) {
@@ -834,7 +897,7 @@ export class RequestService extends BaseService {
     // CRITICAL: Use constant-time comparison to prevent timing attacks
     if (!constantTimeCompare(computedHash, providedHash)) {
       throw new IntegrityError(
-        `Request hash mismatch: computed=${computedHash}, provided=${providedHash}`
+        `request hash verification failed: computed=${computedHash}, provided=${providedHash}`
       );
     }
   }

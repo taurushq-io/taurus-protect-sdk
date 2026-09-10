@@ -1,0 +1,448 @@
+{
+  "_comment": [
+    "Cross-SDK behaviour vectors for the verification primitives. Crypto-free: every",
+    "case is a pure input -> outcome mapping, so all four SDKs can assert it from one",
+    "file without key material. Loaded by Go, Java, Python and TypeScript unit suites.",
+    "",
+    "Each SDK's loader asserts the counts below, so adding a case means updating all",
+    "four in lockstep - which is the point. To add one, append here and bump the count.",
+    "",
+    "memo_key covers the governance verification memo, whose key decides whether ECDSA",
+    "runs at all. It MUST be injective: an unprefixed concatenation leaves the boundary",
+    "between the container and the signature list uncommitted, so a response-controlling",
+    "attacker can shift bytes across it and make a MODIFIED container inherit a genuine",
+    "one's \"already verified\" status. Each pair is {a, b, expect: distinct|same}.",
+    "",
+    "See docs/INTEGRITY_VERIFICATION.md for what each primitive is for."
+  ],
+  "counts": {
+    "rule_key": 12,
+    "hash_coverage": 8,
+    "contains_hash": 7,
+    "memo_key": 8
+  },
+  "rule_key": [
+    {
+      "description": "address payload: chain under 'currency', network present",
+      "payload_as_string": "{\"currency\":\"ALGO\",\"network\":\"mainnet\"}",
+      "dto_blockchain": "ALGO",
+      "dto_network": "mainnet",
+      "expect": "ok",
+      "blockchain": "ALGO",
+      "network": "mainnet"
+    },
+    {
+      "description": "asset payload: chain under 'blockchain'",
+      "payload_as_string": "{\"blockchain\":\"ETH\",\"network\":\"mainnet\"}",
+      "dto_blockchain": "ETH",
+      "dto_network": "mainnet",
+      "expect": "ok",
+      "blockchain": "ETH",
+      "network": "mainnet"
+    },
+    {
+      "description": "network absent from payload falls back to the response (includeNetworkInPayload off)",
+      "payload_as_string": "{\"currency\":\"ALGO\"}",
+      "dto_blockchain": "ALGO",
+      "dto_network": "mainnet",
+      "expect": "ok",
+      "blockchain": "ALGO",
+      "network": "mainnet"
+    },
+    {
+      "description": "real captured production payload: currency present, no network field",
+      "payload_as_string": "{\"currency\":\"ALGO\",\"addressType\":\"individual\",\"address\":\"P4QCJV2YYLAEULGLJQAW4XTU3EBOHWL5C46I5SPLH2H7AJEE367ZDACV5A\",\"memo\":\"\",\"label\":\"TN_Bank ACC Cockroach_WTRTest\",\"customerId\":\"\",\"exchangeAccountId\":\"\",\"linkedInternalAddresses\":[],\"contractType\":\"\",\"tnParticipantID\":\"84dc35e3-0af8-4b6b-be75-785f4b149d16\"}",
+      "dto_blockchain": "ALGO",
+      "dto_network": "mainnet",
+      "expect": "ok",
+      "blockchain": "ALGO",
+      "network": "mainnet"
+    },
+    {
+      "description": "chain absent from payload is an error, never a wildcard",
+      "payload_as_string": "{\"network\":\"mainnet\"}",
+      "dto_blockchain": "ALGO",
+      "dto_network": "mainnet",
+      "expect": "error"
+    },
+    {
+      "description": "empty chain in payload is an error, never a wildcard",
+      "payload_as_string": "{\"currency\":\"\",\"network\":\"mainnet\"}",
+      "dto_blockchain": "ALGO",
+      "dto_network": "mainnet",
+      "expect": "error"
+    },
+    {
+      "description": "response naming a different chain than the signed payload",
+      "payload_as_string": "{\"currency\":\"ALGO\",\"network\":\"mainnet\"}",
+      "dto_blockchain": "ETH",
+      "dto_network": "mainnet",
+      "expect": "error"
+    },
+    {
+      "description": "response naming a different network than the signed payload",
+      "payload_as_string": "{\"currency\":\"ALGO\",\"network\":\"mainnet\"}",
+      "dto_blockchain": "ALGO",
+      "dto_network": "testnet",
+      "expect": "error"
+    },
+    {
+      "description": "network disagreement is NOT an error when the payload carries none",
+      "payload_as_string": "{\"currency\":\"ALGO\"}",
+      "dto_blockchain": "ALGO",
+      "dto_network": "testnet",
+      "expect": "ok",
+      "blockchain": "ALGO",
+      "network": "testnet"
+    },
+    {
+      "description": "case-only differences are not a disagreement",
+      "payload_as_string": "{\"currency\":\"ALGO\",\"network\":\"mainnet\"}",
+      "dto_blockchain": "algo",
+      "dto_network": "MainNet",
+      "expect": "ok",
+      "blockchain": "ALGO",
+      "network": "mainnet"
+    },
+    {
+      "description": "empty payload is an error",
+      "payload_as_string": "",
+      "dto_blockchain": "ALGO",
+      "dto_network": "mainnet",
+      "expect": "error"
+    },
+    {
+      "description": "malformed payload is an error",
+      "payload_as_string": "{\"currency\":",
+      "dto_blockchain": "ALGO",
+      "dto_network": "mainnet",
+      "expect": "error"
+    }
+  ],
+  "hash_coverage": [
+    {
+      "description": "hash covered by the first signature",
+      "signatures": [
+        [
+          "aaa",
+          "bbb"
+        ],
+        [
+          "ccc"
+        ]
+      ],
+      "hash": "aaa",
+      "expect": true
+    },
+    {
+      "description": "hash covered by a later entry of the first signature",
+      "signatures": [
+        [
+          "aaa",
+          "bbb"
+        ],
+        [
+          "ccc"
+        ]
+      ],
+      "hash": "bbb",
+      "expect": true
+    },
+    {
+      "description": "hash covered by a later signature",
+      "signatures": [
+        [
+          "aaa",
+          "bbb"
+        ],
+        [
+          "ccc"
+        ]
+      ],
+      "hash": "ccc",
+      "expect": true
+    },
+    {
+      "description": "hash covered by no signature",
+      "signatures": [
+        [
+          "aaa",
+          "bbb"
+        ],
+        [
+          "ccc"
+        ]
+      ],
+      "hash": "zzz",
+      "expect": false
+    },
+    {
+      "description": "empty signature list",
+      "signatures": [],
+      "hash": "aaa",
+      "expect": false
+    },
+    {
+      "description": "signature carrying no hashes is skipped, not an error",
+      "signatures": [
+        []
+      ],
+      "hash": "aaa",
+      "expect": false
+    },
+    {
+      "description": "empty hash never matches",
+      "signatures": [
+        [
+          "aaa"
+        ]
+      ],
+      "hash": "",
+      "expect": false
+    },
+    {
+      "description": "a prefix of a covered hash does not match it",
+      "signatures": [
+        [
+          "abcdef"
+        ]
+      ],
+      "hash": "abc",
+      "expect": false
+    }
+  ],
+  "contains_hash": [
+    {
+      "description": "present at the head",
+      "hashes": [
+        "aaa",
+        "bbb",
+        "ccc"
+      ],
+      "hash": "aaa",
+      "expect": true
+    },
+    {
+      "description": "present in the middle",
+      "hashes": [
+        "aaa",
+        "bbb",
+        "ccc"
+      ],
+      "hash": "bbb",
+      "expect": true
+    },
+    {
+      "description": "present at the tail",
+      "hashes": [
+        "aaa",
+        "bbb",
+        "ccc"
+      ],
+      "hash": "ccc",
+      "expect": true
+    },
+    {
+      "description": "absent",
+      "hashes": [
+        "aaa",
+        "bbb",
+        "ccc"
+      ],
+      "hash": "zzz",
+      "expect": false
+    },
+    {
+      "description": "empty list",
+      "hashes": [],
+      "hash": "aaa",
+      "expect": false
+    },
+    {
+      "description": "empty needle never matches",
+      "hashes": [
+        "aaa"
+      ],
+      "hash": "",
+      "expect": false
+    },
+    {
+      "description": "a longer candidate is not matched by a shorter needle",
+      "hashes": [
+        "abcdef"
+      ],
+      "hash": "abcdefgh",
+      "expect": false
+    }
+  ],
+  "memo_key": [
+    {
+      "description": "signature folded into the container tail -- collides under plain concatenation",
+      "a": {
+        "rules_container": "GAIqEgoMRVRIL3RyYW5zZmVyEgIIAg==",
+        "signatures": [
+          {
+            "user_id": "",
+            "signature": "s1"
+          }
+        ]
+      },
+      "b": {
+        "rules_container": "GAIqEgoMRVRIL3RyYW5zZmVyEgIIAnMx",
+        "signatures": []
+      },
+      "expect": "distinct"
+    },
+    {
+      "description": "signature folded into the container tail -- collides under 0x00 written before each entry",
+      "a": {
+        "rules_container": "GAIqEgoMRVRIL3RyYW5zZmVyEgIIAg==",
+        "signatures": [
+          {
+            "user_id": "",
+            "signature": "s1"
+          }
+        ]
+      },
+      "b": {
+        "rules_container": "GAIqEgoMRVRIL3RyYW5zZmVyEgIIAgBzMQ==",
+        "signatures": []
+      },
+      "expect": "distinct"
+    },
+    {
+      "description": "signature folded into the container tail -- collides under 0x00 separator plus an empty userId field",
+      "a": {
+        "rules_container": "GAIqEgoMRVRIL3RyYW5zZmVyEgIIAg==",
+        "signatures": [
+          {
+            "user_id": "",
+            "signature": "s1"
+          }
+        ]
+      },
+      "b": {
+        "rules_container": "GAIqEgoMRVRIL3RyYW5zZmVyEgIIAgAAczE=",
+        "signatures": []
+      },
+      "expect": "distinct"
+    },
+    {
+      "description": "one signature split into two -- collides without length prefixes",
+      "a": {
+        "rules_container": "GAIqEgoMRVRIL3RyYW5zZmVyEgIIAg==",
+        "signatures": [
+          {
+            "user_id": "",
+            "signature": "abcd"
+          }
+        ]
+      },
+      "b": {
+        "rules_container": "GAIqEgoMRVRIL3RyYW5zZmVyEgIIAg==",
+        "signatures": [
+          {
+            "user_id": "",
+            "signature": "ab"
+          },
+          {
+            "user_id": "",
+            "signature": "cd"
+          }
+        ]
+      },
+      "expect": "distinct"
+    },
+    {
+      "description": "userId differs only -- ignored by verification, so it must not change the key",
+      "a": {
+        "rules_container": "GAIqEgoMRVRIL3RyYW5zZmVyEgIIAg==",
+        "signatures": [
+          {
+            "user_id": "u1",
+            "signature": "s1"
+          }
+        ]
+      },
+      "b": {
+        "rules_container": "GAIqEgoMRVRIL3RyYW5zZmVyEgIIAg==",
+        "signatures": [
+          {
+            "user_id": "attacker-chosen",
+            "signature": "s1"
+          }
+        ]
+      },
+      "expect": "same"
+    },
+    {
+      "description": "same signature set in the other order -- order must not change the key",
+      "a": {
+        "rules_container": "GAIqEgoMRVRIL3RyYW5zZmVyEgIIAg==",
+        "signatures": [
+          {
+            "user_id": "u1",
+            "signature": "s1"
+          },
+          {
+            "user_id": "u2",
+            "signature": "s2"
+          }
+        ]
+      },
+      "b": {
+        "rules_container": "GAIqEgoMRVRIL3RyYW5zZmVyEgIIAg==",
+        "signatures": [
+          {
+            "user_id": "u2",
+            "signature": "s2"
+          },
+          {
+            "user_id": "u1",
+            "signature": "s1"
+          }
+        ]
+      },
+      "expect": "same"
+    },
+    {
+      "description": "a re-signed container is a different document -- must be a memo miss",
+      "a": {
+        "rules_container": "GAIqEgoMRVRIL3RyYW5zZmVyEgIIAg==",
+        "signatures": []
+      },
+      "b": {
+        "rules_container": "GAIqEgoMRVRIL3RyYW5zZmVyEgIIAg==",
+        "signatures": [
+          {
+            "user_id": "u1",
+            "signature": "s1"
+          }
+        ]
+      },
+      "expect": "distinct"
+    },
+    {
+      "description": "different container bytes with an identical signature set",
+      "a": {
+        "rules_container": "GAIqEgoMRVRIL3RyYW5zZmVyEgIIAg==",
+        "signatures": [
+          {
+            "user_id": "u1",
+            "signature": "s1"
+          }
+        ]
+      },
+      "b": {
+        "rules_container": "GAIqEgoMRVRIL3RyYW5zZmVyEgIIAkAB",
+        "signatures": [
+          {
+            "user_id": "u1",
+            "signature": "s1"
+          }
+        ]
+      },
+      "expect": "distinct"
+    }
+  ]
+}

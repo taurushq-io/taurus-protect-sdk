@@ -151,7 +151,7 @@ The SDK uses specific exceptions for different error scenarios:
 |-----------|------|-------------|
 | `ApiException` | Checked | General API errors (network, auth, validation) |
 | `AuthenticationException` | Checked (extends `ApiException`) | Authentication failures (HTTP 401) |
-| `AuthorizationException` | Checked (extends `ApiException`) | Authorization failures (HTTP 403) |
+| `AuthorizationException` | Checked (extends `ApiException`) | Authorization failures (HTTP 403); `getRequiredRoles()` names the roles that would satisfy the check |
 | `NotFoundException` | Checked (extends `ApiException`) | Resource not found (HTTP 404) |
 | `RateLimitException` | Checked (extends `ApiException`) | Rate limit exceeded (HTTP 429) |
 | `ServerException` | Checked (extends `ApiException`) | Server errors (HTTP 5xx) |
@@ -285,3 +285,28 @@ Generated implementations are in `target/generated-sources/`.
 - [Go SDK Documentation](../../taurus-protect-sdk-go/docs/) - Go SDK reference
 - [Python SDK Documentation](../../taurus-protect-sdk-python/docs/) - Python SDK reference
 - [TypeScript SDK Documentation](../../taurus-protect-sdk-typescript/docs/) - TypeScript SDK reference
+
+## AuthorizationException.getRequiredRoles()
+
+A 403 is mapped to `AuthorizationException`, whose `getRequiredRoles()` returns an
+unmodifiable list.
+
+```java
+try {
+    client.getWalletService().createWallet(/* ... */);
+} catch (AuthorizationException e) {
+    List<String> roles = e.getRequiredRoles();
+    System.out.println(roles.isEmpty()
+            ? "Permission denied"
+            : "Permission denied; requires one of: " + String.join(", ", roles));
+}
+```
+
+The error carries the **roles that would satisfy the failed check**, so a caller can say
+which role to request instead of only "forbidden". The list is empty when the denial was
+not role-based (a disabled endpoint, a visibility restriction). One entry means that role
+is required; several mean any one of them suffices.
+
+> Surface the role list, never the server's message. The role names are safe to display;
+> the surrounding text is server-controlled. A consumer that forwards errors into another
+> system should render roles through an allowlist (the roles are lowercase alphanumeric).

@@ -28,7 +28,7 @@ from taurus_protect.errors import IntegrityError, WhitelistError
 from taurus_protect.helpers.constant_time import constant_time_compare
 from taurus_protect.helpers.signature_verifier import is_valid_signature
 from taurus_protect.helpers.whitelist_hash_helper import compute_legacy_hashes
-from taurus_protect.helpers.whitelisted_asset_verifier import verify_hash_coverage
+from taurus_protect.helpers.whitelist_hash_helper import verify_hash_coverage
 from taurus_protect.mappers.governance_rules import rules_container_from_base64
 from taurus_protect.models.governance_rules import (
     AddressWhitelistingRules,
@@ -389,7 +389,7 @@ class TestStep3DecodeRulesContainer:
 class TestStep4VerifyHashCoverage:
     """Tests for Step 4: Verify hash is in signature hashes list."""
 
-    def test_step4_verify_hash_coverage_success(self, sample_payload_hash: str) -> None:
+    def test_step4verify_hash_coverage_success(self, sample_payload_hash: str) -> None:
         """Test that metadata hash is found in signature hashes."""
         # Create signature entries with the hash
         signatures = [
@@ -405,7 +405,7 @@ class TestStep4VerifyHashCoverage:
         # Verify hash coverage
         assert verify_hash_coverage(sample_payload_hash, signatures) is True
 
-    def test_step4_verify_hash_coverage_multiple_hashes(
+    def test_step4verify_hash_coverage_multiple_hashes(
         self, sample_payload_hash: str
     ) -> None:
         """Test that hash is found when signature covers multiple hashes."""
@@ -424,7 +424,7 @@ class TestStep4VerifyHashCoverage:
 
         assert verify_hash_coverage(sample_payload_hash, signatures) is True
 
-    def test_step4_verify_hash_coverage_failure_uses_legacy(
+    def test_step4verify_hash_coverage_failure_uses_legacy(
         self, sample_payload: str
     ) -> None:
         """Test that legacy hash fallback works when current hash not found."""
@@ -462,7 +462,7 @@ class TestStep4VerifyHashCoverage:
         # But legacy hash IS found
         assert verify_hash_coverage(legacy_hash, signatures) is True
 
-    def test_step4_verify_hash_coverage_failure_not_found(
+    def test_step4verify_hash_coverage_failure_not_found(
         self, sample_payload_hash: str
     ) -> None:
         """Test that missing hash raises IntegrityError."""
@@ -489,7 +489,7 @@ class TestStep4VerifyHashCoverage:
                     f"metadata hash '{sample_payload_hash}' is not covered by any signature"
                 )
 
-    def test_step4_verify_hash_coverage_empty_signatures(
+    def test_step4verify_hash_coverage_empty_signatures(
         self, sample_payload_hash: str
     ) -> None:
         """Test that empty signatures list returns False."""

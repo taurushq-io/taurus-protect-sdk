@@ -102,10 +102,25 @@ type ListWalletsOptions struct {
 	Offset int64
 	// Currency filters by currency symbol.
 	Currency string
-	// Query searches wallet names.
+	// Query is a partial, case-insensitive match across currency, customer id,
+	// blockchain, name, container, account path and comment.
 	Query string
+	// Name is a partial, case-insensitive match on the wallet name alone.
+	Name string
 	// ExcludeDisabled excludes disabled wallets from results.
 	ExcludeDisabled bool
+	// IDs filters to specific wallet IDs.
+	IDs []string
+	// Blockchain filters by blockchain name.
+	Blockchain string
+	// Network filters by network name.
+	Network string
+	// TagIDs filters to wallets carrying any of these tags.
+	TagIDs []string
+	// OnlyPositiveBalance keeps only wallets with a positive balance.
+	OnlyPositiveBalance bool
+	// SortOrder orders the results.
+	SortOrder string
 }
 
 // Pagination contains pagination information for list responses.
@@ -126,4 +141,11 @@ type BalanceHistoryPoint struct {
 	PointDate time.Time `json:"point_date"`
 	// Balance contains the balance amounts at this point in time.
 	Balance *Balance `json:"balance,omitempty"`
+}
+
+// GetWalletTokensOptions bounds a wallet's token-balance listing. The endpoint is
+// cursor-paginated; Limit bounds one page.
+type GetWalletTokensOptions struct {
+	Limit  int64
+	Cursor string
 }

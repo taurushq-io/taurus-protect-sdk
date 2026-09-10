@@ -88,6 +88,43 @@ type ListAddressesOptions struct {
 	Query string
 	// ExcludeDisabled excludes disabled addresses from results.
 	ExcludeDisabled bool
+	// AddressIDs filters to specific Taurus address IDs.
+	AddressIDs []string
+	// Addresses filters to specific blockchain addresses.
+	Addresses []string
+	// Blockchain filters by blockchain name.
+	Blockchain string
+	// Network filters by network name.
+	Network string
+	// TagIDs filters to addresses carrying any of these tags.
+	TagIDs []string
+	// OnlyPositiveBalance keeps only addresses with a positive balance.
+	OnlyPositiveBalance bool
+	// BalanceAbove and BalanceBelow bound the balance.
+	BalanceAbove string
+	BalanceBelow string
+	// SortBy and SortOrder order the results.
+	SortBy    string
+	SortOrder string
+	// Score filters by address risk score. Nil sets no score parameters.
+	Score *AddressScoreFilter
+}
+
+// AddressScoreFilter bounds an address search by risk score, per provider.
+// This is the scoreFilter group; the flat score parameters are deprecated.
+type AddressScoreFilter struct {
+	// Provider selects the scoring provider.
+	Provider string
+	// ScorechainInBelow, ScorechainOutBelow and ScorechainExclusive are
+	// Scorechain-specific bounds.
+	ScorechainInBelow   string
+	ScorechainOutBelow  string
+	ScorechainExclusive bool
+	// Per-provider lower bounds.
+	CoinfirmScoreGreater    string
+	ChainalysisScoreGreater string
+	EllipticScoreGreater    string
+	TRMLabsScoreGreater     string
 }
 
 // ProofOfReserve represents the proof of reserve for an address.

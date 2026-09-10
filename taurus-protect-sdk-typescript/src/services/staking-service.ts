@@ -27,7 +27,6 @@ import type {
   StakeAccountResult,
   StakeAccountType,
   StakeCursor,
-  SolanaStakeAccount,
   SolanaStakeAccountState,
   ListStakeAccountsOptions,
   XTZStakingRewards,

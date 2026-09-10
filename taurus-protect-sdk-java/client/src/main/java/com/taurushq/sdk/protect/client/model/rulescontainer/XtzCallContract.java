@@ -10,7 +10,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
  *
  * @see TransactionRuleDetails
  */
-public class XtzCallContract {
+public class XtzCallContract extends RulesNode {
 
     /**
      * The contract type (e.g., "FA12", "FA20" for Tezos token standards).

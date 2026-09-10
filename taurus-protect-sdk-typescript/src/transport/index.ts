@@ -6,3 +6,7 @@
  */
 
 export { createTPV1Middleware } from "./tpv1-middleware";
+export {
+  createBearerMiddleware,
+  type BearerTokenProvider,
+} from "./bearer-middleware";

@@ -114,7 +114,9 @@ Auto-generated Protocol Buffer classes for binary message handling.
 `ProtectClient` serves as the main entry point, instantiating and providing access to all services:
 
 ```java
-ProtectClient client = ProtectClient.createFromPem(host, apiKey, apiSecret, superAdminKeys, 2);
+// SuperAdmin keys are mandatory for every auth mechanism.
+ProtectClient client = ProtectClient.create(
+        host, Credentials.apiKey(apiKey, apiSecret), superAdminKeys, 2);
 
 // Access services through the facade
 client.getWalletService().createWallet(...);

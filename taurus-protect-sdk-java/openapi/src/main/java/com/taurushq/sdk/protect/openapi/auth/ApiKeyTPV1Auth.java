@@ -23,6 +23,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import static com.taurushq.sdk.protect.openapi.auth.CryptoTPV1.calculateSignedHeader;
 
@@ -30,12 +31,34 @@ import static com.taurushq.sdk.protect.openapi.auth.CryptoTPV1.calculateSignedHe
 public class ApiKeyTPV1Auth implements Authentication {
     private byte[] apiSecret;
     private String apiKey;
+    private Supplier<String> bearerTokenProvider;
 
     public ApiKeyTPV1Auth() {
     }
 
     public void setApiKey(String apiKey) {
         this.apiKey = apiKey;
+    }
+
+    /**
+     * Sets a static bearer token (a constant provider). When set, requests carry an
+     * "Authorization: Bearer &lt;token&gt;" header instead of TPV1-HMAC signing.
+     *
+     * @param bearerToken the bearer token
+     */
+    public void setBearerToken(String bearerToken) {
+        this.bearerTokenProvider = () -> bearerToken;
+    }
+
+    /**
+     * Sets a bearer token provider, resolved per request (for rotating/per-caller
+     * tokens). When set, requests carry an "Authorization: Bearer &lt;token&gt;"
+     * header instead of TPV1-HMAC signing.
+     *
+     * @param bearerTokenProvider supplies the bearer token for each request
+     */
+    public void setBearerTokenProvider(Supplier<String> bearerTokenProvider) {
+        this.bearerTokenProvider = bearerTokenProvider;
     }
 
 
@@ -71,6 +94,17 @@ public class ApiKeyTPV1Auth implements Authentication {
     @Override
     public void applyToParams(List<Pair> queryParams, Map<String, String> headerParams, Map<String, String> cookieParams,
                               String payload, String method, URI uri) throws ApiException {
+
+        if (bearerTokenProvider != null) {
+            // A refresh that silently yields nothing would send "Bearer null" and surface
+            // as an opaque 401 rather than the real cause.
+            String token = bearerTokenProvider.get();
+            if (token == null || token.isEmpty()) {
+                throw new ApiException("bearer token provider returned an empty token");
+            }
+            headerParams.put("Authorization", "Bearer " + token);
+            return;
+        }
 
         String header = calculateSignedHeader(apiKey, apiSecret, UUID.randomUUID().toString(), System.currentTimeMillis(), method, getHost(uri), uri.getPath(), uri.getRawQuery(), getContentType(headerParams), payload);
         headerParams.put("Authorization", header);

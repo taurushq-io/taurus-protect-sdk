@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, List, Optional
 
+from taurus_protect.helpers.price_verifier import verify_prices
 from taurus_protect.mappers.statistics import (
     price_history_from_dto,
     prices_from_dto,
@@ -39,16 +40,29 @@ class PriceService(BaseService):
         ... )
     """
 
-    def __init__(self, api_client: Any, prices_api: Any) -> None:
+    def __init__(self, api_client: Any, prices_api: Any, rules_cache: Any) -> None:
         """
         Initialize price service.
+
+        Rate and decimals feed amount conversion, so an unverified price is a wrong
+        number a caller acts on. Whether prices must be signed is decided by the
+        SuperAdmin-verified rules container: see helpers.price_verifier.verify_price.
 
         Args:
             api_client: The OpenAPI client instance.
             prices_api: The PricesApi service from OpenAPI client.
+            rules_cache: Rules container cache supplying the PRICEUPDATER keys. Required.
+
+        Raises:
+            ValueError: If rules_cache is None.
         """
         super().__init__(api_client)
+        if rules_cache is None:
+            raise ValueError(
+                "rules_cache cannot be None - price signature verification is mandatory"
+            )
         self._prices_api = prices_api
+        self._rules_cache = rules_cache
 
     def get_current(self, currency: Optional[str] = None) -> List[Price]:
         """
@@ -77,6 +91,9 @@ class PriceService(BaseService):
             result = getattr(resp, "result", None)
             prices = prices_from_dto(result) if result else []
 
+            if prices:
+                verify_prices(prices, self._rules_cache.get_decoded_rules_container())
+
             # Filter by currency if specified
             if currency:
                 prices = [
@@ -85,9 +102,11 @@ class PriceService(BaseService):
 
             return prices
         except Exception as e:
-            from taurus_protect.errors import APIError
+            from taurus_protect.errors import APIError, IntegrityError
 
-            if isinstance(e, APIError):
+            # IntegrityError is NOT an APIError, so without naming it a failed price
+            # signature check would be remapped to a retryable ServerError.
+            if isinstance(e, (APIError, IntegrityError)):
                 raise
             raise self._handle_error(e) from e
 

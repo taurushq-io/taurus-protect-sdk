@@ -16,11 +16,12 @@
 import type { KeyObject } from "crypto";
 
 import { calculateHexHash, verifySignature, decodePublicKeyPem } from "../crypto";
-import { IntegrityError, WhitelistError } from "../errors";
+import { ContainerIntegrityError, IntegrityError, WhitelistError } from "../errors";
 import type {
   DecodedRulesContainer,
   RuleUserSignature,
   AddressWhitelistingRules,
+  AddressWhitelistingLine,
   GroupThreshold,
   SequentialThresholds,
 } from "../models/governance-rules";
@@ -28,21 +29,24 @@ import {
   findAddressWhitelistingRules,
   findUserById,
   findGroupById,
+  RuleSourceType,
 } from "../models/governance-rules";
 import type {
   SignedWhitelistedAddressEnvelope,
   WhitelistedAddress,
   WhitelistedAddressVerificationResult,
   WhitelistSignatureEntry,
-  InternalWallet,
 } from "../models/whitelisted-address";
 import { constantTimeCompare } from "./constant-time";
-import { isValidSignature } from "./signature-verifier";
+import { keyFingerprint, verifyGovernanceRulesSignatures } from "./signature-verifier";
 import {
   computeLegacyHashes,
   parseWhitelistedAddressFromJson,
   verifyHashCoverage,
+  containsHash,
+  resolveRuleKey,
 } from "./whitelist-hash-helper";
+import { strictBase64Decode } from "./strict-base64";
 
 /**
  * Configuration for WhitelistedAddressVerifier.
@@ -65,23 +69,17 @@ export type RulesContainerDecoder = (base64Data: string) => DecodedRulesContaine
 export type UserSignaturesDecoder = (base64Data: string) => RuleUserSignature[];
 
 /**
- * Address whitelisting line for rule matching.
+ * True when the line's source cell was preserved verbatim rather than typed.
+ *
+ * `matchesWalletPath` reads `cells[0]`, so that is the cell whose meaning must be
+ * known before a match/no-match verdict can be trusted.
  */
-interface AddressWhitelistingLine {
-  cells: Array<{
-    type: string;
-    internalWallet?: {
-      path?: string;
-    };
-  }>;
-  parallelThresholds: SequentialThresholds[];
-}
-
-/**
- * Extended address whitelisting rules with lines.
- */
-interface ExtendedAddressWhitelistingRules extends AddressWhitelistingRules {
-  lines?: AddressWhitelistingLine[];
+function lineHasUntypedSource(line: AddressWhitelistingLine): boolean {
+  if (!line.cells || line.cells.length === 0) {
+    return false;
+  }
+  const source = line.cells[0];
+  return !!source && !!source.raw && source.raw.length > 0;
 }
 
 /**
@@ -269,21 +267,16 @@ export class WhitelistedAddressVerifier {
       );
     }
 
-    // Count valid signatures
-    let validCount = 0;
-    for (const sig of signatures) {
-      if (
-        sig.signature &&
-        isValidSignature(rulesData, sig.signature, this.superAdminKeys)
-      ) {
-        validCount++;
-      }
-    }
-
-    if (validCount < this.minValidSignatures) {
+    try {
+      verifyGovernanceRulesSignatures(
+        rulesData,
+        signatures,
+        this.superAdminKeys,
+        this.minValidSignatures
+      );
+    } catch (error) {
       throw new IntegrityError(
-        `rules container signature verification failed: only ${validCount} valid signatures, ` +
-          `minimum ${this.minValidSignatures} required`
+        `rules container signature verification failed: ${error instanceof Error ? error.message : "unknown error"}`
       );
     }
 
@@ -356,28 +349,23 @@ export class WhitelistedAddressVerifier {
     // Decode rules container data (raw bytes)
     let rulesData: Buffer;
     try {
-      rulesData = Buffer.from(envelope.rulesContainerBase64, "base64");
+      rulesData = strictBase64Decode(envelope.rulesContainerBase64);
     } catch (error) {
       throw new IntegrityError(
         `failed to decode rules container: ${error instanceof Error ? error.message : "unknown error"}`
       );
     }
 
-    // Count valid signatures
-    let validCount = 0;
-    for (const sig of signatures) {
-      if (
-        sig.signature &&
-        isValidSignature(rulesData, sig.signature, this.superAdminKeys)
-      ) {
-        validCount++;
-      }
-    }
-
-    if (validCount < this.minValidSignatures) {
+    try {
+      verifyGovernanceRulesSignatures(
+        rulesData,
+        signatures,
+        this.superAdminKeys,
+        this.minValidSignatures
+      );
+    } catch (error) {
       throw new IntegrityError(
-        `rules container signature verification failed: only ${validCount} valid signatures, ` +
-          `minimum ${this.minValidSignatures} required`
+        `rules container signature verification failed: ${error instanceof Error ? error.message : "unknown error"}`
       );
     }
   }
@@ -457,16 +445,25 @@ export class WhitelistedAddressVerifier {
     rulesContainer: DecodedRulesContainer,
     metadataHash: string
   ): void {
+    // Which rules judge this address is decided by the SIGNED payload, not by the
+    // surrounding response. A DTO with an empty blockchain would select the
+    // global-default tier — broader than the rule the address belongs to.
+    const { blockchain, network } = resolveRuleKey(
+      envelope.metadata?.payloadAsString,
+      envelope.blockchain,
+      envelope.network
+    );
+
     // Find matching address whitelisting rules
     const whitelistRules = findAddressWhitelistingRules(
       rulesContainer,
-      envelope.blockchain,
-      envelope.network
-    ) as ExtendedAddressWhitelistingRules | undefined;
+      blockchain,
+      network
+    );
 
     if (!whitelistRules) {
       throw new WhitelistError(
-        `no address whitelisting rules found for blockchain=${envelope.blockchain} network=${envelope.network}`
+        `no address whitelisting rules found for blockchain=${blockchain} network=${network}`
       );
     }
 
@@ -505,7 +502,7 @@ export class WhitelistedAddressVerifier {
    * @returns Applicable thresholds
    */
   private getApplicableThresholds(
-    rules: ExtendedAddressWhitelistingRules,
+    rules: AddressWhitelistingRules,
     envelope: SignedWhitelistedAddressEnvelope
   ): SequentialThresholds[] {
     const hasLinkedAddresses = envelope.linkedInternalAddresses.length > 0;
@@ -518,7 +515,24 @@ export class WhitelistedAddressVerifier {
       const walletPath = envelope.linkedWallets[0]?.path;
 
       // Find matching line by wallet path
-      for (const line of rules.lines) {
+      for (let i = 0; i < rules.lines.length; i++) {
+        const line = rules.lines[i]!;
+        // A source cell this SDK could not type might be the one that matches.
+        // Falling through to the container defaults would verify the address
+        // against a quorum governance never granted it — silently, no error.
+        //
+        //   source typed ─┬─ matches path ─▶ line thresholds
+        //                 └─ no match ─────▶ container defaults
+        //   source RAW ───────────────────▶ ContainerIntegrityError
+        if (lineHasUntypedSource(line)) {
+          throw new ContainerIntegrityError(
+            `address whitelisting rules for blockchain=${rules.currency} ` +
+              `network=${rules.network} line ${i} carry a source cell this SDK ` +
+              `version cannot interpret; refusing to fall back to the container ` +
+              `default thresholds, which may be weaker than the line's. Upgrade ` +
+              `the SDK to match the validatord that signed this container`
+          );
+        }
         if (this.matchesWalletPath(line, walletPath)) {
           return line.parallelThresholds;
         }
@@ -545,7 +559,7 @@ export class WhitelistedAddressVerifier {
     }
 
     const source = line.cells[0];
-    if (!source || source.type !== "INTERNAL_WALLET") {
+    if (!source || source.type !== RuleSourceType.InternalWallet) {
       return false;
     }
 
@@ -691,11 +705,25 @@ export class WhitelistedAddressVerifier {
       return null; // minSignatures == 0, so empty group is OK
     }
 
+    // A populated group with a zero threshold is a malformed container, not a
+    // group anyone may satisfy. There is no post-loop threshold check — the only
+    // success exit is inside the loop after an increment — so a zero here
+    // silently means "one signature suffices", turning a 2-of-N group into
+    // 1-of-N. Fail closed.
+    if (minSigs <= 0) {
+      return `group '${groupId}' has ${group.userIds.length} user(s) but requires 0 signature(s): minimumSignatures must be positive`;
+    }
+
     // Build set for faster lookup
     const groupUserIdSet = new Set(group.userIds);
 
-    // Count valid signatures from users in this group
-    let validCount = 0;
+    // Count DISTINCT signers, not signature entries.
+    //
+    // The entries come from the server-supplied userSignatures blob, so counting them
+    // let a duplicated entry from one group member satisfy an N-of-M group. Keyed on the
+    // container-resolved public key rather than the server-supplied userId, so one
+    // compromised key shared by two IDs counts once.
+    const signers = new Set<string>();
     const skippedReasons: string[] = [];
 
     for (let sigIdx = 0; sigIdx < signatures.length; sigIdx++) {
@@ -711,7 +739,7 @@ export class WhitelistedAddressVerifier {
       }
 
       // Check that metadata hash is covered by this signature
-      if (!this.containsHash(sig.hashes, metadataHash)) {
+      if (!containsHash(sig.hashes, metadataHash)) {
         skippedReasons.push(
           `user '${sigUserId}' signature does not cover metadata hash '${metadataHash}' (signed hashes=${JSON.stringify(sig.hashes)})`
         );
@@ -758,8 +786,8 @@ export class WhitelistedAddressVerifier {
 
       try {
         if (verifySignature(publicKey, hashesData, sig.userSignature.signature)) {
-          validCount++;
-          if (validCount >= minSigs) {
+          signers.add(keyFingerprint(publicKey));
+          if (signers.size >= minSigs) {
             return null; // Threshold met
           }
         } else {
@@ -775,27 +803,11 @@ export class WhitelistedAddressVerifier {
     }
 
     // Threshold not met
-    let message = `group '${groupId}' requires ${minSigs} signature(s) but only ${validCount} valid`;
+    let message = `group '${groupId}' requires ${minSigs} distinct signer(s) but only ${signers.size} valid`;
     if (skippedReasons.length > 0) {
       message += ` [${skippedReasons.join("; ")}]`;
     }
     return message;
   }
 
-  /**
-   * Checks if a hash is in the list using constant-time comparison.
-   *
-   * @param hashes - List of hashes to search
-   * @param hash - Hash to find
-   * @returns true if the hash is found
-   */
-  private containsHash(hashes: string[], hash: string): boolean {
-    let found = false;
-    for (const h of hashes) {
-      if (constantTimeCompare(h, hash)) {
-        found = true;
-      }
-    }
-    return found;
-  }
 }

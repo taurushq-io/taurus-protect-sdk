@@ -20,6 +20,49 @@ func (e *IntegrityError) Unwrap() error {
 	return e.Err
 }
 
+// Is matches any IntegrityError so the protect.ErrIntegrity sentinel works with
+// errors.Is regardless of the message.
+func (e *IntegrityError) Is(target error) bool {
+	_, ok := target.(*IntegrityError)
+	return ok
+}
+
+// ContainerIntegrityError means the governance rules container itself carries
+// something this SDK version cannot interpret, so no verification decision taken
+// against it can be trusted.
+//
+// Deliberately distinct from a per-row WhitelistError. A caller listing whitelisted
+// addresses excludes a row that fails its own integrity check and keeps the rest —
+// but an uninterpretable container invalidates EVERY row judged against it, so the
+// whole call must fail instead. Collapsing the two lets a schema-newer container
+// empty a whitelist while reporting success.
+type ContainerIntegrityError struct {
+	Message string
+	Err     error
+}
+
+func (e *ContainerIntegrityError) Error() string {
+	if e.Message != "" {
+		return fmt.Sprintf("rules container integrity error: %s", e.Message)
+	}
+	return "rules container integrity error"
+}
+
+func (e *ContainerIntegrityError) Unwrap() error {
+	return e.Err
+}
+
+// Is matches its own type and also *IntegrityError, so a container-level failure
+// still satisfies the protect.ErrIntegrity sentinel while remaining separately
+// detectable with errors.As.
+func (e *ContainerIntegrityError) Is(target error) bool {
+	if _, ok := target.(*ContainerIntegrityError); ok {
+		return true
+	}
+	_, ok := target.(*IntegrityError)
+	return ok
+}
+
 // WhitelistError indicates a whitelist verification failure.
 type WhitelistError struct {
 	Message string
@@ -37,74 +80,11 @@ func (e *WhitelistError) Unwrap() error {
 	return e.Err
 }
 
-// APIError represents an error response from the Taurus-PROTECT API.
-// It supports errors.As for type-based error handling, and errors.Is via
-// Unwrap for cause chain matching.
-type APIError struct {
-	// StatusCode is the HTTP status code.
-	StatusCode int
-	// ErrorCode is the API error code.
-	ErrorCode string
-	// Message is the human-readable error message.
-	Message string
-	// Err is the underlying error, if any.
-	Err error
-}
-
-func (e *APIError) Error() string {
-	if e.ErrorCode != "" {
-		return fmt.Sprintf("API error %d (%s): %s", e.StatusCode, e.ErrorCode, e.Message)
-	}
-	return fmt.Sprintf("API error %d: %s", e.StatusCode, e.Message)
-}
-
-func (e *APIError) Unwrap() error {
-	return e.Err
-}
-
-// IsRetryable returns true if the error is retryable (429 or 5xx).
-func (e *APIError) IsRetryable() bool {
-	return e.StatusCode == 429 || (e.StatusCode >= 500 && e.StatusCode < 600)
-}
-
-// IsClientError returns true for 4xx errors.
-func (e *APIError) IsClientError() bool {
-	return e.StatusCode >= 400 && e.StatusCode < 500
-}
-
-// IsServerError returns true for 5xx errors.
-func (e *APIError) IsServerError() bool {
-	return e.StatusCode >= 500 && e.StatusCode < 600
-}
-
-// ValidationError represents a 400 Bad Request error.
-type ValidationError struct {
-	*APIError
-}
-
-// AuthenticationError represents a 401 Unauthorized error.
-type AuthenticationError struct {
-	*APIError
-}
-
-// AuthorizationError represents a 403 Forbidden error.
-type AuthorizationError struct {
-	*APIError
-}
-
-// NotFoundError represents a 404 Not Found error.
-type NotFoundError struct {
-	*APIError
-}
-
-// RateLimitError represents a 429 Too Many Requests error.
-type RateLimitError struct {
-	*APIError
-}
-
-// ServerError represents a 5xx server error.
-type ServerError struct {
-	*APIError
+// Is matches any WhitelistError so the protect.ErrWhitelist sentinel works with
+// errors.Is regardless of the message.
+func (e *WhitelistError) Is(target error) bool {
+	_, ok := target.(*WhitelistError)
+	return ok
 }
 
 // ConfigurationError represents a client configuration error.
@@ -139,30 +119,4 @@ func (e *RequestMetadataError) Error() string {
 
 func (e *RequestMetadataError) Unwrap() error {
 	return e.Err
-}
-
-// NewAPIError creates the appropriate typed error based on the HTTP status code.
-func NewAPIError(statusCode int, errorCode string, message string, err error) error {
-	base := &APIError{
-		StatusCode: statusCode,
-		ErrorCode:  errorCode,
-		Message:    message,
-		Err:        err,
-	}
-	switch {
-	case statusCode == 400:
-		return &ValidationError{APIError: base}
-	case statusCode == 401:
-		return &AuthenticationError{APIError: base}
-	case statusCode == 403:
-		return &AuthorizationError{APIError: base}
-	case statusCode == 404:
-		return &NotFoundError{APIError: base}
-	case statusCode == 429:
-		return &RateLimitError{APIError: base}
-	case statusCode >= 500:
-		return &ServerError{APIError: base}
-	default:
-		return base
-	}
 }

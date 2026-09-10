@@ -55,4 +55,16 @@ class BusinessRuleServiceTest {
         assertThrows(IllegalArgumentException.class, () ->
                 businessRuleService.getBusinessRulesByCurrency("", null));
     }
+
+    /**
+     * The transactions-enabled kill switch existed only in the Go SDK, even though the
+     * generated op is present in all four and tg-protect-mcpd drives it. Without a
+     * network stub (the project forbids Mockito) the reachable assertion is that the
+     * method exists with a boolean arity and fails on transport rather than on a missing
+     * symbol — which is what pins the cross-SDK surface.
+     */
+    @Test
+    void updateTransactionsEnabled_isReachableWithABooleanFlag() throws Exception {
+        assertThrows(Exception.class, () -> businessRuleService.updateTransactionsEnabled(false));
+    }
 }

@@ -9,6 +9,7 @@ from taurus_protect.crypto.signing import sign_data
 from taurus_protect.errors import IntegrityError
 from taurus_protect.helpers.signature_verifier import (
     is_valid_signature,
+    verify_governance_rules,
     verify_raw_signature,
 )
 
@@ -182,3 +183,107 @@ class TestVerifyGovernanceRulesIntegration:
         valid_count = sum(1 for sig in signatures if is_valid_signature(data, sig, keys))
 
         assert valid_count == 2
+
+
+class TestDistinctSignerCounting:
+    """min_valid_signatures counts distinct signing keys, not signature entries.
+
+    Counting entries would let one compromised key satisfy any threshold, since ECDSA
+    is randomized and a single key can emit unlimited valid signatures over one payload.
+    """
+
+    @staticmethod
+    def _rules(container: bytes, signatures):
+        from taurus_protect.models.governance_rules import GovernanceRules, RuleUserSignature
+
+        return GovernanceRules(
+            rules_container=base64.b64encode(container).decode("utf-8"),
+            rules_signatures=[
+                RuleUserSignature(user_id=user_id, signature=sig) for user_id, sig in signatures
+            ],
+        )
+
+    def test_two_distinct_signers_meet_threshold_two(
+        self,
+        ecdsa_private_key: ec.EllipticCurvePrivateKey,
+        ecdsa_public_key: ec.EllipticCurvePublicKey,
+        second_ecdsa_private_key: ec.EllipticCurvePrivateKey,
+        second_ecdsa_public_key: ec.EllipticCurvePublicKey,
+    ) -> None:
+        data = b"rules container data"
+        rules = self._rules(
+            data,
+            [
+                ("admin1", sign_data(ecdsa_private_key, data)),
+                ("admin2", sign_data(second_ecdsa_private_key, data)),
+            ],
+        )
+        verify_governance_rules(rules, 2, [ecdsa_public_key, second_ecdsa_public_key])
+
+    def test_one_key_cannot_meet_threshold_two(
+        self,
+        ecdsa_private_key: ec.EllipticCurvePrivateKey,
+        ecdsa_public_key: ec.EllipticCurvePublicKey,
+        second_ecdsa_public_key: ec.EllipticCurvePublicKey,
+    ) -> None:
+        data = b"rules container data"
+        keys = [ecdsa_public_key, second_ecdsa_public_key]
+        rules = self._rules(
+            data,
+            [
+                ("admin1", sign_data(ecdsa_private_key, data)),
+                ("admin1-again", sign_data(ecdsa_private_key, data)),
+            ],
+        )
+
+        with pytest.raises(IntegrityError):
+            verify_governance_rules(rules, 2, keys)
+        verify_governance_rules(rules, 1, keys)
+
+    def test_replayed_signature_counts_once(
+        self,
+        ecdsa_private_key: ec.EllipticCurvePrivateKey,
+        ecdsa_public_key: ec.EllipticCurvePublicKey,
+        second_ecdsa_public_key: ec.EllipticCurvePublicKey,
+    ) -> None:
+        data = b"rules container data"
+        replayed = sign_data(ecdsa_private_key, data)
+        rules = self._rules(data, [("admin1", replayed), ("admin1-replay", replayed)])
+
+        with pytest.raises(IntegrityError):
+            verify_governance_rules(rules, 2, [ecdsa_public_key, second_ecdsa_public_key])
+
+    def test_same_key_configured_twice_counts_once(
+        self,
+        ecdsa_private_key: ec.EllipticCurvePrivateKey,
+        ecdsa_public_key: ec.EllipticCurvePublicKey,
+    ) -> None:
+        data = b"rules container data"
+        rules = self._rules(
+            data,
+            [
+                ("admin1", sign_data(ecdsa_private_key, data)),
+                ("admin1-again", sign_data(ecdsa_private_key, data)),
+            ],
+        )
+
+        with pytest.raises(IntegrityError):
+            verify_governance_rules(rules, 2, [ecdsa_public_key, ecdsa_public_key])
+
+    def test_unconfigured_key_contributes_nothing(
+        self,
+        ecdsa_private_key: ec.EllipticCurvePrivateKey,
+        ecdsa_public_key: ec.EllipticCurvePublicKey,
+        second_ecdsa_private_key: ec.EllipticCurvePrivateKey,
+    ) -> None:
+        data = b"rules container data"
+        rules = self._rules(
+            data,
+            [
+                ("admin1", sign_data(ecdsa_private_key, data)),
+                ("stranger", sign_data(second_ecdsa_private_key, data)),
+            ],
+        )
+
+        with pytest.raises(IntegrityError):
+            verify_governance_rules(rules, 2, [ecdsa_public_key])

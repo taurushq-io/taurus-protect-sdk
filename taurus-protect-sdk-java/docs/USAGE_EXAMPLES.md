@@ -23,6 +23,12 @@ This document provides complete code examples for common SDK operations.
 
 ### Basic Initialization
 
+> `createFromPem` is a PEM-decoding convenience for the **api-key** mechanism (it is not
+> deprecated). For a Bearer token — or to pass keys already decoded — use
+> `ProtectClient.create(host, Credentials, keys, minValidSignatures)` with
+> `Credentials.apiKey` / `.bearerToken` / `.bearerTokenProvider`. SuperAdmin keys are
+> mandatory either way. See [AUTHENTICATION.md](AUTHENTICATION.md).
+
 ```java
 import com.taurushq.sdk.protect.client.ProtectClient;
 import java.util.Arrays;

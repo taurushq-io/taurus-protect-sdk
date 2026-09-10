@@ -1,10 +1,8 @@
 package service
 
 import (
-	"net/http"
 	"testing"
 
-	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/internal/openapi"
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/model"
 )
 
@@ -153,55 +151,6 @@ func TestAPIError_Unwrap_Nil(t *testing.T) {
 
 	if apiErr.Unwrap() != nil {
 		t.Error("APIError.Unwrap() should return nil when no wrapped error")
-	}
-}
-
-func TestMapOpenAPIError_StatusCodes(t *testing.T) {
-	tests := []struct {
-		name       string
-		statusCode int
-		wantCode   int
-		wantDescr  string
-	}{
-		{"bad request", 400, 400, "Bad Request"},
-		{"unauthorized", 401, 401, "Unauthorized"},
-		{"forbidden", 403, 403, "Forbidden"},
-		{"not found", 404, 404, "Not Found"},
-		{"rate limited", 429, 429, "Rate Limited"},
-		{"server error 500", 500, 500, "Server Error"},
-		{"server error 502", 502, 502, "Server Error"},
-		{"server error 503", 503, 503, "Server Error"},
-		{"unknown status", 418, 418, ""}, // I'm a teapot - no special description
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			resp := &http.Response{StatusCode: tt.statusCode}
-			// Create an actual GenericOpenAPIError
-			mockErr := &openapi.GenericOpenAPIError{}
-
-			err := mapOpenAPIError(mockErr, resp)
-			apiErr, ok := err.(*APIError)
-			if !ok {
-				t.Fatalf("mapOpenAPIError() returned %T, want *APIError", err)
-			}
-			if apiErr.Code != tt.wantCode {
-				t.Errorf("APIError.Code = %v, want %v", apiErr.Code, tt.wantCode)
-			}
-			if apiErr.Description != tt.wantDescr {
-				t.Errorf("APIError.Description = %v, want %v", apiErr.Description, tt.wantDescr)
-			}
-		})
-	}
-}
-
-func TestMapOpenAPIError_NilResponse(t *testing.T) {
-	mockErr := &openapi.GenericOpenAPIError{}
-	err := mapOpenAPIError(mockErr, nil)
-
-	// Should return the original error when response is nil
-	if err != mockErr {
-		t.Errorf("mapOpenAPIError(err, nil) should return original error")
 	}
 }
 

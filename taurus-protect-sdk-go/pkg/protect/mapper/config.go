@@ -39,4 +39,3 @@ func NFTMintingConfigFromDTO(dto *openapi.TenantConfigNFTMinting) *model.NFTMint
 		PublicBaseURL: safeString(dto.PublicBaseURL),
 	}
 }
-

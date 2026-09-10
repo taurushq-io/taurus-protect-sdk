@@ -1,0 +1,22 @@
+{
+  "_comment": [
+    "Cross-SDK naming map for the API-surface differ. A service listed here under two",
+    "canonical names is the SAME service with a per-SDK idiomatic name; the differ treats",
+    "the group as one entry so an accepted naming difference does not read as a gap.",
+    "Every entry must correspond to a row in docs/SDK_ALIGNMENT_REPORT.md's",
+    "'Remaining Known Differences' table — that is what makes it a decision and not a",
+    "silent exemption."
+  ],
+  "service_groups": [
+    {
+      "canonical": "contractwhitelisting",
+      "aliases": ["whitelistedcontract"],
+      "reason": "Go uses WhitelistedContractService (Go idiom); the other three use ContractWhitelistingService."
+    },
+    {
+      "canonical": "webhookcall",
+      "aliases": ["webhookcalls"],
+      "reason": "Java uses the plural WebhookCallsService; Go, Python and TypeScript use the singular."
+    }
+  ]
+}

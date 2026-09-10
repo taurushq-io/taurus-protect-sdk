@@ -1,0 +1,1266 @@
+{
+  "sdk": "typescript",
+  "source": "src/services",
+  "services": [
+    {
+      "name": "ActionService",
+      "methods": [
+        {
+          "name": "get",
+          "signature": "get(actionId: string): Promise<ActionEnvelope>",
+          "doc": "Retrieves a specific action by its ID."
+        },
+        {
+          "name": "list",
+          "signature": "list(): Promise<ActionEnvelope[]>",
+          "doc": "Lists all actions."
+        },
+        {
+          "name": "list",
+          "signature": "list(options: ListActionsOptions): Promise<ActionEnvelope[]>",
+          "doc": "Lists actions with optional filters."
+        },
+        {
+          "name": "list",
+          "signature": "list(options?: ListActionsOptions): Promise<ActionEnvelope[]>",
+          "doc": ""
+        }
+      ]
+    },
+    {
+      "name": "AddressService",
+      "methods": [
+        {
+          "name": "create",
+          "signature": "create(request: CreateAddressRequest): Promise<Address>",
+          "doc": "Creates a new address."
+        },
+        {
+          "name": "createAddress",
+          "signature": "createAddress(walletId: number, label: string, comment?: string, customerId?: string): Promise<Address>",
+          "doc": "Creates an address with explicit parameters."
+        },
+        {
+          "name": "createAttribute",
+          "signature": "createAttribute(addressId: number, key: string, value: string): Promise<void>",
+          "doc": "Creates an attribute for an address."
+        },
+        {
+          "name": "deleteAttribute",
+          "signature": "deleteAttribute(addressId: number, attributeId: number): Promise<void>",
+          "doc": "Deletes an attribute from an address."
+        },
+        {
+          "name": "get",
+          "signature": "get(addressId: number): Promise<Address>",
+          "doc": "Gets an address by ID with mandatory signature verification."
+        },
+        {
+          "name": "getProofOfReserve",
+          "signature": "getProofOfReserve(addressId: number, challenge?: string): Promise<TgvalidatordGetAddressProofOfReserveReply[\"result\"]>",
+          "doc": "Gets the proof of reserve for an address."
+        },
+        {
+          "name": "list",
+          "signature": "list(walletId: number, options?: Omit<ListAddressesOptions, \"walletId\">): Promise<{ items: Address[]; pagination: Pagination | undefined; }>",
+          "doc": "Lists addresses for a wallet with mandatory signature verification."
+        },
+        {
+          "name": "listWithOptions",
+          "signature": "listWithOptions(options?: ListAddressesOptions): Promise<{ items: Address[]; pagination: Pagination | undefined; }>",
+          "doc": "Lists addresses with full filtering options."
+        }
+      ]
+    },
+    {
+      "name": "AirGapService",
+      "methods": [
+        {
+          "name": "getOutgoingAirGap",
+          "signature": "getOutgoingAirGap(options: GetOutgoingAirGapOptions): Promise<Blob>",
+          "doc": "Exports HSM-ready requests for cold HSM signing."
+        },
+        {
+          "name": "getOutgoingAirGapAddresses",
+          "signature": "getOutgoingAirGapAddresses(options: GetOutgoingAirGapAddressOptions): Promise<Blob>",
+          "doc": "Exports addresses for cold HSM signing."
+        },
+        {
+          "name": "submitIncomingAirGap",
+          "signature": "submitIncomingAirGap(options: SubmitIncomingAirGapOptions): Promise<void>",
+          "doc": "Imports signed requests from the cold HSM."
+        }
+      ]
+    },
+    {
+      "name": "AssetService",
+      "methods": [
+        {
+          "name": "getAssetAddresses",
+          "signature": "getAssetAddresses(options: GetAssetAddressesOptions): Promise<Address[]>",
+          "doc": "Retrieves addresses that hold a specific asset."
+        },
+        {
+          "name": "getAssetWallets",
+          "signature": "getAssetWallets(options: GetAssetWalletsOptions): Promise<Wallet[]>",
+          "doc": "Retrieves wallets that hold a specific asset."
+        }
+      ]
+    },
+    {
+      "name": "AuditService",
+      "methods": [
+        {
+          "name": "exportAuditTrails",
+          "signature": "exportAuditTrails(options?: { externalUserId?: string; entities?: string[]; actions?: string[]; creationDateFrom?: Date; creationDateTo?: Date; format?: string; }): Promise<string>",
+          "doc": "Export audit trails to a formatted string (CSV or JSON)."
+        },
+        {
+          "name": "list",
+          "signature": "list(options?: ListAuditTrailsOptions): Promise<AuditTrail[]>",
+          "doc": "Lists audit trails with optional filtering."
+        }
+      ]
+    },
+    {
+      "name": "BalanceService",
+      "methods": [
+        {
+          "name": "list",
+          "signature": "list(options?: ListBalancesOptions): Promise<AssetBalance[]>",
+          "doc": "Lists asset balances for the tenant."
+        },
+        {
+          "name": "listNFTCollections",
+          "signature": "listNFTCollections(options: ListNFTCollectionBalancesOptions): Promise<NFTCollectionBalance[]>",
+          "doc": "Lists NFT collection balances for the tenant."
+        }
+      ]
+    },
+    {
+      "name": "BlockchainService",
+      "methods": [
+        {
+          "name": "get",
+          "signature": "get(blockchain: string, network: string, includeBlockHeight?: boolean): Promise<Blockchain>",
+          "doc": "Gets a blockchain by symbol and network."
+        },
+        {
+          "name": "list",
+          "signature": "list(options?: ListBlockchainsOptions): Promise<Blockchain[]>",
+          "doc": "Lists all supported blockchains."
+        }
+      ]
+    },
+    {
+      "name": "BusinessRuleService",
+      "methods": [
+        {
+          "name": "get",
+          "signature": "get(ruleId: string): Promise<BusinessRule>",
+          "doc": "Gets a business rule by ID."
+        },
+        {
+          "name": "list",
+          "signature": "list(options?: ListBusinessRulesOptions): Promise<ListBusinessRulesResult>",
+          "doc": "Lists business rules with optional filtering and pagination."
+        },
+        {
+          "name": "updateTransactionsEnabled",
+          "signature": "updateTransactionsEnabled(enabled: boolean): Promise<void>",
+          "doc": "Enables or disables transaction processing for the tenant (the"
+        }
+      ]
+    },
+    {
+      "name": "ChangeService",
+      "methods": [
+        {
+          "name": "approve",
+          "signature": "approve(id: string): Promise<void>",
+          "doc": "Approves a change."
+        },
+        {
+          "name": "approveMany",
+          "signature": "approveMany(ids: string[]): Promise<void>",
+          "doc": "Approves multiple changes."
+        },
+        {
+          "name": "create",
+          "signature": "create(request: CreateChangeRequest): Promise<string>",
+          "doc": "Creates a change request."
+        },
+        {
+          "name": "get",
+          "signature": "get(id: string): Promise<Change>",
+          "doc": "Gets a change by ID."
+        },
+        {
+          "name": "list",
+          "signature": "list(options?: ListChangesOptions): Promise<ListChangesResult>",
+          "doc": "Lists changes with optional filtering."
+        },
+        {
+          "name": "listForApproval",
+          "signature": "listForApproval(options?: ListChangesForApprovalOptions): Promise<ListChangesResult>",
+          "doc": "Lists changes pending approval."
+        },
+        {
+          "name": "reject",
+          "signature": "reject(id: string): Promise<void>",
+          "doc": "Rejects a change."
+        },
+        {
+          "name": "rejectMany",
+          "signature": "rejectMany(ids: string[]): Promise<void>",
+          "doc": "Rejects multiple changes."
+        }
+      ]
+    },
+    {
+      "name": "ConfigService",
+      "methods": [
+        {
+          "name": "getTenantConfig",
+          "signature": "getTenantConfig(): Promise<TenantConfig>",
+          "doc": "Retrieves the tenant configuration."
+        }
+      ]
+    },
+    {
+      "name": "ContractWhitelistingService",
+      "methods": [
+        {
+          "name": "approve",
+          "signature": "approve(ids: string[], signature: string, comment: string): Promise<void>",
+          "doc": "Approves one or more whitelisted contract addresses."
+        },
+        {
+          "name": "create",
+          "signature": "create(request: CreateWhitelistedContractRequest): Promise<string>",
+          "doc": "Creates a new whitelisted contract address."
+        },
+        {
+          "name": "createAttribute",
+          "signature": "createAttribute(contractId: string, key: string, value: string, options?: { contentType?: string; type?: string; subType?: string; }): Promise<void>",
+          "doc": "Creates an attribute on a whitelisted contract."
+        },
+        {
+          "name": "deleteAttribute",
+          "signature": "deleteAttribute(contractId: string, attributeId: string): Promise<void>",
+          "doc": "Deletes an attribute from a whitelisted contract."
+        },
+        {
+          "name": "getAttribute",
+          "signature": "getAttribute(contractId: string, attributeId: string): Promise<WhitelistedContractAttribute>",
+          "doc": "Gets an attribute from a whitelisted contract."
+        },
+        {
+          "name": "reject",
+          "signature": "reject(ids: string[], comment: string): Promise<void>",
+          "doc": "Rejects a whitelisted contract."
+        },
+        {
+          "name": "update",
+          "signature": "update(id: string, request: UpdateWhitelistedContractRequest): Promise<void>",
+          "doc": "Updates an existing whitelisted contract."
+        }
+      ]
+    },
+    {
+      "name": "CurrencyService",
+      "methods": [
+        {
+          "name": "get",
+          "signature": "get(currencyId: string): Promise<Currency>",
+          "doc": "Gets a currency by ID."
+        },
+        {
+          "name": "getBaseCurrency",
+          "signature": "getBaseCurrency(): Promise<Currency>",
+          "doc": "Gets the base currency configured for the tenant."
+        },
+        {
+          "name": "getByBlockchain",
+          "signature": "getByBlockchain(options: GetCurrencyByBlockchainOptions): Promise<Currency>",
+          "doc": "Gets a currency by blockchain and network."
+        },
+        {
+          "name": "list",
+          "signature": "list(options?: ListCurrenciesOptions): Promise<Currency[]>",
+          "doc": "Lists all currencies."
+        }
+      ]
+    },
+    {
+      "name": "ExchangeService",
+      "methods": [
+        {
+          "name": "export",
+          "signature": "export(format?: string): Promise<string>",
+          "doc": "Exports all exchange accounts to a specified format."
+        },
+        {
+          "name": "get",
+          "signature": "get(id: string): Promise<Exchange>",
+          "doc": "Gets an exchange account by ID."
+        },
+        {
+          "name": "getCounterparties",
+          "signature": "getCounterparties(): Promise<ExchangeCounterparty[]>",
+          "doc": "Gets all exchange counterparties."
+        },
+        {
+          "name": "getWithdrawalFee",
+          "signature": "getWithdrawalFee(exchangeId: string, options?: GetWithdrawalFeeOptions): Promise<ExchangeWithdrawalFee | undefined>",
+          "doc": "Gets the withdrawal fee for a transfer from an exchange."
+        },
+        {
+          "name": "list",
+          "signature": "list(options?: ListExchangesOptions): Promise<ListExchangesResult>",
+          "doc": "Lists exchange accounts."
+        }
+      ]
+    },
+    {
+      "name": "FeePayerService",
+      "methods": [
+        {
+          "name": "get",
+          "signature": "get(id: string): Promise<FeePayer>",
+          "doc": "Gets a fee payer by ID."
+        },
+        {
+          "name": "list",
+          "signature": "list(options?: ListFeePayersOptions): Promise<FeePayer[]>",
+          "doc": "Lists fee payers with optional filtering."
+        }
+      ]
+    },
+    {
+      "name": "FeeService",
+      "methods": [
+        {
+          "name": "getFees",
+          "signature": "getFees(): Promise<Fee[]>",
+          "doc": "Retrieves current network fees for all supported blockchains (v1 API)."
+        },
+        {
+          "name": "getFeesV2",
+          "signature": "getFeesV2(): Promise<FeeV2[]>",
+          "doc": "Retrieves current native currency fees for all supported blockchains (v2 API)."
+        }
+      ]
+    },
+    {
+      "name": "FiatService",
+      "methods": [
+        {
+          "name": "getFiatProviderAccount",
+          "signature": "getFiatProviderAccount(id: string): Promise<FiatProviderAccount>",
+          "doc": "Retrieves a fiat provider account by ID."
+        },
+        {
+          "name": "getFiatProviderAccounts",
+          "signature": "getFiatProviderAccounts(options: ListFiatProviderAccountsOptions): Promise<FiatProviderAccountResult>",
+          "doc": "Retrieves fiat provider accounts with optional filtering."
+        },
+        {
+          "name": "getFiatProviderCounterpartyAccount",
+          "signature": "getFiatProviderCounterpartyAccount(id: string): Promise<FiatProviderCounterpartyAccount>",
+          "doc": "Retrieves a fiat provider counterparty account by ID."
+        },
+        {
+          "name": "getFiatProviderCounterpartyAccounts",
+          "signature": "getFiatProviderCounterpartyAccounts(options: ListFiatProviderCounterpartyAccountsOptions): Promise<FiatProviderCounterpartyAccountResult>",
+          "doc": "Retrieves fiat provider counterparty accounts with optional filtering."
+        },
+        {
+          "name": "getFiatProviderOperation",
+          "signature": "getFiatProviderOperation(id: string): Promise<FiatProviderOperation>",
+          "doc": "Retrieves a fiat provider operation by ID."
+        },
+        {
+          "name": "getFiatProviderOperations",
+          "signature": "getFiatProviderOperations(options?: ListFiatProviderOperationsOptions): Promise<FiatProviderOperationResult>",
+          "doc": "Retrieves fiat provider operations with optional filtering."
+        },
+        {
+          "name": "getFiatProviders",
+          "signature": "getFiatProviders(): Promise<FiatProvider[]>",
+          "doc": "Retrieves all configured fiat providers."
+        }
+      ]
+    },
+    {
+      "name": "GovernanceRuleService",
+      "methods": [
+        {
+          "name": "approveRulesProposal",
+          "signature": "approveRulesProposal(privateKey: KeyObject, comment: string, expectedContainerHash: string): Promise<void>",
+          "doc": ""
+        },
+        {
+          "name": "decodeProposalForReview",
+          "signature": "decodeProposalForReview(rules: GovernanceRules): DecodedRulesContainer",
+          "doc": ""
+        },
+        {
+          "name": "getDecodedRulesContainer",
+          "signature": "getDecodedRulesContainer(): Promise<DecodedRulesContainer>",
+          "doc": "Gets the decoded rules container from the current governance rules."
+        },
+        {
+          "name": "getPublicKeys",
+          "signature": "getPublicKeys(): Promise<SuperAdminPublicKey[]>",
+          "doc": "Gets the SuperAdmin public keys the server has configured."
+        },
+        {
+          "name": "getRules",
+          "signature": "getRules(): Promise<GovernanceRules | undefined>",
+          "doc": "Gets the currently enforced governance rules."
+        },
+        {
+          "name": "getRulesById",
+          "signature": "getRulesById(rulesId: string): Promise<GovernanceRules | undefined>",
+          "doc": "Gets a governance ruleset by its ID."
+        },
+        {
+          "name": "getRulesHistory",
+          "signature": "getRulesHistory(options?: ListGovernanceRulesHistoryOptions): Promise<GovernanceRulesHistoryResult>",
+          "doc": "Gets the history of governance rules."
+        },
+        {
+          "name": "getRulesProposal",
+          "signature": "getRulesProposal(): Promise<GovernanceRules | undefined>",
+          "doc": "Gets the proposed governance rules."
+        },
+        {
+          "name": "proposalContainerHash",
+          "signature": "proposalContainerHash(rules: GovernanceRules): string",
+          "doc": ""
+        },
+        {
+          "name": "rejectRulesProposal",
+          "signature": "rejectRulesProposal(comment: string): Promise<void>",
+          "doc": "Rejects the pending rules proposal with a comment (SuperAdmin only)."
+        },
+        {
+          "name": "updateRulesProposal",
+          "signature": "updateRulesProposal(container: DecodedRulesContainer): Promise<void>",
+          "doc": ""
+        },
+        {
+          "name": "verifyGovernanceRules",
+          "signature": "verifyGovernanceRules(rules: GovernanceRules): GovernanceRules",
+          "doc": "Verifies that governance rules have enough valid SuperAdmin signatures."
+        }
+      ]
+    },
+    {
+      "name": "GroupService",
+      "methods": [
+        {
+          "name": "get",
+          "signature": "get(groupId: string): Promise<Group>",
+          "doc": "Gets a group by ID."
+        },
+        {
+          "name": "list",
+          "signature": "list(options?: ListGroupsOptions): Promise<PaginatedResult<Group>>",
+          "doc": "Lists groups with pagination."
+        }
+      ]
+    },
+    {
+      "name": "HealthService",
+      "methods": [
+        {
+          "name": "check",
+          "signature": "check(): Promise<HealthStatus>",
+          "doc": "Checks the API health status."
+        },
+        {
+          "name": "getGlobalStatus",
+          "signature": "getGlobalStatus(): Promise<HealthStatus>",
+          "doc": "Checks the global component status."
+        }
+      ]
+    },
+    {
+      "name": "JobService",
+      "methods": [
+        {
+          "name": "get",
+          "signature": "get(name: string): Promise<Job>",
+          "doc": "Gets a job by name."
+        },
+        {
+          "name": "getStatus",
+          "signature": "getStatus(name: string, id: string): Promise<JobStatus>",
+          "doc": "Gets the status of a specific job execution."
+        },
+        {
+          "name": "list",
+          "signature": "list(): Promise<Job[]>",
+          "doc": "Lists all jobs."
+        }
+      ]
+    },
+    {
+      "name": "LendingService",
+      "methods": [
+        {
+          "name": "cancelLendingAgreement",
+          "signature": "cancelLendingAgreement(lendingAgreementId: string): Promise<void>",
+          "doc": "Cancels a lending agreement."
+        },
+        {
+          "name": "createLendingAgreement",
+          "signature": "createLendingAgreement(request: CreateLendingAgreementRequest): Promise<string>",
+          "doc": "Creates a new lending agreement."
+        },
+        {
+          "name": "createLendingAgreementAttachment",
+          "signature": "createLendingAgreementAttachment(lendingAgreementId: string, request: CreateLendingAgreementAttachmentRequest): Promise<string>",
+          "doc": "Adds an attachment to a lending agreement."
+        },
+        {
+          "name": "createLendingOffer",
+          "signature": "createLendingOffer(request: CreateLendingOfferRequest): Promise<string>",
+          "doc": "Creates a new lending offer."
+        },
+        {
+          "name": "deleteLendingOffer",
+          "signature": "deleteLendingOffer(offerId: string): Promise<void>",
+          "doc": "Deletes a specific lending offer."
+        },
+        {
+          "name": "deleteLendingOffers",
+          "signature": "deleteLendingOffers(): Promise<void>",
+          "doc": "Deletes all lending offers for the current participant."
+        },
+        {
+          "name": "getLendingAgreement",
+          "signature": "getLendingAgreement(lendingAgreementId: string): Promise<LendingAgreement>",
+          "doc": "Gets a lending agreement by ID."
+        },
+        {
+          "name": "getLendingOffer",
+          "signature": "getLendingOffer(offerId: string): Promise<LendingOffer>",
+          "doc": "Gets a lending offer by ID."
+        },
+        {
+          "name": "listLendingAgreementAttachments",
+          "signature": "listLendingAgreementAttachments(lendingAgreementId: string): Promise<LendingAgreementAttachment[]>",
+          "doc": "Lists attachments for a lending agreement."
+        },
+        {
+          "name": "listLendingAgreements",
+          "signature": "listLendingAgreements(options?: ListLendingAgreementsOptions): Promise<{ agreements: LendingAgreement[]; pagination?: CursorPagination; }>",
+          "doc": "Lists lending agreements."
+        },
+        {
+          "name": "listLendingAgreementsForApproval",
+          "signature": "listLendingAgreementsForApproval(options?: ListLendingAgreementsOptions): Promise<{ agreements: LendingAgreement[]; pagination?: CursorPagination; }>",
+          "doc": "Lists lending agreements pending approval."
+        },
+        {
+          "name": "listLendingOffers",
+          "signature": "listLendingOffers(options?: ListLendingOffersOptions): Promise<{ offers: LendingOffer[]; pagination?: CursorPagination; }>",
+          "doc": "Lists lending offers."
+        },
+        {
+          "name": "repayLendingAgreement",
+          "signature": "repayLendingAgreement(lendingAgreementId: string, request: RepayLendingAgreementRequest): Promise<void>",
+          "doc": "Records repayment for a lending agreement."
+        },
+        {
+          "name": "updateLendingAgreement",
+          "signature": "updateLendingAgreement(lendingAgreementId: string, request: UpdateLendingAgreementRequest): Promise<void>",
+          "doc": "Updates a lending agreement."
+        }
+      ]
+    },
+    {
+      "name": "MultiFactorSignatureService",
+      "methods": [
+        {
+          "name": "approve",
+          "signature": "approve(request: ApproveMultiFactorSignatureRequest): Promise<void>",
+          "doc": "Approve a multi-factor signature."
+        },
+        {
+          "name": "create",
+          "signature": "create(request: CreateMultiFactorSignatureRequest): Promise<string>",
+          "doc": "Create a multi-factor signature batch."
+        },
+        {
+          "name": "get",
+          "signature": "get(id: string): Promise<MultiFactorSignatureInfo>",
+          "doc": "Get multi-factor signature entity info by ID."
+        },
+        {
+          "name": "reject",
+          "signature": "reject(request: RejectMultiFactorSignatureRequest): Promise<void>",
+          "doc": "Reject a multi-factor signature."
+        }
+      ]
+    },
+    {
+      "name": "ParticipantService",
+      "methods": [
+        {
+          "name": "createParticipantAttribute",
+          "signature": "createParticipantAttribute(participantId: string, request: CreateParticipantAttributeRequest): Promise<void>",
+          "doc": "Creates an attribute for a participant."
+        },
+        {
+          "name": "deleteParticipantAttribute",
+          "signature": "deleteParticipantAttribute(participantId: string, attributeId: string): Promise<void>",
+          "doc": "Deletes an attribute for a participant."
+        },
+        {
+          "name": "get",
+          "signature": "get(participantId: string, options?: GetParticipantOptions): Promise<Participant>",
+          "doc": "Gets a participant by ID."
+        },
+        {
+          "name": "getMyParticipant",
+          "signature": "getMyParticipant(): Promise<MyParticipant>",
+          "doc": "Gets the current participant with settings."
+        },
+        {
+          "name": "list",
+          "signature": "list(options?: ListParticipantsOptions): Promise<Participant[]>",
+          "doc": "Lists visible Taurus Network participants."
+        }
+      ]
+    },
+    {
+      "name": "PledgeService",
+      "methods": [
+        {
+          "name": "addCollateral",
+          "signature": "addCollateral(pledgeId: string, request: AddPledgeCollateralRequest): Promise<AddCollateralResult>",
+          "doc": "Adds collateral to an existing pledge."
+        },
+        {
+          "name": "approvePledgeActions",
+          "signature": "approvePledgeActions(actionIds: string[], signature: string, comment?: string): Promise<number>",
+          "doc": "Approves multiple pledge actions with ECDSA signature."
+        },
+        {
+          "name": "createPledge",
+          "signature": "createPledge(request: CreatePledgeRequest): Promise<CreatePledgeResult>",
+          "doc": "Creates a new pledge."
+        },
+        {
+          "name": "get",
+          "signature": "get(pledgeId: string): Promise<Pledge>",
+          "doc": "Gets a pledge by ID."
+        },
+        {
+          "name": "initiateWithdrawPledge",
+          "signature": "initiateWithdrawPledge(pledgeId: string, request: InitiateWithdrawPledgeRequest): Promise<WithdrawPledgeResult>",
+          "doc": "Initiates withdrawal from a pledge (pledgor operation)."
+        },
+        {
+          "name": "list",
+          "signature": "list(options?: ListPledgesOptions): Promise<{ pledges: Pledge[]; pagination?: CursorPagination; }>",
+          "doc": "Lists pledges with optional filtering."
+        },
+        {
+          "name": "listPledgeActions",
+          "signature": "listPledgeActions(options?: ListPledgeActionsOptions): Promise<{ actions: PledgeAction[]; pagination?: CursorPagination; }>",
+          "doc": "Lists pledge actions with optional filtering."
+        },
+        {
+          "name": "listPledgeActionsForApproval",
+          "signature": "listPledgeActionsForApproval(options?: ListPledgeActionsOptions): Promise<{ actions: PledgeAction[]; pagination?: CursorPagination; }>",
+          "doc": "Lists pledge actions pending approval."
+        },
+        {
+          "name": "listPledgeWithdrawals",
+          "signature": "listPledgeWithdrawals(options?: ListPledgeWithdrawalsOptions): Promise<{ withdrawals: PledgeWithdrawal[]; pagination?: CursorPagination; }>",
+          "doc": "Lists pledge withdrawals with optional filtering."
+        },
+        {
+          "name": "rejectPledge",
+          "signature": "rejectPledge(pledgeId: string, request: RejectPledgeRequest): Promise<void>",
+          "doc": "Rejects a pledge."
+        },
+        {
+          "name": "rejectPledgeActions",
+          "signature": "rejectPledgeActions(request: RejectPledgeActionsRequest): Promise<void>",
+          "doc": "Rejects multiple pledge actions."
+        },
+        {
+          "name": "unpledge",
+          "signature": "unpledge(pledgeId: string): Promise<UnpledgeResult>",
+          "doc": "Unpledges all funds from a pledge."
+        },
+        {
+          "name": "updatePledge",
+          "signature": "updatePledge(pledgeId: string, request: UpdatePledgeRequest): Promise<void>",
+          "doc": "Updates a pledge's default destination."
+        },
+        {
+          "name": "withdrawPledge",
+          "signature": "withdrawPledge(pledgeId: string, request: WithdrawPledgeRequest): Promise<WithdrawPledgeResult>",
+          "doc": "Withdraws from a pledge (pledgee operation)."
+        }
+      ]
+    },
+    {
+      "name": "PriceService",
+      "methods": [
+        {
+          "name": "convert",
+          "signature": "convert(options: ConvertOptions): Promise<ConversionResult[]>",
+          "doc": "Converts an amount from one currency to target currencies."
+        },
+        {
+          "name": "getHistory",
+          "signature": "getHistory(options: GetPriceHistoryOptions): Promise<PriceHistoryPoint[]>",
+          "doc": "Gets price history for a currency pair."
+        },
+        {
+          "name": "list",
+          "signature": "list(): Promise<Price[]>",
+          "doc": "Lists all current prices."
+        }
+      ]
+    },
+    {
+      "name": "RequestService",
+      "methods": [
+        {
+          "name": "approveRequest",
+          "signature": "approveRequest(request: Request, privateKey: KeyObject, comment?: string): Promise<number>",
+          "doc": "Approve a single request with ECDSA signature."
+        },
+        {
+          "name": "approveRequests",
+          "signature": "approveRequests(requests: Request[], privateKey: KeyObject, comment?: string): Promise<number>",
+          "doc": "Approve multiple requests with ECDSA signature."
+        },
+        {
+          "name": "createCancelRequest",
+          "signature": "createCancelRequest(addressId: number, nonce: bigint | number): Promise<Request>",
+          "doc": "Create a cancel request for a pending transaction."
+        },
+        {
+          "name": "createExternalTransferFromWalletRequest",
+          "signature": "createExternalTransferFromWalletRequest(options: CreateExternalTransferFromWalletOptions): Promise<Request>",
+          "doc": "Create an external transfer request from a wallet to a whitelisted address."
+        },
+        {
+          "name": "createExternalTransferRequest",
+          "signature": "createExternalTransferRequest(options: CreateExternalTransferOptions): Promise<Request>",
+          "doc": "Create an external transfer request to a whitelisted address."
+        },
+        {
+          "name": "createIncomingRequest",
+          "signature": "createIncomingRequest(options: CreateIncomingRequestOptions): Promise<Request>",
+          "doc": "Create an incoming request from an exchange."
+        },
+        {
+          "name": "createInternalTransferFromWalletRequest",
+          "signature": "createInternalTransferFromWalletRequest(options: CreateInternalTransferFromWalletOptions): Promise<Request>",
+          "doc": "Create an internal transfer request from a wallet."
+        },
+        {
+          "name": "createInternalTransferRequest",
+          "signature": "createInternalTransferRequest(options: CreateInternalTransferOptions): Promise<Request>",
+          "doc": "Create an internal transfer request between addresses."
+        },
+        {
+          "name": "get",
+          "signature": "get(requestId: number): Promise<Request>",
+          "doc": "Get a request by ID with mandatory hash verification."
+        },
+        {
+          "name": "list",
+          "signature": "list(options?: ListRequestsOptions): Promise<ListRequestsResult>",
+          "doc": "List requests with filtering and pagination."
+        },
+        {
+          "name": "listForApproval",
+          "signature": "listForApproval(options?: ListRequestsForApprovalOptions): Promise<ListRequestsResult>",
+          "doc": "List requests pending approval."
+        },
+        {
+          "name": "rejectRequest",
+          "signature": "rejectRequest(requestId: number, comment: string): Promise<void>",
+          "doc": "Reject a single request."
+        },
+        {
+          "name": "rejectRequests",
+          "signature": "rejectRequests(requestIds: number[], comment: string): Promise<void>",
+          "doc": "Reject multiple requests."
+        }
+      ]
+    },
+    {
+      "name": "ReservationService",
+      "methods": [
+        {
+          "name": "get",
+          "signature": "get(id: string): Promise<Reservation>",
+          "doc": "Gets a reservation by ID."
+        },
+        {
+          "name": "getUtxo",
+          "signature": "getUtxo(id: string): Promise<ReservationUtxo>",
+          "doc": "Gets the UTXO details for a reservation."
+        },
+        {
+          "name": "list",
+          "signature": "list(options?: ListReservationsOptions): Promise<Reservation[]>",
+          "doc": "Lists all reservations with optional filtering."
+        }
+      ]
+    },
+    {
+      "name": "ScoreService",
+      "methods": [
+        {
+          "name": "refreshAddressScore",
+          "signature": "refreshAddressScore(addressId: number, scoreProvider: string): Promise<Score[]>",
+          "doc": "Refreshes the compliance scores for an internal address."
+        },
+        {
+          "name": "refreshWhitelistedAddressScore",
+          "signature": "refreshWhitelistedAddressScore(whitelistedAddressId: number, scoreProvider: string): Promise<Score[]>",
+          "doc": "Refreshes the compliance scores for a whitelisted external address."
+        }
+      ]
+    },
+    {
+      "name": "SettlementService",
+      "methods": [
+        {
+          "name": "cancel",
+          "signature": "cancel(settlementId: string): Promise<void>",
+          "doc": "Cancels a settlement."
+        },
+        {
+          "name": "create",
+          "signature": "create(request: CreateSettlementRequest): Promise<string>",
+          "doc": "Creates a new settlement."
+        },
+        {
+          "name": "get",
+          "signature": "get(settlementId: string): Promise<Settlement>",
+          "doc": "Gets a settlement by ID."
+        },
+        {
+          "name": "list",
+          "signature": "list(options?: ListSettlementsOptions): Promise<{ settlements: Settlement[]; pagination?: CursorPagination; }>",
+          "doc": "Lists settlements with optional filtering."
+        },
+        {
+          "name": "listForApproval",
+          "signature": "listForApproval(options?: ListSettlementsForApprovalOptions): Promise<{ settlements: Settlement[]; pagination?: CursorPagination; }>",
+          "doc": "Lists settlements pending approval."
+        },
+        {
+          "name": "replace",
+          "signature": "replace(settlementId: string, request: ReplaceSettlementRequest): Promise<void>",
+          "doc": "Replaces (updates) a settlement."
+        }
+      ]
+    },
+    {
+      "name": "SharingService",
+      "methods": [
+        {
+          "name": "listSharedAddresses",
+          "signature": "listSharedAddresses(options?: ListSharedAddressesOptions): Promise<{ sharedAddresses: SharedAddress[]; pagination?: CursorPagination; }>",
+          "doc": "Lists shared addresses with optional filtering."
+        },
+        {
+          "name": "listSharedAssets",
+          "signature": "listSharedAssets(options?: ListSharedAssetsOptions): Promise<{ sharedAssets: SharedAsset[]; pagination?: CursorPagination; }>",
+          "doc": "Lists shared assets with optional filtering."
+        },
+        {
+          "name": "shareAddress",
+          "signature": "shareAddress(request: ShareAddressRequest): Promise<void>",
+          "doc": "Shares an internal address with a Taurus Network participant."
+        },
+        {
+          "name": "shareWhitelistedAsset",
+          "signature": "shareWhitelistedAsset(request: ShareWhitelistedAssetRequest): Promise<void>",
+          "doc": "Shares a whitelisted asset with a Taurus Network participant."
+        },
+        {
+          "name": "unshareAddress",
+          "signature": "unshareAddress(sharedAddressId: string): Promise<void>",
+          "doc": "Unshares an address from a Taurus Network participant."
+        },
+        {
+          "name": "unshareWhitelistedAsset",
+          "signature": "unshareWhitelistedAsset(sharedAssetId: string): Promise<void>",
+          "doc": "Unshares an asset from a Taurus Network participant."
+        }
+      ]
+    },
+    {
+      "name": "StakingService",
+      "methods": [
+        {
+          "name": "getADAStakePoolInfo",
+          "signature": "getADAStakePoolInfo(network: string, stakePoolId: string): Promise<ADAStakePoolInfo>",
+          "doc": "Retrieves information about a Cardano stake pool."
+        },
+        {
+          "name": "getETHValidatorsInfo",
+          "signature": "getETHValidatorsInfo(network: string, ids: string[]): Promise<ETHValidatorInfo[]>",
+          "doc": "Retrieves information about Ethereum validators."
+        },
+        {
+          "name": "getFTMValidatorInfo",
+          "signature": "getFTMValidatorInfo(network: string, validatorAddress: string): Promise<FTMValidatorInfo>",
+          "doc": "Retrieves information about a Fantom validator."
+        },
+        {
+          "name": "getICPNeuronInfo",
+          "signature": "getICPNeuronInfo(network: string, neuronId: string): Promise<ICPNeuronInfo>",
+          "doc": "Retrieves information about an Internet Computer Protocol neuron."
+        },
+        {
+          "name": "getNEARValidatorInfo",
+          "signature": "getNEARValidatorInfo(network: string, validatorAddress: string): Promise<NEARValidatorInfo>",
+          "doc": "Retrieves information about a NEAR Protocol validator."
+        },
+        {
+          "name": "getStakeAccounts",
+          "signature": "getStakeAccounts(options?: ListStakeAccountsOptions): Promise<StakeAccountResult>",
+          "doc": "Retrieves stake accounts with optional filtering."
+        },
+        {
+          "name": "getXTZStakingRewards",
+          "signature": "getXTZStakingRewards(options: GetXTZStakingRewardsOptions): Promise<XTZStakingRewards>",
+          "doc": "Retrieves Tezos staking rewards for an address over a time period."
+        }
+      ]
+    },
+    {
+      "name": "StatisticsService",
+      "methods": [
+        {
+          "name": "getPortfolioStatistics",
+          "signature": "getPortfolioStatistics(): Promise<PortfolioStatistics>",
+          "doc": "Retrieves aggregated portfolio statistics."
+        }
+      ]
+    },
+    {
+      "name": "TagService",
+      "methods": [
+        {
+          "name": "create",
+          "signature": "create(request: CreateTagRequest): Promise<Tag>",
+          "doc": "Creates a new tag."
+        },
+        {
+          "name": "delete",
+          "signature": "delete(tagId: string): Promise<void>",
+          "doc": "Deletes a tag."
+        },
+        {
+          "name": "get",
+          "signature": "get(tagId: string): Promise<Tag>",
+          "doc": "Gets a tag by ID."
+        },
+        {
+          "name": "list",
+          "signature": "list(options?: ListTagsOptions): Promise<Tag[]>",
+          "doc": "Lists tags."
+        }
+      ]
+    },
+    {
+      "name": "TokenMetadataService",
+      "methods": [
+        {
+          "name": "getCryptoPunkMetadata",
+          "signature": "getCryptoPunkMetadata(options: GetCryptoPunkMetadataOptions): Promise<CryptoPunkMetadata>",
+          "doc": "Retrieves CryptoPunk metadata."
+        },
+        {
+          "name": "getERCTokenMetadata",
+          "signature": "getERCTokenMetadata(options: GetERCTokenMetadataOptions): Promise<TokenMetadata>",
+          "doc": "Retrieves ERC token metadata (ERC-20, ERC-721, ERC-1155)."
+        },
+        {
+          "name": "getEVMERCTokenMetadata",
+          "signature": "getEVMERCTokenMetadata(options: GetEVMERCTokenMetadataOptions): Promise<TokenMetadata>",
+          "doc": "Retrieves ERC token metadata for EVM-compatible chains."
+        },
+        {
+          "name": "getFATokenMetadata",
+          "signature": "getFATokenMetadata(options: GetFATokenMetadataOptions): Promise<TokenMetadata>",
+          "doc": "Retrieves FA token metadata (Tezos FA1.2/FA2 standards)."
+        }
+      ]
+    },
+    {
+      "name": "TransactionService",
+      "methods": [
+        {
+          "name": "exportTransactions",
+          "signature": "exportTransactions(options?: { fromDate?: Date; toDate?: Date; currency?: string; direction?: string; limit?: number; offset?: number; format?: string; blockchain?: string; network?: string; }): Promise<string>",
+          "doc": "Export transactions to a formatted string (CSV or JSON)."
+        },
+        {
+          "name": "get",
+          "signature": "get(transactionId: string): Promise<Transaction>",
+          "doc": "Gets a transaction by ID."
+        },
+        {
+          "name": "getByHash",
+          "signature": "getByHash(txHash: string): Promise<Transaction>",
+          "doc": "Gets a transaction by its blockchain hash."
+        },
+        {
+          "name": "list",
+          "signature": "list(options?: ListTransactionsOptions): Promise<PaginatedResult<Transaction>>",
+          "doc": "Lists transactions with pagination and optional filtering."
+        },
+        {
+          "name": "listByAddress",
+          "signature": "listByAddress(address: string, options?: { limit?: number; offset?: number; }): Promise<PaginatedResult<Transaction>>",
+          "doc": "Lists transactions for a specific blockchain address."
+        },
+        {
+          "name": "listByRequest",
+          "signature": "listByRequest(requestId: string, options?: { limit?: number; offset?: number; }): Promise<PaginatedResult<Transaction>>",
+          "doc": "Lists transactions associated with a specific request ID."
+        }
+      ]
+    },
+    {
+      "name": "UserDeviceService",
+      "methods": [
+        {
+          "name": "approvePairing",
+          "signature": "approvePairing(pairingId: string, options: ApprovePairingOptions): Promise<void>",
+          "doc": "Approves a device pairing request."
+        },
+        {
+          "name": "createPairing",
+          "signature": "createPairing(): Promise<UserDevicePairing>",
+          "doc": "Creates a new device pairing request."
+        },
+        {
+          "name": "getPairingStatus",
+          "signature": "getPairingStatus(pairingId: string, nonce: string): Promise<UserDevicePairingInfo>",
+          "doc": "Gets the status of a device pairing request."
+        },
+        {
+          "name": "startPairing",
+          "signature": "startPairing(pairingId: string, options: StartPairingOptions): Promise<void>",
+          "doc": "Starts the device pairing process."
+        }
+      ]
+    },
+    {
+      "name": "UserService",
+      "methods": [
+        {
+          "name": "get",
+          "signature": "get(userId: string): Promise<User>",
+          "doc": "Gets a user by ID."
+        },
+        {
+          "name": "getCurrentUser",
+          "signature": "getCurrentUser(): Promise<User>",
+          "doc": "Gets the current authenticated user."
+        },
+        {
+          "name": "list",
+          "signature": "list(options?: ListUsersOptions): Promise<PaginatedResult<User>>",
+          "doc": "Lists users with pagination."
+        }
+      ]
+    },
+    {
+      "name": "VisibilityGroupService",
+      "methods": [
+        {
+          "name": "getUsersByVisibilityGroup",
+          "signature": "getUsersByVisibilityGroup(visibilityGroupId: string): Promise<User[]>",
+          "doc": "Gets users assigned to a specific visibility group."
+        },
+        {
+          "name": "list",
+          "signature": "list(): Promise<VisibilityGroup[]>",
+          "doc": "Lists all visibility groups."
+        }
+      ]
+    },
+    {
+      "name": "WalletService",
+      "methods": [
+        {
+          "name": "create",
+          "signature": "create(request: CreateWalletRequest): Promise<Wallet>",
+          "doc": "Creates a new wallet."
+        },
+        {
+          "name": "createAttribute",
+          "signature": "createAttribute(walletId: number, key: string, value: string): Promise<void>",
+          "doc": "Creates an attribute for a wallet."
+        },
+        {
+          "name": "deleteAttribute",
+          "signature": "deleteAttribute(walletId: number, attributeId: string): Promise<void>",
+          "doc": "Deletes an attribute from a wallet."
+        },
+        {
+          "name": "get",
+          "signature": "get(walletId: number): Promise<Wallet>",
+          "doc": "Gets a wallet by ID."
+        },
+        {
+          "name": "getBalanceHistory",
+          "signature": "getBalanceHistory(walletId: number, intervalHours: number): Promise<BalanceHistoryPoint[]>",
+          "doc": "Gets the balance history for a wallet."
+        },
+        {
+          "name": "getWalletTokens",
+          "signature": "getWalletTokens(walletId: number, limit?: number): Promise<AssetBalance[]>",
+          "doc": "Gets the list of tokens (asset balances) for a wallet."
+        },
+        {
+          "name": "list",
+          "signature": "list(options?: ListWalletsOptions): Promise<PaginatedResult<Wallet>>",
+          "doc": "Lists wallets with pagination and optional filtering."
+        }
+      ]
+    },
+    {
+      "name": "WebhookCallService",
+      "methods": [
+        {
+          "name": "get",
+          "signature": "get(callId: string): Promise<WebhookCall>",
+          "doc": "Gets a webhook call by ID."
+        },
+        {
+          "name": "list",
+          "signature": "list(options?: ListWebhookCallsOptions): Promise<WebhookCallResult>",
+          "doc": "Lists webhook calls with optional filtering."
+        }
+      ]
+    },
+    {
+      "name": "WebhookService",
+      "methods": [
+        {
+          "name": "create",
+          "signature": "create(request: CreateWebhookRequest): Promise<Webhook>",
+          "doc": "Creates a new webhook."
+        },
+        {
+          "name": "delete",
+          "signature": "delete(webhookId: string): Promise<void>",
+          "doc": "Deletes a webhook."
+        },
+        {
+          "name": "get",
+          "signature": "get(webhookId: string): Promise<Webhook>",
+          "doc": "Gets a webhook by ID."
+        },
+        {
+          "name": "list",
+          "signature": "list(options?: ListWebhooksOptions): Promise<Webhook[]>",
+          "doc": "Lists webhooks."
+        }
+      ]
+    },
+    {
+      "name": "WhitelistedAddressService",
+      "methods": [
+        {
+          "name": "approve",
+          "signature": "approve(ids: string[], privateKey: KeyObject, comment: string): Promise<void>",
+          "doc": "Signs and submits an approval for the given whitelisted addresses, all-or-nothing."
+        },
+        {
+          "name": "get",
+          "signature": "get(addressId: string): Promise<WhitelistedAddress>",
+          "doc": "Gets a whitelisted address by ID with mandatory verification."
+        },
+        {
+          "name": "getEnvelope",
+          "signature": "getEnvelope(addressId: string): Promise<SignedWhitelistedAddressEnvelope>",
+          "doc": "Gets the signed envelope for a whitelisted address."
+        },
+        {
+          "name": "getWithVerification",
+          "signature": "getWithVerification(addressId: string): Promise<WhitelistedAddressVerificationResult>",
+          "doc": "Gets a whitelisted address by ID with full verification."
+        },
+        {
+          "name": "list",
+          "signature": "list(options?: ListWhitelistedAddressesOptions): Promise<ListWhitelistedAddressesResult>",
+          "doc": "Lists whitelisted addresses with mandatory verification."
+        },
+        {
+          "name": "listForApproval",
+          "signature": "listForApproval(options?: ListWhitelistedAddressesForApprovalOptions): Promise<ListWhitelistedAddressesResult>",
+          "doc": ""
+        },
+        {
+          "name": "withVerification",
+          "signature": "withVerification(api: AddressWhitelistingApi, config: WhitelistedAddressServiceConfig): WhitelistedAddressService",
+          "doc": "Creates a WhitelistedAddressService with verification enabled."
+        }
+      ]
+    },
+    {
+      "name": "WhitelistedAssetService",
+      "methods": [
+        {
+          "name": "approve",
+          "signature": "approve(ids: number[], privateKey: KeyObject, comment: string): Promise<void>",
+          "doc": "Signs and submits an approval for the given whitelisted assets, all-or-nothing."
+        },
+        {
+          "name": "get",
+          "signature": "get(assetId: number): Promise<WhitelistedAsset>",
+          "doc": ""
+        },
+        {
+          "name": "getEnvelope",
+          "signature": "getEnvelope(assetId: number): Promise<Verified<SignedWhitelistedAssetEnvelope>>",
+          "doc": "Gets the signed envelope for a whitelisted asset, after verifying it."
+        },
+        {
+          "name": "getWithVerification",
+          "signature": "getWithVerification(assetId: number): Promise<WhitelistedAssetVerificationResult>",
+          "doc": "Gets a whitelisted asset by ID with full verification."
+        },
+        {
+          "name": "list",
+          "signature": "list(options?: ListWhitelistedAssetsOptions): Promise<ListWhitelistedAssetsResult>",
+          "doc": "Lists whitelisted assets."
+        },
+        {
+          "name": "listForApproval",
+          "signature": "listForApproval(options?: ListWhitelistedAssetsForApprovalOptions): Promise<ListWhitelistedAssetsResult>",
+          "doc": ""
+        },
+        {
+          "name": "withVerification",
+          "signature": "withVerification(api: ContractWhitelistingApi, config: WhitelistedAssetServiceConfig): WhitelistedAssetService",
+          "doc": "Creates a WhitelistedAssetService with verification enabled."
+        }
+      ]
+    }
+  ]
+}

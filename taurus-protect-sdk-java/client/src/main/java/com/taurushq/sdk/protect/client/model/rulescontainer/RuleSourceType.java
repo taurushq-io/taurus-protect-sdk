@@ -20,6 +20,10 @@ public enum RuleSourceType {
      */
     RuleSourceInternalAddress(2),
     /**
+     * Any exchange source (no restriction).
+     */
+    RuleSourceAnyExchange(3),
+    /**
      * Exchange source.
      */
     RuleSourceExchange(4),

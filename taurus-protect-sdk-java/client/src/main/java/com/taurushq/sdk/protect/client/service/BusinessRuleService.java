@@ -12,6 +12,7 @@ import com.taurushq.sdk.protect.openapi.api.BusinessRulesApi;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordBusinessRule;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetBusinessRulesV2Reply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordRequestCursor;
+import com.taurushq.sdk.protect.openapi.model.TgvalidatordUpdateTransactionsEnabledBusinessRuleRequest;
 
 import java.util.Collections;
 import java.util.List;
@@ -208,6 +209,29 @@ public class BusinessRuleService {
             result.setCursor(ApiResponseCursorMapper.INSTANCE.fromDTO(reply.getCursor()));
 
             return result;
+        } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
+            throw apiExceptionMapper.toApiException(e);
+        }
+    }
+
+    /**
+     * Enables or disables transaction processing for the tenant (the
+     * transactions-enabled business rule).
+     *
+     * <p>Peer of Go BusinessRuleService.UpdateTransactionsEnabled, Python
+     * update_transactions_enabled and TS updateTransactionsEnabled. This is the kill
+     * switch tg-protect-mcpd drives, so it must exist in every SDK.
+     *
+     * @param enabled true to allow transactions, false to halt them
+     * @throws ApiException the api exception
+     */
+    public void updateTransactionsEnabled(final boolean enabled) throws ApiException {
+        TgvalidatordUpdateTransactionsEnabledBusinessRuleRequest body =
+                new TgvalidatordUpdateTransactionsEnabledBusinessRuleRequest();
+        body.setEnabled(enabled);
+
+        try {
+            businessRulesApi.ruleServiceUpdateTransactionsEnabledBusinessRule(body);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }

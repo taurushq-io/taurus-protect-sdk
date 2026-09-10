@@ -33,7 +33,7 @@ func GetTestClient(t *testing.T, identityIndex int) *protect.Client {
 	}
 
 	opts := []protect.Option{
-		protect.WithCredentials(identity.APIKey, identity.APISecret),
+		protect.WithCredentials(protect.APIKeyCredentials(identity.APIKey, identity.APISecret)),
 	}
 
 	superAdminKeys := config.GetSuperAdminKeys()

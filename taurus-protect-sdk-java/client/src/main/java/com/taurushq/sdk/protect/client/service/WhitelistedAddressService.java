@@ -1,5 +1,12 @@
 package com.taurushq.sdk.protect.client.service;
 
+import com.taurushq.sdk.protect.openapi.model.TgvalidatordApproveWhitelistedAddressRequest;
+import java.util.stream.Collectors;
+import java.security.SignatureException;
+import java.security.PrivateKey;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.InvalidKeyException;
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -9,14 +16,16 @@ import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
 import com.taurushq.sdk.protect.client.mapper.RulesContainerMapper;
 import com.taurushq.sdk.protect.client.mapper.WhitelistedAddressMapper;
 import com.taurushq.sdk.protect.client.model.ApiException;
+import com.taurushq.sdk.protect.client.model.ContainerIntegrityException;
+import com.taurushq.sdk.protect.client.model.ExcludedWhitelistedAddress;
 import com.taurushq.sdk.protect.client.model.IntegrityException;
-import com.taurushq.sdk.protect.client.model.ApiRequestCursor;
 import com.taurushq.sdk.protect.client.model.RuleUserSignature;
 import com.taurushq.sdk.protect.client.model.SignedWhitelistedAddressEnvelope;
 import com.taurushq.sdk.protect.client.model.WhitelistException;
 import com.taurushq.sdk.protect.client.model.WhitelistSignature;
 import com.taurushq.sdk.protect.client.model.WhitelistUserSignature;
 import com.taurushq.sdk.protect.client.model.WhitelistedAddress;
+import com.taurushq.sdk.protect.client.model.WhitelistedAddressListResult;
 import com.taurushq.sdk.protect.client.model.WhitelistTrail;
 import com.taurushq.sdk.protect.client.model.Attribute;
 import com.taurushq.sdk.protect.client.model.InternalWallet;
@@ -165,40 +174,18 @@ public class WhitelistedAddressService {
         // Step 3: Decode rulesContainer
         DecodedRulesContainer rulesContainer = decodeRulesContainer(envelope);
 
-        // Step 4: Verify metadata.hash is in signed hashes list
-        verifyHashInSignedHashes(envelope);
+        // Step 4: Verify metadata.hash is in signed hashes list. Returns the hash
+        // that was actually covered, which may be a legacy one.
+        String verifiedHash = verifyHashInSignedHashes(envelope);
 
         // Step 5: Verify whitelist signatures are valid per governance rules
-        verifyWhitelistSignatures(envelope, rulesContainer);
+        verifyWhitelistSignatures(envelope, rulesContainer, verifiedHash);
 
-        // Step 6: Parse WhitelistedAddress from verified payloadAsString (signed fields)
-        WhitelistedAddress address = WhitelistHashHelper.parseWhitelistedAddressFromJson(
-                envelope.getMetadata().getPayloadAsString());
-
-        // Extract createdAt from trails (find "created" action)
-        if (envelope.getTrails() != null) {
-            for (WhitelistTrail trail : envelope.getTrails()) {
-                if ("created".equals(trail.getAction())) {
-                    address.setCreatedAt(trail.getDate());
-                    break;
-                }
-            }
-        }
-
-        // Extract attributes from envelope
-        if (envelope.getAttributes() != null) {
-            Map<String, Object> attrs = new HashMap<>();
-            for (Attribute attr : envelope.getAttributes()) {
-                if (attr.getKey() != null) {
-                    attrs.put(attr.getKey(), attr.getValue());
-                }
-            }
-            address.setAttributes(attrs);
-        }
-
-        // Store verified data in envelope
-        envelope.setVerifiedWhitelistedAddress(address);
-        envelope.setVerifiedRulesContainer(rulesContainer);
+        // Step 6: the envelope DERIVES the address from its own signed payloadAsString,
+        // plus the non-security trail/attribute fields it already carries. It used to be
+        // parsed here and handed to a public setter, which meant the "verified" marker
+        // could be flipped with an address the caller chose.
+        envelope.markVerified(rulesContainer);
     }
 
     /**
@@ -254,24 +241,15 @@ public class WhitelistedAddressService {
 
         // Verify signatures against the rulesContainer bytes
         byte[] rulesData = Base64.getDecoder().decode(envelope.getRulesContainer());
-        int validCount = 0;
-
-        for (RuleUserSignature sig : signatures) {
-            if (Strings.isNullOrEmpty(sig.getSignature())) {
-                continue;
-            }
-            if (SignatureVerifier.isValidSignature(rulesData, sig.getSignature(), superAdminPublicKeys)) {
-                validCount++;
-            }
-        }
-
-        if (validCount < minValidSignatures) {
+        try {
+            SignatureVerifier.verifyGovernanceRulesSignatures(rulesData, signatures,
+                    superAdminPublicKeys, minValidSignatures);
+        } catch (IntegrityException e) {
             if (LOGGER.isLoggable(java.util.logging.Level.WARNING)) {
                 LOGGER.warning("Rules container verification failed: insufficient valid signatures");
             }
-            throw new IntegrityException(String.format(
-                    "Rules container verification failed: only %d valid signatures found, minimum %d required",
-                    validCount, minValidSignatures));
+            throw new IntegrityException(
+                    "Rules container verification failed: " + e.getMessage(), e);
         }
         if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
             LOGGER.fine("Rules container signature verification succeeded");
@@ -324,24 +302,15 @@ public class WhitelistedAddressService {
 
         // Verify signatures
         byte[] rulesData = Base64.getDecoder().decode(rulesContainerBase64);
-        int validCount = 0;
-        for (RuleUserSignature sig : signatures) {
-            if (Strings.isNullOrEmpty(sig.getSignature())) {
-                continue;
-            }
-            if (SignatureVerifier.isValidSignature(rulesData, sig.getSignature(),
-                    superAdminPublicKeys)) {
-                validCount++;
-            }
-        }
-
-        if (validCount < minValidSignatures) {
+        try {
+            SignatureVerifier.verifyGovernanceRulesSignatures(rulesData, signatures,
+                    superAdminPublicKeys, minValidSignatures);
+        } catch (IntegrityException e) {
             if (LOGGER.isLoggable(java.util.logging.Level.WARNING)) {
                 LOGGER.warning("Rules container verification failed: insufficient valid signatures");
             }
-            throw new IntegrityException(String.format(
-                    "Rules container verification failed: only %d valid signatures found, "
-                            + "minimum %d required", validCount, minValidSignatures));
+            throw new IntegrityException(
+                    "Rules container verification failed: " + e.getMessage(), e);
         }
         if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
             LOGGER.fine("Rules container signature verification succeeded");
@@ -360,23 +329,24 @@ public class WhitelistedAddressService {
      * For backward compatibility, also tries alternative hashes for addresses signed
      * before certain fields (like contractType, labels in linkedInternalAddresses) were added.
      */
-    private void verifyHashInSignedHashes(SignedWhitelistedAddressEnvelope envelope)
+    private String verifyHashInSignedHashes(SignedWhitelistedAddressEnvelope envelope)
             throws WhitelistException {
         String metadataHash = envelope.getMetadata().getHash();
         List<WhitelistSignature> signatures = envelope.getSignedAddress().getSignatures();
 
         // First, try the provided hash directly
-        if (hashExistsInSignatures(metadataHash, signatures)) {
-            return; // Found - verification passed
+        if (SignatureVerifier.verifyHashCoverage(metadataHash, signatures)) {
+            return metadataHash;
         }
 
         // If not found, try alternative hashes for backward compatibility
         // (handles addresses signed before schema changes)
         for (String legacyHash : computeLegacyHashes(envelope.getMetadata().getPayloadAsString())) {
-            if (hashExistsInSignatures(legacyHash, signatures)) {
-                // Update the metadata hash so subsequent verification steps use the correct hash
-                envelope.getMetadata().setHash(legacyHash);
-                return; // Found with legacy hash
+            if (SignatureVerifier.verifyHashCoverage(legacyHash, signatures)) {
+                // Returned rather than written back onto the caller's envelope:
+                // verification must not mutate its input, and the later steps take
+                // the hash as a parameter.
+                return legacyHash;
             }
         }
 
@@ -385,15 +355,6 @@ public class WhitelistedAddressService {
             LOGGER.warning("Metadata hash not found in any signature's hashes list");
         }
         throw new IntegrityException("metadata hash not found in any signature's hashes list");
-    }
-
-    private boolean hashExistsInSignatures(String hash, List<WhitelistSignature> signatures) {
-        for (WhitelistSignature sig : signatures) {
-            if (sig.getHashes() != null && sig.getHashes().contains(hash)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     /**
@@ -448,13 +409,20 @@ public class WhitelistedAddressService {
      * Verifies whitelist signatures according to governance rules threshold requirements.
      */
     private void verifyWhitelistSignatures(SignedWhitelistedAddressEnvelope envelope,
-                                           DecodedRulesContainer rulesContainer)
+                                           DecodedRulesContainer rulesContainer,
+                                           String metadataHash)
             throws WhitelistException {
-        String metadataHash = envelope.getMetadata().getHash();
+
+        // Which rules judge this address is decided by the SIGNED payload, not by the
+        // surrounding response. A DTO with an empty blockchain would select the
+        // global-default tier — broader than the rule the address belongs to.
+        String[] ruleKey = WhitelistHashHelper.resolveRuleKey(
+                envelope.getMetadata().getPayloadAsString(),
+                envelope.getBlockchain(), envelope.getNetwork());
 
         // Find matching address whitelisting rules
         AddressWhitelistingRules whitelistRules = rulesContainer.findAddressWhitelistingRules(
-                envelope.getBlockchain(), envelope.getNetwork());
+                ruleKey[0], ruleKey[1]);
         if (whitelistRules == null) {
             throw new WhitelistException("no address whitelisting rules found for blockchain="
                     + envelope.getBlockchain() + " network=" + envelope.getNetwork());
@@ -501,7 +469,20 @@ public class WhitelistedAddressService {
             String walletPath = linkedWallets.get(0).getPath();
 
             // Find matching line by wallet path
-            for (AddressWhitelistingLine line : rules.getLines()) {
+            for (int i = 0; i < rules.getLines().size(); i++) {
+                AddressWhitelistingLine line = rules.getLines().get(i);
+                // A source cell this SDK could not type might be the one that matches.
+                // Falling through to the container defaults would verify the address
+                // against a quorum governance never granted it - silently, no error.
+                if (lineHasUntypedSource(line)) {
+                    throw new ContainerIntegrityException(
+                            "address whitelisting rules for blockchain=" + rules.getCurrency()
+                                    + " network=" + rules.getNetwork() + " line " + i
+                                    + " carry a source cell this SDK version cannot interpret;"
+                                    + " refusing to fall back to the container default thresholds,"
+                                    + " which may be weaker than the line's. Upgrade the SDK to"
+                                    + " match the validatord that signed this container");
+                }
                 if (matchesWalletPath(line, walletPath)) {
                     return line.getParallelThresholds();
                 }
@@ -510,6 +491,22 @@ public class WhitelistedAddressService {
 
         // Fallback to default thresholds
         return rules.getParallelThresholds();
+    }
+
+    /**
+     * Returns true when the line's source cell was preserved verbatim rather than typed.
+     * {@code matchesWalletPath} reads cell 0, so that is the cell whose meaning must be
+     * known before a match/no-match verdict can be trusted.
+     * <p>
+     * Package-private so it can be tested directly: this project forbids Mockito, so the
+     * enclosing private getApplicableThresholds cannot be driven from a service test.
+     */
+    boolean lineHasUntypedSource(AddressWhitelistingLine line) {
+        if (line == null || line.getCells() == null || line.getCells().isEmpty()) {
+            return false;
+        }
+        RuleSource source = line.getCells().get(0);
+        return source != null && source.getRaw() != null && !source.getRaw().isEmpty();
     }
 
     /**
@@ -589,7 +586,10 @@ public class WhitelistedAddressService {
      *
      * @throws IntegrityException if the threshold is not met, with detailed reason
      */
-    private void verifyGroupThreshold(GroupThreshold groupThreshold,
+    // Package-private, not private: the distinct-signer counting below is a security
+    // invariant and this is the only way to drive it without a network stub, which this
+    // module has none of.
+    void verifyGroupThreshold(GroupThreshold groupThreshold,
                                       DecodedRulesContainer rulesContainer,
                                       List<WhitelistSignature> signatures,
                                       String metadataHash) {
@@ -612,11 +612,27 @@ public class WhitelistedAddressService {
             return; // minSignatures == 0, so empty group is OK
         }
 
+        // A populated group with a zero threshold is a malformed container, not a
+        // group anyone may satisfy. There is no post-loop threshold check -- the
+        // only success exit is inside the loop after an increment -- so a zero here
+        // silently means "one signature suffices", turning a 2-of-N group into
+        // 1-of-N. Fail closed.
+        if (minSigs <= 0) {
+            throw new IntegrityException(
+                    String.format("group '%s' has %d user(s) but requires 0 signature(s): "
+                            + "minimumSignatures must be positive", groupId, groupUserIds.size()));
+        }
+
         // Convert to set for faster lookup
         Set<String> groupUserIdSet = new HashSet<>(groupUserIds);
 
-        // Count valid signatures from users in this group
-        int validCount = 0;
+        // Count DISTINCT signers, not signature entries.
+        //
+        // The entries come from the server-supplied userSignatures blob, so counting them
+        // let a duplicated entry from one group member satisfy an N-of-M group. Keyed on
+        // the container-resolved public key rather than the server-supplied userId, so one
+        // compromised key shared by two IDs counts once.
+        Set<String> signers = new HashSet<>();
         List<String> skippedReasons = new ArrayList<>();
 
         for (WhitelistSignature sig : signatures) {
@@ -633,7 +649,7 @@ public class WhitelistedAddressService {
 
             // Check that metadata hash is covered by this signature
             List<String> hashes = sig.getHashes();
-            if (hashes == null || !hashes.contains(metadataHash)) {
+            if (!SignatureVerifier.containsHash(hashes, metadataHash)) {
                 skippedReasons.add(String.format(
                         "user '%s' signature does not cover metadata hash '%s' (signed hashes=%s)",
                         sigUserId, metadataHash, hashes));
@@ -656,8 +672,8 @@ public class WhitelistedAddressService {
 
             if (SignatureVerifier.verifySignature(hashesBytes, userSig.getSignature(),
                     user.getPublicKey())) {
-                validCount++;
-                if (validCount >= minSigs) {
+                signers.add(SignatureVerifier.keyFingerprint(user.getPublicKey()));
+                if (signers.size() >= minSigs) {
                     return; // Threshold met
                 }
             } else {
@@ -667,8 +683,8 @@ public class WhitelistedAddressService {
 
         // Threshold not met
         StringBuilder message = new StringBuilder();
-        message.append(String.format("group '%s' requires %d signature(s) but only %d valid",
-                groupId, minSigs, validCount));
+        message.append(String.format("group '%s' requires %d distinct signer(s) but only %d valid",
+                groupId, minSigs, signers.size()));
         if (!skippedReasons.isEmpty()) {
             message.append(" [").append(String.join("; ", skippedReasons)).append("]");
         }
@@ -740,6 +756,31 @@ public class WhitelistedAddressService {
     public List<SignedWhitelistedAddressEnvelope> getWhitelistedAddresses(
             int limit, int offset, String blockchain, String network,
             boolean rulesContainerNormalized) throws ApiException, WhitelistException {
+        return getWhitelistedAddressesWithExclusions(
+                limit, offset, blockchain, network, rulesContainerNormalized).getEnvelopes();
+    }
+
+    /**
+     * Same query as {@link #getWhitelistedAddresses(int, int, String, String, boolean)},
+     * but also returns the rows that were dropped for failing verification.
+     * <p>
+     * An overload rather than a changed return type, so existing callers keep compiling.
+     * Prefer this one: excluded rows are otherwise only written to the SDK's logger,
+     * which a caller cannot read, and a filtered page is then indistinguishable from a
+     * complete one.
+     *
+     * @param limit                    the maximum number of results (max 100)
+     * @param offset                   the offset for pagination
+     * @param blockchain               filter by blockchain (e.g., "ETH", "BTC")
+     * @param network                  filter by network (e.g., "mainnet", "testnet")
+     * @param rulesContainerNormalized if true, caches rules containers by hash
+     * @return the verified envelopes plus the rows excluded for failing verification
+     * @throws ApiException       if the API call fails
+     * @throws WhitelistException if verification fails
+     */
+    public WhitelistedAddressListResult getWhitelistedAddressesWithExclusions(
+            int limit, int offset, String blockchain, String network,
+            boolean rulesContainerNormalized) throws ApiException, WhitelistException {
         try {
             TgvalidatordGetSignedWhitelistedAddressEnvelopesReply reply =
                     whitelistedAddressService.whitelistServiceGetWhitelistedAddresses(
@@ -771,10 +812,9 @@ public class WhitelistedAddressService {
                             null, null, null, null);
 
             if (reply.getResult() == null) {
-                return new ArrayList<>();
+                return new WhitelistedAddressListResult(new ArrayList<>(), new ArrayList<>());
             }
 
-            List<SignedWhitelistedAddressEnvelope> envelopes = new ArrayList<>();
             Map<String, DecodedRulesContainer> rulesContainerCache = new HashMap<>();
 
             // Check if rulesContainers array exists - if so, pre-populate cache
@@ -789,6 +829,20 @@ public class WhitelistedAddressService {
                         continue;
                     }
                     String containerBase64 = hashContainer.getRulesContainer();
+
+                    // The hash is the LABEL a row uses to pick its container, and it
+                    // arrives in the same response as the container. Recompute it:
+                    // otherwise a server can file container A under container B's label
+                    // and steer any row to any other validly-signed container -- an older
+                    // ruleset with a weaker group threshold, say. Both pass the SuperAdmin
+                    // check, so signature verification alone does not catch it.
+                    String computedLabel = containerHashLabel(containerBase64);
+                    if (!computedLabel.equals(hashContainer.getHash())) {
+                        throw new ContainerIntegrityException(String.format(
+                                "rules container hash mismatch: response labelled it %s "
+                                        + "but its bytes hash to %s",
+                                hashContainer.getHash(), computedLabel));
+                    }
                     DecodedRulesContainer decoded = verifiedContainers.get(containerBase64);
                     if (decoded == null) {
                         decoded = verifyAndDecodeRulesContainer(
@@ -800,8 +854,196 @@ public class WhitelistedAddressService {
                 }
             }
 
-            // Process all envelopes
-            for (TgvalidatordSignedWhitelistedAddressEnvelope dto : reply.getResult()) {
+            // rows -> verify -+- ok    -> returned
+            //                  +- fails -> excluded + logged, list survives
+            //
+            // One unverifiable row used to fail the whole call, which took down the
+            // whitelist for every consumer -- and listing is how an operator would
+            // find the bad row, so the failure hid its own cause. Excluding stays
+            // fail-closed: an omitted destination cannot be selected.
+            return verifiedAddresses(
+                    reply.getResult(), rulesContainerCache, reply.getTotalItems());
+
+        } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
+            throw apiExceptionMapper.toApiException(e);
+        }
+    }
+
+    /**
+     * Gets a page of whitelisted addresses awaiting approval, verified exactly as
+     * {@link #getWhitelistedAddressesWithExclusions} is.
+     *
+     * <p>Both this endpoint and {@link #approveWhitelistedAddresses} are generated in
+     * all four SDK clients and were wrapped by none of them, so the rows an approver
+     * reads before whitelisting a destination were not reachable through the SDK at all
+     * — verified or not.
+     *
+     * @param limit                      the maximum number of results
+     * @param offset                     the offset for pagination
+     * @param ids                        filter by specific ids, or null
+     * @param includeAlreadySignedByUser include rows the caller has already signed,
+     *                                   which is how an approver tells "waiting for me"
+     *                                   from "waiting for someone else"
+     * @return the verified rows and the rows withheld
+     * @throws ApiException       if the API call fails
+     * @throws WhitelistException if no row survived verification
+     */
+    public WhitelistedAddressListResult getWhitelistedAddressesForApproval(
+            final int limit, final int offset, final List<String> ids,
+            final Boolean includeAlreadySignedByUser)
+            throws ApiException, WhitelistException {
+        try {
+            TgvalidatordGetSignedWhitelistedAddressEnvelopesReply reply =
+                    whitelistedAddressService.whitelistServiceGetWhitelistedAddressesForApproval(
+                            String.valueOf(limit),
+                            String.valueOf(offset),
+                            ids,
+                            null,       // blockchain
+                            null,       // addressType
+                            null,       // query
+                            null,       // network
+                            includeAlreadySignedByUser);
+
+            if (reply.getResult() == null) {
+                return new WhitelistedAddressListResult(new ArrayList<>(), new ArrayList<>());
+            }
+
+            // This endpoint has no normalized-container mode, so the per-row containers
+            // are used and the cache starts empty.
+            return verifiedAddresses(
+                    reply.getResult(), new HashMap<>(), reply.getTotalItems());
+        } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
+            throw apiExceptionMapper.toApiException(e);
+        }
+    }
+
+    /**
+     * Signs and submits an approval for the given whitelisted addresses, all-or-nothing.
+     *
+     * <p>The batch is re-read through the verifying path and the hashes THOSE rows carry
+     * are what gets signed, so the approver's signature covers metadata this SDK checked
+     * rather than whatever a caller was handed. Same shape as
+     * {@code WhitelistedAssetService.approveWhitelistedAssets}.
+     *
+     * <pre>
+     *   ids -&gt; sort -&gt; ONE filtered verified page -&gt; completeness check -&gt; sign once
+     * </pre>
+     *
+     * <p>Any address that is missing or fails verification aborts the whole call and
+     * nothing is signed: one signature covers every hash in the batch, so a partial
+     * approval would mean the caller believes they approved more than they did.
+     *
+     * @param ids        the whitelisted address ids to approve
+     * @param privateKey the approver's P-256 private key
+     * @param comment    the approval comment
+     * @throws ApiException       if the API call fails
+     * @throws WhitelistException if any row is missing or fails verification
+     */
+    public void approveWhitelistedAddresses(final List<Long> ids, final PrivateKey privateKey,
+                                            final String comment)
+            throws ApiException, WhitelistException {
+        checkNotNull(ids, "ids cannot be null");
+        checkArgument(!ids.isEmpty(), "ids cannot be empty");
+        checkNotNull(privateKey, "privateKey cannot be null");
+        checkArgument(!Strings.isNullOrEmpty(comment), "comment is required");
+        ids.forEach(id -> checkArgument(id != null && id > 0,
+                "whitelisted address id cannot be zero or negative"));
+
+        // Sorted on a COPY: the endpoint requires ascending order, and this also makes
+        // the signed order independent of the order the caller passed without mutating
+        // their list.
+        List<Long> sorted = new ArrayList<>(ids);
+        Collections.sort(sorted);
+        List<String> idStrings =
+                sorted.stream().map(String::valueOf).collect(Collectors.toList());
+
+        // ONE id-filtered page through the verifying path, not one GET per id.
+        Map<String, SignedWhitelistedAddressEnvelope> byId = new HashMap<>();
+        for (SignedWhitelistedAddressEnvelope envelope
+                : getWhitelistedAddressesForApproval(idStrings.size(), 0, idStrings, Boolean.TRUE)
+                        .getEnvelopes()) {
+            if (envelope != null) {
+                byId.put(String.valueOf(envelope.getId()), envelope);
+            }
+        }
+
+        List<String> hashes = new ArrayList<>(idStrings.size());
+        for (String id : idStrings) {
+            SignedWhitelistedAddressEnvelope envelope = byId.get(id);
+            if (envelope == null) {
+                // A page that silently omits a row must not become an approval of fewer
+                // rows than the caller asked for.
+                throw new IntegrityException(String.format(
+                        "refusing to sign: address %s was not returned by the verified read", id));
+            }
+            if (envelope.getMetadata() == null
+                    || Strings.isNullOrEmpty(envelope.getMetadata().getHash())) {
+                throw new IntegrityException(String.format(
+                        "refusing to sign: address %s has no metadata hash", id));
+            }
+            hashes.add(envelope.getMetadata().getHash());
+        }
+
+        String toSign = GSON.toJson(hashes);
+        TgvalidatordApproveWhitelistedAddressRequest request =
+                new TgvalidatordApproveWhitelistedAddressRequest();
+        request.setIds(idStrings);
+        request.setComment(comment);
+        try {
+            request.setSignature(CryptoTPV1.calculateBase64Signature(
+                    privateKey, toSign.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException ex) {
+            ApiException e = new ApiException();
+            e.setCode(400);
+            e.setError("ClientInvalidRequest");
+            e.setMessage("unable to sign the array of whitelisted address hashes");
+            e.setOriginalException(ex);
+            throw e;
+        }
+
+        try {
+            whitelistedAddressService.whitelistServiceApproveWhitelistedAddress(request);
+        } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
+            throw apiExceptionMapper.toApiException(e);
+        }
+    }
+
+    /**
+     * Verifies a page of address envelopes and returns the survivors plus the rows
+     * withheld.
+     *
+     * <pre>
+     *   rows -&gt; verify -+- ok    -&gt; returned
+     *                   +- fails -&gt; excluded + logged, list survives
+     * </pre>
+     *
+     * <p>LENIENT per row, but rows-returned-but-none-surviving aborts the whole call: it
+     * is systemic, and an empty list would look identical to an empty whitelist.
+     *
+     * <p>Shared by {@code getWhitelistedAddressesWithExclusions} and
+     * {@code getWhitelistedAddressesForApproval}. The for-approval endpoint had no
+     * verified reader at all, and duplicating this loop into a second one is precisely
+     * how the list paths drifted from {@code getWhitelistedAddress} in the first place.
+     *
+     * <p>Package-private so the exclusion behaviour can be tested directly.
+     *
+     * @param rows               the DTO rows
+     * @param rulesContainerCache pre-verified containers by hash, may be empty
+     * @return the verified envelopes and the withheld rows
+     * @throws WhitelistException if no row survived
+     */
+    WhitelistedAddressListResult verifiedAddresses(
+            final List<TgvalidatordSignedWhitelistedAddressEnvelope> rows,
+            final Map<String, DecodedRulesContainer> rulesContainerCache,
+            final String serverTotalItems)
+            throws WhitelistException {
+        List<SignedWhitelistedAddressEnvelope> envelopes = new ArrayList<>();
+        int rowCount = rows.size();
+        String firstFailure = null;
+        List<ExcludedWhitelistedAddress> excluded = new ArrayList<>();
+
+        for (TgvalidatordSignedWhitelistedAddressEnvelope dto : rows) {
+            try {
                 SignedWhitelistedAddressEnvelope envelope =
                         WhitelistedAddressMapper.INSTANCE.fromDTO(dto);
 
@@ -819,10 +1061,98 @@ public class WhitelistedAddressService {
                     initializeEnvelope(envelope);
                 }
                 envelopes.add(envelope);
+            } catch (ContainerIntegrityException e) {
+                // Not a property of this row: this SDK cannot interpret the rules
+                // container, which invalidates EVERY row judged against it. Excluding
+                // them one by one would empty the whitelist and report success.
+                // Must precede the multi-catch below — it is an IntegrityException.
+                throw e;
+            } catch (WhitelistException | IntegrityException e) {
+                // IntegrityException is UNCHECKED (extends SecurityException), so
+                // catching only WhitelistException here let steps 1, 2 and 4 escape the
+                // loop and abort the whole page: one row with a tampered payload denied
+                // the entire whitelist listing, which is the failure this class's javadoc
+                // says was fixed. Anything that is NOT one of these two is a defect in
+                // this SDK and still propagates, rather than being reported to the caller
+                // as "this address failed verification".
+                if (firstFailure == null) {
+                    firstFailure = e.getMessage();
+                }
+                excluded.add(new ExcludedWhitelistedAddress(dto.getId(), e.getMessage()));
+                if (LOGGER.isLoggable(java.util.logging.Level.WARNING)) {
+                    LOGGER.warning("whitelisted address excluded: verification failed (id="
+                            + dto.getId() + ")");
+                }
             }
-            return envelopes;
-        } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
-            throw apiExceptionMapper.toApiException(e);
+        }
+
+        // Rows came back but none survived: a systemic failure, not an empty
+        // whitelist, and returning an empty list would look identical to one.
+        if (rowCount > 0 && envelopes.isEmpty()) {
+            throw new IntegrityException(String.format(
+                    "all %d whitelisted address(es) failed verification; first failure: %s",
+                    rowCount, firstFailure == null ? "unknown" : firstFailure));
+        }
+        return new WhitelistedAddressListResult(
+                envelopes, excluded, reduceTotal(serverTotalItems, excluded.size()));
+    }
+
+    /**
+     * Recomputes the label validatord files a normalized rules container under, so a
+     * row's {@code rulesContainerHash} resolves only to bytes that really hash to it.
+     *
+     * <p>The convention is validatord's, in its whitelist controller:
+     * {@code base64.StdEncoding.EncodeToString(crypto.Sha256([]byte(e.GetRulesContainer())))}.
+     * Note what is hashed: {@code GetRulesContainer()} is ALREADY a base64 string there,
+     * so the digest is over the base64 TEXT, not over the decoded protobuf, and the
+     * output is base64 rather than hex. Decoding the container first and hashing the
+     * protobuf yields a different value and would reject every container, breaking all
+     * list calls.
+     *
+     * <p>Do not confuse it with {@code enforcedRulesHash}, which is
+     * {@code base64(SHA256(raw protobuf))} and is a backlink to a ruleset's predecessor
+     * rather than its own identity. Both are 44-character base64 SHA-256 digests, so
+     * mixing them up is silent.
+     *
+     * @param containerBase64 the container exactly as the response carried it
+     * @return the label those bytes should be filed under
+     */
+    static String containerHashLabel(final String containerBase64) {
+        try {
+            // CryptoTPV1 only exposes calculateHexHash; this label is base64 of the raw
+            // digest, so the digest is taken directly rather than re-decoding hex.
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] sum = digest.digest(containerBase64.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(sum);
+        } catch (NoSuchAlgorithmException e) {
+            // SHA-256 is mandatory in every JRE; if it is absent nothing here can work.
+            throw new IllegalStateException("SHA-256 is unavailable", e);
+        }
+    }
+
+    /**
+     * Reduces the server's page total by the number of rows withheld.
+     *
+     * <p>The server counts rows it returned; the caller receives only those that
+     * verified, so reporting the raw total makes pagination promise rows that can never
+     * be read. Floored at zero, and a total the server did not send or that does not
+     * parse stays absent rather than becoming a guess. The wire type is a uint64 the
+     * generated client surfaces as a String, hence the re-stringify — Go and TypeScript
+     * do the same arithmetic on a numeric field.
+     *
+     * @param serverTotalItems the total as reported, may be null
+     * @param excludedCount    how many rows were withheld
+     * @return the adjusted total, or null when there is nothing dependable to report
+     */
+    private static String reduceTotal(final String serverTotalItems, final int excludedCount) {
+        if (serverTotalItems == null || serverTotalItems.isEmpty()) {
+            return null;
+        }
+        try {
+            long total = Long.parseLong(serverTotalItems.trim());
+            return String.valueOf(Math.max(0L, total - excludedCount));
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 
@@ -849,39 +1179,15 @@ public class WhitelistedAddressService {
 
         // Step 3: Use cached rulesContainer instead of decoding again
 
-        // Step 4: Verify metadata.hash is in signed hashes list
-        verifyHashInSignedHashes(envelope);
+        // Step 4: Verify metadata.hash is in signed hashes list. Returns the hash
+        // that was actually covered, which may be a legacy one.
+        String verifiedHash = verifyHashInSignedHashes(envelope);
 
         // Step 5: Verify whitelist signatures are valid per governance rules
-        verifyWhitelistSignatures(envelope, cachedRulesContainer);
+        verifyWhitelistSignatures(envelope, cachedRulesContainer, verifiedHash);
 
-        // Step 6: Parse WhitelistedAddress from verified payloadAsString (signed fields)
-        WhitelistedAddress address = WhitelistHashHelper.parseWhitelistedAddressFromJson(
-                envelope.getMetadata().getPayloadAsString());
-
-        // Extract createdAt from trails (find "created" action)
-        if (envelope.getTrails() != null) {
-            for (WhitelistTrail trail : envelope.getTrails()) {
-                if ("created".equals(trail.getAction())) {
-                    address.setCreatedAt(trail.getDate());
-                    break;
-                }
-            }
-        }
-
-        // Extract attributes from envelope
-        if (envelope.getAttributes() != null) {
-            Map<String, Object> attrs = new HashMap<>();
-            for (Attribute attr : envelope.getAttributes()) {
-                if (attr.getKey() != null) {
-                    attrs.put(attr.getKey(), attr.getValue());
-                }
-            }
-            address.setAttributes(attrs);
-        }
-
-        // Store verified data in envelope
-        envelope.setVerifiedWhitelistedAddress(address);
-        envelope.setVerifiedRulesContainer(cachedRulesContainer);
+        // Step 6: same derivation as the full-data path — one implementation on the
+        // envelope, so the cached-container path cannot drift from it.
+        envelope.markVerified(cachedRulesContainer);
     }
 }

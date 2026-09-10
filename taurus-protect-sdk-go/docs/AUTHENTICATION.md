@@ -33,24 +33,28 @@ The SDK handles TPV1 signing automatically via the custom HTTP transport. You on
 
 ## Client Initialization
 
-### Basic Initialization
+### Authentication mechanisms
 
-```go
-import (
-    "github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect"
-)
+Pass the auth mechanism via `WithCredentials`, built with one of:
 
-client, err := protect.NewClient(
-    "https://api.taurus-protect.com",
-    protect.WithCredentials(apiKey, apiSecret),
-)
-if err != nil {
-    return err
-}
-defer client.Close()
-```
+- `protect.APIKeyCredentials(apiKey, apiSecret)` — static TPV1-HMAC.
+- `protect.BearerTokenCredentials(token)` — a single static Bearer token.
+- `protect.BearerTokenProviderCredentials(fn)` — a Bearer token resolved per request
+  from `fn(ctx)` (e.g. one shared client serving many callers, each carrying its own token).
 
-### With SuperAdmin Keys (Recommended)
+SuperAdmin public keys are **required** regardless of the mechanism — client-side
+governance rules verification is mandatory.
+
+> **A client must not be shared across a trust boundary.** The rules-container cache is a
+> single slot shared by every caller of one client. On a cache hit no request is issued, so
+> a second caller receives the container fetched with the first caller's token and their own
+> authorization for the governance read is never exercised. Governance containers are
+> tenant-wide and SuperAdmin-signed, so this is not a cross-tenant leak — but with a
+> per-request token provider, build **one client per tenant**. `tg-protect-mcpd`'s
+> `tenantClientRegistry` is the reference pattern.
+
+
+### With SuperAdmin Keys
 
 ```go
 import (
@@ -69,7 +73,7 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...
 
 client, err := protect.NewClient(
     "https://api.taurus-protect.com",
-    protect.WithCredentials(apiKey, apiSecret),
+    protect.WithCredentials(protect.APIKeyCredentials(apiKey, apiSecret)),
     protect.WithSuperAdminKeysPEM(superAdminKeys),
     protect.WithMinValidSignatures(2),
 )
@@ -100,7 +104,7 @@ if err != nil {
 
 client, err := protect.NewClient(
     host,
-    protect.WithCredentials(apiKey, apiSecret),
+    protect.WithCredentials(protect.APIKeyCredentials(apiKey, apiSecret)),
     protect.WithSuperAdminKeys([]*ecdsa.PublicKey{key1, key2}),
     protect.WithMinValidSignatures(2),
 )
@@ -111,7 +115,7 @@ client, err := protect.NewClient(
 ```go
 client, err := protect.NewClient(
     host,
-    protect.WithCredentials(apiKey, apiSecret),
+    protect.WithCredentials(protect.APIKeyCredentials(apiKey, apiSecret)),
     protect.WithSuperAdminKeysPEM(superAdminKeys),
     protect.WithMinValidSignatures(2),
     protect.WithRulesCacheTTL(10 * time.Minute),
@@ -122,7 +126,7 @@ client, err := protect.NewClient(
 
 | Option | Type | Description |
 |--------|------|-------------|
-| `WithCredentials` | (string, string) | API key and hex-encoded secret (required) |
+| `WithCredentials` | Credentials | Auth mechanism: `APIKeyCredentials` / `BearerTokenCredentials` / `BearerTokenProviderCredentials` (required) |
 | `WithSuperAdminKeysPEM` | []string | SuperAdmin public keys in PEM format |
 | `WithSuperAdminKeys` | []*ecdsa.PublicKey | Pre-parsed SuperAdmin public keys |
 | `WithMinValidSignatures` | int | Minimum SuperAdmin signatures required |
@@ -223,10 +227,16 @@ SuperAdmin keys are typically provided by your Taurus-PROTECT administrator. You
 │  For each signature:                                     │
 │    1. Decode base64 signature                           │
 │    2. Verify against SuperAdmin public keys             │
-│    3. Count valid signatures                            │
-│  Require: validCount >= minValidSignatures              │
+│    3. Record the signing key's fingerprint              │
+│  Require: distinct signing keys >= minValidSignatures    │
 └─────────────────────────────────────────────────────────┘
 ```
+
+> `minValidSignatures` counts **distinct signing keys**, never signature entries. ECDSA is
+> randomized, so one key can emit unlimited valid signatures over the same container, and
+> `userId` is server-supplied — so neither entries nor user IDs can gate the count. A signer
+> is identified by a SHA-256 hash of its encoded public key; a key configured twice counts
+> once.
 
 ## Request Approval Signing
 
@@ -301,7 +311,7 @@ httpClient := &http.Client{
 
 client, err := protect.NewClient(
     host,
-    protect.WithCredentials(apiKey, apiSecret),
+    protect.WithCredentials(protect.APIKeyCredentials(apiKey, apiSecret)),
     protect.WithHTTPClient(httpClient),
 )
 ```
@@ -312,7 +322,7 @@ Always close the client when done to securely wipe credentials from memory:
 
 ```go
 // Recommended: use defer for cleanup
-client, err := protect.NewClient(host, protect.WithCredentials(apiKey, apiSecret))
+client, err := protect.NewClient(host, protect.WithCredentials(protect.APIKeyCredentials(apiKey, apiSecret)))
 if err != nil {
     return err
 }
@@ -419,8 +429,8 @@ func createClientFromEnv() (*protect.Client, error) {
         minSigs, _ = strconv.Atoi(minSigsEnv)
     }
 
-    opts := []protect.ClientOption{
-        protect.WithCredentials(apiKey, apiSecret),
+    opts := []protect.Option{
+        protect.WithCredentials(protect.APIKeyCredentials(apiKey, apiSecret)),
     }
 
     if len(superAdminKeys) > 0 {

@@ -7,8 +7,10 @@ import org.junit.jupiter.api.Test;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.ECGenParameterSpec;
+import java.util.Arrays;
 import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -18,6 +20,7 @@ class WhitelistedAssetServiceTest {
     private ApiClient apiClient;
     private ApiExceptionMapper apiExceptionMapper;
     private PublicKey testPublicKey;
+    private PrivateKey testPrivateKey;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -29,6 +32,12 @@ class WhitelistedAssetServiceTest {
         kpg.initialize(new ECGenParameterSpec("secp256r1"));
         KeyPair kp = kpg.generateKeyPair();
         testPublicKey = kp.getPublic();
+        testPrivateKey = kp.getPrivate();
+    }
+
+    private WhitelistedAssetService service() {
+        return new WhitelistedAssetService(apiClient, apiExceptionMapper,
+                Collections.singletonList(testPublicKey), 1);
     }
 
     @Test
@@ -81,5 +90,43 @@ class WhitelistedAssetServiceTest {
                 Collections.singletonList(testPublicKey), 1);
         assertThrows(IllegalArgumentException.class, () ->
                 service.getWhitelistedAsset(-1));
+    }
+
+    // Approval is all-or-nothing: one signature covers every hash in the batch, so a row
+    // this SDK could not verify has to stop the call before anything is signed. Argument
+    // validation is what is reachable here — the project forbids mocking, so the
+    // verify-then-sign path is covered by the Go/Python/TypeScript suites.
+    @Test
+    void approveWhitelistedAssets_throwsOnNullIds() {
+        assertThrows(NullPointerException.class, () ->
+                service().approveWhitelistedAssets(null, testPrivateKey, "c"));
+    }
+
+    @Test
+    void approveWhitelistedAssets_throwsOnEmptyIds() {
+        assertThrows(IllegalArgumentException.class, () ->
+                service().approveWhitelistedAssets(Collections.emptyList(), testPrivateKey, "c"));
+    }
+
+    @Test
+    void approveWhitelistedAssets_throwsOnNullPrivateKey() {
+        assertThrows(NullPointerException.class, () ->
+                service().approveWhitelistedAssets(Collections.singletonList(1L), null, "c"));
+    }
+
+    @Test
+    void approveWhitelistedAssets_throwsOnMissingComment() {
+        assertThrows(IllegalArgumentException.class, () ->
+                service().approveWhitelistedAssets(Collections.singletonList(1L),
+                        testPrivateKey, ""));
+    }
+
+    // A zero or negative id would be sorted into the signed array with no row behind it.
+    @Test
+    void approveWhitelistedAssets_throwsOnNonPositiveId() {
+        assertThrows(IllegalArgumentException.class, () ->
+                service().approveWhitelistedAssets(Arrays.asList(1L, 0L), testPrivateKey, "c"));
+        assertThrows(IllegalArgumentException.class, () ->
+                service().approveWhitelistedAssets(Arrays.asList(1L, -3L), testPrivateKey, "c"));
     }
 }

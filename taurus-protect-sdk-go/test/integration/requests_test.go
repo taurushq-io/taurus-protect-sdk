@@ -120,28 +120,43 @@ func TestIntegration_RequestMetadataVerification(t *testing.T) {
 		t.Logf("  Entry: key=%s", entry.Key)
 	}
 
-	// Test GetMetadataCurrency
-	metadataCurrency := request.Metadata.GetMetadataCurrency()
+	// GetRequest verifies the metadata, so every accessor below must succeed here:
+	// ErrMetadataUnverified would mean the verification the service just performed
+	// did not take.
+	metadataCurrency, err := request.Metadata.GetMetadataCurrency()
+	if err != nil {
+		t.Fatalf("GetMetadataCurrency() error = %v", err)
+	}
 	t.Logf("Metadata currency: %s", metadataCurrency)
 
-	// Test GetMetadataRequestID
-	metadataRequestID := request.Metadata.GetMetadataRequestID()
+	metadataRequestID, err := request.Metadata.GetMetadataRequestID()
+	if err != nil {
+		t.Fatalf("GetMetadataRequestID() error = %v", err)
+	}
 	t.Logf("Metadata request ID: %d", metadataRequestID)
 
-	// Test GetSourceAddress (may be empty for some request types)
-	sourceAddr := request.Metadata.GetSourceAddress()
+	// Source/destination/amount may legitimately be absent for some request types;
+	// absent is an empty value, not an error.
+	sourceAddr, err := request.Metadata.GetSourceAddress()
+	if err != nil {
+		t.Fatalf("GetSourceAddress() error = %v", err)
+	}
 	if sourceAddr != "" {
 		t.Logf("Source address: %s", sourceAddr)
 	}
 
-	// Test GetDestinationAddress (may be empty for some request types)
-	destAddr := request.Metadata.GetDestinationAddress()
+	destAddr, err := request.Metadata.GetDestinationAddress()
+	if err != nil {
+		t.Fatalf("GetDestinationAddress() error = %v", err)
+	}
 	if destAddr != "" {
 		t.Logf("Destination address: %s", destAddr)
 	}
 
-	// Test GetAmount (may be nil for some request types)
-	amount := request.Metadata.GetAmount()
+	amount, err := request.Metadata.GetAmount()
+	if err != nil {
+		t.Fatalf("GetAmount() error = %v", err)
+	}
 	if amount != nil {
 		t.Logf("Amount: valueFrom=%s, valueTo=%s, rate=%s, currencyFrom=%s, currencyTo=%s",
 			amount.ValueFrom, amount.ValueTo, amount.Rate, amount.CurrencyFrom, amount.CurrencyTo)
@@ -159,7 +174,7 @@ func TestIntegration_ListRequestsByStatus(t *testing.T) {
 	// Note: API uses "CONFIRMED" not "COMPLETED" for completed requests
 	confirmedResult, err := client.Requests().ListRequests(ctx, &model.ListRequestsOptions{
 		PageSize: 10,
-		Status:   "CONFIRMED",
+		Statuses: []string{"CONFIRMED"},
 	})
 	if err != nil {
 		t.Fatalf("ListRequests(CONFIRMED) error = %v", err)
@@ -178,7 +193,7 @@ func TestIntegration_ListRequestsByStatus(t *testing.T) {
 	// Also try PENDING status
 	pendingResult, err := client.Requests().ListRequests(ctx, &model.ListRequestsOptions{
 		PageSize: 5,
-		Status:   "PENDING",
+		Statuses: []string{"PENDING"},
 	})
 	if err != nil {
 		t.Fatalf("ListRequests(PENDING) error = %v", err)

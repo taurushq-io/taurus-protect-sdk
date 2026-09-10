@@ -52,12 +52,30 @@ type SuperAdminPublicKey struct {
 
 // GovernanceRulesHistoryResult contains the result of a rules history query.
 type GovernanceRulesHistoryResult struct {
-	// Rules is the list of governance rulesets in history.
+	// Rules is the list of governance rulesets in history whose SuperAdmin signatures
+	// verified.
 	Rules []*GovernanceRuleset `json:"rules"`
-	// TotalItems is the total number of items.
+	// ExcludedUnverified names the entries dropped because their signatures did not
+	// verify, so a shortened page cannot read as a complete one.
+	//
+	// History is LENIENT where the whitelist lists are not, and deliberately does not
+	// error when nothing survives: a SuperAdmin key rotation makes every pre-rotation
+	// ruleset unverifiable, so a strict page would deny access to the whole audit
+	// trail permanently after any rotation.
+	ExcludedUnverified []ExcludedRuleset `json:"excluded_unverified,omitempty"`
+	// TotalItems is the total number of items, reduced by the number excluded.
 	TotalItems int64 `json:"total_items"`
 	// Cursor is the pagination cursor for the next page.
 	Cursor string `json:"cursor,omitempty"`
+}
+
+// ExcludedRuleset names a history entry that did not verify.
+type ExcludedRuleset struct {
+	// CreatedAt is when the excluded ruleset was created, the only stable identifier a
+	// history entry carries.
+	CreatedAt time.Time `json:"created_at"`
+	// Reason is why it was excluded.
+	Reason string `json:"reason"`
 }
 
 // ListRulesHistoryOptions contains options for listing rules history.

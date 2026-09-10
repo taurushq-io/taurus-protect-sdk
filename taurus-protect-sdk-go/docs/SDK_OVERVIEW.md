@@ -18,8 +18,8 @@ taurus-protect-sdk-go/
 │   ├── transport.go                # HTTP transport with TPV1
 │   ├── errors.go                   # Error types
 │   ├── service/                    # Service implementations (43 services: 38 core + 5 TaurusNetwork)
-│   ├── model/                      # Domain models (46 models)
-│   ├── mapper/                     # DTO converters (83 mappers)
+│   ├── model/                      # Domain models (42 model files)
+│   ├── mapper/                     # DTO converters (47 mapper files)
 │   ├── cache/                      # Rules container caching
 │   └── crypto/                     # Cryptographic utilities
 ├── internal/
@@ -84,11 +84,11 @@ pkg/protect/
 │   ├── wallet.go
 │   ├── address.go
 │   ├── request.go
-│   └── ... (46 models total)
+│   └── ... (42 model files total)
 ├── mapper/                # DTO converters
 │   ├── wallet.go
 │   ├── address.go
-│   └── ... (83 mappers)
+│   └── ... (47 mapper files)
 ├── cache/                 # Caching
 │   └── rules_container.go
 └── crypto/                # Cryptographic utilities
@@ -133,7 +133,7 @@ import "github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/prot
 
 client, err := protect.NewClient(
     "https://api.taurus-protect.com",
-    protect.WithCredentials(apiKey, apiSecret),
+    protect.WithCredentials(protect.APIKeyCredentials(apiKey, apiSecret)),
     protect.WithSuperAdminKeysPEM(pemKeys),
     protect.WithMinValidSignatures(2),
     protect.WithRulesCacheTTL(10 * time.Minute),
@@ -277,13 +277,17 @@ go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `WithCredentials` | Required | API key and secret |
-| `WithSuperAdminKeysPEM` | Optional | SuperAdmin public keys in PEM format |
-| `WithSuperAdminKeys` | Optional | SuperAdmin public keys as `*ecdsa.PublicKey` |
+| `WithCredentials` | Required | Auth mechanism: `APIKeyCredentials` / `BearerTokenCredentials` / `BearerTokenProviderCredentials` |
+| `WithSuperAdminKeysPEM` | **Required** (one of the two) | SuperAdmin public keys in PEM format |
+| `WithSuperAdminKeys` | **Required** (one of the two) | SuperAdmin public keys as `*ecdsa.PublicKey` |
 | `WithMinValidSignatures` | 1 | Minimum SuperAdmin signatures required |
 | `WithRulesCacheTTL` | 5 min | Rules container cache TTL |
 | `WithHTTPClient` | Default | Custom HTTP client |
 | `WithHTTPTimeout` | 30s | HTTP request timeout |
+
+At least one SuperAdmin public key is mandatory for every auth mechanism, api-key and
+bearer alike: `NewClient` fails with "superAdminKeys are required" without one. Client-side
+integrity verification is not optional, so there is no configuration that turns it off.
 
 ## Thread Safety
 

@@ -9,7 +9,12 @@ export {
   constantTimeCompareBytes,
 } from "./constant-time";
 
-export { isValidSignature, verifyGovernanceRules } from "./signature-verifier";
+export {
+  isValidSignature,
+  verifySignatureWithKey,
+  verifyGovernanceRules,
+  verifyGovernanceRulesSignatures,
+} from "./signature-verifier";
 
 export {
   verifyAddressSignature,
@@ -38,3 +43,4 @@ export {
 } from "./whitelisted-asset-verifier";
 
 export { getSourceAddress, getDestinationAddress, getAmount } from "./metadata-utils";
+export { priceSignedBytes, verifyPrice, verifyPrices } from "./price-verifier";

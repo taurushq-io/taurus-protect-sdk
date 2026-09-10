@@ -7,6 +7,13 @@ from taurus_protect.mappers._base import (
     safe_int,
     safe_string,
 )
+from taurus_protect.mappers.action import (
+    action_attribute_from_dto,
+    action_details_from_dto,
+    action_from_dto,
+    action_trail_from_dto,
+    actions_from_dto,
+)
 from taurus_protect.mappers.audit import (
     audit_from_dto,
     audits_from_dto,
@@ -20,13 +27,6 @@ from taurus_protect.mappers.business_rule import (
     business_rule_from_dto,
     business_rules_from_dto,
 )
-from taurus_protect.mappers.action import (
-    action_attribute_from_dto,
-    action_details_from_dto,
-    action_from_dto,
-    action_trail_from_dto,
-    actions_from_dto,
-)
 from taurus_protect.mappers.currency import (
     asset_balance_from_dto,
     asset_balances_from_dto,
@@ -38,6 +38,16 @@ from taurus_protect.mappers.currency import (
 from taurus_protect.mappers.governance_rules import (
     rules_container_from_base64,
     user_signatures_from_base64,
+)
+from taurus_protect.mappers.rules_container_encode import (
+    rules_container_to_base64,
+    rules_container_to_bytes,
+)
+from taurus_protect.mappers.rules_container_json import (
+    rule_message_base64_from_json,
+    rule_message_json_from_base64,
+    rules_container_base64_from_json,
+    rules_container_json_from_base64,
 )
 from taurus_protect.mappers.statistics import (
     portfolio_statistics_from_dto,
@@ -103,7 +113,13 @@ __all__ = [
     "visibility_group_user_from_dto",
     # Governance rules mappers
     "rules_container_from_base64",
+    "rules_container_to_base64",
+    "rules_container_to_bytes",
     "user_signatures_from_base64",
+    "rules_container_json_from_base64",
+    "rules_container_base64_from_json",
+    "rule_message_base64_from_json",
+    "rule_message_json_from_base64",
     # Audit/Change/Job mappers
     "audit_from_dto",
     "audits_from_dto",

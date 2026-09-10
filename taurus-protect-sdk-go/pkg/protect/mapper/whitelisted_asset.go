@@ -202,7 +202,6 @@ func TrailFromDTO(dto *openapi.TgvalidatordTrail) model.Trail {
 	return trail
 }
 
-
 // TrailsFromDTO converts a slice of OpenAPI Trails to domain Trails.
 func TrailsFromDTO(dtos []openapi.TgvalidatordTrail) []model.Trail {
 	if dtos == nil {

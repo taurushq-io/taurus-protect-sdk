@@ -362,19 +362,19 @@ describeIntegration("Integration: TaurusNetwork Sharing", () => {
 });
 
 // =============================================================================
-// ContractWhitelistingService
+// WhitelistedAssetService — the verified reader of /whitelists/contracts
 // =============================================================================
 
-describeIntegration("Integration: ContractWhitelistingService", () => {
+describeIntegration("Integration: WhitelistedAssetService", () => {
   it("should list whitelisted contracts", async () => {
     const client = getTestClient();
     try {
-      const result = await client.contractWhitelisting.list();
+      const result = await client.whitelistedAssets.list();
 
       expect(result).toBeDefined();
       console.log(`Found ${result.items.length} whitelisted contracts`);
       for (const c of result.items.slice(0, 5)) {
-        console.log(`  Contract: ID=${c.id}`);
+        console.log(`  Contract: ID=${c.id} address=${c.contractAddress}`);
       }
     } finally {
       client.close();

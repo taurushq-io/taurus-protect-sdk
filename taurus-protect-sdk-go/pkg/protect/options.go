@@ -21,39 +21,34 @@ const (
 // clientConfig holds the configuration for the ProtectClient.
 type clientConfig struct {
 	host               string
-	apiKey             string
-	apiSecret          string
+	credentials        Credentials
 	superAdminKeys     []*ecdsa.PublicKey
 	minValidSignatures int
 	rulesCacheTTL      time.Duration
 	httpClient         *http.Client
 	httpTimeout        time.Duration
+	logger             Logger
 }
 
-// validate checks the configuration for required fields and valid values.
+// validate checks the configuration for required fields and valid values. The
+// auth mechanism is a Credentials value (WithCredentials). SuperAdmin keys are
+// mandatory regardless of the mechanism, since client-side rules verification is
+// mandatory.
 func (c *clientConfig) validate() error {
 	if c.host == "" {
 		return errors.New("host is required")
 	}
-	if c.apiKey == "" {
-		return errors.New("apiKey is required")
-	}
-	if c.apiSecret == "" {
-		return errors.New("apiSecret is required")
+	if c.credentials == nil {
+		return errors.New("credentials are required: pass WithCredentials(...)")
 	}
 	if len(c.superAdminKeys) == 0 {
 		return errors.New("superAdminKeys are required: at least one SuperAdmin public key must be provided for integrity verification")
 	}
-	if c.minValidSignatures < 0 {
-		return errors.New("minValidSignatures must be non-negative")
+	if c.minValidSignatures <= 0 {
+		return errors.New("minValidSignatures must be greater than zero")
 	}
-	if len(c.superAdminKeys) > 0 && c.minValidSignatures > len(c.superAdminKeys) {
+	if c.minValidSignatures > len(c.superAdminKeys) {
 		return errors.New("minValidSignatures cannot exceed number of superAdminKeys")
-	}
-	// Reject minValidSignatures=0 when SuperAdmin keys are provided.
-	// This matches Java SDK behavior (IllegalArgumentException).
-	if len(c.superAdminKeys) > 0 && c.minValidSignatures == 0 {
-		return errors.New("minValidSignatures must be greater than zero when SuperAdmin keys are provided")
 	}
 	return nil
 }
@@ -61,18 +56,16 @@ func (c *clientConfig) validate() error {
 // Option configures a ProtectClient.
 type Option func(*clientConfig) error
 
-// WithCredentials sets the API key and secret for authentication.
-// The apiSecret should be hex-encoded.
-func WithCredentials(apiKey, apiSecret string) Option {
+// WithCredentials sets the client's authentication mechanism. Construct the
+// Credentials with APIKeyCredentials (static TPV1-HMAC),
+// BearerTokenProviderCredentials (per-request Bearer token), or
+// BearerTokenCredentials (a static Bearer token).
+func WithCredentials(credentials Credentials) Option {
 	return func(c *clientConfig) error {
-		if apiKey == "" {
-			return errors.New("apiKey cannot be empty")
+		if credentials == nil {
+			return errors.New("credentials cannot be nil")
 		}
-		if apiSecret == "" {
-			return errors.New("apiSecret cannot be empty")
-		}
-		c.apiKey = apiKey
-		c.apiSecret = apiSecret
+		c.credentials = credentials
 		return nil
 	}
 }
@@ -131,6 +124,23 @@ func WithRulesCacheTTL(ttl time.Duration) Option {
 func WithHTTPClient(client *http.Client) Option {
 	return func(c *clientConfig) error {
 		c.httpClient = client
+		return nil
+	}
+}
+
+// WithLogger sets the logger the SDK reports diagnostic events to. The default
+// discards them.
+//
+// The SDK logs metadata only — an identifier, a resource, a reason — never a
+// payload, token or key. It reports, among other things, rows dropped from a list
+// because their integrity could not be verified; without a logger those exclusions
+// are silent, and a shortened list is indistinguishable from a complete one.
+func WithLogger(l Logger) Option {
+	return func(c *clientConfig) error {
+		if l == nil {
+			return errors.New("logger must not be nil; omit the option to disable logging")
+		}
+		c.logger = l
 		return nil
 	}
 }

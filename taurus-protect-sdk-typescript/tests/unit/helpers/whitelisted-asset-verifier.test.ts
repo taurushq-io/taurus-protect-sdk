@@ -22,181 +22,19 @@ import type {
   SignedWhitelistedAssetEnvelope,
 } from "../../../src/models/whitelisted-asset";
 
+import {
+  generateP256KeyPair,
+  keyToPem,
+  buildAssetPayload,
+  payloadToString,
+  buildFullAssetFixture,
+  type AssetTestFixture,
+} from "../fixtures/whitelisted-asset-fixtures";
+import { computeAssetLegacyHashes } from "../../../src/helpers/whitelist-hash-helper";
+
 // =============================================================================
 // Helpers
 // =============================================================================
-
-function generateP256KeyPair(): {
-  privateKey: crypto.KeyObject;
-  publicKey: crypto.KeyObject;
-} {
-  const { privateKey, publicKey } = crypto.generateKeyPairSync("ec", {
-    namedCurve: "P-256",
-  });
-  return { privateKey, publicKey };
-}
-
-function keyToPem(publicKey: crypto.KeyObject): string {
-  return encodePublicKeyPem(publicKey);
-}
-
-function buildAssetPayload(overrides?: Partial<{
-  blockchain: string;
-  network: string;
-  contractAddress: string;
-  name: string;
-  symbol: string;
-  decimals: number;
-  isNFT: boolean;
-  kindType: string;
-}>): Record<string, unknown> {
-  return {
-    blockchain: "ETH",
-    network: "mainnet",
-    contractAddress: "0xUSDC",
-    name: "USDC",
-    symbol: "USDC",
-    decimals: 6,
-    ...overrides,
-  };
-}
-
-function payloadToString(payload: Record<string, unknown>): string {
-  return JSON.stringify(payload);
-}
-
-interface AssetTestFixture {
-  saPriv: crypto.KeyObject;
-  saPub: crypto.KeyObject;
-  userPriv: crypto.KeyObject;
-  userPub: crypto.KeyObject;
-  saPem: string;
-  userPem: string;
-  envelope: SignedWhitelistedAssetEnvelope;
-  rulesContainerDecoder: (b64: string) => DecodedRulesContainer;
-  userSignaturesDecoder: (b64: string) => RuleUserSignature[];
-}
-
-function buildFullAssetFixture(overrides?: {
-  blockchain?: string;
-  network?: string;
-  groupId?: string;
-  userId?: string;
-}): AssetTestFixture {
-  const { privateKey: saPriv, publicKey: saPub } = generateP256KeyPair();
-  const { privateKey: userPriv, publicKey: userPub } = generateP256KeyPair();
-  const saPem = keyToPem(saPub);
-  const userPem = keyToPem(userPub);
-
-  const blockchain = overrides?.blockchain ?? "ETH";
-  const network = overrides?.network ?? "mainnet";
-  const groupId = overrides?.groupId ?? "approvers";
-  const userId = overrides?.userId ?? "user1@bank.com";
-
-  const payload = buildAssetPayload({ blockchain, network });
-  const payloadStr = payloadToString(payload);
-  const metadataHash = calculateHexHash(payloadStr);
-
-  // Build rules container
-  const rulesJson = JSON.stringify({
-    users: [{ id: userId, publicKey: userPem, roles: ["USER"] }],
-    groups: [{ id: groupId, userIds: [userId] }],
-    contractAddressWhitelistingRules: [
-      {
-        blockchain,
-        network,
-        parallelThresholds: [{ groupId, minimumSignatures: 1 }],
-      },
-    ],
-  });
-  const rulesB64 = Buffer.from(rulesJson).toString("base64");
-  const rulesData = Buffer.from(rulesB64, "base64");
-
-  // Sign rules container with SuperAdmin key
-  const saSig = signData(saPriv, rulesData);
-
-  // Sign hashes array with user key
-  const hashes = [metadataHash];
-  const hashesJson = JSON.stringify(hashes);
-  const userSig = signData(userPriv, Buffer.from(hashesJson, "utf-8"));
-
-  const envelope: SignedWhitelistedAssetEnvelope = {
-    id: 1,
-    metadata: {
-      hash: metadataHash,
-      payloadAsString: payloadStr,
-    },
-    rulesContainerBase64: rulesB64,
-    rulesSignaturesBase64: Buffer.from("dummy").toString("base64"),
-    signedContractAddress: {
-      payload: undefined,
-      signatures: [
-        {
-          userSignature: {
-            userId,
-            signature: userSig,
-            comment: undefined,
-          },
-          hashes,
-        },
-      ],
-    },
-    blockchain,
-    network,
-  };
-
-  const rulesContainerDecoder = (_b64: string): DecodedRulesContainer => ({
-    users: [
-      {
-        id: userId,
-        name: "User 1",
-        publicKeyPem: userPem,
-        roles: ["USER"],
-      },
-    ],
-    groups: [
-      { id: groupId, name: "Approvers", userIds: [userId] },
-    ],
-    addressWhitelistingRules: [],
-    contractAddressWhitelistingRules: [
-      {
-        blockchain,
-        network,
-        parallelThresholds: [
-          {
-            thresholds: [
-              { groupId, minimumSignatures: 1, threshold: 0 },
-            ],
-          },
-        ],
-      },
-    ],
-    transactionRules: [],
-    minimumDistinctUserSignatures: 0,
-    minimumDistinctGroupSignatures: 0,
-    enforcedRulesHash: "",
-    timestamp: 0,
-    hsmSlotId: 0,
-    minimumCommitmentSignatures: 0,
-    engineIdentities: [],
-  });
-
-  const userSignaturesDecoder = (_b64: string): RuleUserSignature[] => [
-    { userId: "sa@bank.com", signature: saSig },
-  ];
-
-  return {
-    saPriv,
-    saPub,
-    userPriv,
-    userPub,
-    saPem,
-    userPem,
-    envelope,
-    rulesContainerDecoder,
-    userSignaturesDecoder,
-  };
-}
 
 // =============================================================================
 // Constructor Tests
@@ -883,5 +721,93 @@ describe("WhitelistedAssetVerifier - Batch Verification", () => {
     }
 
     expect(results).toEqual(["pass", "integrity_fail"]);
+  });
+});
+
+// =============================================================================
+// Legacy hash carried into step 5
+// =============================================================================
+
+describe("WhitelistedAssetVerifier - legacy hash threading", () => {
+  /**
+   * An asset signed before `isNFT` entered the schema is covered by the LEGACY
+   * hash, not by SHA-256 of today's payload. Step 4 matches the legacy hash, so
+   * step 5 must look for that same hash. While step 4 returned void and step 5
+   * re-read `metadata.hash`, such an asset passed step 4 and then failed step 5.
+   */
+  it("verifies an asset whose signature covers only the legacy hash", () => {
+    const { privateKey: saPriv, publicKey: saPub } = generateP256KeyPair();
+    const { privateKey: userPriv, publicKey: userPub } = generateP256KeyPair();
+
+    // Today's payload carries isNFT; the signature predates it.
+    const currentPayload =
+      '{"blockchain":"ETH","network":"mainnet","contractAddress":"0xUSDC","name":"USDC","symbol":"USDC","decimals":6,"isNFT":false}';
+    const legacyPayload =
+      '{"blockchain":"ETH","network":"mainnet","contractAddress":"0xUSDC","name":"USDC","symbol":"USDC","decimals":6}';
+
+    const currentHash = calculateHexHash(currentPayload);
+    const legacyHash = calculateHexHash(legacyPayload);
+    expect(legacyHash).not.toBe(currentHash);
+    expect(computeAssetLegacyHashes(currentPayload)).toContain(legacyHash);
+
+    const userId = "user1@bank.com";
+    const groupId = "approvers";
+
+    // The user signed the LEGACY hash only.
+    const hashes = [legacyHash];
+    const userSig = signData(userPriv, Buffer.from(JSON.stringify(hashes), "utf-8"));
+    const rulesB64 = Buffer.from("{}").toString("base64");
+    const saSig = signData(saPriv, Buffer.from(rulesB64, "base64"));
+
+    const envelope: SignedWhitelistedAssetEnvelope = {
+      id: 7,
+      metadata: { hash: currentHash, payloadAsString: currentPayload },
+      rulesContainerBase64: rulesB64,
+      rulesSignaturesBase64: Buffer.from("dummy").toString("base64"),
+      signedContractAddress: {
+        payload: undefined,
+        signatures: [
+          { userSignature: { userId, signature: userSig, comment: undefined }, hashes },
+        ],
+      },
+      blockchain: "ETH",
+      network: "mainnet",
+    };
+
+    const verifier = new WhitelistedAssetVerifier({
+      superAdminKeysPem: [keyToPem(saPub)],
+      minValidSignatures: 1,
+    });
+
+    const result = verifier.verify(
+      envelope,
+      () => ({
+        users: [{ id: userId, name: "U", publicKeyPem: keyToPem(userPub), roles: ["USER"] }],
+        groups: [{ id: groupId, name: "G", userIds: [userId] }],
+        addressWhitelistingRules: [],
+        contractAddressWhitelistingRules: [
+          {
+            blockchain: "ETH",
+            network: "mainnet",
+            parallelThresholds: [
+              { thresholds: [{ groupId, minimumSignatures: 1, threshold: 0 }] },
+            ],
+          },
+        ],
+        transactionRules: [],
+        minimumDistinctUserSignatures: 0,
+        minimumDistinctGroupSignatures: 0,
+        enforcedRulesHash: "",
+        timestamp: 0,
+        hsmSlotId: 0,
+        minimumCommitmentSignatures: 0,
+        engineIdentities: [],
+      }),
+      () => [{ userId: "sa@bank.com", signature: saSig }]
+    );
+
+    // The reported hash is the one actually covered, not the current one.
+    expect(result.verifiedHash).toBe(legacyHash);
+    expect(result.verifiedAsset.symbol).toBe("USDC");
   });
 });

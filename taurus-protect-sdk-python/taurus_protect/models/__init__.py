@@ -36,9 +36,13 @@ from taurus_protect.models.currency import (
 from taurus_protect.models.governance_rules import (
     AddressWhitelistingLine,
     AddressWhitelistingRules,
+    CashSettlement,
     ContractAddressWhitelistingRules,
+    CosmosDetails,
     DecodedRulesContainer,
+    EvmCallContract,
     GovernanceRules,
+    ExcludedRuleset,
     GovernanceRulesHistoryResult,
     GovernanceRulesTrail,
     GroupThreshold,
@@ -46,6 +50,9 @@ from taurus_protect.models.governance_rules import (
     RuleGroup,
     RuleLine,
     RuleSource,
+    RuleSourceExchange,
+    RuleSourceExternalAddress,
+    RuleSourceInternalAddress,
     RuleSourceInternalWallet,
     RuleUser,
     RuleUserSignature,
@@ -53,7 +60,10 @@ from taurus_protect.models.governance_rules import (
     SuperAdminPublicKey,
     TransactionRuleDetails,
     TransactionRules,
+    XtzCallContract,
 )
+from taurus_protect.models import rule_cell as rule_cell
+from taurus_protect.models.rule_cell import RuleCell
 from taurus_protect.models.pagination import Pagination
 from taurus_protect.models.request import (
     Attribute,
@@ -253,6 +263,7 @@ __all__ = [
     "Transaction",
     # Governance Rules
     "GovernanceRules",
+    "ExcludedRuleset",
     "GovernanceRulesHistoryResult",
     "GovernanceRulesTrail",
     "RuleUserSignature",
@@ -266,6 +277,15 @@ __all__ = [
     "RuleLine",
     "RuleSource",
     "RuleSourceInternalWallet",
+    "RuleSourceInternalAddress",
+    "RuleSourceExchange",
+    "RuleSourceExternalAddress",
+    "RuleCell",
+    "rule_cell",
+    "EvmCallContract",
+    "XtzCallContract",
+    "CashSettlement",
+    "CosmosDetails",
     "ContractAddressWhitelistingRules",
     "DecodedRulesContainer",
     "SuperAdminPublicKey",

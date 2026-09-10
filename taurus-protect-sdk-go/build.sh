@@ -124,6 +124,20 @@ clean() {
     info "Clean completed"
 }
 
+
+# Regenerates the generated method index in docs/SERVICES.md from the source, and with
+# --check fails when the docs drift from the code. This repo has no CI, so build.sh is
+# the only place a gate can live: the four SERVICES.md files had accumulated ~100
+# documented methods that did not exist, which is worse than missing docs because a
+# reader cannot tell.
+docs() {
+    local mode="render"
+    if [ "${1:-}" = "--check" ]; then
+        mode="check"
+    fi
+    "$(dirname "$0")/../scripts/api-surface/generate.sh" go "$mode"
+}
+
 # Show usage
 usage() {
     cat << EOF
@@ -199,6 +213,9 @@ main() {
             ;;
         lint)
             lint
+            ;;
+        docs)
+            docs "${2:-}"
             ;;
         generate)
             generate

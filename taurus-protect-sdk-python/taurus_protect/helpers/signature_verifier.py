@@ -4,14 +4,17 @@ from __future__ import annotations
 
 import base64
 import binascii
-from typing import List
+import hashlib
+from typing import List, Optional, Sequence
 
 from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 
+from taurus_protect._strict_base64 import strict_b64decode
 from taurus_protect.crypto.signing import verify_signature
 from taurus_protect.errors import IntegrityError
-from taurus_protect.models.governance_rules import GovernanceRules
+from taurus_protect.models.governance_rules import GovernanceRules, RuleUserSignature
 
 
 def verify_governance_rules(
@@ -20,14 +23,15 @@ def verify_governance_rules(
     super_admin_keys: List[EllipticCurvePublicKey],
 ) -> None:
     """
-    Verify that governance rules have enough valid SuperAdmin signatures.
+    Verify that governance rules are signed by enough DISTINCT SuperAdmin keys.
 
-    This function verifies the cryptographic signatures on the rules container
-    to ensure they were signed by the required number of SuperAdmin keys.
+    min_valid_signatures counts distinct signing keys, not signature entries: ECDSA
+    is randomized, so counting entries would let a single key produce as many valid
+    signatures as any threshold demands, making 2-of-N no stronger than 1-of-N.
 
     Args:
         rules: The governance rules to verify.
-        min_valid_signatures: Minimum number of valid signatures required.
+        min_valid_signatures: Minimum number of distinct valid signers required.
         super_admin_keys: List of SuperAdmin public keys for verification.
 
     Raises:
@@ -53,20 +57,91 @@ def verify_governance_rules(
 
     # Decode the rules container
     try:
-        rules_data = base64.b64decode(rules.rules_container)
+        rules_data = strict_b64decode(rules.rules_container)
     except (binascii.Error, ValueError) as e:
         raise IntegrityError(f"Governance rules verification failed: invalid base64 encoding: {e}") from e
 
-    valid_count = 0
-    for sig in signatures:
-        if sig.signature and is_valid_signature(rules_data, sig.signature, super_admin_keys):
-            valid_count += 1
+    try:
+        verify_governance_rules_signatures(
+            rules_data, signatures, super_admin_keys, min_valid_signatures
+        )
+    except IntegrityError as e:
+        raise IntegrityError(f"Governance rules verification failed: {e}") from e
 
-    if valid_count < min_valid_signatures:
+
+def verify_governance_rules_signatures(
+    rules_container_data: bytes,
+    signatures: Sequence[RuleUserSignature],
+    super_admin_keys: List[EllipticCurvePublicKey],
+    min_valid_signatures: int,
+) -> None:
+    """
+    Verify that the rules container is signed by enough DISTINCT SuperAdmin keys.
+
+    This is the single place the threshold is evaluated -- every caller routes here.
+    min_valid_signatures counts distinct signing keys, not signature entries: ECDSA
+    is randomized, so counting entries would let a single key produce as many valid
+    signatures as any threshold demands, making 2-of-N no stronger than 1-of-N.
+
+    Args:
+        rules_container_data: The raw signed rules container bytes.
+        signatures: The signature entries to check.
+        super_admin_keys: List of SuperAdmin public keys for verification.
+        min_valid_signatures: Minimum number of distinct valid signers required.
+
+    Raises:
+        IntegrityError: If too few distinct SuperAdmin keys signed.
+        ValueError: If min_valid_signatures is not positive.
+    """
+    if min_valid_signatures <= 0:
+        raise ValueError("min_valid_signatures must be positive")
+    if not rules_container_data:
+        raise IntegrityError("rules container data cannot be empty")
+    if not super_admin_keys:
+        raise IntegrityError("no SuperAdmin keys configured for verification")
+    if not signatures:
+        raise IntegrityError("no signatures provided")
+
+    signers = set()
+    for sig in signatures:
+        if not sig.signature:
+            continue
+        key = _matching_key(rules_container_data, sig.signature, super_admin_keys)
+        if key is not None:
+            signers.add(key_fingerprint(key))
+
+    if len(signers) < min_valid_signatures:
         raise IntegrityError(
-            f"Governance rules verification failed: only {valid_count} valid signatures found, "
+            f"only {len(signers)} distinct valid signers found, "
             f"minimum {min_valid_signatures} required"
         )
+
+
+def _matching_key(
+    data: bytes,
+    signature_b64: str,
+    super_admin_keys: List[EllipticCurvePublicKey],
+) -> Optional[EllipticCurvePublicKey]:
+    """Return the first configured key that verifies the signature, else None."""
+    for public_key in super_admin_keys:
+        try:
+            if verify_signature(public_key, data, signature_b64):
+                return public_key
+        except (InvalidSignature, ValueError):
+            # Signature verification failed for this key, try next
+            # InvalidSignature: cryptographic verification failed
+            # ValueError: malformed signature or key format
+            continue
+    return None
+
+
+def key_fingerprint(public_key: EllipticCurvePublicKey) -> bytes:
+    """Identify a key by its encoded bytes, so the same key configured twice counts once."""
+    der = public_key.public_bytes(
+        encoding=serialization.Encoding.DER,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+    )
+    return hashlib.sha256(der).digest()
 
 
 def is_valid_signature(
@@ -88,16 +163,7 @@ def is_valid_signature(
     Returns:
         True if the signature is valid for any of the keys.
     """
-    for public_key in super_admin_keys:
-        try:
-            if verify_signature(public_key, data, signature_b64):
-                return True
-        except (InvalidSignature, ValueError):
-            # Signature verification failed for this key, try next
-            # InvalidSignature: cryptographic verification failed
-            # ValueError: malformed signature or key format
-            continue
-    return False
+    return _matching_key(data, signature_b64, super_admin_keys) is not None
 
 
 def verify_raw_signature(

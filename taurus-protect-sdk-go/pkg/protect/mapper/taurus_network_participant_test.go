@@ -40,24 +40,24 @@ func TestTnParticipantFromDTO(t *testing.T) {
 				status := "ACTIVE"
 				now := time.Now()
 				return &openapi.TgvalidatordTnParticipant{
-					Id:                                        &id,
-					Name:                                      &name,
-					LegalAddress:                              &legalAddress,
-					Country:                                   &country,
-					LogoBase64:                                &logoBase64,
-					PublicKey:                                 &publicKey,
-					Shield:                                    &shield,
-					OriginRegistrationDate:                    &now,
-					OriginDeletionDate:                        &now,
-					CreatedAt:                                 &now,
-					UpdatedAt:                                 &now,
-					OwnedSharedAddressesCount:                 &ownedCount,
-					TargetedSharedAddressesCount:              &targetedCount,
+					Id:                           &id,
+					Name:                         &name,
+					LegalAddress:                 &legalAddress,
+					Country:                      &country,
+					LogoBase64:                   &logoBase64,
+					PublicKey:                    &publicKey,
+					Shield:                       &shield,
+					OriginRegistrationDate:       &now,
+					OriginDeletionDate:           &now,
+					CreatedAt:                    &now,
+					UpdatedAt:                    &now,
+					OwnedSharedAddressesCount:    &ownedCount,
+					TargetedSharedAddressesCount: &targetedCount,
 					OutgoingTotalPledgesValuationBaseCurrency: &outgoingVal,
 					IncomingTotalPledgesValuationBaseCurrency: &incomingVal,
-					PublicSubname:                             &publicSubname,
-					LegalEntityIdentifier:                     &lei,
-					Status:                                    &status,
+					PublicSubname:         &publicSubname,
+					LegalEntityIdentifier: &lei,
+					Status:                &status,
 				}
 			}(),
 		},
@@ -371,9 +371,9 @@ func TestTnParticipantSettingsFromDTO(t *testing.T) {
 				status := "ACTIVE"
 				now := time.Now()
 				return &openapi.TgvalidatordTnParticipantSettings{
-					InteractingAllowedCountries:   []string{"CH", "DE", "US"},
-					Status:                        &status,
-					TermsAndConditionsAcceptedAt:  &now,
+					InteractingAllowedCountries:  []string{"CH", "DE", "US"},
+					Status:                       &status,
+					TermsAndConditionsAcceptedAt: &now,
 				}
 			}(),
 		},

@@ -136,8 +136,6 @@ type ListWhitelistedAddressesOptions struct {
 	Blockchain string
 	// Network filters by network.
 	Network string
-	// Currency filters by currency.
-	Currency string
 	// Query searches address names or values.
 	Query string
 	// AddressType filters by address type.
@@ -148,6 +146,17 @@ type ListWhitelistedAddressesOptions struct {
 	Addresses []string
 	// IncludeForApproval includes addresses pending approval.
 	IncludeForApproval bool
+	// AllowedForWalletID / AllowedForAddressID keep only the destinations that
+	// wallet or address is permitted to send to.
+	AllowedForWalletID  string
+	AllowedForAddressID string
+	// TNParticipantID filters to one Taurus-NETWORK counterparty.
+	TNParticipantID string
+	// TagIDs, ContractTypes and ExchangeAccountIDs are list filters. The endpoint
+	// also has `actions`, absent from the generated client's stale spec.
+	TagIDs             []string
+	ContractTypes      []string
+	ExchangeAccountIDs []string
 }
 
 // WhitelistedAddressEnvelope wraps a whitelisted address with its verification data.
@@ -195,4 +204,57 @@ func (e *WhitelistedAddressEnvelope) DecodedRulesContainer() *DecodedRulesContai
 func (e *WhitelistedAddressEnvelope) SetVerified(addr *WhitelistedAddress, rules *DecodedRulesContainer) {
 	e.verifiedWhitelistedAddress = addr
 	e.verifiedRulesContainer = rules
+}
+
+// ExcludedWhitelistedAddress names a row dropped from a list because it failed
+// integrity verification, and why.
+type ExcludedWhitelistedAddress struct {
+	// ID is the address ID, or "" when the row carried no usable ID.
+	ID string
+	// Reason is why the row failed verification.
+	Reason string
+}
+
+// WhitelistedAddressResult contains the result of a paginated whitelisted-address
+// list query.
+//
+// Verification is lenient by design: a row that cannot be verified is excluded rather
+// than failing the whole call, because one bad row used to deny access to every good
+// one — and listing is how an operator finds the bad row. Excluding stays fail-closed,
+// since an omitted destination cannot be selected.
+//
+// The omission is reported rather than silent: a shortened list must never be mistaken
+// for a complete one.
+// ListWhitelistedAddressesForApprovalOptions filters the approval queue.
+//
+// The approval queue is a different ENDPOINT, not a status filter on the general list:
+// it is scoped to what the calling user may act on, which no filter reproduces.
+type ListWhitelistedAddressesForApprovalOptions struct {
+	// Limit is the maximum number of rows to return.
+	Limit int64
+	// Offset is the number of rows to skip.
+	Offset int64
+	// IDs filters by specific whitelisted address IDs.
+	IDs []string
+	// Blockchain filters by blockchain symbol.
+	Blockchain string
+	// Network filters by network.
+	Network string
+	// AddressType filters by address type.
+	AddressType string
+	// Query matches customer id, address, blockchain, label, memo and address type.
+	Query string
+	// IncludeAlreadySignedByUser includes rows the calling user has already signed,
+	// which is how an approver tells "waiting for me" from "waiting for someone else".
+	IncludeAlreadySignedByUser bool
+}
+
+type WhitelistedAddressResult struct {
+	// Addresses is the list of verified whitelisted addresses in the current page.
+	Addresses []*WhitelistedAddress
+	// Pagination carries the page window, with TotalItems already reduced by the
+	// number of excluded rows so HasMore stays honest.
+	Pagination *Pagination
+	// ExcludedUnverified names the rows dropped from Addresses, with the reason.
+	ExcludedUnverified []ExcludedWhitelistedAddress
 }

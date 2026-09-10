@@ -8,34 +8,29 @@
 
 import type { ContractWhitelistingApi } from "../internal/openapi/apis/ContractWhitelistingApi";
 import { NotFoundError, ValidationError } from "../errors";
-import type { Pagination, PaginatedResult } from "../models/pagination";
 import type {
-  WhitelistedContract,
   WhitelistedContractAttribute,
-  ListWhitelistedContractsOptions,
-  ListForApprovalOptions,
   CreateWhitelistedContractRequest,
   UpdateWhitelistedContractRequest,
 } from "../models/contract-whitelist";
-import {
-  whitelistedContractFromDto,
-  whitelistedContractsFromDto,
-  whitelistedContractAttributeFromDto,
-} from "../mappers/contract-whitelist";
+import { whitelistedContractAttributeFromDto } from "../mappers/contract-whitelist";
 import { BaseService } from "./base";
 
 // Re-export types for convenience
 export type {
-  WhitelistedContract,
   WhitelistedContractAttribute,
-  ListWhitelistedContractsOptions,
-  ListForApprovalOptions,
   CreateWhitelistedContractRequest,
   UpdateWhitelistedContractRequest,
 } from "../models/contract-whitelist";
 
 /**
- * Service for managing whitelisted contract addresses.
+ * Service for whitelisted contract WRITE operations.
+ *
+ * Reads live on WhitelistedAssetService, which is the same server entity
+ * (/api/rest/v1/whitelists/contracts) verified through the six-step chain. The get/list/
+ * listForApproval that used to sit here returned the DTO — and parsed the signed payload
+ * as fact — with no verification, which made the verified reader avoidable. Do not
+ * re-add them.
  *
  * Provides operations for creating, approving, updating, and deleting
  * whitelisted contract addresses such as ERC20 tokens, NFT collections
@@ -73,161 +68,6 @@ export class ContractWhitelistingService extends BaseService {
    */
   constructor(private readonly api: ContractWhitelistingApi) {
     super();
-  }
-
-  /**
-   * Gets a whitelisted contract by ID.
-   *
-   * @param id - The contract ID to retrieve
-   * @returns The whitelisted contract
-   * @throws {@link ValidationError} If id is invalid
-   * @throws {@link NotFoundError} If contract not found
-   * @throws {@link APIError} If API request fails
-   *
-   * @example
-   * ```typescript
-   * const contract = await contractWhitelistingService.get('123');
-   * console.log(`Contract: ${contract.name} (${contract.symbol})`);
-   * ```
-   */
-  async get(id: string): Promise<WhitelistedContract> {
-    if (!id || id.trim() === "") {
-      throw new ValidationError("id is required");
-    }
-
-    return this.execute(async () => {
-      const response = await this.api.whitelistServiceGetWhitelistedContract({
-        id,
-      });
-
-      const envelope = response.result;
-      if (envelope == null) {
-        throw new NotFoundError(`Whitelisted contract ${id} not found`);
-      }
-
-      const contract = whitelistedContractFromDto(envelope);
-      if (!contract) {
-        throw new NotFoundError(`Whitelisted contract ${id} not found`);
-      }
-
-      return contract;
-    });
-  }
-
-  /**
-   * Lists whitelisted contracts with optional filtering and pagination.
-   *
-   * @param options - Optional filtering and pagination options
-   * @returns Paginated result containing whitelisted contracts
-   * @throws {@link ValidationError} If options are invalid
-   * @throws {@link APIError} If API request fails
-   *
-   * @example
-   * ```typescript
-   * // List all contracts for ETH mainnet
-   * const result = await contractWhitelistingService.list({
-   *   blockchain: 'ETH',
-   *   network: 'mainnet',
-   *   limit: 50,
-   * });
-   *
-   * // Filter by kind types
-   * const nfts = await contractWhitelistingService.list({
-   *   kindTypes: ['nft'],
-   * });
-   * ```
-   */
-  async list(
-    options?: ListWhitelistedContractsOptions
-  ): Promise<PaginatedResult<WhitelistedContract>> {
-    const limit = options?.limit ?? 50;
-    const offset = options?.offset ?? 0;
-
-    if (limit <= 0) {
-      throw new ValidationError("limit must be positive");
-    }
-    if (offset < 0) {
-      throw new ValidationError("offset cannot be negative");
-    }
-
-    return this.execute(async () => {
-      const response = await this.api.whitelistServiceGetWhitelistedContracts({
-        limit: String(limit),
-        offset: String(offset),
-        query: options?.query,
-        blockchain: options?.blockchain,
-        network: options?.network,
-        isNFT: options?.isNFT,
-        kindTypes: options?.kindTypes,
-        whitelistedContractAddressIds: options?.contractIds,
-        includeForApproval: false,
-      });
-
-      const items = whitelistedContractsFromDto(response.result);
-      const totalItems = response.totalItems
-        ? parseInt(response.totalItems, 10)
-        : 0;
-
-      const pagination: Pagination = {
-        totalItems,
-        offset,
-        limit,
-      };
-
-      return { items, pagination };
-    });
-  }
-
-  /**
-   * Lists whitelisted contracts pending approval.
-   *
-   * @param options - Optional filtering and pagination options
-   * @returns Paginated result containing whitelisted contracts for approval
-   * @throws {@link ValidationError} If options are invalid
-   * @throws {@link APIError} If API request fails
-   *
-   * @example
-   * ```typescript
-   * const pending = await contractWhitelistingService.listForApproval({
-   *   limit: 50,
-   * });
-   * console.log(`${pending.pagination.totalItems} contracts pending approval`);
-   * ```
-   */
-  async listForApproval(
-    options?: ListForApprovalOptions
-  ): Promise<PaginatedResult<WhitelistedContract>> {
-    const limit = options?.limit ?? 50;
-    const offset = options?.offset ?? 0;
-
-    if (limit <= 0) {
-      throw new ValidationError("limit must be positive");
-    }
-    if (offset < 0) {
-      throw new ValidationError("offset cannot be negative");
-    }
-
-    return this.execute(async () => {
-      const response =
-        await this.api.whitelistServiceGetWhitelistedContractsForApproval({
-          limit: String(limit),
-          offset: String(offset),
-          ids: options?.ids,
-        });
-
-      const items = whitelistedContractsFromDto(response.result);
-      const totalItems = response.totalItems
-        ? parseInt(response.totalItems, 10)
-        : 0;
-
-      const pagination: Pagination = {
-        totalItems,
-        offset,
-        limit,
-      };
-
-      return { items, pagination };
-    });
   }
 
   /**
@@ -303,6 +143,10 @@ export class ContractWhitelistingService extends BaseService {
    *
    * Requires a cryptographic signature computed over the metadata hashes
    * of the contracts being approved.
+   *
+   * @deprecated The signature is an opaque blob over hashes nothing verified, so the
+   * caller cannot know what they signed. Use `whitelistedAssets.approve`, which re-reads
+   * and verifies the rows first.
    *
    * @param ids - The list of contract IDs to approve
    * @param signature - The approval signature (base64-encoded)

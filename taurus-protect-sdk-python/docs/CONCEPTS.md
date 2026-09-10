@@ -170,8 +170,20 @@ try:
     # Action requires higher privileges
     wallet = client.wallets.create(...)
 except AuthorizationError as e:
-    print(f"Permission denied: {e.message}")
+    if e.required_roles:
+        print(f"Permission denied; requires one of: {', '.join(e.required_roles)}")
+    else:
+        print("Permission denied")
 ```
+
+The error carries the **roles that would satisfy the failed check**, so a caller can say
+which role to request instead of only "forbidden". The list is empty when the denial was
+not role-based (a disabled endpoint, a visibility restriction). One entry means that role
+is required; several mean any one of them suffices.
+
+> Surface the role list, never the server's message. The role names are safe to display;
+> the surrounding text is server-controlled. A consumer that forwards errors into another
+> system should render roles through an allowlist (the roles are lowercase alphanumeric).
 
 ### NotFoundError
 
@@ -270,8 +282,7 @@ from taurus_protect.errors import ConfigurationError
 try:
     client = ProtectClient.create(
         host="",  # Empty host
-        api_key="key",
-        api_secret="secret",
+        credentials=Credentials.api_key("key", "secret"),
     )
 except ConfigurationError as e:
     print(f"Config error: {e.message}")

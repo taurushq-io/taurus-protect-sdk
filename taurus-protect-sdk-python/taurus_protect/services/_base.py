@@ -48,7 +48,8 @@ class BaseService:
 
         if body and isinstance(body, dict):
             message = body.get("message", message)
-            error_code = body.get("code")
+            # "code" is the numeric HTTP status; the application code is "error_code".
+            error_code = body.get("error_code")
 
         # Check for retry-after header (rate limiting)
         retry_after = None

@@ -4,7 +4,7 @@ This document provides comprehensive documentation for the Taurus-PROTECT TypeSc
 
 ## Service Overview
 
-The SDK provides 26 high-level services accessible as getters on `ProtectClient`, with domain models and validation. Additional service classes exist in `src/services/` for direct instantiation, and low-level API access is available for all features.
+The SDK provides 43 high-level services (38 on `ProtectClient` plus 5 on the `taurusNetwork` namespace), each with domain models and validation. Low-level OpenAPI access remains available for every feature alongside the high-level services.
 
 ### High-Level Services (26)
 
@@ -39,22 +39,10 @@ The SDK provides 26 high-level services accessible as getters on `ProtectClient`
 
 ### Low-Level API Access
 
-The following features are available through low-level OpenAPI-generated APIs:
-
-| API | Access | Purpose |
-|-----|--------|---------|
-| ChangesApi | `client.changesApi` | Configuration change approvals |
-| BusinessRulesApi | `client.businessRulesApi` | Transaction approval rules |
-| ReservationsApi | `client.reservationsApi` | Balance reservations |
-| MultiFactorSignatureApi | `client.multiFactorSignatureApi` | Multi-factor signature operations |
-| ContractWhitelistingApi | `client.contractWhitelistingApi` | Smart contract address whitelisting |
-| StakingApi | `client.stakingApi` | Multi-chain staking information and validators |
-| ActionsApi | `client.actionsApi` | Action management |
-| BlockchainApi | `client.blockchainApi` | Blockchain information |
-| FiatApi | `client.fiatApi` | Fiat currency operations |
-| ScoresApi | `client.scoresApi` | Risk/compliance scoring |
-| UserDeviceApi | `client.userDeviceApi` | User device management |
-| WebhookCallsApi | `client.webhookCallsApi` | Webhook call history |
+Every feature also has a low-level OpenAPI-generated API on the client (`client.<name>Api`),
+useful for endpoints or parameters the high-level service does not surface. There is no
+longer any feature reachable *only* through a low-level API — all 43 services have
+high-level getters.
 
 ### TaurusNetwork APIs
 
@@ -352,6 +340,11 @@ listForApproval(cursor?: RequestCursor): Promise<RequestResult>
 
 Signs and approves requests using a private key.
 
+> **A request whose metadata hash has not been verified is refused.** The signature attests
+> to those hashes, so each must be one verification cleared against its payload — the flag was
+> set on every read path and read by nobody. The check runs after the hash-present check, so
+> absent metadata still reports as absent.
+
 ```typescript
 approveRequest(request: Request, privateKey: KeyObject): Promise<number>
 approveRequests(requests: Request[], privateKey: KeyObject): Promise<number>
@@ -631,36 +624,36 @@ const baseCurrency = await client.currencies.getBaseCurrency();
 
 ### Methods
 
-#### get
+#### getRules
 
 Gets current governance rules with **signature verification**.
 
 ```typescript
-get(): Promise<GovernanceRules>
+getRules(): Promise<GovernanceRules>
 ```
 
-#### getById
+#### getRulesById
 
 Gets governance rules by ID.
 
 ```typescript
-getById(id: number): Promise<GovernanceRules>
+getRulesById(id: number): Promise<GovernanceRules>
 ```
 
-#### getProposal
+#### getRulesProposal
 
 Gets pending rules proposal (SuperAdmin only).
 
 ```typescript
-getProposal(): Promise<GovernanceRules | null>
+getRulesProposal(): Promise<GovernanceRules | null>
 ```
 
-#### getHistory
+#### getRulesHistory
 
 Gets historical governance rules.
 
 ```typescript
-getHistory(options?: GovernanceRulesHistoryOptions): Promise<GovernanceRulesHistoryResult>
+getRulesHistory(options?: GovernanceRulesHistoryOptions): Promise<GovernanceRulesHistoryResult>
 ```
 
 #### getDecodedRulesContainer
@@ -668,7 +661,7 @@ getHistory(options?: GovernanceRulesHistoryOptions): Promise<GovernanceRulesHist
 Decodes the rules container.
 
 ```typescript
-getDecodedRulesContainer(rules: GovernanceRules): Promise<DecodedRulesContainer>
+getDecodedRulesContainer(): Promise<DecodedRulesContainer>
 ```
 
 #### verifyGovernanceRules
@@ -679,20 +672,60 @@ Manually verifies rules against SuperAdmin keys.
 verifyGovernanceRules(rules: GovernanceRules, minValidSignatures: number): Promise<GovernanceRules>
 ```
 
+#### updateRulesProposal
+
+Submits a typed rules container as a governance proposal (SuperAdmin only). The container
+is encoded to the wire format internally; the server-controlled `enforcedRulesHash` and
+`timestamp` fields are stripped. The endpoint returns no body — callers needing the
+persisted proposal should call `getRulesProposal` (note: rules reads are cached
+server-side, so an immediate read-back may be stale).
+
+```typescript
+updateRulesProposal(container: DecodedRulesContainer): Promise<void>
+```
+
+#### approveRulesProposal
+
+Signs the pending proposal's rules container with a SuperAdmin private key (SHA-256 +
+P-256 ECDSA, base64 raw r||s) and submits the approval. The signature binds the exact
+pending content — review it first via `getRulesProposal` + `getDecodedRulesContainer`.
+
+```typescript
+approveRulesProposal(privateKey: KeyObject, comment: string): Promise<void>
+```
+
+#### rejectRulesProposal
+
+Rejects the pending rules proposal with a comment (SuperAdmin only).
+
+```typescript
+rejectRulesProposal(comment: string): Promise<void>
+```
+
 **Example:**
 ```typescript
-const rules = await client.governanceRules.get();
+const rules = await client.governanceRules.getRules();
 console.log(`Rules locked: ${rules.locked}`);
 
 // Decode rules container
-const decoded = await client.governanceRules.getDecodedRulesContainer(rules);
+const decoded = await client.governanceRules.getDecodedRulesContainer();
 console.log(`Groups: ${decoded.groups?.length}`);
 ```
 
 ### Key Models
 
 - `GovernanceRules` - rulesContainer, rulesSignatures, locked, trails
-- `DecodedRulesContainer` - groups, users, thresholds, addressWhitelistingRules
+- `DecodedRulesContainer` - lossless typed rules container (users, groups, transaction and
+  whitelisting rules); round-trips through `rulesContainerToBase64` /
+  `rulesContainerFromBase64`
+- `RuleCell` - typed transaction-rule cell union covering every cell type
+  (`FiatAmountAny`, `FiatAmountRange`, `SourceInternalWallet`, `StringEqualValue`, ...);
+  `RawCell` preserves cells from newer schemas verbatim. Decode and encode a cell with
+  `ruleCellFromBytes(columnType, bytes)` / `ruleCellToBytes(columnType, cell)`
+
+Cross-SDK cell wire-format parity is pinned by the shared golden vectors at
+`scripts/resources/governance-cell-vectors.json` (monorepo root), consumed by every SDK's
+test suite.
 
 ---
 
@@ -798,15 +831,39 @@ getEnvelope(id: string): Promise<SignedWhitelistedAssetEnvelope>
 
 #### list
 
-Lists whitelisted assets with filtering.
+Lists whitelisted assets with filtering. Verification is **lenient** here: an unverifiable
+row is excluded and named on `excludedUnverified` rather than failing the call, but a page
+where rows came back and none survived throws `IntegrityError`.
 
 ```typescript
 list(options?: ListWhitelistedAssetsOptions): Promise<ListWhitelistedAssetsResult>
 ```
 
+#### listForApproval
+
+Lists whitelisted assets awaiting approval, verified as in `list`. Without this the only
+reader of the for-approval endpoint was the unverified contract service, so the rows an
+approver inspects were never checked against governance.
+
+```typescript
+listForApproval(options?: ListWhitelistedAssetsForApprovalOptions): Promise<ListWhitelistedAssetsResult>
+```
+
+#### approve
+
+Signs and submits an approval, **all-or-nothing**. Each asset is re-read and verified, and
+the hashes those rows carry are what gets signed; a row that is missing or fails verification
+aborts the whole call and nothing is signed. The API takes one signature covering the whole
+batch, so a partial approval would mean the caller believes they approved more than they did.
+
+```typescript
+approve(ids: number[], privateKey: KeyObject, comment: string): Promise<void>
+```
+
 ### Key Models
 
 - `WhitelistedAsset` - id, blockchain, network, contractAddress, symbol, name, decimals, kind
+- `ListWhitelistedAssetsResult` - items, pagination, excludedUnverified
 
 ---
 
@@ -1156,11 +1213,17 @@ getXTZStakingRewards(network: string, addressId: string, from?: Date, to?: Date)
 
 ## ContractWhitelistingService
 
-**Purpose:** Manages whitelisted smart contract addresses (ERC20 tokens, NFTs, FA2 tokens).
+**Purpose:** WRITE operations on whitelisted smart contract addresses (ERC20 tokens, NFTs, FA2 tokens).
 
 **Location:** `src/services/contract-whitelisting-service.ts`
 
-> **Note:** This service does not have a client getter on `ProtectClient`. Use the low-level API via `client.contractWhitelistingApi` or instantiate `ContractWhitelistingService` directly.
+**Accessor:** `client.contractWhitelisting`
+
+> **Reads live on `WhitelistedAssetService`.** A whitelisted contract and a whitelisted asset
+> are one server entity (`/whitelists/contracts`); the `get`/`list`/`listForApproval` that used
+> to sit here returned the envelope with no verification, and this SDK's mapper additionally
+> parsed the signed payload and returned its contents as fact. Use
+> `client.whitelistedAssets.get` / `.list` / `.listForApproval`, which run the six-step chain.
 
 ### Methods
 
@@ -1198,20 +1261,16 @@ const id = await client.contractWhitelisting.create({
 console.log(`Created whitelist entry: ${id}`);
 ```
 
-#### get / list / listForApproval
-
-```typescript
-get(id: string): Promise<SignedWhitelistedContractEnvelope>
-list(options?: ListWhitelistedContractsOptions): Promise<WhitelistedContractResult>
-listForApproval(options?: ListWhitelistedContractsForApprovalOptions): Promise<WhitelistedContractResult>
-```
-
 #### approve / reject
 
 ```typescript
-approve(ids: string[], signature: string, comment?: string): Promise<void>
+approve(ids: string[], signature: string, comment: string): Promise<void>
 reject(ids: string[], comment: string): Promise<void>
 ```
+
+> `approve` is **deprecated**: the signature is an opaque blob over hashes nothing verified,
+> so the caller cannot know what they signed. Use `client.whitelistedAssets.approve`, which
+> re-reads and verifies the rows first.
 
 #### update
 
@@ -1229,8 +1288,7 @@ deleteAttribute(contractId: string, attributeId: string): Promise<void>
 
 ### Key Models
 
-- `SignedWhitelistedContractEnvelope` - id, blockchain, network, status, metadata, approvers, trails
-- `WhitelistedContractResult` - contracts list with pagination
+- `WhitelistedContractAttribute` - id, key, value, contentType, type, subType, isFile
 
 ---
 
@@ -1295,6 +1353,13 @@ await client.changes.approve(changeId, 'Approved via SDK');
 
 **Location:** `src/services/price-service.ts`
 
+> **Prices are signature-verified.** `rate` and `decimals` feed amount conversion, so an
+> unverified price is a wrong number a caller acts on. `list` verifies each price against the
+> `PRICEUPDATER` keys in the SuperAdmin-verified rules container. Whether prices must be
+> signed is the **container's** call: no `PRICEUPDATER` configured means this tenant does not
+> sign prices and the price passes through; a `PRICEUPDATER` configured plus a price with no
+> signatures is an `IntegrityError`.
+
 ### Methods
 
 ```typescript
@@ -1317,7 +1382,8 @@ for (const result of conversions) {
 
 ### Key Models
 
-- `Price` - currency pair, price, timestamp
+- `Price` - currency pair, rate, decimals, signatures
+- `PriceSignature` - userId, signature
 - `PriceHistoryPoint` - timestamp, price
 - `ConversionResult` - target currency, converted amount
 
@@ -1510,6 +1576,11 @@ console.log(`MFA mandatory: ${config.mfaMandatory}`);
 **Purpose:** Retrieves asset information for addresses and wallets.
 
 **Location:** `src/services/asset-service.ts`
+
+> **`getAssetAddresses` verifies every address's HSM signature**, the same check
+> `AddressService` runs, and **fails fast** on the first address that does not verify. It
+> returns the same entity, so returning it unverified made `AddressService`'s mandatory
+> verification avoidable.
 
 ### Methods
 
@@ -2341,3 +2412,353 @@ do {
 - [Authentication](AUTHENTICATION.md) - Security and signing
 - [Usage Examples](USAGE_EXAMPLES.md) - Code examples
 - [Concepts](CONCEPTS.md) - Domain models and entities
+
+<!-- BEGIN GENERATED METHOD INDEX -->
+
+## Complete Method Index
+
+Generated from the typescript source by `scripts/api-surface/docs.py`; regenerate with
+`./build.sh docs`. Every method below exists in the SDK, and `./build.sh docs --check`
+fails if this list drifts or if the prose above documents a method that does not.
+
+43 services, 209 public methods.
+
+### ActionService
+
+- `get(actionId: string): Promise<ActionEnvelope>` — Retrieves a specific action by its ID.
+- `list(): Promise<ActionEnvelope[]>` — Lists all actions.
+- `list(options: ListActionsOptions): Promise<ActionEnvelope[]>` — Lists actions with optional filters.
+- `list(options?: ListActionsOptions): Promise<ActionEnvelope[]>`
+
+### AddressService
+
+- `create(request: CreateAddressRequest): Promise<Address>` — Creates a new address.
+- `createAddress(walletId: number, label: string, comment?: string, customerId?: string): Promise<Address>` — Creates an address with explicit parameters.
+- `createAttribute(addressId: number, key: string, value: string): Promise<void>` — Creates an attribute for an address.
+- `deleteAttribute(addressId: number, attributeId: number): Promise<void>` — Deletes an attribute from an address.
+- `get(addressId: number): Promise<Address>` — Gets an address by ID with mandatory signature verification.
+- `getProofOfReserve(addressId: number, challenge?: string): Promise<TgvalidatordGetAddressProofOfReserveReply["result"]>` — Gets the proof of reserve for an address.
+- `list(walletId: number, options?: Omit<ListAddressesOptions, "walletId">): Promise<{ items: Address[]; pagination: Pagination | undefined; }>` — Lists addresses for a wallet with mandatory signature verification.
+- `listWithOptions(options?: ListAddressesOptions): Promise<{ items: Address[]; pagination: Pagination | undefined; }>` — Lists addresses with full filtering options.
+
+### AirGapService
+
+- `getOutgoingAirGap(options: GetOutgoingAirGapOptions): Promise<Blob>` — Exports HSM-ready requests for cold HSM signing.
+- `getOutgoingAirGapAddresses(options: GetOutgoingAirGapAddressOptions): Promise<Blob>` — Exports addresses for cold HSM signing.
+- `submitIncomingAirGap(options: SubmitIncomingAirGapOptions): Promise<void>` — Imports signed requests from the cold HSM.
+
+### AssetService
+
+- `getAssetAddresses(options: GetAssetAddressesOptions): Promise<Address[]>` — Retrieves addresses that hold a specific asset.
+- `getAssetWallets(options: GetAssetWalletsOptions): Promise<Wallet[]>` — Retrieves wallets that hold a specific asset.
+
+### AuditService
+
+- `exportAuditTrails(options?: { externalUserId?: string; entities?: string[]; actions?: string[]; creationDateFrom?: Date; creationDateTo?: Date; format?: string; }): Promise<string>` — Export audit trails to a formatted string (CSV or JSON).
+- `list(options?: ListAuditTrailsOptions): Promise<AuditTrail[]>` — Lists audit trails with optional filtering.
+
+### BalanceService
+
+- `list(options?: ListBalancesOptions): Promise<AssetBalance[]>` — Lists asset balances for the tenant.
+- `listNFTCollections(options: ListNFTCollectionBalancesOptions): Promise<NFTCollectionBalance[]>` — Lists NFT collection balances for the tenant.
+
+### BlockchainService
+
+- `get(blockchain: string, network: string, includeBlockHeight?: boolean): Promise<Blockchain>` — Gets a blockchain by symbol and network.
+- `list(options?: ListBlockchainsOptions): Promise<Blockchain[]>` — Lists all supported blockchains.
+
+### BusinessRuleService
+
+- `get(ruleId: string): Promise<BusinessRule>` — Gets a business rule by ID.
+- `list(options?: ListBusinessRulesOptions): Promise<ListBusinessRulesResult>` — Lists business rules with optional filtering and pagination.
+- `updateTransactionsEnabled(enabled: boolean): Promise<void>` — Enables or disables transaction processing for the tenant (the
+
+### ChangeService
+
+- `approve(id: string): Promise<void>` — Approves a change.
+- `approveMany(ids: string[]): Promise<void>` — Approves multiple changes.
+- `create(request: CreateChangeRequest): Promise<string>` — Creates a change request.
+- `get(id: string): Promise<Change>` — Gets a change by ID.
+- `list(options?: ListChangesOptions): Promise<ListChangesResult>` — Lists changes with optional filtering.
+- `listForApproval(options?: ListChangesForApprovalOptions): Promise<ListChangesResult>` — Lists changes pending approval.
+- `reject(id: string): Promise<void>` — Rejects a change.
+- `rejectMany(ids: string[]): Promise<void>` — Rejects multiple changes.
+
+### ConfigService
+
+- `getTenantConfig(): Promise<TenantConfig>` — Retrieves the tenant configuration.
+
+### ContractWhitelistingService
+
+- `approve(ids: string[], signature: string, comment: string): Promise<void>` — Approves one or more whitelisted contract addresses.
+- `create(request: CreateWhitelistedContractRequest): Promise<string>` — Creates a new whitelisted contract address.
+- `createAttribute(contractId: string, key: string, value: string, options?: { contentType?: string; type?: string; subType?: string; }): Promise<void>` — Creates an attribute on a whitelisted contract.
+- `deleteAttribute(contractId: string, attributeId: string): Promise<void>` — Deletes an attribute from a whitelisted contract.
+- `getAttribute(contractId: string, attributeId: string): Promise<WhitelistedContractAttribute>` — Gets an attribute from a whitelisted contract.
+- `reject(ids: string[], comment: string): Promise<void>` — Rejects a whitelisted contract.
+- `update(id: string, request: UpdateWhitelistedContractRequest): Promise<void>` — Updates an existing whitelisted contract.
+
+### CurrencyService
+
+- `get(currencyId: string): Promise<Currency>` — Gets a currency by ID.
+- `getBaseCurrency(): Promise<Currency>` — Gets the base currency configured for the tenant.
+- `getByBlockchain(options: GetCurrencyByBlockchainOptions): Promise<Currency>` — Gets a currency by blockchain and network.
+- `list(options?: ListCurrenciesOptions): Promise<Currency[]>` — Lists all currencies.
+
+### ExchangeService
+
+- `export(format?: string): Promise<string>` — Exports all exchange accounts to a specified format.
+- `get(id: string): Promise<Exchange>` — Gets an exchange account by ID.
+- `getCounterparties(): Promise<ExchangeCounterparty[]>` — Gets all exchange counterparties.
+- `getWithdrawalFee(exchangeId: string, options?: GetWithdrawalFeeOptions): Promise<ExchangeWithdrawalFee | undefined>` — Gets the withdrawal fee for a transfer from an exchange.
+- `list(options?: ListExchangesOptions): Promise<ListExchangesResult>` — Lists exchange accounts.
+
+### FeePayerService
+
+- `get(id: string): Promise<FeePayer>` — Gets a fee payer by ID.
+- `list(options?: ListFeePayersOptions): Promise<FeePayer[]>` — Lists fee payers with optional filtering.
+
+### FeeService
+
+- `getFees(): Promise<Fee[]>` — Retrieves current network fees for all supported blockchains (v1 API).
+- `getFeesV2(): Promise<FeeV2[]>` — Retrieves current native currency fees for all supported blockchains (v2 API).
+
+### FiatService
+
+- `getFiatProviderAccount(id: string): Promise<FiatProviderAccount>` — Retrieves a fiat provider account by ID.
+- `getFiatProviderAccounts(options: ListFiatProviderAccountsOptions): Promise<FiatProviderAccountResult>` — Retrieves fiat provider accounts with optional filtering.
+- `getFiatProviderCounterpartyAccount(id: string): Promise<FiatProviderCounterpartyAccount>` — Retrieves a fiat provider counterparty account by ID.
+- `getFiatProviderCounterpartyAccounts(options: ListFiatProviderCounterpartyAccountsOptions): Promise<FiatProviderCounterpartyAccountResult>` — Retrieves fiat provider counterparty accounts with optional filtering.
+- `getFiatProviderOperation(id: string): Promise<FiatProviderOperation>` — Retrieves a fiat provider operation by ID.
+- `getFiatProviderOperations(options?: ListFiatProviderOperationsOptions): Promise<FiatProviderOperationResult>` — Retrieves fiat provider operations with optional filtering.
+- `getFiatProviders(): Promise<FiatProvider[]>` — Retrieves all configured fiat providers.
+
+### GovernanceRuleService
+
+- `approveRulesProposal(privateKey: KeyObject, comment: string, expectedContainerHash: string): Promise<void>`
+- `decodeProposalForReview(rules: GovernanceRules): DecodedRulesContainer`
+- `getDecodedRulesContainer(): Promise<DecodedRulesContainer>` — Gets the decoded rules container from the current governance rules.
+- `getPublicKeys(): Promise<SuperAdminPublicKey[]>` — Gets the SuperAdmin public keys the server has configured.
+- `getRules(): Promise<GovernanceRules | undefined>` — Gets the currently enforced governance rules.
+- `getRulesById(rulesId: string): Promise<GovernanceRules | undefined>` — Gets a governance ruleset by its ID.
+- `getRulesHistory(options?: ListGovernanceRulesHistoryOptions): Promise<GovernanceRulesHistoryResult>` — Gets the history of governance rules.
+- `getRulesProposal(): Promise<GovernanceRules | undefined>` — Gets the proposed governance rules.
+- `proposalContainerHash(rules: GovernanceRules): string`
+- `rejectRulesProposal(comment: string): Promise<void>` — Rejects the pending rules proposal with a comment (SuperAdmin only).
+- `updateRulesProposal(container: DecodedRulesContainer): Promise<void>`
+- `verifyGovernanceRules(rules: GovernanceRules): GovernanceRules` — Verifies that governance rules have enough valid SuperAdmin signatures.
+
+### GroupService
+
+- `get(groupId: string): Promise<Group>` — Gets a group by ID.
+- `list(options?: ListGroupsOptions): Promise<PaginatedResult<Group>>` — Lists groups with pagination.
+
+### HealthService
+
+- `check(): Promise<HealthStatus>` — Checks the API health status.
+- `getGlobalStatus(): Promise<HealthStatus>` — Checks the global component status.
+
+### JobService
+
+- `get(name: string): Promise<Job>` — Gets a job by name.
+- `getStatus(name: string, id: string): Promise<JobStatus>` — Gets the status of a specific job execution.
+- `list(): Promise<Job[]>` — Lists all jobs.
+
+### LendingService
+
+- `cancelLendingAgreement(lendingAgreementId: string): Promise<void>` — Cancels a lending agreement.
+- `createLendingAgreement(request: CreateLendingAgreementRequest): Promise<string>` — Creates a new lending agreement.
+- `createLendingAgreementAttachment(lendingAgreementId: string, request: CreateLendingAgreementAttachmentRequest): Promise<string>` — Adds an attachment to a lending agreement.
+- `createLendingOffer(request: CreateLendingOfferRequest): Promise<string>` — Creates a new lending offer.
+- `deleteLendingOffer(offerId: string): Promise<void>` — Deletes a specific lending offer.
+- `deleteLendingOffers(): Promise<void>` — Deletes all lending offers for the current participant.
+- `getLendingAgreement(lendingAgreementId: string): Promise<LendingAgreement>` — Gets a lending agreement by ID.
+- `getLendingOffer(offerId: string): Promise<LendingOffer>` — Gets a lending offer by ID.
+- `listLendingAgreementAttachments(lendingAgreementId: string): Promise<LendingAgreementAttachment[]>` — Lists attachments for a lending agreement.
+- `listLendingAgreements(options?: ListLendingAgreementsOptions): Promise<{ agreements: LendingAgreement[]; pagination?: CursorPagination; }>` — Lists lending agreements.
+- `listLendingAgreementsForApproval(options?: ListLendingAgreementsOptions): Promise<{ agreements: LendingAgreement[]; pagination?: CursorPagination; }>` — Lists lending agreements pending approval.
+- `listLendingOffers(options?: ListLendingOffersOptions): Promise<{ offers: LendingOffer[]; pagination?: CursorPagination; }>` — Lists lending offers.
+- `repayLendingAgreement(lendingAgreementId: string, request: RepayLendingAgreementRequest): Promise<void>` — Records repayment for a lending agreement.
+- `updateLendingAgreement(lendingAgreementId: string, request: UpdateLendingAgreementRequest): Promise<void>` — Updates a lending agreement.
+
+### MultiFactorSignatureService
+
+- `approve(request: ApproveMultiFactorSignatureRequest): Promise<void>` — Approve a multi-factor signature.
+- `create(request: CreateMultiFactorSignatureRequest): Promise<string>` — Create a multi-factor signature batch.
+- `get(id: string): Promise<MultiFactorSignatureInfo>` — Get multi-factor signature entity info by ID.
+- `reject(request: RejectMultiFactorSignatureRequest): Promise<void>` — Reject a multi-factor signature.
+
+### ParticipantService
+
+- `createParticipantAttribute(participantId: string, request: CreateParticipantAttributeRequest): Promise<void>` — Creates an attribute for a participant.
+- `deleteParticipantAttribute(participantId: string, attributeId: string): Promise<void>` — Deletes an attribute for a participant.
+- `get(participantId: string, options?: GetParticipantOptions): Promise<Participant>` — Gets a participant by ID.
+- `getMyParticipant(): Promise<MyParticipant>` — Gets the current participant with settings.
+- `list(options?: ListParticipantsOptions): Promise<Participant[]>` — Lists visible Taurus Network participants.
+
+### PledgeService
+
+- `addCollateral(pledgeId: string, request: AddPledgeCollateralRequest): Promise<AddCollateralResult>` — Adds collateral to an existing pledge.
+- `approvePledgeActions(actionIds: string[], signature: string, comment?: string): Promise<number>` — Approves multiple pledge actions with ECDSA signature.
+- `createPledge(request: CreatePledgeRequest): Promise<CreatePledgeResult>` — Creates a new pledge.
+- `get(pledgeId: string): Promise<Pledge>` — Gets a pledge by ID.
+- `initiateWithdrawPledge(pledgeId: string, request: InitiateWithdrawPledgeRequest): Promise<WithdrawPledgeResult>` — Initiates withdrawal from a pledge (pledgor operation).
+- `list(options?: ListPledgesOptions): Promise<{ pledges: Pledge[]; pagination?: CursorPagination; }>` — Lists pledges with optional filtering.
+- `listPledgeActions(options?: ListPledgeActionsOptions): Promise<{ actions: PledgeAction[]; pagination?: CursorPagination; }>` — Lists pledge actions with optional filtering.
+- `listPledgeActionsForApproval(options?: ListPledgeActionsOptions): Promise<{ actions: PledgeAction[]; pagination?: CursorPagination; }>` — Lists pledge actions pending approval.
+- `listPledgeWithdrawals(options?: ListPledgeWithdrawalsOptions): Promise<{ withdrawals: PledgeWithdrawal[]; pagination?: CursorPagination; }>` — Lists pledge withdrawals with optional filtering.
+- `rejectPledge(pledgeId: string, request: RejectPledgeRequest): Promise<void>` — Rejects a pledge.
+- `rejectPledgeActions(request: RejectPledgeActionsRequest): Promise<void>` — Rejects multiple pledge actions.
+- `unpledge(pledgeId: string): Promise<UnpledgeResult>` — Unpledges all funds from a pledge.
+- `updatePledge(pledgeId: string, request: UpdatePledgeRequest): Promise<void>` — Updates a pledge's default destination.
+- `withdrawPledge(pledgeId: string, request: WithdrawPledgeRequest): Promise<WithdrawPledgeResult>` — Withdraws from a pledge (pledgee operation).
+
+### PriceService
+
+- `convert(options: ConvertOptions): Promise<ConversionResult[]>` — Converts an amount from one currency to target currencies.
+- `getHistory(options: GetPriceHistoryOptions): Promise<PriceHistoryPoint[]>` — Gets price history for a currency pair.
+- `list(): Promise<Price[]>` — Lists all current prices.
+
+### RequestService
+
+- `approveRequest(request: Request, privateKey: KeyObject, comment?: string): Promise<number>` — Approve a single request with ECDSA signature.
+- `approveRequests(requests: Request[], privateKey: KeyObject, comment?: string): Promise<number>` — Approve multiple requests with ECDSA signature.
+- `createCancelRequest(addressId: number, nonce: bigint | number): Promise<Request>` — Create a cancel request for a pending transaction.
+- `createExternalTransferFromWalletRequest(options: CreateExternalTransferFromWalletOptions): Promise<Request>` — Create an external transfer request from a wallet to a whitelisted address.
+- `createExternalTransferRequest(options: CreateExternalTransferOptions): Promise<Request>` — Create an external transfer request to a whitelisted address.
+- `createIncomingRequest(options: CreateIncomingRequestOptions): Promise<Request>` — Create an incoming request from an exchange.
+- `createInternalTransferFromWalletRequest(options: CreateInternalTransferFromWalletOptions): Promise<Request>` — Create an internal transfer request from a wallet.
+- `createInternalTransferRequest(options: CreateInternalTransferOptions): Promise<Request>` — Create an internal transfer request between addresses.
+- `get(requestId: number): Promise<Request>` — Get a request by ID with mandatory hash verification.
+- `list(options?: ListRequestsOptions): Promise<ListRequestsResult>` — List requests with filtering and pagination.
+- `listForApproval(options?: ListRequestsForApprovalOptions): Promise<ListRequestsResult>` — List requests pending approval.
+- `rejectRequest(requestId: number, comment: string): Promise<void>` — Reject a single request.
+- `rejectRequests(requestIds: number[], comment: string): Promise<void>` — Reject multiple requests.
+
+### ReservationService
+
+- `get(id: string): Promise<Reservation>` — Gets a reservation by ID.
+- `getUtxo(id: string): Promise<ReservationUtxo>` — Gets the UTXO details for a reservation.
+- `list(options?: ListReservationsOptions): Promise<Reservation[]>` — Lists all reservations with optional filtering.
+
+### ScoreService
+
+- `refreshAddressScore(addressId: number, scoreProvider: string): Promise<Score[]>` — Refreshes the compliance scores for an internal address.
+- `refreshWhitelistedAddressScore(whitelistedAddressId: number, scoreProvider: string): Promise<Score[]>` — Refreshes the compliance scores for a whitelisted external address.
+
+### SettlementService
+
+- `cancel(settlementId: string): Promise<void>` — Cancels a settlement.
+- `create(request: CreateSettlementRequest): Promise<string>` — Creates a new settlement.
+- `get(settlementId: string): Promise<Settlement>` — Gets a settlement by ID.
+- `list(options?: ListSettlementsOptions): Promise<{ settlements: Settlement[]; pagination?: CursorPagination; }>` — Lists settlements with optional filtering.
+- `listForApproval(options?: ListSettlementsForApprovalOptions): Promise<{ settlements: Settlement[]; pagination?: CursorPagination; }>` — Lists settlements pending approval.
+- `replace(settlementId: string, request: ReplaceSettlementRequest): Promise<void>` — Replaces (updates) a settlement.
+
+### SharingService
+
+- `listSharedAddresses(options?: ListSharedAddressesOptions): Promise<{ sharedAddresses: SharedAddress[]; pagination?: CursorPagination; }>` — Lists shared addresses with optional filtering.
+- `listSharedAssets(options?: ListSharedAssetsOptions): Promise<{ sharedAssets: SharedAsset[]; pagination?: CursorPagination; }>` — Lists shared assets with optional filtering.
+- `shareAddress(request: ShareAddressRequest): Promise<void>` — Shares an internal address with a Taurus Network participant.
+- `shareWhitelistedAsset(request: ShareWhitelistedAssetRequest): Promise<void>` — Shares a whitelisted asset with a Taurus Network participant.
+- `unshareAddress(sharedAddressId: string): Promise<void>` — Unshares an address from a Taurus Network participant.
+- `unshareWhitelistedAsset(sharedAssetId: string): Promise<void>` — Unshares an asset from a Taurus Network participant.
+
+### StakingService
+
+- `getADAStakePoolInfo(network: string, stakePoolId: string): Promise<ADAStakePoolInfo>` — Retrieves information about a Cardano stake pool.
+- `getETHValidatorsInfo(network: string, ids: string[]): Promise<ETHValidatorInfo[]>` — Retrieves information about Ethereum validators.
+- `getFTMValidatorInfo(network: string, validatorAddress: string): Promise<FTMValidatorInfo>` — Retrieves information about a Fantom validator.
+- `getICPNeuronInfo(network: string, neuronId: string): Promise<ICPNeuronInfo>` — Retrieves information about an Internet Computer Protocol neuron.
+- `getNEARValidatorInfo(network: string, validatorAddress: string): Promise<NEARValidatorInfo>` — Retrieves information about a NEAR Protocol validator.
+- `getStakeAccounts(options?: ListStakeAccountsOptions): Promise<StakeAccountResult>` — Retrieves stake accounts with optional filtering.
+- `getXTZStakingRewards(options: GetXTZStakingRewardsOptions): Promise<XTZStakingRewards>` — Retrieves Tezos staking rewards for an address over a time period.
+
+### StatisticsService
+
+- `getPortfolioStatistics(): Promise<PortfolioStatistics>` — Retrieves aggregated portfolio statistics.
+
+### TagService
+
+- `create(request: CreateTagRequest): Promise<Tag>` — Creates a new tag.
+- `delete(tagId: string): Promise<void>` — Deletes a tag.
+- `get(tagId: string): Promise<Tag>` — Gets a tag by ID.
+- `list(options?: ListTagsOptions): Promise<Tag[]>` — Lists tags.
+
+### TokenMetadataService
+
+- `getCryptoPunkMetadata(options: GetCryptoPunkMetadataOptions): Promise<CryptoPunkMetadata>` — Retrieves CryptoPunk metadata.
+- `getERCTokenMetadata(options: GetERCTokenMetadataOptions): Promise<TokenMetadata>` — Retrieves ERC token metadata (ERC-20, ERC-721, ERC-1155).
+- `getEVMERCTokenMetadata(options: GetEVMERCTokenMetadataOptions): Promise<TokenMetadata>` — Retrieves ERC token metadata for EVM-compatible chains.
+- `getFATokenMetadata(options: GetFATokenMetadataOptions): Promise<TokenMetadata>` — Retrieves FA token metadata (Tezos FA1.2/FA2 standards).
+
+### TransactionService
+
+- `exportTransactions(options?: { fromDate?: Date; toDate?: Date; currency?: string; direction?: string; limit?: number; offset?: number; format?: string; blockchain?: string; network?: string; }): Promise<string>` — Export transactions to a formatted string (CSV or JSON).
+- `get(transactionId: string): Promise<Transaction>` — Gets a transaction by ID.
+- `getByHash(txHash: string): Promise<Transaction>` — Gets a transaction by its blockchain hash.
+- `list(options?: ListTransactionsOptions): Promise<PaginatedResult<Transaction>>` — Lists transactions with pagination and optional filtering.
+- `listByAddress(address: string, options?: { limit?: number; offset?: number; }): Promise<PaginatedResult<Transaction>>` — Lists transactions for a specific blockchain address.
+- `listByRequest(requestId: string, options?: { limit?: number; offset?: number; }): Promise<PaginatedResult<Transaction>>` — Lists transactions associated with a specific request ID.
+
+### UserDeviceService
+
+- `approvePairing(pairingId: string, options: ApprovePairingOptions): Promise<void>` — Approves a device pairing request.
+- `createPairing(): Promise<UserDevicePairing>` — Creates a new device pairing request.
+- `getPairingStatus(pairingId: string, nonce: string): Promise<UserDevicePairingInfo>` — Gets the status of a device pairing request.
+- `startPairing(pairingId: string, options: StartPairingOptions): Promise<void>` — Starts the device pairing process.
+
+### UserService
+
+- `get(userId: string): Promise<User>` — Gets a user by ID.
+- `getCurrentUser(): Promise<User>` — Gets the current authenticated user.
+- `list(options?: ListUsersOptions): Promise<PaginatedResult<User>>` — Lists users with pagination.
+
+### VisibilityGroupService
+
+- `getUsersByVisibilityGroup(visibilityGroupId: string): Promise<User[]>` — Gets users assigned to a specific visibility group.
+- `list(): Promise<VisibilityGroup[]>` — Lists all visibility groups.
+
+### WalletService
+
+- `create(request: CreateWalletRequest): Promise<Wallet>` — Creates a new wallet.
+- `createAttribute(walletId: number, key: string, value: string): Promise<void>` — Creates an attribute for a wallet.
+- `deleteAttribute(walletId: number, attributeId: string): Promise<void>` — Deletes an attribute from a wallet.
+- `get(walletId: number): Promise<Wallet>` — Gets a wallet by ID.
+- `getBalanceHistory(walletId: number, intervalHours: number): Promise<BalanceHistoryPoint[]>` — Gets the balance history for a wallet.
+- `getWalletTokens(walletId: number, limit?: number): Promise<AssetBalance[]>` — Gets the list of tokens (asset balances) for a wallet.
+- `list(options?: ListWalletsOptions): Promise<PaginatedResult<Wallet>>` — Lists wallets with pagination and optional filtering.
+
+### WebhookCallService
+
+- `get(callId: string): Promise<WebhookCall>` — Gets a webhook call by ID.
+- `list(options?: ListWebhookCallsOptions): Promise<WebhookCallResult>` — Lists webhook calls with optional filtering.
+
+### WebhookService
+
+- `create(request: CreateWebhookRequest): Promise<Webhook>` — Creates a new webhook.
+- `delete(webhookId: string): Promise<void>` — Deletes a webhook.
+- `get(webhookId: string): Promise<Webhook>` — Gets a webhook by ID.
+- `list(options?: ListWebhooksOptions): Promise<Webhook[]>` — Lists webhooks.
+
+### WhitelistedAddressService
+
+- `approve(ids: string[], privateKey: KeyObject, comment: string): Promise<void>` — Signs and submits an approval for the given whitelisted addresses, all-or-nothing.
+- `get(addressId: string): Promise<WhitelistedAddress>` — Gets a whitelisted address by ID with mandatory verification.
+- `getEnvelope(addressId: string): Promise<SignedWhitelistedAddressEnvelope>` — Gets the signed envelope for a whitelisted address.
+- `getWithVerification(addressId: string): Promise<WhitelistedAddressVerificationResult>` — Gets a whitelisted address by ID with full verification.
+- `list(options?: ListWhitelistedAddressesOptions): Promise<ListWhitelistedAddressesResult>` — Lists whitelisted addresses with mandatory verification.
+- `listForApproval(options?: ListWhitelistedAddressesForApprovalOptions): Promise<ListWhitelistedAddressesResult>`
+- `withVerification(api: AddressWhitelistingApi, config: WhitelistedAddressServiceConfig): WhitelistedAddressService` — Creates a WhitelistedAddressService with verification enabled.
+
+### WhitelistedAssetService
+
+- `approve(ids: number[], privateKey: KeyObject, comment: string): Promise<void>` — Signs and submits an approval for the given whitelisted assets, all-or-nothing.
+- `get(assetId: number): Promise<WhitelistedAsset>`
+- `getEnvelope(assetId: number): Promise<Verified<SignedWhitelistedAssetEnvelope>>` — Gets the signed envelope for a whitelisted asset, after verifying it.
+- `getWithVerification(assetId: number): Promise<WhitelistedAssetVerificationResult>` — Gets a whitelisted asset by ID with full verification.
+- `list(options?: ListWhitelistedAssetsOptions): Promise<ListWhitelistedAssetsResult>` — Lists whitelisted assets.
+- `listForApproval(options?: ListWhitelistedAssetsForApprovalOptions): Promise<ListWhitelistedAssetsResult>`
+- `withVerification(api: ContractWhitelistingApi, config: WhitelistedAssetServiceConfig): WhitelistedAssetService` — Creates a WhitelistedAssetService with verification enabled.
+
+<!-- END GENERATED METHOD INDEX -->

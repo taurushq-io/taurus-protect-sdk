@@ -52,38 +52,26 @@ The SDK requires the following packages (installed automatically):
 ### Client Initialization
 
 ```python
-from taurus_protect import ProtectClient
+from taurus_protect import Credentials, ProtectClient
 
-# Basic initialization
-with ProtectClient.create(
-    host="https://api.protect.taurushq.com",
-    api_key="your-api-key",
-    api_secret="your-api-secret-hex",
-) as client:
-    # Use the client
-    wallets, _ = client.wallets.list()
-```
-
-For production use with SuperAdmin key verification:
-
-```python
-from taurus_protect import ProtectClient
-
+# SuperAdmin public keys are required — client-side rules verification is mandatory.
 super_admin_keys = [
-    "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...\n-----END PUBLIC KEY-----",
     "-----BEGIN PUBLIC KEY-----\nMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...\n-----END PUBLIC KEY-----",
 ]
 
 with ProtectClient.create(
     host="https://api.protect.taurushq.com",
-    api_key="your-api-key",
-    api_secret="your-api-secret-hex",
+    credentials=Credentials.api_key("your-api-key", "your-api-secret-hex"),
     super_admin_keys_pem=super_admin_keys,
-    min_valid_signatures=2,
+    min_valid_signatures=1,
 ) as client:
-    # All governance rule verifications will require 2 valid signatures
-    pass
+    # Use the client
+    wallets, _ = client.wallets.list()
 ```
+
+Build the credentials with `Credentials.api_key(key, secret)` for TPV1-HMAC, or
+`Credentials.bearer_token_provider(fn)` for a per-request Bearer token. Raise
+`min_valid_signatures` for multi-signature governance verification.
 
 See [Authentication](docs/AUTHENTICATION.md) for more initialization options.
 
@@ -148,10 +136,15 @@ See [Services Reference](docs/SERVICES.md) for complete API documentation.
 
 ## Basic Usage
 
+Every example below assumes `host`, `credentials` and `super_admin_keys` from the Quick
+Start above. `super_admin_keys_pem` is **required** on every call: client-side integrity
+verification is mandatory, so `create()` raises `ConfigurationError` without at least one
+SuperAdmin public key.
+
 ### List Wallets
 
 ```python
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials, super_admin_keys_pem=super_admin_keys) as client:
     # List wallets with pagination
     wallets, pagination = client.wallets.list(limit=50, offset=0)
 
@@ -167,7 +160,7 @@ with ProtectClient.create(host, api_key, api_secret) as client:
 ```python
 from taurus_protect.models import CreateWalletRequest
 
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials, super_admin_keys_pem=super_admin_keys) as client:
     request = CreateWalletRequest(
         blockchain="ETH",
         network="mainnet",
@@ -186,7 +179,7 @@ from cryptography.hazmat.primitives.serialization import load_pem_private_key
 with open("private_key.pem", "rb") as f:
     private_key = load_pem_private_key(f.read(), password=None)
 
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials, super_admin_keys_pem=super_admin_keys) as client:
     # Get requests pending approval
     requests, _ = client.requests.get_for_approval(limit=10)
 
@@ -199,7 +192,7 @@ with ProtectClient.create(host, api_key, api_secret) as client:
 ### TaurusNetwork Operations
 
 ```python
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials, super_admin_keys_pem=super_admin_keys) as client:
     # Get my participant info
     me = client.taurus_network.participants.get_my_participant()
     print(f"Participant: {me.name}")
@@ -224,7 +217,7 @@ from taurus_protect.errors import (
 )
 import time
 
-with ProtectClient.create(host, api_key, api_secret) as client:
+with ProtectClient.create(host, credentials, super_admin_keys_pem=super_admin_keys) as client:
     try:
         wallet = client.wallets.get(999999)
     except NotFoundError:

@@ -1,5 +1,6 @@
 package com.taurushq.sdk.protect.client.service;
 
+import com.taurushq.sdk.protect.client.cache.RulesContainerCache;
 import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,19 +21,19 @@ class PriceServiceTest {
     void setUp() {
         apiClient = new ApiClient();
         apiExceptionMapper = new ApiExceptionMapper();
-        priceService = new PriceService(apiClient, apiExceptionMapper);
+        priceService = new PriceService(apiClient, apiExceptionMapper, rulesContainerCache());
     }
 
     @Test
     void constructor_throwsOnNullApiClient() {
         assertThrows(NullPointerException.class, () ->
-                new PriceService(null, apiExceptionMapper));
+                new PriceService(null, apiExceptionMapper, rulesContainerCache()));
     }
 
     @Test
     void constructor_throwsOnNullExceptionMapper() {
         assertThrows(NullPointerException.class, () ->
-                new PriceService(apiClient, null));
+                new PriceService(apiClient, null, rulesContainerCache()));
     }
 
     @Test
@@ -93,5 +94,19 @@ class PriceServiceTest {
     void convert_throwsOnNullTargetCurrencies() {
         assertThrows(IllegalArgumentException.class, () ->
                 priceService.convert("ETH", "1000", null));
+    }
+
+    private RulesContainerCache rulesContainerCache() {
+        try {
+            java.security.KeyPairGenerator generator =
+                    java.security.KeyPairGenerator.getInstance("EC");
+            generator.initialize(new java.security.spec.ECGenParameterSpec("secp256r1"));
+            java.security.PublicKey key = generator.generateKeyPair().getPublic();
+            return new RulesContainerCache(new GovernanceRuleService(
+                    new ApiClient(), new ApiExceptionMapper(),
+                    java.util.Collections.singletonList(key), 1));
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

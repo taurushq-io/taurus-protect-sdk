@@ -72,8 +72,29 @@ type ListTransactionsOptions struct {
 	Direction string
 	// Blockchain filters by blockchain.
 	Blockchain string
-	// Query searches transaction fields.
+	// Network filters by network.
+	Network string
+	// Query is a partial, case-insensitive match across address, label, customer id,
+	// transaction id, hash and type. Prefer IDs/Hashes for an exact value.
 	Query string
+	// FromDate filters by transaction creation date (inclusive lower bound).
+	FromDate *time.Time
+	// ToDate filters by transaction creation date (inclusive upper bound).
+	ToDate *time.Time
+	// IDs filters to specific Taurus transaction IDs.
+	IDs []string
+	// Hashes filters to specific on-chain transaction hashes.
+	Hashes []string
+	// TransactionIDs filters by the chain-level transaction identifier.
+	TransactionIDs []string
+	// Address filters to transactions touching one blockchain address.
+	Address string
+	// Source filters by originating address.
+	Source string
+	// Destination filters by destination address.
+	Destination string
+	// AmountAbove keeps only transactions above this amount.
+	AmountAbove string
 }
 
 // ListTransactionsByAddressOptions contains options for listing transactions by address.

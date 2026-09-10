@@ -9,6 +9,7 @@ import type { BusinessRulesApi } from '../../../src/internal/openapi/apis/Busine
 function createMockApi(): jest.Mocked<BusinessRulesApi> {
   return {
     ruleServiceGetBusinessRulesV2: jest.fn(),
+    ruleServiceUpdateTransactionsEnabledBusinessRule: jest.fn(),
   } as unknown as jest.Mocked<BusinessRulesApi>;
 }
 
@@ -85,6 +86,30 @@ describe('BusinessRuleService', () => {
       const rule = await service.get('rule-123');
       expect(rule).toBeDefined();
       expect(rule.id).toBe('rule-123');
+    });
+  });
+
+  // The transactions-enabled kill switch existed only in the Go SDK, even though the
+  // generated op is present in all four and tg-protect-mcpd drives it.
+  describe("updateTransactionsEnabled", () => {
+    it("sends the enabled flag", async () => {
+      mockApi.ruleServiceUpdateTransactionsEnabledBusinessRule.mockResolvedValue({});
+
+      await service.updateTransactionsEnabled(false);
+
+      expect(
+        mockApi.ruleServiceUpdateTransactionsEnabledBusinessRule
+      ).toHaveBeenCalledWith({ body: { enabled: false } });
+    });
+
+    it("sends true when enabling", async () => {
+      mockApi.ruleServiceUpdateTransactionsEnabledBusinessRule.mockResolvedValue({});
+
+      await service.updateTransactionsEnabled(true);
+
+      expect(
+        mockApi.ruleServiceUpdateTransactionsEnabledBusinessRule
+      ).toHaveBeenCalledWith({ body: { enabled: true } });
     });
   });
 });

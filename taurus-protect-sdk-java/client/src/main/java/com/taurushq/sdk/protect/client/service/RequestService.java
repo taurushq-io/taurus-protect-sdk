@@ -33,6 +33,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.SignatureException;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -41,7 +42,6 @@ import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.bouncycastle.util.Strings.constantTimeAreEqual;
 
 /**
  * Service for managing transaction requests in the Taurus Protect system.
@@ -134,7 +134,7 @@ public class RequestService {
         request.setAmount(amount.toString());
         try {
             TgvalidatordCreateRequestReply reply = requestsApi.requestServiceCreateOutgoingRequest(request);
-            return RequestMapper.INSTANCE.fromDTO(reply.getResult());
+            return verifiedRequest(reply.getResult());
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
@@ -161,7 +161,7 @@ public class RequestService {
         request.setAmount(amount.toString());
         try {
             TgvalidatordCreateRequestReply reply = requestsApi.requestServiceCreateOutgoingRequest(request);
-            return RequestMapper.INSTANCE.fromDTO(reply.getResult());
+            return verifiedRequest(reply.getResult());
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
@@ -188,7 +188,7 @@ public class RequestService {
         request.setAmount(amount.toString());
         try {
             TgvalidatordCreateRequestReply reply = requestsApi.requestServiceCreateOutgoingRequest(request);
-            return RequestMapper.INSTANCE.fromDTO(reply.getResult());
+            return verifiedRequest(reply.getResult());
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
@@ -215,7 +215,7 @@ public class RequestService {
         request.setAmount(amount.toString());
         try {
             TgvalidatordCreateRequestReply reply = requestsApi.requestServiceCreateOutgoingRequest(request);
-            return RequestMapper.INSTANCE.fromDTO(reply.getResult());
+            return verifiedRequest(reply.getResult());
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
@@ -233,35 +233,8 @@ public class RequestService {
 
         try {
             TgvalidatordGetRequestReply reply = requestsApi.requestServiceGetRequest(String.valueOf(id));
-            Request r = RequestMapper.INSTANCE.fromDTO(reply.getResult());
-
-            if (r.getMetadata() != null && (!Strings.isNullOrEmpty(r.getMetadata().getHash()) || !Strings.isNullOrEmpty(r.getMetadata().getPayloadAsString()))) {
-
-                String computedHash = CryptoTPV1.calculateHexHash(r.getMetadata().getPayloadAsString());
-                String providedHash = r.getMetadata().getHash();
-
-                // Explicit null checks before constant-time comparison
-                if (computedHash == null || providedHash == null) {
-                    if (LOGGER.isLoggable(java.util.logging.Level.WARNING)) {
-                        LOGGER.warning(String.format(
-                                "Request hash verification failed for request ID %d: hash values must be non-null", id));
-                    }
-                    throw new IntegrityException("request hash verification failed: hash values must be non-null");
-                }
-
-                if (!constantTimeAreEqual(computedHash, providedHash)) {
-                    if (LOGGER.isLoggable(java.util.logging.Level.WARNING)) {
-                        LOGGER.warning(String.format(
-                                "Request hash verification failed for request ID %d: computed=%s, provided=%s",
-                                id, computedHash, providedHash));
-                    }
-                    throw new IntegrityException(String.format("request hash verification failed: computed=%s, provided=%s", computedHash, providedHash));
-                }
-                if (LOGGER.isLoggable(java.util.logging.Level.FINE)) {
-                    LOGGER.fine(String.format("Request hash verification succeeded for request ID %d", id));
-                }
-            }
-            return r;
+            // Same seam every other path uses: one implementation, so they cannot drift.
+            return verifiedRequest(reply.getResult());
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
@@ -276,20 +249,59 @@ public class RequestService {
      * @throws ApiException the api exception
      */
     public int approveRequests(final List<Request> requests, final PrivateKey privateKey) throws ApiException {
+        return approveRequests(requests, privateKey, null);
+    }
+
+    /**
+     * Approves requests, recording the caller's comment against the approval.
+     *
+     * <p>An overload rather than a new parameter on the existing method, so callers
+     * keep compiling. Python and TypeScript take the comment as an optional argument;
+     * it used to be hardcoded here.
+     *
+     * @param requests   the requests to approve
+     * @param privateKey the key to sign the approval with
+     * @param comment    the rationale to record; a default is used when null or empty
+     * @return the number of requests approved
+     * @throws ApiException if the API call fails
+     */
+    public int approveRequests(final List<Request> requests, final PrivateKey privateKey,
+                               final String comment) throws ApiException {
         checkNotNull(requests, "requests list cannot be null");
         checkArgument(!requests.isEmpty(), "requests list cannot be empty");
         requests.forEach(r -> checkNotNull(r.getMetadata(), "request metadata cannot be null"));
         requests.forEach(r -> checkArgument(!Strings.isNullOrEmpty(r.getMetadata().getHash()), "request metadata hash cannot be null or zero"));
         checkNotNull(privateKey, "privateKey cannot be null");
 
+        // RE-VERIFY each hash this signature will attest to. isHashVerified() is
+        // deliberately NOT consulted: Gson and any other reflective deserializer can set
+        // the private field, so a Request rebuilt from JSON (a queue, a webhook, a cached
+        // blob) can arrive claiming true and get an attacker-chosen hash signed by the
+        // approver's real key. Re-verification is a SHA-256 over a string already in hand,
+        // and it is the same rule approveWhitelistedAssets gets by re-reading — so both
+        // signing paths rest on one rule, not two. Last of the checks: argument validation
+        // first, so a bad argument still reports as one, and absent metadata as absent.
+        requests.forEach(r -> {
+            try {
+                verifyMetadataHash(r);
+            } catch (IntegrityException e) {
+                throw new IntegrityException(String.format(
+                        "refusing to sign request %d: %s", r.getId(), e.getMessage()));
+            }
+        });
 
-        // sort requests by request id
-        requests.sort(Comparator.comparingLong(Request::getId));
+
+        // Sorted on a COPY. Sorting the caller's list in place mutated their argument
+        // and threw UnsupportedOperationException on an immutable one; Go, Python and
+        // TypeScript all sort a copy.
+        List<Request> sorted = new ArrayList<>(requests);
+        sorted.sort(Comparator.comparingLong(Request::getId));
 
         TgvalidatordApproveRequestsRequest request = new TgvalidatordApproveRequestsRequest();
-        request.setIds(requests.stream().map(r -> Long.toString(r.getId())).collect(Collectors.toList()));
-        request.setComment("approving via taurus-protect-sdk-java");
-        String toSign = GSON.toJson(requests.stream().map(r -> r.getMetadata().getHash()).collect(Collectors.toList()));
+        request.setIds(sorted.stream().map(r -> Long.toString(r.getId())).collect(Collectors.toList()));
+        request.setComment(Strings.isNullOrEmpty(comment)
+                ? "approving via taurus-protect-sdk-java" : comment);
+        String toSign = GSON.toJson(sorted.stream().map(r -> r.getMetadata().getHash()).collect(Collectors.toList()));
 
         try {
             request.setSignature(CryptoTPV1.calculateBase64Signature(privateKey, toSign.getBytes(StandardCharsets.UTF_8)));
@@ -322,9 +334,119 @@ public class RequestService {
      * @throws ApiException the api exception
      */
     public int approveRequest(final Request r, final PrivateKey privateKey) throws ApiException {
-        return approveRequests(Collections.singletonList(r), privateKey);
+        return approveRequest(r, privateKey, null);
     }
 
+    /**
+     * Approves a single request, recording the caller's comment.
+     *
+     * @param r          the request to approve
+     * @param privateKey the key to sign the approval with
+     * @param comment    the rationale to record; a default is used when null or empty
+     * @return the number of requests approved
+     * @throws ApiException if the API call fails
+     */
+    public int approveRequest(final Request r, final PrivateKey privateKey,
+                              final String comment) throws ApiException {
+        return approveRequests(Collections.singletonList(r), privateKey, comment);
+    }
+
+
+    /**
+     * Keeps only the requests whose metadata integrity verifies.
+     *
+     * <pre>
+     *   rows -&gt; verifyMetadataHash -+- ok    -&gt; kept, marked hashVerified
+     *                               +- fails -&gt; excluded + logged
+     * </pre>
+     *
+     * <p>The list endpoints previously returned every row without verifying any of
+     * them, while {@code getRequest} verified — so a payload altered in transit
+     * reached the caller with no error and no flag. Excluding rather than throwing
+     * keeps one bad row from denying access to every good one; logging keeps a
+     * shortened list from passing as a complete one.
+     *
+     * <p>The log carries metadata only: an id and a reason, never the payload.
+     *
+     * <p>Package-private so the exclusion behaviour can be tested directly; this
+     * class has no seam for injecting a stub API. Takes DTOs, not models, so the
+     * mapper stays behind {@link #verifiedRequest}.
+     *
+     * @param dtos the request DTOs as returned by the API
+     * @return only those whose metadata verified, plus those with no metadata to verify
+     */
+    List<Request> verifiedRequests(final List<TgvalidatordRequest> dtos) {
+        List<Request> kept = new ArrayList<>(dtos.size());
+        for (TgvalidatordRequest dto : dtos) {
+            if (dto == null) {
+                continue;
+            }
+            try {
+                kept.add(verifiedRequest(dto));
+            } catch (IntegrityException e) {
+                if (LOGGER.isLoggable(java.util.logging.Level.WARNING)) {
+                    LOGGER.warning(String.format(
+                            "request excluded: metadata integrity verification failed (request_id=%s, reason=%s)",
+                            dto.getId(), e.getMessage()));
+                }
+            }
+        }
+        return kept;
+    }
+
+    /**
+     * Maps one request DTO and verifies its metadata. The ONLY way this class builds
+     * a {@link Request}.
+     *
+     * <pre>
+     *   getRequest ----------+
+     *   getRequests(ForApproval)-+
+     *   create* (x6) --------+--&gt; verifiedRequest -&gt; fromDTO -&gt; verifyAndMaterialise
+     *                                    ok &lt;-----+-----&gt; IntegrityException
+     *                             (hashVerified set)      (names the request id)
+     * </pre>
+     *
+     * <p>Verification lived in {@code getRequest} alone. The list paths skipped it in
+     * one pass and the six create paths in the next — both times because "remember to
+     * verify" was a rule rather than the only available construction path. So do NOT
+     * call {@code RequestMapper.INSTANCE.fromDTO} anywhere else in this class.
+     *
+     * <p>The id goes into the exception because a failing create has already succeeded
+     * server-side; the caller needs it to reconcile rather than retrying and creating
+     * a second request.
+     *
+     * @param dto the request DTO
+     * @return the verified request, marked
+     * @throws IntegrityException if the metadata hash does not cover the payload
+     */
+    Request verifiedRequest(final TgvalidatordRequest dto) {
+        Request r = RequestMapper.INSTANCE.fromDTO(dto);
+        if (r == null) {
+            throw new IntegrityException("request not found");
+        }
+        try {
+            verifyMetadataHash(r);
+        } catch (IntegrityException e) {
+            throw new IntegrityException(String.format("request %s: %s", r.getId(), e.getMessage()));
+        }
+        return r;
+    }
+
+    /**
+     * Verifies that a request's metadata hash covers its payload string.
+     *
+     * <p>Extracted from {@code getRequest} so both the single-request and list paths
+     * enforce the same check. Keeping it inline in one method is what let the list
+     * paths skip it.
+     *
+     * @param r the request to verify
+     * @return true if metadata was present and verified, false if there was nothing
+     *         to verify (an early-status request has no metadata yet)
+     * @throws IntegrityException if the hash does not cover the payload
+     */
+    private boolean verifyMetadataHash(final Request r) {
+        return r.getMetadata() != null && r.getMetadata().verifyAndMaterialise();
+    }
 
     /**
      * Gets requests with filtering.
@@ -370,9 +492,7 @@ public class RequestService {
             if (requests == null) {
                 result.setRequests(Collections.emptyList());
             } else {
-                result.setRequests(requests.stream()
-                        .map(RequestMapper.INSTANCE::fromDTO)
-                        .collect(Collectors.toList()));
+                result.setRequests(verifiedRequests(requests));
             }
 
             result.setCursor(ApiResponseCursorMapper.INSTANCE.fromDTO(reply.getCursor()));
@@ -416,9 +536,7 @@ public class RequestService {
             if (requests == null) {
                 result.setRequests(Collections.emptyList());
             } else {
-                result.setRequests(requests.stream()
-                        .map(RequestMapper.INSTANCE::fromDTO)
-                        .collect(Collectors.toList()));
+                result.setRequests(verifiedRequests(requests));
             }
 
             result.setCursor(ApiResponseCursorMapper.INSTANCE.fromDTO(reply.getCursor()));
@@ -486,7 +604,7 @@ public class RequestService {
             request.setNonce(String.valueOf(nonce));
 
             TgvalidatordCreateRequestReply reply = requestsApi.requestServiceCreateOutgoingCancelRequest(request);
-            return RequestMapper.INSTANCE.fromDTO(reply.getResult());
+            return verifiedRequest(reply.getResult());
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
@@ -516,7 +634,7 @@ public class RequestService {
             request.setAmount(amount.toString());
 
             TgvalidatordCreateRequestReply reply = requestsApi.requestServiceCreateIncomingRequest(request);
-            return RequestMapper.INSTANCE.fromDTO(reply.getResult());
+            return verifiedRequest(reply.getResult());
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }

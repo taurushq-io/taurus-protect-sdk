@@ -49,10 +49,10 @@ taurus_protect/
 │   └── taurus_network/        # TaurusNetwork models (71 models)
 │       ├── __init__.py
 │       ├── participant.py     # 7 models
-│       ├── pledge.py          # 26 models
+│       ├── pledge.py          # 25 models
 │       ├── lending.py         # 13 models
 │       ├── settlement.py      # 11 models
-│       └── sharing.py         # 14 models
+│       └── sharing.py         # 15 models
 │
 ├── mappers/                    # DTO to model conversion
 │   ├── __init__.py
@@ -194,8 +194,7 @@ The `ProtectClient` class serves as the main entry point, providing a unified in
 ```python
 with ProtectClient.create(
     host="https://api.protect.taurushq.com",
-    api_key="your-api-key",
-    api_secret="your-api-secret-hex",
+    credentials=Credentials.api_key("your-api-key", "your-api-secret-hex"),
 ) as client:
     # Access services through properties
     wallets, _ = client.wallets.list()

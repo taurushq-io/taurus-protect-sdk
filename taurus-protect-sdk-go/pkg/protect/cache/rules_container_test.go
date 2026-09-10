@@ -149,92 +149,65 @@ func TestRulesContainerCache_Get_Expiration(t *testing.T) {
 	}
 }
 
-func TestRulesContainerCache_Set(t *testing.T) {
-	cache := NewRulesContainerCache(time.Minute, nil)
-
-	rules := &model.DecodedRulesContainer{}
-	cache.Set(rules)
-
-	got, err := cache.Get(context.Background())
-	if err != nil {
-		t.Errorf("Get() error = %v", err)
+// seededCache returns a cache holding rules, populated the only way a container can
+// now enter: through the constructor's fetcher. It also reports the fetch count, so a
+// caller can tell a cache hit from a refetch.
+func seededCache(t *testing.T, ttl time.Duration, rules *model.DecodedRulesContainer) (*RulesContainerCache, func() int) {
+	t.Helper()
+	fetches := 0
+	cache := NewRulesContainerCache(ttl, func(context.Context) (*model.DecodedRulesContainer, error) {
+		fetches++
+		return rules, nil
+	})
+	if _, err := cache.Get(context.Background()); err != nil {
+		t.Fatalf("seeding Get() error = %v", err)
 	}
-	if got != rules {
-		t.Errorf("Get() = %v, want %v", got, rules)
-	}
-}
-
-func TestRulesContainerCache_Set_ResetsExpiry(t *testing.T) {
-	fetchCount := 0
-	fetcher := func(ctx context.Context) (*model.DecodedRulesContainer, error) {
-		fetchCount++
-		return &model.DecodedRulesContainer{}, nil
-	}
-
-	cache := NewRulesContainerCache(50*time.Millisecond, fetcher)
-
-	// Initial fetch
-	cache.Get(context.Background())
-
-	// Wait partial TTL
-	time.Sleep(30 * time.Millisecond)
-
-	// Manual set should reset expiry
-	newRules := &model.DecodedRulesContainer{}
-	cache.Set(newRules)
-
-	// Wait another partial TTL (total 60ms from initial, but only 30ms from Set)
-	time.Sleep(30 * time.Millisecond)
-
-	// Should still use cached value (not expired from Set)
-	got, _ := cache.Get(context.Background())
-	if got != newRules {
-		t.Errorf("Get() = %v, want manually set rules", got)
-	}
-	if fetchCount != 1 {
-		t.Errorf("fetchCount = %v, want 1 (should not refetch)", fetchCount)
-	}
+	return cache, func() int { return fetches }
 }
 
 func TestRulesContainerCache_Invalidate(t *testing.T) {
 	rules := &model.DecodedRulesContainer{}
-	cache := NewRulesContainerCache(time.Minute, nil)
+	cache, fetches := seededCache(t, time.Minute, rules)
 
-	// Set value
-	cache.Set(rules)
-
-	// Verify it's cached
 	if !cache.IsValid() {
-		t.Error("Cache should be valid after Set()")
+		t.Error("Cache should be valid after the seeding fetch")
 	}
 
-	// Invalidate
 	cache.Invalidate()
 
-	// Verify it's cleared
 	if cache.IsValid() {
 		t.Error("Cache should be invalid after Invalidate()")
 	}
 
-	// Get should return nil (no fetcher)
-	got, _ := cache.Get(context.Background())
-	if got != nil {
-		t.Errorf("Get() after Invalidate() = %v, want nil", got)
+	// The next Get must go back to the fetcher rather than serve the cleared value.
+	got, err := cache.Get(context.Background())
+	if err != nil {
+		t.Errorf("Get() after Invalidate() error = %v", err)
+	}
+	if got != rules {
+		t.Errorf("Get() after Invalidate() = %v, want a refetch", got)
+	}
+	if fetches() != 2 {
+		t.Errorf("fetchCount = %d, want 2 (Invalidate must force a refetch)", fetches())
 	}
 }
 
 func TestRulesContainerCache_IsValid(t *testing.T) {
-	cache := NewRulesContainerCache(time.Minute, nil)
+	cache := NewRulesContainerCache(time.Minute, func(context.Context) (*model.DecodedRulesContainer, error) {
+		return &model.DecodedRulesContainer{}, nil
+	})
 
 	// Initially invalid
 	if cache.IsValid() {
 		t.Error("New cache should be invalid")
 	}
 
-	// After Set, should be valid
-	cache.Set(&model.DecodedRulesContainer{})
+	// After a fetch, should be valid
+	if _, err := cache.Get(context.Background()); err != nil {
+		t.Fatalf("Get() error = %v", err)
+	}
 	if !cache.IsValid() {
-		t.Error("Cache should be valid after Set()")
+		t.Error("Cache should be valid after a fetch")
 	}
 
 	// After Invalidate, should be invalid
@@ -245,12 +218,11 @@ func TestRulesContainerCache_IsValid(t *testing.T) {
 }
 
 func TestRulesContainerCache_IsValid_Expiration(t *testing.T) {
-	cache := NewRulesContainerCache(10*time.Millisecond, nil)
-	cache.Set(&model.DecodedRulesContainer{})
+	cache, _ := seededCache(t, 10*time.Millisecond, &model.DecodedRulesContainer{})
 
 	// Initially valid
 	if !cache.IsValid() {
-		t.Error("Cache should be valid after Set()")
+		t.Error("Cache should be valid after the seeding fetch")
 	}
 
 	// Wait for expiration
@@ -259,28 +231,6 @@ func TestRulesContainerCache_IsValid_Expiration(t *testing.T) {
 	// Should be invalid after expiration
 	if cache.IsValid() {
 		t.Error("Cache should be invalid after expiration")
-	}
-}
-
-func TestRulesContainerCache_SetFetcher(t *testing.T) {
-	cache := NewRulesContainerCache(time.Minute, nil)
-
-	// Without fetcher, returns nil
-	got, _ := cache.Get(context.Background())
-	if got != nil {
-		t.Error("Get() should return nil without fetcher")
-	}
-
-	// Set fetcher
-	rules := &model.DecodedRulesContainer{}
-	cache.SetFetcher(func(ctx context.Context) (*model.DecodedRulesContainer, error) {
-		return rules, nil
-	})
-
-	// Now Get should fetch
-	got, _ = cache.Get(context.Background())
-	if got != rules {
-		t.Errorf("Get() = %v, want %v", got, rules)
 	}
 }
 
@@ -318,26 +268,21 @@ func TestRulesContainerCache_ConcurrentAccess(t *testing.T) {
 	}
 }
 
-func TestRulesContainerCache_ConcurrentGetAndSet(t *testing.T) {
-	cache := NewRulesContainerCache(time.Minute, nil)
+// Concurrent Get + Invalidate, which is the remaining write path now that a container
+// can only enter through the fetcher. Run with -race.
+func TestRulesContainerCache_ConcurrentGetAndInvalidate(t *testing.T) {
+	cache := NewRulesContainerCache(time.Minute, func(context.Context) (*model.DecodedRulesContainer, error) {
+		return &model.DecodedRulesContainer{}, nil
+	})
 
 	var wg sync.WaitGroup
-
-	// Concurrent Sets
-	for i := 0; i < 50; i++ {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			cache.Set(&model.DecodedRulesContainer{})
-		}(i)
-	}
 
 	// Concurrent Gets
 	for i := 0; i < 50; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			cache.Get(context.Background())
+			_, _ = cache.Get(context.Background())
 		}()
 	}
 

@@ -18,9 +18,6 @@ func TestActionService_GetAction_ServiceStructure(t *testing.T) {
 		errMapper: NewErrorMapper(),
 	}
 
-	if svc == nil {
-		t.Error("ActionService should not be nil")
-	}
 	if svc.errMapper == nil {
 		t.Error("ErrorMapper should not be nil")
 	}
@@ -36,8 +33,8 @@ func TestActionService_ListActions_NilOptions(t *testing.T) {
 
 	// This verifies the service accepts nil options
 	// In a real test with mocked API, nil options should work
-	if svc == nil {
-		t.Error("ActionService should not be nil")
+	if svc.errMapper == nil {
+		t.Error("ErrorMapper should not be nil")
 	}
 }
 
@@ -97,8 +94,8 @@ func TestActionService_ListActions_WithOptions(t *testing.T) {
 				api:       nil,
 				errMapper: NewErrorMapper(),
 			}
-			if svc == nil {
-				t.Error("ActionService should not be nil")
+			if svc.errMapper == nil {
+				t.Error("ErrorMapper should not be nil")
 			}
 		})
 	}

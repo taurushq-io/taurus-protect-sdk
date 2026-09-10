@@ -25,13 +25,12 @@ This document provides complete TypeScript code examples for common SDK operatio
 ### Basic Initialization
 
 ```typescript
-import { ProtectClient } from '@taurushq/protect-sdk';
+import { Credentials, ProtectClient } from '@taurushq/protect-sdk';
 
 async function createClient(): Promise<ProtectClient> {
   const client = ProtectClient.create({
     host: 'https://api.protect.taurushq.com',
-    apiKey: 'your-api-key-uuid',
-    apiSecret: 'your-api-secret-hex',
+    credentials: Credentials.apiKey('your-api-key-uuid', 'your-api-secret-hex'),
   });
 
   return client;
@@ -49,7 +48,7 @@ try {
 ### Environment-Based Configuration
 
 ```typescript
-import { ProtectClient, ProtectClientConfig } from '@taurushq/protect-sdk';
+import { Credentials, ProtectClient, ProtectClientConfig } from '@taurushq/protect-sdk';
 
 function createFromEnvironment(): ProtectClient {
   const host = process.env.TAURUS_API_HOST;
@@ -60,17 +59,19 @@ function createFromEnvironment(): ProtectClient {
     throw new Error('Missing required environment variables');
   }
 
+  // SuperAdmin keys are MANDATORY for every auth mechanism — `superAdminKeysPem` is a
+  // required field, so omitting it is a compile error and an empty array is rejected at
+  // construction. Client-side rules verification is not optional.
+  if (!process.env.TAURUS_SUPERADMIN_KEYS) {
+    throw new Error('TAURUS_SUPERADMIN_KEYS is required');
+  }
+
   const config: ProtectClientConfig = {
     host,
-    apiKey,
-    apiSecret,
+    credentials: Credentials.apiKey(apiKey, apiSecret),
+    superAdminKeysPem: JSON.parse(process.env.TAURUS_SUPERADMIN_KEYS),
+    minValidSignatures: parseInt(process.env.TAURUS_MIN_SIGNATURES ?? '2', 10),
   };
-
-  // Optional: SuperAdmin keys for verification
-  if (process.env.TAURUS_SUPERADMIN_KEYS) {
-    config.superAdminKeysPem = JSON.parse(process.env.TAURUS_SUPERADMIN_KEYS);
-    config.minValidSignatures = parseInt(process.env.TAURUS_MIN_SIGNATURES ?? '2', 10);
-  }
 
   return ProtectClient.create(config);
 }
@@ -79,7 +80,7 @@ function createFromEnvironment(): ProtectClient {
 ### With SuperAdmin Key Verification
 
 ```typescript
-import { ProtectClient } from '@taurushq/protect-sdk';
+import { Credentials, ProtectClient } from '@taurushq/protect-sdk';
 
 const superAdmin1 = `-----BEGIN PUBLIC KEY-----
 MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...
@@ -91,8 +92,7 @@ MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE...
 
 const client = ProtectClient.create({
   host: 'https://api.protect.taurushq.com',
-  apiKey: 'your-api-key-uuid',
-  apiSecret: 'your-api-secret-hex',
+  credentials: Credentials.apiKey('your-api-key-uuid', 'your-api-secret-hex'),
   superAdminKeysPem: [superAdmin1, superAdmin2],
   minValidSignatures: 2,
   rulesCacheTtlMs: 600000, // 10 minutes
@@ -584,14 +584,13 @@ async function getWhitelistedAddressExample(client: ProtectClient): Promise<void
 For enhanced security, use the verification methods:
 
 ```typescript
-import { ProtectClient, WhitelistedAddressService, rulesContainerFromBase64, userSignaturesFromBase64 } from '@taurushq/protect-sdk';
+import { Credentials, ProtectClient, WhitelistedAddressService, rulesContainerFromBase64, userSignaturesFromBase64 } from '@taurushq/protect-sdk';
 
 async function verifiedWhitelistExample(): Promise<void> {
   // Create client
   const client = ProtectClient.create({
     host: 'https://api.protect.taurushq.com',
-    apiKey: 'your-api-key',
-    apiSecret: 'your-api-secret',
+    credentials: Credentials.apiKey('your-api-key', 'your-api-secret'),
   });
 
   // Create verified service with decoders
@@ -1163,7 +1162,7 @@ async function processManyRequests(client: ProtectClient): Promise<void> {
 ### Using try-finally for Cleanup
 
 ```typescript
-import { ProtectClient, ProtectClientConfig } from '@taurushq/protect-sdk';
+import { Credentials, ProtectClient, ProtectClientConfig } from '@taurushq/protect-sdk';
 
 async function withClient<T>(
   config: ProtectClientConfig,
@@ -1182,8 +1181,7 @@ async function main(): Promise<void> {
   const result = await withClient(
     {
       host: process.env.API_HOST!,
-      apiKey: process.env.API_KEY!,
-      apiSecret: process.env.API_SECRET!,
+      credentials: Credentials.apiKey(process.env.API_KEY!, process.env.API_SECRET!),
     },
     async (client) => {
       const wallets = await client.wallets.list();
@@ -1217,8 +1215,7 @@ Always configure SuperAdmin keys in production to enable signature verification:
 ```typescript
 const client = ProtectClient.create({
   host: config.host,
-  apiKey: config.apiKey,
-  apiSecret: config.apiSecret,
+  credentials: Credentials.apiKey(config.apiKey, config.apiSecret),
   superAdminKeysPem: config.superAdminKeys,
   minValidSignatures: 2,
 });

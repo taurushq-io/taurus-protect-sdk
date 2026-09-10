@@ -5,7 +5,9 @@
  * and performing currency conversions.
  */
 
-import { ValidationError } from '../errors';
+import type { RulesContainerCache } from '../cache';
+import { ConfigurationError, ValidationError } from '../errors';
+import { verifyPrices } from '../helpers/price-verifier';
 import type { PricesApi } from '../internal/openapi/apis/PricesApi';
 import {
   conversionResultsFromDto,
@@ -53,15 +55,28 @@ import { BaseService } from './base';
  */
 export class PriceService extends BaseService {
   private readonly pricesApi: PricesApi;
+  private readonly rulesCache: RulesContainerCache;
 
   /**
    * Creates a new PriceService instance.
    *
+   * Price signature verification is MANDATORY: rate and decimals feed amount
+   * conversion, so an unverified price is a wrong number a caller acts on. Whether
+   * prices must be signed is decided by the SuperAdmin-verified rules container.
+   *
    * @param pricesApi - The PricesApi instance from the OpenAPI client
+   * @param rulesCache - Rules container cache supplying the PRICEUPDATER keys
+   * @throws ConfigurationError if rulesCache is not provided
    */
-  constructor(pricesApi: PricesApi) {
+  constructor(pricesApi: PricesApi, rulesCache: RulesContainerCache) {
     super();
+    if (!rulesCache) {
+      throw new ConfigurationError(
+        "RulesContainerCache is required for PriceService — price signature verification is mandatory"
+      );
+    }
     this.pricesApi = pricesApi;
+    this.rulesCache = rulesCache;
   }
 
   /**
@@ -87,7 +102,13 @@ export class PriceService extends BaseService {
       const result =
         (response as Record<string, unknown>).result ??
         (response as Record<string, unknown>).prices;
-      return pricesFromDto(result as unknown[]);
+      const prices = pricesFromDto(result as unknown[]);
+
+      if (prices.length > 0) {
+        verifyPrices(prices, await this.rulesCache.get());
+      }
+
+      return prices;
     });
   }
 

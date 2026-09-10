@@ -19,7 +19,7 @@ import java.util.List;
  * @see TransactionRuleDetails
  * @see DecodedRulesContainer
  */
-public class TransactionRules {
+public class TransactionRules extends RulesNode {
 
     /**
      * Unique key identifying this rule set (e.g., blockchain/action type).

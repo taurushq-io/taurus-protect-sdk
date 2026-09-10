@@ -20,14 +20,20 @@ type RulesContainerCache struct {
 	expiry   time.Time
 	ttl      time.Duration
 	fetcher  RulesContainerFetcher
-	fetching bool              // True when a fetch is in progress
-	fetchCh  chan struct{}     // Closed when fetch completes
-	fetchErr error             // Error from the last fetch (propagated to waiters)
+	fetching bool          // True when a fetch is in progress
+	fetchCh  chan struct{} // Closed when fetch completes
+	fetchErr error         // Error from the last fetch (propagated to waiters)
 }
 
 // NewRulesContainerCache creates a new cache with the given TTL and fetcher function.
-// The fetcher function is called to refresh the cache when it expires.
-// If fetcher is nil, the cache must be populated manually using Set().
+// The fetcher function is called to refresh the cache when it expires, and is the only
+// way a container enters the cache (see below).
+//
+// The fetcher MUST verify the container's SuperAdmin signatures before returning it —
+// this cache supplies the HSM public key that address signature verification trusts.
+// protect.NewClient wires it to GovernanceRuleService.GetDecodedRulesContainer, which
+// does. A nil fetcher leaves the cache permanently empty; Get then returns nil, which
+// the address verifier rejects rather than treating as "nothing to check".
 func NewRulesContainerCache(ttl time.Duration, fetcher RulesContainerFetcher) *RulesContainerCache {
 	return &RulesContainerCache{
 		ttl:     ttl,
@@ -116,14 +122,14 @@ func (c *RulesContainerCache) Get(ctx context.Context) (*model.DecodedRulesConta
 	return rules, nil
 }
 
-// Set manually sets the cached rules container.
-// This resets the expiry timer.
-func (c *RulesContainerCache) Set(rules *model.DecodedRulesContainer) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.rules = rules
-	c.expiry = time.Now().Add(c.ttl)
-}
+// The constructor's fetcher is the ONLY way a container enters this cache.
+//
+// There used to be a Set(container) and a SetFetcher(fn) here, either of which seated
+// a container that nothing had verified — and this cache supplies the HSM public key
+// that address signature verification trusts, so an unverified one makes that check
+// pass against whatever key the container carries. Neither had a caller outside tests,
+// and no sibling SDK offers an equivalent: Java and Python inject the governance
+// service, TypeScript injects a provider closure. Do not reintroduce them.
 
 // Invalidate clears the cache, forcing a refresh on the next Get().
 func (c *RulesContainerCache) Invalidate() {
@@ -138,11 +144,4 @@ func (c *RulesContainerCache) IsValid() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 	return c.rules != nil && time.Now().Before(c.expiry)
-}
-
-// SetFetcher sets the fetcher function used to refresh the cache.
-func (c *RulesContainerCache) SetFetcher(fetcher RulesContainerFetcher) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	c.fetcher = fetcher
 }

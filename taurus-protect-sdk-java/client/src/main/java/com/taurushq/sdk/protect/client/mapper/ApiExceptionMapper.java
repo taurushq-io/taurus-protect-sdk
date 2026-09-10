@@ -25,13 +25,6 @@ public class ApiExceptionMapper {
 
     private static final Gson GSON = new Gson();
 
-    /**
-     * Instantiates a new Api exception mapper.
-     */
-    public ApiExceptionMapper() {
-        // No instance state needed - Gson is shared via static field
-    }
-
 
     /**
      * Converts an OpenAPI exception to a typed SDK exception.

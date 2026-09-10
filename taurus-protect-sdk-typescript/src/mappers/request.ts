@@ -94,13 +94,19 @@ function mapMetadata(
   }
 
   const hash = safeString(dto.hash);
-  if (!hash) {
+  const payloadAsString = safeString(dto.payloadAsString);
+
+  // Metadata with neither field carries nothing to verify or read.
+  if (!hash && !payloadAsString) {
     return undefined;
   }
 
+  // A payload with NO hash is kept deliberately. Dropping the whole object here
+  // meant such a response never reached verification at all and the payload was
+  // silently discarded — Go, Java and Python all reject that input instead.
   return {
-    hash,
-    payloadAsString: safeString(dto.payloadAsString),
+    hash: hash ?? "",
+    payloadAsString,
     // SECURITY: payload intentionally not mapped
   };
 }

@@ -1,6 +1,8 @@
 package com.taurushq.sdk.protect.client.service;
 
 import com.google.common.base.Strings;
+import com.taurushq.sdk.protect.client.cache.RulesContainerCache;
+import com.taurushq.sdk.protect.client.helper.PriceVerifier;
 import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
 import com.taurushq.sdk.protect.client.mapper.PriceMapper;
 import com.taurushq.sdk.protect.client.model.ApiException;
@@ -61,16 +63,30 @@ public class PriceService {
     private final ApiExceptionMapper apiExceptionMapper;
 
     /**
-     * Instantiates a new Price service.
-     *
-     * @param openApiClient      the open api client
-     * @param apiExceptionMapper the api exception mapper
+     * Cache supplying the PRICEUPDATER keys from a verified rules container.
      */
-    public PriceService(final ApiClient openApiClient, final ApiExceptionMapper apiExceptionMapper) {
+    private final RulesContainerCache rulesContainerCache;
+
+    /**
+     * Instantiates a new Price service.
+     * <p>
+     * Price signature verification is mandatory: rate and decimals feed amount
+     * conversion, so an unverified price is a wrong number a caller acts on. Whether
+     * prices must be signed is decided by the SuperAdmin-verified rules container.
+     *
+     * @param openApiClient       the open api client
+     * @param apiExceptionMapper  the api exception mapper
+     * @param rulesContainerCache the cache supplying the PRICEUPDATER keys, required
+     */
+    public PriceService(final ApiClient openApiClient, final ApiExceptionMapper apiExceptionMapper,
+                        final RulesContainerCache rulesContainerCache) {
 
         checkNotNull(openApiClient, "openApiClient cannot be null");
         checkNotNull(apiExceptionMapper, "apiExceptionMapper cannot be null");
+        checkNotNull(rulesContainerCache,
+                "rulesContainerCache cannot be null - price signature verification is mandatory");
 
+        this.rulesContainerCache = rulesContainerCache;
         this.apiExceptionMapper = apiExceptionMapper;
         this.pricesApi = new PricesApi(openApiClient);
     }
@@ -90,7 +106,7 @@ public class PriceService {
             if (result == null) {
                 return Collections.emptyList();
             }
-            return PriceMapper.INSTANCE.fromDTO(result);
+            return verifiedPrices(PriceMapper.INSTANCE.fromDTO(result));
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
@@ -158,5 +174,20 @@ public class PriceService {
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
+    }
+
+    /**
+     * Verifies every price against the container's PRICEUPDATER keys.
+     *
+     * @param prices the mapped prices
+     * @return the same prices, once verified
+     * @throws ApiException if the rules container cannot be fetched
+     */
+    private List<Price> verifiedPrices(final List<Price> prices) throws ApiException {
+        if (prices == null || prices.isEmpty()) {
+            return prices;
+        }
+        PriceVerifier.verifyPrices(prices, rulesContainerCache.getDecodedRulesContainer());
+        return prices;
     }
 }

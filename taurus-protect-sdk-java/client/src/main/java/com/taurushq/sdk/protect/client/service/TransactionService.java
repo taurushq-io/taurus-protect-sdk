@@ -143,6 +143,31 @@ public class TransactionService {
     public List<Transaction> getTransactions(final OffsetDateTime from, final OffsetDateTime to,
                                              final String currency, final String direction,
                                              final int limit, final int offset) throws ApiException {
+        return getTransactions(from, to, currency, direction, null, null, limit, offset);
+    }
+
+    /**
+     * Gets transactions with filtering, including by chain.
+     *
+     * <p>The API accepts blockchain and network on this endpoint and the Go and TypeScript
+     * SDKs expose both; this SDK used to hardcode them to null, so the filters were
+     * unreachable and a caller silently got every chain back.
+     *
+     * @param from       filter transactions after this date (optional)
+     * @param to         filter transactions before this date (optional)
+     * @param currency   filter by currency ID or symbol (optional)
+     * @param direction  filter by direction: "incoming" or "outgoing" (optional)
+     * @param blockchain filter by blockchain, e.g. "ETH" (optional)
+     * @param network    filter by network, e.g. "mainnet" (optional)
+     * @param limit      the maximum number of transactions to return
+     * @param offset     the offset for pagination
+     * @return the list of transactions
+     * @throws ApiException the api exception
+     */
+    public List<Transaction> getTransactions(final OffsetDateTime from, final OffsetDateTime to,
+                                             final String currency, final String direction,
+                                             final String blockchain, final String network,
+                                             final int limit, final int offset) throws ApiException {
 
         checkArgument(limit > 0, "limit must be positive");
         checkArgument(offset >= 0, "offset cannot be negative");
@@ -161,8 +186,8 @@ public class TransactionService {
                     null,                       // source
                     null,                       // destination
                     null,                       // ids
-                    null,                       // blockchain
-                    null,                       // network
+                    blockchain,                 // blockchain
+                    network,                    // network
                     null,                       // fromBlockNumber
                     null,                       // toBlockNumber
                     null,                       // hashes
@@ -293,11 +318,33 @@ public class TransactionService {
      * @param currency  filter by currency ID or symbol (optional)
      * @param direction filter by direction: "incoming" or "outgoing" (optional)
      * @param limit     the maximum number of transactions to export
+     * @param offset    the offset for pagination
      * @return the CSV content as a string
      * @throws ApiException the api exception
      */
     public String exportTransactions(final OffsetDateTime from, final OffsetDateTime to,
                                       final String currency, final String direction,
+                                      final int limit, final int offset) throws ApiException {
+        return exportTransactions(from, to, currency, direction, null, null, limit, offset);
+    }
+
+    /**
+     * Exports transactions to CSV format, including by chain.
+     *
+     * @param from       filter transactions after this date (optional)
+     * @param to         filter transactions before this date (optional)
+     * @param currency   filter by currency ID or symbol (optional)
+     * @param direction  filter by direction: "incoming" or "outgoing" (optional)
+     * @param blockchain filter by blockchain, e.g. "ETH" (optional)
+     * @param network    filter by network, e.g. "mainnet" (optional)
+     * @param limit      the maximum number of transactions to export
+     * @param offset     the offset for pagination
+     * @return the CSV content as a string
+     * @throws ApiException the api exception
+     */
+    public String exportTransactions(final OffsetDateTime from, final OffsetDateTime to,
+                                      final String currency, final String direction,
+                                      final String blockchain, final String network,
                                       final int limit, final int offset) throws ApiException {
 
         checkArgument(limit > 0, "limit must be positive");
@@ -318,8 +365,8 @@ public class TransactionService {
                     null,                       // source
                     null,                       // destination
                     null,                       // ids
-                    null,                       // blockchain
-                    null,                       // network
+                    blockchain,                 // blockchain
+                    network,                    // network
                     null,                       // fromBlockNumber
                     null,                       // toBlockNumber
                     null,                       // amountAbove

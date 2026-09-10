@@ -140,10 +140,55 @@ class TestWhitelistedAddressServiceSecurity:
         service._api.whitelist_service_get_whitelisted_addresses.return_value = mock_reply
 
         # Should succeed and return verified addresses
-        addresses, pagination = service.list(limit=50, offset=0)
+        result = service.list(limit=50, offset=0)
+        addresses = result.addresses
 
         assert len(addresses) == 2
+        # Nothing was excluded, so the server's total stands and nothing is reported.
+        assert result.excluded_unverified == []
+        assert result.pagination is not None
+        assert result.pagination.total_items == 2
         assert all(addr.address == "0xf631ce893edb440e49188a991250051d07968186" for addr in addresses)
+
+    def test_list_excludes_bad_row_and_reports_it(self) -> None:
+        """A bad row is excluded, named on the result, and removed from the total.
+
+        Logging alone is not reporting -- a caller cannot read the SDK's logger. If a
+        filtered page is indistinguishable from a complete one, a caller asking "is
+        this destination approved?" gets a false negative. And a total that still
+        counts the dropped row makes has_more promise a page never fully readable.
+        """
+        service = _make_service_with_mocked_verifier()
+
+        good_dto = create_mock_dto_with_metadata(create_valid_payload())
+        bad_dto = create_mock_dto_with_metadata(create_valid_payload())
+        bad_dto.id = "666"
+
+        # Fail the SECOND row only. Keyed on call order rather than on the envelope,
+        # because the envelope id is mapped from the payload, not from dto.id.
+        calls = {"n": 0}
+
+        def verify_side_effect(envelope, *args, **kwargs):
+            calls["n"] += 1
+            if calls["n"] == 2:
+                raise IntegrityError("metadata hash verification failed")
+            return _mock_verify_side_effect(envelope, *args, **kwargs)
+
+        service._verifier.verify_whitelisted_address.side_effect = verify_side_effect
+
+        mock_reply = MagicMock()
+        mock_reply.result = [good_dto, bad_dto]
+        mock_reply.total_items = "2"
+        service._api.whitelist_service_get_whitelisted_addresses.return_value = mock_reply
+
+        result = service.list(limit=50, offset=0)
+
+        assert len(result.addresses) == 1, "the good row must survive one bad neighbour"
+        assert len(result.excluded_unverified) == 1
+        assert result.excluded_unverified[0].id == "666"
+        assert result.excluded_unverified[0].reason, "an exclusion needs an actionable reason"
+        assert result.pagination is not None
+        assert result.pagination.total_items == 1, "the excluded row must not be counted"
 
     def test_list_raises_integrity_error_on_invalid_envelope(self) -> None:
         """Test that list() raises IntegrityError when envelope verification fails."""
@@ -195,7 +240,7 @@ class TestWhitelistedAddressServiceSecurity:
 
         service._api.whitelist_service_get_whitelisted_addresses.return_value = mock_reply
 
-        addresses, _ = service.list(limit=50, offset=0)
+        addresses = service.list(limit=50, offset=0).addresses
 
         # Address fields should come from payload, not DTO
         assert len(addresses) == 1

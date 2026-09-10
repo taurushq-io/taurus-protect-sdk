@@ -21,6 +21,12 @@ export function priceFromDto(dto: unknown): Price | undefined {
     currencyTo: safeString(d.currencyTo ?? d.currency_to),
     decimals: safeString(d.decimals),
     rate: safeString(d.rate),
+    signatures: Array.isArray(d.signatures)
+      ? (d.signatures as Record<string, unknown>[]).map((sig) => ({
+          userId: safeString(sig.userId ?? sig.user_id),
+          signature: safeString(sig.signature),
+        }))
+      : [],
     changePercent24Hour: safeString(d.changePercent24Hour ?? d.change_percent_24_hour),
     source: safeString(d.source),
     // Map creationDate -> createdAt, updateDate -> updatedAt (as in Java mapper)

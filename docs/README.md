@@ -7,8 +7,8 @@ This directory contains documentation that is common across all Taurus-PROTECT S
 | Document | Description |
 |----------|-------------|
 | [CONCEPTS.md](CONCEPTS.md) | Domain model, entities, relationships, request lifecycle, governance model |
-| [AUTHENTICATION.md](AUTHENTICATION.md) | TPV1 authentication protocol, API credentials, security best practices |
-| [INTEGRITY_VERIFICATION.md](INTEGRITY_VERIFICATION.md) | Cryptographic verification flows for governance rules and whitelisted addresses |
+| [AUTHENTICATION.md](AUTHENTICATION.md) | Authentication mechanisms (`Credentials`: api-key TPV1, bearer token, bearer provider), API credentials, SuperAdmin keys, security best practices |
+| [INTEGRITY_VERIFICATION.md](INTEGRITY_VERIFICATION.md) | Cryptographic verification flows: governance rules, whitelisted addresses, whitelisted assets, requests and addresses |
 | [BUSINESS_RULES.md](BUSINESS_RULES.md) | Business rules, change approval system, entities, actions, and scopes |
 | [POSTMAN_INTEGRATION.md](POSTMAN_INTEGRATION.md) | Postman collections — Bearer and HMAC auth, setup guide, environment variables |
 | [SDK_ALIGNMENT_REPORT.md](SDK_ALIGNMENT_REPORT.md) | Cross-SDK alignment report (services, security, models, documentation) |
@@ -29,6 +29,7 @@ Location: `taurus-protect-sdk-java/docs/`
 | [SERVICES.md](../taurus-protect-sdk-java/docs/SERVICES.md) | Complete Java API reference |
 | [USAGE_EXAMPLES.md](../taurus-protect-sdk-java/docs/USAGE_EXAMPLES.md) | Java code examples |
 | [WHITELISTED_ADDRESS_VERIFICATION.md](../taurus-protect-sdk-java/docs/WHITELISTED_ADDRESS_VERIFICATION.md) | Java verification implementation |
+| [WHITELISTED_ASSET_VERIFICATION.md](../taurus-protect-sdk-java/docs/WHITELISTED_ASSET_VERIFICATION.md) | Java asset verification implementation |
 
 ### Go SDK
 
@@ -42,6 +43,7 @@ Location: `taurus-protect-sdk-go/docs/`
 | [SERVICES.md](../taurus-protect-sdk-go/docs/SERVICES.md) | Complete Go API reference |
 | [USAGE_EXAMPLES.md](../taurus-protect-sdk-go/docs/USAGE_EXAMPLES.md) | Go code examples |
 | [WHITELISTED_ADDRESS_VERIFICATION.md](../taurus-protect-sdk-go/docs/WHITELISTED_ADDRESS_VERIFICATION.md) | Go verification implementation |
+| [WHITELISTED_ASSET_VERIFICATION.md](../taurus-protect-sdk-go/docs/WHITELISTED_ASSET_VERIFICATION.md) | Go asset verification implementation |
 
 ### Python SDK
 
@@ -55,6 +57,7 @@ Location: `taurus-protect-sdk-python/docs/`
 | [SERVICES.md](../taurus-protect-sdk-python/docs/SERVICES.md) | Complete Python API reference |
 | [USAGE_EXAMPLES.md](../taurus-protect-sdk-python/docs/USAGE_EXAMPLES.md) | Python code examples |
 | [WHITELISTED_ADDRESS_VERIFICATION.md](../taurus-protect-sdk-python/docs/WHITELISTED_ADDRESS_VERIFICATION.md) | Python verification implementation |
+| [WHITELISTED_ASSET_VERIFICATION.md](../taurus-protect-sdk-python/docs/WHITELISTED_ASSET_VERIFICATION.md) | Python asset verification implementation |
 
 ### TypeScript SDK
 
@@ -68,6 +71,7 @@ Location: `taurus-protect-sdk-typescript/docs/`
 | [SERVICES.md](../taurus-protect-sdk-typescript/docs/SERVICES.md) | Complete TypeScript API reference |
 | [USAGE_EXAMPLES.md](../taurus-protect-sdk-typescript/docs/USAGE_EXAMPLES.md) | TypeScript code examples |
 | [WHITELISTED_ADDRESS_VERIFICATION.md](../taurus-protect-sdk-typescript/docs/WHITELISTED_ADDRESS_VERIFICATION.md) | TypeScript verification implementation |
+| [WHITELISTED_ASSET_VERIFICATION.md](../taurus-protect-sdk-typescript/docs/WHITELISTED_ASSET_VERIFICATION.md) | TypeScript asset verification implementation |
 
 ## Quick Start
 
@@ -82,9 +86,11 @@ taurus-protect-sdk/
 ├── docs/                           # Common documentation (this directory)
 │   ├── README.md                   # This file
 │   ├── CONCEPTS.md                 # Domain model (shared)
-│   ├── AUTHENTICATION.md           # TPV1 protocol (shared)
+│   ├── AUTHENTICATION.md           # Auth mechanisms & SuperAdmin keys (shared)
 │   ├── INTEGRITY_VERIFICATION.md   # Verification flows (shared)
-│   └── BUSINESS_RULES.md           # Business rules & change approval
+│   ├── BUSINESS_RULES.md           # Business rules & change approval
+│   ├── POSTMAN_INTEGRATION.md      # Postman collections (Bearer + HMAC)
+│   └── SDK_ALIGNMENT_REPORT.md     # Cross-SDK alignment report
 │
 ├── taurus-protect-sdk-java/
 │   └── docs/                       # Java-specific documentation

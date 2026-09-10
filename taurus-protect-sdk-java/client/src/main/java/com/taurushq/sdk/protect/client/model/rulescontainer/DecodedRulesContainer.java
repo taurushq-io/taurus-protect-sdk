@@ -25,7 +25,7 @@ import java.util.List;
  * @see TransactionRules
  * @see AddressWhitelistingRules
  */
-public class DecodedRulesContainer {
+public class DecodedRulesContainer extends RulesNodeWithProperties {
 
     private static final String HSMSLOT_ROLE = "HSMSLOT";
     private static final String ANY_WILDCARD = "Any";
@@ -84,6 +84,11 @@ public class DecodedRulesContainer {
      * List of HSM engine identities (serial numbers) authorized for this tenant.
      */
     private List<String> engineIdentities;
+
+    /**
+     * HSM slot ID these rules are intended for. When this changes, rules must be re-signed.
+     */
+    private int hsmSlotId;
 
     /**
      * Cached HSM public key (lazily resolved from users with HSMSLOT role).
@@ -326,6 +331,24 @@ public class DecodedRulesContainer {
     }
 
     /**
+     * Gets the HSM slot ID these rules are intended for.
+     *
+     * @return the HSM slot ID
+     */
+    public int getHsmSlotId() {
+        return hsmSlotId;
+    }
+
+    /**
+     * Sets the HSM slot ID these rules are intended for.
+     *
+     * @param hsmSlotId the HSM slot ID
+     */
+    public void setHsmSlotId(int hsmSlotId) {
+        this.hsmSlotId = hsmSlotId;
+    }
+
+    /**
      * Gets the engine identities (HSM serial numbers).
      *
      * @return the engine identities
@@ -509,5 +532,137 @@ public class DecodedRulesContainer {
             }
         }
         return null;
+    }
+
+    /**
+     * Reports whether any node in this container carries data unknown to this SDK
+     * version. Overrides the per-node check so the result covers the whole tree, as in
+     * the Go, Python and TypeScript SDKs: unknown protobuf fields on any node, raw cells,
+     * and raw whitelisting sources are all preserved verbatim on re-encode, and a true
+     * result is a hint to upgrade the SDK before editing the container.
+     *
+     * @return true if any node carries preserved unknown data
+     */
+    @Override
+    public boolean hasUnknownFields() {
+        if (super.hasUnknownFields()) {
+            return true;
+        }
+        if (anyNodeUnknown(users) || anyNodeUnknown(groups)
+                || anyNodeUnknown(contractAddressWhitelistingRules)) {
+            return true;
+        }
+        if (contractAddressWhitelistingRules != null) {
+            for (ContractAddressWhitelistingRules r : contractAddressWhitelistingRules) {
+                if (r != null && thresholdsUnknown(r.getParallelThresholds())) {
+                    return true;
+                }
+            }
+        }
+        if (transactionRules != null) {
+            for (TransactionRules tr : transactionRules) {
+                if (transactionRulesUnknown(tr)) {
+                    return true;
+                }
+            }
+        }
+        if (addressWhitelistingRules != null) {
+            for (AddressWhitelistingRules awr : addressWhitelistingRules) {
+                if (addressWhitelistingUnknown(awr)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean anyNodeUnknown(List<? extends RulesNode> nodes) {
+        if (nodes == null) {
+            return false;
+        }
+        for (RulesNode n : nodes) {
+            if (n != null && n.hasUnknownFields()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean thresholdsUnknown(List<SequentialThresholds> thresholds) {
+        if (thresholds == null) {
+            return false;
+        }
+        for (SequentialThresholds st : thresholds) {
+            if (st == null) {
+                continue;
+            }
+            if (st.hasUnknownFields() || anyNodeUnknown(st.getThresholds())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean transactionRulesUnknown(TransactionRules tr) {
+        if (tr == null) {
+            return false;
+        }
+        if (tr.hasUnknownFields() || anyNodeUnknown(tr.getColumns())) {
+            return true;
+        }
+        if (tr.getLines() != null) {
+            for (RuleLine l : tr.getLines()) {
+                if (l == null) {
+                    continue;
+                }
+                if (l.hasUnknownFields() || thresholdsUnknown(l.getParallelThresholds())) {
+                    return true;
+                }
+            }
+        }
+        return detailsUnknown(tr.getDetails());
+    }
+
+    /**
+     * Unknown fields on the details node or on any nested contract-call scoping node.
+     * Checking only the details node would report a container clean while a nested node
+     * carried data from a newer schema.
+     */
+    private static boolean detailsUnknown(TransactionRuleDetails d) {
+        if (d == null) {
+            return false;
+        }
+        return d.hasUnknownFields()
+                || (d.getEvmCallContract() != null && d.getEvmCallContract().hasUnknownFields())
+                || (d.getXtzCallContract() != null && d.getXtzCallContract().hasUnknownFields())
+                || (d.getCashSettlement() != null && d.getCashSettlement().hasUnknownFields())
+                || (d.getCosmosDetails() != null && d.getCosmosDetails().hasUnknownFields());
+    }
+
+    private static boolean addressWhitelistingUnknown(AddressWhitelistingRules awr) {
+        if (awr == null) {
+            return false;
+        }
+        if (awr.hasUnknownFields() || thresholdsUnknown(awr.getParallelThresholds())) {
+            return true;
+        }
+        if (awr.getLines() != null) {
+            for (AddressWhitelistingLine l : awr.getLines()) {
+                if (l == null) {
+                    continue;
+                }
+                if (l.hasUnknownFields() || thresholdsUnknown(l.getParallelThresholds())) {
+                    return true;
+                }
+                if (l.getCells() != null) {
+                    for (RuleSource src : l.getCells()) {
+                        if (src != null && src.getRaw() != null && !src.getRaw().isEmpty()) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     }
 }

@@ -2,6 +2,7 @@ package com.taurushq.sdk.protect.client.model;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.taurushq.sdk.protect.client.helper.SignatureVerifier;
+import com.taurushq.sdk.protect.client.helper.StrictBase64;
 import com.taurushq.sdk.protect.client.mapper.RulesContainerMapper;
 import com.taurushq.sdk.protect.client.model.rulescontainer.DecodedRulesContainer;
 import com.taurushq.sdk.protect.proto.v1.RequestReply;
@@ -115,7 +116,10 @@ public class GovernanceRules {
                 SignatureVerifier.verifyGovernanceRules(this, minValidSignatures, superAdminPublicKeys);
 
                 // Decode after verification passes
-                byte[] bytes = Base64.decodeBase64(rulesContainer);
+                // Strict: commons-codec's decodeBase64 silently DISCARDS out-of-alphabet
+                // characters, so a smuggled container decodes to the genuine bytes with
+                // attacker bytes appended -- and protobuf treats concatenation as merge.
+                byte[] bytes = StrictBase64.decode(rulesContainer);
                 try {
                     RequestReply.RulesContainer proto = RequestReply.RulesContainer.parseFrom(bytes);
                     this.decodedRulesContainer = RulesContainerMapper.INSTANCE.fromProto(proto);

@@ -107,9 +107,9 @@ const Strategy2LegacyPayload = `{"currency":"ETH","addressType":"individual","ad
 // 3. Remove both contractType AND labels from linkedInternalAddresses
 func LegacyHashStrategies() []string {
 	return []string{
-		"current",                  // No transformation
-		"remove_labels",            // Strategy 2: Remove labels from linkedInternalAddresses
-		"remove_contractType",      // Strategy 1a: Remove contractType only
+		"current",                        // No transformation
+		"remove_labels",                  // Strategy 2: Remove labels from linkedInternalAddresses
+		"remove_contractType",            // Strategy 1a: Remove contractType only
 		"remove_labels_and_contractType", // Strategy 1: Remove both
 	}
 }

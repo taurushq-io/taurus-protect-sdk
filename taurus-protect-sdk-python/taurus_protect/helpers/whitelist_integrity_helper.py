@@ -77,36 +77,35 @@ def verify_whitelist_envelope(envelope: SignedWhitelistedAddressEnvelope) -> boo
 
 def extract_whitelisted_address_from_envelope(
     envelope: SignedWhitelistedAddressEnvelope,
-    verify: bool = True,
 ) -> WhitelistedAddress:
     """
     Extract and parse the whitelisted address from a signed envelope.
 
-    This extracts the whitelisted address from the envelope's metadata payload.
-    By default, it first verifies the envelope integrity before extraction.
+    Checks the metadata hash only — step 1 of six. It has no SuperAdmin keys and no
+    rules container, so it CANNOT check the container signatures, hash coverage or the
+    governance thresholds. A hash match proves the payload was not altered without also
+    updating its hash; it does not prove the entry was approved.
+
+    ``WhitelistedAddressService`` is the only route that runs all six steps, and the
+    supported way to obtain a whitelisted address.
+
+    The former ``verify`` parameter is gone: passing False returned a parsed address with
+    nothing checked at all.
 
     Args:
         envelope: The signed whitelist envelope containing the address.
-        verify: If True (default), verify envelope integrity before extraction.
-                Set to False to skip verification (use with caution).
 
     Returns:
         The WhitelistedAddress parsed from the envelope payload.
 
     Raises:
-        IntegrityError: If verification fails (when verify=True).
+        IntegrityError: If the metadata hash does not match the payload.
         WhitelistError: If parsing the address fails.
-
-    Example:
-        >>> envelope = get_whitelisted_address_envelope(address_id)
-        >>> address = extract_whitelisted_address_from_envelope(envelope)
-        >>> print(address.address)
     """
     if envelope is None:
         raise IntegrityError("envelope cannot be None")
 
-    if verify:
-        verify_whitelist_envelope(envelope)
+    verify_whitelist_envelope(envelope)
 
     if envelope.metadata is None:
         raise IntegrityError("envelope metadata cannot be None")
@@ -144,7 +143,7 @@ def verify_envelope_field_match(
         raise IntegrityError("envelope cannot be None")
 
     # Extract address from envelope (with verification)
-    envelope_address = extract_whitelisted_address_from_envelope(envelope, verify=True)
+    envelope_address = extract_whitelisted_address_from_envelope(envelope)
 
     # Validate fields match
     _validate_field_match("Address", db_address.address, envelope_address.address)

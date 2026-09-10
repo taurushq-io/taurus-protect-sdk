@@ -443,9 +443,9 @@ func TestHealthReportFromDTO_WithVaultdClients(t *testing.T) {
 
 func TestHealthReportFromDTO_WithResults(t *testing.T) {
 	results := map[string]string{
-		"connections":     "10",
-		"active_queries":  "5",
-		"response_time":   "10ms",
+		"connections":    "10",
+		"active_queries": "5",
+		"response_time":  "10ms",
 	}
 
 	dto := &openapi.TgvalidatordHealthReport{

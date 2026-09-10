@@ -174,14 +174,14 @@ type ListSettlementsForApprovalResult struct {
 
 // Settlement status constants.
 const (
-	SettlementStatusCreating           = "CREATING"
-	SettlementStatusCreated            = "CREATED"
-	SettlementStatusRejectedByCreator  = "REJECTED_BY_CREATOR"
-	SettlementStatusApprovedByCreator  = "APPROVED_BY_CREATOR"
-	SettlementStatusReceived           = "RECEIVED"
-	SettlementStatusRejectedByTarget   = "REJECTED_BY_TARGET"
-	SettlementStatusAcceptedByTarget   = "ACCEPTED_BY_TARGET"
-	SettlementStatusPending            = "PENDING"
-	SettlementStatusCompleted          = "COMPLETED"
-	SettlementStatusFailed             = "FAILED"
+	SettlementStatusCreating          = "CREATING"
+	SettlementStatusCreated           = "CREATED"
+	SettlementStatusRejectedByCreator = "REJECTED_BY_CREATOR"
+	SettlementStatusApprovedByCreator = "APPROVED_BY_CREATOR"
+	SettlementStatusReceived          = "RECEIVED"
+	SettlementStatusRejectedByTarget  = "REJECTED_BY_TARGET"
+	SettlementStatusAcceptedByTarget  = "ACCEPTED_BY_TARGET"
+	SettlementStatusPending           = "PENDING"
+	SettlementStatusCompleted         = "COMPLETED"
+	SettlementStatusFailed            = "FAILED"
 )

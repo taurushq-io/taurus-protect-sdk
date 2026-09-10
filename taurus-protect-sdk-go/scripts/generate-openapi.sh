@@ -56,6 +56,68 @@ cp -R .codegen/*.go internal/openapi/ 2>/dev/null || true
 # Clean up
 rm -rf .codegen
 
+# --- post-generation patch -----------------------------------------------------
+#
+# Drop TgvalidatordMetadata.payload.
+#
+# The proto declares it `google.protobuf.Value` (any JSON value) and the swagger
+# correctly emits an untyped `{}`, but openapi-generator's Go target maps that to
+# map[string]interface{} while the wire sends an ARRAY — so every requests read
+# failed with "cannot unmarshal array into ... map[string]interface {}".
+# `--type-mappings=AnyType=interface{}` does not change it.
+#
+# Removing the field also keeps the raw object out of the process entirely, which
+# is what pkg/protect/mapper/request.go has always intended: the object can be
+# altered while payloadAsString and its hash stay consistent, so only the hashed
+# string is ever read.
+#
+# This MUST fail loudly. A silent no-op reintroduces both the decode failure and
+# the tamperable field, and nothing downstream would say so.
+patch_metadata_payload() {
+    local file="internal/openapi/model_tgvalidatord_metadata.go"
+
+    if [[ ! -f "$file" ]]; then
+        echo "ERROR: $file not found after generation" >&2
+        return 1
+    fi
+    if ! grep -q 'Payload map\[string\]interface{}' "$file"; then
+        echo "ERROR: expected generated field 'Payload map[string]interface{}' in $file." >&2
+        echo "       The generator's output changed. Re-check whether the payload field" >&2
+        echo "       still needs removing before editing this guard." >&2
+        return 1
+    fi
+
+    python3 - "$file" <<'PYEOF'
+import re, sys
+path = sys.argv[1]
+src = open(path).read()
+
+before = src
+src = re.sub(r'\n\tPayload map\[string\]interface\{\} `json:"payload,omitempty"`', '', src, count=1)
+for name in ("GetPayload", "GetPayloadOk", "HasPayload", "SetPayload"):
+    src = re.sub(r'\n// ' + name + r' [^\n]*\n(?://[^\n]*\n)*func \(o \*?TgvalidatordMetadata\) '
+                 + name + r'\([^\n]*\{.*?\n\}\n', '\n', src, count=1, flags=re.S)
+src = re.sub(r'\tif !IsNil\(o\.Payload\) \{\n\t\ttoSerialize\["payload"\] = o\.Payload\n\t\}\n', '', src, count=1)
+
+if src == before:
+    sys.exit("ERROR: post-generation patch matched nothing in " + path)
+if re.search(r'\bo\.Payload\b|\bPayload\s+map\[string\]|"payload"', src):
+    sys.exit("ERROR: payload references remain in " + path + " after patching")
+if "PayloadAsString" not in src:
+    sys.exit("ERROR: patch removed PayloadAsString from " + path)
+
+open(path, "w").write(src)
+print("post-generation: removed TgvalidatordMetadata.payload")
+PYEOF
+}
+
+if ! patch_metadata_payload; then
+    echo "" >&2
+    echo "Generation ABORTED: the payload patch did not apply." >&2
+    echo "Leaving it unapplied would restore a decode failure on every requests read." >&2
+    exit 1
+fi
+
 echo ""
 echo "OpenAPI client generated successfully."
 echo "Files are in: internal/openapi/"

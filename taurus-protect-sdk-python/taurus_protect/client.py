@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING, Any, List, Optional
 
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 
+from taurus_protect.credentials import Credentials
 from taurus_protect.crypto.keys import decode_public_keys_pem
-from taurus_protect.crypto.tpv1 import TPV1Auth
 from taurus_protect.errors import ConfigurationError
 
 if TYPE_CHECKING:
@@ -69,8 +69,7 @@ class ProtectClient:
     Example:
         >>> with ProtectClient.create(
         ...     host="https://api.protect.taurushq.com",
-        ...     api_key="your-api-key",
-        ...     api_secret="your-api-secret-hex",
+        ...     credentials=Credentials.api_key("your-api-key", "your-api-secret-hex"),
         ...     super_admin_keys_pem=["-----BEGIN PUBLIC KEY-----..."],
         ...     min_valid_signatures=2,
         ... ) as client:
@@ -97,7 +96,7 @@ class ProtectClient:
     def __init__(
         self,
         host: str,
-        auth: TPV1Auth,
+        credentials: Credentials,
         super_admin_keys: List[EllipticCurvePublicKey],
         min_valid_signatures: int,
         rules_cache_ttl: float,
@@ -110,7 +109,7 @@ class ProtectClient:
         of calling this constructor directly.
         """
         self.host = host
-        self._auth = auth
+        self._credentials = credentials
         self._super_admin_keys = super_admin_keys
         self._min_valid_signatures = min_valid_signatures
         self._rules_cache_ttl = rules_cache_ttl
@@ -169,9 +168,10 @@ class ProtectClient:
     def create(
         cls,
         host: str,
-        api_key: str,
-        api_secret: str,
-        super_admin_keys_pem: List[str],
+        credentials: Optional[Credentials] = None,
+        api_key: Optional[str] = None,
+        api_secret: Optional[str] = None,
+        super_admin_keys_pem: Optional[List[str]] = None,
         min_valid_signatures: int = 1,
         rules_cache_ttl: float = DEFAULT_RULES_CACHE_TTL,
         timeout: float = DEFAULT_TIMEOUT,
@@ -181,8 +181,11 @@ class ProtectClient:
 
         Args:
             host: API host URL (e.g., "https://api.protect.taurushq.com").
-            api_key: API key for authentication.
-            api_secret: API secret as hex-encoded string.
+            credentials: The authentication mechanism. Build one with
+                Credentials.api_key, Credentials.bearer_token, or
+                Credentials.bearer_token_provider.
+            api_key: (Deprecated) API key; use credentials=Credentials.api_key(...).
+            api_secret: (Deprecated) API secret (hex); use credentials=Credentials.api_key(...).
             super_admin_keys_pem: List of PEM-encoded SuperAdmin public keys
                 for integrity verification. At least one key is required.
             min_valid_signatures: Minimum number of valid SuperAdmin signatures
@@ -195,54 +198,40 @@ class ProtectClient:
 
         Raises:
             ConfigurationError: If configuration is invalid.
-            ValueError: If credentials are empty.
         """
-        # Validate required fields
         if not host:
             raise ConfigurationError("host cannot be empty")
-        if not api_key:
-            raise ConfigurationError("api_key cannot be empty")
-        if not api_secret:
-            raise ConfigurationError("api_secret cannot be empty")
 
-        # Validate SuperAdmin keys are provided
+        # The deprecated flat api_key/api_secret params build a Credentials.
+        if credentials is None:
+            credentials = Credentials.api_key(api_key or "", api_secret or "")
+
         if not super_admin_keys_pem:
             raise ConfigurationError(
                 "super_admin_keys_pem is required: at least one SuperAdmin public key "
                 "must be provided for integrity verification"
             )
 
-        # Normalize host URL
         host = host.rstrip("/")
 
-        # Create auth handler
-        try:
-            auth = TPV1Auth(api_key, api_secret)
-        except ValueError as e:
-            raise ConfigurationError(str(e)) from e
-
-        # Decode SuperAdmin keys
         try:
             super_admin_keys = decode_public_keys_pem(super_admin_keys_pem)
         except ValueError as e:
             raise ConfigurationError(f"Invalid SuperAdmin key: {e}") from e
 
-        # Validate min_valid_signatures
         if min_valid_signatures < 0:
             raise ConfigurationError("min_valid_signatures cannot be negative")
+        if min_valid_signatures < 1:
+            raise ConfigurationError("min_valid_signatures must be greater than zero")
         if min_valid_signatures > len(super_admin_keys):
             raise ConfigurationError(
                 f"min_valid_signatures ({min_valid_signatures}) cannot exceed "
                 f"number of SuperAdmin keys ({len(super_admin_keys)})"
             )
-        if min_valid_signatures < 1:
-            raise ConfigurationError(
-                "min_valid_signatures must be greater than zero"
-            )
 
         return cls(
             host=host,
-            auth=auth,
+            credentials=credentials,
             super_admin_keys=super_admin_keys,
             min_valid_signatures=min_valid_signatures,
             rules_cache_ttl=rules_cache_ttl,
@@ -274,7 +263,7 @@ class ProtectClient:
         """
         # For now, assume PEM secret is just the hex value
         # In practice, you might need to parse PEM format
-        return cls.create(host, api_key, api_secret_pem, **kwargs)
+        return cls.create(host, api_key=api_key, api_secret=api_secret_pem, **kwargs)
 
     def __enter__(self) -> "ProtectClient":
         """Enter context manager."""
@@ -297,8 +286,7 @@ class ProtectClient:
         """
         with self._lock:
             if not self._closed:
-                if self._auth:
-                    self._auth.close()
+                self._credentials.close()
                 self._closed = True
 
     @property
@@ -321,7 +309,6 @@ class ProtectClient:
         """
         if self._api_client is None:
             from taurus_protect._internal.openapi import ApiClient, Configuration
-            from taurus_protect.crypto.authenticated_rest import AuthenticatedRESTClient
 
             config = Configuration(host=self.host)
 
@@ -334,9 +321,9 @@ class ProtectClient:
             # Create the ApiClient
             api_client = ApiClient(configuration=config)
 
-            # Replace rest_client with authenticated version (like Go's TPV1Transport)
-            # This intercepts all requests and adds TPV1 Authorization header
-            api_client.rest_client = AuthenticatedRESTClient(config, self._auth)
+            # Replace rest_client with the authenticating variant: bearer mode adds
+            # an Authorization: Bearer header, otherwise TPV1-HMAC signs each request.
+            api_client.rest_client = self._credentials._build_rest_client(config)
 
             self._api_client = api_client
 
@@ -476,7 +463,11 @@ class ProtectClient:
 
                 api_client = self._get_api_client()
                 assets_api = AssetsApi(api_client)
-                self._asset_service = AssetService(api_client, assets_api)
+                # Asset addresses are the same entity as AddressService's, so they
+                # verify against the same cache.
+                self._asset_service = AssetService(
+                    api_client, assets_api, self._get_rules_cache()
+                )
             return self._asset_service
 
     @property
@@ -728,7 +719,9 @@ class ProtectClient:
 
                 api_client = self._get_api_client()
                 prices_api = PricesApi(api_client)
-                self._price_service = PriceService(api_client, prices_api)
+                self._price_service = PriceService(
+                    api_client, prices_api, self._get_rules_cache()
+                )
             return self._price_service
 
     @property

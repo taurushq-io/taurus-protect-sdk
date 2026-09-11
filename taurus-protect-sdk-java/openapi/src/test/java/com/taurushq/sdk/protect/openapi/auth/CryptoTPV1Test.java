@@ -137,33 +137,33 @@ public class CryptoTPV1Test {
 
     @Test
     void calculateSignedHeader() {
-        String h1 = CryptoTPV1.calculateSignedHeader("api-key", "api-secret".getBytes(), "nonce", 10, "method", "host", "path", "query", "content-type", "body");
-        String sig1 = CryptoTPV1.calculateBase64Hmac("api-secret".getBytes(), "TPV1 api-key nonce 10 method host path query content-type body");
+        String h1 = CryptoTPV1.calculateSignedHeader("api-key", "api-secret".getBytes(), "nonce", 10, "GET", "host", "path", "query", "content-type", "body");
+        String sig1 = CryptoTPV1.calculateBase64Hmac("api-secret".getBytes(), "TPV1 api-key nonce 10 GET host path query content-type body");
         String eh1 = "TPV1-HMAC-SHA256 ApiKey=api-key Nonce=nonce Timestamp=10 Signature=" + sig1;
         assertEquals(eh1, h1);
 
-        String h2 = CryptoTPV1.calculateSignedHeader("api-key", "api-secret".getBytes(), "nonce", 10, "method", "host", "path", "query", "content-type", "");
-        String sig2 = CryptoTPV1.calculateBase64Hmac("api-secret".getBytes(), "TPV1 api-key nonce 10 method host path query content-type");
+        String h2 = CryptoTPV1.calculateSignedHeader("api-key", "api-secret".getBytes(), "nonce", 10, "GET", "host", "path", "query", "content-type", "");
+        String sig2 = CryptoTPV1.calculateBase64Hmac("api-secret".getBytes(), "TPV1 api-key nonce 10 GET host path query content-type");
         String eh2 = "TPV1-HMAC-SHA256 ApiKey=api-key Nonce=nonce Timestamp=10 Signature=" + sig2;
         assertEquals(eh2, h2);
 
-        String h3 = CryptoTPV1.calculateSignedHeader("api-key", "api-secret".getBytes(), "nonce", 10, "method", "host", "path", "query", "", "");
-        String sig3 = CryptoTPV1.calculateBase64Hmac("api-secret".getBytes(), "TPV1 api-key nonce 10 method host path query");
+        String h3 = CryptoTPV1.calculateSignedHeader("api-key", "api-secret".getBytes(), "nonce", 10, "GET", "host", "path", "query", "", "");
+        String sig3 = CryptoTPV1.calculateBase64Hmac("api-secret".getBytes(), "TPV1 api-key nonce 10 GET host path query");
         String eh3 = "TPV1-HMAC-SHA256 ApiKey=api-key Nonce=nonce Timestamp=10 Signature=" + sig3;
         assertEquals(eh3, h3);
 
-        String h4 = CryptoTPV1.calculateSignedHeader("api-key", "api-secret".getBytes(), "nonce", 10, "method", "host", "path", "", "", "");
-        String sig4 = CryptoTPV1.calculateBase64Hmac("api-secret".getBytes(), "TPV1 api-key nonce 10 method host path");
+        String h4 = CryptoTPV1.calculateSignedHeader("api-key", "api-secret".getBytes(), "nonce", 10, "GET", "host", "path", "", "", "");
+        String sig4 = CryptoTPV1.calculateBase64Hmac("api-secret".getBytes(), "TPV1 api-key nonce 10 GET host path");
         String eh4 = "TPV1-HMAC-SHA256 ApiKey=api-key Nonce=nonce Timestamp=10 Signature=" + sig4;
         assertEquals(eh4, h4);
 
-        String h5 = CryptoTPV1.calculateSignedHeader("api-key", "api-secret".getBytes(), "nonce", 10, "method", "host", "", "", "", "");
-        String sig5 = CryptoTPV1.calculateBase64Hmac("api-secret".getBytes(), "TPV1 api-key nonce 10 method host");
+        String h5 = CryptoTPV1.calculateSignedHeader("api-key", "api-secret".getBytes(), "nonce", 10, "GET", "host", "", "", "", "");
+        String sig5 = CryptoTPV1.calculateBase64Hmac("api-secret".getBytes(), "TPV1 api-key nonce 10 GET host");
         String eh5 = "TPV1-HMAC-SHA256 ApiKey=api-key Nonce=nonce Timestamp=10 Signature=" + sig5;
         assertEquals(eh5, h5);
 
-        String h6 = CryptoTPV1.calculateSignedHeader("api-key", "api-secret".getBytes(), "nonce", 10, "method", "", "", "", "", "");
-        String sig6 = CryptoTPV1.calculateBase64Hmac("api-secret".getBytes(), "TPV1 api-key nonce 10 method");
+        String h6 = CryptoTPV1.calculateSignedHeader("api-key", "api-secret".getBytes(), "nonce", 10, "GET", "", "", "", "", "");
+        String sig6 = CryptoTPV1.calculateBase64Hmac("api-secret".getBytes(), "TPV1 api-key nonce 10 GET");
         String eh6 = "TPV1-HMAC-SHA256 ApiKey=api-key Nonce=nonce Timestamp=10 Signature=" + sig6;
         assertEquals(eh6, h6);
 
@@ -171,6 +171,22 @@ public class CryptoTPV1Test {
         String sig7 = CryptoTPV1.calculateBase64Hmac("api-secret".getBytes(), "TPV1 api-key nonce 10");
         String eh7 = "TPV1-HMAC-SHA256 ApiKey=api-key Nonce=nonce Timestamp=10 Signature=" + sig7;
         assertEquals(eh7, h7);
+
+        // The method is upper-cased before signing, so these two must produce the SAME header.
+        // Python and TypeScript always did this; Java and Go signed it verbatim, so a caller
+        // issuing a lowercase `get` was unauthenticable against one of the two families. Pinned
+        // cross-SDK by the `canonical_string` group in docs/test-vectors/crypto-test-vectors.json,
+        // which lives in the client module's suite — hence this local case.
+        assertEquals(
+                CryptoTPV1.calculateSignedHeader("api-key", "api-secret".getBytes(), "nonce", 10,
+                        "GET", "host", "path", "", "", ""),
+                CryptoTPV1.calculateSignedHeader("api-key", "api-secret".getBytes(), "nonce", 10,
+                        "get", "host", "path", "", "", ""));
+        assertEquals(
+                CryptoTPV1.calculateSignedHeader("api-key", "api-secret".getBytes(), "nonce", 10,
+                        "GET", "host", "path", "", "", ""),
+                CryptoTPV1.calculateSignedHeader("api-key", "api-secret".getBytes(), "nonce", 10,
+                        "GeT", "host", "path", "", "", ""));
 
     }
 

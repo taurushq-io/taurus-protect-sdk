@@ -88,6 +88,10 @@ def _mock_verify_side_effect(envelope, **kwargs):
     return AddressVerificationResult(
         rules_container=DecodedRulesContainer(),
         verified_hash="mocked_hash",
+        # These fixtures carry no legacy variant, so the matched payload IS the delivered
+        # one. The real verifier returns the STRIPPED variant when step 4 matched a legacy
+        # hash, which is what stops an appended member reaching the caller as verified.
+        verified_payload=payload_str,
         verified_whitelisted_address=verified_addr,
     )
 

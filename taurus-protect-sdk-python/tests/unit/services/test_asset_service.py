@@ -155,11 +155,14 @@ class TestAssetServiceAddressVerification:
                 id="1", wallet_id="1", address="0x123", signature="sig1"
             ),
         ), patch(
-            "taurus_protect.services.asset_service.verify_address_signature"
+            "taurus_protect.services.asset_service.verified_address",
+            side_effect=lambda address, _container: address,
         ) as verify:
             addresses, _ = service.get_addresses("ETH")
 
         assert len(addresses) == 2
+        # Every mapped address goes through the SHARED seam, which is what stops this
+        # path drifting from AddressService's.
         assert verify.call_count == 2
         rules_cache.get_decoded_rules_container.assert_called_once()
 
@@ -184,7 +187,7 @@ class TestAssetServiceAddressVerification:
             "taurus_protect.services.asset_service.address_from_dto",
             side_effect=lambda _dto: Address(id="1", wallet_id="1", address="0xEVIL"),
         ), patch(
-            "taurus_protect.services.asset_service.verify_address_signature",
+            "taurus_protect.services.asset_service.verified_address",
             side_effect=IntegrityError("address signature verification failed"),
         ):
             with pytest.raises(IntegrityError):

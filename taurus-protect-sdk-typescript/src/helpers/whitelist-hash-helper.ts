@@ -36,7 +36,17 @@
 import { createHash } from "crypto";
 import { calculateHexHash } from "../crypto";
 import { constantTimeCompare } from "./constant-time";
+import { guardSignedPayload, MAX_PAYLOAD_BYTES } from "./signed-payload-guard";
 import { IntegrityError } from "../errors";
+
+/**
+ * Maximum size of a signed payload before it is parsed.
+ *
+ * Defined in `signed-payload-guard.ts` beside the duplicate-key pre-pass — the two
+ * bounds belong together — and re-exported here, which is where every caller has always
+ * imported it from.
+ */
+export { MAX_PAYLOAD_BYTES };
 import type {
   WhitelistedAddress,
   InternalAddress,
@@ -83,12 +93,46 @@ const KIND_TYPE_PATTERN_LEADING_COMMA = /,"kindType":"[^"]*"/g;
 const KIND_TYPE_PATTERN_TRAILING_COMMA = /"kindType":"[^"]*",/g;
 
 /**
- * Computes legacy hashes for backward compatibility.
+ * One backward-compatible rewrite of a signed payload: the exact byte string a
+ * pre-schema-change signer covered, together with its hash.
  *
- * When a whitelisted address was signed before certain schema changes,
- * the hash may have been computed without those fields. This function
- * generates alternative hashes by removing fields that may not have
- * existed at signing time.
+ * Step 4 must carry the PAYLOAD forward, not just the hash. The strips below are not
+ * injective, so a response-controlling server can append a member the strip removes — a
+ * duplicate `,"label":"X"` immediately before the closing brace — to a genuinely signed
+ * payload. The residue is then the signed bytes exactly, every signature check passes,
+ * and a step 6 that parsed the DELIVERED payload would return the appended value as
+ * verified (`JSON.parse` keeps the last of two duplicate keys). Parsing the MATCHED
+ * VARIANT is what makes step 6's contract true: every field came from bytes a counted
+ * signature covered.
+ *
+ * The strips are global, and that does NOT bound the exposure the way it first appears.
+ * A row whose DELIVERED payload carries inner `linkedInternalAddresses` labels is still
+ * exposed, because validatord rebuilds those labels on every read from live DB relations
+ * rather than from the signed envelope — so for a row signed before per-object labels
+ * existed, removing every label (the inner ones the server added AND the one the attacker
+ * appended) lands exactly on the signed bytes. Both injectable members reach the caller
+ * on any legacy row: `label` at either level, and `contractType`.
+ *
+ * What does bound it is the regex alphabet: `[^"]*` cannot contain a quote, so nothing
+ * beyond those two string values can be smuggled in.
+ */
+export interface LegacyPayloadVariant {
+  /** Hex SHA-256 of {@link payload}. */
+  readonly hash: string;
+  /**
+   * The rewritten payload whose hash a signer may have covered. This, not the delivered
+   * payload, is what step 6 must parse when this variant is the match.
+   */
+  readonly payload: string;
+}
+
+/**
+ * Computes the backward-compatible payload rewrites for an address, each paired with
+ * its hash.
+ *
+ * When a whitelisted address was signed before certain schema changes, the hash was
+ * computed over a payload without those fields. This generates the alternatives by
+ * removing fields that may not have existed at signing time.
  *
  * Strategies:
  * 1. Remove contractType field (addresses signed before contractType was added)
@@ -96,21 +140,23 @@ const KIND_TYPE_PATTERN_TRAILING_COMMA = /"kindType":"[^"]*",/g;
  * 3. Remove both contractType and labels (before both fields were added)
  *
  * @param payloadAsString - The JSON payload string
- * @returns Array of possible hashes (may be empty if no legacy formats apply)
+ * @returns The variants, in strategy order, deduplicated by hash
  */
-export function computeLegacyHashes(payloadAsString: string): string[] {
+export function computeLegacyPayloadVariants(
+  payloadAsString: string
+): LegacyPayloadVariant[] {
   if (!payloadAsString) {
     return [];
   }
 
   const seen = new Set<string>();
-  const hashes: string[] = [];
+  const variants: LegacyPayloadVariant[] = [];
 
-  const addHash = (payload: string): void => {
+  const addVariant = (payload: string): void => {
     const hash = calculateHexHash(payload);
     if (!seen.has(hash)) {
       seen.add(hash);
-      hashes.push(hash);
+      variants.push({ hash, payload });
     }
   };
 
@@ -121,14 +167,14 @@ export function computeLegacyHashes(payloadAsString: string): string[] {
     ""
   );
   if (withoutContractType !== payloadAsString) {
-    addHash(withoutContractType);
+    addVariant(withoutContractType);
   }
 
   // Strategy 2: Remove labels from linkedInternalAddresses objects only (keep contractType)
   // Handles addresses signed after contractType was added but before labels were added
   const withoutLabels = payloadAsString.replace(LABEL_IN_OBJECT_PATTERN, "}");
   if (withoutLabels !== payloadAsString) {
-    addHash(withoutLabels);
+    addVariant(withoutLabels);
   }
 
   // Strategy 3: Remove BOTH contractType AND labels from linkedInternalAddresses
@@ -136,41 +182,64 @@ export function computeLegacyHashes(payloadAsString: string): string[] {
   let withoutBoth = payloadAsString.replace(LABEL_IN_OBJECT_PATTERN, "}");
   withoutBoth = withoutBoth.replace(CONTRACT_TYPE_PATTERN, "");
   if (withoutBoth !== payloadAsString) {
-    addHash(withoutBoth);
+    addVariant(withoutBoth);
   }
 
-  return hashes;
+  return variants;
 }
 
 /**
- * Computes asset-specific legacy hashes for backward compatibility.
+ * Computes alternative hashes for backward compatibility, discarding the payload each
+ * one came from.
  *
- * When a whitelisted asset was signed before certain schema changes,
- * the hash may have been computed without those fields. This function
- * generates alternative hashes by removing fields that may not have
- * existed at signing time.
+ * Verification uses {@link computeLegacyPayloadVariants} instead: step 6 needs the
+ * payload, not just the hash. This projection remains because the cross-SDK vector
+ * oracle (`docs/test-vectors/crypto-test-vectors.json`) asserts hashes through this
+ * exact symbol, and because it is exported.
+ *
+ * @param payloadAsString - The JSON payload string
+ * @returns Array of possible hashes (may be empty if no legacy formats apply)
+ */
+export function computeLegacyHashes(payloadAsString: string): string[] {
+  return computeLegacyPayloadVariants(payloadAsString).map((v) => v.hash);
+}
+
+/**
+ * The asset peer of {@link computeLegacyPayloadVariants}.
+ *
+ * When a whitelisted asset was signed before certain schema changes, the hash was
+ * computed over a payload without those fields.
  *
  * Strategies (aligned with Java SDK WhitelistedAssetService.computeLegacyHashes):
  * 1. Remove isNFT field (assets signed before isNFT was added)
  * 2. Remove kindType field (assets signed before kindType was added)
  * 3. Remove both isNFT and kindType (assets signed before both fields were added)
  *
+ * No asset identity field is currently injectable through it — the stripped members
+ * (`isNFT`, `kindType`) are not read by `parseWhitelistedAssetFromJson`, so for a variant
+ * to hash-match, the inserted text has to be exactly what the regexes remove. This
+ * carries the payload anyway, so the two flows stay symmetric and a future schema change
+ * that makes a stripped field readable does not silently reopen the address defect on
+ * the asset side.
+ *
  * @param payloadAsString - The JSON payload string
- * @returns Array of possible hashes (may be empty if no legacy formats apply)
+ * @returns The variants, in strategy order, deduplicated by hash
  */
-export function computeAssetLegacyHashes(payloadAsString: string): string[] {
+export function computeAssetLegacyPayloadVariants(
+  payloadAsString: string
+): LegacyPayloadVariant[] {
   if (!payloadAsString) {
     return [];
   }
 
   const seen = new Set<string>();
-  const hashes: string[] = [];
+  const variants: LegacyPayloadVariant[] = [];
 
   const addHash = (payload: string): void => {
     const hash = calculateHexHash(payload);
     if (!seen.has(hash)) {
       seen.add(hash);
-      hashes.push(hash);
+      variants.push({ hash, payload });
     }
   };
 
@@ -204,7 +273,22 @@ export function computeAssetLegacyHashes(payloadAsString: string): string[] {
     addHash(withoutBoth);
   }
 
-  return hashes;
+  return variants;
+}
+
+/**
+ * Computes asset-specific legacy hashes for backward compatibility, discarding the
+ * payload each one came from.
+ *
+ * See {@link computeAssetLegacyPayloadVariants}: verification uses that form, because
+ * step 6 needs the payload rather than only its hash. This projection remains for the
+ * cross-SDK vector oracle.
+ *
+ * @param payloadAsString - The JSON payload string
+ * @returns Array of possible hashes (may be empty if no legacy formats apply)
+ */
+export function computeAssetLegacyHashes(payloadAsString: string): string[] {
+  return computeAssetLegacyPayloadVariants(payloadAsString).map((v) => v.hash);
 }
 
 /**
@@ -265,6 +349,11 @@ export function parseWhitelistedAddressFromJson(
   if (!jsonPayload) {
     throw new Error("JSON payload cannot be empty");
   }
+  // Bounded and duplicate-key-checked here, not left to the caller's ordering: this
+  // function is exported, and JSON.parse would silently keep the last of two duplicate
+  // keys — which is how an appended `,"label":"..."` reaches the caller as verified
+  // data.
+  guardSignedPayload(jsonPayload, "whitelisted address");
 
   let payload: WhitelistPayload;
   try {
@@ -384,15 +473,6 @@ export function containsHash(
 }
 
 /**
- * Maximum size of a signed payload before it is parsed.
- *
- * The payload is hash-checked in step 1 but not AUTHENTICATED until step 5's
- * signatures verify, so anything parsed in between is still attacker-influenced.
- * A generous ceiling that only stops a hostile response consuming memory.
- */
-export const MAX_PAYLOAD_BYTES = 1 << 20;
-
-/**
  * Returns the (blockchain, network) pair that selects the governance rules, taken
  * from the SIGNED payload rather than the surrounding DTO.
  *
@@ -422,6 +502,38 @@ export function resolveRuleKey(
   dtoBlockchain: string | undefined,
   dtoNetwork: string | undefined
 ): { blockchain: string; network: string } {
+  const { blockchain, network } = resolveRuleKeyWithSource(
+    payloadAsString,
+    dtoBlockchain,
+    dtoNetwork
+  );
+  return { blockchain, network };
+}
+
+/**
+ * {@link resolveRuleKey} plus the one fact the caller cannot otherwise recover: whether
+ * the NETWORK came from the signed payload or was taken from the unsigned response DTO.
+ *
+ * Step 5 needs that distinction because the network selects which rule — and therefore
+ * which group quorum — judges the row. When it is unsigned, a single rule lookup lets
+ * the server pick the quorum; see `findAddressWhitelistingRuleCandidates` for what to do
+ * instead.
+ *
+ * `resolveRuleKey` keeps its two-value shape because the shared `rule_key` vectors in
+ * `scripts/resources/verification-behaviour-vectors.json` assert exactly that shape
+ * across all four SDKs.
+ *
+ * @param payloadAsString - the signed payload
+ * @param dtoBlockchain - the blockchain the response claims
+ * @param dtoNetwork - the network the response claims
+ * @returns the pair to look rules up with, and where the network came from
+ * @throws {@link IntegrityError} as {@link resolveRuleKey} does
+ */
+export function resolveRuleKeyWithSource(
+  payloadAsString: string | undefined,
+  dtoBlockchain: string | undefined,
+  dtoNetwork: string | undefined
+): { blockchain: string; network: string; networkFromPayload: boolean } {
   if (!payloadAsString) {
     throw new IntegrityError("cannot resolve governance rule key: payload is empty");
   }
@@ -476,7 +588,7 @@ export function resolveRuleKey(
     );
   }
 
-  return { blockchain, network };
+  return { blockchain, network, networkFromPayload };
 }
 
 /**

@@ -61,7 +61,7 @@ func TestPopulateVerifiedIdentity(t *testing.T) {
 		Metadata:   &model.WhitelistedAssetMetadata{PayloadAsString: payload},
 	}
 
-	if err := populateVerifiedIdentity(asset); err != nil {
+	if err := populateVerifiedIdentity(asset, payload); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -83,7 +83,7 @@ func TestPopulateVerifiedIdentity(t *testing.T) {
 }
 
 func TestPopulateVerifiedIdentity_RejectsMissingMetadata(t *testing.T) {
-	if err := populateVerifiedIdentity(&model.WhitelistedAsset{ID: "1"}); err == nil {
+	if err := populateVerifiedIdentity(&model.WhitelistedAsset{ID: "1"}, "{}"); err == nil {
 		t.Error("expected an error when metadata is absent")
 	}
 }
@@ -93,7 +93,7 @@ func TestPopulateVerifiedIdentity_RejectsUnparseablePayload(t *testing.T) {
 		ID:       "1",
 		Metadata: &model.WhitelistedAssetMetadata{PayloadAsString: `{"contractAddress":`},
 	}
-	if err := populateVerifiedIdentity(asset); err == nil {
+	if err := populateVerifiedIdentity(asset, `{"contractAddress":`); err == nil {
 		t.Error("expected an error for a malformed payload")
 	}
 	if asset.ContractAddress != "" {

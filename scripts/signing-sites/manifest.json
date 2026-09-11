@@ -29,6 +29,7 @@
     "go": {
       "taurus-protect-sdk-go/pkg/protect/service/governance_rule.go:ApproveRulesProposal": "signs-own-bytes",
       "taurus-protect-sdk-go/pkg/protect/service/request.go:ApproveRequests": "verifies",
+      "taurus-protect-sdk-go/pkg/protect/service/taurus_network_pledge.go:ApprovePledgeActions": "verifies",
       "taurus-protect-sdk-go/pkg/protect/service/whitelisted_address.go:ApproveWhitelistedAddresses": "verifies",
       "taurus-protect-sdk-go/pkg/protect/service/whitelisted_asset.go:ApproveWhitelistedAssets": "verifies"
     },
@@ -48,6 +49,7 @@
     "typescript": {
       "taurus-protect-sdk-typescript/src/services/governance-rule-service.ts:approveRulesProposal": "signs-own-bytes",
       "taurus-protect-sdk-typescript/src/services/request-service.ts:approveRequests": "verifies",
+      "taurus-protect-sdk-typescript/src/services/taurus-network/pledge-service.ts:approvePledgeActions": "verifies",
       "taurus-protect-sdk-typescript/src/services/whitelisted-address-service.ts:approve": "verifies",
       "taurus-protect-sdk-typescript/src/services/whitelisted-asset-service.ts:approve": "verifies"
     }

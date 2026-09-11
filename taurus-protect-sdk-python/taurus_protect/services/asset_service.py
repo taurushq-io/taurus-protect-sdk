@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
-from taurus_protect.helpers.address_signature_verifier import verify_address_signature
+from taurus_protect.helpers.address_signature_verifier import verified_address
 from taurus_protect.mappers._base import safe_bool, safe_int, safe_string
 from taurus_protect.mappers.address import address_from_dto
 from taurus_protect.models.address import Address
@@ -214,9 +214,13 @@ class AssetService(BaseService):
                 enabled=True,
             )
         except Exception as e:
-            from taurus_protect.errors import APIError, NotFoundError
+            from taurus_protect.errors import APIError, IntegrityError
 
-            if isinstance(e, (APIError, ValueError)):
+            # Consistent with the siblings in this file: IntegrityError is not an
+            # APIError, so omitting it here turns a security failure into a retryable
+            # ServerError(500). This path calls the same asset-addresses endpoint the
+            # verifying get_addresses does, so it can surface one.
+            if isinstance(e, (APIError, IntegrityError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -320,14 +324,19 @@ class AssetService(BaseService):
             resp = self._assets_api.wallet_service_get_asset_addresses(body=body)
 
             raw = getattr(resp, "result", None) or getattr(resp, "addresses", []) or []
-            addresses = [address_from_dto(dto) for dto in raw]
 
             # Fail-fast, as AddressService does: one unverifiable address is not a row to
-            # skip past when the caller is choosing where funds go.
-            if addresses:
+            # skip past when the caller is choosing where funds go. Through the SHARED
+            # seam, so the "address string with no signature is withheld" rule cannot
+            # differ between this reader and AddressService -- this path was fixed to
+            # verify once already while create_address was missed.
+            addresses = []
+            if raw:
                 rules_container = self._rules_cache.get_decoded_rules_container()
-                for address in addresses:
-                    verify_address_signature(address, rules_container)
+                for dto in raw:
+                    address = address_from_dto(dto)
+                    if address is not None:
+                        addresses.append(verified_address(address, rules_container))
 
             pagination = self._extract_pagination(
                 total_items=getattr(resp, "total_items", None) or getattr(resp, "totalItems", None),

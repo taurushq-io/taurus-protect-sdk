@@ -12,7 +12,6 @@ from taurus_protect.crypto.hashing import calculate_hex_hash
 from taurus_protect.errors import IntegrityError, WhitelistError
 from taurus_protect.helpers.constant_time import constant_time_compare
 from taurus_protect.helpers.whitelist_hash_helper import (
-    compute_legacy_hashes,
     parse_whitelisted_address_from_json,
 )
 from taurus_protect.models.whitelisted_address import (
@@ -59,18 +58,23 @@ def verify_whitelist_envelope(envelope: SignedWhitelistedAddressEnvelope) -> boo
     if not provided_hash:
         raise IntegrityError("metadata hash is empty")
 
-    # Compute hash of payload
+    # Compute hash of payload.
+    #
+    # There is deliberately NO legacy-variant tolerance here. This used to accept
+    # `metadata.hash` when it equalled the hash of a STRIPPED variant -- i.e. it did not
+    # require sha256(payload_as_string) == metadata.hash at all -- and then
+    # extract_whitelisted_address_from_envelope parsed the UNSTRIPPED payload below.
+    # That is the exact inverse of the invariant: it admitted a payload whose own hash
+    # nothing had committed to, and returned every field of it as fact.
+    #
+    # The legacy tolerance belongs in step 4 (is metadata.hash covered by a signature),
+    # where it is paired with the payload the matching variant carries -- see
+    # WhitelistedAddressVerifier._verify_hash_in_signed_hashes and
+    # helpers.whitelist_hash_helper.LegacyPayloadVariant. Step 1 is only ever
+    # "does the delivered payload hash to the hash the response claims for it".
     computed_hash = calculate_hex_hash(payload_as_string)
-
-    # First try exact match
     if constant_time_compare(computed_hash, provided_hash):
         return True
-
-    # Try legacy hashes for backward compatibility
-    legacy_hashes = compute_legacy_hashes(payload_as_string)
-    for legacy_hash in legacy_hashes:
-        if constant_time_compare(legacy_hash, provided_hash):
-            return True
 
     raise IntegrityError("metadata hash verification failed")
 

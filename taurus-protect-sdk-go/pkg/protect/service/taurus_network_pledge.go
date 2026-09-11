@@ -2,9 +2,14 @@ package service
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/internal/openapi"
+	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/crypto"
+	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/helper"
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/mapper"
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/model"
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/model/taurusnetwork"
@@ -345,6 +350,9 @@ func (s *TaurusNetworkPledgeService) ListPledgeActions(ctx context.Context, opts
 	}
 
 	actions := mapper.PledgeActionsFromDTO(resp.Result)
+	if err := verifyPledgeActionMetadata(actions); err != nil {
+		return nil, nil, err
+	}
 	cursor := mapper.CursorPaginationFromDTO(resp.Cursor)
 
 	return actions, cursor, nil
@@ -381,27 +389,116 @@ func (s *TaurusNetworkPledgeService) ListPledgeActionsForApproval(ctx context.Co
 	}
 
 	actions := mapper.PledgeActionsFromDTO(resp.Result)
+	if err := verifyPledgeActionMetadata(actions); err != nil {
+		return nil, nil, err
+	}
 	cursor := mapper.CursorPaginationFromDTO(resp.Cursor)
 
 	return actions, cursor, nil
 }
 
-// ApprovePledgeActions approves one or more pledge actions.
-func (s *TaurusNetworkPledgeService) ApprovePledgeActions(ctx context.Context, req *taurusnetwork.ApprovePledgeActionsRequest) (*taurusnetwork.ApprovePledgeActionsResponse, error) {
-	if req == nil {
-		return nil, fmt.Errorf("request cannot be nil")
+// verifyPledgeActionMetadata verifies every action's hash against its payload on the read
+// paths, so a caller reviewing an action reads a payload the hash actually commits to.
+//
+// PledgeAction reuses model.RequestMetadata, whose documented contract is that metadata the
+// SDK returned has been materialised by VerifyAndMaterialise — and ParsePayloadEntries
+// silently falls back to parsing the unverified string, so without this an integrator
+// displaying an action for review saw content nothing had checked. The approval path verifies
+// again in the same call rather than trusting HashVerified: the flag is a serialized field, so
+// an action decoded from a queue or cache can arrive claiming true.
+func verifyPledgeActionMetadata(actions []taurusnetwork.PledgeAction) error {
+	for i := range actions {
+		if actions[i].Metadata == nil {
+			continue
+		}
+		if err := actions[i].Metadata.VerifyAndMaterialise(); err != nil {
+			return fmt.Errorf("pledge action %s: %w", actions[i].ID, err)
+		}
 	}
-	if len(req.Ids) == 0 {
-		return nil, fmt.Errorf("ids cannot be empty")
+	return nil
+}
+
+// ApprovePledgeActions approves one or more pledge actions, verifying every metadata hash it
+// is about to attest to and signing inside the SDK.
+//
+//	actions ─▶ presence check ─▶ sha256(payload) == hash ─▶ sort by id ─▶ sign once ─▶ POST
+//
+// It used to take an opaque, caller-computed `signature` string with only a non-empty check, so
+// the approver's key attested to a hash nothing had verified. A malicious or compromised server
+// could return a pledge action whose payloadAsString describes a benign top-up while its hash is
+// that of a withdrawal of the whole collateral to an address of the attacker's choosing: the
+// approver reviews the payload, signs the hash, and the movement executed is not the one they
+// read. Python already did this correctly and is listed `verifies` in
+// scripts/signing-sites/manifest.json; Go and TypeScript were the two that did not.
+//
+// docs/SERVICES.md has documented this signing-style signature for some time while the shipped
+// method took a pre-computed blob, so this makes the code match the documentation rather than
+// the other way round.
+//
+// One signature covers the whole batch, so any action that fails these checks aborts the call
+// and nothing is signed or submitted.
+func (s *TaurusNetworkPledgeService) ApprovePledgeActions(
+	ctx context.Context,
+	actions []taurusnetwork.PledgeAction,
+	privateKey *ecdsa.PrivateKey,
+	comment string,
+) (*taurusnetwork.ApprovePledgeActionsResponse, error) {
+	if len(actions) == 0 {
+		return nil, fmt.Errorf("actions cannot be empty")
 	}
-	if req.Signature == "" {
-		return nil, fmt.Errorf("signature is required")
+	if privateKey == nil {
+		return nil, fmt.Errorf("privateKey cannot be nil")
+	}
+
+	// Verify every hash this signature will attest to, then sort by id: the endpoint requires
+	// ascending order and the signed array must not depend on the caller's ordering.
+	sorted := make([]taurusnetwork.PledgeAction, 0, len(actions))
+	for _, action := range actions {
+		if action.Metadata == nil {
+			return nil, fmt.Errorf("pledge action %s has no metadata", action.ID)
+		}
+		if action.Metadata.Hash == "" {
+			return nil, fmt.Errorf("pledge action %s has no metadata hash", action.ID)
+		}
+		if action.Metadata.PayloadAsString == "" {
+			return nil, &model.IntegrityError{
+				Message: fmt.Sprintf("refusing to sign pledge action %s: hash exists but the "+
+					"payload it commits to is missing, so there is nothing to verify it against",
+					action.ID),
+			}
+		}
+		computed := crypto.CalculateHexHash(action.Metadata.PayloadAsString)
+		if !helper.ConstantTimeCompare(computed, action.Metadata.Hash) {
+			return nil, &model.IntegrityError{
+				Message: fmt.Sprintf("refusing to sign pledge action %s: hash verification "+
+					"failed: computed=%s, provided=%s", action.ID, computed, action.Metadata.Hash),
+			}
+		}
+		sorted = append(sorted, action)
+	}
+
+	sort.Slice(sorted, func(i, j int) bool { return sorted[i].ID < sorted[j].ID })
+
+	ids := make([]string, 0, len(sorted))
+	hashes := make([]string, 0, len(sorted))
+	for _, action := range sorted {
+		ids = append(ids, action.ID)
+		hashes = append(hashes, action.Metadata.Hash)
+	}
+
+	hashesJSON, err := json.Marshal(hashes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to serialize hashes: %w", err)
+	}
+	signature, err := crypto.SignData(privateKey, hashesJSON)
+	if err != nil {
+		return nil, fmt.Errorf("failed to sign pledge action hashes: %w", err)
 	}
 
 	body := openapi.TgvalidatordApprovePledgeActionsRequest{
-		Ids:       req.Ids,
-		Signature: req.Signature,
-		Comment:   req.Comment,
+		Ids:       ids,
+		Signature: signature,
+		Comment:   comment,
 	}
 
 	resp, httpResp, err := s.api.TaurusNetworkServiceApprovePledgeActions(ctx).Body(body).Execute()

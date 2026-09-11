@@ -6,7 +6,6 @@ import com.taurushq.sdk.protect.client.helper.StrictBase64;
 import com.taurushq.sdk.protect.client.mapper.RulesContainerMapper;
 import com.taurushq.sdk.protect.client.model.rulescontainer.DecodedRulesContainer;
 import com.taurushq.sdk.protect.proto.v1.RequestReply;
-import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.security.PublicKey;

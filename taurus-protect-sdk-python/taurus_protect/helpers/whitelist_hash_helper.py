@@ -35,6 +35,7 @@ from __future__ import annotations
 import hmac
 import json
 import re
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 from taurus_protect.crypto.hashing import calculate_hex_hash
@@ -108,9 +109,48 @@ def compute_whitelist_hash(
     return calculate_hex_hash(payload_str)
 
 
-def compute_legacy_hashes(payload_as_string: str) -> List[str]:
+@dataclass(frozen=True)
+class LegacyPayloadVariant:
     """
-    Compute alternative hashes for backward compatibility.
+    One backward-compatible rewrite of a signed payload: the exact byte string a
+    pre-schema-change signer covered, together with its hash.
+
+    Step 4 must carry the PAYLOAD forward, not just the hash. The strips below are not
+    injective, so a response-controlling server can append a member the strip removes --
+    a duplicate ``,"label":"X"`` immediately before the closing brace -- to a genuinely
+    signed payload. The residue is then the signed bytes exactly, every signature check
+    passes, and a step 6 that parsed the DELIVERED payload would return the appended
+    value as verified (``json.loads`` keeps the LAST of two duplicate keys). Parsing the
+    MATCHED VARIANT is what makes step 6's contract true: every field came from bytes a
+    counted signature covered.
+
+    The strips are global, and that does NOT bound the exposure the way it first
+    appears. A row whose DELIVERED payload carries inner ``linkedInternalAddresses``
+    labels is still exposed, because validatord rebuilds those labels on every read from
+    live DB relations rather than from the signed envelope -- so for a row signed before
+    per-object labels existed, removing every label (the inner ones the server added AND
+    the one the attacker appended) lands exactly on the signed bytes. Both injectable
+    members reach the caller on any legacy row: ``label`` at either level, and
+    ``contractType``.
+
+    What does bound it is the regex alphabet: ``[^"]*`` cannot contain a quote, so
+    nothing beyond those two string values can be smuggled in.
+
+    Attributes:
+        hash: The hex SHA-256 of ``payload``.
+        payload: The rewritten payload whose hash a signer may have covered. This, not
+            the delivered payload, is what step 6 must parse when this variant is the
+            match.
+    """
+
+    hash: str
+    payload: str
+
+
+def compute_legacy_payload_variants(payload_as_string: str) -> List[LegacyPayloadVariant]:
+    """
+    Compute the backward-compatible payload rewrites for an address, each paired with
+    its hash.
 
     This handles addresses signed before schema changes by removing certain
     fields and recomputing the hash.
@@ -125,46 +165,68 @@ def compute_legacy_hashes(payload_as_string: str) -> List[str]:
         payload_as_string: The original payload JSON string.
 
     Returns:
-        List of unique legacy hashes (may be empty if no transformations apply).
+        List of unique variants, in strategy order (may be empty if no
+        transformation changes the payload).
     """
     if not payload_as_string:
         return []
 
-    seen: set[str] = set()
-    hashes: List[str] = []
+    seen: set = set()
+    variants: List[LegacyPayloadVariant] = []
 
-    def add_hash(payload: str) -> None:
+    def add_variant(payload: str) -> None:
         hash_value = calculate_hex_hash(payload)
         if hash_value not in seen:
             seen.add(hash_value)
-            hashes.append(hash_value)
+            variants.append(LegacyPayloadVariant(hash=hash_value, payload=payload))
 
     # Strategy 1: Remove contractType only
     # Handles addresses signed before contractType was added to schema
     without_contract_type = _CONTRACT_TYPE_PATTERN.sub("", payload_as_string)
     if without_contract_type != payload_as_string:
-        add_hash(without_contract_type)
+        add_variant(without_contract_type)
 
     # Strategy 2: Remove labels from linkedInternalAddresses objects only
     # (keep contractType)
     # Handles addresses signed after contractType was added but before labels
     without_labels = _LABEL_IN_OBJECT_PATTERN.sub("}", payload_as_string)
     if without_labels != payload_as_string:
-        add_hash(without_labels)
+        add_variant(without_labels)
 
     # Strategy 3: Remove BOTH contractType AND labels from linkedInternalAddresses
     # Handles addresses signed before both fields were added
     without_both = _LABEL_IN_OBJECT_PATTERN.sub("}", payload_as_string)
     without_both = _CONTRACT_TYPE_PATTERN.sub("", without_both)
     if without_both != payload_as_string:
-        add_hash(without_both)
+        add_variant(without_both)
 
-    return hashes
+    return variants
 
 
-def compute_asset_legacy_hashes(payload_as_string: str) -> List[str]:
+def compute_legacy_hashes(payload_as_string: str) -> List[str]:
     """
-    Compute alternative hashes for backward compatibility with assets.
+    Compute alternative hashes for backward compatibility, discarding the payload each
+    one came from.
+
+    Verification must use :func:`compute_legacy_payload_variants` instead: step 6 needs
+    the payload, not just the hash. This form remains because the cross-SDK vector
+    oracle (``docs/test-vectors/crypto-test-vectors.json``) asserts hashes through this
+    name, and because it is part of the public helper surface.
+
+    Args:
+        payload_as_string: The original payload JSON string.
+
+    Returns:
+        List of unique legacy hashes (may be empty if no transformations apply).
+    """
+    return [variant.hash for variant in compute_legacy_payload_variants(payload_as_string)]
+
+
+def compute_asset_legacy_payload_variants(
+    payload_as_string: str,
+) -> List[LegacyPayloadVariant]:
+    """
+    Asset peer of :func:`compute_legacy_payload_variants`.
 
     This handles assets signed before schema changes by removing certain
     fields and recomputing the hash.
@@ -174,37 +236,44 @@ def compute_asset_legacy_hashes(payload_as_string: str) -> List[str]:
     2. Remove kindType field (assets signed before kindType was added)
     3. Remove both isNFT and kindType (assets signed before both fields were added)
 
+    No asset identity field is currently injectable through it -- the stripped members
+    (``isNFT``, ``kindType``) are not read by the asset payload parser, so for a variant
+    to hash-match, the inserted text has to be exactly what the regexes remove. This
+    carries the payload anyway, so the two flows stay symmetric and a future schema
+    change that makes a stripped field readable does not silently reopen the address
+    defect on the asset side.
+
     Args:
         payload_as_string: The original payload JSON string.
 
     Returns:
-        List of unique legacy hashes (may be empty if no transformations apply).
+        List of unique variants, in strategy order.
     """
     if not payload_as_string:
         return []
 
-    seen: set[str] = set()
-    hashes: List[str] = []
+    seen: set = set()
+    variants: List[LegacyPayloadVariant] = []
 
-    def add_hash(payload: str) -> None:
+    def add_variant(payload: str) -> None:
         hash_value = calculate_hex_hash(payload)
         if hash_value not in seen:
             seen.add(hash_value)
-            hashes.append(hash_value)
+            variants.append(LegacyPayloadVariant(hash=hash_value, payload=payload))
 
     # Strategy 1: Remove isNFT only
     # Handles assets signed before isNFT was added to schema
     without_is_nft = _IS_NFT_PATTERN_LEADING_COMMA.sub("", payload_as_string)
     without_is_nft = _IS_NFT_PATTERN_TRAILING_COMMA.sub("", without_is_nft)
     if without_is_nft != payload_as_string:
-        add_hash(without_is_nft)
+        add_variant(without_is_nft)
 
     # Strategy 2: Remove kindType only
     # Handles assets signed before kindType was added to schema
     without_kind_type = _KIND_TYPE_PATTERN_LEADING_COMMA.sub("", payload_as_string)
     without_kind_type = _KIND_TYPE_PATTERN_TRAILING_COMMA.sub("", without_kind_type)
     if without_kind_type != payload_as_string:
-        add_hash(without_kind_type)
+        add_variant(without_kind_type)
 
     # Strategy 3: Remove BOTH isNFT AND kindType
     # Handles assets signed before both fields were added
@@ -214,9 +283,95 @@ def compute_asset_legacy_hashes(payload_as_string: str) -> List[str]:
     without_both = _KIND_TYPE_PATTERN_LEADING_COMMA.sub("", without_both)
     without_both = _KIND_TYPE_PATTERN_TRAILING_COMMA.sub("", without_both)
     if without_both != payload_as_string:
-        add_hash(without_both)
+        add_variant(without_both)
 
-    return hashes
+    return variants
+
+
+def compute_asset_legacy_hashes(payload_as_string: str) -> List[str]:
+    """
+    Compute alternative hashes for backward compatibility with assets, discarding the
+    payload each one came from.
+
+    See :func:`compute_asset_legacy_payload_variants`: verification uses that form,
+    because step 6 needs the payload rather than only its hash. This form remains for
+    the cross-SDK vector oracle.
+
+    Args:
+        payload_as_string: The original payload JSON string.
+
+    Returns:
+        List of unique legacy hashes (may be empty if no transformations apply).
+    """
+    return [
+        variant.hash for variant in compute_asset_legacy_payload_variants(payload_as_string)
+    ]
+
+
+class _DuplicateJSONKey(Exception):
+    """Raised by the object_pairs_hook below; never escapes this module."""
+
+    def __init__(self, key: str) -> None:
+        super().__init__(key)
+        self.key = key
+
+
+def _reject_duplicate_object_keys(pairs: List[Tuple[str, Any]]) -> Dict[str, Any]:
+    """
+    ``object_pairs_hook`` that refuses any object carrying the same key twice.
+
+    ``json.loads`` keeps the LAST of two duplicate keys and reports no error, which is a
+    verification bypass on this path rather than a curiosity. The legacy-hash tolerance
+    strips a member the parser would still read, so a server can append
+    ``,"label":"X"`` before the closing brace of a genuinely signed payload: the strip
+    recovers the signed bytes, every signature check passes, and the parse then returns
+    the attacker's value. Parsing the matched variant (see
+    :class:`LegacyPayloadVariant`) closes that, and this closes the shapes the strip
+    does not reach.
+
+    The check is PER OBJECT -- the hook is invoked once for each object as it is
+    decoded -- so the same key appearing in sibling objects is perfectly legal, which
+    matters because ``linkedInternalAddresses`` is an array of objects that all carry
+    ``id``/``address``/``label``.
+    """
+    seen: set = set()
+    for key, _value in pairs:
+        if key in seen:
+            raise _DuplicateJSONKey(key)
+        seen.add(key)
+    return dict(pairs)
+
+
+def _loads_strict(json_str: str, what: str) -> Any:
+    """
+    Decode a signed payload, refusing duplicate object keys.
+
+    Args:
+        json_str: The payload to decode.
+        what: What is being parsed, for the error message.
+
+    Returns:
+        The decoded JSON value.
+
+    Raises:
+        IntegrityError: If an object carries a duplicate key, or nesting is deep
+            enough to exhaust the interpreter's recursion budget -- a server-chosen
+            depth must not become a crash.
+        WhitelistError: If the JSON is malformed.
+    """
+    try:
+        return json.loads(json_str, object_pairs_hook=_reject_duplicate_object_keys)
+    except _DuplicateJSONKey as exc:
+        raise IntegrityError(
+            f"cannot parse {what}: signed payload carries duplicate key "
+            f"{exc.key!r}; refusing to choose between two values for one field"
+        ) from exc
+    except RecursionError as exc:
+        raise IntegrityError(
+            f"cannot parse {what}: signed payload nests too deeply"
+        ) from exc
+    except json.JSONDecodeError as exc:
+        raise WhitelistError(f"Failed to parse JSON: {exc}")
 
 
 def parse_whitelisted_address_from_json(json_str: str) -> WhitelistedAddress:
@@ -227,35 +382,41 @@ def parse_whitelisted_address_from_json(json_str: str) -> WhitelistedAddress:
     and extracts the whitelisted address fields.
 
     SECURITY NOTE:
-        This function expects the verified ``payload_as_string`` from the
-        metadata, NOT the raw ``payload`` object. The ``payload_as_string``
-        is the cryptographically verified source (its hash is signed by
-        governance rules). Using the raw payload object would bypass
-        integrity verification and could allow an attacker to inject
-        tampered data.
+        This function expects the payload a counted signature actually COVERED --
+        ``AddressVerificationResult.verified_payload``, which is the matched legacy
+        variant when step 4 fell back to one, and otherwise the delivered
+        ``payload_as_string``. It is never the raw ``payload`` object: that can be
+        tampered with while ``payload_as_string`` still hashes to ``metadata.hash``.
 
     Args:
-        json_str: JSON string from metadata.payload_as_string (verified source).
+        json_str: The verified payload JSON string.
 
     Returns:
         WhitelistedAddress model populated from the JSON fields.
 
     Raises:
         WhitelistError: If parsing fails or JSON is invalid.
+        IntegrityError: If the payload exceeds ``MAX_PAYLOAD_BYTES`` or carries a
+            duplicate object key.
 
     Example:
-        >>> # CORRECT: Use payload_as_string
-        >>> addr = parse_whitelisted_address_from_json(metadata.payload_as_string)
+        >>> # CORRECT: parse what verification cleared
+        >>> result = verifier.verify_whitelisted_address(envelope, ...)
+        >>> addr = parse_whitelisted_address_from_json(result.verified_payload)
         >>> print(addr.address)
         0x123
     """
     if not json_str:
         raise WhitelistError("JSON payload cannot be null or empty")
 
-    try:
-        obj = json.loads(json_str)
-    except json.JSONDecodeError as e:
-        raise WhitelistError(f"Failed to parse JSON: {e}")
+    # Bounded here, not left to the caller's ordering: this is exported, and the
+    # payload is hash-checked in step 1 but not AUTHENTICATED until step 5.
+    if len(json_str) > MAX_PAYLOAD_BYTES:
+        raise IntegrityError(
+            f"cannot parse whitelisted address: payload exceeds {MAX_PAYLOAD_BYTES} bytes"
+        )
+
+    obj = _loads_strict(json_str, "whitelisted address")
 
     try:
         # Extract basic fields
@@ -280,6 +441,60 @@ def parse_whitelisted_address_from_json(json_str: str) -> WhitelistedAddress:
         )
     except (KeyError, TypeError, ValueError) as e:
         raise WhitelistError(f"Failed to parse WhitelistedAddress from JSON: {e}") from e
+
+
+def parse_whitelisted_asset_identity_from_json(json_str: str) -> Dict[str, Any]:
+    """
+    Parse the identity fields of a whitelisted asset out of a verified JSON payload.
+
+    This is step 6 of the asset flow: steps 1-5 prove the envelope is authentic, and
+    this is what stops an unsigned value reaching the caller. It returns a MAPPING
+    rather than a ``WhitelistedAsset`` because this SDK merged asset and envelope into
+    one model, so the service applies these fields onto the envelope it already built
+    (``asset.model_copy(update=...)``) instead of constructing a second object.
+
+    The payload it must be given is the payload a counted signature COVERED --
+    ``AssetVerificationResult.verified_payload`` -- not the delivered
+    ``payload_as_string``. See :class:`LegacyPayloadVariant` for why the two can differ.
+
+    Args:
+        json_str: The verified payload JSON string.
+
+    Returns:
+        Mapping of ``WhitelistedAsset`` field names to their verified values. Every
+        key is always present, so applying it clears any field the signed payload
+        does not carry rather than leaving a stale value behind.
+
+    Raises:
+        WhitelistError: If the JSON is malformed or is not an object.
+        IntegrityError: If the payload exceeds ``MAX_PAYLOAD_BYTES`` or carries a
+            duplicate object key.
+    """
+    if not json_str:
+        raise WhitelistError("JSON payload cannot be null or empty")
+
+    # See parse_whitelisted_address_from_json: bounded here, not at the call sites.
+    if len(json_str) > MAX_PAYLOAD_BYTES:
+        raise IntegrityError(
+            f"cannot parse whitelisted asset: payload exceeds {MAX_PAYLOAD_BYTES} bytes"
+        )
+
+    payload = _loads_strict(json_str, "whitelisted asset")
+    if not isinstance(payload, dict):
+        raise WhitelistError("Failed to parse WhitelistedAsset from JSON: not an object")
+
+    # Field names match what the DTO-era mapper read, including the capitalised
+    # tolerances -- the same signed bytes are parsed by the Java (AssetHashHelper) and
+    # TypeScript (WhitelistedAssetPayload) readers, so the three must agree.
+    return {
+        "name": payload.get("name"),
+        "symbol": payload.get("symbol"),
+        "blockchain": payload.get("blockchain") or payload.get("Blockchain"),
+        "network": payload.get("network") or payload.get("Network"),
+        "contract_address": payload.get("contract_address") or payload.get("contractAddress"),
+        "decimals": payload.get("decimals"),
+        "token_id": payload.get("token_id") or payload.get("tokenId"),
+    }
 
 
 def _get_string_or_none(obj: Dict[str, Any], key: str) -> Optional[str]:
@@ -328,11 +543,11 @@ def _parse_linked_wallets(arr: List[Dict[str, Any]]) -> List[InternalWallet]:
 MAX_PAYLOAD_BYTES = 1 << 20
 
 
-def resolve_rule_key(
+def resolve_rule_key_with_source(
     payload_as_string: Optional[str],
     dto_blockchain: Optional[str],
     dto_network: Optional[str],
-) -> Tuple[str, str]:
+) -> Tuple[str, str, bool]:
     """
     Return the (blockchain, network) pair that selects the governance rules.
 
@@ -370,9 +585,14 @@ def resolve_rule_key(
             f"cannot resolve governance rule key: payload exceeds {MAX_PAYLOAD_BYTES} bytes"
         )
 
+    # Through the STRICT loader, like both parse functions. This is the third place a
+    # signed payload is parsed and the one with the widest consequence: `currency` and
+    # `network` decide WHICH governance rule judges the row, so last-duplicate-wins here
+    # could steer an address to a tier with a weaker quorum. Go, Java and TypeScript all
+    # guard this site; this SDK used a bare json.loads.
     try:
-        payload = json.loads(payload_as_string)
-    except (json.JSONDecodeError, TypeError) as exc:
+        payload = _loads_strict(payload_as_string, "governance rule key")
+    except WhitelistError as exc:
         raise IntegrityError(f"cannot resolve governance rule key: {exc}") from exc
 
     if not isinstance(payload, dict):
@@ -403,6 +623,35 @@ def resolve_rule_key(
             f"and the response ({dto_network})"
         )
 
+    return blockchain, network, network_from_payload
+
+
+def resolve_rule_key(
+    payload_as_string: Optional[str],
+    dto_blockchain: Optional[str],
+    dto_network: Optional[str],
+) -> Tuple[str, str]:
+    """
+    The two-value projection of :func:`resolve_rule_key_with_source`.
+
+    Kept because the shared ``rule_key`` vectors in
+    ``scripts/resources/verification-behaviour-vectors.json`` assert exactly this
+    shape across all four SDKs -- the same reason Go keeps its own two-value form.
+    A caller that needs to know whether the NETWORK was signed (and therefore
+    whether one rule tier or every reachable tier must be satisfied) must use the
+    source-aware form.
+
+    Args:
+        payload_as_string: The signed payload.
+        dto_blockchain: The unverified blockchain from the response DTO.
+        dto_network: The unverified network from the response DTO.
+
+    Returns:
+        The ``(blockchain, network)`` pair that selects the governance rules.
+    """
+    blockchain, network, _ = resolve_rule_key_with_source(
+        payload_as_string, dto_blockchain, dto_network
+    )
     return blockchain, network
 
 

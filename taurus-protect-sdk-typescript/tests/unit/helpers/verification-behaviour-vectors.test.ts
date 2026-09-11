@@ -15,10 +15,17 @@ import { readFileSync, existsSync } from "fs";
 import * as path from "path";
 
 import { IntegrityError } from "../../../src/errors";
+import { calculateHexHash } from "../../../src/crypto/hashing";
 import {
+  computeLegacyPayloadVariants,
   resolveRuleKey,
   verifyHashCoverage,
 } from "../../../src/helpers/whitelist-hash-helper";
+import {
+  createEmptyRulesContainer,
+  findAddressWhitelistingRuleCandidates,
+  findContractAddressWhitelistingRuleCandidates,
+} from "../../../src/models/governance-rules";
 import { rulesetVerificationKey } from "../../../src/services/governance-rule-service";
 import type { GovernanceRules } from "../../../src/models/governance-rules";
 
@@ -64,8 +71,30 @@ interface MemoKeyCase {
   expect: "distinct" | "same";
 }
 
+interface LegacyHashCase {
+  description: string;
+  signed_payload: string;
+  delivered_payload: string;
+  expect: "match" | "no_match";
+  expect_matched_payload?: string;
+}
+
+interface RuleTier {
+  blockchain: string;
+  network: string;
+}
+
+interface RuleTierCandidatesCase {
+  description: string;
+  rules: RuleTier[];
+  blockchain: string;
+  expect_candidates: RuleTier[];
+}
+
 interface Vectors {
   counts: Record<string, number>;
+  legacy_hash: LegacyHashCase[];
+  rule_tier_candidates: RuleTierCandidatesCase[];
   rule_key: RuleKeyCase[];
   hash_coverage: HashCoverageCase[];
   contains_hash: ContainsHashCase[];
@@ -177,6 +206,88 @@ describe("verification behaviour vectors", () => {
         c.description,
         verifyHashCoverage(c.hash, [{ hashes: c.hashes }]),
       ]).toEqual([c.description, c.expect]);
+    }
+  });
+
+  // ------------------------------------------------------------------------------
+  // legacy_hash and rule_tier_candidates
+  // ------------------------------------------------------------------------------
+  //
+  // Until 2026-09-10 both sections were consumed by the GO suite alone, even though the
+  // file's `counts` block declares them and every loader asserts the counts. Asserting a
+  // section's LENGTH proves the file is well formed; it does not prove the behaviour is
+  // checked. Python shipped the single-tier lookup `rule_tier_candidates` exists to forbid
+  // while three SDKs had the fix, and nothing went red.
+
+  it("parses the payload the signature COVERED, for every legacy_hash vector", () => {
+    // Asserts the PARSED PAYLOAD, not a hash — the legacy-strip injection moves no hash at
+    // all, so `crypto-test-vectors.json` is structurally blind to it.
+    for (const c of loadVectors().legacy_hash) {
+      const coveredHash = calculateHexHash(c.signed_payload);
+
+      let matchedPayload: string | undefined;
+      if (calculateHexHash(c.delivered_payload) === coveredHash) {
+        matchedPayload = c.delivered_payload;
+      } else {
+        for (const variant of computeLegacyPayloadVariants(c.delivered_payload)) {
+          if (variant.hash === coveredHash) {
+            matchedPayload = variant.payload;
+            break;
+          }
+        }
+      }
+
+      if (c.expect === "no_match") {
+        expect([c.description, matchedPayload]).toEqual([c.description, undefined]);
+        continue;
+      }
+      expect([c.description, matchedPayload]).toEqual([
+        c.description,
+        c.expect_matched_payload,
+      ]);
+    }
+  });
+
+  it("returns every reachable rule tier, for every rule_tier_candidates vector", () => {
+    // When the signed payload omits `network` there is no authenticated way to learn
+    // whether that was legitimate, so every tier the unsigned DTO value could have
+    // selected must be enforced. Too few lets the server pick the quorum; too many
+    // rejects rows governance would accept.
+    for (const c of loadVectors().rule_tier_candidates) {
+      const container = {
+        ...createEmptyRulesContainer(),
+        addressWhitelistingRules: c.rules.map((r) => ({
+          currency: r.blockchain,
+          network: r.network,
+          parallelThresholds: [],
+          lines: [],
+        })),
+        contractAddressWhitelistingRules: c.rules.map((r) => ({
+          blockchain: r.blockchain,
+          network: r.network,
+          parallelThresholds: [],
+        })),
+      };
+      const expected = c.expect_candidates.map((e) => [e.blockchain, e.network]);
+
+      expect([
+        c.description,
+        findAddressWhitelistingRuleCandidates(container, c.blockchain).map((r) => [
+          r.currency ?? "",
+          r.network ?? "",
+        ]),
+      ]).toEqual([c.description, expected]);
+
+      // The asset peer, from the same vectors: the two families name the chain field
+      // differently (`currency` vs `blockchain`), so a walk reading one name treats every
+      // contract rule as a wildcard global default — fail-OPEN, the broadest tier.
+      expect([
+        c.description,
+        findContractAddressWhitelistingRuleCandidates(container, c.blockchain).map((r) => [
+          r.blockchain ?? "",
+          r.network ?? "",
+        ]),
+      ]).toEqual([c.description, expected]);
     }
   });
 });

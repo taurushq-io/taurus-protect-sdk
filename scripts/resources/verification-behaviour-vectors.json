@@ -13,13 +13,25 @@
     "attacker can shift bytes across it and make a MODIFIED container inherit a genuine",
     "one's \"already verified\" status. Each pair is {a, b, expect: distinct|same}.",
     "",
+    "",
+    "legacy_hash covers WHICH PAYLOAD step 6 must parse. The legacy strips are not injective, so a",
+    "server can append a member the strip removes to a genuinely signed payload: the residue is the",
+    "signed bytes, every signature check passes, and parsing the DELIVERED payload then returns the",
+    "appended value as verified. Each case gives the payload a signer covered and the payload the",
+    "server delivered; the SDK must report which variant matched and hand back the covered bytes.",
+    "",
+    "rule_tier_candidates covers rule selection when the signed payload omits `network` (the common",
+    "case, since includeNetworkInPayload has no proto backing and so is never signed). The unsigned",
+    "DTO network must not be able to pick a weaker quorum, so every reachable tier is enforced.",
     "See docs/INTEGRITY_VERIFICATION.md for what each primitive is for."
   ],
   "counts": {
     "rule_key": 12,
     "hash_coverage": 8,
     "contains_hash": 7,
-    "memo_key": 8
+    "memo_key": 8,
+    "legacy_hash": 7,
+    "rule_tier_candidates": 5
   },
   "rule_key": [
     {
@@ -443,6 +455,166 @@
         ]
       },
       "expect": "distinct"
+    }
+  ],
+  "legacy_hash": [
+    {
+      "description": "appended duplicate top-level label: the strip recovers the signed bytes, so step 6 must parse THOSE",
+      "signed_payload": "{\"currency\":\"ALGO\",\"network\":\"mainnet\",\"address\":\"ALGOADDR\",\"memo\":\"\",\"label\":\"TN_Bank treasury\",\"customerId\":\"cust-1\",\"linkedInternalAddresses\":[],\"tnParticipantID\":\"p-7\"}",
+      "delivered_payload": "{\"currency\":\"ALGO\",\"network\":\"mainnet\",\"address\":\"ALGOADDR\",\"memo\":\"\",\"label\":\"TN_Bank treasury\",\"customerId\":\"cust-1\",\"linkedInternalAddresses\":[],\"tnParticipantID\":\"p-7\",\"label\":\"Coinbase Prime custody\"}",
+      "expect": "match",
+      "expect_matched_payload": "{\"currency\":\"ALGO\",\"network\":\"mainnet\",\"address\":\"ALGOADDR\",\"memo\":\"\",\"label\":\"TN_Bank treasury\",\"customerId\":\"cust-1\",\"linkedInternalAddresses\":[],\"tnParticipantID\":\"p-7\"}"
+    },
+    {
+      "description": "appended contractType on a payload that has none: NOT a duplicate key, so only the variant carry closes it",
+      "signed_payload": "{\"currency\":\"ALGO\",\"network\":\"mainnet\",\"address\":\"ALGOADDR\",\"memo\":\"\",\"label\":\"TN_Bank treasury\",\"customerId\":\"cust-1\",\"linkedInternalAddresses\":[]}",
+      "delivered_payload": "{\"currency\":\"ALGO\",\"network\":\"mainnet\",\"address\":\"ALGOADDR\",\"memo\":\"\",\"label\":\"TN_Bank treasury\",\"customerId\":\"cust-1\",\"linkedInternalAddresses\":[],\"contractType\":\"CMTA20\"}",
+      "expect": "match",
+      "expect_matched_payload": "{\"currency\":\"ALGO\",\"network\":\"mainnet\",\"address\":\"ALGOADDR\",\"memo\":\"\",\"label\":\"TN_Bank treasury\",\"customerId\":\"cust-1\",\"linkedInternalAddresses\":[]}"
+    },
+    {
+      "description": "genuine migration: server adds contractType:\"\" to a row signed before the field existed",
+      "signed_payload": "{\"currency\":\"ALGO\",\"network\":\"mainnet\",\"address\":\"ALGOADDR\",\"memo\":\"\",\"label\":\"TN_Bank treasury\",\"customerId\":\"cust-1\",\"linkedInternalAddresses\":[]}",
+      "delivered_payload": "{\"currency\":\"ALGO\",\"network\":\"mainnet\",\"address\":\"ALGOADDR\",\"memo\":\"\",\"label\":\"TN_Bank treasury\",\"customerId\":\"cust-1\",\"linkedInternalAddresses\":[],\"contractType\":\"\"}",
+      "expect": "match",
+      "expect_matched_payload": "{\"currency\":\"ALGO\",\"network\":\"mainnet\",\"address\":\"ALGOADDR\",\"memo\":\"\",\"label\":\"TN_Bank treasury\",\"customerId\":\"cust-1\",\"linkedInternalAddresses\":[]}"
+    },
+    {
+      "description": "delivered payload carries inner labels the signer never covered: stripping ALL labels lands on the signed bytes",
+      "signed_payload": "{\"currency\":\"ETH\",\"network\":\"mainnet\",\"address\":\"0xdead\",\"linkedInternalAddresses\":[{\"id\":1,\"address\":\"0xa\"},{\"id\":2,\"address\":\"0xb\"}],\"contractType\":\"\"}",
+      "delivered_payload": "{\"currency\":\"ETH\",\"network\":\"mainnet\",\"address\":\"0xdead\",\"linkedInternalAddresses\":[{\"id\":1,\"address\":\"0xa\",\"label\":\"L1\"},{\"id\":2,\"address\":\"0xb\",\"label\":\"L2\"}],\"contractType\":\"\"}",
+      "expect": "match",
+      "expect_matched_payload": "{\"currency\":\"ETH\",\"network\":\"mainnet\",\"address\":\"0xdead\",\"linkedInternalAddresses\":[{\"id\":1,\"address\":\"0xa\"},{\"id\":2,\"address\":\"0xb\"}],\"contractType\":\"\"}"
+    },
+    {
+      "description": "delivered payload identical to the signed one: the current hash matches, no variant needed",
+      "signed_payload": "{\"currency\":\"ALGO\",\"network\":\"mainnet\",\"address\":\"ALGOADDR\",\"memo\":\"\",\"label\":\"TN_Bank treasury\",\"customerId\":\"cust-1\",\"linkedInternalAddresses\":[],\"tnParticipantID\":\"p-7\"}",
+      "delivered_payload": "{\"currency\":\"ALGO\",\"network\":\"mainnet\",\"address\":\"ALGOADDR\",\"memo\":\"\",\"label\":\"TN_Bank treasury\",\"customerId\":\"cust-1\",\"linkedInternalAddresses\":[],\"tnParticipantID\":\"p-7\"}",
+      "expect": "match",
+      "expect_matched_payload": "{\"currency\":\"ALGO\",\"network\":\"mainnet\",\"address\":\"ALGOADDR\",\"memo\":\"\",\"label\":\"TN_Bank treasury\",\"customerId\":\"cust-1\",\"linkedInternalAddresses\":[],\"tnParticipantID\":\"p-7\"}"
+    },
+    {
+      "description": "tampering the strip cannot undo: a changed address is covered by nothing",
+      "signed_payload": "{\"currency\":\"ALGO\",\"network\":\"mainnet\",\"address\":\"ALGOADDR\",\"memo\":\"\",\"label\":\"TN_Bank treasury\",\"customerId\":\"cust-1\",\"linkedInternalAddresses\":[],\"tnParticipantID\":\"p-7\"}",
+      "delivered_payload": "{\"currency\":\"ALGO\",\"network\":\"mainnet\",\"address\":\"ATTACKERADDR\",\"memo\":\"\",\"label\":\"TN_Bank treasury\",\"customerId\":\"cust-1\",\"linkedInternalAddresses\":[],\"tnParticipantID\":\"p-7\"}",
+      "expect": "no_match",
+      "expect_matched_payload": ""
+    },
+    {
+      "description": "appended member outside the strip alphabet: memo is not stripped, so nothing recovers the signed bytes",
+      "signed_payload": "{\"currency\":\"ALGO\",\"network\":\"mainnet\",\"address\":\"ALGOADDR\",\"memo\":\"\",\"label\":\"TN_Bank treasury\",\"customerId\":\"cust-1\",\"linkedInternalAddresses\":[],\"tnParticipantID\":\"p-7\"}",
+      "delivered_payload": "{\"currency\":\"ALGO\",\"network\":\"mainnet\",\"address\":\"ALGOADDR\",\"memo\":\"\",\"label\":\"TN_Bank treasury\",\"customerId\":\"cust-1\",\"linkedInternalAddresses\":[],\"tnParticipantID\":\"p-7\",\"memo\":\"attacker\"}",
+      "expect": "no_match",
+      "expect_matched_payload": ""
+    }
+  ],
+  "rule_tier_candidates": [
+    {
+      "description": "exact tiers plus the global default, because the chain has no wildcard-network rule",
+      "rules": [
+        {
+          "blockchain": "ETH",
+          "network": "mainnet"
+        },
+        {
+          "blockchain": "ETH",
+          "network": "goerli"
+        },
+        {
+          "blockchain": "BTC",
+          "network": "mainnet"
+        },
+        {
+          "blockchain": "",
+          "network": ""
+        }
+      ],
+      "blockchain": "ETH",
+      "expect_candidates": [
+        {
+          "blockchain": "ETH",
+          "network": "mainnet"
+        },
+        {
+          "blockchain": "ETH",
+          "network": "goerli"
+        },
+        {
+          "blockchain": "",
+          "network": ""
+        }
+      ]
+    },
+    {
+      "description": "global default is NOT reachable when the chain has a wildcard-network rule: the tier walk stops at priority 2",
+      "rules": [
+        {
+          "blockchain": "ETH",
+          "network": "mainnet"
+        },
+        {
+          "blockchain": "ETH",
+          "network": ""
+        },
+        {
+          "blockchain": "",
+          "network": ""
+        }
+      ],
+      "blockchain": "ETH",
+      "expect_candidates": [
+        {
+          "blockchain": "ETH",
+          "network": "mainnet"
+        },
+        {
+          "blockchain": "ETH",
+          "network": ""
+        }
+      ]
+    },
+    {
+      "description": "a single reachable tier means conservative enforcement is a no-op",
+      "rules": [
+        {
+          "blockchain": "ETH",
+          "network": "mainnet"
+        }
+      ],
+      "blockchain": "ETH",
+      "expect_candidates": [
+        {
+          "blockchain": "ETH",
+          "network": "mainnet"
+        }
+      ]
+    },
+    {
+      "description": "no rule for the chain and no global default: nothing is reachable",
+      "rules": [
+        {
+          "blockchain": "BTC",
+          "network": "mainnet"
+        }
+      ],
+      "blockchain": "ETH",
+      "expect_candidates": []
+    },
+    {
+      "description": "only a global default: reachable for any chain",
+      "rules": [
+        {
+          "blockchain": "",
+          "network": ""
+        }
+      ],
+      "blockchain": "ETH",
+      "expect_candidates": [
+        {
+          "blockchain": "",
+          "network": ""
+        }
+      ]
     }
   ]
 }

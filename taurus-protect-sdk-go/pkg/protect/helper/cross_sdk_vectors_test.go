@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/crypto"
@@ -19,7 +20,36 @@ type vectorsFile struct {
 		ConstantTimeCompare []constantTimeCompareVector `json:"constant_time_compare"`
 		LegacyHashAddress   []legacyHashAddressVector   `json:"legacy_hash_address"`
 		LegacyHashAsset     []legacyHashAssetVector     `json:"legacy_hash_asset"`
+		CanonicalString     canonicalStringGroup        `json:"canonical_string"`
 	} `json:"vectors"`
+}
+
+// canonicalStringGroup pins the TPV1 canonical string and the resulting HMAC.
+//
+// Nothing pinned this before: the hmac_sha256 group HMACs a hardcoded string that merely LOOKS
+// like a canonical message, and no consumer routed through CalculateSignedHeader — which is how
+// Python and TypeScript came to upper-case the HTTP method while Java and Go signed it verbatim,
+// leaving a caller who issues a lowercase method unable to authenticate against one of the two
+// families.
+type canonicalStringGroup struct {
+	SecretHex string                  `json:"secret_hex"`
+	Count     int                     `json:"count"`
+	Cases     []canonicalStringVector `json:"cases"`
+}
+
+type canonicalStringVector struct {
+	Description       string `json:"description"`
+	APIKey            string `json:"api_key"`
+	Nonce             string `json:"nonce"`
+	Timestamp         int64  `json:"timestamp"`
+	Method            string `json:"method"`
+	Host              string `json:"host"`
+	Path              string `json:"path"`
+	Query             string `json:"query"`
+	ContentType       string `json:"content_type"`
+	Body              string `json:"body"`
+	ExpectedMessage   string `json:"expected_message"`
+	ExpectedSignature string `json:"expected_signature"`
 }
 
 type hexHashVector struct {
@@ -192,4 +222,33 @@ func assertContains(t *testing.T, hashes []string, expected, name string) {
 		}
 	}
 	t.Errorf("Missing %s hash %s in legacy hashes %v", name, expected, hashes)
+}
+
+// TestCrossSdkCanonicalString asserts the signature this SDK produces for each pinned canonical
+// string. It reads the signature out of the Authorization header rather than comparing an
+// internal message, because the header is the only cross-SDK-comparable public output.
+func TestCrossSdkCanonicalString(t *testing.T) {
+	group := loadVectors(t).Vectors.CanonicalString
+
+	if len(group.Cases) != group.Count {
+		t.Fatalf("canonical_string: got %d cases, file declares %d", len(group.Cases), group.Count)
+	}
+	secret, err := hex.DecodeString(group.SecretHex)
+	if err != nil {
+		t.Fatalf("cannot decode secret_hex: %v", err)
+	}
+
+	for _, tc := range group.Cases {
+		t.Run(tc.Description, func(t *testing.T) {
+			header := crypto.CalculateSignedHeader(tc.APIKey, secret, tc.Nonce, tc.Timestamp,
+				tc.Method, tc.Host, tc.Path, tc.Query, tc.ContentType, tc.Body)
+
+			want := "Signature=" + tc.ExpectedSignature
+			if !strings.HasSuffix(header, want) {
+				t.Errorf("signature mismatch for method %q\n got  %s\n want ...%s\n"+
+					"canonical message should be: %s",
+					tc.Method, header, want, tc.ExpectedMessage)
+			}
+		})
+	}
 }

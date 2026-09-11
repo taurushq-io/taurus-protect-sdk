@@ -173,11 +173,24 @@ List<AssetBalance> getWalletTokens(long walletId, int limit) throws ApiException
 
 #### createAddress
 
-Creates a new address in a wallet.
+Creates a new address in a wallet, and **verifies the HSM signature on the address it returns**.
 
 ```java
 Address createAddress(long walletId, String label, String comment, String customerId) throws ApiException
 ```
+
+> **The rule is: never return a non-empty address string that has not been verified.** The
+> create reply carries the same `signature` field the read paths verify, so a signed address is
+> verified here exactly as `getAddress` does and a failure raises `IntegrityException`.
+> Asynchronous creation is real, though — `status` is one of `created`, `creating`, `signed`,
+> `observed`, `confirmed` — so when the reply carries an address with **no** signature the SDK
+> refuses to hand back the server's address string and returns the id and `status` instead.
+> Re-read through `getAddress` once the status advances. The branch is on the address STRING,
+> not on `status`, because `status` is server-controlled.
+>
+> `getAddress`, `getAddresses`, `createAddress` and `AssetService.getAssetAddresses` all route
+> through one private seam. This finding existed because `getAssetAddresses` was fixed and
+> `createAddress` was missed, so a seam rather than a third copy is the point.
 
 **Parameters:**
 | Parameter | Type | Description |
@@ -1109,9 +1122,38 @@ aborts the whole call and nothing is signed. The API takes one signature coverin
 batch, so a partial approval would mean the caller believes they approved more than they did.
 
 ```java
-void approveWhitelistedAssets(List<Long> ids, PrivateKey privateKey, String comment)
-        throws ApiException, WhitelistException
+void approveWhitelistedAssets(WhitelistedAssetApproval selection, PrivateKey privateKey,
+        String comment) throws ApiException, WhitelistException
 ```
+
+> **`selection` is the ROWS a verified read returned, not bare ids.** Mint it with
+> `result.select(ids)` or `result.selectAll()` off a `getWhitelistedAssetsForApproval` result.
+> It carries the metadata hash each row had **at review time**, and the approval aborts if the
+> re-read hash differs.
+>
+> Without that pin a response-controlling server could answer the id-filtered re-read with a
+> *different* row — one whose existing signatures already satisfy the container it presents —
+> and harvest a genuine approver signature over content the approver never saw. Verification
+> alone does not catch it: the substituted row is a real, validly-signed entry, just not the
+> one that was reviewed. Same mitigation as `approveRulesProposal`'s mandatory
+> `expectedContainerHash`. `WhitelistedAssetApproval` has no public constructor, so the pin
+> cannot be forgotten; an empty selection raises rather than meaning "approve nothing".
+>
+> The value **signed** is still the row's current `metadata.hash`, never the legacy variant
+> step 4 matched — validatord rebuilds the hash array from the current schema and verifies the
+> submitted signature against those bytes.
+
+```java
+WhitelistedAssetResult reviewed = client.getWhitelistedAssetService()
+        .getWhitelistedAssetsForApproval(50, 0, null);
+client.getWhitelistedAssetService()
+        .approveWhitelistedAssets(reviewed.selectAll(), approverKey, "reviewed");
+```
+
+`WhitelistedAddressService.approveWhitelistedAddresses(WhitelistedAddressApproval, PrivateKey,
+String)` is the address peer, pinned the same way off a `WhitelistedAddressListResult`. Its
+re-read goes through the **normalized** list path, where containers are response-level and
+label-verified, rather than the per-row in-band containers it used before.
 
 ### Key Models
 
@@ -1220,20 +1262,57 @@ ReservationResult getReservations(long addressId, ApiRequestCursor cursor) throw
 
 ### Methods
 
+Multi-factor signatures are a **second approval channel** over the same entities this SDK
+otherwise protects (a request, a whitelisted address, a whitelisted contract). The caller is
+the second-factor signing device, and the signature it submits is precisely the artefact a
+compromised server cannot forge on its own.
+
+> **Security — `payloadToSign` is UNVERIFIED server data, and `approve` is opaque to the SDK.**
+> The reply carries only `{id, payloadToSign[], entityType}` with **no entity id**, so nothing
+> in it can be joined back to the entities the request was created for and the SDK has nothing
+> to check against. A compromised server can therefore answer with the metadata hash of an
+> entity of its choosing under the expected kind; sign it and the server holds a valid
+> MobileAppSigner approval over an entity nobody reviewed.
+>
+> **Bind it yourself.** `createMultiFactorSignatures` takes the entity IDs — keep them, re-read
+> those entities through the verifying reader for that kind (`RequestService`,
+> `WhitelistedAddressService`, `WhitelistedAssetService`) and require each `payloadToSign`
+> element to equal the locally recomputed, verified metadata hash. Tracked in `TODOS.md`; this
+> is the one read path in the SDK that returns bytes intended for a signing key without
+> verifying them, and it is deliberate-but-unresolved rather than an oversight.
+
 #### getMultiFactorSignatureInfo
 
-Lists pending multi-factor signature requests.
+Retrieves a multi-factor signature request. **`payloadToSign` is unverified** — see above.
 
 ```java
-List<MultiFactorSignature> getMultiFactorSignatureInfo(ApiRequestCursor cursor) throws ApiException
+MultiFactorSignatureInfo getMultiFactorSignatureInfo(String id) throws ApiException
+```
+
+#### createMultiFactorSignatures
+
+Creates a batch of multi-factor signature requests. Keep the entity IDs.
+
+```java
+MultiFactorSignatureResult createMultiFactorSignatures(List<String> entityIDs,
+        MultiFactorSignatureEntityType entityType) throws ApiException
 ```
 
 #### approveMultiFactorSignature
 
-Approves a multi-factor signature request.
+Submits a caller-produced signature. **The SDK never learns what it covers** — see above.
 
 ```java
-void approveMultiFactorSignature(String id, String signature) throws ApiException
+MultiFactorSignatureApprovalResult approveMultiFactorSignature(String id, String signature,
+        String comment) throws ApiException
+```
+
+#### rejectMultiFactorSignature
+
+Rejects a multi-factor signature request.
+
+```java
+void rejectMultiFactorSignature(String id, String comment) throws ApiException
 ```
 
 ---
@@ -2228,7 +2307,7 @@ fails if this list drifts or if the prose above documents a method that does not
 
 ### WhitelistedAddressService
 
-- `approveWhitelistedAddresses(List<Long>, PrivateKey, String): void`
+- `approveWhitelistedAddresses(WhitelistedAddressApproval, PrivateKey, String): void`
 - `getWhitelistedAddress(long): WhitelistedAddress`
 - `getWhitelistedAddressEnvelope(long): SignedWhitelistedAddressEnvelope`
 - `getWhitelistedAddresses(int, int): List<SignedWhitelistedAddressEnvelope>`
@@ -2240,7 +2319,7 @@ fails if this list drifts or if the prose above documents a method that does not
 
 ### WhitelistedAssetService
 
-- `approveWhitelistedAssets(List<Long>, PrivateKey, String): void`
+- `approveWhitelistedAssets(WhitelistedAssetApproval, PrivateKey, String): void`
 - `getWhitelistedAsset(long): WhitelistedAsset`
 - `getWhitelistedAssetEnvelope(long): SignedWhitelistedAssetEnvelope`
 - `getWhitelistedAssets(int, int): List<SignedWhitelistedAssetEnvelope>`

@@ -1077,7 +1077,7 @@
       "methods": [
         {
           "name": "approveWhitelistedAddresses",
-          "signature": "approveWhitelistedAddresses(List<Long>, PrivateKey, String): void",
+          "signature": "approveWhitelistedAddresses(WhitelistedAddressApproval, PrivateKey, String): void",
           "doc": ""
         },
         {
@@ -1127,7 +1127,7 @@
       "methods": [
         {
           "name": "approveWhitelistedAssets",
-          "signature": "approveWhitelistedAssets(List<Long>, PrivateKey, String): void",
+          "signature": "approveWhitelistedAssets(WhitelistedAssetApproval, PrivateKey, String): void",
           "doc": ""
         },
         {

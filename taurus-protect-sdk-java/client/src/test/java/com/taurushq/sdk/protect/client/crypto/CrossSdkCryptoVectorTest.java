@@ -4,9 +4,12 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.taurushq.sdk.protect.client.helper.AssetHashHelper;
+import com.taurushq.sdk.protect.client.helper.WhitelistHashHelper;
 import com.taurushq.sdk.protect.openapi.auth.CryptoTPV1;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -15,10 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
 import static org.bouncycastle.util.Strings.constantTimeAreEqual;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -140,7 +140,7 @@ class CrossSdkCryptoVectorTest {
             int expectedCount = vec.get("expected_legacy_count").getAsInt();
             String description = vec.get("description").getAsString();
 
-            List<String> legacyHashes = computeAddressLegacyHashes(payload);
+            List<String> legacyHashes = WhitelistHashHelper.computeLegacyHashes(payload);
 
             assertEquals(expectedCount, legacyHashes.size(),
                     "Legacy hash count mismatch for: " + description);
@@ -186,7 +186,7 @@ class CrossSdkCryptoVectorTest {
             int expectedCount = vec.get("expected_legacy_count").getAsInt();
             String description = vec.get("description").getAsString();
 
-            List<String> legacyHashes = computeAssetLegacyHashes(payload);
+            List<String> legacyHashes = AssetHashHelper.computeAssetLegacyHashes(payload);
 
             assertEquals(expectedCount, legacyHashes.size(),
                     "Legacy hash count mismatch for: " + description);
@@ -206,60 +206,62 @@ class CrossSdkCryptoVectorTest {
         }
     }
 
-    // ============ Helper Methods ============
-    // These mirror the private methods in WhitelistedAddressService and WhitelistedAssetService
+    // No local re-implementation of the legacy-hash regexes lives here any more.
+    //
+    // It used to: two private methods mirroring the (then private) production ones with
+    // String.replaceAll. That made this file — the CROSS-SDK legacy-hash oracle — assert
+    // the behaviour of a copy rather than of the SDK, so the injection fix could land in
+    // production while this gate stayed green against the old semantics. The production
+    // functions were moved to WhitelistHashHelper / AssetHashHelper and made public
+    // precisely so this test can call them.
 
-    private static List<String> computeAddressLegacyHashes(String payloadAsString) {
-        Set<String> uniqueHashes = new LinkedHashSet<>();
-
-        // Strategy 1: Remove contractType only
-        String withoutContractType = payloadAsString.replaceAll(",\"contractType\":\"[^\"]*\"", "");
-        if (!withoutContractType.equals(payloadAsString)) {
-            uniqueHashes.add(CryptoTPV1.calculateHexHash(withoutContractType));
+    @Test
+    @DisplayName("the TPV1 canonical string matches every cross-SDK vector")
+    void canonicalStringMatchesEveryVector() {
+        // Nothing pinned the canonical MESSAGE before 2026-09-10, and that is how a real
+        // interop break shipped: the `hmac_sha256` group HMACs a hardcoded string that
+        // merely LOOKS like a canonical message, and no consumer routed through
+        // calculateSignedHeader — so Python and TypeScript upper-cased the HTTP method
+        // while Java and Go signed it verbatim, leaving a caller who issued a lowercase
+        // `get` unable to authenticate against one of the two families. This section was
+        // consumed by the Go suite alone until now.
+        JsonObject group = vectors.getAsJsonObject("canonical_string");
+        byte[] secret;
+        try {
+            secret = Hex.decodeHex(group.get("secret_hex").getAsString().toCharArray());
+        } catch (org.apache.commons.codec.DecoderException ex) {
+            throw new AssertionError("canonical_string.secret_hex is not hex", ex);
         }
+        JsonArray cases = group.getAsJsonArray("cases");
 
-        // Strategy 2: Remove labels from linkedInternalAddresses objects only
-        String withoutLabels = payloadAsString.replaceAll(",\"label\":\"[^\"]*\"}", "}");
-        if (!withoutLabels.equals(payloadAsString)) {
-            uniqueHashes.add(CryptoTPV1.calculateHexHash(withoutLabels));
+        // A case added and consumed by nobody must fail loudly.
+        assertEquals(group.get("count").getAsInt(), cases.size(),
+                "canonical_string: case count disagrees with the file's own declaration");
+
+        for (JsonElement e : cases) {
+            JsonObject vec = e.getAsJsonObject();
+            String description = vec.get("description").getAsString();
+
+            // Asserting the SIGNATURE is what pins the MESSAGE: the secret is fixed, so a
+            // match means the exact byte string was signed. Rebuilding the message here
+            // would assert a copy of the implementation instead — the trap this file
+            // already carries a note about for the legacy-hash regexes.
+            String header = CryptoTPV1.calculateSignedHeader(
+                    vec.get("api_key").getAsString(),
+                    secret,
+                    vec.get("nonce").getAsString(),
+                    vec.get("timestamp").getAsLong(),
+                    vec.get("method").getAsString(),
+                    vec.get("host").getAsString(),
+                    vec.get("path").getAsString(),
+                    vec.get("query").getAsString(),
+                    vec.get("content_type").getAsString(),
+                    vec.get("body").getAsString());
+
+            assertTrue(
+                    header.contains("Signature=" + vec.get("expected_signature").getAsString()),
+                    description + ": expected a signature over "
+                            + vec.get("expected_message").getAsString() + ", got " + header);
         }
-
-        // Strategy 3: Remove both
-        String withoutBoth = payloadAsString.replaceAll(",\"label\":\"[^\"]*\"}", "}");
-        withoutBoth = withoutBoth.replaceAll(",\"contractType\":\"[^\"]*\"", "");
-        if (!withoutBoth.equals(payloadAsString)) {
-            uniqueHashes.add(CryptoTPV1.calculateHexHash(withoutBoth));
-        }
-
-        return new ArrayList<>(uniqueHashes);
-    }
-
-    private static List<String> computeAssetLegacyHashes(String payloadAsString) {
-        Set<String> uniqueHashes = new LinkedHashSet<>();
-
-        // Strategy 1: Remove isNFT only
-        String withoutIsNFT = payloadAsString.replaceAll(",\"isNFT\":(true|false)", "");
-        withoutIsNFT = withoutIsNFT.replaceAll("\"isNFT\":(true|false),", "");
-        if (!withoutIsNFT.equals(payloadAsString)) {
-            uniqueHashes.add(CryptoTPV1.calculateHexHash(withoutIsNFT));
-        }
-
-        // Strategy 2: Remove kindType only
-        String withoutKindType = payloadAsString.replaceAll(",\"kindType\":\"[^\"]*\"", "");
-        withoutKindType = withoutKindType.replaceAll("\"kindType\":\"[^\"]*\",", "");
-        if (!withoutKindType.equals(payloadAsString)) {
-            uniqueHashes.add(CryptoTPV1.calculateHexHash(withoutKindType));
-        }
-
-        // Strategy 3: Remove both (isNFT first, then kindType — matches Java SDK order)
-        String withoutBoth = payloadAsString.replaceAll(",\"isNFT\":(true|false)", "");
-        withoutBoth = withoutBoth.replaceAll("\"isNFT\":(true|false),", "");
-        withoutBoth = withoutBoth.replaceAll(",\"kindType\":\"[^\"]*\"", "");
-        withoutBoth = withoutBoth.replaceAll("\"kindType\":\"[^\"]*\",", "");
-        if (!withoutBoth.equals(payloadAsString)) {
-            uniqueHashes.add(CryptoTPV1.calculateHexHash(withoutBoth));
-        }
-
-        return new ArrayList<>(uniqueHashes);
     }
 }

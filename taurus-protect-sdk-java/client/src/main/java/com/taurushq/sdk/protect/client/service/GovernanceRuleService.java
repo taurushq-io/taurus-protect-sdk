@@ -31,7 +31,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SignatureException;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 
@@ -51,7 +50,7 @@ public class GovernanceRuleService {
      * {@link #rulesetVerificationKey}. See {@link #verifiedRuleset}.
      */
     private final java.util.Set<String> verified =
-            java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap<>());
+            Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap<>());
 
 
     private final GovernanceRulesApi governanceRulesApi;
@@ -393,13 +392,35 @@ public class GovernanceRuleService {
             java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
             updateLengthPrefixed(digest, data);
 
-            java.util.List<String> signatures = new java.util.ArrayList<>();
+            List<String> signatures = new java.util.ArrayList<>();
             if (rules.getRulesSignatures() != null) {
                 for (RuleUserSignature sig : rules.getRulesSignatures()) {
-                    signatures.add(sig.getSignature() == null ? "" : sig.getSignature());
+                    // The ELEMENT is guarded, not just the list and the string. MapStruct
+                    // preserves nulls, so a response carrying "rulesSignatures":[null]
+                    // produces a list with a null entry, and an unguarded
+                    // sig.getSignature() threw NullPointerException here — from the memo
+                    // key, which runs BEFORE verification. A single crafted /rules response
+                    // therefore denied every governance read, and the throw was an NPE from
+                    // deep in a helper rather than an integrity error, so it read as an SDK
+                    // defect instead of a rejected response.
+                    //
+                    // Safe for injectivity because the entry KEEPS its slot: it still
+                    // occupies a position in the sorted list, still contributes its own
+                    // 8-byte length prefix (of zero), and is still counted by
+                    // signatures.size() below. So [] , [null] and [null, null] stay three
+                    // distinct keys — dropping the element instead would have collapsed
+                    // them. What this does share a key with is an entry whose signature is
+                    // null or empty, and that is the equivalence the key is meant to model:
+                    // SignatureVerifier.verifyGovernanceRulesSignatures skips all three
+                    // cases with the same `continue`, so none can contribute a distinct
+                    // signing key to the threshold and no pair of lists that collide here
+                    // could verify differently.
+                    String value = sig == null || sig.getSignature() == null
+                            ? "" : sig.getSignature();
+                    signatures.add(value);
                 }
             }
-            java.util.Collections.sort(signatures);
+            Collections.sort(signatures);
 
             digest.update(bigEndian(signatures.size()));
             for (String signature : signatures) {
@@ -412,7 +433,7 @@ public class GovernanceRuleService {
                 hex.append(String.format("%02x", b));
             }
             return hex.toString();
-        } catch (java.security.NoSuchAlgorithmException e) {
+        } catch (NoSuchAlgorithmException e) {
             // SHA-256 is mandated by every JRE; if it is absent nothing here can work.
             throw new IllegalStateException("SHA-256 unavailable", e);
         }
@@ -525,7 +546,7 @@ public class GovernanceRuleService {
                 hex.append(String.format("%02x", b));
             }
             return hex.toString();
-        } catch (java.security.NoSuchAlgorithmException e) {
+        } catch (NoSuchAlgorithmException e) {
             // SHA-256 is mandated by every JRE; if it is absent nothing here can work.
             throw new IllegalStateException("SHA-256 unavailable", e);
         }

@@ -8,6 +8,7 @@
 
 import * as fs from "fs";
 import * as path from "path";
+import { calculateSignedHeader } from "../../../src/crypto/tpv1";
 import {
   calculateHexHash,
   calculateBase64Hmac,
@@ -66,6 +67,24 @@ interface TestVectors {
       expected_without_both?: string;
       expected_legacy_count: number;
     }>;
+    canonical_string: {
+      secret_hex: string;
+      count: number;
+      cases: Array<{
+        description: string;
+        api_key: string;
+        nonce: string;
+        timestamp: number;
+        method: string;
+        host: string;
+        path: string;
+        query: string;
+        content_type: string;
+        body: string;
+        expected_message: string;
+        expected_signature: string;
+      }>;
+    };
   };
 }
 
@@ -158,4 +177,41 @@ describe("Cross-SDK Legacy Asset Hash", () => {
       }
     }
   );
+});
+
+describe("Cross-SDK TPV1 Canonical String", () => {
+  // Nothing pinned the canonical MESSAGE before 2026-09-10, and that is how a real interop
+  // break shipped: the `hmac_sha256` group HMACs a hardcoded string that merely *looks*
+  // like a canonical message, and no consumer routed through calculateSignedHeader -- so
+  // Python and TypeScript upper-cased the HTTP method while Java and Go signed it verbatim,
+  // leaving a caller who issued a lowercase `get` unable to authenticate against one of the
+  // two families. This section was consumed by the Go suite alone until now.
+  const group = vectors.canonical_string;
+
+  it("declares the number of cases it carries", () => {
+    // A case added and consumed by nobody must fail loudly.
+    expect(group.cases.length).toBe(group.count);
+  });
+
+  it.each(group.cases)("signs the canonical message for: $description", (vec) => {
+    // Asserting the SIGNATURE is what pins the MESSAGE: the secret is fixed, so a match
+    // means the exact byte string was signed. Rebuilding the message in the test would
+    // assert a copy of the implementation instead.
+    const header = calculateSignedHeader(
+      vec.api_key,
+      Buffer.from(group.secret_hex, "hex"),
+      vec.nonce,
+      vec.timestamp,
+      vec.method,
+      vec.host,
+      vec.path,
+      vec.query || undefined,
+      vec.content_type || undefined,
+      vec.body || undefined
+    );
+
+    expect([vec.description, header.includes(`Signature=${vec.expected_signature}`)]).toEqual(
+      [vec.description, true]
+    );
+  });
 });

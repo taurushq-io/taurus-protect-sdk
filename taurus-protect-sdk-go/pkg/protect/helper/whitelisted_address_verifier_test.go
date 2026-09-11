@@ -420,7 +420,7 @@ func TestVerifyHashInSignedHashes_NoSignedAddress(t *testing.T) {
 			SignedAddress: nil,
 			Metadata:      &model.WhitelistedAssetMetadata{Hash: "hash"},
 		}
-		_, err := v.verifyHashInSignedHashes(addr)
+		_, _, err := v.verifyHashInSignedHashes(addr)
 		if err == nil {
 			t.Error("expected error for nil signed address")
 		}
@@ -431,7 +431,7 @@ func TestVerifyHashInSignedHashes_NoSignedAddress(t *testing.T) {
 			SignedAddress: &model.SignedWhitelistedAddress{Signatures: nil},
 			Metadata:      &model.WhitelistedAssetMetadata{Hash: "hash"},
 		}
-		_, err := v.verifyHashInSignedHashes(addr)
+		_, _, err := v.verifyHashInSignedHashes(addr)
 		if err == nil {
 			t.Error("expected error for empty signatures")
 		}
@@ -457,7 +457,7 @@ func TestVerifyHashInSignedHashes_HashCoverage(t *testing.T) {
 				PayloadAsString: payload,
 			},
 		}
-		foundHash, err := v.verifyHashInSignedHashes(addr)
+		foundHash, _, err := v.verifyHashInSignedHashes(addr)
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
@@ -478,7 +478,7 @@ func TestVerifyHashInSignedHashes_HashCoverage(t *testing.T) {
 				PayloadAsString: payload,
 			},
 		}
-		_, err := v.verifyHashInSignedHashes(addr)
+		_, _, err := v.verifyHashInSignedHashes(addr)
 		if err == nil {
 			t.Error("expected error when hash not found")
 		}

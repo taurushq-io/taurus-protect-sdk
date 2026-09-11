@@ -314,7 +314,21 @@ Provides whitelisted address management with 6-step verification.
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
 | `get(address_id)` | `address_id: int` | `WhitelistedAddress` | Get with verification |
-| `list(...)` | Filters | `Tuple[List[WhitelistedAddress], Optional[Pagination]]` | List addresses |
+| `list(...)` | Filters | `WhitelistedAddressListResult` | List addresses; carries `excluded_unverified` |
+| `list_for_approval(...)` | Filters | `WhitelistedAddressListResult` | Rows awaiting approval, verified as in `list` |
+| `approve(selection, private_key, comment)` | `selection: WhitelistedAddressApproval`, `private_key`, `comment: str` | `None` | Sign an approval, all-or-nothing, pinned to the reviewed rows |
+
+**`approve` takes the ROWS a verified read returned, not bare ids.** Mint the selection with
+`result.select(*ids)` or `result.select_all()` off a `list_for_approval` result; it carries
+the metadata hash each row had **at review time**, and the approval aborts if the re-read
+hash differs. See the note under `WhitelistedAssetService.approve` for the substitution
+attack the pin defeats — it is the same one, and verification alone does not catch it.
+
+```python
+result = client.whitelisted_addresses.list_for_approval()
+selection = result.select_all()
+client.whitelisted_addresses.approve(selection, private_key, "reviewed")
+```
 
 ---
 
@@ -334,7 +348,7 @@ whitelisted asset and a whitelisted contract are one server entity, and
 | `get(asset_id)` | `asset_id: int` | `WhitelistedAsset` | Get with verification |
 | `list(...)` | Filters | `Tuple[List[WhitelistedAsset], Optional[Pagination]]` | List assets |
 | `list_for_approval(ids, limit, offset)` | `ids: Optional[List[str]]`, `limit: int = 50`, `offset: int = 0` | `Tuple[List[WhitelistedAsset], Optional[Pagination]]` | List assets awaiting approval, verified as in `list` |
-| `approve(ids, private_key, comment)` | `ids: List[int]`, `private_key`, `comment: str` | `None` | Sign an approval, all-or-nothing |
+| `approve(selection, private_key, comment)` | `selection: WhitelistedAssetApproval`, `private_key`, `comment: str` | `None` | Sign an approval, all-or-nothing, pinned to the reviewed rows |
 
 `list_for_approval` exists here because the for-approval read used to live only on the
 unverified contract service, so the rows an approver inspects were never checked against
@@ -344,6 +358,22 @@ governance.
 that is missing or fails verification aborts the whole call and nothing is signed: the API
 takes one signature covering the whole batch, so a partial approval would mean the caller
 believes they approved more than they did.
+
+**`approve` takes the ROWS a verified read returned, not bare ids.** Mint the selection with
+`WhitelistedAssetApproval.select(assets, *ids)` or `.select_all(assets)`; it carries the
+metadata hash each row had **at review time**, and the approval aborts if the re-read hash
+differs. Without that pin a response-controlling server could answer the id-filtered
+re-read with a *different* row — one whose existing signatures already satisfy the container
+it presents — and harvest a genuine approver signature over content the approver never saw.
+Verification alone does not catch it: the substituted row is a real, validly-signed entry,
+just not the one that was reviewed. An empty selection raises rather than meaning "approve
+nothing".
+
+```python
+assets, _ = client.whitelisted_assets.list_for_approval()
+selection = WhitelistedAssetApproval.select(assets, *[a.id for a in assets])
+client.whitelisted_assets.approve(selection, private_key, "reviewed")
+```
 
 ---
 
@@ -646,7 +676,23 @@ client.reservations.cancel(reservation_id=456)
 
 ### MultiFactorSignatureService
 
-Provides multi-factor signature operations for high-value transactions.
+Provides multi-factor signature operations: a **second approval channel** over the same
+entities the SDK otherwise protects (a request, a whitelisted address, a whitelisted
+contract). The caller is the second-factor signing device, and the signature it submits is
+precisely the artefact a compromised server cannot forge on its own.
+
+> **Security — `payload_to_sign` is UNVERIFIED server data.**
+> `get_multi_factor_signature_info` returns the bytes the server asks you to sign, and the
+> SDK cannot check them: the reply carries only `{id, payload_to_sign[], entity_type}` with
+> **no entity id**, so nothing in it can be joined back to the entities the request was
+> created for. A compromised server can therefore answer with the metadata hash of an
+> entity of its choosing under the expected kind.
+>
+> **Bind it yourself.** `create_multi_factor_signatures` takes the entity IDs — keep them,
+> re-read those entities through the verifying reader for that kind (`client.requests`,
+> `client.whitelisted_addresses`, `client.whitelisted_assets`) and require each
+> `payload_to_sign` element to equal the locally recomputed, verified metadata hash.
+> Tracked in `TODOS.md`.
 
 **Access:** `client.multi_factor_signature`
 
@@ -654,24 +700,42 @@ Provides multi-factor signature operations for high-value transactions.
 
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
-| `get_challenge(challenge_id)` | `challenge_id: str` | `MultiFactorSignatureChallenge` | Get challenge by ID |
-| `list_challenges(request_id, limit, offset)` | `request_id: Optional[int]`, `limit: int = 50`, `offset: int = 0` | `Tuple[List[MultiFactorSignatureChallenge], Optional[Pagination]]` | List challenges |
-| `create_challenge(request_id, challenge_type)` | `request_id: int`, `challenge_type: str` | `str` | Create a challenge |
-| `verify_challenge(challenge_id, response)` | `challenge_id: str`, `response: str` | `bool` | Verify a challenge response |
+| `get_multi_factor_signature_info(id)` | `id: str` | `MultiFactorSignatureInfo` | Get the signature request info. **`payload_to_sign` is unverified** |
+| `create_multi_factor_signatures(entity_ids, entity_type)` | `entity_ids: List[str]`, `entity_type: Union[MultiFactorSignatureEntityType, str]` | `MultiFactorSignatureResult` | Create a batch of signature requests |
+| `approve_multi_factor_signature(id, signature, comment)` | `id: str`, `signature: str`, `comment: str = ""` | `MultiFactorSignatureApprovalResult` | Submit a caller-produced signature. **Opaque to the SDK** |
+| `reject_multi_factor_signature(id, comment)` | `id: str`, `comment: str = ""` | `None` | Reject a signature request |
 
 #### Example
 
 ```python
-# Create a challenge for a request
-challenge_id = client.multi_factor_signature.create_challenge(
-    request_id=123, challenge_type="TOTP"
+from taurus_protect.models import MultiFactorSignatureEntityType
+
+# 1. Create the batch, and KEEP the entity ids -- they are the only thing that can bind
+#    the payload the server later asks you to sign to entities you can verify.
+entity_ids = ["123", "124"]
+batch = client.multi_factor_signature.create_multi_factor_signatures(
+    entity_ids, MultiFactorSignatureEntityType.REQUEST
 )
 
-# Verify the challenge
-is_valid = client.multi_factor_signature.verify_challenge(
-    challenge_id=challenge_id, response="123456"
+# 2. Read the payload -- UNVERIFIED.
+info = client.multi_factor_signature.get_multi_factor_signature_info(batch.id)
+
+# 3. Bind it before signing: re-read each entity through the VERIFYING reader and require
+#    the payload to be a hash it produced. Skip this and you sign bytes the server chose.
+verified_hashes = set()
+for entity_id in entity_ids:
+    request = client.requests.get(int(entity_id))   # verifies the metadata hash
+    if request.metadata and request.metadata.hash:
+        verified_hashes.add(request.metadata.hash)
+for payload in info.payload_to_sign:
+    if payload not in verified_hashes:
+        raise RuntimeError(f"refusing to sign an unrecognised payload: {payload}")
+
+# 4. Sign with the second-factor key and submit.
+result = client.multi_factor_signature.approve_multi_factor_signature(
+    id=info.id, signature=my_second_factor_signature, comment="reviewed"
 )
-print(f"Verification: {'passed' if is_valid else 'failed'}")
+print(f"signatures now: {result.signature_count}")
 ```
 
 ---
@@ -1674,10 +1738,10 @@ fails if this list drifts or if the prose above documents a method that does not
 
 ### MultiFactorSignatureService
 
-- `create_challenge(request_id: 'int', challenge_type: 'str') -> 'str'` — Create a new multi-factor signature challenge.
-- `get_challenge(challenge_id: 'str') -> 'MultiFactorSignatureChallenge'` — Get a multi-factor signature challenge by ID.
-- `list_challenges(request_id: 'Optional[int]' = None, limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[MultiFactorSignatureChallenge], Optional[Pagination]]'` — List multi-factor signature challenges.
-- `verify_challenge(challenge_id: 'str', response: 'str') -> 'bool'` — Verify a multi-factor signature challenge response.
+- `approve_multi_factor_signature(id: 'str', signature: 'str', comment: 'str' = '') -> 'MultiFactorSignatureApprovalResult'` — Approve a multi-factor signature request.
+- `create_multi_factor_signatures(entity_ids: 'List[str]', entity_type: 'Union[MultiFactorSignatureEntityType, str]') -> 'MultiFactorSignatureResult'` — Create a batch of multi-factor signature requests.
+- `get_multi_factor_signature_info(id: 'str') -> 'MultiFactorSignatureInfo'` — Retrieve information about a multi-factor signature request.
+- `reject_multi_factor_signature(id: 'str', comment: 'str' = '') -> 'None'` — Reject a multi-factor signature request.
 
 ### ParticipantService
 
@@ -1837,7 +1901,7 @@ fails if this list drifts or if the prose above documents a method that does not
 
 ### WhitelistedAddressService
 
-- `approve(ids: 'List[int]', private_key: 'Any', comment: 'str') -> 'None'` — Sign and submit an approval for the given whitelisted addresses, all-or-nothing.
+- `approve(selection: 'WhitelistedAddressApproval', private_key: 'Any', comment: 'str') -> 'None'` — Sign and submit an approval for the reviewed whitelisted addresses,
 - `get(whitelisted_address_id: 'int') -> 'WhitelistedAddress'` — Get a whitelisted address by ID with verification.
 - `get_envelope(whitelisted_address_id: 'int') -> 'SignedWhitelistedAddressEnvelope'` — Get the signed envelope for a whitelisted address.
 - `list(currency: 'Optional[str]' = None, limit: 'int' = 50, offset: 'int' = 0, *, ids: 'Optional[List[str]]' = None, include_for_approval: 'bool' = False) -> 'WhitelistedAddressListResult'` — List whitelisted addresses with cryptographic verification.
@@ -1845,7 +1909,7 @@ fails if this list drifts or if the prose above documents a method that does not
 
 ### WhitelistedAssetService
 
-- `approve(ids: 'List[int]', private_key: 'Any', comment: 'str') -> 'None'` — Sign and submit an approval for the given whitelisted assets, all-or-nothing.
+- `approve(selection: 'WhitelistedAssetApproval', private_key: 'Any', comment: 'str') -> 'None'` — Sign and submit an approval for the reviewed whitelisted assets, all-or-nothing.
 - `get(asset_id: 'int') -> 'WhitelistedAsset'` — Get a whitelisted asset by ID.
 - `list(blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None, limit: 'int' = 50, offset: 'int' = 0, *, ids: 'Optional[List[str]]' = None, include_for_approval: 'bool' = False) -> 'Tuple[List[WhitelistedAsset], Optional[Pagination]]'` — List whitelisted assets.
 - `list_for_approval(ids: 'Optional[List[str]]' = None, limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[WhitelistedAsset], Optional[Pagination]]'` — List whitelisted assets awaiting approval, verified as in list().

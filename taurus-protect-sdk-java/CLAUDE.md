@@ -324,6 +324,73 @@ Key model classes and their actual field names (to avoid compilation errors):
   extraction is written up in `TODOS.md`, and the alignment report records the layering as an
   accepted difference *with that TODO as the plan to stop accepting it*.
 
+## Verification surface added in the 2026-09-10 security-scan pass
+
+Go was the reference SDK for this pass; cross-SDK reasoning is in the repo-root `CLAUDE.md`.
+Java-specific:
+
+- **CHECKED vs UNCHECKED is a CLASSIFICATION rule here, and getting it wrong re-opens a fixed
+  finding.** Throw the checked `WhitelistException` for anything that is one ROW's problem;
+  reserve the unchecked `IntegrityException` / `ContainerIntegrityException` for what
+  invalidates the whole call. `WhitelistHashHelper.rejectDuplicateObjectKeys` first shipped
+  throwing `IntegrityException`, which silently escapes every `catch (WhitelistException)` — so
+  one unparseable row would have aborted a whole listing, exactly the failure
+  `WhitelistedAddressListResult`'s javadoc claims was fixed. Both public parse entry points
+  declare `throws WhitelistException`, so two pre-existing tests caught it
+  (`WhitelistHashHelperTest.testParseWhitelistedAddressFromJson_InvalidJson`,
+  `VerificationBehaviourVectorsTest`). Keep that alignment when adding a check to either parser.
+- **`RulesContainerCache` released its single-flight flag only on the `catch (ApiException)`
+  path.** `doFetch()` runs governance verification, whose `IntegrityException` is unchecked, and
+  the Gson error path can raise `StackOverflowError`; either escaped before `fetching` was
+  cleared, so every later caller parked on the untimed `lock.wait()` forever — **one crafted
+  `/rules` response wedged address, asset and price verification process-wide.** Both
+  `getDecodedRulesContainer` and `invalidate` now release through a `finally` +
+  `releaseTheFetchSlot()`. `fetchException` is deliberately NOT set there: it is typed
+  `ApiException`, and the escaping throwable reaches its own caller anyway. Gated by
+  `RulesContainerCacheTest.{getDecodedRulesContainer,invalidate}_failedFetchReleasesTheSlot`,
+  which are 5-second timeouts on another thread — they were the tests that proved the fix was
+  still missing after everything else had landed.
+- **The GENERATED `openapi.ApiException.getMessage()` interpolates the ENTIRE response body**
+  (`"…HTTP response code: %s%nHTTP response body: %s…"`, and it is an override, so `super.getMessage()`
+  is only the first `%s`). That defeated `ApiExceptionMapper`'s own `MAX_ERROR_BODY_BYTES` ceiling in
+  the one case the ceiling exists for: an over-ceiling body was correctly not PARSED, and then the
+  fallback copied `e.getMessage()` into the SDK exception anyway — so a hostile body still reached an
+  integrator's log in full. `truncateForMessage` / `MAX_MESSAGE_CHARS` (2048) bound it, with a
+  `[truncated]` marker so a cut message is distinguishable from a short one. A body *excerpt* is
+  diagnostically useful, so the fix is a bound, not removal. Found by the new
+  `ApiExceptionMapperHostileBodyTest`; the red run reports `131248 chars for a body of 65566`.
+- **MapStruct silently produced an ALL-NULL bean from an enum source.**
+  `MultiFactorSignatureMapper.fromEntityTypeDTO` maps a bare enum to a bean with `id`/`kind`;
+  with no explicit mapping, MapStruct's default bean mapping sets **no** target properties, so
+  `getKind()` was null and the mapper test's `assertNotNull` passed. It is a hand-written
+  `default` method now. `id` stays null on purpose — the reply carries no entity id, and that
+  absence is the MFA blocker itself. This is the same class as the `is*()`-setter trap already
+  documented below: MapStruct's failures here are silent, so assert VALUES, never non-null.
+- **`markVerified` takes the VERIFIED PAYLOAD as a parameter**, on both envelopes, and refuses
+  an absent one rather than falling back to `metadata.getPayloadAsString()`. The delivered text
+  is not always what a signature covered (the legacy strips are not injective, and Gson keeps
+  the LAST of two duplicate keys), so parsing the delivered payload is precisely the injection.
+  `metadata.payloadAsString` is left untouched — a caller needs it to reproduce `metadata.hash`.
+- **The approval pin types have no public constructor.** `WhitelistedAddressApproval` /
+  `WhitelistedAssetApproval` are minted only by `WhitelistedAddressListResult.select(ids)` /
+  `selectAll()` and `WhitelistedAssetResult.select(ids)` / `selectAll()`, so a test in the
+  `service` package must build a result first — which is the point of the type, not friction.
+- **Java's address approve now re-reads through the NORMALIZED list path**, where containers are
+  response-level and label-verified, rather than the per-row in-band containers it used before.
+  That converged it onto Go/Python/TypeScript; the asset side still uses in-band, as all four do.
+- **Three test files re-implemented the legacy-hash regexes inline** because the production
+  methods were private. All three now call `WhitelistHashHelper.computeLegacyPayloadVariants` /
+  `AssetHashHelper.computeAssetLegacyHashes`: `crypto/CrossSdkCryptoVectorTest`,
+  `service/WhitelistedAddressServiceLegacyHashTest`, `helper/WhitelistVerificationFlowTest`.
+  A copy here is worse than no test — the cross-SDK oracle would keep asserting the pre-fix
+  semantics while the SDK moved.
+- **PMD is now 0, down from 10 on master.** Almost all of it was unused imports and unnecessary
+  fully-qualified names left behind when logic moved, plus two `PreserveStackTrace` in
+  `RequestService` (chain the cause: `new IntegrityException(msg, e)`). Watch out for a
+  find-and-replace that strips a package qualifier from an **import** line — `java.util.Map<` →
+  `Map<` is safe, but `java.security.NoSuchAlgorithmException` → `NoSuchAlgorithmException`
+  rewrote the import statement itself into `import NoSuchAlgorithmException;`.
+
 ## Verification surface added in the 2026-09-07 pass
 
 Cross-SDK rules are in the repo-root `CLAUDE.md`. Java-specific:

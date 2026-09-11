@@ -69,3 +69,66 @@ def verify_address_signature(
         # TypeError: Invalid data types
         # InvalidSignature: Cryptographic signature verification failed
         raise IntegrityError(f"Address signature verification failed for address {address.id}: {e}")
+
+
+def verified_address(
+    address: Address,
+    rules_container: DecodedRulesContainer,
+) -> Address:
+    """
+    The ONE decision every ``Address``-returning path must make before handing one back.
+
+    The invariant: **never return a non-empty ``Address.address`` that has not been
+    verified.** Three cases, and only the middle one is new:
+
+    ==========================  ===========================================
+    address string is empty     return as-is -- there is no destination to
+                                misuse yet; ``status`` tells the caller to
+                                come back
+    address, but no signature   REFUSE. Returning it would hand the caller
+                                an attacker-controllable destination in the
+                                same type as a verified one
+    address and signature       verify against the HSMSLOT key; a failure
+                                is an ``IntegrityError``
+    ==========================  ===========================================
+
+    The branch is on the address STRING, not on ``status``: status is server-controlled,
+    so keying the decision on it would let a response claim ``creating`` while handing
+    over an attacker-chosen destination.
+
+    Asynchronous creation is why this is not simply verify-and-throw. The create reply's
+    ``status`` is one of ``created``/``creating``/``signed``/``observed``/``confirmed``,
+    so a reply can legitimately arrive before the HSM has signed the address.
+
+    Lives here rather than in a service so ``AddressService`` and
+    ``AssetService.get_addresses`` cannot drift: ``get_addresses`` was fixed to verify
+    once already while ``create_address`` was missed, which is exactly the shape of
+    defect a shared seam removes.
+
+    Args:
+        address: The mapped address.
+        rules_container: The decoded, SuperAdmin-verified rules container.
+
+    Returns:
+        The same address, once it is safe to return.
+
+    Raises:
+        IntegrityError: If the signature does not verify, or an address string arrived
+            with no signature to check it against.
+        ValueError: If arguments are None.
+    """
+    if address is None:
+        raise ValueError("address cannot be None")
+
+    if not address.address:
+        return address
+
+    if not address.signature:
+        raise IntegrityError(
+            f"address {address.id} (status {address.status!r}) carries an address string "
+            "but no HSM signature; refusing to return an unverified destination. "
+            'Re-read once the status reaches "signed"'
+        )
+
+    verify_address_signature(address, rules_container)
+    return address

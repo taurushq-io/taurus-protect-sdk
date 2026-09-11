@@ -160,8 +160,10 @@ class PriceService(BaseService):
             result = getattr(resp, "result", None)
             return price_history_from_dto(result) if result else []
         except Exception as e:
-            from taurus_protect.errors import APIError
+            from taurus_protect.errors import APIError, IntegrityError
 
-            if isinstance(e, (APIError, ValueError)):
+            # Consistent with the siblings in this file: IntegrityError is not an APIError, so omitting it here turns a
+            # security failure into a retryable ServerError(500).
+            if isinstance(e, (APIError, IntegrityError, ValueError)):
                 raise
             raise self._handle_error(e) from e

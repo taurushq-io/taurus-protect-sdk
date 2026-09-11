@@ -30,9 +30,10 @@ class VerifiedEnvelopeDerivationTest {
         metadata.setPayloadAsString(ASSET_PAYLOAD);
         envelope.setMetadata(metadata);
 
-        envelope.markVerified(new DecodedRulesContainer());
+        envelope.markVerified(new DecodedRulesContainer(), ASSET_PAYLOAD);
 
-        // There is no seam to inject "0xATTACKER" through: markVerified takes no asset.
+        // There is no seam to inject "0xATTACKER" through: markVerified takes no asset,
+        // only the payload a counted signature covered.
         assertEquals("0xREAL", envelope.getWhitelistedAsset().getContractAddress());
         assertEquals("USDC", envelope.getWhitelistedAsset().getSymbol());
     }
@@ -44,7 +45,7 @@ class VerifiedEnvelopeDerivationTest {
         envelope.setMetadata(new WhitelistMetadata());
 
         WhitelistException e = assertThrows(WhitelistException.class,
-                () -> envelope.markVerified(new DecodedRulesContainer()));
+                () -> envelope.markVerified(new DecodedRulesContainer(), ASSET_PAYLOAD));
         assertTrue(e.getMessage().contains("no signed payload"), e.getMessage());
 
         // And the gate stayed shut, so the getter still refuses.
@@ -63,10 +64,11 @@ class VerifiedEnvelopeDerivationTest {
     void addressIsDerivedFromItsOwnPayload() throws Exception {
         SignedWhitelistedAddressEnvelope envelope = new SignedWhitelistedAddressEnvelope();
         WhitelistMetadata metadata = new WhitelistMetadata();
-        metadata.setPayloadAsString("{\"address\":\"0xREAL\",\"label\":\"treasury\"}");
+        String payload = "{\"address\":\"0xREAL\",\"label\":\"treasury\"}";
+        metadata.setPayloadAsString(payload);
         envelope.setMetadata(metadata);
 
-        envelope.markVerified(new DecodedRulesContainer());
+        envelope.markVerified(new DecodedRulesContainer(), payload);
 
         assertEquals("0xREAL", envelope.getWhitelistedAddress().getAddress());
     }
@@ -78,7 +80,46 @@ class VerifiedEnvelopeDerivationTest {
         envelope.setMetadata(new WhitelistMetadata());
 
         assertThrows(WhitelistException.class,
-                () -> envelope.markVerified(new DecodedRulesContainer()));
+                () -> envelope.markVerified(new DecodedRulesContainer(), "{}"));
+        assertThrows(IllegalStateException.class, envelope::getWhitelistedAddress);
+    }
+
+    @Test
+    @DisplayName("the derivation uses the VERIFIED payload, not the delivered one")
+    void derivationUsesTheVerifiedPayloadNotTheDeliveredOne() throws Exception {
+        // What a server can do on a legacy row: append a duplicate label immediately
+        // before the closing brace. The legacy strip recovers the genuinely signed bytes,
+        // so every signature check passes -- and Gson keeps the LAST of two duplicate
+        // keys, so parsing the DELIVERED text would return the attacker's value as
+        // verified. Step 4 hands over what it matched; that is what must be parsed.
+        String signed = "{\"address\":\"0xREAL\",\"label\":\"treasury\"}";
+        String delivered =
+                "{\"address\":\"0xREAL\",\"label\":\"treasury\",\"label\":\"ATTACKER\"}";
+
+        SignedWhitelistedAddressEnvelope envelope = new SignedWhitelistedAddressEnvelope();
+        WhitelistMetadata metadata = new WhitelistMetadata();
+        metadata.setPayloadAsString(delivered);
+        envelope.setMetadata(metadata);
+
+        envelope.markVerified(new DecodedRulesContainer(), signed);
+
+        assertEquals("treasury", envelope.getWhitelistedAddress().getLabel(),
+                "the appended label must not reach the caller as verified");
+    }
+
+    @Test
+    @DisplayName("an absent verified payload is a hard failure, never a fallback")
+    void anAbsentVerifiedPayloadDoesNotFallBackToMetadata() {
+        // Defaulting to metadata.payloadAsString here would reintroduce the bug above,
+        // which is why it is refused rather than defaulted.
+        SignedWhitelistedAddressEnvelope envelope = new SignedWhitelistedAddressEnvelope();
+        WhitelistMetadata metadata = new WhitelistMetadata();
+        metadata.setPayloadAsString("{\"address\":\"0xREAL\"}");
+        envelope.setMetadata(metadata);
+
+        WhitelistException e = assertThrows(WhitelistException.class,
+                () -> envelope.markVerified(new DecodedRulesContainer(), null));
+        assertTrue(e.getMessage().contains("no verified payload"), e.getMessage());
         assertThrows(IllegalStateException.class, envelope::getWhitelistedAddress);
     }
 }

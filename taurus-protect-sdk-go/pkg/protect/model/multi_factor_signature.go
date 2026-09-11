@@ -17,6 +17,11 @@ type MultiFactorSignatureInfo struct {
 	// ID is the multi-factor signature ID.
 	ID string `json:"id"`
 	// PayloadToSign is the list of payloads that need to be signed.
+	//
+	// UNVERIFIED SERVER DATA. Unlike every other field the SDK hands back, these bytes have
+	// not been checked against anything — the reply carries no entity id to check them
+	// against. Bind them to a verified entity before signing; see
+	// MultiFactorSignatureService.GetMultiFactorSignatureInfo.
 	PayloadToSign []string `json:"payload_to_sign,omitempty"`
 	// EntityType is the type of entity associated with this signature request.
 	EntityType MultiFactorSignatureEntityType `json:"entity_type"`

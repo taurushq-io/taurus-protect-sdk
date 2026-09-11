@@ -28,6 +28,7 @@ import type {
 } from '../models/governance-rules';
 import { RuleSourceType } from '../models/governance-rules';
 import { ruleCellFromBytes } from './rule-cell-codec';
+import { MAX_RULES_CONTAINER_BYTES } from '../helpers/signed-payload-guard';
 import { ruleSourceToBytes } from './protobuf-rules-container-encode';
 import {
   RulesContainer as ProtobufRulesContainer,
@@ -73,9 +74,18 @@ export function pbEnumName(enumObj: Record<string | number, string | number>, va
 
 /**
  * Attempts to decode protobuf bytes to a DecodedRulesContainer.
- * Returns undefined if the bytes are not a protobuf RulesContainer.
+ * Returns undefined if the bytes are not a protobuf RulesContainer, or if they exceed
+ * {@link MAX_RULES_CONTAINER_BYTES}.
+ *
+ * The size bound is here as well as in `rulesContainerFromBase64` because this function
+ * is exported and so reachable with arbitrary bytes. It matters more than it looks:
+ * megabytes of `0x00` decode as a perfectly *valid* empty RulesContainer, so without a
+ * bound a hostile response is not even malformed enough to be rejected on its content.
  */
 export function tryDecodeProtobufRulesContainer(bytes: Uint8Array): DecodedRulesContainer | undefined {
+  if (bytes.length > MAX_RULES_CONTAINER_BYTES) {
+    return undefined;
+  }
   try {
     return rulesContainerFromProtobuf(ProtobufRulesContainer.decode(bytes));
   } catch {

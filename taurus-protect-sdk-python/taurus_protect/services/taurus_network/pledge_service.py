@@ -9,8 +9,13 @@ from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 
 from taurus_protect.crypto.hashing import calculate_hex_hash
-from taurus_protect.errors import IntegrityError
 from taurus_protect.crypto.signing import sign_data
+from taurus_protect.errors import (
+    APIError,
+    IntegrityError,
+    NotFoundError,
+    WhitelistError,
+)
 from taurus_protect.mappers.taurus_network.pledge import (
     pledge_action_from_dto,
     pledge_actions_from_dto,
@@ -39,6 +44,44 @@ from taurus_protect.services._base import BaseService
 
 if TYPE_CHECKING:
     pass  # For OpenAPI types when available
+
+
+def _verify_pledge_action_metadata(actions: List[PledgeAction]) -> None:
+    """Verify every action's hash against its payload on the READ paths, so a caller
+    reviewing an action reads a payload the hash actually commits to.
+
+    Without it, a compromised server can return an action whose ``payload`` describes a
+    benign top-up while its ``hash`` is that of a withdrawal of the whole collateral to
+    an address of the attacker's choosing: the approver reviews the payload, the approval
+    path signs the hash, and the movement executed is not the one they read. The approval
+    path verifies AGAIN in the same call rather than trusting a read-time check, because
+    an action can reach it decoded from a queue or cache rather than from this SDK.
+
+    An action with no metadata is not an error -- an early-status action has nothing to
+    read. A hash with no payload IS: there is nothing to verify it against.
+
+    One bad row fails the whole page here, matching Go. These are approval candidates
+    rather than a reference list, so a silently shortened page is the worse outcome.
+
+    Raises:
+        IntegrityError: If any action's hash does not cover its payload.
+    """
+    for action in actions:
+        if action.metadata is None:
+            continue
+        if not action.metadata.hash and not action.metadata.payload:
+            continue
+        if not action.metadata.payload:
+            raise IntegrityError(
+                f"pledge action {action.id}: hash exists but the payload it commits to "
+                "is missing, so there is nothing to verify it against"
+            )
+        computed = calculate_hex_hash(action.metadata.payload)
+        if not hmac.compare_digest(computed, action.metadata.hash):
+            raise IntegrityError(
+                f"pledge action {action.id}: hash verification failed: "
+                f"computed={computed}, provided={action.metadata.hash}"
+            )
 
 
 class PledgeService(BaseService):
@@ -101,21 +144,18 @@ class PledgeService(BaseService):
 
             result = getattr(resp, "result", None)
             if result is None:
-                from taurus_protect.errors import NotFoundError
 
                 raise NotFoundError(f"Pledge {pledge_id} not found")
 
             pledge = pledge_from_dto(result)
             if pledge is None:
-                from taurus_protect.errors import NotFoundError
 
                 raise NotFoundError(f"Pledge {pledge_id} not found")
 
             return pledge
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -157,9 +197,8 @@ class PledgeService(BaseService):
 
             return pledges, pagination
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, APIError):
+            if isinstance(e, (APIError, IntegrityError, WhitelistError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -223,28 +262,24 @@ class PledgeService(BaseService):
 
             pledge_result = getattr(resp, "result", None)
             if pledge_result is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to create pledge: no result returned")
 
             pledge = pledge_from_dto(pledge_result)
             if pledge is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to create pledge: invalid response")
 
             action_result = getattr(resp, "action", None)
             action = pledge_action_from_dto(action_result)
             if action is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to create pledge: no action returned")
 
             return pledge, action
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -289,21 +324,18 @@ class PledgeService(BaseService):
 
             result = getattr(resp, "result", None)
             if result is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to update pledge: no result returned")
 
             pledge = pledge_from_dto(result)
             if pledge is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to update pledge: invalid response")
 
             return pledge
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -344,28 +376,24 @@ class PledgeService(BaseService):
 
             pledge_result = getattr(resp, "result", None)
             if pledge_result is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to add collateral: no result returned")
 
             pledge = pledge_from_dto(pledge_result)
             if pledge is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to add collateral: invalid response")
 
             action_result = getattr(resp, "action", None)
             action = pledge_action_from_dto(action_result)
             if action is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to add collateral: no action returned")
 
             return pledge, action
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -413,28 +441,24 @@ class PledgeService(BaseService):
 
             withdrawal_result = getattr(resp, "result", None)
             if withdrawal_result is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to withdraw: no result returned")
 
             withdrawal = pledge_withdrawal_from_dto(withdrawal_result)
             if withdrawal is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to withdraw: invalid response")
 
             action_result = getattr(resp, "action", None)
             action = pledge_action_from_dto(action_result)
             if action is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to withdraw: no action returned")
 
             return withdrawal, action
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -478,28 +502,24 @@ class PledgeService(BaseService):
 
             withdrawal_result = getattr(resp, "result", None)
             if withdrawal_result is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to initiate withdrawal: no result returned")
 
             withdrawal = pledge_withdrawal_from_dto(withdrawal_result)
             if withdrawal is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to initiate withdrawal: invalid response")
 
             action_result = getattr(resp, "action", None)
             action = pledge_action_from_dto(action_result)
             if action is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to initiate withdrawal: no action returned")
 
             return withdrawal, action
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -532,28 +552,24 @@ class PledgeService(BaseService):
 
             pledge_result = getattr(resp, "result", None)
             if pledge_result is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to unpledge: no result returned")
 
             pledge = pledge_from_dto(pledge_result)
             if pledge is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to unpledge: invalid response")
 
             action_result = getattr(resp, "action", None)
             action = pledge_action_from_dto(action_result)
             if action is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to unpledge: no action returned")
 
             return pledge, action
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -593,21 +609,18 @@ class PledgeService(BaseService):
 
             result = getattr(resp, "result", None)
             if result is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to reject pledge: no result returned")
 
             pledge = pledge_from_dto(result)
             if pledge is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to reject pledge: invalid response")
 
             return pledge
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -640,6 +653,7 @@ class PledgeService(BaseService):
 
             result = getattr(resp, "result", None)
             actions = pledge_actions_from_dto(result) if result else []
+            _verify_pledge_action_metadata(actions)
 
             pagination = self._extract_pagination(
                 total_items=getattr(resp, "total_items", None),
@@ -649,9 +663,8 @@ class PledgeService(BaseService):
 
             return actions, pagination
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, APIError):
+            if isinstance(e, (APIError, IntegrityError, WhitelistError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -685,6 +698,7 @@ class PledgeService(BaseService):
 
             result = getattr(resp, "result", None)
             actions = pledge_actions_from_dto(result) if result else []
+            _verify_pledge_action_metadata(actions)
 
             pagination = self._extract_pagination(
                 total_items=getattr(resp, "total_items", None),
@@ -694,9 +708,8 @@ class PledgeService(BaseService):
 
             return actions, pagination
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, APIError):
+            if isinstance(e, (APIError, IntegrityError, WhitelistError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -764,7 +777,7 @@ class PledgeService(BaseService):
 
             # Build concatenated hash string - array of hex hashes
             hashes = [a.metadata.hash for a in sorted_actions]
-            to_sign = json.dumps(hashes)
+            to_sign = json.dumps(hashes, separators=(",", ":"))
 
             # Sign with ECDSA
             signature = sign_data(private_key, to_sign.encode("utf-8"))
@@ -785,9 +798,8 @@ class PledgeService(BaseService):
             # If no count returned, assume all were approved
             return len(actions)
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -829,9 +841,8 @@ class PledgeService(BaseService):
             # If no count returned, assume all were rejected
             return len(req.ids)
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -872,8 +883,7 @@ class PledgeService(BaseService):
 
             return withdrawals, pagination
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, APIError):
+            if isinstance(e, (APIError, IntegrityError, WhitelistError)):
                 raise
             raise self._handle_error(e) from e

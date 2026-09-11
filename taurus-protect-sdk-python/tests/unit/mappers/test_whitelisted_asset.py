@@ -10,7 +10,15 @@ from taurus_protect.services.whitelisted_asset_service import WhitelistedAssetSe
 class TestMapAssetFromDto:
     """Tests for WhitelistedAssetService._map_asset_from_dto."""
 
-    def test_maps_fields_from_payload(self) -> None:
+    def test_maps_the_envelope_but_no_identity_field(self) -> None:
+        """The mapper carries the envelope; identity comes from the verified payload.
+
+        ``name``/``symbol``/``blockchain``/``network``/``contract_address`` used to be
+        parsed out of ``payload_as_string`` here, i.e. before any signature had been
+        checked. Step 6 lives in ``WhitelistedAssetService._verified_asset`` now, and it
+        parses the payload step 4 matched -- which for a legacy-signed row is not the
+        payload the server delivered.
+        """
         payload = {
             "name": "Tether",
             "symbol": "USDT",
@@ -45,13 +53,16 @@ class TestMapAssetFromDto:
         assert isinstance(result, WhitelistedAsset)
         assert result.id == "asset-1"
         assert result.tenant_id == "t-1"
-        # Security-critical fields from payload only
-        assert result.name == "Tether"
-        assert result.symbol == "USDT"
-        assert result.blockchain == "ETH"
-        assert result.network == "mainnet"
-        assert result.contract_address == "0xdac17f958d2ee523a2206206994597c13d831ec7"
-        # Non-security fields from DTO
+        # Security-critical fields are NOT sourced here, even though a payload is present
+        assert result.name is None
+        assert result.symbol is None
+        assert result.blockchain is None
+        assert result.network is None
+        assert result.contract_address is None
+        # The verification material and the non-security fields are mapped
+        assert result.metadata is not None
+        assert result.metadata.payload_as_string == json.dumps(payload)
+        assert result.rules_container == "base64rc"
         assert result.status == "APPROVED"
         assert result.action == "APPROVE"
         assert result.business_rule_enabled is True

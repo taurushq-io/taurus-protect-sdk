@@ -4,7 +4,9 @@
  * Provides methods for managing Taurus Network pledges between participants.
  */
 
-import { NotFoundError, ValidationError } from '../../errors';
+import type { KeyObject } from 'crypto';
+import { IntegrityError, NotFoundError, ValidationError } from '../../errors';
+import { calculateHexHash, constantTimeCompare, signData } from '../../crypto';
 import type { TaurusNetworkPledgeApi } from '../../internal/openapi/apis/TaurusNetworkPledgeApi';
 import type {
   TgvalidatordTnPledge,
@@ -407,6 +409,54 @@ function pledgeWithdrawalFromDto(dto?: TgvalidatordTnPledgeWithdrawal): PledgeWi
 }
 
 /**
+ * Verifies that every action's metadata hash covers the payload delivered with it.
+ *
+ * Run on both read paths, so a caller reviewing an action reads a payload the hash
+ * actually commits to. Without it, an integrator displaying an action for review shows
+ * content nothing has checked: a response-controlling server can send a
+ * `payloadAsString` describing a benign top-up alongside the `hash` of a withdrawal of
+ * the whole collateral, and the approver signs the hash they never saw.
+ *
+ * Two shapes are deliberately treated differently:
+ *
+ * - **no metadata at all** is not an error. An early-status action has nothing to read.
+ * - **a hash with no payload IS an error.** There is nothing to verify the hash
+ *   against, so passing it through would let an unverifiable action reach the approval
+ *   path looking like a checked one.
+ *
+ * One bad row fails the whole page rather than being excluded: these are actions
+ * awaiting a signature, and a filtered page would silently under-report what is
+ * pending. It also matches the Go SDK, whose two list paths abort identically.
+ *
+ * @param actions - The mapped actions from a list reply
+ * @throws IntegrityError if any action's hash does not cover its payload
+ */
+function verifyPledgeActionMetadata(actions: PledgeAction[]): void {
+  for (const action of actions) {
+    const metadata = action.metadata;
+    if (!metadata) {
+      continue;
+    }
+    if (!metadata.hash) {
+      continue;
+    }
+    if (!metadata.payloadAsString) {
+      throw new IntegrityError(
+        `pledge action ${action.id}: metadata hash exists but the payload it commits ` +
+          `to is missing, so there is nothing to verify it against`
+      );
+    }
+    const computed = calculateHexHash(metadata.payloadAsString);
+    if (!constantTimeCompare(computed, metadata.hash)) {
+      throw new IntegrityError(
+        `pledge action ${action.id}: metadata hash verification failed: ` +
+          `computed=${computed}, provided=${metadata.hash}`
+      );
+    }
+  }
+}
+
+/**
  * Extracts cursor pagination from response.
  */
 function extractCursorPagination(cursor?: {
@@ -770,8 +820,12 @@ export class PledgeService extends BaseService {
   /**
    * Lists pledge actions with optional filtering.
    *
+   * Every action's metadata hash is verified against the payload delivered with it,
+   * so the content a reviewer reads is content the hash commits to.
+   *
    * @param options - Optional filtering and pagination options
    * @returns Pledge actions list and pagination info
+   * @throws {@link IntegrityError} If any action's hash does not cover its payload
    * @throws {@link APIError} If API request fails
    */
   async listPledgeActions(
@@ -797,6 +851,8 @@ export class PledgeService extends BaseService {
         }
       }
 
+      verifyPledgeActionMetadata(actions);
+
       return {
         actions,
         pagination: extractCursorPagination(response.cursor),
@@ -809,8 +865,12 @@ export class PledgeService extends BaseService {
    *
    * Returns only actions that require approval from the current user.
    *
+   * Every action's metadata hash is verified against the payload delivered with it,
+   * so the content a reviewer reads is content the hash commits to.
+   *
    * @param options - Optional filtering and pagination options
    * @returns Pledge actions list and pagination info
+   * @throws {@link IntegrityError} If any action's hash does not cover its payload
    * @throws {@link APIError} If API request fails
    */
   async listPledgeActionsForApproval(
@@ -836,6 +896,8 @@ export class PledgeService extends BaseService {
         }
       }
 
+      verifyPledgeActionMetadata(actions);
+
       return {
         actions,
         pagination: extractCursorPagination(response.cursor),
@@ -844,40 +906,94 @@ export class PledgeService extends BaseService {
   }
 
   /**
-   * Approves multiple pledge actions with ECDSA signature.
+   * Approves one or more pledge actions, verifying every metadata hash it is about to
+   * attest to and signing inside the SDK.
    *
-   * The actions are sorted by ID, and a signature is computed over
-   * the concatenated hashes of their metadata using the provided private key.
+   * ```
+   * actions ─▶ presence check ─▶ sha256(payload) == hash ─▶ sort by id ─▶ sign once ─▶ POST
+   * ```
    *
-   * @param actionIds - List of pledge action IDs to approve
-   * @param signature - Base64-encoded ECDSA signature
+   * This used to take an opaque, caller-computed `signature` string with only a
+   * non-empty check, so the approver's key attested to a hash nothing had verified. A
+   * malicious or compromised server could return a pledge action whose
+   * `payloadAsString` describes a benign top-up while its `hash` is that of a
+   * withdrawal of the whole collateral to an address of the attacker's choosing: the
+   * approver reviews the payload, signs the hash, and the movement executed is not the
+   * one they read.
+   *
+   * The hash is re-verified here even though the read paths already did it — the
+   * action is a plain interface, so one decoded from a queue, a webhook or a cached
+   * blob can arrive with any hash at all. Re-verification is a SHA-256 over a string
+   * already in hand.
+   *
+   * One signature covers the whole batch, so any action that fails these checks aborts
+   * the call and nothing is signed or submitted. **Breaking change:** this previously
+   * took `(actionIds, signature, comment)`.
+   *
+   * @param actions - The pledge actions to approve, as returned by a list path
+   * @param privateKey - ECDSA private key for signing (P-256)
    * @param comment - Optional approval comment
-   * @returns Number of actions successfully approved
-   * @throws {@link ValidationError} If arguments are invalid
+   * @returns Number of actions approved
+   * @throws {@link ValidationError} If arguments are invalid or metadata is absent
+   * @throws {@link IntegrityError} If any action's hash does not cover its payload
    * @throws {@link APIError} If API request fails
    */
   async approvePledgeActions(
-    actionIds: string[],
-    signature: string,
+    actions: PledgeAction[],
+    privateKey: KeyObject,
     comment: string = 'approving via taurus-protect-sdk-typescript'
   ): Promise<number> {
-    if (!actionIds || actionIds.length === 0) {
-      throw new ValidationError('actionIds list cannot be empty');
+    if (!actions || actions.length === 0) {
+      throw new ValidationError('actions list cannot be empty');
     }
-    if (!signature || signature.trim() === '') {
-      throw new ValidationError('signature is required');
+    if (!privateKey) {
+      throw new ValidationError('privateKey is required');
+    }
+
+    for (const action of actions) {
+      if (!action.metadata) {
+        throw new ValidationError(`pledge action ${action.id} has no metadata`);
+      }
+      if (!action.metadata.hash) {
+        throw new ValidationError(`pledge action ${action.id} has no metadata hash`);
+      }
+      if (!action.metadata.payloadAsString) {
+        throw new IntegrityError(
+          `refusing to sign pledge action ${action.id}: hash exists but the payload ` +
+            `it commits to is missing, so there is nothing to verify it against`
+        );
+      }
+      const computed = calculateHexHash(action.metadata.payloadAsString);
+      if (!constantTimeCompare(computed, action.metadata.hash)) {
+        throw new IntegrityError(
+          `refusing to sign pledge action ${action.id}: hash verification failed: ` +
+            `computed=${computed}, provided=${action.metadata.hash}`
+        );
+      }
     }
 
     return this.execute(async () => {
+      // Sort by id: the endpoint requires ascending order and the signed array must
+      // not depend on the caller's ordering — it reproduces the server's own.
+      const sorted = [...actions].sort((a, b) =>
+        a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+      );
+
+      const ids = sorted.map((a) => a.id);
+      const hashes = sorted.map((a) => a.metadata!.hash!);
+      const hashesJson = JSON.stringify(hashes);
+
+      const signature = signData(privateKey, Buffer.from(hashesJson, 'utf-8'));
+
       await this.pledgeApi.taurusNetworkServiceApprovePledgeActions({
         body: {
-          ids: actionIds,
+          ids,
           signature,
           comment,
         },
       });
 
-      return actionIds.length;
+      return sorted.length;
     });
   }
 

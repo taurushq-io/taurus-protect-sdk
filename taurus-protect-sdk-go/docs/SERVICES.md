@@ -188,23 +188,48 @@ func (s *AddressService) ListAddresses(ctx context.Context, walletID string, opt
 Creates a new address in a wallet.
 
 ```go
-func (s *AddressService) CreateAddress(ctx context.Context, walletID string, req *model.CreateAddressRequest) (*model.Address, error)
+func (s *AddressService) CreateAddress(ctx context.Context, req *model.CreateAddressRequest) (*model.Address, error)
 ```
 
-**Parameters:**
+**Parameters:** (`model.CreateAddressRequest`)
 | Field | Type | Description |
 |-------|------|-------------|
-| Label | string | Address label |
+| WalletID | string | Wallet to create the address in (required) |
+| Label | string | Address label (required) |
 | Comment | string | Optional comment |
 | CustomerID | string | External customer ID |
 
+**The returned address is HSM-verified, exactly like `GetAddress` and `ListAddresses`.** Every
+path that returns a `*model.Address` — including this one and `AssetService.GetAssetAddresses` —
+goes through one `verifiedAddress` seam, so a server cannot substitute the destination on the
+one call whose caller is about to publish or fund it.
+
+Address creation can be asynchronous (`Status` is one of `created`, `creating`, `signed`,
+`observed`, `confirmed`), so the rule is not "always verify" but *never return an unverified
+address string*:
+
+- `Address` empty (still `creating`) — returned as-is with its `Status`; re-read once it advances.
+- `Address` present with a signature — verified; a failure is a `model.IntegrityError`.
+- `Address` present with **no** signature — refused, rather than handed over in the same type as
+  a verified one.
+
 **Example:**
 ```go
-address, err := client.Addresses().CreateAddress(ctx, walletID, &model.CreateAddressRequest{
+address, err := client.Addresses().CreateAddress(ctx, &model.CreateAddressRequest{
+    WalletID:   walletID,
     Label:      "Customer Deposit",
     Comment:    "Auto-generated",
     CustomerID: "USER-789",
 })
+if err != nil {
+    // May be a model.IntegrityError: the server returned an address it did not sign.
+    return err
+}
+if address.Address == "" {
+    // Asynchronous creation; re-read with GetAddress once Status advances.
+    fmt.Printf("pending, status=%s\n", address.Status)
+    return nil
+}
 fmt.Printf("Address: %s\n", address.Address)
 ```
 
@@ -628,9 +653,9 @@ entity, and `WhitelistedContractService` is write-only.
 ```go
 func (s *WhitelistedAssetService) GetWhitelistedAsset(ctx context.Context, id string) (*model.WhitelistedAsset, error)
 func (s *WhitelistedAssetService) GetWhitelistedAssetEnvelope(ctx context.Context, id string) (*model.WhitelistedAssetEnvelope, error)
-func (s *WhitelistedAssetService) ListWhitelistedAssets(ctx context.Context, opts *model.ListWhitelistedAssetsOptions) ([]*model.WhitelistedAsset, *model.Pagination, error)
-func (s *WhitelistedAssetService) ListWhitelistedAssetsForApproval(ctx context.Context, opts *model.ListWhitelistedAssetsForApprovalOptions) ([]*model.WhitelistedAsset, *model.Pagination, error)
-func (s *WhitelistedAssetService) ApproveWhitelistedAssets(ctx context.Context, ids []string, privateKey *ecdsa.PrivateKey, comment string) error
+func (s *WhitelistedAssetService) ListWhitelistedAssets(ctx context.Context, opts *model.ListWhitelistedAssetsOptions) (*model.WhitelistedAssetResult, error)
+func (s *WhitelistedAssetService) ListWhitelistedAssetsForApproval(ctx context.Context, opts *model.ListWhitelistedAssetsForApprovalOptions) (*model.WhitelistedAssetResult, error)
+func (s *WhitelistedAssetService) ApproveWhitelistedAssets(ctx context.Context, selection *model.WhitelistedAssetApproval, privateKey *ecdsa.PrivateKey, comment string) error
 ```
 
 `Get` and `List` populate `ContractAddress`, `Name`, `Symbol`, `Decimals` and `TokenID` by
@@ -638,16 +663,38 @@ running step 6 on the verified payload — without them the verified reader coul
 "is this contract whitelisted, and at what address?", which is what sent callers to the
 unverified one.
 
-`ApproveWhitelistedAssets` is **all-or-nothing**: each asset is re-read and verified, the
-hashes those rows carry are what gets signed, and any row that is missing or fails
-verification aborts the whole call. The API takes one signature covering the whole batch, so a
-partial approval would mean the caller believes they approved more than they did.
+The list methods return `*model.WhitelistedAssetResult` (`Assets` + `Pagination`) rather than a
+bare tuple. The tuple was the outlier among this package's result types, and it left the asset
+side with nowhere to hang the approval pin below.
+
+`ApproveWhitelistedAssets` is **all-or-nothing** and takes a **content pin**, not bare ids:
+
+```go
+result, err := client.WhitelistedAssets().ListWhitelistedAssetsForApproval(ctx, opts)
+// ... the approver reviews result.Assets ...
+selection, err := result.Select("11", "12")   // or result.SelectAll()
+err = client.WhitelistedAssets().ApproveWhitelistedAssets(ctx, selection, key, "reviewed")
+```
+
+`Select` records the metadata hash each row carried **at review time**. The approval re-reads and
+verifies those ids, then refuses to sign if any row's hash has changed since. Without that pin
+the approval signed whatever the server returned under the requested ids, so a
+response-controlling server could substitute a row whose existing signatures already satisfy the
+container it presents and harvest a genuine approver signature over content nobody reviewed.
+`WhitelistedAddressResult` / `WhitelistedAssetResult` are the only producers of a usable
+selection — the pinned map is unexported, so a hand-built value pins nothing and is refused.
+
+Any row that is missing, fails verification, or whose hash no longer matches the pin aborts the
+whole call. The API takes one signature covering the whole batch, so a partial approval would
+mean the caller believes they approved more than they did.
 `WhitelistedContractService.ApproveWhitelistedContract` — which takes an opaque signature over
 hashes nothing verified — is deprecated in its favour.
 
 ### Key Models
 
 - `model.WhitelistedAsset` - ID, Blockchain, Network, Status, Metadata, SignedContractAddress, Approvers, ContractAddress, Name, Symbol, Decimals, TokenID
+- `model.WhitelistedAssetResult` - Assets, Pagination
+- `model.WhitelistedAssetApproval` - the reviewed content pin; minted only by `Result.Select`/`SelectAll`
 
 ---
 
@@ -1169,8 +1216,19 @@ func (s *TaurusNetworkPledgeService) ListPledges(ctx context.Context, opts *mode
 func (s *TaurusNetworkPledgeService) CreatePledge(ctx context.Context, req *model.CreatePledgeRequest) (*model.Pledge, *model.PledgeAction, error)
 func (s *TaurusNetworkPledgeService) ListPledgeWithdrawals(ctx context.Context, pledgeID string, opts *model.ListPledgeWithdrawalsOptions) ([]*model.PledgeWithdrawal, *model.CursorPagination, error)
 func (s *TaurusNetworkPledgeService) ListPledgeActionsForApproval(ctx context.Context, opts *model.ListPledgeActionsOptions) ([]*model.PledgeAction, *model.CursorPagination, error)
-func (s *TaurusNetworkPledgeService) ApprovePledgeActions(ctx context.Context, actions []*model.PledgeAction, privateKey *ecdsa.PrivateKey) (int, error)
+func (s *TaurusNetworkPledgeService) ApprovePledgeActions(ctx context.Context, actions []taurusnetwork.PledgeAction, privateKey *ecdsa.PrivateKey, comment string) (*taurusnetwork.ApprovePledgeActionsResponse, error)
 ```
+
+`ApprovePledgeActions` takes the actions themselves rather than a pre-computed signature: it
+verifies `sha256(payloadAsString) == hash` for every one, sorts them by id as the endpoint
+requires, and signs inside the SDK. It previously accepted an opaque caller-supplied signature
+with only a non-empty check, so the approver's key attested to a hash nothing had checked — a
+server could return a pledge action whose `payloadAsString` describes a benign collateral top-up
+while its hash is that of a withdrawal to an address of its choosing. One signature covers the
+whole batch, so any action that fails verification aborts the call and nothing is signed.
+
+The read paths (`ListPledgeActions`, `ListPledgeActionsForApproval`) verify the same hashes, so
+an action displayed for review carries a payload the hash actually commits to.
 
 ### Key Models
 
@@ -1575,7 +1633,7 @@ fails if this list drifts or if the prose above documents a method that does not
 ### TaurusNetworkPledgeService
 
 - `AddPledgeCollateral(ctx context.Context, pledgeID string, req *taurusnetwork.AddPledgeCollateralRequest) (*taurusnetwork.AddPledgeCollateralResponse, error)` — AddPledgeCollateral adds collateral to an existing pledge.
-- `ApprovePledgeActions(ctx context.Context, req *taurusnetwork.ApprovePledgeActionsRequest) (*taurusnetwork.ApprovePledgeActionsResponse, error)` — ApprovePledgeActions approves one or more pledge actions.
+- `ApprovePledgeActions(ctx context.Context, actions []taurusnetwork.PledgeAction, privateKey *ecdsa.PrivateKey, comment string) (*taurusnetwork.ApprovePledgeActionsResponse, error)` — ApprovePledgeActions approves one or more pledge actions, verifying every metadata hash it
 - `CreatePledge(ctx context.Context, req *taurusnetwork.CreatePledgeRequest) (*taurusnetwork.CreatePledgeResponse, error)` — CreatePledge creates a new pledge.
 - `GetPledge(ctx context.Context, pledgeID string) (*taurusnetwork.Pledge, error)` — GetPledge retrieves a pledge by ID.
 - `InitiateWithdrawPledge(ctx context.Context, pledgeID string, req *taurusnetwork.InitiateWithdrawPledgeRequest) (*taurusnetwork.InitiateWithdrawPledgeResponse, error)` — InitiateWithdrawPledge initiates a withdrawal from a pledge (pledgor initiates).
@@ -1663,7 +1721,7 @@ fails if this list drifts or if the prose above documents a method that does not
 
 ### WhitelistedAddressService
 
-- `ApproveWhitelistedAddresses(ctx context.Context, ids []string, privateKey *ecdsa.PrivateKey, comment string) error` — ApproveWhitelistedAddresses signs and submits an approval for the given whitelisted
+- `ApproveWhitelistedAddresses(ctx context.Context, selection *model.WhitelistedAddressApproval, privateKey *ecdsa.PrivateKey, comment string) error` — ApproveWhitelistedAddresses signs and submits an approval for the reviewed whitelisted
 - `GetWhitelistedAddress(ctx context.Context, id string) (*model.WhitelistedAddress, error)` — GetWhitelistedAddress retrieves a whitelisted address by ID.
 - `GetWhitelistedAddressEnvelope(ctx context.Context, id string) (*model.WhitelistedAddressEnvelope, error)` — GetWhitelistedAddressEnvelope retrieves a whitelisted address envelope by ID and performs
 - `ListWhitelistedAddresses(ctx context.Context, opts *model.ListWhitelistedAddressesOptions) (*model.WhitelistedAddressResult, error)` — ListWhitelistedAddresses retrieves a list of whitelisted addresses, verifying every
@@ -1671,11 +1729,11 @@ fails if this list drifts or if the prose above documents a method that does not
 
 ### WhitelistedAssetService
 
-- `ApproveWhitelistedAssets(ctx context.Context, ids []string, privateKey *ecdsa.PrivateKey, comment string) error` — ApproveWhitelistedAssets signs and submits an approval for the given whitelisted
+- `ApproveWhitelistedAssets(ctx context.Context, selection *model.WhitelistedAssetApproval, privateKey *ecdsa.PrivateKey, comment string) error` — ApproveWhitelistedAssets signs and submits an approval for the reviewed whitelisted
 - `GetWhitelistedAsset(ctx context.Context, id string) (*model.WhitelistedAsset, error)` — GetWhitelistedAsset retrieves a whitelisted asset by ID.
 - `GetWhitelistedAssetEnvelope(ctx context.Context, id string) (*model.WhitelistedAssetEnvelope, error)` — GetWhitelistedAssetEnvelope retrieves a whitelisted asset envelope by ID and performs
-- `ListWhitelistedAssets(ctx context.Context, opts *model.ListWhitelistedAssetsOptions) ([]*model.WhitelistedAsset, *model.Pagination, error)` — ListWhitelistedAssets retrieves a list of whitelisted assets.
-- `ListWhitelistedAssetsForApproval(ctx context.Context, opts *model.ListWhitelistedAssetsForApprovalOptions) ([]*model.WhitelistedAsset, *model.Pagination, error)` — ListWhitelistedAssetsForApproval retrieves assets awaiting approval, verified the same
+- `ListWhitelistedAssets(ctx context.Context, opts *model.ListWhitelistedAssetsOptions) (*model.WhitelistedAssetResult, error)` — ListWhitelistedAssets retrieves a list of whitelisted assets.
+- `ListWhitelistedAssetsForApproval(ctx context.Context, opts *model.ListWhitelistedAssetsForApprovalOptions) (*model.WhitelistedAssetResult, error)` — ListWhitelistedAssetsForApproval retrieves assets awaiting approval, verified the same
 
 ### WhitelistedContractService
 

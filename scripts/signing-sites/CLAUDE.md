@@ -39,6 +39,18 @@ Current state: **17 sites — 13 `verifies`, 4 `signs-own-bytes`.**
   filtered them. There is a second TS alternative for a signature whose paren opens at
   end-of-line (`async approve(` with params on following lines) — without it three TS sites
   resolved to `list`, `getEnvelope` and a bare line number.
+
+  **The failure mode is a green-to-red flip on unrelated code, and it happened
+  2026-09-10.** Widening a Python except funnel to `except (APIError, IntegrityError,
+  WhitelistError):` above two signing calls matched the TS alternative — `except` followed
+  by parens and a colon — so both real sites re-keyed to the symbol `except`, and the gate
+  reported two UNDECLARED sites plus two manifest entries that "no longer sign anything".
+  Nothing about the signing code had changed. `except`/`elif`/`with` are on the blocklist now.
+
+  **Add RESERVED WORDS only.** Do not blocklist a builtin like `list`, `int` or `len`:
+  `list` is a real method name in three of the four SDKs, so blocklisting it would make a
+  future signing site inside `list` silently key to whatever declaration sits above it —
+  the one outcome worse than a false failure, because it is a false PASS.
 - **The crypto helpers are excluded, not classified.** `HELPER_PATHS` drops
   `crypto/`, `tpv1`, `CryptoTPV1.java`, `signing.ts|py` — those *define* the signing
   primitive rather than calling it.

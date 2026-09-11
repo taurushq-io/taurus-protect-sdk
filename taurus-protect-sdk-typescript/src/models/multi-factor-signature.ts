@@ -29,7 +29,14 @@ export enum MultiFactorSignatureEntityType {
 export interface MultiFactorSignatureInfo {
   /** The multi-factor signature ID */
   readonly id: string;
-  /** The payloads that need to be signed */
+  /**
+   * The payloads that need to be signed.
+   *
+   * UNVERIFIED SERVER DATA. Unlike every other field the SDK hands back, these bytes have not
+   * been checked against anything — the reply carries no entity id to check them against. Bind
+   * them to a verified entity before signing; see
+   * `MultiFactorSignatureService.get` for why and how.
+   */
   readonly payloadToSign: string[];
   /** The type of entity associated with this signature request */
   readonly entityType: MultiFactorSignatureEntityType;

@@ -24,6 +24,16 @@ public class MultiFactorSignatureInfo {
         this.id = id;
     }
 
+    /**
+     * The payloads that need to be signed.
+     *
+     * <p><b>UNVERIFIED SERVER DATA.</b> Unlike every other field the SDK hands back, these bytes
+     * have not been checked against anything — the reply carries no entity id to check them
+     * against. Bind them to a verified entity before signing; see
+     * {@link MultiFactorSignatureService#getMultiFactorSignatureInfo} for why and how.
+     *
+     * @return the unverified payloads to sign
+     */
     public List<String> getPayloadToSign() {
         return payloadToSign;
     }

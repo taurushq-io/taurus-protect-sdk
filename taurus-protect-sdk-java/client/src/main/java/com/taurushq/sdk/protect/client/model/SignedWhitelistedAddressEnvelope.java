@@ -218,17 +218,39 @@ public class SignedWhitelistedAddressEnvelope {
      * {@code TODOS.md} — a witness type the verifier alone can mint. This closes the
      * exploitable half without it.
      *
-     * @param rulesContainer the verified rules container
+     * <p><b>{@code verifiedPayload} is the payload the matched signature COVERED, which
+     * is not always the payload the server delivered.</b> Step 4 accepts three
+     * backward-compatible rewrites of the delivered payload, and those strips are not
+     * injective: a server can append a duplicate {@code ,"label":"X"} (or a
+     * {@code contractType} the row never had) immediately before the closing brace, the
+     * strip recovers the genuinely signed bytes, every signature check passes — and this
+     * method, parsing the DELIVERED text, would return the appended value as verified,
+     * because Gson keeps the LAST of two duplicate keys. So the payload is a parameter
+     * rather than read off {@code metadata}: it is the only way the derivation can be
+     * bytes a counted signature covered. {@code metadata.getPayloadAsString()} is left
+     * untouched, because a caller needs it to reproduce {@code metadata.hash}.
+     *
+     * @param rulesContainer  the verified rules container
+     * @param verifiedPayload the payload the matched signature covered — step 4's
+     *                        {@code LegacyPayloadVariant.getPayload()}, NOT
+     *                        {@code metadata.payloadAsString}
      * @throws WhitelistException if the signed payload is absent or unparseable
      */
-    public void markVerified(final DecodedRulesContainer rulesContainer)
+    public void markVerified(final DecodedRulesContainer rulesContainer,
+                             final String verifiedPayload)
             throws WhitelistException {
         if (this.metadata == null || Strings.isNullOrEmpty(this.metadata.getPayloadAsString())) {
             throw new WhitelistException(
                     "cannot mark verified: the envelope carries no signed payload");
         }
-        WhitelistedAddress address = WhitelistHashHelper.parseWhitelistedAddressFromJson(
-                this.metadata.getPayloadAsString());
+        if (Strings.isNullOrEmpty(verifiedPayload)) {
+            // Not a defaulting opportunity. Falling back to metadata.payloadAsString here
+            // is exactly the bug above, so an absent verified payload is a hard failure.
+            throw new WhitelistException("cannot mark verified: no verified payload was "
+                    + "supplied; step 4 must hand over the payload it matched");
+        }
+        WhitelistedAddress address =
+                WhitelistHashHelper.parseWhitelistedAddressFromJson(verifiedPayload);
 
         // Non-security fields, from this envelope's own DTO data. createdAt is the
         // "created" trail entry; attributes are a key/value list. Both are allowed to

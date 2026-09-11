@@ -19,14 +19,22 @@ import java.security.Security;
 import java.security.spec.ECGenParameterSpec;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RulesContainerCacheTest {
 
+    /** Bounds the wait for a second caller: a wedged slot must FAIL, never hang the suite. */
+    private static final long WEDGE_TIMEOUT_SECONDS = 5;
+
     private static GovernanceRuleService governanceRuleService;
+    private static List<PublicKey> superAdminKeys;
 
     @BeforeAll
     static void setUpKeys() throws Exception {
@@ -36,10 +44,10 @@ class RulesContainerCacheTest {
         KeyPairGenerator generator = KeyPairGenerator.getInstance("EC", BouncyCastleProvider.PROVIDER_NAME);
         generator.initialize(new ECGenParameterSpec("secp256r1"));
         KeyPair keyPair = generator.generateKeyPair();
-        List<PublicKey> keys = Collections.singletonList(keyPair.getPublic());
+        superAdminKeys = Collections.singletonList(keyPair.getPublic());
 
         governanceRuleService = new GovernanceRuleService(
-                new ApiClient(), new ApiExceptionMapper(), keys, 1);
+                new ApiClient(), new ApiExceptionMapper(), superAdminKeys, 1);
     }
 
     // --- Constructor validation ---
@@ -181,5 +189,127 @@ class RulesContainerCacheTest {
         DecodedRulesContainer container = new DecodedRulesContainer();
         container.setMinimumDistinctUserSignatures(2);
         return RulesContainerMapper.INSTANCE.toBase64String(container);
+    }
+
+    // --- Single-flight flag lifecycle (ported from Python's
+    // --- test_failed_fetch_still_releases_the_slot) ---
+
+    /**
+     * A governance service whose fetch fails exactly the way a hostile {@code /rules}
+     * response makes it fail: the container is wire-valid but carries no SuperAdmin
+     * signatures, so {@code getDecodedRulesContainer} — the one method the cache's own
+     * {@code doFetch()} verifies through — raises {@link IntegrityException}. That
+     * exception extends {@code SecurityException} and is therefore UNCHECKED, which is
+     * the entire point: the cache's {@code catch (ApiException e)} never sees it.
+     *
+     * <p>Overriding {@code getRules()} is the least-hacky injection available. This suite
+     * has JUnit only — no mocking library, no HTTP stub — and the cache deliberately
+     * exposes no setter and no fetcher hook (Go's {@code Set}/{@code SetFetcher} were
+     * REMOVED because either could seat a container nothing had verified; do not add a
+     * Java equivalent to make a test easier). Overriding the fetch input rather than the
+     * fetch outcome also keeps the SDK's real verification code, not a stub, as the thing
+     * that throws.
+     */
+    private static final class UnverifiableRulesService extends GovernanceRuleService {
+
+        UnverifiableRulesService() {
+            super(new ApiClient(), new ApiExceptionMapper(), superAdminKeys, 1);
+        }
+
+        @Override
+        public GovernanceRules getRules() {
+            GovernanceRules rules = new GovernanceRules();
+            rules.setRulesContainer(wireValidContainer());
+            rules.setRulesSignatures(Collections.<RuleUserSignature>emptyList());
+            return rules;
+        }
+    }
+
+    /** A cache call, so the two tests below can share the second-caller harness. */
+    private interface CacheCall {
+        void invoke() throws Exception;
+    }
+
+    /**
+     * Runs {@code call} on another thread and returns what it threw, failing the test if
+     * it has not finished within {@link #WEDGE_TIMEOUT_SECONDS}.
+     *
+     * <p>The bounded wait is what turns the wedge into a red test instead of a suite that
+     * never finishes: the cache waits on {@code lock.wait()} with no timeout, so a caller
+     * that never gets notified never comes back. The thread is a daemon so that a parked
+     * one cannot keep the surefire JVM alive after the failure has been reported.
+     *
+     * @param call what the second caller should do
+     * @return the exception it threw
+     * @throws InterruptedException if this thread is interrupted while waiting
+     */
+    private static Exception failureOnAnotherThread(final CacheCall call) throws InterruptedException {
+        final AtomicReference<Exception> outcome = new AtomicReference<>();
+        final CountDownLatch finished = new CountDownLatch(1);
+
+        Thread second = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    call.invoke();
+                    outcome.set(new IllegalStateException(
+                            "the fetch was expected to fail again, not succeed"));
+                } catch (Exception e) {
+                    // Deliberately broad: the subject of the test is WHICH exception comes
+                    // out, so it has to be captured rather than filtered.
+                    outcome.set(e);
+                } finally {
+                    finished.countDown();
+                }
+            }
+        });
+        second.setDaemon(true);
+        second.start();
+
+        assertTrue(finished.await(WEDGE_TIMEOUT_SECONDS, TimeUnit.SECONDS),
+                "a second caller never returned. The failed fetch left `fetching` true, so it "
+                        + "parked on the untimed lock.wait() and never woke: one crafted /rules "
+                        + "response permanently wedges every address, asset and price "
+                        + "verification in the process");
+        return outcome.get();
+    }
+
+    /**
+     * The single-flight slot must be released even when the fetch fails with an UNCHECKED
+     * exception. {@code fetching = true} is set under the lock and {@code doFetch()} then
+     * runs outside it; when the reset sat after the try rather than in a finally, the
+     * unchecked {@link IntegrityException} from container verification skipped it and left
+     * the flag true for the life of the process.
+     */
+    @Test
+    void getDecodedRulesContainer_failedFetchReleasesTheSlot() throws Exception {
+        final RulesContainerCache cache = new RulesContainerCache(new UnverifiableRulesService());
+
+        assertThrows(IntegrityException.class, () -> cache.getDecodedRulesContainer(),
+                "an unsigned container must be refused");
+
+        Exception second = failureOnAnotherThread(() -> cache.getDecodedRulesContainer());
+
+        assertTrue(second instanceof IntegrityException,
+                "the retry must surface the real integrity failure rather than a null container "
+                        + "or a stale one; got " + second);
+        assertFalse(cache.isCacheValid(),
+                "a failed fetch must not seat or freshen a container");
+    }
+
+    /** {@code invalidate()} sets the same flag, so it needs the same finally. */
+    @Test
+    void invalidate_failedFetchReleasesTheSlot() throws Exception {
+        final RulesContainerCache cache = new RulesContainerCache(new UnverifiableRulesService());
+
+        assertThrows(IntegrityException.class, () -> cache.invalidate(),
+                "an unsigned container must be refused");
+
+        Exception second = failureOnAnotherThread(() -> cache.invalidate());
+
+        assertTrue(second instanceof IntegrityException,
+                "the retry must surface the real integrity failure; got " + second);
+        assertFalse(cache.isCacheValid(),
+                "a failed invalidate must not seat or freshen a container");
     }
 }

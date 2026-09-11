@@ -324,6 +324,73 @@ pip3 install --upgrade pip
 correct, not an oversight: real signed payloads omit `network` unless the rule sets
 `includeNetworkInPayload`. Don't "fix" the default — it is what keeps the fallback path covered.
 
+## Verification surface added in the 2026-09-10 security-scan pass
+
+Go was the reference SDK for this pass; cross-SDK reasoning is in the repo-root `CLAUDE.md`.
+Python-specific, and each of these cost real time:
+
+- **A function-local `from taurus_protect.errors import X` is a LANDMINE.** Python makes the
+  name local to the WHOLE function, so an `except X` or `raise X` *earlier* in the same
+  function raises `UnboundLocalError`. This was a **live defect** in `request_service.py`:
+  `approve_requests` caught `IntegrityError` before an except funnel that re-imported it, so a
+  genuine verification failure crashed instead of reporting. Error imports are now at module
+  scope in `request_service.py`, `address_service.py` and `taurus_network/pledge_service.py`
+  (35 local imports removed from the last one alone). **The pattern is still present in ~30
+  other service files** — hoist rather than adding to it. `TODOS.md` has the census.
+- **Widening a funnel means propagating the SDK TAXONOMY, both directions.** The obvious half
+  is not remapping `IntegrityError` to a retryable `ServerError(500)`. The half that was
+  missed: the whitelist approve paths wrapped **everything** into
+  `IntegrityError("the verified read failed")`, so a transport failure surfaced as an integrity
+  failure and lost `is_retryable()`. Both now propagate `(APIError, IntegrityError,
+  WhitelistError)` unchanged and wrap only the rest. Go keeps the type reachable through `%w`;
+  `raise ... from` does **not**, so the tuple is required here and is not redundant.
+- **`WhitelistedAssetApproval.select(assets, *ids)` is a CLASSMETHOD taking the ROWS**, not a
+  method on a result object, because this SDK merged asset and envelope — `WhitelistedAsset`
+  carries `metadata`, so the reviewed hash is reachable off the rows themselves. The address
+  side cannot do that (`WhitelistedAddress` has no metadata field, the Python-specific
+  difference this file already records), so there it is
+  `WhitelistedAddressListResult.select(*ids)` / `.select_all()`.
+- **`resolve_rule_key_with_source` is the source-aware form; `resolve_rule_key` is a two-value
+  projection over it.** Keep the projection: the shared `rule_key` vectors assert exactly the
+  `(blockchain, network)` shape across all four SDKs, and Go keeps its own two-value form for the
+  same reason. Only a caller that must know whether the NETWORK was signed — and therefore whether
+  one tier or every reachable tier applies — needs the three-value form.
+- **`DecodedRulesContainer._rule_candidates` serves BOTH rule families, so it reads the chain
+  through `_rule_chain(rule)`** — address rules name that field `currency`, contract rules name it
+  `blockchain`. Reading one name is fail-open (every contract rule reads as the wildcard global
+  default); see the repo-root `CLAUDE.md` -> "Same field, different names". The other three SDKs
+  have separate typed walks and cannot hit it.
+- **`WhitelistedAssetMetadata`, not `WhitelistMetadata`** — the asset envelope has its own
+  metadata class, and both live in `models/whitelisted_address.py`. There is no
+  `models/whitelisted_asset.py`; importing from one is a `ModuleNotFoundError` that reads as a
+  broken environment.
+- **The MFA service was DEAD CODE that could not run**, and its tests passed because `mfs_api`
+  was a bare `MagicMock()`. It called four generated operations that do not exist
+  (`..._get_challenge` / `_get_challenges` / `_create_challenge` / `_verify_challenge`) and
+  imported two request models that do not exist. Rewritten onto the four real operations
+  (approve / create-batch / get-entities-info / reject). **The test stub is now
+  `MagicMock(spec=MultiFactorSignatureApi)`** — that is the whole fix for the class of bug: a
+  bare mock answers any attribute, so a service calling nothing that exists reports green. The
+  test also pins that the four phantom operations are absent, so the challenge-shaped API
+  cannot come back from memory.
+- **The MFA entity kind is refused, never defaulted.** `_entity_type_from_dto` raises
+  `IntegrityError` on an unknown or missing kind, because the kind decides which verifying
+  reader a caller must check `payload_to_sign` against — defaulting it would say a payload
+  covers a REQUEST when the server said something else.
+- **Pledge read paths verify now** (`_verify_pledge_action_metadata`, module-level, called from
+  both list paths). Approval verifies **again** in the same call, deliberately: an action can
+  reach `approve_pledge_actions` decoded from a queue or cache rather than from this SDK.
+- **`json.dumps(hashes)` was signing different bytes from the other three SDKs.** Default
+  separators put a space after each comma; Go's `json.Marshal`, Java/TS `JSON.stringify` and
+  every whitelist path in this SDK emit compact JSON. The pledge approval now passes
+  `separators=(",", ":")`. Any new signing path must too — the server verifies against its own
+  rebuilt array, so a space is a rejected signature.
+- **The positive-integer id check on both whitelist `approve` methods is load-bearing.** A
+  zero or negative id would be sorted into the signed array with no row behind it. It was
+  silently dropped from both while the content pin was being wired in and had to be restored;
+  `test_rejects_bad_input` in each suite is what asserts it. `int(raw_id)` alone is not enough
+  — `"0"` parses fine.
+
 ## Verification surface added in the 2026-09-07 pass
 
 Cross-SDK rules are in the repo-root `CLAUDE.md`. Python-specific:

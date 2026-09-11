@@ -37,6 +37,13 @@ type VerificationResult struct {
 	// VerifiedHash is the hash that was matched during verification.
 	// This may differ from the input hash if a legacy hash format was used.
 	VerifiedHash string
+	// VerifiedPayload is the payload VerifiedHash covers, and the bytes VerifiedAddress was
+	// parsed from. When a legacy variant matched, this is that variant rather than
+	// Metadata.PayloadAsString — the delivered payload carries members no signature covered.
+	//
+	// Metadata.PayloadAsString is deliberately left untouched: a caller needs it to reproduce
+	// metadata.hash. Read this field instead when the question is "what was actually signed".
+	VerifiedPayload string
 }
 
 // VerifyWhitelistedAddress performs the complete 6-step verification of a whitelisted address.
@@ -90,8 +97,9 @@ func (v *WhitelistedAddressVerifier) VerifyWhitelistedAddress(
 	}
 
 	// Step 4: Verify hash coverage
-	// verifiedHash may differ from addr.Metadata.Hash if a legacy hash format was matched
-	verifiedHash, err := v.verifyHashInSignedHashes(addr)
+	// verifiedHash may differ from addr.Metadata.Hash if a legacy hash format was matched, and
+	// verifiedPayload is then the legacy variant rather than the delivered payload.
+	verifiedHash, verifiedPayload, err := v.verifyHashInSignedHashes(addr)
 	if err != nil {
 		return nil, err
 	}
@@ -101,8 +109,10 @@ func (v *WhitelistedAddressVerifier) VerifyWhitelistedAddress(
 		return nil, err
 	}
 
-	// Step 6: Parse WhitelistedAddress from verified payload
-	verifiedAddr, err := ParseWhitelistedAddressFromJSON(addr.Metadata.PayloadAsString)
+	// Step 6: Parse WhitelistedAddress from the payload the matched signature COVERED, which
+	// is not always the payload the server delivered. Parsing the delivered text here would
+	// hand back members the legacy strip removed — i.e. values no signature covered.
+	verifiedAddr, err := ParseWhitelistedAddressFromJSON(verifiedPayload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse verified address: %w", err)
 	}
@@ -111,6 +121,7 @@ func (v *WhitelistedAddressVerifier) VerifyWhitelistedAddress(
 		RulesContainer:  rulesContainer,
 		VerifiedAddress: verifiedAddr,
 		VerifiedHash:    verifiedHash,
+		VerifiedPayload: verifiedPayload,
 	}, nil
 }
 
@@ -217,32 +228,40 @@ func (v *WhitelistedAddressVerifier) decodeRulesContainer(
 
 // verifyHashInSignedHashes verifies that the metadata hash is covered by at least one signature.
 // Step 4 of the verification flow.
-// Returns the hash that was found (may be a legacy hash).
-func (v *WhitelistedAddressVerifier) verifyHashInSignedHashes(addr *model.WhitelistedAddress) (string, error) {
+//
+// Returns BOTH the hash that was found (which may be a legacy hash) and the payload that hash
+// covers. The payload is what step 6 must parse: when a legacy variant is the match, the delivered
+// payload contains members no signature covered, so parsing the delivered text would return unsigned
+// values as verified. See LegacyPayloadVariant for the attack this closes.
+//
+// When the current hash matches, the matched payload IS the delivered payload.
+func (v *WhitelistedAddressVerifier) verifyHashInSignedHashes(
+	addr *model.WhitelistedAddress,
+) (matchedHash string, matchedPayload string, err error) {
 	if addr.SignedAddress == nil {
-		return "", &model.IntegrityError{Message: "signedAddress is nil"}
+		return "", "", &model.IntegrityError{Message: "signedAddress is nil"}
 	}
 
 	signatures := addr.SignedAddress.Signatures
 	if len(signatures) == 0 {
-		return "", &model.IntegrityError{Message: "no signatures in signedAddress"}
+		return "", "", &model.IntegrityError{Message: "no signatures in signedAddress"}
 	}
 
 	// Try the provided hash first
 	providedHash := addr.Metadata.Hash
 	if VerifyHashCoverage(providedHash, signatures) {
-		return providedHash, nil
+		return providedHash, addr.Metadata.PayloadAsString, nil
 	}
 
-	// Try legacy hashes for backward compatibility
-	legacyHashes := ComputeLegacyHashes(addr.Metadata.PayloadAsString)
-	for _, legacyHash := range legacyHashes {
-		if VerifyHashCoverage(legacyHash, signatures) {
-			return legacyHash, nil
+	// Try legacy variants for backward compatibility. The variant's PAYLOAD travels with its
+	// hash so step 6 parses the bytes the signature actually covered.
+	for _, variant := range ComputeLegacyPayloadVariants(addr.Metadata.PayloadAsString) {
+		if VerifyHashCoverage(variant.Hash, signatures) {
+			return variant.Hash, variant.Payload, nil
 		}
 	}
 
-	return "", &model.IntegrityError{
+	return "", "", &model.IntegrityError{
 		Message: "metadata hash is not covered by any signature",
 	}
 }
@@ -257,36 +276,58 @@ func (v *WhitelistedAddressVerifier) verifyWhitelistSignatures(
 	// Which rules judge this address is decided by the SIGNED payload, not by the
 	// surrounding response. A DTO that set blockchain="" would select the
 	// global-default tier — broader than the rule the address belongs to.
-	blockchain, network, err := resolveRuleKeyFor(addr.Metadata, addr.Blockchain, addr.Network)
+	blockchain, network, networkFromPayload, err := resolveRuleKeyFor(
+		addr.Metadata, addr.Blockchain, addr.Network)
 	if err != nil {
 		return err
 	}
 
-	// Find matching address whitelisting rules
-	whitelistRules := rulesContainer.FindAddressWhitelistingRules(blockchain, network)
-	if whitelistRules == nil {
+	// Which rules to enforce.
+	//
+	// When the payload carries the network, the key is fully signed and one rule applies.
+	// When it does NOT — includeNetworkInPayload off, the common case in captured data — the
+	// network came from the unsigned DTO, so a single lookup would let the server choose the
+	// quorum. Enforce EVERY tier that value could have selected instead. For a chain with one
+	// reachable tier this is the same rule as before; it only bites where a container really
+	// does hold a weaker second tier for the chain, which is exactly the case worth refusing.
+	var applicableRules []*model.AddressWhitelistingRules
+	if networkFromPayload {
+		if r := rulesContainer.FindAddressWhitelistingRules(blockchain, network); r != nil {
+			applicableRules = []*model.AddressWhitelistingRules{r}
+		}
+	} else {
+		applicableRules = rulesContainer.FindAddressWhitelistingRuleCandidates(blockchain)
+	}
+	if len(applicableRules) == 0 {
 		return &model.WhitelistError{
 			Message: fmt.Sprintf("no address whitelisting rules found for blockchain=%s network=%s",
 				blockchain, network),
 		}
 	}
 
-	// Determine which thresholds to use based on rule lines
-	parallelThresholds, err := v.getApplicableThresholds(whitelistRules, addr)
-	if err != nil {
-		return err
-	}
-	if len(parallelThresholds) == 0 {
-		return &model.WhitelistError{Message: "no threshold rules defined"}
-	}
+	for _, whitelistRules := range applicableRules {
+		// Determine which thresholds to use based on rule lines
+		parallelThresholds, err := v.getApplicableThresholds(whitelistRules, addr)
+		if err != nil {
+			return err
+		}
+		if len(parallelThresholds) == 0 {
+			return &model.WhitelistError{Message: "no threshold rules defined"}
+		}
 
-	// Try to verify all paths (OR logic - only one needs to succeed)
-	pathFailures := tryVerifyAllPaths(parallelThresholds, rulesContainer, addr.SignedAddress.Signatures, metadataHash)
-	if len(pathFailures) > 0 {
-		return &model.WhitelistError{
-			Message: fmt.Sprintf("signature verification failed for whitelisted address (ID: %s): "+
-				"no approval path satisfied the threshold requirements. %s",
-				addr.ID, strings.Join(pathFailures, "; ")),
+		// Try to verify all paths (OR logic - only one needs to succeed)
+		pathFailures := tryVerifyAllPaths(parallelThresholds, rulesContainer, addr.SignedAddress.Signatures, metadataHash)
+		if len(pathFailures) > 0 {
+			scope := fmt.Sprintf("blockchain=%s network=%s", whitelistRules.Currency, whitelistRules.Network)
+			if !networkFromPayload && len(applicableRules) > 1 {
+				scope += " (enforced because the signed payload carries no network, so the " +
+					"response could otherwise choose which quorum applies)"
+			}
+			return &model.WhitelistError{
+				Message: fmt.Sprintf("signature verification failed for whitelisted address (ID: %s) "+
+					"against %s: no approval path satisfied the threshold requirements. %s",
+					addr.ID, scope, strings.Join(pathFailures, "; ")),
+			}
 		}
 	}
 

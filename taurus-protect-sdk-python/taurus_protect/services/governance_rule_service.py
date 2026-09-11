@@ -12,9 +12,8 @@ from cryptography.hazmat.primitives.asymmetric.ec import (
     EllipticCurvePublicKey,
 )
 
-from taurus_protect._internal.openapi.exceptions import ApiException
 from taurus_protect._strict_base64 import strict_b64decode
-from taurus_protect.errors import APIError, IntegrityError
+from taurus_protect.errors import APIError, IntegrityError, WhitelistError
 from taurus_protect.helpers.signature_verifier import verify_governance_rules
 from taurus_protect.mappers.governance_rules import rules_container_from_base64
 from taurus_protect.models.governance_rules import (
@@ -145,9 +144,16 @@ class GovernanceRuleService(BaseService):
         except IntegrityError:
             raise
         except Exception as e:
-            if isinstance(e, ApiException):
-                raise self._handle_error(e)
-            raise
+            # Funnel on the SDK error taxonomy, not on the raw generated ApiException.
+            # Keying on ApiException left every other failure -- a urllib3 transport
+            # error, say -- propagating unmapped, so a caller could not treat it as an
+            # APIError at all. And the pass-through list must name IntegrityError and
+            # WhitelistError explicitly: both are plain Exceptions, so _handle_error
+            # would map them to ServerError(500), whose is_retryable() is True. That
+            # inverts the documented "security error, DO NOT retry" contract.
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
+                raise
+            raise self._handle_error(e) from e
 
     def get_rules_by_id(self, rules_id: str) -> Optional[GovernanceRules]:
         """
@@ -177,9 +183,11 @@ class GovernanceRuleService(BaseService):
         except IntegrityError:
             raise
         except Exception as e:
-            if isinstance(e, ApiException):
-                raise self._handle_error(e)
-            raise
+            # See above: funnel on the SDK taxonomy, and never let IntegrityError or
+            # WhitelistError be remapped to a retryable ServerError(500).
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
+                raise
+            raise self._handle_error(e) from e
 
     def get_rules_proposal(self) -> Optional[GovernanceRules]:
         """
@@ -202,9 +210,11 @@ class GovernanceRuleService(BaseService):
             # Proposal rules are not verified
             return self._map_rules_from_dto(result)
         except Exception as e:
-            if isinstance(e, ApiException):
-                raise self._handle_error(e)
-            raise
+            # See above: funnel on the SDK taxonomy, and never let IntegrityError or
+            # WhitelistError be remapped to a retryable ServerError(500).
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
+                raise
+            raise self._handle_error(e) from e
 
     def update_rules_proposal(self, container: DecodedRulesContainer) -> None:
         """Submit a rules container as a governance proposal (SuperAdmin only).
@@ -236,9 +246,11 @@ class GovernanceRuleService(BaseService):
                 body=TgvalidatordUpdateRulesProposalRequest(rules_container=encoded)
             )
         except Exception as e:
-            if isinstance(e, ApiException):
-                raise self._handle_error(e)
-            raise
+            # See above: funnel on the SDK taxonomy, and never let IntegrityError or
+            # WhitelistError be remapped to a retryable ServerError(500).
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
+                raise
+            raise self._handle_error(e) from e
 
     def proposal_container_hash(self, rules: GovernanceRules) -> str:
         """Return the canonical SHA-256 hex digest of a ruleset's decoded container.
@@ -363,9 +375,11 @@ class GovernanceRuleService(BaseService):
                 body=TgvalidatordApproveRulesProposalRequest(signature=signature, comment=comment)
             )
         except Exception as e:
-            if isinstance(e, ApiException):
-                raise self._handle_error(e)
-            raise
+            # See above: funnel on the SDK taxonomy, and never let IntegrityError or
+            # WhitelistError be remapped to a retryable ServerError(500).
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
+                raise
+            raise self._handle_error(e) from e
 
     def reject_rules_proposal(self, comment: str) -> None:
         """Reject the pending rules proposal with a comment (SuperAdmin only).
@@ -385,9 +399,11 @@ class GovernanceRuleService(BaseService):
                 body=TgvalidatordRejectRulesProposalRequest(comment=comment)
             )
         except Exception as e:
-            if isinstance(e, ApiException):
-                raise self._handle_error(e)
-            raise
+            # See above: funnel on the SDK taxonomy, and never let IntegrityError or
+            # WhitelistError be remapped to a retryable ServerError(500).
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
+                raise
+            raise self._handle_error(e) from e
 
     def get_rules_history(
         self, page_size: int = 50, cursor: Optional[str] = None
@@ -464,9 +480,11 @@ class GovernanceRuleService(BaseService):
                 excluded_unverified=excluded,
             )
         except Exception as e:
-            if isinstance(e, ApiException):
-                raise self._handle_error(e)
-            raise
+            # See above: funnel on the SDK taxonomy, and never let IntegrityError or
+            # WhitelistError be remapped to a retryable ServerError(500).
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
+                raise
+            raise self._handle_error(e) from e
 
     def get_public_keys(self) -> List[SuperAdminPublicKey]:
         """
@@ -496,9 +514,11 @@ class GovernanceRuleService(BaseService):
 
             return result
         except Exception as e:
-            if isinstance(e, ApiException):
-                raise self._handle_error(e)
-            raise
+            # See above: funnel on the SDK taxonomy, and never let IntegrityError or
+            # WhitelistError be remapped to a retryable ServerError(500).
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
+                raise
+            raise self._handle_error(e) from e
 
     def _verified_ruleset(self, rules: GovernanceRules) -> GovernanceRules:
         """

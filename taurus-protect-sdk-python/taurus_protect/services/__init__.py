@@ -27,7 +27,6 @@ from taurus_protect.services.group_service import GroupService
 from taurus_protect.services.health_service import HealthService, HealthStatus
 from taurus_protect.services.job_service import JobService
 from taurus_protect.services.multi_factor_signature_service import (
-    MultiFactorSignatureChallenge,
     MultiFactorSignatureService,
 )
 from taurus_protect.services.price_service import PriceService
@@ -80,7 +79,6 @@ __all__ = [
     "HealthService",
     "HealthStatus",
     "JobService",
-    "MultiFactorSignatureChallenge",
     "MultiFactorSignatureService",
     "PriceService",
     "RequestService",

@@ -31,6 +31,10 @@ class MultiFactorSignatureMapperTest {
         assertEquals(2, result.getPayloadToSign().size());
         assertEquals("payload1", result.getPayloadToSign().get(0));
         assertNotNull(result.getEntityType());
+        // assertNotNull alone was the whole assertion, and that is why the all-null bean
+        // below went unnoticed: the kind is what tells a caller WHICH verifying reader to
+        // check payloadToSign against, so a null one leaves the payload uncheckable.
+        assertEquals("REQUEST", result.getEntityType().getKind());
     }
 
     @Test
@@ -58,11 +62,28 @@ class MultiFactorSignatureMapperTest {
     }
 
     @Test
-    void fromEntityTypeDTO_mapsFields() {
+    void fromEntityTypeDTO_mapsTheKindForEveryValue() {
+        // MapStruct's default bean mapping from an ENUM source sets no target properties at
+        // all, so this returned a bean with both fields null. The mapper is hand-written now.
+        for (TgvalidatordMultiFactorSignaturesEntityType dto
+                : TgvalidatordMultiFactorSignaturesEntityType.values()) {
+            MultiFactorSignatureEntityType result =
+                    MultiFactorSignatureMapper.INSTANCE.fromEntityTypeDTO(dto);
+
+            assertNotNull(result);
+            assertEquals(dto.getValue(), result.getKind(),
+                    "the kind must survive the mapping for " + dto);
+        }
+    }
+
+    @Test
+    void fromEntityTypeDTO_leavesIdNullBecauseTheReplyCarriesNone() {
+        // Not an oversight to be "fixed" by inventing an id: the reply has no entity id, and
+        // that absence is exactly why the SDK cannot bind payloadToSign to a verified entity.
         MultiFactorSignatureEntityType result = MultiFactorSignatureMapper.INSTANCE
                 .fromEntityTypeDTO(TgvalidatordMultiFactorSignaturesEntityType.REQUEST);
 
-        assertNotNull(result);
+        assertNull(result.getId());
     }
 
     @Test

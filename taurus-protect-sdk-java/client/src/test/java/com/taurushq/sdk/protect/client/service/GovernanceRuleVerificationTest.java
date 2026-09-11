@@ -22,6 +22,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -199,6 +200,67 @@ class GovernanceRuleVerificationTest {
     void memoSkipsUndecodableContainer() {
         assertNull(GovernanceRuleService.rulesetVerificationKey(entry("!!!not base64!!!", null)),
                 "an undecodable container must not produce a memo key");
+    }
+
+    /**
+     * The memo key guards the LIST and the signature STRING; it must guard the ELEMENT
+     * too. MapStruct preserves nulls, so a response carrying {@code "rulesSignatures":
+     * [null]} arrives as a list holding a null entry, and an unguarded
+     * {@code sig.getSignature()} threw NullPointerException — from the memo key, which
+     * runs BEFORE verification. One crafted response therefore denied every governance
+     * read, and did it with an NPE out of a private helper, which reads as an SDK defect
+     * rather than a rejected response.
+     */
+    @Test
+    void memoKeyToleratesANullSignatureElement() {
+        GovernanceRules rules = entry(wireValidUnsignedContainer, null);
+        rules.setRulesSignatures(Collections.<RuleUserSignature>singletonList(null));
+
+        assertNotNull(GovernanceRuleService.rulesetVerificationKey(rules),
+                "a null signature element must not stop the memo key being computed");
+    }
+
+    /**
+     * The whole read path must reject a null element as an integrity failure, not blow up
+     * on it. {@code SignatureVerifier} already skips a null entry, so the only thing
+     * standing between a crafted response and an NPE was the memo key.
+     */
+    @Test
+    void aNullSignatureElementIsExcluded_notAnNpe() {
+        GovernanceRules rules = entry(wireValidUnsignedContainer, null);
+        rules.setRulesSignatures(Collections.<RuleUserSignature>singletonList(null));
+
+        List<ExcludedRuleset> excluded = new ArrayList<>();
+        List<GovernanceRules> kept = service().verifiedHistoryEntries(
+                Collections.singletonList(rules), excluded);
+
+        assertTrue(kept.isEmpty(), "a null entry signs nothing, so the ruleset cannot verify");
+        assertEquals(1, excluded.size(),
+                "the row must be excluded and named, not escape as an unchecked NPE");
+    }
+
+    /**
+     * A null element keeps its SLOT in the key rather than being dropped. It still holds a
+     * position in the sorted list, still contributes its own 8-byte length prefix (of
+     * zero) and is still counted, so {@code []}, {@code [null]} and {@code [null, null]}
+     * stay three distinct keys. Skipping the element instead would collapse them onto one
+     * — exactly the non-injectivity the length prefixes exist to prevent.
+     */
+    @Test
+    void memoKeyCountsNullSignatureElements() {
+        GovernanceRules none = entry(wireValidUnsignedContainer, null);
+        none.setRulesSignatures(Collections.<RuleUserSignature>emptyList());
+        GovernanceRules one = entry(wireValidUnsignedContainer, null);
+        one.setRulesSignatures(Collections.<RuleUserSignature>singletonList(null));
+        GovernanceRules two = entry(wireValidUnsignedContainer, null);
+        two.setRulesSignatures(Arrays.<RuleUserSignature>asList(null, null));
+
+        assertNotEquals(GovernanceRuleService.rulesetVerificationKey(none),
+                GovernanceRuleService.rulesetVerificationKey(one),
+                "an empty list and a list holding one null must not share a memo key");
+        assertNotEquals(GovernanceRuleService.rulesetVerificationKey(one),
+                GovernanceRuleService.rulesetVerificationKey(two),
+                "signature-list length must stay committed to the key");
     }
 
     /** A failure must resurface on every call rather than being remembered as a verdict. */

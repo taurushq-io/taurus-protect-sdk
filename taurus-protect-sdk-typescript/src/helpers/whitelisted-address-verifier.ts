@@ -27,6 +27,7 @@ import type {
 } from "../models/governance-rules";
 import {
   findAddressWhitelistingRules,
+  findAddressWhitelistingRuleCandidates,
   findUserById,
   findGroupById,
   RuleSourceType,
@@ -40,13 +41,14 @@ import type {
 import { constantTimeCompare } from "./constant-time";
 import { keyFingerprint, verifyGovernanceRulesSignatures } from "./signature-verifier";
 import {
-  computeLegacyHashes,
+  computeLegacyPayloadVariants,
   parseWhitelistedAddressFromJson,
   verifyHashCoverage,
   containsHash,
-  resolveRuleKey,
+  resolveRuleKeyWithSource,
 } from "./whitelist-hash-helper";
 import { strictBase64Decode } from "./strict-base64";
+import { attestVerified } from "./verified";
 
 /**
  * Configuration for WhitelistedAddressVerifier.
@@ -198,16 +200,19 @@ export class WhitelistedAddressVerifier {
       );
     }
 
-    // Step 4: Verify hash in signed hashes list (with legacy support)
-    const verifiedHash = this.verifyHashInSignedHashes(envelope);
+    // Step 4: Verify hash in signed hashes list (with legacy support). Carries the
+    // matched PAYLOAD as well as the hash: when a legacy variant is the match, the
+    // delivered payload contains members no signature covered.
+    const { hash: verifiedHash, payload: verifiedPayload } =
+      this.verifyHashInSignedHashes(envelope);
 
     // Step 5: Verify whitelist signatures
     this.verifyWhitelistSignatures(envelope, rulesContainer, verifiedHash);
 
-    // Step 6: Parse and return verified address
-    const verifiedAddress = parseWhitelistedAddressFromJson(
-      envelope.metadata.payloadAsString
-    );
+    // Step 6: Parse the payload the matched signature COVERED, which is not always the
+    // payload the server delivered. Parsing the delivered text here would hand back
+    // members the legacy strip removed — i.e. values no signature covered.
+    const verifiedAddress = parseWhitelistedAddressFromJson(verifiedPayload);
 
     // Set the ID from the envelope (not in the signed payload)
     const addressWithId: WhitelistedAddress = {
@@ -219,6 +224,9 @@ export class WhitelistedAddressVerifier {
       verifiedWhitelistedAddress: addressWithId,
       verifiedRulesContainer: rulesContainer,
       verifiedHash,
+      verifiedPayload,
+      // The single point where the marker is applied: every step above has passed.
+      verifiedEnvelope: attestVerified(envelope),
     };
   }
 
@@ -394,16 +402,24 @@ export class WhitelistedAddressVerifier {
   /**
    * Step 4: Verify that the metadata hash is covered by at least one signature.
    *
-   * This step also tries legacy hashes for backward compatibility with
-   * addresses signed before schema changes.
+   * This step also tries legacy variants for backward compatibility with addresses
+   * signed before schema changes.
+   *
+   * Returns BOTH the hash that was found (which may be a legacy hash) and the payload
+   * that hash covers. The payload is what step 6 must parse: when a legacy variant is
+   * the match, the delivered payload contains members no signature covered, so parsing
+   * the delivered text would return unsigned values as verified. See
+   * `LegacyPayloadVariant` in `whitelist-hash-helper.ts` for the attack this closes.
+   *
+   * When the current hash matches, the matched payload IS the delivered payload.
    *
    * @param envelope - The signed whitelisted address envelope
-   * @returns The hash that was found (may be a legacy hash)
+   * @returns the covered hash and the bytes it covers
    * @throws IntegrityError if hash is not covered by any signature
    */
   private verifyHashInSignedHashes(
     envelope: SignedWhitelistedAddressEnvelope
-  ): string {
+  ): { hash: string; payload: string } {
     if (!envelope.signedAddress) {
       throw new IntegrityError("signedAddress is null or undefined");
     }
@@ -416,14 +432,16 @@ export class WhitelistedAddressVerifier {
     // Try the provided hash first
     const providedHash = envelope.metadata.hash;
     if (verifyHashCoverage(providedHash, signatures)) {
-      return providedHash;
+      return { hash: providedHash, payload: envelope.metadata.payloadAsString };
     }
 
-    // Try legacy hashes for backward compatibility
-    const legacyHashes = computeLegacyHashes(envelope.metadata.payloadAsString);
-    for (const legacyHash of legacyHashes) {
-      if (verifyHashCoverage(legacyHash, signatures)) {
-        return legacyHash;
+    // Try legacy variants for backward compatibility. The variant's PAYLOAD travels
+    // with its hash so step 6 parses the bytes the signature actually covered.
+    for (const variant of computeLegacyPayloadVariants(
+      envelope.metadata.payloadAsString
+    )) {
+      if (verifyHashCoverage(variant.hash, signatures)) {
+        return { hash: variant.hash, payload: variant.payload };
       }
     }
 
@@ -448,47 +466,73 @@ export class WhitelistedAddressVerifier {
     // Which rules judge this address is decided by the SIGNED payload, not by the
     // surrounding response. A DTO with an empty blockchain would select the
     // global-default tier — broader than the rule the address belongs to.
-    const { blockchain, network } = resolveRuleKey(
+    const { blockchain, network, networkFromPayload } = resolveRuleKeyWithSource(
       envelope.metadata?.payloadAsString,
       envelope.blockchain,
       envelope.network
     );
 
-    // Find matching address whitelisting rules
-    const whitelistRules = findAddressWhitelistingRules(
-      rulesContainer,
-      blockchain,
-      network
-    );
+    // Which rules to enforce.
+    //
+    // When the payload carries the network, the key is fully signed and one rule
+    // applies. When it does NOT — includeNetworkInPayload off, the common case in
+    // captured data — the network came from the unsigned DTO, so a single lookup would
+    // let the server choose the quorum. Enforce EVERY tier that value could have
+    // selected instead. For a chain with one reachable tier this is the same rule as
+    // before; it only bites where a container really does hold a weaker second tier for
+    // the chain, which is exactly the case worth refusing.
+    let applicableRules: AddressWhitelistingRules[];
+    if (networkFromPayload) {
+      const exact = findAddressWhitelistingRules(
+        rulesContainer,
+        blockchain,
+        network
+      );
+      applicableRules = exact ? [exact] : [];
+    } else {
+      applicableRules = findAddressWhitelistingRuleCandidates(
+        rulesContainer,
+        blockchain
+      );
+    }
 
-    if (!whitelistRules) {
+    if (applicableRules.length === 0) {
       throw new WhitelistError(
         `no address whitelisting rules found for blockchain=${blockchain} network=${network}`
       );
     }
 
-    // Determine which thresholds to use based on rule lines
-    const parallelThresholds = this.getApplicableThresholds(
-      whitelistRules,
-      envelope
-    );
-    if (!parallelThresholds || parallelThresholds.length === 0) {
-      throw new WhitelistError("no threshold rules defined");
-    }
-
-    // Try to verify all paths (OR logic - only one needs to succeed)
-    const pathFailures = this.tryVerifyAllPaths(
-      parallelThresholds,
-      rulesContainer,
-      envelope.signedAddress.signatures,
-      metadataHash
-    );
-
-    if (pathFailures.length > 0) {
-      throw new WhitelistError(
-        `signature verification failed for whitelisted address (ID: ${envelope.id}): ` +
-          `no approval path satisfied the threshold requirements. ${pathFailures.join("; ")}`
+    for (const whitelistRules of applicableRules) {
+      // Determine which thresholds to use based on rule lines
+      const parallelThresholds = this.getApplicableThresholds(
+        whitelistRules,
+        envelope
       );
+      if (!parallelThresholds || parallelThresholds.length === 0) {
+        throw new WhitelistError("no threshold rules defined");
+      }
+
+      // Try to verify all paths (OR logic - only one needs to succeed)
+      const pathFailures = this.tryVerifyAllPaths(
+        parallelThresholds,
+        rulesContainer,
+        envelope.signedAddress.signatures,
+        metadataHash
+      );
+
+      if (pathFailures.length > 0) {
+        let scope = `blockchain=${whitelistRules.currency ?? ""} network=${whitelistRules.network ?? ""}`;
+        if (!networkFromPayload && applicableRules.length > 1) {
+          scope +=
+            " (enforced because the signed payload carries no network, so the " +
+            "response could otherwise choose which quorum applies)";
+        }
+        throw new WhitelistError(
+          `signature verification failed for whitelisted address (ID: ${envelope.id}) ` +
+            `against ${scope}: no approval path satisfied the threshold requirements. ` +
+            `${pathFailures.join("; ")}`
+        );
+      }
     }
   }
 

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"crypto/ecdsa"
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"sort"
@@ -83,7 +84,7 @@ func (s *WhitelistedAssetService) GetWhitelistedAsset(ctx context.Context, id st
 }
 
 // ListWhitelistedAssets retrieves a list of whitelisted assets.
-func (s *WhitelistedAssetService) ListWhitelistedAssets(ctx context.Context, opts *model.ListWhitelistedAssetsOptions) ([]*model.WhitelistedAsset, *model.Pagination, error) {
+func (s *WhitelistedAssetService) ListWhitelistedAssets(ctx context.Context, opts *model.ListWhitelistedAssetsOptions) (*model.WhitelistedAssetResult, error) {
 	req := s.api.WhitelistServiceGetWhitelistedContracts(ctx)
 
 	if opts != nil {
@@ -115,7 +116,7 @@ func (s *WhitelistedAssetService) ListWhitelistedAssets(ctx context.Context, opt
 
 	resp, httpResp, err := req.Execute()
 	if err != nil {
-		return nil, nil, s.errMapper.MapError(err, httpResp)
+		return nil, s.errMapper.MapError(err, httpResp)
 	}
 
 	assets := mapper.WhitelistedAssetsFromDTO(resp.Result)
@@ -126,7 +127,7 @@ func (s *WhitelistedAssetService) ListWhitelistedAssets(ctx context.Context, opt
 	for _, asset := range assets {
 		if asset != nil {
 			if err := s.verifyAsset(asset, containers); err != nil {
-				return nil, nil, fmt.Errorf("verification failed for asset %s: %w", asset.ID, err)
+				return nil, fmt.Errorf("verification failed for asset %s: %w", asset.ID, err)
 			}
 		}
 	}
@@ -135,7 +136,10 @@ func (s *WhitelistedAssetService) ListWhitelistedAssets(ctx context.Context, opt
 	if opts != nil {
 		limit, offset = opts.Limit, opts.Offset
 	}
-	return assets, assetPagination(resp.TotalItems, limit, offset), nil
+	return &model.WhitelistedAssetResult{
+		Assets:     assets,
+		Pagination: assetPagination(resp.TotalItems, limit, offset),
+	}, nil
 }
 
 // assetPagination builds the page window from the server's total.
@@ -161,7 +165,7 @@ func assetPagination(totalItems *string, limit, offset int64) *model.Pagination 
 func (s *WhitelistedAssetService) ListWhitelistedAssetsForApproval(
 	ctx context.Context,
 	opts *model.ListWhitelistedAssetsForApprovalOptions,
-) ([]*model.WhitelistedAsset, *model.Pagination, error) {
+) (*model.WhitelistedAssetResult, error) {
 	req := s.api.WhitelistServiceGetWhitelistedContractsForApproval(ctx)
 
 	var limit, offset int64
@@ -180,7 +184,7 @@ func (s *WhitelistedAssetService) ListWhitelistedAssetsForApproval(
 
 	resp, httpResp, err := req.Execute()
 	if err != nil {
-		return nil, nil, s.errMapper.MapError(err, httpResp)
+		return nil, s.errMapper.MapError(err, httpResp)
 	}
 
 	assets := mapper.WhitelistedAssetsFromDTO(resp.Result)
@@ -189,12 +193,15 @@ func (s *WhitelistedAssetService) ListWhitelistedAssetsForApproval(
 	for _, asset := range assets {
 		if asset != nil {
 			if err := s.verifyAsset(asset, containers); err != nil {
-				return nil, nil, fmt.Errorf("verification failed for asset %s: %w", asset.ID, err)
+				return nil, fmt.Errorf("verification failed for asset %s: %w", asset.ID, err)
 			}
 		}
 	}
 
-	return assets, assetPagination(resp.TotalItems, limit, offset), nil
+	return &model.WhitelistedAssetResult{
+		Assets:     assets,
+		Pagination: assetPagination(resp.TotalItems, limit, offset),
+	}, nil
 }
 
 // GetWhitelistedAssetEnvelope retrieves a whitelisted asset envelope by ID and performs
@@ -282,7 +289,9 @@ func (s *WhitelistedAssetService) initializeAssetEnvelope(envelope *model.Whitel
 	// envelope is authentic; this is what stops an unsigned value reaching the
 	// caller. Marking the DTO-built subject as verified — which is what this used
 	// to do — meant blockchain, network and the asset identity were never checked.
-	verified, err := helper.ParseWhitelistedAssetFromJSON(envelope.Metadata.PayloadAsString)
+	// result.VerifiedPayload, not envelope.Metadata.PayloadAsString: when step 4 matched a
+	// legacy hash, the delivered payload carries members no signature covered.
+	verified, err := helper.ParseWhitelistedAssetFromJSON(result.VerifiedPayload)
 	if err != nil {
 		return &model.IntegrityError{
 			Message: fmt.Sprintf("asset payload is verified but unparseable: %v", err),
@@ -323,25 +332,27 @@ func (s *WhitelistedAssetService) verifyAsset(asset *model.WhitelistedAsset, con
 		if err != nil {
 			return err
 		}
-		if _, err := s.verifier.VerifyWhitelistedAsset(
+		result, err := s.verifier.VerifyWhitelistedAsset(
 			asset,
 			mapper.RulesContainerFromBase64,
 			mapper.UserSignaturesFromBase64,
 			cached,
-		); err != nil {
+		)
+		if err != nil {
 			return err
 		}
-		return populateVerifiedIdentity(asset)
+		return populateVerifiedIdentity(asset, result.VerifiedPayload)
 	}
 
-	if _, err := s.verifier.VerifyWhitelistedAsset(
+	result, err := s.verifier.VerifyWhitelistedAsset(
 		asset,
 		mapper.RulesContainerFromBase64,
 		mapper.UserSignaturesFromBase64,
-	); err != nil {
+	)
+	if err != nil {
 		return err
 	}
-	return populateVerifiedIdentity(asset)
+	return populateVerifiedIdentity(asset, result.VerifiedPayload)
 }
 
 // populateVerifiedIdentity fills the identity fields from the signed payload — step 6 for
@@ -350,11 +361,18 @@ func (s *WhitelistedAssetService) verifyAsset(asset *model.WhitelistedAsset, con
 // The DTO mapper cannot supply these: they are payload-only by contract, so without this
 // a verified asset came back with an empty ContractAddress and a caller asking "is this
 // contract whitelisted?" had to reach for the unverified reader to get an answer.
-func populateVerifiedIdentity(asset *model.WhitelistedAsset) error {
+//
+// verifiedPayload is the payload the matched signature COVERED, which is not always
+// asset.Metadata.PayloadAsString — see helper.LegacyPayloadVariant.
+//
+// Blockchain and Network are re-derived here too. They used to keep the DTO values while the
+// envelope path (initializeAssetEnvelope) took them from the payload, so the SDK's two verified
+// asset readers disagreed about the fields that select which governance rules judge the asset.
+func populateVerifiedIdentity(asset *model.WhitelistedAsset, verifiedPayload string) error {
 	if asset.Metadata == nil {
 		return &model.IntegrityError{Message: "metadata missing after verification"}
 	}
-	verified, err := helper.ParseWhitelistedAssetFromJSON(asset.Metadata.PayloadAsString)
+	verified, err := helper.ParseWhitelistedAssetFromJSON(verifiedPayload)
 	if err != nil {
 		return fmt.Errorf("failed to parse verified asset: %w", err)
 	}
@@ -364,6 +382,10 @@ func populateVerifiedIdentity(asset *model.WhitelistedAsset) error {
 	asset.Symbol = verified.Symbol
 	asset.Decimals = verified.Decimals
 	asset.TokenID = verified.TokenID
+	asset.Blockchain = verified.Blockchain
+	if verified.Network != "" {
+		asset.Network = verified.Network
+	}
 	return nil
 }
 
@@ -379,7 +401,7 @@ func (s *WhitelistedAssetService) verifiedAssetsByID(
 	ctx context.Context,
 	ids []string,
 ) (map[string]*model.WhitelistedAsset, error) {
-	assets, _, err := s.ListWhitelistedAssets(ctx, &model.ListWhitelistedAssetsOptions{
+	result, err := s.ListWhitelistedAssets(ctx, &model.ListWhitelistedAssetsOptions{
 		IDs:                ids,
 		Limit:              int64(len(ids)),
 		IncludeForApproval: true,
@@ -388,8 +410,8 @@ func (s *WhitelistedAssetService) verifiedAssetsByID(
 		return nil, fmt.Errorf("refusing to sign: the verified read failed: %w", err)
 	}
 
-	byID := make(map[string]*model.WhitelistedAsset, len(assets))
-	for _, asset := range assets {
+	byID := make(map[string]*model.WhitelistedAsset, len(result.Assets))
+	for _, asset := range result.Assets {
 		if asset != nil {
 			byID[asset.ID] = asset
 		}
@@ -397,13 +419,15 @@ func (s *WhitelistedAssetService) verifiedAssetsByID(
 	return byID, nil
 }
 
-// ApproveWhitelistedAssets signs and submits an approval for the given whitelisted
+// ApproveWhitelistedAssets signs and submits an approval for the reviewed whitelisted
 // assets, all-or-nothing.
 //
-// It re-reads the batch through the verified path and signs the hashes THOSE rows carry,
-// so the approver's signature covers metadata this SDK checked rather than whatever a
-// caller was handed. The raw-signature form on WhitelistedContractService accepted an
-// opaque blob over hashes nothing had verified.
+// `selection` comes from a verified read — `result.Select(ids...)` or `result.SelectAll()` — and
+// carries the metadata hash each row had at review time, so the approver's signature covers the
+// content they actually reviewed rather than whatever the server returns under those ids at
+// approval time. See ApproveWhitelistedAddresses for the full reasoning; the raw-signature form
+// on WhitelistedContractService, by contrast, accepted an opaque blob over hashes nothing had
+// verified.
 //
 // Any asset that is missing or fails verification aborts the whole call and nothing is
 // signed: one signature covers every hash in the batch, so a partial approval would mean
@@ -418,12 +442,13 @@ func (s *WhitelistedAssetService) verifiedAssetsByID(
 //	                          sign(JSON(hashes)) ─▶ POST once for the whole batch
 func (s *WhitelistedAssetService) ApproveWhitelistedAssets(
 	ctx context.Context,
-	ids []string,
+	selection *model.WhitelistedAssetApproval,
 	privateKey *ecdsa.PrivateKey,
 	comment string,
 ) error {
-	if len(ids) == 0 {
-		return fmt.Errorf("ids cannot be empty")
+	if selection.IsEmpty() {
+		return fmt.Errorf("selection cannot be empty: pin the rows with " +
+			"result.Select(ids...) or result.SelectAll() from a verified read")
 	}
 	if privateKey == nil {
 		return fmt.Errorf("privateKey cannot be nil")
@@ -431,6 +456,8 @@ func (s *WhitelistedAssetService) ApproveWhitelistedAssets(
 	if comment == "" {
 		return fmt.Errorf("comment is required")
 	}
+
+	ids := selection.IDs()
 
 	// Sorted numerically, as the request-approval path does, so the signed order is
 	// independent of the order the caller passed.
@@ -470,6 +497,22 @@ func (s *WhitelistedAssetService) ApproveWhitelistedAssets(
 		if asset.Metadata == nil || asset.Metadata.Hash == "" {
 			return &model.IntegrityError{
 				Message: fmt.Sprintf("refusing to sign: asset %s has no metadata hash", id),
+			}
+		}
+
+		// The content pin. See ApproveWhitelistedAddresses for why bare ids are not enough,
+		// and why the comparison is constant-time.
+		pinnedHash, pinned := selection.PinnedHash(id)
+		if !pinned {
+			return &model.IntegrityError{
+				Message: fmt.Sprintf("refusing to sign: asset %s is not in the reviewed selection", id),
+			}
+		}
+		if subtle.ConstantTimeCompare([]byte(pinnedHash), []byte(asset.Metadata.Hash)) != 1 {
+			return &model.IntegrityError{
+				Message: fmt.Sprintf("refusing to sign: whitelisted asset %s changed since it was "+
+					"reviewed: reviewed hash %s, re-read hash %s. Re-read, re-review and re-approve",
+					id, pinnedHash, asset.Metadata.Hash),
 			}
 		}
 		hashes = append(hashes, asset.Metadata.Hash)

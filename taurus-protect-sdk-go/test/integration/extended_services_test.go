@@ -294,10 +294,11 @@ func TestIntegration_ListWhitelistedContracts(t *testing.T) {
 	defer client.Close()
 
 	ctx := context.Background()
-	assets, _, err := client.WhitelistedAssets().ListWhitelistedAssets(ctx, nil)
+	assetResult, err := client.WhitelistedAssets().ListWhitelistedAssets(ctx, nil)
 	if err != nil {
 		t.Fatalf("ListWhitelistedAssets() error = %v", err)
 	}
+	assets := assetResult.Assets
 
 	t.Logf("Found %d whitelisted contracts", len(assets))
 }

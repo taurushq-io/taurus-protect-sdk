@@ -43,8 +43,20 @@ echo "Generating Go client from: $SPEC_FILE"
 rm -rf .codegen internal/openapi
 mkdir -p .codegen internal/openapi
 
+# Vendored template overrides. Only the files present here override the generator's built-ins;
+# everything else still comes from the JAR, so this directory stays deliberately tiny.
+#
+# It exists because `decode` must reject a 2xx whose typed reply could not be populated. An empty
+# body, or the JSON literal `null`, otherwise leaves the reply pointer nil and returns no error —
+# and every hand-written service dereferences the reply immediately after checking err (~110 sites
+# across 38 files), so a server could turn any routine read into a process-killing nil-pointer
+# panic. Patching internal/openapi/client.go by hand is not enough: this script `rm -rf`s that
+# directory above, so the fix has to live in the template to survive regeneration.
+TEMPLATE_DIR="$RESOURCES_DIR/templates/go"
+
 # Generate Go client with enumClassPrefix to avoid const conflicts
 java -jar "$GENERATOR_JAR" generate -g go -i "$SPEC_FILE" -o .codegen \
+    -t "$TEMPLATE_DIR" \
     --skip-validate-spec \
     --additional-properties=packageName=openapi \
     --additional-properties=isGoSubmodule=true \

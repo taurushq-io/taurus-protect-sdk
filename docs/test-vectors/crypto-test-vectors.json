@@ -150,6 +150,113 @@
         "expected_without_both": "304697473bcb4358e5c98144be2c1ccf5ac9e43713d32b04f095434fdac6fc4b",
         "expected_legacy_count": 3
       }
-    ]
+    ],
+    "canonical_string": {
+      "_comment": [
+        "Pins the TPV1 canonical string and the resulting base64 HMAC, for the secret in",
+        "`secret_hex` below. Nothing pinned this before: the `hmac_sha256` group HMACs a",
+        "hardcoded string that merely LOOKS like a canonical message, and no consumer routed",
+        "through calculateSignedHeader -- which is how Python and TypeScript came to upper-case",
+        "the HTTP method while Java and Go signed it verbatim. A caller issuing a lowercase",
+        "`get` therefore produced a different canonical string in the two families, and one of",
+        "them could not authenticate.",
+        "",
+        "All four SDKs now upper-case the method. The `lowercase method` vector is the one that",
+        "fails against the old Java/Go behaviour.",
+        "",
+        "This group deliberately does NOT pin the non-injectivity of the construction (empty",
+        "components elided, delimiter present inside content-type/body/decoded path). Fixing",
+        "that changes what a correct caller signs and needs a versioned scheme -- see TODOS.md,",
+        "'TPV1's canonical string is not injective'."
+      ],
+      "secret_hex": "0badc0de0badc0de0badc0de0badc0de",
+      "count": 6,
+      "cases": [
+        {
+          "description": "GET with no query, no content-type, no body",
+          "api_key": "api-key-id",
+          "nonce": "nonce-1",
+          "timestamp": 10,
+          "method": "GET",
+          "host": "api.example.test",
+          "path": "/api/rest/v1/wallets",
+          "query": "",
+          "content_type": "",
+          "body": "",
+          "expected_message": "TPV1 api-key-id nonce-1 10 GET api.example.test /api/rest/v1/wallets",
+          "expected_signature": "aFKP2oy2IXAONlBbGQDvT8DVjryhl2J8ZAcLMADl0kE="
+        },
+        {
+          "description": "lowercase method must sign identically to upper case -- this is the divergence that made Python/TS and Java/Go mutually unauthenticable",
+          "api_key": "api-key-id",
+          "nonce": "nonce-1",
+          "timestamp": 10,
+          "method": "get",
+          "host": "api.example.test",
+          "path": "/api/rest/v1/wallets",
+          "query": "",
+          "content_type": "",
+          "body": "",
+          "expected_message": "TPV1 api-key-id nonce-1 10 GET api.example.test /api/rest/v1/wallets",
+          "expected_signature": "aFKP2oy2IXAONlBbGQDvT8DVjryhl2J8ZAcLMADl0kE="
+        },
+        {
+          "description": "mixed-case method",
+          "api_key": "api-key-id",
+          "nonce": "nonce-1",
+          "timestamp": 10,
+          "method": "GeT",
+          "host": "api.example.test",
+          "path": "/api/rest/v1/wallets",
+          "query": "",
+          "content_type": "",
+          "body": "",
+          "expected_message": "TPV1 api-key-id nonce-1 10 GET api.example.test /api/rest/v1/wallets",
+          "expected_signature": "aFKP2oy2IXAONlBbGQDvT8DVjryhl2J8ZAcLMADl0kE="
+        },
+        {
+          "description": "POST with a JSON body and the normalised content-type",
+          "api_key": "api-key-id",
+          "nonce": "nonce-1",
+          "timestamp": 10,
+          "method": "POST",
+          "host": "api.example.test",
+          "path": "/api/rest/v1/wallets",
+          "query": "",
+          "content_type": "application/json; charset=utf-8",
+          "body": "{\"walletId\":\"1\"}",
+          "expected_message": "TPV1 api-key-id nonce-1 10 POST api.example.test /api/rest/v1/wallets application/json; charset=utf-8 {\"walletId\":\"1\"}",
+          "expected_signature": "JzsbyoTlQoN8QpG46w+qtPFFeXpIlS5Sn+Jlkutlz5A="
+        },
+        {
+          "description": "GET with a query string",
+          "api_key": "api-key-id",
+          "nonce": "nonce-1",
+          "timestamp": 10,
+          "method": "GET",
+          "host": "api.example.test",
+          "path": "/api/rest/v1/wallets",
+          "query": "limit=1&statuses=PENDING",
+          "content_type": "",
+          "body": "",
+          "expected_message": "TPV1 api-key-id nonce-1 10 GET api.example.test /api/rest/v1/wallets limit=1&statuses=PENDING",
+          "expected_signature": "3mX69Af51iO81BQ6NsBpnyNgVSvjfgSz9lu1a9q84+Q="
+        },
+        {
+          "description": "every optional component present",
+          "api_key": "api-key-id",
+          "nonce": "nonce-1",
+          "timestamp": 10,
+          "method": "PUT",
+          "host": "api.example.test",
+          "path": "/api/rest/v1/wallets",
+          "query": "a=1",
+          "content_type": "application/json; charset=utf-8",
+          "body": "{\"x\":1}",
+          "expected_message": "TPV1 api-key-id nonce-1 10 PUT api.example.test /api/rest/v1/wallets a=1 application/json; charset=utf-8 {\"x\":1}",
+          "expected_signature": "B+Le4krvb5gCK4HJaw77uBv84s0yEEdYLaIzlUWf+64="
+        }
+      ]
+    }
   }
 }

@@ -15,6 +15,7 @@
  * detected by a decode → re-encode → byte-compare check.
  */
 import type { RuleCell } from '../models/rule-cell';
+import { MAX_CELL_PAYLOAD_BYTES } from '../helpers/signed-payload-guard';
 import {
   Blockchain,
   blockchainFromJSON,
@@ -70,10 +71,35 @@ function bigintToMagnitude(v: bigint): Uint8Array {
   return out;
 }
 
+/** Byte → two lowercase hex digits, so the hex build below is a table lookup per byte. */
+const HEX_BYTE: readonly string[] = Array.from({ length: 256 }, (_, i) =>
+  i.toString(16).padStart(2, '0')
+);
+
+/**
+ * Big-endian magnitude bytes → bigint, in ONE pass over the input.
+ *
+ * This was `for (const byte of b) v = (v << 8n) | BigInt(byte)`, which is quadratic:
+ * bigints are immutable, so every shift allocates and copies a value whose width grows
+ * with the bytes consumed. Measured on a 512 KiB payload — legal, and reachable from
+ * any API response carrying a rules container — that loop took **138 seconds**; this
+ * one takes ~30 ms. A cell payload is attacker-chosen length, and the container decode
+ * runs on the address, asset and price read paths, so the cost was a remote CPU stall,
+ * not a micro-optimisation.
+ *
+ * The other three SDKs all use a native one-pass primitive for exactly this:
+ * Go `big.Int.SetBytes`, Python `int.from_bytes`, Java `new BigInteger(1, …)`.
+ * JavaScript's equivalent is a single base-16 parse, which is linear because the base
+ * is a power of two.
+ *
+ * @param b - Big-endian magnitude bytes
+ * @returns The non-negative value they encode
+ */
 function magnitudeToBigint(b: Uint8Array): bigint {
-  let v = 0n;
-  for (const byte of b) v = (v << 8n) | BigInt(byte);
-  return v;
+  if (b.length === 0) return 0n;
+  let hex = '';
+  for (let i = 0; i < b.length; i++) hex += HEX_BYTE[b[i]];
+  return BigInt('0x' + hex);
 }
 
 /** The column type a typed cell belongs to. */
@@ -293,6 +319,12 @@ export function ruleCellToBytes(colType: string, cell: RuleCell): Uint8Array {
  */
 export function ruleCellFromBytes(colType: string, data: Uint8Array): RuleCell {
   const raw = (): RuleCell => ({ kind: 'RawCell', columnType: colType, payload: data });
+  // Bound the typed parse before running it. This function is exported, so it is
+  // reachable with arbitrary bytes without passing the container-level cap, and the
+  // integer families build a bigint whose cost is driven by the payload length. An
+  // over-cap cell is preserved verbatim rather than dropped, so this stays inside the
+  // "decode never fails" contract — it declines to interpret, it does not discard.
+  if (data.length > MAX_CELL_PAYLOAD_BYTES) return raw();
   // Decoding never fails: one malformed cell must degrade to a RawCell rather than
   // abort the whole container, which would take every rule for that tenant down with
   // it. A cell payload is protobuf `bytes`, so a non-UTF-8 string cell and a truncated

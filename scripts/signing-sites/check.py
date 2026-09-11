@@ -78,6 +78,16 @@ DECL = re.compile(
 NOT_A_SYMBOL = {
     "if", "for", "while", "switch", "catch", "try", "else", "do", "return", "throw",
     "new", "str", "String", "await", "async", "function", "get", "set", "constructor",
+    # Python keywords that take a parenthesised expression and end in a colon, so the TS
+    # method-signature alternative matches them. `except (A, B):` above a signing call
+    # resolved two real sites to the symbol "except" and simultaneously reported their
+    # true keys as gone — a green-to-red flip on a change that touched no signing code.
+    #
+    # RESERVED WORDS ONLY. Do not add builtins like `list`, `int` or `len`: those are real
+    # method names in this repo (`WhitelistedAddressService.list` in three of the four
+    # SDKs), and blocklisting one would silently mis-key a future signing site inside it
+    # rather than failing loudly.
+    "except", "elif", "with", "raise", "yield", "del", "not", "and", "or", "in", "is",
 }
 
 

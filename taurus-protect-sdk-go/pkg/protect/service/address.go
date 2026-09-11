@@ -53,9 +53,56 @@ func (s *AddressService) GetAddress(ctx context.Context, addressID string) (*mod
 		return nil, fmt.Errorf("address not found")
 	}
 
-	address := mapper.AddressFromDTO(resp.Result)
+	return s.verifiedAddress(ctx, resp.Result)
+}
 
-	// Mandatory address signature verification
+// verifiedAddress is the construction seam for a single *model.Address: GetAddress and
+// CreateAddress both go through it, because "remember to verify" was a rule rather than the
+// only available construction path, and CreateAddress is what that cost — GetAssetAddresses
+// had already been fixed for exactly this, and the create path was missed. Same reasoning as
+// RequestService.verifiedRequest.
+//
+// The two PAGE paths — ListAddresses and AssetService.GetAssetAddresses — verify through
+// helper.VerifyAddressSignatures instead, so this is not literally the only route to an
+// Address. That is a recorded divergence, not an oversight: the batch verifier is STRICTER
+// than this seam (it errors on an empty address string, where this seam returns it), so the
+// invariant "never return a non-empty address that has not been verified" holds on all four
+// paths — but a page containing an address still being created fails here and succeeds in
+// Java, whose list path shares the seam. See TODOS.md; do not "align" it by loosening the
+// batch verifier without deciding which behaviour is wanted.
+//
+// Asynchronous creation is the one case that is NOT simply verify-and-throw. The DTO carries a
+// `status` of `created`/`creating`/`signed`/`observed`/`confirmed`, so a reply can legitimately
+// arrive before the HSM has signed the address. The rule that holds either way: never hand back
+// a non-empty Address.Address that has not been verified. So a signature present must verify,
+// and a signature absent means the address string is withheld rather than returned unchecked —
+// the caller re-reads through this same seam once the status advances.
+func (s *AddressService) verifiedAddress(
+	ctx context.Context,
+	dto *openapi.TgvalidatordAddress,
+) (*model.Address, error) {
+	address := mapper.AddressFromDTO(dto)
+	if address == nil {
+		return nil, fmt.Errorf("address not found")
+	}
+
+	if address.Address == "" {
+		// Nothing to verify and nothing to misuse: an address that has not been generated
+		// yet carries no destination. Status tells the caller to come back.
+		return address, nil
+	}
+
+	if address.Signature == "" {
+		// A non-empty address with no signature is NOT a silent skip. Returning it would
+		// hand the caller an attacker-controllable destination in the same type as a
+		// verified one, which is the whole defect.
+		return nil, &model.IntegrityError{
+			Message: fmt.Sprintf("address %s (status %q) carries an address string but no HSM "+
+				"signature; refusing to return an unverified destination. Re-read once the "+
+				"status reaches \"signed\"", address.ID, address.Status),
+		}
+	}
+
 	rulesContainer, err := s.rulesCache.Get(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get rules container for verification: %w", err)
@@ -205,7 +252,11 @@ func (s *AddressService) CreateAddress(ctx context.Context, req *model.CreateAdd
 		return nil, fmt.Errorf("failed to create address")
 	}
 
-	return mapper.AddressFromDTO(resp.Result), nil
+	// Through the same seam as every read. The create reply carries the same
+	// TgvalidatordAddress the read paths return, signature included, so there was never a
+	// reason for this path to be the unverified one — and callers of create are precisely
+	// the ones about to publish or fund a fresh deposit address.
+	return s.verifiedAddress(ctx, resp.Result)
 }
 
 // CreateAddressAttribute creates an attribute on an address.

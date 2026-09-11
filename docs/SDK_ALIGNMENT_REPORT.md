@@ -6,16 +6,50 @@
 
 ## How alignment is enforced
 
-Alignment is checked by gates, not by inspection. Four of them, all consumed by every SDK's
-unit suite or `build.sh`:
+Alignment is checked by gates, not by inspection. All of them are consumed by every SDK's unit
+suite, by `build.sh`, or by a script at the repo root:
 
 | Gate | File / command | Covers | Enforced |
 |---|---|---|---|
 | Cell wire parity | `scripts/resources/governance-cell-vectors.json` (39 vectors) | Each typed `RuleCell` encodes to exact recorded bytes and decodes back | all 4 unit suites |
 | Lossless / non-canonical parity | `scripts/resources/governance-lossless-vectors.json` (8 vectors) | Schema-newer and deliberately non-canonical wire forms survive a round trip | all 4 unit suites |
 | Authorization-error parsing | `scripts/resources/authorization-error-vectors.json` (8 vectors) | The 403 role-list parser agrees on every server wording | all 4 unit suites |
+| Verification behaviour | `scripts/resources/verification-behaviour-vectors.json` (`rule_key` 12, `hash_coverage` 8, `contains_hash` 7, `memo_key` 8, **`legacy_hash` 7**, **`rule_tier_candidates` 5**) | The verification primitives: which `(blockchain, network)` selects the rules, hash coverage, memo-key injectivity, **which payload step 6 parses**, **which rule tiers apply when the network is unsigned** | all 4 unit suites |
+| Signed fixtures | `scripts/resources/verification-signed-fixtures.json` (10 SuperAdmin + 8 group vectors) | Both thresholds count DISTINCT SIGNING KEYS, not signature entries | all 4 unit suites |
+| Crypto + legacy hashes | `docs/test-vectors/crypto-test-vectors.json` (`legacy_hash_address` 3, `legacy_hash_asset` 3, **`canonical_string` 6**) | Hash/HMAC primitives, the legacy-hash strategies, **and the TPV1 canonical string** | all 4 unit suites |
+| Signing-site inventory | `python3 scripts/signing-sites/check.py` | Every ECDSA signing site declares `verifies` or `signs-own-bytes` | repo-root script |
 | API-surface parity | `scripts/api-surface/diff.py` | Every service exists in all four SDKs; method-count deltas reported | `build.sh docs` |
 | Docs match code | `build.sh docs --check` | No documented method that does not exist; generated index current | `build.sh docs --check` |
+
+The bold rows are new in the 2026-09-10 security-scan pass, and two of them exist because an
+existing gate was structurally unable to catch the defect it looked like it covered.
+
+**A note on "Enforced: all 4 unit suites", because it was briefly untrue.** The three new
+sections — `legacy_hash`, `rule_tier_candidates` and `canonical_string` — shipped consumed by
+the **Go suite alone**. The other three loaders asserted the `counts` block, which proves the
+file is *well formed*, and never asserted the *behaviour*. That is not a gate, and it had a
+direct cost: **Python shipped the exact single-tier rule lookup `rule_tier_candidates` exists
+to forbid** while three SDKs carried the candidate-set fix, and nothing anywhere went red. It
+was found by reading the four implementations side by side, not by a test — the drift pattern
+this repo keeps producing. All four loaders now consume all three sections; verified by
+truncating the file (the Python total drops 53 → 39, the documented regression signal) and by
+deleting it (every loader hard-fails).
+
+The lesson worth keeping: **a `counts` assertion is not consumption.** When adding a section,
+grep for a reader in each of the four suites before claiming the row is enforced.
+
+- **`legacy_hash`** asserts the *parsed model*, not a hash. `crypto-test-vectors.json`'s
+  `legacy_hash_*` groups assert hash values and counts — and the legacy-strip injection moves no
+  hash, so those groups passed against it unchanged (they still do, correctly).
+- **`canonical_string`** is the first thing to pin the TPV1 canonical message at all. The
+  `hmac_sha256` group HMACs a hardcoded string that *looks* like a canonical message, and no
+  consumer routed through `calculateSignedHeader` — which is how Python and TypeScript came to
+  upper-case the HTTP method while Java and Go signed it verbatim, leaving a lowercase-method
+  caller unable to authenticate against one of the two families.
+
+A gate that cannot fail is worse than no gate, so each of the new sections was verified by
+reverting the fix and confirming the suite goes red, and by deleting the vector file and
+confirming the loader hard-fails rather than silently skipping.
 
 The lossless vectors and the API-surface differ are **new in this pass**. Before it, the
 eight lossless base64 strings were hand-copied into four separate test suites with nothing
@@ -30,19 +64,32 @@ because its report reads as evidence of parity.
 
 Verified by running each gate, not asserted:
 
-| SDK | Services | Public service methods | Unit tests | Other gates |
-|---|---|---|---|---|
-| Go | 43 | 191 | 1050 test funcs, 7 packages | `go vet`, `GOARCH=386` build, `golangci-lint` 0 issues |
-| Java | 43 | 184 | 1273 | Checkstyle 0 violations |
-| Python | 43 | 202 | 1419 | new-file flake8 clean (repo lint is a known-red baseline) |
-| TypeScript | 43 | 207 | 1722 in 103 suites | `tsc --noEmit`, ESLint 0 |
+| SDK | Services | Unit tests | Other gates |
+|---|---|---|---|
+| Go | 43 | 7 packages | `go vet ./...` (whole module), `GOARCH=386` build, `golangci-lint` **0 issues** |
+| Java | 43 | **1386** | Checkstyle **0**, PMD **0**, SpotBugs **0** |
+| Python | 43 | **1583** | touched-file flake8 no worse than the committed baseline (repo lint is known-red) |
+| TypeScript | 43 | **1851** in 118 suites | `tsc --noEmit`, ESLint **0** |
+
+Measured 2026-09-10, after the security-scan pass. Previous run (2026-09-07): Java 1273,
+Python 1419, TypeScript 1722 in 103 suites. **A drop in any of these is a regression even
+when nothing reports failure** — a broken TypeScript test file reports "Test suite failed to
+run" and drops the count instead of showing red, and a bulk rename can un-name a Python test
+so pytest stops collecting it. Compare the totals, not just the pass/fail line.
+
+**Java's PMD moved 10 → 0 in this pass**, so it is a real gate now rather than known-red debt.
 
 Service counts come from `scripts/resources/api-surface.<lang>.json`, regenerated from
-source by `build.sh docs`. The "43 services (38 core + 5 TaurusNetwork)" claim is now
-measured rather than repeated.
+source by `build.sh docs`. The "43 services (38 core + 5 TaurusNetwork)" claim is measured
+rather than repeated. Per-service method counts are deliberately **advisory**, not a gate:
+names differ by language idiom (Go `ListWallets` / Python `list` / Java `getWallets`), so
+normalising them either hides real gaps or invents false ones.
 
-`tg-protect-mcpd`, which consumes the Go SDK through a local-path `replace`, builds and
-passes its own suite against this branch.
+`tg-protect-mcpd` consumes the Go SDK and **no longer uses a local-path `replace`** (removed
+2026-09-10) — it pins a released commit through the goproxy, so edits here are invisible to it
+until they are pushed and it is bumped. Checked against this branch with a temporary
+`replace`: it breaks in **exactly 5 places**, all the `ListWhitelistedAssets` tuple →
+`WhitelistedAssetResult` change, and needs a deliberate bump. That is a separate repo.
 
 ## What this pass changed
 
@@ -148,6 +195,130 @@ passes its own suite against this branch.
   61 generated OpenAPI APIs (this report said 56), Go 47 mapper / 42 model files (said
   83/46), Python 25 pledge and 15 sharing models (said 26/14), TypeScript 38 service getters
   (said 26).
+
+## Security-scan pass (2026-09-10)
+
+A scan against commit `20df2ca` produced **30 findings — 19 HIGH, 11 MEDIUM — across all four
+SDKs**. They were not 30 independent bugs: most were **one design defect implemented four
+times**, which is the drift pattern this repo keeps producing and the reason every fix below
+landed with a gate rather than a review. Threat model throughout: **the API server is the
+adversary** — the adversary client-side verification exists to defeat, so each of these was a
+gap in the product's core promise rather than a hardening nicety.
+
+Three defects were found during the work and are not in the 30. Two of them are arguably worse
+than findings that were.
+
+### The legacy-hash strip was injective in nobody's implementation
+
+**All four SDKs.** Step 4 accepts three backward-compatible rewrites of the delivered payload
+so that OLD signatures stay valid. Those strips are not injective, and every SDK then parsed
+the **delivered** text rather than the variant that matched — so a server could append a
+duplicate `,"label":"X"` (or a `contractType` the row never had) immediately before the closing
+brace: the strip recovers the genuinely signed bytes, steps 1 through 5 all pass, and
+last-duplicate-wins parsing hands the appended value back to the caller as *verified*.
+
+Four exploitable shapes, confirmed by simulating the real regexes. The fix has two halves,
+because neither alone is enough:
+
+1. **Step 4 returns the payload it matched, and step 6 parses THAT.** By preimage resistance a
+   matching variant *is* the byte string governance signed, so this is closure, not narrowing.
+2. **Duplicate object keys are refused**, structurally, inside the parse functions — closing the
+   shapes the strip does not reach, including the third parse in `resolveRuleKey` where a
+   duplicated `currency`/`network` would re-point rule selection at a weaker quorum.
+
+One accepted regression, and it must not be "fixed": `linkedInternalAddresses[].label` comes
+back empty for legacy-era rows. Those labels are live DB values validatord rebuilds on every
+read and were never signed — returning them was the bug.
+
+Gated by the new `legacy_hash` section of `verification-behaviour-vectors.json`, which asserts
+the **parsed model** rather than a hash. The pre-existing `crypto-test-vectors.json` legacy
+groups pass unchanged, which is correct: the fix moves no hash, and that is exactly why they
+could never have caught it.
+
+### Whitelist approval signed server-selected rows
+
+**All four SDKs.** `approve` took a list of ids, re-read them, and signed whatever came back
+under those ids. Nothing bound the approver's intent to the bytes signed, so a
+response-controlling server could answer the id-filtered re-read with a **different** row — one
+whose existing signatures already satisfy the container it presents — and harvest a genuine
+approver signature over content the approver never saw. Verification is no defence: the
+substituted row is a real, validly-signed whitelist entry, just not the reviewed one.
+
+`approve` now takes the **rows a verified read returned**, carrying the metadata hash each had
+at review time, and aborts on a mismatch. This is a **breaking change**, taken deliberately: the
+pin has to be impossible to forget, so the pin types have no public constructor and are minted
+only by `select(ids)` / `selectAll()` on a read result. An empty selection raises rather than
+meaning "approve nothing" — the same rule `approveRulesProposal`'s mandatory
+`expectedContainerHash` follows.
+
+The value **signed** is still the row's current `metadata.hash`, never the legacy variant step 4
+matched: validatord rebuilds the hash array from the current schema and verifies the submitted
+signature against those bytes.
+
+### Six more themes, same shape
+
+| Theme | SDKs | What was wrong |
+|---|---|---|
+| `createAddress` returned an unverified HSM address | all 4 | `getAssetAddresses` had been fixed and `createAddress` missed. Now ONE seam per SDK, with the rule "never return a non-empty address string that has not been verified" — branching on the address STRING, since `status` is server-controlled. Async creation is real, so an unsigned address is withheld rather than returned |
+| Pledge-action approval signed an unverified hash | Go, TS | Read paths now verify `sha256(payload) == hash`, and approval verifies again and signs internally. Python was the model; Java has no pledge surface |
+| An unsigned DTO `network` picked the rule tier | Go, Java, TS **+ Python** | `includeNetworkInPayload` has **no proto backing**, so it is unsigned and the finding's suggested fix was unavailable. Instead: when the payload omits `network`, EVERY reachable tier must be satisfied. **The scan filed this against three SDKs; Python had the same defect and was not filed.** Found by verifying the fix site-by-site across all four — regressing Python's walk makes the lookup return the *global default*, the broadest tier, which is fail-open. Its two families also name the chain field differently (`currency` vs `blockchain`), so a shared walk reading one name silently treats every contract rule as a wildcard |
+| Integrity failures remapped to a retryable `ServerError(500)` | Python, TS | Told a caller to retry a response an attacker controls. Fixed on every path that can raise it; the mechanical remainder is in `TODOS.md` |
+| Gson-onto-`Throwable` recursion · rules-cache wedge | Java | A nested error body could raise `StackOverflowError` out of every SDK call; separately, an unchecked throw from the rules fetch left the single-flight flag set, so **one crafted `/rules` response wedged address, asset and price verification process-wide** on an untimed wait |
+| Nil-reply deref · TPV1 followed redirects | Go | ~110 unchecked `resp.<Field>` sites behind one generated `decode`; and TPV1 minted a **fresh valid signature** for whatever host a `Location` header named — a signing oracle, not a replayed credential |
+| Quadratic bigint decode · unbounded container · unverified `getEnvelope` | TS | The address `getEnvelope` returned the unverified input envelope while the asset one was already correct |
+
+### Not fixed, by decision — and recorded rather than shipped silently
+
+Three themes are blocked on a server-side answer and are documentation-only, each with its
+finding ids in `TODOS.md`:
+
+- **`payloadToSign` on a multi-factor signature is unverified**, and cannot be bound: the reply
+  carries no entity id. This is the ONE place in the SDK where bytes intended for a signing key
+  are returned unverified, and it is now stated as such on the model field and both methods in
+  all four SDKs, with the actionable client-side path written down.
+- **TPV1's canonical string is not injective** — needs a versioned scheme across four SDKs, the
+  Postman collection and validatord, because the server verifies the same string.
+- **A uniformly stale rules container** is undetectable client-side: the container arrives
+  in-band and validatord exposes no ruleset identity to pin against. The approval pin closes the
+  *signing* consequence; the read consequence stays open.
+
+### Three defects found during the work, not in the 30
+
+1. **Python's entire MFA service was dead code that could not run** — it called four generated
+   operations that do not exist and imported two request models that do not exist, so every call
+   raised `AttributeError` or `ModuleNotFoundError`. **Its tests passed** because the API object
+   was a bare `MagicMock()`, which answers any attribute. Rewritten onto the four real
+   operations; the stub is now `MagicMock(spec=MultiFactorSignatureApi)`, which is the actual fix
+   for the class of bug, and the four phantom operations are pinned as absent.
+2. **TPV1 diverged on HTTP-method case** — an interop break, not just an inconsistency. Python
+   and TS upper-cased; Java and Go signed verbatim. A caller issuing lowercase `get` signs a
+   different canonical string in the two families, so one family cannot authenticate. Aligned on
+   upper-casing (HTTP methods are case-sensitive per RFC 9110, so normalising cannot break a
+   working deployment) across all four SDKs and all five Postman signing blocks, and pinned by
+   the new `canonical_string` vectors.
+3. **Java's `ApiExceptionMapper` let the response body override the HTTP status** — a body
+   `{"code":200}` on a 503 yielded `getCode() == 200` and `isRetryable() == false`. The transport
+   status always wins now. Same taxonomy inversion as the retryable-integrity finding, reached
+   from the other side.
+
+### What made each fix a gate
+
+Every new test was run against the UNFIXED code first, and the verbatim failure captured. Three
+worth recording because they show what the old suites could not see:
+
+- Removing both legacy defences: `attacker-appended label reached the caller as verified:
+  "Coinbase Prime custody"`. The end-to-end address flow had only ever been exercised with nil
+  inputs, so nothing could tell "closed" from "narrowed".
+- Restoring the single rule-tier lookup: *"the row met goerli's 1-of-1 but not mainnet's
+  ops+compliance, and it verified anyway."*
+- Removing the duplicate-key pass: **7 of 9** Java cases go red, including `resolveRuleKey`.
+- Reverting the TPV1 method case: the `lowercase method` and `mixed-case method` vectors go red.
+- Removing the nil-reply guard: `panic: runtime error: invalid memory address or nil pointer
+  dereference`.
+- Removing the rules-cache `finally`: *"a second caller never returned"* — the two cache tests
+  were the last thing still red after everything else had landed, which is the gate working.
+
+---
 
 ## Verification alignment pass (2026-09-04)
 

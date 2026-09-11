@@ -100,6 +100,44 @@ class AddressMapperTest {
         assertEquals("0xabcdef123456", result.getAddress());
     }
 
+    /**
+     * The status is what lets the verification seam tell an in-flight asynchronous
+     * creation (status {@code creating}, no address string, nothing signed yet) apart
+     * from a response whose signature was stripped. MapStruct drops a property whose
+     * model setter does not follow the {@code set*} convention, silently and with a
+     * green build — {@code Address.disabled} and {@code Wallet.omnibus} were both bitten
+     * by that — so the mapping is asserted here rather than only read off the generated
+     * {@code AddressMapperImpl}.
+     */
+    @Test
+    void fromDTO_mapsStatus() {
+        // Given
+        TgvalidatordAddress dto = new TgvalidatordAddress();
+        dto.setId("1");
+        dto.setWalletId("2");
+        dto.setStatus("creating");
+
+        // When
+        Address result = AddressMapper.INSTANCE.fromDTO(dto);
+
+        // Then
+        assertEquals("creating", result.getStatus());
+    }
+
+    @Test
+    void fromDTO_withoutStatus_leavesItNull() {
+        // Given
+        TgvalidatordAddress dto = new TgvalidatordAddress();
+        dto.setId("1");
+        dto.setWalletId("2");
+
+        // When
+        Address result = AddressMapper.INSTANCE.fromDTO(dto);
+
+        // Then
+        assertNull(result.getStatus());
+    }
+
     @Test
     void fromDTO_withDisabledTrue_mapsCorrectly() {
         // Given

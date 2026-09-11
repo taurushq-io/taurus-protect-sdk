@@ -377,6 +377,65 @@ and returns `undefined`, which type-checks under `Promise<T>` and fails silently
   the same; rows-returned-but-none-surviving throws `IntegrityError`.
 - `resolveRuleKey` and `MAX_PAYLOAD_BYTES` live in `whitelist-hash-helper.ts`.
 
+## Verification surface added in the 2026-09-10 security-scan pass
+
+Go was the reference SDK for this pass; cross-SDK reasoning is in the repo-root `CLAUDE.md`.
+TypeScript-specific:
+
+- **`src/helpers/signed-payload-guard.ts` is the new bounds/structure leaf**: `rejectDuplicateObjectKeys`
+  (a structural token walk — no `JSON.parse` setting rejects duplicates, and by the time an object
+  exists they are collapsed), plus `MAX_RULES_CONTAINER_BYTES` (4 MiB) and `MAX_CELL_PAYLOAD_BYTES`
+  (1 MiB). Those two caps are **TypeScript-only**: Go/Java/Python cap only the signed payload
+  (1 MiB) and nothing bounds their container decode. Chosen to be unreachable by real data — the
+  largest golden-vector cell is 29 bytes.
+- **`magnitudeToBigint` was quadratic, and the string concat was not the cause.** `v = (v << 8n) | b`
+  reallocates the whole bigint per byte, so it is O(n²) however it is spelled. Measured: a large
+  legal magnitude took **138 s** before, 405 ms after. The other three use a native primitive
+  (`big.Int.SetBytes`, `int.from_bytes`, `new BigInteger(1, …)`), which is why only this SDK had it.
+  It is module-private — exercise it through the public codec API.
+- **`strictBase64Decode` validates with a LINEAR SCAN, not a regex.** The obvious
+  `/^(?:[A-Za-z0-9+/]{4})*…/` recurses per four-character group in V8: 1.6 MB passed in 27 ms,
+  5.6 MB threw `RangeError: Maximum call stack size exceeded` **out of the decoder**. It failed
+  closed, so availability rather than bypass — but a `RangeError` escapes every
+  `catch (e) { if (e instanceof …) }` funnel, and the decoder is reachable from any governance
+  response through the signature-verification decode and the memo key, not only the capped
+  container decode. Go/Python/Java validate without a quantified-group regex and were never
+  affected. The accepted SET is unchanged, which is the property that matters — it is cross-SDK
+  gated. `tests/unit/helpers/strict-base64.test.ts` asserts the accept/reject table (22 cases pass
+  both ways, which is what proved the rewrite behaviour-preserving) plus two multi-MB cases.
+- **The approval witness classes live in `src/models/whitelisted-address.ts`, not the service file.**
+  `WhitelistedAddressApproval` / `WhitelistedAssetApproval` hold a true-private `#pinned`
+  `ReadonlyMap` — the closest TS comes to Go's unexported field, and unlike `private` it survives at
+  runtime. Minted only by `select`/`selectAll` on a read result.
+- **`hashesToSignByID` returns the row's CURRENT `metadata.hash`, deliberately** — not the
+  verifier's `verifiedHash`. This SDK was the one that signed the legacy variant, and the collector
+  was renamed so the old name could not return by muscle memory. A local variable called
+  `verifiedHash` in the approve loop puts the confusion straight back; the asset side had exactly
+  that until 2026-09-11 (behaviour was correct, the name was not). Call it `currentHash`.
+- **`isPassThroughSdkError` (`src/services/base.ts`) must stay in step with `rethrowIfNotRowLevel`**
+  (`src/services/row-level-error.ts`). `IntegrityError`, `WhitelistError`, `RequestMetadataError` and
+  `ConfigurationError` extend plain `Error`, so without it they fell through `handleError` to a
+  **retryable** `ServerError(500)` — telling a caller to retry a response an attacker controls.
+  `handleError` is `protected` on an exported class, so its signature is public API: change the
+  branching, never the signature.
+- **Address `getEnvelope` returns the branded verified envelope**, matching the asset side which was
+  already correct. That fix was present in the tree with **no test**; see the note below about
+  verifying a gate before trusting it.
+
+### Adding a shared-vector section? Declare it in the loader's `interface` too
+
+A new section in `verification-behaviour-vectors.json` or `crypto-test-vectors.json` needs a field on
+the loader's TS `interface` (`Vectors` / `TestVectors`). Without it, `c.rules.map((r) => …)` has an
+implicitly-`any` parameter, which is `TS7006` — and under ts-jest that is **"Test suite failed to
+run"** with `Tests: 0 total`, not a red test. Same trap this file already documents for `tsc` not
+covering `tests/`, reached from a new direction.
+
+Worth knowing why it came up: three sections (`legacy_hash`, `rule_tier_candidates`,
+`canonical_string`) shipped consumed by the **Go suite alone**. Every loader asserts the file's
+`counts` block, which proves each section has the declared NUMBER of vectors and **not** that
+anything checks their outcomes. So grep for a reader in all four suites before believing a section
+covers this SDK — and before claiming it in the alignment report.
+
 ## Verification surface added in the 2026-09-07 pass
 
 Cross-SDK rules are in the repo-root `CLAUDE.md`. TypeScript-specific:

@@ -2,6 +2,7 @@ package com.taurushq.sdk.protect.client.helper;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.taurushq.sdk.protect.client.helper.LegacyPayloadVariant;
 import com.taurushq.sdk.protect.client.model.IntegrityException;
 import com.taurushq.sdk.protect.client.model.RuleUserSignature;
 import com.taurushq.sdk.protect.client.model.WhitelistException;
@@ -436,17 +437,23 @@ class WhitelistVerificationFlowTest {
             assertFalse(signatureHashes.contains(currentHash),
                     "Current hash should NOT be in legacy signature list");
 
-            // Compute legacy hash using the same transformation as production code
-            // (remove contractType field)
-            String withoutContractType = currentPayload.replaceAll(",\"contractType\":\"[^\"]*\"", "");
-            String computedLegacyHash = CryptoTPV1.calculateHexHash(withoutContractType);
+            // The legacy hash comes from PRODUCTION, not from a regex copied into this
+            // test. This file used to re-implement the strips with String.replaceAll
+            // because the production methods were private; that made the assertion about
+            // a copy, so the injection fix could land in the SDK while this test stayed
+            // green against the old semantics. computeLegacyPayloadVariants is public
+            // precisely so this can call it.
+            assertTrue(variantHashes(currentPayload).contains(legacyHash),
+                    "production legacy variants should include the recorded legacy hash");
 
-            // Legacy hash should match
-            assertEquals(legacyHash, computedLegacyHash,
-                    "Computed legacy hash should match expected legacy hash");
+            // And the variant that matched carries the bytes the signature covered, which
+            // is what step 6 must parse. Recovering only the hash is what allowed an
+            // appended duplicate key to reach the caller as verified.
+            assertEquals(legacyHash,
+                    CryptoTPV1.calculateHexHash(variantPayloadFor(currentPayload, legacyHash)),
+                    "the matched variant's payload must hash to the matched hash");
 
-            // Legacy hash IS in the list
-            assertTrue(signatureHashes.contains(computedLegacyHash),
+            assertTrue(signatureHashes.contains(legacyHash),
                     "Legacy hash should be found in signature list");
 
             // Test Case 2: both contractType and labels removed
@@ -454,13 +461,33 @@ class WhitelistVerificationFlowTest {
             String case2CurrentPayload = case2.get("currentPayload").getAsString();
             String case2LegacyHash = case2.get("legacyHash").getAsString();
 
-            // Apply both transformations
-            String withoutLabels = case2CurrentPayload.replaceAll(",\"label\":\"[^\"]*\"}", "}");
-            String withoutBoth = withoutLabels.replaceAll(",\"contractType\":\"[^\"]*\"", "");
-            String computed = CryptoTPV1.calculateHexHash(withoutBoth);
+            assertTrue(variantHashes(case2CurrentPayload).contains(case2LegacyHash),
+                    "Case 2: production legacy variants should include the recorded hash");
+            assertEquals(case2LegacyHash,
+                    CryptoTPV1.calculateHexHash(
+                            variantPayloadFor(case2CurrentPayload, case2LegacyHash)),
+                    "Case 2: the matched variant's payload must hash to the matched hash");
+        }
 
-            assertEquals(case2LegacyHash, computed,
-                    "Case 2: Legacy hash should match after removing both fields");
+        /** The hashes production's legacy strips produce for {@code payload}. */
+        private List<String> variantHashes(final String payload) {
+            List<String> hashes = new ArrayList<>();
+            for (LegacyPayloadVariant variant
+                    : WhitelistHashHelper.computeLegacyPayloadVariants(payload)) {
+                hashes.add(variant.getHash());
+            }
+            return hashes;
+        }
+
+        /** The payload of the production variant whose hash is {@code hash}. */
+        private String variantPayloadFor(final String payload, final String hash) {
+            for (LegacyPayloadVariant variant
+                    : WhitelistHashHelper.computeLegacyPayloadVariants(payload)) {
+                if (hash.equals(variant.getHash())) {
+                    return variant.getPayload();
+                }
+            }
+            throw new AssertionError("no production legacy variant hashes to " + hash);
         }
     }
 

@@ -83,6 +83,171 @@ say so in the javadoc and keep it; if not, it needs the re-read treatment.
 
 **Depends on:** a server-side answer on who is supposed to produce that signature.
 
+### 2026-09-10 update — the security scan filed this three times, and the blocker is now precise
+
+Scan findings **4284688** (Java, HIGH), **4284646** (TS, MED) and **4284645** (Go, MED) are all
+this entry. Left as documentation by decision, because the reply cannot be bound to an entity
+without a server change — but the *exact* blocker and the actionable client-side path are worth
+recording so the next reader does not re-derive them:
+
+- **`GetMultiFactorSignatureEntitiesInfoReply` carries only `{id, payloadToSign[], entityType}`.**
+  All three fields are required; there is **no entity id, singular or plural**, and
+  `payloadToSign` is a bare string array with no per-element id, hash or ordering marker. So the
+  reply cannot be joined back to the entities the caller asked about, and an integrator following
+  the documented flow signs opaque bytes chosen entirely by the server.
+- **`entityType` is a bare kind enum** (`REQUEST` / `WHITELISTED_ADDRESS` /
+  `WHITELISTED_CONTRACT`). Java's domain object `MultiFactorSignatureEntityType` has `id` and
+  `kind` fields, both of which MapStruct's `fromEntityTypeDTO(enum)` left null — the mapper test
+  only asserted non-null, so nothing caught it. **Fixed 2026-09-10**: the mapper method is
+  hand-written and populates `kind`; `id` stays null because the reply carries none, and that
+  absence is the blocker itself. The test now asserts the kind for every enum value and asserts
+  `id` is null *with the reason*, so nobody "fixes" it by inventing one. The kind matters
+  because it is what tells a caller which verifying reader to check the payload against.
+- **The actionable path, for when the decision comes:** `create` DOES take `entityIDs`
+  (`TgvalidatordCreateMultiFactorSignaturesRequest{entityType, entityIDs}`, both required). So
+  carrying the create-time `(entityType, entityIDs)` through to approve — or taking them as
+  parameters — would let the SDK re-read those entities through the already-verifying reader for
+  that type and require each `payloadToSign` element to equal a locally recomputed, verified
+  metadata hash. That is a client-side fix and needs no wire change; it just needs someone to
+  decide it is the intended model.
+- **`REQUESTMOBILEAPPSIGNER` / `WHITELISTEDADDRESSMOBILEAPPSIGNER` are governance `Role` values**
+  (`request_reply.proto:3004-3005`), in the same enum as `REQUESTAPPROVER`. So the second-factor
+  signature is a governance-level approval keyed to a user public key — precisely the artefact a
+  compromised server cannot forge, which is what makes the substitution worth doing.
+- Python's half of this entry is now **out of date in the SDK's favour**: its
+  `create_challenge`/`verify_challenge` methods were not merely a different shape, they called
+  four generated operations that do not exist and could never run. Rewritten 2026-09-10 onto the
+  four real operations, so there IS now a cross-SDK shape to compare.
+
+Until the decision lands, all three SDKs state in the method docs that `payloadToSign` is
+unverified server data and that the caller must bind it to a verified entity before signing.
+
+---
+
+## TPV1's canonical string is not injective — needs a versioned scheme (TPV2)
+
+**Status:** open, documentation only. Scan finding **4284627** (MEDIUM).
+
+**What:** The HMAC input is built by dropping empty components and joining the rest with a single
+space: `Stream.of("TPV1", apiKey, nonce, ts, method, host, path, query, contentType, body)
+.filter(nonEmpty).collect(joining(" "))` (Java `CryptoTPV1.java:117-123`, and byte-for-byte the
+same construction in Go `crypto/tpv1.go:95-110`, Python `crypto/tpv1.py:112-129`, TS
+`crypto/tpv1.ts:226-246`, plus the Postman pre-request script).
+
+**Why it is a defect:** the mapping (method, host, path, query, content-type, body) -> message is
+not one-to-one, for two independent reasons. The delimiter legitimately occurs INSIDE components —
+the normalised Content-Type is `application/json; charset=utf-8`, the body is arbitrary text, and
+the path is signed percent-DECODED, so a wire `%20` becomes a delimiter. And empty components are
+elided rather than kept as fixed slots, so a component can be emptied and its text moved into the
+adjacent one with no change to the MAC.
+
+Consequences for an on-path attacker who can read and rewrite one signed request (a TLS-terminating
+proxy or CDN, corporate TLS inspection, a compromised session) — the exact position TPV1's
+documented integrity property exists to defend against (`docs/AUTHENTICATION.md:51`):
+
+| rewrite | effect |
+|---|---|
+| move a GET's query into the `Content-Type` header | the server runs the UNFILTERED, unpaginated operation under the integrator's key, and the response flows back through the attacker |
+| move a POST's body into `Content-Type`, send an empty body | the path-identified operation (reject, cancel, update) executes with its payload blanked |
+| shift the path/query split where a path parameter carries `%20` | re-targets the call |
+
+The attacker cannot INJECT content, only redistribute the signed bytes across adjacent fields, so
+the gain is bounded — but the signature no longer uniquely binds the request it protects.
+
+**Why this is documentation and not a patch:** the server verifies the same string, so any fix is a
+protocol change that has to land in lock-step across four SDKs, the Postman collection and
+tg-validatord. The fix itself is well understood: a fixed number of fields with empty fields
+represented explicitly, each field length-prefixed or replaced by its SHA-256 digest (at minimum
+body and Content-Type), and the path signed in the exact raw form sent on the wire. Ship it as
+**TPV2** rather than mutating TPV1, or every deployed client breaks at once.
+
+**Assumption stated explicitly:** that tg-validatord reconstructs the documented string from the
+received request, taking the Content-Type header verbatim and dropping empty components. That is
+what interoperability with these SDKs requires — the vendor's own Postman script signs
+`application/json` while the SDKs sign `application/json; charset=utf-8`, so the server must accept
+whatever it is sent. A server that re-normalised Content-Type, or rejected a Content-Type header on
+a bodiless request, would defeat the header-based rewrites.
+
+**What WAS fixed on 2026-09-10:** the separate, non-protocol half — Python and TS upper-cased the
+HTTP method while Java and Go signed it verbatim, so a caller issuing lowercase `get` produced a
+different canonical string in the two families and one of them could not authenticate. All four now
+normalise, and a new canonical-string vector pins it. That is X2 in the security-fix plan; it is
+NOT this entry.
+
+**Depends on:** a validatord decision on adopting a versioned canonicalisation.
+
+## The single-Address seam is not literally single, and the three SDKs disagree
+
+**What:** `AddressService.verifiedAddress` is documented as the ONE construction seam for an
+`Address`, and in Java it is: `getAddress`, `getAddresses`, `createAddress` and
+`AssetService.getAssetAddresses` all route through `verifiedAddress` / `verifiedAddresses`. In
+**Go and TypeScript the two PAGE paths do not** — `ListAddresses` and
+`AssetService.GetAssetAddresses` call the batch `helper.VerifyAddressSignatures` instead.
+
+**Why it is not a hole, and why it still matters:** the batch verifier is *stricter* than the
+seam — it errors on an empty address string, where the seam returns it — so the security
+invariant ("never return a non-empty address that has not been verified") holds on all four
+paths in all three SDKs. What differs is the **asynchronous-creation case**: address creation is
+async (`status` is one of `created`/`creating`/`signed`/`observed`/`confirmed`), so a page can
+legitimately contain an address that has no address string yet. In Java that row comes back with
+its `status`; in Go and TypeScript **the whole page fails**.
+
+So a caller listing a wallet's addresses immediately after creating one gets a working list in
+Java and an `IntegrityError` in Go and TypeScript. That is a usability divergence on a read path,
+not a verification difference.
+
+**Decide which behaviour is wanted before aligning.** The seam's behaviour is the better one — an
+in-flight address should not deny access to the whole page, and the batch verifier's strictness
+buys nothing, since an empty address carries no destination to misuse. But changing it alters
+list semantics in two SDKs on a path no scan finding named, so it was left recorded rather than
+changed. **Do not "align" it by loosening the batch verifier alone** — route the page paths
+through the seam, so there is one rule rather than two that happen to agree.
+
+**Context:** surfaced 2026-09-10 while porting the T3 `createAddress` fix. Go's seam doc comment
+claimed all four paths went through it; that claim is corrected in place and now points here.
+
+**Depends on:** a decision on the async-list behaviour. No blocker otherwise.
+
+---
+
+## No SDK tests its own strict base64 decoder
+
+**What:** the repo-root `CLAUDE.md` records "Base64 on any governance path is decoded STRICTLY"
+as a security property with a named implementation per SDK (Go `base64.StdEncoding`, Python
+`_strict_base64.py`, TypeScript `helpers/strict-base64.ts`, Java `helper/StrictBase64.java`).
+**Nothing pins it.** A grep of all four test trees for `strict_b64decode` / `StrictBase64` /
+`strictBase64Decode` returns nothing outside the TypeScript suite added 2026-09-10.
+
+**Why:** this is the primitive that decides what bytes a signature covers. A lenient decoder
+silently discards out-of-alphabet characters and absorbs the rest, so a container carrying
+embedded separators decodes to the genuine bytes **with attacker bytes appended** — and protobuf
+treats concatenation as merge, so appended bytes ADD entries to repeated fields like `users`.
+That is how an attacker-chosen HSM or `PRICEUPDATER` key reaches the trust root. Go was never
+exploitable by this route *only* because it happened to use the strict encoder. A property with
+no test, in four independent implementations, is the exact shape this repo keeps rediscovering by
+grep.
+
+**What it should be:** a shared accept/reject vector file — the accepted set (padding variants,
+line wrapping) and the rejected set (embedded separators, misplaced padding, non-multiple-of-four,
+non-ASCII) — loaded by all four suites, same pattern as `authorization-error-vectors.json`. It is
+pure input→outcome, so no key material is involved. The TypeScript test added in the 2026-09-10
+pass (`tests/unit/helpers/strict-base64.test.ts`) has the table to lift; it deliberately asserts
+the accept/reject SET rather than the implementation, which is what let a linear-scan rewrite be
+proven behaviour-preserving.
+
+**One live defect found while writing it, fixed in TypeScript only:** the well-formedness regex
+`/^(?:[A-Za-z0-9+/]{4})*.../` recurses per four-character group in V8, so a multi-megabyte input
+threw `RangeError: Maximum call stack size exceeded` out of the decoder instead of returning a
+decision. Measured: 1.6 MB passed in 27 ms, 5.6 MB threw. It failed **closed**, so it was
+availability rather than a verification bypass — but a `RangeError` escapes every
+`catch (e) { if (e instanceof ...) }` funnel in the SDK, and it was reachable from any governance
+response through the signature-verification decode and the memo key, only one of which sits
+behind a size cap. Replaced with a linear scan over the same accepted set. Go, Python and Java
+validate without a quantified-group regex and were never affected — TypeScript was the lone
+outlier, again.
+
+**Depends on:** nothing.
+
 ---
 
 ## TaurusNetwork `ProofOfOwnership` is never verified anywhere
@@ -195,9 +360,10 @@ already asserts a vector count, so bump it in lockstep.
 
 ---
 
-## 4. Revive or retire the Python lint and Java PMD gates
+## 4. Revive or retire the Python lint gate (Java PMD: done)
 
-**What:** Decide, and record the decision, whether these two gates are gates.
+**What:** Decide, and record the decision, whether the Python lint gate is a gate.
+Java PMD was the other half and is resolved — see below.
 
 **Why:** Both are red on committed `main` and have been ignored for long enough that every
 alignment pass rediscovers them, spends time establishing they are pre-existing, and skips
@@ -208,9 +374,13 @@ them. Either state is fine; the ambiguity is what costs time.
 - **Python** `./build.sh lint`: 96 files fail flake8 (mostly E501 at the 100-char limit),
   79 would be reformatted by black, mypy reports 3008 errors in 124 files. Reformatting the
   package to chase it is a repo-wide project that would bury any review in churn.
-- **Java** `mvn pmd:check -pl client`: 10 violations on master. Checkstyle, by contrast, is
-  a real gate at 0 violations, and SpotBugs is at 0 (note `spotbugs:check` must run
-  **without** `-o`; `findsecbugs-plugin` is not in the local `~/.m2` cache).
+- **Java** — **RESOLVED 2026-09-10: PMD is a real gate now, at 0.** It was 10 on master, and
+  every one was mechanical: unused imports and unnecessary fully-qualified names left behind
+  when logic moved, plus two `PreserveStackTrace` in `RequestService` (chain the cause). Fixed
+  in passing during the security-scan pass, so `mvn pmd:check -pl client` exits 0 and its exit
+  code now means something. Checkstyle was already a real gate at 0, and SpotBugs is at 0 (note
+  `spotbugs:check` must run **without** `-o`; `findsecbugs-plugin` is not in the local `~/.m2`
+  cache). **Only the Python half of this item is still open.**
 
 The realistic middle path, already the working convention, is to keep *new* files free of
 real findings (F401 dead imports, F841 unused locals) and leave E501 alone. If that is the
@@ -349,6 +519,41 @@ error propagates instead of being re-wrapped.
 
 **Depends on:** nothing. Best done with the two items below, which are the same taxonomy.
 
+### 2026-09-10 update — the verifying paths are done in Python; the mechanical remainder is not
+
+The 2026-09-10 security scan filed this twice against Python (`address_service.py`,
+`request_service.py`) and once against TypeScript (`base.ts`). The decision taken was to fix
+**every funnel on a path that can raise `IntegrityError` today** and record the rest here.
+
+Done in Python (all 7 funnels widened per file unless noted, and the module-level import
+hoisted — see the landmine note below): `address_service.py` (7), `request_service.py` (11),
+`whitelisted_address_service.py` (4), `whitelisted_asset_service.py` (4),
+`governance_rule_service.py` (8), `asset_service.py` (4), `price_service.py` (2), and
+`taurus_network/pledge_service.py` (14, after the read paths gained hash verification).
+The whitelist and pledge funnels also carry `WhitelistError`.
+
+Two shapes were fixed while in there, both worth knowing before touching the rest:
+
+- **A function-local `from taurus_protect.errors import X` is a landmine, not a style choice.**
+  Python makes the name local to the WHOLE function, so an `except X` or `raise X` *earlier* in
+  the same function raises `UnboundLocalError`. This was a **live defect**:
+  `request_service.py`'s `approve_requests` caught `IntegrityError` before an except funnel
+  that re-imported it, so a genuine verification failure crashed with `UnboundLocalError`
+  instead of reporting. Hoisted to module scope in the three files touched (35 local imports
+  removed from `pledge_service.py` alone); the pattern is still present elsewhere.
+- **Wrapping an `APIError` into an `IntegrityError` is the same inversion, backwards.** The
+  whitelist approve paths' `except Exception -> IntegrityError("the verified read failed")`
+  turned a transport failure into an integrity failure and lost `is_retryable()`. Both now
+  propagate `(APIError, IntegrityError, WhitelistError)` unchanged and wrap only the rest.
+  Go keeps the type reachable via `%w`; `raise ... from` does not, so the tuple is required.
+
+**Remaining: roughly 100 funnels** across the other ~30 `services/*.py` files, none of which
+can raise `IntegrityError` today. Two shapes are mixed in and should be unified with them:
+funnels keyed on the **raw generated `ApiException`** rather than the SDK `APIError`, and
+narrow two-element tuples. Do it as one mechanical pass; it is not urgent, but it is what stops
+a new verification site inheriting the bug.
+
+
 ---
 
 ## Container failures must abort; row failures must exclude
@@ -374,6 +579,33 @@ which is why one escapes the other. Deferred from the 2026-09-07 review as a Med
 
 **Depends on:** a decision on whether Java's `IntegrityException` becomes a subtype of
 `WhitelistException` or the catch sites are widened.
+
+### 2026-09-10 update — both halves are CLOSED, and the classification rule is now written down
+
+TypeScript routes both whitelist services through one `rethrowIfNotRowLevel` seam
+(`src/services/row-level-error.ts`); Java's catch is
+`catch (ContainerIntegrityException e) { throw e; }` then
+`catch (WhitelistException | IntegrityException e)`, in that order (the first is a subclass of
+the second). Gated by `tests/unit/services/whitelisted-address-container-abort.test.ts` and
+`service/WhitelistedAddressExclusionTest.java`.
+
+The decision the item was waiting on: **`IntegrityException` stays unchecked and the catch
+sites were widened** — but the rule that came out of it is the useful part, and it is a
+classification rule, not a hierarchy one:
+
+> Throw the CHECKED `WhitelistException` for anything that is one ROW's problem; reserve the
+> unchecked `IntegrityException` (and `ContainerIntegrityException`) for what invalidates the
+> whole call.
+
+Applied when the 2026-09-10 duplicate-JSON-key rejection landed:
+`WhitelistHashHelper.rejectDuplicateObjectKeys` initially threw `IntegrityException`, which
+silently escaped every existing `catch (WhitelistException)` — so one unparseable row would
+have aborted a whole listing, re-opening this exact item through a new door. It throws
+`WhitelistException` now. Two pre-existing tests caught it
+(`WhitelistHashHelperTest.testParseWhitelistedAddressFromJson_InvalidJson` and
+`VerificationBehaviourVectorsTest`), which is the gate working: both public parse entry points
+declare `throws WhitelistException`, so changing what they actually throw was a visible API
+break rather than a silent one. Keep that alignment when adding a check to either parser.
 
 ---
 
@@ -555,3 +787,37 @@ its only two non-test references in validatord are the writes.
 envelope — an `id`, a generation counter, or an `enforced` flag — so a client can assert that
 the container it was handed is the one currently in force. This is a server-side change; raise
 it with the validatord team rather than working around it in the SDKs.
+
+### 2026-09-10 update — the SIGNING consequence is now closed; the READ consequence is not
+
+The security scan filed the signing half of this four times: findings **4284629** (Go),
+**4284644** (Java), **4284643** (Python), **4284632** (TS), all HIGH. Their common shape was that
+the whitelist approval took bare row ids, re-read them, and signed whatever came back under those
+ids — so a stale-but-validly-signed container was not just a misleading READ, it was the thing
+that let a substituted row survive verification and get an approver's signature.
+
+**What changed:** all four approvals now take a content pin minted by the preceding verified read
+(a witness type whose map of `id -> reviewed metadata hash` cannot be built by hand), and refuse to
+sign when a re-read row's hash differs. That closes the *harvest*: a substituted row can no longer
+be signed regardless of which container cleared it. Comparison is constant-time, matching
+`approveRulesProposal`'s `expectedContainerHash`.
+
+**What is still open, and is what this entry remains about:** a uniformly stale container still
+misleads every READ. Two further notes for whoever picks this up:
+
+- **The pin does not make the read-path fix unnecessary**, it just removes the worst consequence.
+  A caller who reads a whitelist and acts on it without approving anything is still judged against
+  whatever ruleset the server chose to serve.
+- **Fix option 2 from the findings ("check the in-band container against an independently obtained
+  current ruleset") is a bigger change than it sounds:** none of the four whitelist services holds
+  a `RulesContainerCache` today — only `AddressService`, `AssetService` and `PriceService` do — so
+  it means threading the cache or a `GovernanceRuleService` into a whitelist-service constructor in
+  all four SDKs. Worth knowing before scoping it. And it is still racy without the ruleset identity
+  this entry asks for, because a ruleset can be promoted between the two calls.
+
+**A pin mismatch is a real signal, not a false positive.** `metadata.hash` is recomputed by the
+server on every read (`enrichWLAs` -> `ToWLAMetadata`) from the immutable envelope PLUS the row's
+live linked-address and linked-wallet rows, so it moves when a linked address is renamed. Usually
+that also breaks signature coverage and the row is excluded anyway; for a legacy-signed row the
+strip removes the inner labels, so the hash can move while the row still verifies. Either way the
+content changed since review — re-read, re-review, re-approve.

@@ -31,14 +31,13 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
-
 )
 
 var (
 	JsonCheck       = regexp.MustCompile(`(?i:(?:application|text)/(?:[^;]+\+)?json)`)
 	XmlCheck        = regexp.MustCompile(`(?i:(?:application|text)/(?:[^;]+\+)?xml)`)
 	queryParamSplit = regexp.MustCompile(`(^|&)([^&]+)`)
-	queryDescape    = strings.NewReplacer( "%5B", "[", "%5D", "]" )
+	queryDescape    = strings.NewReplacer("%5B", "[", "%5D", "]")
 )
 
 // APIClient manages communication with the Taurus-PROTECT APIs API v1.0
@@ -305,15 +304,15 @@ func typeCheckParameter(obj interface{}, expected string, name string) error {
 	return nil
 }
 
-func parameterValueToString( obj interface{}, key string ) string {
+func parameterValueToString(obj interface{}, key string) string {
 	if reflect.TypeOf(obj).Kind() != reflect.Ptr {
 		return fmt.Sprintf("%v", obj)
 	}
-	var param,ok = obj.(MappedNullable)
+	var param, ok = obj.(MappedNullable)
 	if !ok {
 		return ""
 	}
-	dataMap,err := param.ToMap()
+	dataMap, err := param.ToMap()
 	if err != nil {
 		return ""
 	}
@@ -329,85 +328,85 @@ func parameterAddToHeaderOrQuery(headerOrQueryParams interface{}, keyPrefix stri
 		value = "null"
 	} else {
 		switch v.Kind() {
-			case reflect.Invalid:
-				value = "invalid"
+		case reflect.Invalid:
+			value = "invalid"
 
-			case reflect.Struct:
-				if t,ok := obj.(MappedNullable); ok {
-					dataMap,err := t.ToMap()
-					if err != nil {
-						return
-					}
-					parameterAddToHeaderOrQuery(headerOrQueryParams, keyPrefix, dataMap, style, collectionType)
+		case reflect.Struct:
+			if t, ok := obj.(MappedNullable); ok {
+				dataMap, err := t.ToMap()
+				if err != nil {
 					return
 				}
-				if t, ok := obj.(time.Time); ok {
-					parameterAddToHeaderOrQuery(headerOrQueryParams, keyPrefix, t.Format(time.RFC3339Nano), style, collectionType)
-					return
-				}
-				value = v.Type().String() + " value"
-			case reflect.Slice:
-				var indValue = reflect.ValueOf(obj)
-				if indValue == reflect.ValueOf(nil) {
-					return
-				}
-				var lenIndValue = indValue.Len()
-				for i:=0;i<lenIndValue;i++ {
-					var arrayValue = indValue.Index(i)
-					var keyPrefixForCollectionType = keyPrefix
-					if style == "deepObject" {
-						keyPrefixForCollectionType = keyPrefix + "[" + strconv.Itoa(i) + "]"
-					}
-					parameterAddToHeaderOrQuery(headerOrQueryParams, keyPrefixForCollectionType, arrayValue.Interface(), style, collectionType)
-				}
+				parameterAddToHeaderOrQuery(headerOrQueryParams, keyPrefix, dataMap, style, collectionType)
 				return
-
-			case reflect.Map:
-				var indValue = reflect.ValueOf(obj)
-				if indValue == reflect.ValueOf(nil) {
-					return
-				}
-				iter := indValue.MapRange()
-				for iter.Next() {
-					k,v := iter.Key(), iter.Value()
-					parameterAddToHeaderOrQuery(headerOrQueryParams, fmt.Sprintf("%s[%s]", keyPrefix, k.String()), v.Interface(), style, collectionType)
-				}
+			}
+			if t, ok := obj.(time.Time); ok {
+				parameterAddToHeaderOrQuery(headerOrQueryParams, keyPrefix, t.Format(time.RFC3339Nano), style, collectionType)
 				return
-
-			case reflect.Interface:
-				fallthrough
-			case reflect.Ptr:
-				parameterAddToHeaderOrQuery(headerOrQueryParams, keyPrefix, v.Elem().Interface(), style, collectionType)
+			}
+			value = v.Type().String() + " value"
+		case reflect.Slice:
+			var indValue = reflect.ValueOf(obj)
+			if indValue == reflect.ValueOf(nil) {
 				return
+			}
+			var lenIndValue = indValue.Len()
+			for i := 0; i < lenIndValue; i++ {
+				var arrayValue = indValue.Index(i)
+				var keyPrefixForCollectionType = keyPrefix
+				if style == "deepObject" {
+					keyPrefixForCollectionType = keyPrefix + "[" + strconv.Itoa(i) + "]"
+				}
+				parameterAddToHeaderOrQuery(headerOrQueryParams, keyPrefixForCollectionType, arrayValue.Interface(), style, collectionType)
+			}
+			return
 
-			case reflect.Int, reflect.Int8, reflect.Int16,
-				reflect.Int32, reflect.Int64:
-				value = strconv.FormatInt(v.Int(), 10)
-			case reflect.Uint, reflect.Uint8, reflect.Uint16,
-				reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-				value = strconv.FormatUint(v.Uint(), 10)
-			case reflect.Float32, reflect.Float64:
-				value = strconv.FormatFloat(v.Float(), 'g', -1, 32)
-			case reflect.Bool:
-				value = strconv.FormatBool(v.Bool())
-			case reflect.String:
-				value = v.String()
-			default:
-				value = v.Type().String() + " value"
+		case reflect.Map:
+			var indValue = reflect.ValueOf(obj)
+			if indValue == reflect.ValueOf(nil) {
+				return
+			}
+			iter := indValue.MapRange()
+			for iter.Next() {
+				k, v := iter.Key(), iter.Value()
+				parameterAddToHeaderOrQuery(headerOrQueryParams, fmt.Sprintf("%s[%s]", keyPrefix, k.String()), v.Interface(), style, collectionType)
+			}
+			return
+
+		case reflect.Interface:
+			fallthrough
+		case reflect.Ptr:
+			parameterAddToHeaderOrQuery(headerOrQueryParams, keyPrefix, v.Elem().Interface(), style, collectionType)
+			return
+
+		case reflect.Int, reflect.Int8, reflect.Int16,
+			reflect.Int32, reflect.Int64:
+			value = strconv.FormatInt(v.Int(), 10)
+		case reflect.Uint, reflect.Uint8, reflect.Uint16,
+			reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+			value = strconv.FormatUint(v.Uint(), 10)
+		case reflect.Float32, reflect.Float64:
+			value = strconv.FormatFloat(v.Float(), 'g', -1, 32)
+		case reflect.Bool:
+			value = strconv.FormatBool(v.Bool())
+		case reflect.String:
+			value = v.String()
+		default:
+			value = v.Type().String() + " value"
 		}
 	}
 
 	switch valuesMap := headerOrQueryParams.(type) {
-		case url.Values:
-			if collectionType == "csv" && valuesMap.Get(keyPrefix) != "" {
-				valuesMap.Set(keyPrefix, valuesMap.Get(keyPrefix) + "," + value)
-			} else {
-				valuesMap.Add(keyPrefix, value)
-			}
-			break
-		case map[string]string:
-			valuesMap[keyPrefix] = value
-			break
+	case url.Values:
+		if collectionType == "csv" && valuesMap.Get(keyPrefix) != "" {
+			valuesMap.Set(keyPrefix, valuesMap.Get(keyPrefix)+","+value)
+		} else {
+			valuesMap.Add(keyPrefix, value)
+		}
+		break
+	case map[string]string:
+		valuesMap[keyPrefix] = value
+		break
 	}
 }
 
@@ -452,9 +451,9 @@ func (c *APIClient) GetConfig() *Configuration {
 }
 
 type formFile struct {
-		fileBytes []byte
-		fileName string
-		formFileName string
+	fileBytes    []byte
+	fileName     string
+	formFileName string
 }
 
 // prepareRequest build the request
@@ -508,11 +507,11 @@ func (c *APIClient) prepareRequest(
 				w.Boundary()
 				part, err := w.CreateFormFile(formFile.formFileName, filepath.Base(formFile.fileName))
 				if err != nil {
-						return nil, err
+					return nil, err
 				}
 				_, err = part.Write(formFile.fileBytes)
 				if err != nil {
-						return nil, err
+					return nil, err
 				}
 			}
 		}
@@ -602,9 +601,43 @@ func (c *APIClient) prepareRequest(
 	return localVarRequest, nil
 }
 
+// assertReplyDecoded reports an error when v is a pointer to a typed reply pointer that is
+// STILL NIL after decoding.
+//
+// Why this is here and not in each caller. A 2xx response whose body is empty, or whose body is
+// the JSON literal `null`, leaves that pointer nil and returns no error — and every
+// hand-written service in pkg/protect dereferences the reply immediately after checking err.
+// Measured on this tree: ~110 unchecked `resp.<Field>` dereferences across 38 service files,
+// and even the apparently-careful `if resp.Result == nil` is itself a dereference of a nil
+// resp. So a server (which this SDK's threat model treats as the adversary) could turn any
+// routine read into a nil-pointer panic and kill the calling process, repeatably. Guarding the
+// shared decode path is the only fix that no future service can forget.
+//
+// It deliberately says nothing about other shapes: *string, *os.File, []byte and value types
+// all legitimately accept an empty body, and endpoints returning google.protobuf.Empty do too.
+// Only the "we were asked to populate a typed reply and did not" case is an error.
+func assertReplyDecoded(v interface{}) error {
+	rv := reflect.ValueOf(v)
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		return nil
+	}
+	inner := rv.Elem()
+	if inner.Kind() != reflect.Ptr || !inner.IsNil() {
+		return nil
+	}
+	name := "response"
+	if t := inner.Type().Elem(); t.Name() != "" {
+		name = t.Name()
+	}
+	return fmt.Errorf("the server returned a success status with no usable %s payload: "+
+		"refusing to hand back a nil reply", name)
+}
+
 func (c *APIClient) decode(v interface{}, b []byte, contentType string) (err error) {
 	if len(b) == 0 {
-		return nil
+		// An empty body cannot populate a typed reply. This used to return nil, leaving the
+		// caller's reply pointer nil with no error. See assertReplyDecoded.
+		return assertReplyDecoded(v)
 	}
 	if s, ok := v.(*string); ok {
 		*s = string(b)
@@ -652,7 +685,9 @@ func (c *APIClient) decode(v interface{}, b []byte, contentType string) (err err
 		} else if err = json.Unmarshal(b, v); err != nil { // simple model
 			return err
 		}
-		return nil
+		// A body of the JSON literal `null` unmarshals into a **T by setting the pointer
+		// to nil and reporting no error, so it needs the same guard as an empty body.
+		return assertReplyDecoded(v)
 	}
 	return errors.New("undefined response type")
 }

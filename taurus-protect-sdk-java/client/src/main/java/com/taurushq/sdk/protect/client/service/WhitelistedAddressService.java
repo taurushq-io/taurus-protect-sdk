@@ -10,6 +10,8 @@ import java.security.InvalidKeyException;
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.taurushq.sdk.protect.client.helper.LegacyPayloadVariant;
+import com.taurushq.sdk.protect.client.helper.ResolvedRuleKey;
 import com.taurushq.sdk.protect.client.helper.SignatureVerifier;
 import com.taurushq.sdk.protect.client.helper.WhitelistHashHelper;
 import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
@@ -25,9 +27,8 @@ import com.taurushq.sdk.protect.client.model.WhitelistException;
 import com.taurushq.sdk.protect.client.model.WhitelistSignature;
 import com.taurushq.sdk.protect.client.model.WhitelistUserSignature;
 import com.taurushq.sdk.protect.client.model.WhitelistedAddress;
+import com.taurushq.sdk.protect.client.model.WhitelistedAddressApproval;
 import com.taurushq.sdk.protect.client.model.WhitelistedAddressListResult;
-import com.taurushq.sdk.protect.client.model.WhitelistTrail;
-import com.taurushq.sdk.protect.client.model.Attribute;
 import com.taurushq.sdk.protect.client.model.InternalWallet;
 import com.taurushq.sdk.protect.client.model.rulescontainer.AddressWhitelistingLine;
 import com.taurushq.sdk.protect.client.model.rulescontainer.AddressWhitelistingRules;
@@ -54,12 +55,10 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -76,10 +75,6 @@ public class WhitelistedAddressService {
 
     private static final Logger LOGGER = Logger.getLogger(WhitelistedAddressService.class.getName());
     private static final Gson GSON = new Gson();
-    private static final Pattern CONTRACT_TYPE_PATTERN =
-            Pattern.compile(",\"contractType\":\"[^\"]*\"");
-    private static final Pattern LABEL_IN_OBJECT_PATTERN =
-            Pattern.compile(",\"label\":\"[^\"]*\"}");
 
     private final AddressWhitelistingApi whitelistedAddressService;
     private final ApiExceptionMapper apiExceptionMapper;
@@ -174,18 +169,19 @@ public class WhitelistedAddressService {
         // Step 3: Decode rulesContainer
         DecodedRulesContainer rulesContainer = decodeRulesContainer(envelope);
 
-        // Step 4: Verify metadata.hash is in signed hashes list. Returns the hash
-        // that was actually covered, which may be a legacy one.
-        String verifiedHash = verifyHashInSignedHashes(envelope);
+        // Step 4: Verify metadata.hash is in signed hashes list. Returns the hash that was
+        // actually covered — which may be a legacy one — TOGETHER WITH the payload that
+        // hash covers, because those are not always the delivered payload.
+        LegacyPayloadVariant matched = verifyHashInSignedHashes(envelope);
 
         // Step 5: Verify whitelist signatures are valid per governance rules
-        verifyWhitelistSignatures(envelope, rulesContainer, verifiedHash);
+        verifyWhitelistSignatures(envelope, rulesContainer, matched);
 
-        // Step 6: the envelope DERIVES the address from its own signed payloadAsString,
-        // plus the non-security trail/attribute fields it already carries. It used to be
-        // parsed here and handed to a public setter, which meant the "verified" marker
-        // could be flipped with an address the caller chose.
-        envelope.markVerified(rulesContainer);
+        // Step 6: the envelope DERIVES the address from the payload the matched signature
+        // COVERED, plus the non-security trail/attribute fields it already carries. It
+        // used to be parsed here and handed to a public setter, which meant the "verified"
+        // marker could be flipped with an address the caller chose.
+        envelope.markVerified(rulesContainer, matched.getPayload());
     }
 
     /**
@@ -328,25 +324,36 @@ public class WhitelistedAddressService {
      * Verifies that the metadata hash is present in at least one signature's hashes list.
      * For backward compatibility, also tries alternative hashes for addresses signed
      * before certain fields (like contractType, labels in linkedInternalAddresses) were added.
+     *
+     * <p>Returns BOTH the hash that was found (which may be a legacy hash) and the payload
+     * that hash covers. The payload is what step 6 must parse: when a legacy variant is the
+     * match, the DELIVERED payload contains members no signature covered, so parsing the
+     * delivered text would return unsigned values as verified. See
+     * {@link LegacyPayloadVariant} for the attack this closes.
+     *
+     * <p>When the current hash matches, the matched payload IS the delivered payload.
      */
-    private String verifyHashInSignedHashes(SignedWhitelistedAddressEnvelope envelope)
+    private LegacyPayloadVariant verifyHashInSignedHashes(SignedWhitelistedAddressEnvelope envelope)
             throws WhitelistException {
         String metadataHash = envelope.getMetadata().getHash();
+        String payloadAsString = envelope.getMetadata().getPayloadAsString();
         List<WhitelistSignature> signatures = envelope.getSignedAddress().getSignatures();
 
         // First, try the provided hash directly
         if (SignatureVerifier.verifyHashCoverage(metadataHash, signatures)) {
-            return metadataHash;
+            return new LegacyPayloadVariant(metadataHash, payloadAsString);
         }
 
-        // If not found, try alternative hashes for backward compatibility
-        // (handles addresses signed before schema changes)
-        for (String legacyHash : computeLegacyHashes(envelope.getMetadata().getPayloadAsString())) {
-            if (SignatureVerifier.verifyHashCoverage(legacyHash, signatures)) {
+        // If not found, try alternative hashes for backward compatibility (handles
+        // addresses signed before schema changes). The variant's PAYLOAD travels with its
+        // hash so step 6 parses the bytes the signature actually covered.
+        for (LegacyPayloadVariant variant
+                : WhitelistHashHelper.computeLegacyPayloadVariants(payloadAsString)) {
+            if (SignatureVerifier.verifyHashCoverage(variant.getHash(), signatures)) {
                 // Returned rather than written back onto the caller's envelope:
                 // verification must not mutate its input, and the later steps take
-                // the hash as a parameter.
-                return legacyHash;
+                // the matched variant as a parameter.
+                return variant;
             }
         }
 
@@ -358,92 +365,95 @@ public class WhitelistedAddressService {
     }
 
     /**
-     * Computes legacy hashes by applying ALL transformation combinations to handle schema evolution.
-     * Returns a list of possible legacy hashes to try.
-     *
-     * <p>Strategies cover all possible schema evolution scenarios:
-     * <ul>
-     *   <li>Strategy 1: contractType added after signing</li>
-     *   <li>Strategy 2: labels added to linkedInternalAddresses after signing (but contractType existed)</li>
-     *   <li>Strategy 3: both contractType AND labels added after signing</li>
-     * </ul>
-     *
-     * @param payloadAsString the current payload string
-     * @return list of legacy hashes to try (may be empty if no transformations apply)
-     */
-    private List<String> computeLegacyHashes(String payloadAsString) {
-        if (payloadAsString == null) {
-            return Collections.emptyList();
-        }
-
-        Set<String> uniqueHashes = new LinkedHashSet<>();
-
-        // Strategy 1: Remove contractType only
-        // Handles addresses signed before contractType was added to schema
-        String withoutContractType = CONTRACT_TYPE_PATTERN.matcher(payloadAsString).replaceAll("");
-        if (!withoutContractType.equals(payloadAsString)) {
-            uniqueHashes.add(CryptoTPV1.calculateHexHash(withoutContractType));
-        }
-
-        // Strategy 2: Remove labels from linkedInternalAddresses objects only (keep contractType)
-        // Handles addresses signed after contractType was added but before labels were added
-        // Pattern ,"label":"[^"]*"} matches ONLY labels inside objects (followed by closing brace)
-        // This does NOT match the main address label which is followed by ,"customerId":
-        String withoutLabels = LABEL_IN_OBJECT_PATTERN.matcher(payloadAsString).replaceAll("}");
-        if (!withoutLabels.equals(payloadAsString)) {
-            uniqueHashes.add(CryptoTPV1.calculateHexHash(withoutLabels));
-        }
-
-        // Strategy 3: Remove BOTH contractType AND labels from linkedInternalAddresses
-        // Handles addresses signed before both fields were added
-        String withoutBoth = LABEL_IN_OBJECT_PATTERN.matcher(payloadAsString).replaceAll("}");
-        withoutBoth = CONTRACT_TYPE_PATTERN.matcher(withoutBoth).replaceAll("");
-        if (!withoutBoth.equals(payloadAsString)) {
-            uniqueHashes.add(CryptoTPV1.calculateHexHash(withoutBoth));
-        }
-
-        return new ArrayList<>(uniqueHashes);
-    }
-
-    /**
      * Verifies whitelist signatures according to governance rules threshold requirements.
      */
     private void verifyWhitelistSignatures(SignedWhitelistedAddressEnvelope envelope,
                                            DecodedRulesContainer rulesContainer,
-                                           String metadataHash)
+                                           LegacyPayloadVariant matched)
             throws WhitelistException {
 
         // Which rules judge this address is decided by the SIGNED payload, not by the
         // surrounding response. A DTO with an empty blockchain would select the
         // global-default tier — broader than the rule the address belongs to.
-        String[] ruleKey = WhitelistHashHelper.resolveRuleKey(
+        ResolvedRuleKey ruleKey = WhitelistHashHelper.resolveRuleKeyWithSource(
                 envelope.getMetadata().getPayloadAsString(),
                 envelope.getBlockchain(), envelope.getNetwork());
 
-        // Find matching address whitelisting rules
-        AddressWhitelistingRules whitelistRules = rulesContainer.findAddressWhitelistingRules(
-                ruleKey[0], ruleKey[1]);
-        if (whitelistRules == null) {
+        // Which rules to enforce.
+        //
+        // When the payload carries the network, the key is fully signed and exactly one
+        // rule applies. When it does NOT — includeNetworkInPayload off, the common case in
+        // captured data — the network came from the UNSIGNED DTO, so a single lookup would
+        // let a response-controlling server choose the quorum: it just names the network of
+        // whichever tier for this chain has the weakest thresholds. Enforce EVERY tier that
+        // value could have selected instead. For a chain with one reachable tier this is
+        // the same rule as before, so it is conservative without being disruptive; it only
+        // bites where a container really does hold a second, laxer tier for the chain,
+        // which is exactly the case worth refusing.
+        List<AddressWhitelistingRules> applicableRules = new ArrayList<>();
+        if (ruleKey.isNetworkFromPayload()) {
+            AddressWhitelistingRules exact = rulesContainer.findAddressWhitelistingRules(
+                    ruleKey.getBlockchain(), ruleKey.getNetwork());
+            if (exact != null) {
+                applicableRules.add(exact);
+            }
+        } else {
+            applicableRules.addAll(rulesContainer.findAddressWhitelistingRuleCandidates(
+                    ruleKey.getBlockchain()));
+        }
+        if (applicableRules.isEmpty()) {
             throw new WhitelistException("no address whitelisting rules found for blockchain="
-                    + envelope.getBlockchain() + " network=" + envelope.getNetwork());
+                    + ruleKey.getBlockchain() + " network=" + ruleKey.getNetwork());
         }
 
-        // Parse the whitelisted address to check linked addresses/wallets
-        WhitelistedAddress wla = WhitelistHashHelper.parseWhitelistedAddressFromJson(
-                envelope.getMetadata().getPayloadAsString());
+        // Parsed from the MATCHED VARIANT, not the delivered payload: everything read here
+        // must be bytes a counted signature covered, and the linked-address/wallet shape
+        // decides which thresholds apply. The strips only remove labels and contractType,
+        // so the linked entries themselves are unaffected — but sourcing them from the
+        // signed bytes is what keeps that true if the strip set ever grows.
+        WhitelistedAddress wla =
+                WhitelistHashHelper.parseWhitelistedAddressFromJson(matched.getPayload());
 
-        // Determine which thresholds to use based on rule lines matching
+        for (AddressWhitelistingRules whitelistRules : applicableRules) {
+            enforceRule(envelope, rulesContainer, matched.getHash(), wla, whitelistRules,
+                    ruleKey.isNetworkFromPayload() ? 1 : applicableRules.size());
+        }
+    }
+
+    /**
+     * Enforces one address whitelisting rule tier against the row's signatures.
+     *
+     * @param envelope         the row
+     * @param rulesContainer   the verified container
+     * @param metadataHash     the hash step 4 matched
+     * @param wla              the address parsed from the matched payload
+     * @param whitelistRules   the tier to enforce
+     * @param enforcedTierCount how many tiers are being enforced, for the error message
+     * @throws WhitelistException if no approval path satisfies this tier
+     */
+    private void enforceRule(SignedWhitelistedAddressEnvelope envelope,
+                             DecodedRulesContainer rulesContainer,
+                             String metadataHash,
+                             WhitelistedAddress wla,
+                             AddressWhitelistingRules whitelistRules,
+                             int enforcedTierCount) throws WhitelistException {
         List<SequentialThresholds> parallelThresholds = getApplicableThresholds(whitelistRules, wla);
         if (parallelThresholds == null || parallelThresholds.isEmpty()) {
             throw new WhitelistException("no threshold rules defined");
         }
 
-        // Try to verify all paths
         List<String> pathFailures = tryVerifyAllPaths(
                 parallelThresholds, rulesContainer, envelope.getSignedAddress().getSignatures(),
                 metadataHash);
         if (!pathFailures.isEmpty()) {
-            throw new WhitelistException("signature verification failed of whitelisted address (ID: " + envelope.getId() + ") : "
+            String scope = "blockchain=" + whitelistRules.getCurrency()
+                    + " network=" + whitelistRules.getNetwork();
+            if (enforcedTierCount > 1) {
+                scope += " (enforced because the signed payload carries no network, so the "
+                        + "response could otherwise choose which quorum applies)";
+            }
+            throw new WhitelistException("signature verification failed of whitelisted address (ID: "
+                    + envelope.getId() + ") against " + scope + " : "
                     + "no approval path satisfied the threshold requirements. "
                     + String.join("; ", pathFailures));
         }
@@ -781,6 +791,34 @@ public class WhitelistedAddressService {
     public WhitelistedAddressListResult getWhitelistedAddressesWithExclusions(
             int limit, int offset, String blockchain, String network,
             boolean rulesContainerNormalized) throws ApiException, WhitelistException {
+        return listVerified(limit, offset, blockchain, network, rulesContainerNormalized,
+                null, null);
+    }
+
+    /**
+     * The one call into the normalized list endpoint, so every reader of it — the public
+     * page, and the approval re-read — goes through the same row-to-container label
+     * verification and the same lenient per-row exclusion.
+     *
+     * <p>Seven parameters, one under {@code ParameterNumber max}: an eighth filter needs an
+     * options object, not another positional argument.
+     *
+     * @param limit                    the maximum number of results
+     * @param offset                   the offset for pagination
+     * @param blockchain               filter by blockchain, or null
+     * @param network                  filter by network, or null
+     * @param rulesContainerNormalized whether containers arrive response-level and
+     *                                 label-verified rather than per row
+     * @param ids                      filter by specific ids, or null
+     * @param includeForApproval       include rows still pending approval, or null
+     * @return the verified rows and the rows withheld
+     * @throws ApiException       if the API call fails
+     * @throws WhitelistException if verification fails
+     */
+    private WhitelistedAddressListResult listVerified(
+            final int limit, final int offset, final String blockchain, final String network,
+            final boolean rulesContainerNormalized, final List<String> ids,
+            final Boolean includeForApproval) throws ApiException, WhitelistException {
         try {
             TgvalidatordGetSignedWhitelistedAddressEnvelopesReply reply =
                     whitelistedAddressService.whitelistServiceGetWhitelistedAddresses(
@@ -803,10 +841,10 @@ public class WhitelistedAddressService {
                             null,       // allowedForAddressId
                             null,       // allowedForWalletId
                             blockchain, // blockchain
-                            null,       // includeForApproval
+                            includeForApproval,  // includeForApproval
                             null,       // addresses
                             network,    // network
-                            null,       // ids
+                            ids,        // ids
                             null,       // tnParticipantID
                             null, null, null, null, null, null, null, null,
                             null, null, null, null);
@@ -918,49 +956,82 @@ public class WhitelistedAddressService {
     }
 
     /**
-     * Signs and submits an approval for the given whitelisted addresses, all-or-nothing.
+     * Signs and submits an approval for the reviewed whitelisted addresses,
+     * all-or-nothing.
      *
-     * <p>The batch is re-read through the verifying path and the hashes THOSE rows carry
-     * are what gets signed, so the approver's signature covers metadata this SDK checked
-     * rather than whatever a caller was handed. Same shape as
-     * {@code WhitelistedAssetService.approveWhitelistedAssets}.
+     * <p>{@code selection} comes from a verified read —
+     * {@link WhitelistedAddressListResult#select(List)} or
+     * {@link WhitelistedAddressListResult#selectAll()} — and carries the metadata hash
+     * each row had AT REVIEW TIME. That pin is the point:
      *
      * <pre>
-     *   ids -&gt; sort -&gt; ONE filtered verified page -&gt; completeness check -&gt; sign once
+     *   verified read -&gt; select(ids) -&gt; pinned hashes
+     *                                        |
+     *     sort -&gt; ONE filtered verified re-read -&gt; completeness -&gt; PIN MATCH -&gt; sign once
      * </pre>
      *
-     * <p>Any address that is missing or fails verification aborts the whole call and
-     * nothing is signed: one signature covers every hash in the batch, so a partial
-     * approval would mean the caller believes they approved more than they did.
+     * <p>Without it the approval accepted bare ids and signed whatever the server returned
+     * under them, so a response-controlling server could substitute a row whose existing
+     * signatures already satisfy the container it presents and harvest a genuine approver
+     * signature over content the approver never saw.
+     * {@code GovernanceRuleService.approveRulesProposal} was hardened the same way with its
+     * mandatory {@code expectedContainerHash}; an empty pin must not silently restore the
+     * old behaviour, which is why an empty selection is an error rather than "approve
+     * nothing".
      *
-     * @param ids        the whitelisted address ids to approve
+     * <p>A pin mismatch is a REAL signal, not a false positive. The metadata hash is
+     * recomputed by the server on every read from the immutable envelope plus the row's
+     * live linked-address and linked-wallet rows, so it moves when a linked address is
+     * renamed. Normally that also breaks signature coverage and the row is excluded anyway;
+     * for a legacy-signed row it can move while the row still verifies. Either way the
+     * content changed since review, so re-read, re-review and re-approve — exactly as for a
+     * changed rules proposal.
+     *
+     * <p>The re-read goes through the NORMALIZED list endpoint rather than the for-approval
+     * one, which is where the other three SDKs read from: containers arrive response-level
+     * and their row-to-container label is recomputed and checked, so a server cannot file
+     * one container under another's label and steer a row to a different validly-signed
+     * ruleset. The for-approval endpoint has no normalized mode and its per-row in-band
+     * containers offer nothing to cross-check.
+     *
+     * <p>Any address that is missing, fails verification, or whose hash no longer matches
+     * the pin aborts the whole call and nothing is signed: one signature covers every hash
+     * in the batch, so a partial approval would mean the caller believes they approved more
+     * than they did.
+     *
+     * @param selection  the rows pinned by a preceding verified read
      * @param privateKey the approver's P-256 private key
      * @param comment    the approval comment
      * @throws ApiException       if the API call fails
-     * @throws WhitelistException if any row is missing or fails verification
+     * @throws WhitelistException if any row is missing, fails verification, or changed
+     *                            since it was reviewed
      */
-    public void approveWhitelistedAddresses(final List<Long> ids, final PrivateKey privateKey,
+    public void approveWhitelistedAddresses(final WhitelistedAddressApproval selection,
+                                            final PrivateKey privateKey,
                                             final String comment)
             throws ApiException, WhitelistException {
-        checkNotNull(ids, "ids cannot be null");
-        checkArgument(!ids.isEmpty(), "ids cannot be empty");
+        checkNotNull(selection, "selection cannot be null: pin the rows with "
+                + "result.select(ids) or result.selectAll() from a verified read");
+        checkArgument(!selection.isEmpty(), "selection cannot be empty: pin the rows with "
+                + "result.select(ids) or result.selectAll() from a verified read");
         checkNotNull(privateKey, "privateKey cannot be null");
         checkArgument(!Strings.isNullOrEmpty(comment), "comment is required");
-        ids.forEach(id -> checkArgument(id != null && id > 0,
+        selection.getIds().forEach(id -> checkArgument(id != null && id > 0,
                 "whitelisted address id cannot be zero or negative"));
 
         // Sorted on a COPY: the endpoint requires ascending order, and this also makes
-        // the signed order independent of the order the caller passed without mutating
-        // their list.
-        List<Long> sorted = new ArrayList<>(ids);
+        // the signed order independent of the order the caller selected in.
+        List<Long> sorted = new ArrayList<>(selection.getIds());
         Collections.sort(sorted);
         List<String> idStrings =
                 sorted.stream().map(String::valueOf).collect(Collectors.toList());
 
-        // ONE id-filtered page through the verifying path, not one GET per id.
+        // ONE id-filtered page through the verifying NORMALIZED path, not one GET per id.
+        // includeForApproval is required: the rows being approved are pending, so the
+        // default list omits them.
         Map<String, SignedWhitelistedAddressEnvelope> byId = new HashMap<>();
         for (SignedWhitelistedAddressEnvelope envelope
-                : getWhitelistedAddressesForApproval(idStrings.size(), 0, idStrings, Boolean.TRUE)
+                : listVerified(idStrings.size(), 0, null, null, true, idStrings, Boolean.TRUE)
                         .getEnvelopes()) {
             if (envelope != null) {
                 byId.put(String.valueOf(envelope.getId()), envelope);
@@ -968,20 +1039,8 @@ public class WhitelistedAddressService {
         }
 
         List<String> hashes = new ArrayList<>(idStrings.size());
-        for (String id : idStrings) {
-            SignedWhitelistedAddressEnvelope envelope = byId.get(id);
-            if (envelope == null) {
-                // A page that silently omits a row must not become an approval of fewer
-                // rows than the caller asked for.
-                throw new IntegrityException(String.format(
-                        "refusing to sign: address %s was not returned by the verified read", id));
-            }
-            if (envelope.getMetadata() == null
-                    || Strings.isNullOrEmpty(envelope.getMetadata().getHash())) {
-                throw new IntegrityException(String.format(
-                        "refusing to sign: address %s has no metadata hash", id));
-            }
-            hashes.add(envelope.getMetadata().getHash());
+        for (Long id : sorted) {
+            hashes.add(pinnedHashOf(selection, byId, id));
         }
 
         String toSign = GSON.toJson(hashes);
@@ -1006,6 +1065,58 @@ public class WhitelistedAddressService {
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
+    }
+
+    /**
+     * Returns the hash to sign for one row, after proving the re-read row is the row that
+     * was reviewed.
+     *
+     * <p>The value signed is the row's CURRENT {@code metadata.hash}, never the legacy
+     * variant step 4 matched: validatord rebuilds the hash array itself from the current
+     * schema and verifies the submitted signature against those bytes, so signing a legacy
+     * variant would be rejected server-side. Verification must clear the row first — that
+     * is what the re-read is for — but the value signed is the row's current hash.
+     *
+     * @param selection the reviewed pin
+     * @param byId      the verified re-read, keyed by id string
+     * @param id        the row id
+     * @return the current metadata hash of a row that matches its pin
+     * @throws IntegrityException if the row is absent, has no hash, was not reviewed, or
+     *                            changed since review
+     */
+    private static String pinnedHashOf(final WhitelistedAddressApproval selection,
+                                       final Map<String, SignedWhitelistedAddressEnvelope> byId,
+                                       final long id) {
+        SignedWhitelistedAddressEnvelope envelope = byId.get(String.valueOf(id));
+        if (envelope == null) {
+            // Excluded, or simply absent. Either way a page that omits a row must not
+            // become an approval of fewer rows than the caller asked for.
+            throw new IntegrityException(String.format(
+                    "refusing to sign: address %d was not returned by the verified read", id));
+        }
+        if (envelope.getMetadata() == null
+                || Strings.isNullOrEmpty(envelope.getMetadata().getHash())) {
+            throw new IntegrityException(String.format(
+                    "refusing to sign: address %d has no metadata hash", id));
+        }
+
+        String pinnedHash = selection.pinnedHash(id);
+        if (Strings.isNullOrEmpty(pinnedHash)) {
+            throw new IntegrityException(String.format(
+                    "refusing to sign: address %d is not in the reviewed selection", id));
+        }
+
+        String currentHash = envelope.getMetadata().getHash();
+        // Constant-time, matching how approveRulesProposal compares its container pin.
+        // This is hash material, and the loop must not leak where the two diverge.
+        if (!MessageDigest.isEqual(pinnedHash.getBytes(StandardCharsets.US_ASCII),
+                currentHash.getBytes(StandardCharsets.US_ASCII))) {
+            throw new IntegrityException(String.format(
+                    "refusing to sign: whitelisted address %d changed since it was reviewed: "
+                            + "reviewed hash %s, re-read hash %s. Re-read, re-review and "
+                            + "re-approve", id, pinnedHash, currentHash));
+        }
+        return currentHash;
     }
 
     /**
@@ -1179,15 +1290,16 @@ public class WhitelistedAddressService {
 
         // Step 3: Use cached rulesContainer instead of decoding again
 
-        // Step 4: Verify metadata.hash is in signed hashes list. Returns the hash
-        // that was actually covered, which may be a legacy one.
-        String verifiedHash = verifyHashInSignedHashes(envelope);
+        // Step 4: Verify metadata.hash is in signed hashes list. Returns the hash that was
+        // actually covered — which may be a legacy one — with the payload it covers.
+        LegacyPayloadVariant matched = verifyHashInSignedHashes(envelope);
 
         // Step 5: Verify whitelist signatures are valid per governance rules
-        verifyWhitelistSignatures(envelope, cachedRulesContainer, verifiedHash);
+        verifyWhitelistSignatures(envelope, cachedRulesContainer, matched);
 
         // Step 6: same derivation as the full-data path — one implementation on the
-        // envelope, so the cached-container path cannot drift from it.
-        envelope.markVerified(cachedRulesContainer);
+        // envelope, so the cached-container path cannot drift from it, including on WHICH
+        // payload gets parsed.
+        envelope.markVerified(cachedRulesContainer, matched.getPayload());
     }
 }

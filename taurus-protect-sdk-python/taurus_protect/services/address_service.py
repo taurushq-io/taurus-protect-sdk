@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
-from taurus_protect.mappers.address import address_from_dto, addresses_from_dto
+from taurus_protect.errors import APIError, IntegrityError, NotFoundError
+from taurus_protect.mappers.address import address_from_dto
 from taurus_protect.models.address import Address, CreateAddressRequest, ListAddressesOptions
 from taurus_protect.models.pagination import Pagination
 from taurus_protect.services._base import BaseService
@@ -90,26 +91,71 @@ class AddressService(BaseService):
 
             result = getattr(resp, "result", None)
             if result is None:
-                from taurus_protect.errors import NotFoundError
 
                 raise NotFoundError(f"Address {address_id} not found")
 
-            address = address_from_dto(result)
+            address = self._verified_address(result)
             if address is None:
-                from taurus_protect.errors import NotFoundError
 
                 raise NotFoundError(f"Address {address_id} not found")
-
-            # Mandatory signature verification if cache is available
-            self._verify_address_signature(address)
 
             return address
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            # IntegrityError is NOT an APIError, so without naming it here a failed HSM
+            # signature check would be remapped to a retryable ServerError(500) and a
+            # caller following is_retryable() would retry a suspected forgery.
+            if isinstance(e, (APIError, IntegrityError, ValueError)):
                 raise
             raise self._handle_error(e) from e
+
+    def _verified_address(self, dto: Any, rules_container: Optional[Any] = None) -> Optional[Address]:
+        """
+        The ONE construction seam for an :class:`Address`.
+
+        Every path that returns an Address goes through here -- ``get``, ``list``,
+        ``list_with_options``, ``create_address`` and ``AssetService.get_addresses`` --
+        because "remember to verify" was a rule rather than the only available
+        construction path, and ``create_address`` is what that cost: ``get_addresses``
+        had already been fixed for exactly this, and the create path was missed.
+
+        Asynchronous creation is the one case that is NOT simply verify-and-throw. The
+        DTO carries a ``status`` of ``created``/``creating``/``signed``/``observed``/
+        ``confirmed``, so a reply can legitimately arrive before the HSM has signed the
+        address. The rule that holds either way: **never hand back a non-empty
+        ``Address.address`` that has not been verified.** So a signature present must
+        verify, and a signature absent means the address string is withheld rather than
+        returned unchecked -- the caller re-reads through this same seam once the status
+        advances.
+
+        The branch is on the address STRING, not on ``status``: status is
+        server-controlled, so keying the decision on it would let a response claim
+        ``creating`` while handing over an attacker-chosen destination.
+
+        Args:
+            dto: The generated address DTO.
+            rules_container: Optional pre-fetched container, to avoid an N+1 cache
+                lookup when verifying a page.
+
+        Returns:
+            The verified address, or None when the DTO maps to nothing.
+
+        Raises:
+            IntegrityError: If the signature does not verify, or an address string
+                arrived with no signature to check it against.
+        """
+        from taurus_protect.helpers.address_signature_verifier import verified_address
+
+        address = address_from_dto(dto)
+        if address is None:
+            return None
+
+        # Only pay for a container fetch when there is something to verify -- an
+        # address still being generated carries no destination. The DECISION itself
+        # stays in the helper, so this cannot drift from AssetService.get_addresses.
+        if rules_container is None and address.address:
+            rules_container = self._rules_cache.get_decoded_rules_container()
+        return verified_address(address, rules_container)
 
     def list(
         self,
@@ -175,16 +221,18 @@ class AddressService(BaseService):
                 score_filter_trmlabs_filters_score_greater=None,
             )
 
-            result = getattr(resp, "result", None)
-            addresses = addresses_from_dto(result) if result else []
+            rows = list(getattr(resp, "result", None) or [])
 
-            # Mandatory signature verification for all addresses
-            # Pre-fetch rules container once to avoid N+1 cache lookups
+            # Every row through the one seam. Pre-fetch the rules container once to
+            # avoid an N+1 cache lookup.
             rules_container = None
-            if self._rules_cache is not None and addresses:
+            if rows:
                 rules_container = self._rules_cache.get_decoded_rules_container()
-            for address in addresses:
-                self._verify_address_signature(address, rules_container)
+            addresses = []
+            for dto in rows:
+                address = self._verified_address(dto, rules_container)
+                if address is not None:
+                    addresses.append(address)
 
             pagination = self._extract_pagination(
                 total_items=getattr(resp, "total_items", None),
@@ -194,9 +242,11 @@ class AddressService(BaseService):
 
             return addresses, pagination
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            # IntegrityError is NOT an APIError, so without naming it here a failed HSM
+            # signature check would be remapped to a retryable ServerError(500) and a
+            # caller following is_retryable() would retry a suspected forgery.
+            if isinstance(e, (APIError, IntegrityError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -254,16 +304,18 @@ class AddressService(BaseService):
                 score_filter_trmlabs_filters_score_greater=None,
             )
 
-            result = getattr(resp, "result", None)
-            addresses = addresses_from_dto(result) if result else []
+            rows = list(getattr(resp, "result", None) or [])
 
-            # Mandatory signature verification for all addresses
-            # Pre-fetch rules container once to avoid N+1 cache lookups
+            # Every row through the one seam. Pre-fetch the rules container once to
+            # avoid an N+1 cache lookup.
             rules_container = None
-            if self._rules_cache is not None and addresses:
+            if rows:
                 rules_container = self._rules_cache.get_decoded_rules_container()
-            for address in addresses:
-                self._verify_address_signature(address, rules_container)
+            addresses = []
+            for dto in rows:
+                address = self._verified_address(dto, rules_container)
+                if address is not None:
+                    addresses.append(address)
 
             pagination = self._extract_pagination(
                 total_items=getattr(resp, "total_items", None),
@@ -273,9 +325,10 @@ class AddressService(BaseService):
 
             return addresses, pagination
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, APIError):
+            # See list(): IntegrityError must not be remapped to a retryable
+            # ServerError(500). ValueError joins it so an argument error stays one.
+            if isinstance(e, (APIError, IntegrityError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -347,21 +400,25 @@ class AddressService(BaseService):
 
             result = getattr(resp, "result", None)
             if result is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to create address: no result returned")
 
-            address = address_from_dto(result)
+            # Through the same seam as every read. The create reply carries the same
+            # generated address DTO the read paths return, signature included, so there
+            # was never a reason for this path to be the unverified one -- and callers
+            # of create are precisely the ones about to publish or fund a fresh deposit
+            # address.
+            address = self._verified_address(result)
             if address is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to create address: invalid response")
 
             return address
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            # See list(): an unverifiable freshly-created address must not be reported
+            # as a retryable server error -- retrying would create a second address.
+            if isinstance(e, (APIError, IntegrityError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -394,9 +451,8 @@ class AddressService(BaseService):
             }
             self._addresses_api.wallet_service_create_address_attributes(str(address_id), body=body)
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            if isinstance(e, (APIError, IntegrityError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -426,9 +482,8 @@ class AddressService(BaseService):
                 str(address_id), str(attribute_id)
             )
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            if isinstance(e, (APIError, IntegrityError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -460,9 +515,8 @@ class AddressService(BaseService):
             )
             return getattr(resp, "result", None)
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            if isinstance(e, (APIError, IntegrityError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 

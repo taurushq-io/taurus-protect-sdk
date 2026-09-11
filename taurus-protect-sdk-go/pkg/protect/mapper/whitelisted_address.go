@@ -1,15 +1,28 @@
 package mapper
 
 import (
+	"fmt"
+
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/internal/openapi"
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/helper"
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/model"
 )
 
-// WhitelistedAddressFromDTO converts an OpenAPI SignedWhitelistedAddressEnvelope to a domain WhitelistedAddress.
-func WhitelistedAddressFromDTO(dto *openapi.TgvalidatordSignedWhitelistedAddressEnvelope) *model.WhitelistedAddress {
+// WhitelistedAddressFromDTO converts an OpenAPI SignedWhitelistedAddressEnvelope to a domain
+// WhitelistedAddress.
+//
+// A signed payload that is present but cannot be parsed is an ERROR, not a row with empty
+// fields. This used to swallow the parse error (`if err == nil && parsed != nil`), which left
+// every identity field at its zero value with no signal — and the caller of this mapper feeds
+// the result straight into step 5, where an empty LinkedInternalAddresses/LinkedWallets pair
+// turns off rule-line selection (getApplicableThresholds) and falls back to the container
+// default thresholds, which may be weaker than the line's. So a swallowed parse error is a
+// silent quorum downgrade, not a cosmetic gap.
+func WhitelistedAddressFromDTO(
+	dto *openapi.TgvalidatordSignedWhitelistedAddressEnvelope,
+) (*model.WhitelistedAddress, error) {
 	if dto == nil {
-		return nil
+		return nil, nil
 	}
 
 	addr := &model.WhitelistedAddress{
@@ -35,17 +48,24 @@ func WhitelistedAddressFromDTO(dto *openapi.TgvalidatordSignedWhitelistedAddress
 		// The raw payload object could be tampered with while payloadAsString remains unchanged.
 		if dto.Metadata.PayloadAsString != nil && *dto.Metadata.PayloadAsString != "" {
 			parsed, err := helper.ParseWhitelistedAddressFromJSON(*dto.Metadata.PayloadAsString)
-			if err == nil && parsed != nil {
-				addr.Address = parsed.Address
-				addr.Label = parsed.Label
-				addr.Memo = parsed.Memo
-				addr.CustomerId = parsed.CustomerId
-				addr.ContractType = parsed.ContractType
-				addr.AddressType = parsed.AddressType
-				addr.ExchangeAccountId = parsed.ExchangeAccountId
-				addr.LinkedInternalAddresses = parsed.LinkedInternalAddresses
-				addr.LinkedWallets = parsed.LinkedWallets
+			if err != nil {
+				return nil, fmt.Errorf("whitelisted address %s: cannot parse signed payload: %w",
+					addr.ID, err)
 			}
+			if parsed == nil {
+				return nil, &model.IntegrityError{
+					Message: fmt.Sprintf("whitelisted address %s: signed payload parsed to nothing", addr.ID),
+				}
+			}
+			addr.Address = parsed.Address
+			addr.Label = parsed.Label
+			addr.Memo = parsed.Memo
+			addr.CustomerId = parsed.CustomerId
+			addr.ContractType = parsed.ContractType
+			addr.AddressType = parsed.AddressType
+			addr.ExchangeAccountId = parsed.ExchangeAccountId
+			addr.LinkedInternalAddresses = parsed.LinkedInternalAddresses
+			addr.LinkedWallets = parsed.LinkedWallets
 		}
 	}
 
@@ -85,19 +105,30 @@ func WhitelistedAddressFromDTO(dto *openapi.TgvalidatordSignedWhitelistedAddress
 		addr.Attributes = WhitelistedAddressAttributesFromDTO(dto.Attributes)
 	}
 
-	return addr
+	return addr, nil
 }
 
-// WhitelistedAddressesFromDTO converts a slice of OpenAPI SignedWhitelistedAddressEnvelopes to domain WhitelistedAddresses.
-func WhitelistedAddressesFromDTO(dtos []openapi.TgvalidatordSignedWhitelistedAddressEnvelope) []*model.WhitelistedAddress {
+// WhitelistedAddressesFromDTO converts a slice of OpenAPI SignedWhitelistedAddressEnvelopes to
+// domain WhitelistedAddresses, failing on the first row whose signed payload cannot be parsed.
+//
+// The verifying list path does NOT use this: it maps row by row so an unparseable payload
+// excludes that row and reports it, rather than failing a whole page. Kept for callers that
+// want all-or-nothing.
+func WhitelistedAddressesFromDTO(
+	dtos []openapi.TgvalidatordSignedWhitelistedAddressEnvelope,
+) ([]*model.WhitelistedAddress, error) {
 	if dtos == nil {
-		return nil
+		return nil, nil
 	}
 	addresses := make([]*model.WhitelistedAddress, len(dtos))
 	for i := range dtos {
-		addresses[i] = WhitelistedAddressFromDTO(&dtos[i])
+		addr, err := WhitelistedAddressFromDTO(&dtos[i])
+		if err != nil {
+			return nil, err
+		}
+		addresses[i] = addr
 	}
-	return addresses
+	return addresses, nil
 }
 
 // SignedWhitelistedAddressFromDTO converts an OpenAPI SignedWhitelistedAddress to a domain SignedWhitelistedAddress.

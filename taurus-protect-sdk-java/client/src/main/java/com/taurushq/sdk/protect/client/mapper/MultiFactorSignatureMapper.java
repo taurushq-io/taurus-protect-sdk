@@ -36,10 +36,30 @@ public interface MultiFactorSignatureMapper {
     /**
      * Converts an entity type DTO to a domain model.
      *
+     * <p><b>Hand-written, because MapStruct silently produced an all-null bean here.</b> The
+     * source is a bare enum and the target has {@code id} and {@code kind}; with no explicit
+     * mapping, MapStruct's default bean mapping from an enum source sets no target properties
+     * at all, so {@code getKind()} returned null and a caller could not even tell which KIND
+     * of entity the {@code payloadToSign} bytes were supposed to cover. The mapper test only
+     * asserted non-null, so nothing caught it.
+     *
+     * <p>{@code id} stays null on purpose: <b>the reply carries no entity id</b>, singular or
+     * plural. That absence is the reason the SDK cannot bind {@code payloadToSign} to a
+     * verified entity — see {@code MultiFactorSignatureService.getMultiFactorSignatureInfo}
+     * and {@code TODOS.md}. Do not invent one.
+     *
      * @param dto the OpenAPI entity type DTO
-     * @return the domain model
+     * @return the domain model carrying the kind, or {@code null} if the DTO was null
      */
-    MultiFactorSignatureEntityType fromEntityTypeDTO(TgvalidatordMultiFactorSignaturesEntityType dto);
+    default MultiFactorSignatureEntityType fromEntityTypeDTO(
+            final TgvalidatordMultiFactorSignaturesEntityType dto) {
+        if (dto == null) {
+            return null;
+        }
+        MultiFactorSignatureEntityType kind = new MultiFactorSignatureEntityType();
+        kind.setKind(dto.getValue());
+        return kind;
+    }
 
     /**
      * Converts a create reply to a result model.

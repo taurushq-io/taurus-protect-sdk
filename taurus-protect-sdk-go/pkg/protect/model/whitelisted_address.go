@@ -1,6 +1,9 @@
 package model
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // WhitelistedAddress represents a whitelisted address in the system.
 type WhitelistedAddress struct {
@@ -257,4 +260,112 @@ type WhitelistedAddressResult struct {
 	Pagination *Pagination
 	// ExcludedUnverified names the rows dropped from Addresses, with the reason.
 	ExcludedUnverified []ExcludedWhitelistedAddress
+}
+
+// WhitelistedAddressApproval is the set of rows an approver reviewed, carrying the metadata hash
+// each one had AT REVIEW TIME. It is the content pin the approval path signs against.
+//
+// Why this type exists rather than a plain []string of ids. The approval API accepts only ids:
+// the SDK re-reads them and signs whatever the server returns under those ids. Nothing bound the
+// approver's intent to the bytes signed, so a response-controlling server could answer the
+// id-filtered re-read with a different row — one whose existing signatures already satisfy the
+// container it presents — and harvest a genuine approver signature over content the approver
+// never saw. This is the same shape GovernanceRuleService.ApproveRulesProposal was hardened
+// against with its mandatory expectedContainerHash.
+//
+// `pinned` is unexported on purpose, which is the idiom helper.VerifiedAsset already uses here:
+// Go permits model.WhitelistedAddressApproval{} from another package, so the value is forgeable
+// but USELESS — a hand-built one pins nothing and IsEmpty reports true, which the approval
+// refuses. Only a verified read can mint a usable one.
+type WhitelistedAddressApproval struct {
+	// pinned maps row id -> the metadata hash that row carried when it was reviewed.
+	pinned map[string]string
+}
+
+// IDs returns the pinned row ids in no particular order. The approval path sorts them itself,
+// because the endpoint requires ascending order and the signed array must not depend on the
+// order the caller happened to select in.
+func (a *WhitelistedAddressApproval) IDs() []string {
+	if a == nil {
+		return nil
+	}
+	ids := make([]string, 0, len(a.pinned))
+	for id := range a.pinned {
+		ids = append(ids, id)
+	}
+	return ids
+}
+
+// PinnedHash returns the reviewed metadata hash for id, and whether it was pinned at all.
+func (a *WhitelistedAddressApproval) PinnedHash(id string) (string, bool) {
+	if a == nil {
+		return "", false
+	}
+	hash, ok := a.pinned[id]
+	return hash, ok
+}
+
+// IsEmpty reports whether this selection pins nothing — true for a nil or hand-built value.
+func (a *WhitelistedAddressApproval) IsEmpty() bool {
+	return a == nil || len(a.pinned) == 0
+}
+
+// Select pins the given ids from this verified read.
+//
+// An id that is not in the result is an error rather than a silent omission: it means the caller
+// is trying to approve something this read did not return — either it was excluded as
+// unverifiable, or it was never on the page — and approving fewer rows than asked for would tell
+// the approver they approved more than they did.
+func (r *WhitelistedAddressResult) Select(ids ...string) (*WhitelistedAddressApproval, error) {
+	if r == nil {
+		return nil, fmt.Errorf("cannot select from a nil result")
+	}
+	if len(ids) == 0 {
+		return nil, fmt.Errorf("cannot select an empty set of ids")
+	}
+
+	byID := make(map[string]*WhitelistedAddress, len(r.Addresses))
+	for _, addr := range r.Addresses {
+		if addr != nil {
+			byID[addr.ID] = addr
+		}
+	}
+
+	pinned := make(map[string]string, len(ids))
+	for _, id := range ids {
+		addr, ok := byID[id]
+		if !ok {
+			return nil, fmt.Errorf("whitelisted address %s is not in this verified read: it was "+
+				"either excluded as unverifiable or not on this page", id)
+		}
+		if addr.Metadata == nil || addr.Metadata.Hash == "" {
+			return nil, &IntegrityError{
+				Message: fmt.Sprintf("whitelisted address %s carries no metadata hash, so there is "+
+					"nothing to pin the approval to", id),
+			}
+		}
+		pinned[id] = addr.Metadata.Hash
+	}
+	return &WhitelistedAddressApproval{pinned: pinned}, nil
+}
+
+// SelectAll pins every row this verified read returned.
+//
+// Note it pins what SURVIVED verification, not what the server sent: rows in
+// ExcludedUnverified are not included, so a caller who wants to know about them must read
+// that field. Approving is all-or-nothing over what is pinned here.
+func (r *WhitelistedAddressResult) SelectAll() (*WhitelistedAddressApproval, error) {
+	if r == nil {
+		return nil, fmt.Errorf("cannot select from a nil result")
+	}
+	ids := make([]string, 0, len(r.Addresses))
+	for _, addr := range r.Addresses {
+		if addr != nil {
+			ids = append(ids, addr.ID)
+		}
+	}
+	if len(ids) == 0 {
+		return nil, fmt.Errorf("this read returned no verified addresses to approve")
+	}
+	return r.Select(ids...)
 }

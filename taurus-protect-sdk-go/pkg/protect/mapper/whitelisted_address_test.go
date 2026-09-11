@@ -55,7 +55,10 @@ func TestWhitelistedAddressFromDTO(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := WhitelistedAddressFromDTO(tt.dto)
+			got, err := WhitelistedAddressFromDTO(tt.dto)
+			if err != nil {
+				t.Fatalf("WhitelistedAddressFromDTO() unexpected error: %v", err)
+			}
 			if tt.dto == nil {
 				if got != nil {
 					t.Errorf("WhitelistedAddressFromDTO() = %v, want nil", got)
@@ -95,7 +98,10 @@ func TestWhitelistedAddressFromDTO_WithMetadata(t *testing.T) {
 		},
 	}
 
-	got := WhitelistedAddressFromDTO(dto)
+	got, err := WhitelistedAddressFromDTO(dto)
+	if err != nil {
+		t.Fatalf("WhitelistedAddressFromDTO() unexpected error: %v", err)
+	}
 	if got == nil {
 		t.Fatal("WhitelistedAddressFromDTO() returned nil")
 	}
@@ -145,7 +151,10 @@ func TestWhitelistedAddressesFromDTO(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := WhitelistedAddressesFromDTO(tt.dtos)
+			got, err := WhitelistedAddressesFromDTO(tt.dtos)
+			if err != nil {
+				t.Fatalf("WhitelistedAddressesFromDTO() unexpected error: %v", err)
+			}
 			if tt.want == -1 {
 				if got != nil {
 					t.Errorf("WhitelistedAddressesFromDTO() = %v, want nil", got)

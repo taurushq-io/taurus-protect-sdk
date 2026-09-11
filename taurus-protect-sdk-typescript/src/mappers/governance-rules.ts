@@ -25,6 +25,7 @@ import { safeBoolDefault, safeDate, safeMap, safeString } from "./base";
 import { IntegrityError } from "../errors";
 import { tryDecodeProtobufRulesContainer } from "./protobuf-rules-container";
 import { strictBase64Decode } from "../helpers/strict-base64";
+import { MAX_RULES_CONTAINER_BYTES } from "../helpers/signed-payload-guard";
 
 /**
  * Decodes a base64-encoded rules container.
@@ -41,6 +42,22 @@ export function rulesContainerFromBase64(base64Data: string): DecodedRulesContai
     return createEmptyRulesContainer();
   }
 
+  // Bound the input BEFORE decoding it. Nothing capped this container, and it is the
+  // document every HSM and PRICEUPDATER public key is read from, so the decode runs on
+  // the address, asset and price read paths for any response a server chooses to send.
+  //
+  // The check is on the base64 TEXT first, deliberately: `strictBase64Decode`'s
+  // well-formedness regex recurses per four-character group, so a multi-megabyte string
+  // exhausts the stack there (it fails closed, but with a misleading "invalid base64"
+  // message and after the damage). Four base64 characters carry three bytes, so this
+  // bounds the decoded size without allocating anything.
+  const maxBase64Length = Math.ceil((MAX_RULES_CONTAINER_BYTES * 4) / 3) + 4;
+  if (base64Data.length > maxBase64Length) {
+    throw new IntegrityError(
+      `Failed to decode rules container: encoded container exceeds ${MAX_RULES_CONTAINER_BYTES} bytes`
+    );
+  }
+
   // Decode base64 to bytes
   let decoded: Uint8Array;
   try {
@@ -49,6 +66,14 @@ export function rulesContainerFromBase64(base64Data: string): DecodedRulesContai
     // Invalid base64 encoding - this is a security-critical failure
     throw new IntegrityError(
       `Failed to decode rules container: invalid base64 encoding - ${error instanceof Error ? error.message : "unknown error"}`
+    );
+  }
+
+  // Whitespace inside the base64 means the text bound above is not tight, so bound the
+  // decoded bytes too rather than relying on the estimate.
+  if (decoded.length > MAX_RULES_CONTAINER_BYTES) {
+    throw new IntegrityError(
+      `Failed to decode rules container: container exceeds ${MAX_RULES_CONTAINER_BYTES} bytes`
     );
   }
 

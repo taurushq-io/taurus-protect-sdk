@@ -206,6 +206,153 @@ class TestApprovePledgeActionsVerification:
         api.taurus_network_service_approve_pledge_actions.assert_not_called()
 
 
+    def test_signs_compact_json_matching_the_other_sdks(self) -> None:
+        """The signed bytes are compact JSON, as in Go/Java/TS and every whitelist path.
+
+        ``json.dumps`` defaults to ``", "`` between elements, so this SDK used to sign a
+        DIFFERENT byte string for any batch of two or more -- the server verifies the
+        signature against its own rebuilt array, so a multi-action approval signed here
+        was rejected there.
+        """
+        from taurus_protect.crypto.hashing import calculate_hex_hash
+
+        service, _ = self._make_service()
+        p1, p2 = '{"amount":"1"}', '{"amount":"2"}'
+        h1, h2 = calculate_hex_hash(p1), calculate_hex_hash(p2)
+        actions = [self._action("a-1", p1, h1), self._action("a-2", p2, h2)]
+
+        captured: dict = {}
+
+        def capture(_key: object, data: bytes) -> str:
+            captured["signed"] = data.decode("utf-8")
+            return "signature_base64"
+
+        with patch(
+            "taurus_protect.services.taurus_network.pledge_service.sign_data",
+            side_effect=capture,
+        ):
+            service.approve_pledge_actions(actions=actions, private_key=MagicMock())
+
+        assert captured["signed"] == f'["{h1}","{h2}"]', "no spaces: compact separators"
+
+
+class TestPledgeActionReadVerification:
+    """The read paths verify each action's hash against its payload.
+
+    Approval verifies again in the same call -- that is deliberate, not redundant: an
+    action can reach ``approve_pledge_actions`` decoded from a queue or cache rather than
+    from this SDK. What the read-path check buys is that the payload an integrator
+    DISPLAYS for review is one the hash commits to.
+    """
+
+    def _make_service(self, rows: list) -> tuple:
+        pledge_api = MagicMock()
+        reply = MagicMock()
+        reply.result = rows
+        reply.total_items = str(len(rows))
+        reply.offset = "0"
+        pledge_api.taurus_network_service_get_pledge_actions.return_value = reply
+        pledge_api.taurus_network_service_get_pledge_actions_for_approval.return_value = reply
+        service = PledgeService(api_client=MagicMock(), pledge_api=pledge_api)
+        return service, pledge_api
+
+    @staticmethod
+    def _mapped(action_id: str, payload: str, hash_value: str) -> MagicMock:
+        action = MagicMock()
+        action.id = action_id
+        action.metadata = MagicMock()
+        action.metadata.payload = payload
+        action.metadata.hash = hash_value
+        return action
+
+    def test_a_tampered_payload_is_refused_on_both_list_paths(self) -> None:
+        from taurus_protect.crypto.hashing import calculate_hex_hash
+        from taurus_protect.errors import IntegrityError
+
+        # The hash of a benign top-up, delivered with the payload of something else.
+        tampered = self._mapped(
+            "a-1", '{"amount":"999"}', calculate_hex_hash('{"amount":"1"}')
+        )
+        service, _ = self._make_service([MagicMock()])
+
+        with patch(
+            "taurus_protect.services.taurus_network.pledge_service.pledge_actions_from_dto",
+            return_value=[tampered],
+        ):
+            with pytest.raises(IntegrityError, match="hash verification failed"):
+                service.list_pledge_actions()
+            with pytest.raises(IntegrityError, match="hash verification failed"):
+                service.list_pledge_actions_for_approval()
+
+    def test_a_matching_payload_passes(self) -> None:
+        from taurus_protect.crypto.hashing import calculate_hex_hash
+
+        payload = '{"amount":"1"}'
+        good = self._mapped("a-1", payload, calculate_hex_hash(payload))
+        service, _ = self._make_service([MagicMock()])
+
+        with patch(
+            "taurus_protect.services.taurus_network.pledge_service.pledge_actions_from_dto",
+            return_value=[good],
+        ):
+            actions, _pagination = service.list_pledge_actions()
+
+        assert [a.id for a in actions] == ["a-1"]
+
+    def test_an_action_with_no_metadata_is_not_an_error(self) -> None:
+        """An early-status action has nothing to read, so absence is not tampering."""
+        bare = MagicMock()
+        bare.id = "a-1"
+        bare.metadata = None
+        service, _ = self._make_service([MagicMock()])
+
+        with patch(
+            "taurus_protect.services.taurus_network.pledge_service.pledge_actions_from_dto",
+            return_value=[bare],
+        ):
+            actions, _pagination = service.list_pledge_actions()
+
+        assert [a.id for a in actions] == ["a-1"]
+
+    def test_a_hash_with_no_payload_is_refused(self) -> None:
+        from taurus_protect.errors import IntegrityError
+
+        orphan = self._mapped("a-1", "", "abc123")
+        service, _ = self._make_service([MagicMock()])
+
+        with patch(
+            "taurus_protect.services.taurus_network.pledge_service.pledge_actions_from_dto",
+            return_value=[orphan],
+        ):
+            with pytest.raises(IntegrityError, match="nothing to verify it against"):
+                service.list_pledge_actions()
+
+    def test_the_integrity_error_is_not_remapped_to_a_retryable_server_error(self) -> None:
+        """T7: the funnel must not turn a tampered response into "retry me".
+
+        ``IntegrityError`` is not an ``APIError``, so the pre-existing
+        ``isinstance(e, APIError)`` funnel re-wrapped it as ``ServerError(500)`` --
+        whose ``is_retryable()`` is True. A caller following that advice retries a
+        response an attacker controls.
+        """
+        from taurus_protect.crypto.hashing import calculate_hex_hash
+        from taurus_protect.errors import IntegrityError, ServerError
+
+        tampered = self._mapped(
+            "a-1", '{"amount":"999"}', calculate_hex_hash('{"amount":"1"}')
+        )
+        service, _ = self._make_service([MagicMock()])
+
+        with patch(
+            "taurus_protect.services.taurus_network.pledge_service.pledge_actions_from_dto",
+            return_value=[tampered],
+        ):
+            with pytest.raises(IntegrityError) as exc_info:
+                service.list_pledge_actions()
+
+        assert not isinstance(exc_info.value, ServerError)
+
+
 class TestRejectPledgeActions:
     """Tests for PledgeService.reject_pledge_actions()."""
 

@@ -240,12 +240,25 @@ listWithOptions(options?: ListAddressesOptions): Promise<ListAddressesResult>
 
 #### create / createAddress
 
-Creates a new address in a wallet.
+Creates a new address in a wallet, verifying the HSM signature on the reply.
 
 ```typescript
 create(request: CreateAddressRequest): Promise<Address>
 createAddress(walletId: number, label: string, comment?: string, customerId?: string): Promise<Address>
 ```
+
+Both routes go through the same verification seam as `get` and `list`: **a non-empty
+`address` string is never returned unverified.** This is the highest-value moment for
+substitution, because the caller is about to publish or fund a fresh deposit address.
+
+Address creation can be asynchronous, so the branch is on the address string rather than
+on the server-controlled `status`:
+
+| Reply | Result |
+|---|---|
+| `address` empty (`status` `created` / `creating`) | returned as-is — no destination yet, so nothing to verify and nothing to misuse. Re-read with `get(id)` once the status advances |
+| `address` present, HSM `signature` present | signature verified against the HSMSLOT key from the rules container |
+| `address` present, `signature` absent | `IntegrityError` — the server's address string is withheld rather than handed back unchecked |
 
 **Parameters:**
 | Parameter | Type | Description |
@@ -2432,7 +2445,7 @@ fails if this list drifts or if the prose above documents a method that does not
 
 ### AddressService
 
-- `create(request: CreateAddressRequest): Promise<Address>` — Creates a new address.
+- `create(request: CreateAddressRequest): Promise<Address>` — Creates a new address, with mandatory signature verification of the reply.
 - `createAddress(walletId: number, label: string, comment?: string, customerId?: string): Promise<Address>` — Creates an address with explicit parameters.
 - `createAttribute(addressId: number, key: string, value: string): Promise<void>` — Creates an attribute for an address.
 - `deleteAttribute(addressId: number, attributeId: number): Promise<void>` — Deletes an attribute from an address.
@@ -2583,9 +2596,9 @@ fails if this list drifts or if the prose above documents a method that does not
 
 ### MultiFactorSignatureService
 
-- `approve(request: ApproveMultiFactorSignatureRequest): Promise<void>` — Approve a multi-factor signature.
+- `approve(request: ApproveMultiFactorSignatureRequest): Promise<void>`
 - `create(request: CreateMultiFactorSignatureRequest): Promise<string>` — Create a multi-factor signature batch.
-- `get(id: string): Promise<MultiFactorSignatureInfo>` — Get multi-factor signature entity info by ID.
+- `get(id: string): Promise<MultiFactorSignatureInfo>`
 - `reject(request: RejectMultiFactorSignatureRequest): Promise<void>` — Reject a multi-factor signature.
 
 ### ParticipantService
@@ -2599,7 +2612,7 @@ fails if this list drifts or if the prose above documents a method that does not
 ### PledgeService
 
 - `addCollateral(pledgeId: string, request: AddPledgeCollateralRequest): Promise<AddCollateralResult>` — Adds collateral to an existing pledge.
-- `approvePledgeActions(actionIds: string[], signature: string, comment?: string): Promise<number>` — Approves multiple pledge actions with ECDSA signature.
+- `approvePledgeActions(actions: PledgeAction[], privateKey: KeyObject, comment?: string): Promise<number>` — Approves one or more pledge actions, verifying every metadata hash it is about to
 - `createPledge(request: CreatePledgeRequest): Promise<CreatePledgeResult>` — Creates a new pledge.
 - `get(pledgeId: string): Promise<Pledge>` — Gets a pledge by ID.
 - `initiateWithdrawPledge(pledgeId: string, request: InitiateWithdrawPledgeRequest): Promise<WithdrawPledgeResult>` — Initiates withdrawal from a pledge (pledgor operation).
@@ -2743,9 +2756,9 @@ fails if this list drifts or if the prose above documents a method that does not
 
 ### WhitelistedAddressService
 
-- `approve(ids: string[], privateKey: KeyObject, comment: string): Promise<void>` — Signs and submits an approval for the given whitelisted addresses, all-or-nothing.
+- `approve(selection: WhitelistedAddressApproval, privateKey: KeyObject, comment: string): Promise<void>`
 - `get(addressId: string): Promise<WhitelistedAddress>` — Gets a whitelisted address by ID with mandatory verification.
-- `getEnvelope(addressId: string): Promise<SignedWhitelistedAddressEnvelope>` — Gets the signed envelope for a whitelisted address.
+- `getEnvelope(addressId: string): Promise<Verified<SignedWhitelistedAddressEnvelope>>` — Gets the signed envelope for a whitelisted address, after verifying it.
 - `getWithVerification(addressId: string): Promise<WhitelistedAddressVerificationResult>` — Gets a whitelisted address by ID with full verification.
 - `list(options?: ListWhitelistedAddressesOptions): Promise<ListWhitelistedAddressesResult>` — Lists whitelisted addresses with mandatory verification.
 - `listForApproval(options?: ListWhitelistedAddressesForApprovalOptions): Promise<ListWhitelistedAddressesResult>`
@@ -2753,7 +2766,7 @@ fails if this list drifts or if the prose above documents a method that does not
 
 ### WhitelistedAssetService
 
-- `approve(ids: number[], privateKey: KeyObject, comment: string): Promise<void>` — Signs and submits an approval for the given whitelisted assets, all-or-nothing.
+- `approve(selection: WhitelistedAssetApproval, privateKey: KeyObject, comment: string): Promise<void>`
 - `get(assetId: number): Promise<WhitelistedAsset>`
 - `getEnvelope(assetId: number): Promise<Verified<SignedWhitelistedAssetEnvelope>>` — Gets the signed envelope for a whitelisted asset, after verifying it.
 - `getWithVerification(assetId: number): Promise<WhitelistedAssetVerificationResult>` — Gets a whitelisted asset by ID with full verification.

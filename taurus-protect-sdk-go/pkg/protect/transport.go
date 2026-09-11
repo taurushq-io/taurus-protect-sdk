@@ -28,10 +28,33 @@ type TPV1Transport struct {
 	Base http.RoundTripper
 	// Auth provides TPV1 credentials for signing.
 	Auth *crypto.TPV1Auth
+	// Host is the configured API origin (host[:port]). Requests are signed ONLY for this
+	// host. Empty means unpinned, which is the pre-2026-09 behaviour and should not be
+	// used by anything but a test that is deliberately exercising it.
+	Host string
 }
 
 // RoundTrip executes a single HTTP transaction, signing the request with TPV1.
+//
+// The request is signed ONLY when it is for the configured host, for the same reason the
+// bearer transport pins its own: the Authorization header is created HERE, below net/http's
+// redirect handling, so the follow-up request net/http synthesises from a server-supplied
+// Location carries no Authorization for net/http to strip — and this transport would mint a
+// brand-new, fully valid signature (fresh nonce and timestamp) over the attacker-chosen
+// method, host, path, query and body.
+//
+// That makes an unpinned TPV1 client a signing oracle rather than merely a redirect-follower:
+// a 303 turns any signed call into an authenticated GET of the intermediary's choosing, and
+// the response comes back through them. newHTTPClient also refuses to follow redirects by
+// default; this check is what holds if a caller supplies a redirect-following policy of
+// their own.
 func (t *TPV1Transport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if t.Host != "" && (req.URL == nil || !strings.EqualFold(req.URL.Host, t.Host)) {
+		return nil, fmt.Errorf(
+			"refusing to sign a request for %q: the client is configured for %q",
+			hostOf(req), t.Host)
+	}
+
 	// Read the body from the original request first
 	var body []byte
 	if req.Body != nil {
@@ -67,9 +90,15 @@ func (t *TPV1Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 
 // newHTTPClient creates an http.Client with TPV1 authentication.
 //
-// CheckRedirect and Jar are carried over from the caller-supplied client. They used to be
-// dropped, which silently discarded a redirect policy a consumer had deliberately set.
-func newHTTPClient(auth *crypto.TPV1Auth, base *http.Client) *http.Client {
+// Redirects are NOT followed by default, matching newBearerHTTPClient. An API client has no
+// reason to follow one, and following one here is worse than it looks: the TPV1 signature is
+// produced inside the RoundTripper, so each hop is signed afresh for whatever URL the server
+// named. See TPV1Transport.RoundTrip. A caller-supplied CheckRedirect still wins — the host
+// pin on the transport is what holds in that case.
+//
+// Jar is carried over from the caller-supplied client. Both used to be copied unconditionally,
+// which meant a nil CheckRedirect (the default) silently opted into following redirects.
+func newHTTPClient(auth *crypto.TPV1Auth, host string, base *http.Client) *http.Client {
 	var baseTransport http.RoundTripper
 	if base != nil && base.Transport != nil {
 		baseTransport = base.Transport
@@ -79,11 +108,17 @@ func newHTTPClient(auth *crypto.TPV1Auth, base *http.Client) *http.Client {
 		Transport: &TPV1Transport{
 			Base: baseTransport,
 			Auth: auth,
+			Host: host,
+		},
+		CheckRedirect: func(*http.Request, []*http.Request) error {
+			return http.ErrUseLastResponse
 		},
 	}
 	if base != nil {
 		client.Timeout = base.Timeout
-		client.CheckRedirect = base.CheckRedirect
+		if base.CheckRedirect != nil {
+			client.CheckRedirect = base.CheckRedirect
+		}
 		client.Jar = base.Jar
 	}
 	return client

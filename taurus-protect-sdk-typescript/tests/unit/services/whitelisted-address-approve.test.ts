@@ -11,6 +11,7 @@
 import * as crypto from "crypto";
 import { WhitelistedAddressService } from "../../../src/services/whitelisted-address-service";
 import { IntegrityError, ValidationError } from "../../../src/errors";
+import { WhitelistedAddressApproval } from "../../../src/models/whitelisted-address";
 import type { AddressWhitelistingApi } from "../../../src/internal/openapi";
 import type { WhitelistedAddressServiceConfig } from "../../../src/services/whitelisted-address-service";
 import type {
@@ -51,12 +52,32 @@ const { privateKey } = crypto.generateKeyPairSync("ec", {
   namedCurve: "P-256",
 });
 
+/**
+ * Mints the content pin the way a caller does — from a verified read — without needing a
+ * real signed page: it builds the result the read would have produced.
+ *
+ * Going through `WhitelistedAddressApproval` rather than an object literal is deliberate:
+ * `#pinned` is a true private field, so a literal is not an instance and cannot be passed
+ * to `approve` at all. That is the guard, and the tests exercise it.
+ */
+function reviewedSelection(
+  idToHash: Record<string, string>
+): WhitelistedAddressApproval {
+  return new WhitelistedAddressApproval(new Map(Object.entries(idToHash)));
+}
+
 describe("WhitelistedAddressService.approve", () => {
   it("aborts when the verified read omits a requested row", async () => {
     const { api, svc } = setup();
 
     // Empty page: no row verified, so every requested id is missing.
-    await expect(svc.approve(["1", "2"], privateKey, "ok")).rejects.toThrow(
+    await expect(
+      svc.approve(
+        reviewedSelection({ "1": "aaa", "2": "bbb" }),
+        privateKey,
+        "ok"
+      )
+    ).rejects.toThrow(
       /was not returned by the verified read/
     );
     expect(api.whitelistServiceApproveWhitelistedAddress).not.toHaveBeenCalled();
@@ -65,9 +86,13 @@ describe("WhitelistedAddressService.approve", () => {
   it("reads ONE id-filtered page rather than one GET per id", async () => {
     const { api, svc } = setup();
 
-    await expect(svc.approve(["7", "3"], privateKey, "ok")).rejects.toThrow(
-      IntegrityError
-    );
+    await expect(
+      svc.approve(
+        reviewedSelection({ "7": "aaa", "3": "bbb" }),
+        privateKey,
+        "ok"
+      )
+    ).rejects.toThrow(IntegrityError);
 
     expect(api.whitelistServiceGetWhitelistedAddresses).toHaveBeenCalledTimes(1);
     const args = api.whitelistServiceGetWhitelistedAddresses.mock.calls[0]?.[0] as {
@@ -81,12 +106,14 @@ describe("WhitelistedAddressService.approve", () => {
   });
 
   it.each([
-    ["no ids", [] as string[], "ok"],
-    ["no comment", ["1"], ""],
-    ["non-numeric id", ["abc"], "ok"],
-  ])("rejects bad input: %s", async (_name, ids, comment) => {
+    // An empty pin must be refused rather than treated as "approve nothing": an empty
+    // one silently restores the unpinned behaviour the pin exists to remove.
+    ["empty selection", reviewedSelection({}), "ok"],
+    ["no comment", reviewedSelection({ "1": "aaa" }), ""],
+    ["non-numeric id", reviewedSelection({ abc: "aaa" }), "ok"],
+  ])("rejects bad input: %s", async (_name, selection, comment) => {
     const { api, svc } = setup();
-    await expect(svc.approve(ids, privateKey, comment)).rejects.toThrow(
+    await expect(svc.approve(selection, privateKey, comment)).rejects.toThrow(
       ValidationError
     );
     expect(api.whitelistServiceApproveWhitelistedAddress).not.toHaveBeenCalled();
@@ -95,8 +122,33 @@ describe("WhitelistedAddressService.approve", () => {
   it("requires a private key", async () => {
     const { svc } = setup();
     await expect(
-      svc.approve(["1"], undefined as unknown as crypto.KeyObject, "ok")
+      svc.approve(
+        reviewedSelection({ "1": "aaa" }),
+        undefined as unknown as crypto.KeyObject,
+        "ok"
+      )
     ).rejects.toThrow(ValidationError);
+  });
+
+  // The finding itself: the re-read returns a row under the requested id whose metadata
+  // hash is NOT the one the approver reviewed. Without the pin this signs the substitute.
+  it("refuses to sign a row that changed since it was reviewed", async () => {
+    const { api, svc } = setup();
+    api.whitelistServiceGetWhitelistedAddresses.mockResolvedValue({
+      result: [
+        { id: "1", metadata: { hash: "substituted", payloadAsString: "{}" } },
+      ],
+      totalItems: "1",
+    } as never);
+
+    await expect(
+      svc.approve(
+        reviewedSelection({ "1": "the-hash-the-approver-reviewed" }),
+        privateKey,
+        "ok"
+      )
+    ).rejects.toThrow(IntegrityError);
+    expect(api.whitelistServiceApproveWhitelistedAddress).not.toHaveBeenCalled();
   });
 });
 

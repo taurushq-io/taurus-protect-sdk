@@ -316,6 +316,70 @@ uniform in `[1, n-1]`, so one of them periodically has a leading zero byte that 
 yielding a 63-byte signature. `signature_verifier_test.go` has a `padTo32Bytes` helper — use it.
 One test in that file did not, and read as an intermittent verification failure.
 
+## Verification surface added in the 2026-09-10 security-scan pass
+
+Go was the reference SDK for this pass, so these are the shapes the other three were ported to.
+Cross-SDK reasoning is in the repo-root `CLAUDE.md`; what matters *here*:
+
+- **`helper.LegacyPayloadVariant` carries the payload, not just the hash.**
+  `ComputeLegacyPayloadVariants` / `ComputeAssetLegacyPayloadVariants` are what verification uses;
+  `ComputeLegacyHashes` / `ComputeAssetLegacyHashes` remain as thin projections **because they are
+  the cross-SDK vector oracle's entry point** (`cross_sdk_vectors_test.go` →
+  `docs/test-vectors/crypto-test-vectors.json`). Keeping the old names intact is what let that gate
+  keep passing unchanged, which is the correct outcome: the fix moves no hash.
+- **`verifyHashInSignedHashes` returns `(hash, payload, err)`** in both verifiers, and
+  `VerificationResult` / `AssetVerificationResult` gained `VerifiedPayload`. Step 6 parses THAT.
+  `Metadata.PayloadAsString` is deliberately left untouched — a caller needs it to reproduce
+  `metadata.hash`.
+- **`rejectDuplicateObjectKeys`** is a structural `json.Decoder.Token()` pre-pass with per-object
+  key sets (siblings sharing a key are fine), depth-bounded at 32. It sits inside
+  `ParseWhitelistedAddressFromJSON` / `ParseWhitelistedAssetFromJSON` next to the existing
+  `MaxPayloadBytes` guard, so a new caller cannot forget either. `DisallowUnknownFields` is the
+  wrong tool and would reject real payloads.
+- **`mapper.WhitelistedAddressFromDTO` now returns an error, and that ORDERING MATTERED.**
+  It used to swallow the parse failure (`if err == nil && parsed != nil`), leaving every identity
+  field at its zero value with no signal. That had to be fixed *before* duplicate-key rejection
+  landed: step 6 parses the clean variant, so a rejected duplicate in the mapper would otherwise
+  have produced a "verified" address with an empty address string — and worse, step 5 reads
+  `LinkedInternalAddresses`/`LinkedWallets` from the mapper, so both empty means
+  `shouldCheckRuleLines == false` and a silent fall-through to the container default thresholds.
+  A fail-open through a new door. No fixture has duplicate keys, so the suite would not have
+  caught it.
+- **The verifying list path maps ROW BY ROW.** `WhitelistedAddressesFromDTO` (all-or-nothing) is
+  kept for other callers, but `verifiedAddresses` calls the single-row mapper so an unparseable
+  payload becomes one `ExcludedWhitelistedAddress` rather than failing the page.
+- **`applyVerifiedIdentity`** (service) is what stopped `_, err :=` discarding the verifier's
+  step-6 result on every read path except `GetWhitelistedAddressEnvelope`. `Network` is the one
+  field that keeps its DTO value when the payload omits it — safe only because rule selection no
+  longer lets an unsigned network reach a weaker quorum.
+- **`ResolveRuleKeyWithSource`** is the source-aware form; `ResolveRuleKey` keeps its two-value
+  shape because the shared `rule_key` vectors assert exactly that. Same projection trick as the
+  legacy hashes, same reason.
+- **`model.WhitelistedAssetResult` now exists**, so `ListWhitelistedAssets` /
+  `ListWhitelistedAssetsForApproval` return a result struct rather than a bare tuple. It has no
+  `ExcludedUnverified` yet: that list is still STRICT, and making it lenient needs a `logger` on
+  `WhitelistedAssetService`, whose constructor takes no `opts ...ServiceOption` — a separate change.
+  **This broke 5 `tg-protect-mcpd` call sites**; expect to bump it deliberately.
+- **`AddressService.verifiedAddress` is the ONE seam** for a `*model.Address`. It checks the
+  address STRING, not the status, because `status` is server-controlled: empty address → return
+  (nothing to misuse), address + signature → verify, address without signature → refuse.
+- **`ApprovePledgeActions` takes actions + key and signs inside the SDK.** It is now
+  `verifies` in the signing manifest — the gate found it unprompted, which is the gate working.
+  `verifyPledgeActionMetadata` covers the two list paths. Note the list paths return
+  `[]taurusnetwork.PledgeAction` (values), so the approval takes values too rather than pointers.
+- **`TPV1Transport` has a `Host` field and `newHTTPClient` takes the host.** Both guards are
+  required (redirect refusal + host pin) for the reason already documented for `bearerTransport`
+  a few sections below — and TPV1's consequence is worse, because it mints a *fresh valid
+  signature* for the attacker's host rather than replaying one. `apiKeyCredentials.apply` no
+  longer discards the host (`_ string`) and fails closed on an unparseable one.
+  An empty `Host` means unpinned; only the pre-existing transport tests pass `""`.
+- **The nil-reply guard is in TWO places that must stay in step**: `internal/openapi/client.go`
+  (the committed generated file) and `scripts/resources/templates/go/client.mustache`. The repo
+  had **no vendored templates** before this, and `scripts/generate-openapi.sh` does
+  `rm -rf internal/openapi` before regenerating, so a hand-edit to the generated file alone is
+  silently reverted on the next `./build.sh generate`. If you add another generated-client fix,
+  put it in both and pass `-t` to the generator.
+
 ## Verification surface added in the 2026-09-07 pass
 
 Cross-SDK rules are in the repo-root `CLAUDE.md` (one reader per entity; all-or-nothing

@@ -87,13 +87,15 @@ func TestPaginateAllWhitelistedAssets(t *testing.T) {
 
 	// Fetch all whitelisted assets using pagination
 	for {
-		assets, pagination, err := client.WhitelistedAssets().ListWhitelistedAssets(ctx, &model.ListWhitelistedAssetsOptions{
+		assetResult, err := client.WhitelistedAssets().ListWhitelistedAssets(ctx, &model.ListWhitelistedAssetsOptions{
 			Limit:  pageSize,
 			Offset: offset,
 		})
 		if err != nil {
 			t.Fatalf("ListWhitelistedAssets(offset=%d) error = %v", offset, err)
 		}
+		assets := assetResult.Assets
+		pagination := assetResult.Pagination
 
 		allAssets = append(allAssets, assets...)
 		t.Logf("Fetched %d whitelisted assets (offset=%d)", len(assets), offset)
@@ -124,12 +126,13 @@ func TestListWhitelistedAssets(t *testing.T) {
 
 	ctx := context.Background()
 
-	assets, _, err := client.WhitelistedAssets().ListWhitelistedAssets(ctx, &model.ListWhitelistedAssetsOptions{
+	assetResult, err := client.WhitelistedAssets().ListWhitelistedAssets(ctx, &model.ListWhitelistedAssetsOptions{
 		Limit: 10,
 	})
 	if err != nil {
 		t.Fatalf("ListWhitelistedAssets error = %v", err)
 	}
+	assets := assetResult.Assets
 
 	t.Logf("Found %d whitelisted assets", len(assets))
 	for _, a := range assets {
@@ -249,12 +252,13 @@ func TestGetWhitelistedAsset(t *testing.T) {
 	ctx := context.Background()
 
 	// First list assets to find a valid ID
-	assets, _, err := client.WhitelistedAssets().ListWhitelistedAssets(ctx, &model.ListWhitelistedAssetsOptions{
+	assetResult, err := client.WhitelistedAssets().ListWhitelistedAssets(ctx, &model.ListWhitelistedAssetsOptions{
 		Limit: 1,
 	})
 	if err != nil {
 		t.Fatalf("ListWhitelistedAssets error = %v", err)
 	}
+	assets := assetResult.Assets
 
 	if len(assets) == 0 {
 		t.Skip("No whitelisted assets available for testing")
@@ -298,13 +302,15 @@ func TestListWhitelistedAssetsByBlockchain(t *testing.T) {
 	ctx := context.Background()
 
 	// List assets filtered by blockchain ETH
-	assets, pagination, err := client.WhitelistedAssets().ListWhitelistedAssets(ctx, &model.ListWhitelistedAssetsOptions{
+	assetResult, err := client.WhitelistedAssets().ListWhitelistedAssets(ctx, &model.ListWhitelistedAssetsOptions{
 		Blockchain: "ETH",
 		Limit:      10,
 	})
 	if err != nil {
 		t.Fatalf("ListWhitelistedAssets(blockchain=ETH) error = %v", err)
 	}
+	assets := assetResult.Assets
+	pagination := assetResult.Pagination
 
 	t.Logf("Listed %d whitelisted assets for blockchain ETH", len(assets))
 	if pagination != nil {
@@ -329,7 +335,7 @@ func TestListWhitelistedAssetsByBlockchainAndNetwork(t *testing.T) {
 	ctx := context.Background()
 
 	// List assets filtered by blockchain ETH and network mainnet
-	assets, pagination, err := client.WhitelistedAssets().ListWhitelistedAssets(ctx, &model.ListWhitelistedAssetsOptions{
+	assetResult, err := client.WhitelistedAssets().ListWhitelistedAssets(ctx, &model.ListWhitelistedAssetsOptions{
 		Blockchain: "ETH",
 		Network:    "mainnet",
 		Limit:      10,
@@ -337,6 +343,8 @@ func TestListWhitelistedAssetsByBlockchainAndNetwork(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListWhitelistedAssets(blockchain=ETH, network=mainnet) error = %v", err)
 	}
+	assets := assetResult.Assets
+	pagination := assetResult.Pagination
 
 	t.Logf("Listed %d whitelisted assets for blockchain ETH, network mainnet", len(assets))
 	if pagination != nil {

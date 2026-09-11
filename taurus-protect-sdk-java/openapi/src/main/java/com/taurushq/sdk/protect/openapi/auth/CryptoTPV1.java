@@ -23,6 +23,7 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -114,8 +115,26 @@ public class CryptoTPV1 {
         return constantTimeAreEqual(calculateHexHmac(secret, data), hexHmac);
     }
 
+    /**
+     * Computes the TPV1-HMAC-SHA256 Authorization header value.
+     *
+     * <p>The HTTP method is upper-cased before signing. Python and TypeScript have always done
+     * this; Java and Go signed it verbatim, so a caller issuing a lowercase {@code get} produced a
+     * DIFFERENT canonical string in the two families and one of them could not authenticate. HTTP
+     * methods are case-sensitive per RFC 9110 and every real caller sends upper case, so
+     * normalising cannot break a working deployment — it only removes the split. Pinned by the
+     * canonical_string vectors in docs/test-vectors/crypto-test-vectors.json.
+     *
+     * <p>This does NOT address the separate defect that the construction below is not injective:
+     * empty components are elided rather than kept as fixed slots, and the delimiter legitimately
+     * occurs inside the normalised Content-Type, the body and the percent-decoded path. Fixing
+     * that changes what a correct caller signs, so it needs a versioned scheme across all four
+     * SDKs, the Postman collection and validatord — see TODOS.md, "TPV1's canonical string is not
+     * injective".
+     */
     public static String calculateSignedHeader(String apiKey, byte[] apiSecret, String nonce, long timestamp, String method, String host, String path, String query, String contentType, String body) {
-        String msg = Stream.of("TPV1", apiKey, nonce, Long.toString(timestamp), method, host, path, query, contentType, body)
+        String normalisedMethod = method == null ? null : method.toUpperCase(Locale.ROOT);
+        String msg = Stream.of("TPV1", apiKey, nonce, Long.toString(timestamp), normalisedMethod, host, path, query, contentType, body)
                 .filter(p -> !Strings.isNullOrEmpty(p))
                 .collect(Collectors.joining(" "));
 

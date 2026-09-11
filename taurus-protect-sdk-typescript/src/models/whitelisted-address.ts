@@ -5,6 +5,7 @@
  * their cryptographic verification envelopes.
  */
 
+import type { Verified } from "../helpers/verified";
 import type { DecodedRulesContainer } from "./governance-rules";
 
 /**
@@ -151,6 +152,97 @@ export interface WhitelistedAddressVerificationResult {
   readonly verifiedRulesContainer?: DecodedRulesContainer;
   /** The hash that was verified (may be a legacy hash). */
   readonly verifiedHash: string;
+  /**
+   * The payload {@link verifiedHash} covers, and the bytes
+   * {@link verifiedWhitelistedAddress} was parsed from.
+   *
+   * When a legacy variant matched, this is that variant rather than
+   * `metadata.payloadAsString` — the delivered payload carries members no signature
+   * covered. `metadata.payloadAsString` is deliberately left untouched, because a caller
+   * needs it to reproduce `metadata.hash`; read this field instead when the question is
+   * "what was actually signed".
+   */
+  readonly verifiedPayload: string;
+  /**
+   * The envelope, marked as having passed verification.
+   *
+   * Anything that reads raw envelope fields takes this type rather than the bare
+   * envelope, so a read path that skipped `verify()` will not compile. The asset side
+   * has carried this since the 2026-09-04 pass; the address side returned the
+   * unverified INPUT envelope from `getEnvelope` and discarded the verification result
+   * entirely.
+   */
+  readonly verifiedEnvelope: Verified<SignedWhitelistedAddressEnvelope>;
+}
+
+/**
+ * The set of rows an approver reviewed, carrying the metadata hash each one had AT
+ * REVIEW TIME. It is the content pin the approval path signs against.
+ *
+ * Why this type exists rather than a plain `string[]` of ids. The approval API accepts
+ * only ids: the SDK re-reads them and signs whatever the server returns under those ids.
+ * Nothing bound the approver's intent to the bytes signed, so a response-controlling
+ * server could answer the id-filtered re-read with a different row — one whose existing
+ * signatures already satisfy the container it presents — and harvest a genuine approver
+ * signature over content the approver never saw. This is the same shape
+ * `GovernanceRuleService.approveRulesProposal` was hardened against with its mandatory
+ * `expectedContainerHash`.
+ *
+ * The pin lives on the RESULT rather than on the row, because this SDK's
+ * `WhitelistedAddress` deliberately carries no `metadata` — the hash it would pin is on
+ * the envelope, and the verifier's result, not the model. `list()` and
+ * `listForApproval()` therefore capture it while they still hold the DTO.
+ *
+ *	verified read ──▶ result.select(ids) ──▶ WhitelistedAddressApproval
+ *	                                                 │
+ *	                       approve(selection, key, comment) ◀┘
+ *	                                                 │
+ *	                          re-read ──▶ hash == pinned ? sign : abort
+ *
+ * `#pinned` is a true private field, which is the closest TypeScript comes to Go's
+ * unexported-field idiom: a hand-built object literal is not an instance, and an
+ * instance built with an empty map pins nothing and is refused by `approve`. What it
+ * proves is that the approver went through a verified read — not that the read was
+ * against the right keys. It is a structural guard against forgetting to pin.
+ */
+export class WhitelistedAddressApproval {
+  /** Row id -> the metadata hash that row carried when it was reviewed. */
+  readonly #pinned: ReadonlyMap<string, string>;
+
+  /**
+   * Minted by a verified read. Prefer `result.select(...)` / `result.selectAll()` on a
+   * {@link WhitelistedAddress} listing over calling this directly — those are the
+   * paths that guarantee the hashes came from rows this SDK verified.
+   *
+   * @param pinned - row id -> reviewed metadata hash
+   */
+  constructor(pinned: ReadonlyMap<string, string>) {
+    this.#pinned = new Map(pinned);
+  }
+
+  /**
+   * The pinned row ids, in no particular order.
+   *
+   * The approval path sorts them itself, because the endpoint requires ascending order
+   * and the signed array must not depend on the order the caller happened to select in.
+   */
+  ids(): string[] {
+    return [...this.#pinned.keys()];
+  }
+
+  /**
+   * The reviewed metadata hash for `id`, or `undefined` when that id was not pinned.
+   *
+   * @param id - the row id
+   */
+  pinnedHash(id: string): string | undefined {
+    return this.#pinned.get(id);
+  }
+
+  /** True when this selection pins nothing. */
+  isEmpty(): boolean {
+    return this.#pinned.size === 0;
+  }
 }
 
 /**

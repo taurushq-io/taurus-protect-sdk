@@ -64,6 +64,12 @@ from taurus_protect.models.governance_rules import (
 )
 from taurus_protect.models import rule_cell as rule_cell
 from taurus_protect.models.rule_cell import RuleCell
+from taurus_protect.models.multi_factor_signature import (
+    MultiFactorSignatureApprovalResult,
+    MultiFactorSignatureEntityType,
+    MultiFactorSignatureInfo,
+    MultiFactorSignatureResult,
+)
 from taurus_protect.models.pagination import Pagination
 from taurus_protect.models.request import (
     Attribute,
@@ -198,13 +204,17 @@ from taurus_protect.models.webhook import (
     WebhookCall,
 )
 from taurus_protect.models.whitelisted_address import (
+    ExcludedWhitelistedAddress,
     InternalAddress,
     InternalWallet,
     SignedContractAddress,
     SignedWhitelistedAddress,
     SignedWhitelistedAddressEnvelope,
     WhitelistedAddress,
+    WhitelistedAddressApproval,
+    WhitelistedAddressListResult,
     WhitelistedAsset,
+    WhitelistedAssetApproval,
     WhitelistedAssetMetadata,
     WhitelistMetadata,
     WhitelistSignature,
@@ -317,6 +327,10 @@ __all__ = [
     "FATokenMetadata",
     "CryptoPunkMetadata",
     # Statistics, Prices, Scores
+    "MultiFactorSignatureApprovalResult",
+    "MultiFactorSignatureEntityType",
+    "MultiFactorSignatureInfo",
+    "MultiFactorSignatureResult",
     "Price",
     "PriceHistoryPoint",
     "PortfolioStatistics",
@@ -339,8 +353,13 @@ __all__ = [
     "WhitelistMetadata",
     "SignedWhitelistedAddress",
     "SignedWhitelistedAddressEnvelope",
+    "ExcludedWhitelistedAddress",
+    "WhitelistedAddressListResult",
+    # The approval content pins -- minted only by a verified read, never by hand
+    "WhitelistedAddressApproval",
     # Whitelisted Asset
     "WhitelistedAsset",
+    "WhitelistedAssetApproval",
     "WhitelistedAssetMetadata",
     "WhitelistUserSignature",
     "WhitelistSignatureEntry",

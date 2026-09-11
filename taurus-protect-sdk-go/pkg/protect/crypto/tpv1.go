@@ -92,9 +92,22 @@ func (a *TPV1Auth) SignRequest(req *http.Request, body []byte) error {
 }
 
 // CalculateSignedHeader computes the TPV1-HMAC-SHA256 Authorization header value.
+//
+// The HTTP method is upper-cased before signing. Python and TypeScript have always done this;
+// Go and Java signed it verbatim, so a caller issuing a lowercase `get` produced a DIFFERENT
+// canonical string in the two families and one of them could not authenticate. HTTP methods are
+// case-sensitive per RFC 9110 and every real caller sends upper case, so normalising cannot break
+// a working deployment — it only removes the split. Pinned by the canonical_string vectors in
+// docs/test-vectors/crypto-test-vectors.json.
+//
+// This does NOT address the separate defect that the construction below is not injective: empty
+// components are elided rather than kept as fixed slots, and the delimiter legitimately occurs
+// inside the normalised Content-Type, the body and the percent-decoded path. Fixing that changes
+// what a correct caller signs, so it needs a versioned scheme across all four SDKs, the Postman
+// collection and validatord — see TODOS.md, "TPV1's canonical string is not injective".
 func CalculateSignedHeader(apiKey string, apiSecret []byte, nonce string, timestamp int64, method, host, path, query, contentType, body string) string {
 	// Build message by joining non-empty parts with spaces
-	parts := []string{"TPV1", apiKey, nonce, fmt.Sprintf("%d", timestamp), method, host, path, query, contentType, body}
+	parts := []string{"TPV1", apiKey, nonce, fmt.Sprintf("%d", timestamp), strings.ToUpper(method), host, path, query, contentType, body}
 	var nonEmpty []string
 	for _, p := range parts {
 		if p != "" {

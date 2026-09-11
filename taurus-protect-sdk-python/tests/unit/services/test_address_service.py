@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+from typing import Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from taurus_protect.errors import NotFoundError
+from taurus_protect.errors import IntegrityError
 from taurus_protect.services.address_service import AddressService
 
 
@@ -42,8 +45,11 @@ class TestGet:
             addresses_api=addresses_api,
             rules_cache=rules_cache,
         )
-        # Mock signature verification to prevent it from running
-        service._verify_address_signature = MagicMock()
+        # Verification now lives inside the ONE construction seam (_verified_address)
+        # rather than in a private method a test could neuter, so that is what these
+        # plumbing tests stub. The seam's own behaviour is covered by
+        # TestVerifiedAddressSeam below.
+        service._verified_address = MagicMock()
         return service, addresses_api
 
     def test_get_returns_address(self) -> None:
@@ -54,11 +60,9 @@ class TestGet:
         api.wallet_service_get_address.return_value = reply
 
         mock_address = MagicMock()
-        with patch(
-            "taurus_protect.services.address_service.address_from_dto",
-            return_value=mock_address,
-        ):
-            result = service.get(1)
+        service._verified_address.return_value = mock_address
+
+        result = service.get(1)
 
         assert result is mock_address
         api.wallet_service_get_address.assert_called_once_with("1")
@@ -85,14 +89,10 @@ class TestGet:
         reply.result = MagicMock()
         api.wallet_service_get_address.return_value = reply
 
-        mock_address = MagicMock()
-        with patch(
-            "taurus_protect.services.address_service.address_from_dto",
-            return_value=mock_address,
-        ):
-            service.get(1)
+        service.get(1)
 
-        service._verify_address_signature.assert_called_once()
+        # get() must not construct an Address by any route other than the seam.
+        service._verified_address.assert_called_once()
 
 
 class TestList:
@@ -107,7 +107,7 @@ class TestList:
             addresses_api=addresses_api,
             rules_cache=rules_cache,
         )
-        service._verify_address_signature = MagicMock()
+        service._verified_address = MagicMock()
         return service, addresses_api, rules_cache
 
     def test_list_returns_addresses_and_pagination(self) -> None:
@@ -119,13 +119,14 @@ class TestList:
         reply.offset = "0"
         api.wallet_service_get_addresses.return_value = reply
 
-        with patch(
-            "taurus_protect.services.address_service.addresses_from_dto",
-            return_value=[MagicMock()],
-        ):
-            addresses, pagination = service.list(wallet_id=1)
+        service._verified_address.return_value = MagicMock()
+
+        addresses, pagination = service.list(wallet_id=1)
 
         assert len(addresses) == 1
+        # One row in, one trip through the seam: the list path must not map rows by
+        # any other route.
+        service._verified_address.assert_called_once()
 
     def test_list_raises_for_non_positive_wallet_id(self) -> None:
         service, _, _ = self._make_service()
@@ -158,6 +159,8 @@ class TestCreateAddress:
             addresses_api=addresses_api,
             rules_cache=rules_cache,
         )
+        # Same seam stub as the read tests: create now shares their construction path.
+        service._verified_address = MagicMock()
         return service, addresses_api
 
     def test_create_address_raises_for_non_positive_wallet_id(self) -> None:
@@ -180,13 +183,16 @@ class TestCreateAddress:
         api.wallet_service_create_address.return_value = reply
 
         mock_address = MagicMock()
-        with patch(
-            "taurus_protect.services.address_service.address_from_dto",
-            return_value=mock_address,
-        ):
-            result = service.create_address(wallet_id=1, label="test", comment="comment")
+        service._verified_address.return_value = mock_address
 
+        result = service.create_address(wallet_id=1, label="test", comment="comment")
+
+        # The point of the fix: create goes through the SAME seam as every read, so it
+        # cannot hand back an address the HSM signature has not cleared. This test used
+        # to stub a reply with no signature at all and assert the Address came back --
+        # i.e. it pinned the vulnerability. See TestVerifiedAddressSeam for the refusal.
         assert result is mock_address
+        service._verified_address.assert_called_once()
 
     def test_create_raises_for_none_request(self) -> None:
         service, _ = self._make_service()
@@ -275,3 +281,75 @@ class TestGetProofOfReserve:
 
         with pytest.raises(ValueError, match="address_id must be positive"):
             service.get_proof_of_reserve(0)
+
+
+class TestVerifiedAddressSeam:
+    """
+    The ONE construction seam for an Address, driven directly.
+
+    ``create_address`` was the last path that returned an Address without checking the
+    HSM signature, and it is the highest-value moment for substitution: its caller is
+    about to publish or fund a fresh deposit address. ``get_addresses`` had already been
+    fixed for exactly this and the create path was missed anyway, which is why the fix is
+    a seam rather than a per-path check.
+    """
+
+    def _make_service(self) -> AddressService:
+        return AddressService(
+            api_client=MagicMock(),
+            addresses_api=MagicMock(),
+            rules_cache=MagicMock(),
+        )
+
+    @staticmethod
+    def _dto(address: str, signature: Optional[str], status: str) -> SimpleNamespace:
+        """
+        A plain attribute holder rather than a MagicMock.
+
+        The mapper reads nested DTOs (``balance``) and hands them to pydantic models with
+        typed str fields, so a MagicMock -- whose every attribute is another MagicMock --
+        fails validation before the seam is reached, and the test would pass or fail for
+        the wrong reason.
+        """
+        return SimpleNamespace(
+            id="42",
+            wallet_id="1",
+            address=address,
+            signature=signature,
+            status=status,
+            balance=None,
+            attributes=None,
+            linked_whitelisted_address_ids=None,
+        )
+
+    def test_refuses_an_address_string_with_no_signature(self) -> None:
+        """
+        A non-empty address with no signature is NOT a silent skip. Returning it would
+        hand the caller an attacker-controllable destination in the same type as a
+        verified one, which is the whole defect.
+        """
+        service = self._make_service()
+
+        dto = self._dto("0xATTACKERCONTROLLED", None, "created")
+
+        with pytest.raises(IntegrityError) as exc:
+            service._verified_address(dto)
+
+        assert "signature" in str(exc.value).lower()
+
+    def test_allows_a_pending_address_with_no_address_string(self) -> None:
+        """
+        Asynchronous creation is legitimate: ``creating`` with no address yet carries no
+        destination, so there is nothing to verify and nothing to misuse. This is why the
+        seam branches on the address STRING rather than on the server-controlled status.
+        """
+        service = self._make_service()
+
+        dto = self._dto("", None, "creating")
+
+        result = service._verified_address(dto)
+
+        assert result is not None
+        assert result.address == ""
+        # The status is surfaced so the caller knows to re-read.
+        assert result.status == "creating"

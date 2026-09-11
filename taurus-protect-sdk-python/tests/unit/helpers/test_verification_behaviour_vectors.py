@@ -12,6 +12,7 @@ it in all four suites.
 """
 
 import json
+from typing import Any
 from pathlib import Path
 
 import pytest
@@ -129,3 +130,122 @@ def test_memo_key(case):
         )
     else:
         raise AssertionError(f"unknown expect {case['expect']!r}")
+
+
+# ---------------------------------------------------------------------------------
+# rule_tier_candidates -- which rule tiers apply when the network is UNSIGNED
+# ---------------------------------------------------------------------------------
+#
+# Until 2026-09-10 this section and `legacy_hash` were consumed by the Go suite ALONE,
+# even though the file's `counts` block declares both and every loader asserts the counts.
+# Asserting a section's LENGTH proves the file is well formed; it does not prove the
+# behaviour is checked. That asymmetry is how Python came to ship the single-tier lookup
+# this section exists to forbid, while three SDKs had the candidate-set fix.
+
+
+def _rules_container_with(rules: list, family: str) -> Any:
+    """A container carrying only the rule tiers a vector describes."""
+    from taurus_protect.models.governance_rules import (
+        AddressWhitelistingRules,
+        ContractAddressWhitelistingRules,
+        DecodedRulesContainer,
+    )
+
+    if family == "address":
+        return DecodedRulesContainer(
+            address_whitelisting_rules=[
+                AddressWhitelistingRules(currency=r["blockchain"], network=r["network"])
+                for r in rules
+            ]
+        )
+    return DecodedRulesContainer(
+        contract_address_whitelisting_rules=[
+            ContractAddressWhitelistingRules(
+                blockchain=r["blockchain"], network=r["network"]
+            )
+            for r in rules
+        ]
+    )
+
+
+@pytest.mark.parametrize("case", VECTORS["rule_tier_candidates"], ids=lambda c: c["description"])
+def test_rule_tier_candidates_for_the_address_family(case: dict) -> None:
+    """Every tier an unsigned DTO network could have selected must be returned.
+
+    ``include_network_in_payload`` has no proto backing in any SDK, so when the signed
+    payload omits ``network`` there is no authenticated way to learn whether that was
+    legitimate. A single lookup on the DTO's value hands a response-controlling server the
+    choice of WHICH quorum the row must meet; the answer is to enforce every reachable
+    tier instead.
+    """
+    container = _rules_container_with(case["rules"], "address")
+
+    got = container.find_address_whitelisting_rule_candidates(case["blockchain"])
+
+    assert [(r.currency or "", r.network or "") for r in got] == [
+        (e["blockchain"], e["network"]) for e in case["expect_candidates"]
+    ], case["description"]
+
+
+@pytest.mark.parametrize("case", VECTORS["rule_tier_candidates"], ids=lambda c: c["description"])
+def test_rule_tier_candidates_for_the_contract_family(case: dict) -> None:
+    """The asset peer, driven by the same vectors.
+
+    Worth its own pass rather than trusting the address one: in THIS SDK the two families
+    name the chain field differently (``currency`` vs ``blockchain``), so a walk reading
+    one name treats every contract rule as a wildcard global default -- fail-OPEN, since
+    the global default is the broadest tier.
+    """
+    container = _rules_container_with(case["rules"], "contract")
+
+    got = container.find_contract_address_whitelisting_rule_candidates(case["blockchain"])
+
+    assert [(r.blockchain or "", r.network or "") for r in got] == [
+        (e["blockchain"], e["network"]) for e in case["expect_candidates"]
+    ], case["description"]
+
+
+# ---------------------------------------------------------------------------------
+# legacy_hash -- WHICH payload step 6 parses
+# ---------------------------------------------------------------------------------
+#
+# This section asserts the PARSED PAYLOAD, not a hash, which is why it lives here rather
+# than in `docs/test-vectors/crypto-test-vectors.json`: the legacy-strip injection moves no
+# hash at all, so a hash-value gate is structurally blind to it.
+
+
+@pytest.mark.parametrize(
+    "case", VECTORS["legacy_hash"], ids=lambda c: c["description"]
+)
+def test_legacy_hash_matches_the_payload_the_signature_covered(case: dict) -> None:
+    """Step 4 must carry forward the payload it matched, not the one the server delivered.
+
+    The three legacy strips are not injective, so a server can append a duplicate
+    ``,"label":"X"`` (or a ``contractType`` a row never had) immediately before the closing
+    brace: the strip recovers the genuinely signed bytes, every signature check passes, and
+    a step 6 that parses the DELIVERED text returns the appended value as *verified*.
+    """
+    from taurus_protect.crypto.hashing import calculate_hex_hash
+    from taurus_protect.helpers.whitelist_hash_helper import (
+        compute_legacy_payload_variants,
+    )
+
+    covered_hash = calculate_hex_hash(case["signed_payload"])
+
+    matched_payload = None
+    if calculate_hex_hash(case["delivered_payload"]) == covered_hash:
+        matched_payload = case["delivered_payload"]
+    else:
+        for variant in compute_legacy_payload_variants(case["delivered_payload"]):
+            if variant.hash == covered_hash:
+                matched_payload = variant.payload
+                break
+
+    if case["expect"] == "no_match":
+        assert matched_payload is None, (
+            f"expected no variant to be covered, but {matched_payload!r} matched"
+        )
+        return
+
+    assert matched_payload is not None, "expected a covered variant, found none"
+    assert matched_payload == case["expect_matched_payload"], case["description"]

@@ -50,7 +50,7 @@ type apiKeyCredentials struct {
 	apiSecret string
 }
 
-func (c apiKeyCredentials) apply(_ string, base *http.Client) (*http.Client, *crypto.TPV1Auth, error) {
+func (c apiKeyCredentials) apply(host string, base *http.Client) (*http.Client, *crypto.TPV1Auth, error) {
 	if c.apiKey == "" {
 		return nil, nil, errors.New("apiKey is required")
 	}
@@ -61,7 +61,17 @@ func (c apiKeyCredentials) apply(_ string, base *http.Client) (*http.Client, *cr
 	if err != nil {
 		return nil, nil, err
 	}
-	return newHTTPClient(auth, base), auth, nil
+	// The signature must not be minted for any origin but the configured one, so the
+	// transport needs to know it. This used to discard the host (`_ string`), which left
+	// the api-key client free to sign for whatever host a redirect named — the bearer half
+	// of this file has parsed and forwarded it for exactly that reason since 2026-09.
+	// An unparseable host fails closed rather than disabling the check silently.
+	parsed, err := url.Parse(host)
+	if err != nil || parsed.Host == "" {
+		return nil, nil, fmt.Errorf("cannot determine the API host from %q: api-key "+
+			"credentials require it so a request is never signed for another origin", host)
+	}
+	return newHTTPClient(auth, parsed.Host, base), auth, nil
 }
 
 type bearerCredentials struct {

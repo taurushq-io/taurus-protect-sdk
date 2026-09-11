@@ -1,6 +1,9 @@
 package model
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // WhitelistedAsset represents a whitelisted contract address (token/NFT).
 // In the API, these are referred to as "whitelisted contracts" but the SDK
@@ -235,4 +238,103 @@ type ListWhitelistedAssetsForApprovalOptions struct {
 	Offset int64
 	// IDs filters by specific whitelisted asset IDs.
 	IDs []string
+}
+
+// WhitelistedAssetResult contains the result of a paginated whitelisted-asset list query.
+//
+// The asset list used to return a bare (assets, pagination, error) tuple — the outlier among the
+// ~50 *Result structs in this package, and the reason the asset side had nowhere to hang the
+// approval pin. It also has no ExcludedUnverified field yet because this list is still STRICT
+// (one unverifiable row fails the page), unlike its address peer. Making it lenient is a separate
+// change: it needs a logger on WhitelistedAssetService, which its constructor does not take.
+type WhitelistedAssetResult struct {
+	// Assets is the list of verified whitelisted assets in the current page.
+	Assets []*WhitelistedAsset
+	// Pagination carries the page window.
+	Pagination *Pagination
+}
+
+// WhitelistedAssetApproval is the asset peer of WhitelistedAddressApproval: the rows an approver
+// reviewed, with the metadata hash each carried at review time. See that type for why the
+// approval path needs a content pin rather than bare ids, and why `pinned` is unexported.
+type WhitelistedAssetApproval struct {
+	// pinned maps row id -> the metadata hash that row carried when it was reviewed.
+	pinned map[string]string
+}
+
+// IDs returns the pinned row ids in no particular order.
+func (a *WhitelistedAssetApproval) IDs() []string {
+	if a == nil {
+		return nil
+	}
+	ids := make([]string, 0, len(a.pinned))
+	for id := range a.pinned {
+		ids = append(ids, id)
+	}
+	return ids
+}
+
+// PinnedHash returns the reviewed metadata hash for id, and whether it was pinned at all.
+func (a *WhitelistedAssetApproval) PinnedHash(id string) (string, bool) {
+	if a == nil {
+		return "", false
+	}
+	hash, ok := a.pinned[id]
+	return hash, ok
+}
+
+// IsEmpty reports whether this selection pins nothing — true for a nil or hand-built value.
+func (a *WhitelistedAssetApproval) IsEmpty() bool {
+	return a == nil || len(a.pinned) == 0
+}
+
+// Select pins the given ids from this verified read. An id this read did not return is an
+// error, not a silent omission — see WhitelistedAddressResult.Select.
+func (r *WhitelistedAssetResult) Select(ids ...string) (*WhitelistedAssetApproval, error) {
+	if r == nil {
+		return nil, fmt.Errorf("cannot select from a nil result")
+	}
+	if len(ids) == 0 {
+		return nil, fmt.Errorf("cannot select an empty set of ids")
+	}
+
+	byID := make(map[string]*WhitelistedAsset, len(r.Assets))
+	for _, asset := range r.Assets {
+		if asset != nil {
+			byID[asset.ID] = asset
+		}
+	}
+
+	pinned := make(map[string]string, len(ids))
+	for _, id := range ids {
+		asset, ok := byID[id]
+		if !ok {
+			return nil, fmt.Errorf("whitelisted asset %s is not in this verified read", id)
+		}
+		if asset.Metadata == nil || asset.Metadata.Hash == "" {
+			return nil, &IntegrityError{
+				Message: fmt.Sprintf("whitelisted asset %s carries no metadata hash, so there is "+
+					"nothing to pin the approval to", id),
+			}
+		}
+		pinned[id] = asset.Metadata.Hash
+	}
+	return &WhitelistedAssetApproval{pinned: pinned}, nil
+}
+
+// SelectAll pins every row this verified read returned.
+func (r *WhitelistedAssetResult) SelectAll() (*WhitelistedAssetApproval, error) {
+	if r == nil {
+		return nil, fmt.Errorf("cannot select from a nil result")
+	}
+	ids := make([]string, 0, len(r.Assets))
+	for _, asset := range r.Assets {
+		if asset != nil {
+			ids = append(ids, asset.ID)
+		}
+	}
+	if len(ids) == 0 {
+		return nil, fmt.Errorf("this read returned no verified assets to approve")
+	}
+	return r.Select(ids...)
 }

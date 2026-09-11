@@ -22,12 +22,14 @@ import type {
 } from "../internal/openapi";
 import { signData } from "../crypto";
 import { IntegrityError, NotFoundError, ValidationError } from "../errors";
+import { constantTimeCompare } from "../helpers/constant-time";
 import {
   WhitelistedAssetVerifier,
   type WhitelistedAssetVerifierConfig,
   type RulesContainerDecoder,
   type UserSignaturesDecoder,
 } from "../helpers/whitelisted-asset-verifier";
+import { WhitelistedAssetApproval } from "../models/whitelisted-asset";
 import type {
   WhitelistedAsset,
   SignedWhitelistedAssetEnvelope,
@@ -98,6 +100,78 @@ export interface ListWhitelistedAssetsResult {
    * completeness must check this rather than inferring from `items.length`.
    */
   excludedUnverified: ExcludedWhitelistedAsset[];
+  /**
+   * Pins the named rows for {@link WhitelistedAssetService.approve}, recording the
+   * metadata hash each one carried on THIS read. See the address side for the
+   * substitution this defeats.
+   *
+   * @param ids - the row ids to pin
+   * @throws {@link ValidationError} If `ids` is empty or names a row not in this result
+   * @throws {@link IntegrityError} If a named row carries no metadata hash to pin to
+   */
+  select(...ids: number[]): WhitelistedAssetApproval;
+  /**
+   * Pins every row this read returned — what SURVIVED verification, not what the server
+   * sent.
+   *
+   * @throws {@link IntegrityError} If this read returned no verified rows
+   */
+  selectAll(): WhitelistedAssetApproval;
+}
+
+/**
+ * Assembles a list result and attaches the two selection methods over the hashes the
+ * read captured. The asset peer of `buildAddressListResult`; both `list` and
+ * `listForApproval` go through `verifyPage`, which is the single caller here.
+ *
+ * @param items - the rows that survived verification
+ * @param pagination - the page window, already reduced by the exclusions
+ * @param excludedUnverified - the rows withheld, with reasons
+ * @param pinnedHashes - row id -> the metadata hash that row carried on this read
+ */
+function buildAssetListResult(
+  items: WhitelistedAsset[],
+  pagination: Pagination | undefined,
+  excludedUnverified: ExcludedWhitelistedAsset[],
+  pinnedHashes: ReadonlyMap<number, string>
+): ListWhitelistedAssetsResult {
+  const select = (...ids: number[]): WhitelistedAssetApproval => {
+    if (ids.length === 0) {
+      throw new ValidationError("cannot select an empty set of ids");
+    }
+    const pinned = new Map<number, string>();
+    for (const id of ids) {
+      const hash = pinnedHashes.get(id);
+      if (hash === undefined) {
+        throw new ValidationError(
+          `whitelisted asset ${id} is not in this verified read: it was either ` +
+            `excluded as unverifiable or not on this page`
+        );
+      }
+      if (!hash) {
+        throw new IntegrityError(
+          `whitelisted asset ${id} carries no metadata hash, so there is nothing to ` +
+            `pin the approval to`
+        );
+      }
+      pinned.set(id, hash);
+    }
+    return new WhitelistedAssetApproval(pinned);
+  };
+
+  return {
+    items,
+    pagination,
+    excludedUnverified,
+    select,
+    selectAll: (): WhitelistedAssetApproval => {
+      const ids = [...pinnedHashes.keys()];
+      if (ids.length === 0) {
+        throw new IntegrityError("this read returned no verified assets to approve");
+      }
+      return select(...ids);
+    },
+  };
 }
 
 /**
@@ -313,31 +387,39 @@ export class WhitelistedAssetService extends BaseService {
   }
 
   /**
-   * Signs and submits an approval for the given whitelisted assets, all-or-nothing.
+   * Signs and submits an approval for the whitelisted assets an approver REVIEWED,
+   * all-or-nothing.
    *
-   * Each asset is re-read through the verified path and the hashes THOSE rows carry are
-   * what gets signed, so the approver's signature covers metadata this SDK checked rather
-   * than whatever a caller was handed. `ContractWhitelistingService.approve` takes an
-   * opaque signature over hashes nothing verified.
+   * The selection comes from a preceding verified read — `result.select(...)` or
+   * `result.selectAll()` on {@link list} / {@link listForApproval} — so it carries the
+   * metadata hash each row had at review time. Each asset is then re-read through the
+   * verified path, every re-read hash must equal its pin, and only then is one signature
+   * computed over the whole batch. `ContractWhitelistingService.approve` takes an opaque
+   * signature over hashes nothing verified.
    *
-   * Any asset that is missing or fails verification aborts the whole call and nothing is
-   * signed: one signature covers every hash in the batch, so a partial approval would mean
-   * the caller believes they approved more than they did.
+   * Any asset that is missing, fails verification, or has moved since it was reviewed
+   * aborts the whole call and nothing is signed: one signature covers every hash in the
+   * batch, so a partial approval would mean the caller believes they approved more than
+   * they did. See the address side for why the pin is not optional.
    *
-   * @param ids - The whitelisted asset IDs to approve
+   * @param selection - rows pinned by a verified read
    * @param privateKey - The approver's P-256 private key
    * @param comment - The approval comment
    * @throws {@link ValidationError} If parameters are invalid
-   * @throws {@link IntegrityError} If any asset is missing or has no metadata hash
+   * @throws {@link IntegrityError} If any asset is missing, has no metadata hash, or has
+   *   changed since it was reviewed
    * @throws {@link APIError} If the API request fails
    */
   async approve(
-    ids: number[],
+    selection: WhitelistedAssetApproval,
     privateKey: KeyObject,
     comment: string
   ): Promise<void> {
-    if (!ids || ids.length === 0) {
-      throw new ValidationError("ids cannot be empty");
+    if (!selection || selection.isEmpty()) {
+      throw new ValidationError(
+        "selection cannot be empty: pin the rows with result.select(...ids) or " +
+          "result.selectAll() from a verified read"
+      );
     }
     if (!privateKey) {
       throw new ValidationError("privateKey is required");
@@ -345,6 +427,7 @@ export class WhitelistedAssetService extends BaseService {
     if (!comment || comment.trim() === "") {
       throw new ValidationError("comment is required");
     }
+    const ids = selection.ids();
     for (const id of ids) {
       if (!Number.isInteger(id) || id <= 0) {
         throw new ValidationError(`whitelisted asset ID ${id} must be a positive integer`);
@@ -359,24 +442,45 @@ export class WhitelistedAssetService extends BaseService {
     // endpoint verifies every row and fetches the rules container once per call, so a
     // 50-id approval costs one round trip instead of fifty. includeForApproval is
     // required: the rows being approved are pending, so the default list omits them.
-    const verifiedHashes = await this.hashesToSignByID(sortedIds);
+    const hashesByID = await this.hashesToSignByID(sortedIds);
 
     const hashes: string[] = [];
     for (const id of sortedIds) {
-      const verifiedHash = verifiedHashes.get(id);
-      if (verifiedHash === undefined) {
+      // Named for what it IS: the row's CURRENT metadata.hash, which is what validatord
+      // rebuilds and verifies the submitted signature against. Deliberately not
+      // `verifiedHash` — this SDK was the one that signed the verifier's legacy variant,
+      // and the collector was renamed to `hashesToSignByID` so the old name could not come
+      // back by muscle memory. A local called `verifiedHash` puts it straight back.
+      const currentHash = hashesByID.get(id);
+      if (currentHash === undefined) {
         // A page that silently omits a row must not become an approval of fewer rows
         // than the caller asked for.
         throw new IntegrityError(
           `refusing to sign: asset ${id} was not returned by the verified read`
         );
       }
-      if (!verifiedHash) {
+      if (!currentHash) {
         throw new IntegrityError(
           `refusing to sign: asset ${id} has no metadata hash`
         );
       }
-      hashes.push(verifiedHash);
+
+      // The pin, compared in constant time as all hash material in this SDK is.
+      const pinned = selection.pinnedHash(id);
+      if (pinned === undefined) {
+        throw new IntegrityError(
+          `refusing to sign: asset ${id} is not in the reviewed selection`
+        );
+      }
+      if (!constantTimeCompare(pinned, currentHash)) {
+        throw new IntegrityError(
+          `refusing to sign: whitelisted asset ${id} changed since it was reviewed: ` +
+            `reviewed hash ${pinned}, re-read hash ${currentHash}. Re-read, re-review ` +
+            `and re-approve`
+        );
+      }
+
+      hashes.push(currentHash);
     }
 
     const signature = signData(
@@ -454,12 +558,16 @@ export class WhitelistedAssetService extends BaseService {
     const rows = response.result ?? [];
     const items: WhitelistedAsset[] = [];
     const excludedUnverified: ExcludedWhitelistedAsset[] = [];
+    // The content pin, captured while the DTO is still in hand: WhitelistedAsset carries
+    // no metadata, so the hash an approver would sign is not recoverable from `items`.
+    const pinnedHashes = new Map<number, string>();
 
     for (const dto of rows) {
       const rowId = dto.id ? parseInt(dto.id, 10) : 0;
       try {
         const result = this.verifyEnvelope(this.mapDtoToEnvelope(dto, rowId));
         items.push(result.verifiedAsset);
+        pinnedHashes.set(rowId, dto.metadata?.hash ?? "");
       } catch (error: unknown) {
         rethrowIfNotRowLevel(error);
         excludedUnverified.push({
@@ -494,7 +602,7 @@ export class WhitelistedAssetService extends BaseService {
       ? { totalItems, offset, limit }
       : undefined;
 
-    return { items, pagination, excludedUnverified };
+    return buildAssetListResult(items, pagination, excludedUnverified, pinnedHashes);
   }
 
   /**

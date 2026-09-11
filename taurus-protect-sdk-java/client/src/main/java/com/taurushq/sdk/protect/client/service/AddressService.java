@@ -8,6 +8,7 @@ import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
 import com.taurushq.sdk.protect.client.model.Address;
 import com.taurushq.sdk.protect.client.model.ApiException;
 import com.taurushq.sdk.protect.client.model.CreateAddressRequest;
+import com.taurushq.sdk.protect.client.model.IntegrityException;
 import com.taurushq.sdk.protect.client.model.rulescontainer.DecodedRulesContainer;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import com.taurushq.sdk.protect.openapi.api.AddressesApi;
@@ -98,6 +99,156 @@ public class AddressService {
 
 
     /**
+     * Supplies the SuperAdmin-verified rules container on demand.
+     * <p>
+     * The seam below takes a source rather than a container so that it can decide
+     * whether a container is needed at all: an in-flight asynchronous creation has no
+     * address string to check, and must not be made to depend on a governance fetch.
+     * It is also what lets a unit test drive the seam with a hand-built container —
+     * {@link RulesContainerCache} can only be fed through a live {@code ApiClient}
+     * (test scope here is JUnit only: no Mockito, no HTTP stub).
+     */
+    @FunctionalInterface
+    interface RulesContainerSource {
+
+        /**
+         * Returns the verified rules container.
+         *
+         * @return the decoded, SuperAdmin-verified rules container
+         * @throws ApiException if fetching the governance rules fails
+         */
+        DecodedRulesContainer get() throws ApiException;
+    }
+
+    /**
+     * The ONE verification seam every {@link Address} this SDK returns passes through.
+     * <p>
+     * The threat model is a response-controlling API server. An {@code Address} carries
+     * the deposit destination a caller is about to publish or send funds to, and the
+     * only thing binding that string to Taurus Protect is the HSM signature over it. So
+     * the invariant is: <b>never hand back a non-empty address string that has not been
+     * verified.</b> Three arms, in this order:
+     * <ol>
+     *   <li><b>No address string</b> (asynchronous creation, status {@code creating}) —
+     *       return it. There is no destination to misuse and nothing has been signed
+     *       yet, so no container is fetched.</li>
+     *   <li><b>Address string but no signature</b> — refuse. This is the arm that was
+     *       missing: {@code createAddress} returned the mapped DTO directly, so a
+     *       hostile server could answer a creation with an attacker-chosen deposit
+     *       address and no signature at all, and the caller received it in exactly the
+     *       same {@code Address} type that {@code getAddress} verifies. Handing the
+     *       string back "because there was nothing to check" is the bug.</li>
+     *   <li><b>Address string and a signature</b> — verify it against the HSMSLOT key
+     *       from the verified rules container; a failure is an
+     *       {@link IntegrityException}.</li>
+     * </ol>
+     * A seam rather than a third copy of the verify block is the point: this defect
+     * exists because {@code getAddress} and {@code getAddresses} each grew their own
+     * inline verification and {@code createAddress} inherited neither.
+     * {@code AssetService.getAssetAddresses} — the only other reader of this entity —
+     * routes through here too.
+     *
+     * @param address         the mapped address, may be null (an empty API result)
+     * @param containerSource supplies the rules container if a signature must be checked
+     * @return the same address, once it satisfies the invariant
+     * @throws IntegrityException if the address string cannot be shown to be authentic
+     * @throws ApiException       if the rules container could not be fetched
+     */
+    static Address verifiedAddress(final Address address,
+                                   final RulesContainerSource containerSource) throws ApiException {
+
+        if (address == null || !hasAddressString(address)) {
+            // Arm 1: nothing to verify, and deliberately no container fetch.
+            return address;
+        }
+
+        if (Strings.isNullOrEmpty(address.getSignature())) {
+            // Arm 2: refuse, and do it before touching the network — an unsigned address
+            // is not a transient condition to retry, it is a response we will not trust.
+            // The status is named because it is the only way for the caller to tell an
+            // in-flight row (which would have no address string) from a stripped
+            // signature, and the message points at the verifying getter so the caller
+            // does not "work around" this by keeping the value.
+            throw new IntegrityException("Address " + address.getId() + " (status "
+                    + describeStatus(address) + ") carries a blockchain address but no HSM"
+                    + " signature; refusing to return an unverified address. Re-read it with"
+                    + " getAddress(" + address.getId() + ") once the status advances past"
+                    + " creation.");
+        }
+
+        // Arm 3: the real check.
+        AddressSignatureVerifier.verifyAddressSignature(address, containerSource.get());
+        return address;
+    }
+
+    /**
+     * Applies {@link #verifiedAddress} to a page of addresses, fail-fast.
+     * <p>
+     * One unverifiable address is not a row to skip past when the caller is choosing
+     * where funds go, so — unlike the whitelist list paths, which exclude and report —
+     * this aborts the call.
+     * <p>
+     * The container is fetched at most once for the whole page: per-row fetching would
+     * repeat the round trip on a cold cache, and a TTL expiry mid-page could judge two
+     * rows of one response against two different rulesets. A page in which no row has
+     * an address string yet fetches nothing.
+     *
+     * @param addresses       the mapped addresses, may be null or empty
+     * @param containerSource supplies the rules container if a signature must be checked
+     * @return the same list, once every element satisfies the invariant
+     * @throws IntegrityException if any address string cannot be shown to be authentic
+     * @throws ApiException       if the rules container could not be fetched
+     */
+    static List<Address> verifiedAddresses(final List<Address> addresses,
+                                           final RulesContainerSource containerSource) throws ApiException {
+
+        if (addresses == null || addresses.isEmpty()) {
+            return addresses;
+        }
+
+        final DecodedRulesContainer container =
+                anyAddressToVerify(addresses) ? containerSource.get() : null;
+
+        for (Address address : addresses) {
+            verifiedAddress(address, () -> container);
+        }
+        return addresses;
+    }
+
+    /**
+     * Reports whether this row carries a blockchain address string at all.
+     * <p>
+     * An empty string is the asynchronous-creation case, not a tampered row: there is
+     * no destination a caller could act on.
+     */
+    private static boolean hasAddressString(final Address address) {
+        return !Strings.isNullOrEmpty(address.getAddress());
+    }
+
+    /**
+     * Reports whether any row in the page needs the rules container.
+     * <p>
+     * Shares {@link #hasAddressString} with the seam so the two cannot disagree about
+     * which rows require a signature check.
+     */
+    private static boolean anyAddressToVerify(final List<Address> addresses) {
+        for (Address address : addresses) {
+            if (address != null && hasAddressString(address)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Renders the server-reported status for an error message, never null or empty.
+     */
+    private static String describeStatus(final Address address) {
+        return Strings.isNullOrEmpty(address.getStatus()) ? "unreported" : address.getStatus();
+    }
+
+
+    /**
      * Creates an address using a request object.
      * <p>
      * This is the recommended method for creating addresses as it provides
@@ -151,7 +302,13 @@ public class AddressService {
         request.setCustomerId(customerId);
         try {
             TgvalidatordCreateAddressReply reply = addressesApi.walletServiceCreateAddress(request);
-            return AddressMapper.INSTANCE.fromDTO(reply.getResult());
+
+            // Through the same seam as the read paths. A creation reply carries a
+            // deposit address in the very type getAddress verifies, so returning the
+            // mapper output raw here made the mandatory verification on the getters
+            // avoidable: ask the server to create an address and it can name one.
+            return verifiedAddress(AddressMapper.INSTANCE.fromDTO(reply.getResult()),
+                    rulesContainerCache::getDecodedRulesContainer);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
@@ -171,13 +328,10 @@ public class AddressService {
 
         try {
             TgvalidatordGetAddressReply reply = addressesApi.walletServiceGetAddress(String.valueOf(id));
-            Address address = AddressMapper.INSTANCE.fromDTO(reply.getResult());
 
-            // Mandatory signature verification
-            DecodedRulesContainer rulesContainer = rulesContainerCache.getDecodedRulesContainer();
-            AddressSignatureVerifier.verifyAddressSignature(address, rulesContainer);
-
-            return address;
+            // Mandatory signature verification, through the shared seam
+            return verifiedAddress(AddressMapper.INSTANCE.fromDTO(reply.getResult()),
+                    rulesContainerCache::getDecodedRulesContainer);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
@@ -241,20 +395,13 @@ public class AddressService {
                 return Collections.emptyList();
             }
 
-            // Fetch rules container once for all addresses
-            DecodedRulesContainer rulesContainer = rulesContainerCache.getDecodedRulesContainer();
-
-            // Map and verify each address
             List<Address> addresses = result.stream()
                     .map(AddressMapper.INSTANCE::fromDTO)
                     .collect(Collectors.toList());
 
-            // Mandatory signature verification for all addresses
-            for (Address address : addresses) {
-                AddressSignatureVerifier.verifyAddressSignature(address, rulesContainer);
-            }
-
-            return addresses;
+            // Mandatory signature verification for all addresses, through the shared
+            // seam (which fetches the rules container once for the whole page)
+            return verifiedAddresses(addresses, rulesContainerCache::getDecodedRulesContainer);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }

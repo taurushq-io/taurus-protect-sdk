@@ -4,6 +4,8 @@ import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.taurushq.sdk.protect.client.helper.AssetHashHelper;
+import com.taurushq.sdk.protect.client.helper.LegacyPayloadVariant;
+import com.taurushq.sdk.protect.client.helper.ResolvedRuleKey;
 import com.taurushq.sdk.protect.client.helper.SignatureVerifier;
 import com.taurushq.sdk.protect.client.helper.WhitelistHashHelper;
 import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
@@ -17,6 +19,7 @@ import com.taurushq.sdk.protect.client.model.WhitelistException;
 import com.taurushq.sdk.protect.client.model.WhitelistSignature;
 import com.taurushq.sdk.protect.client.model.WhitelistUserSignature;
 import com.taurushq.sdk.protect.client.model.WhitelistedAsset;
+import com.taurushq.sdk.protect.client.model.WhitelistedAssetApproval;
 import com.taurushq.sdk.protect.client.model.WhitelistedAssetResult;
 import com.taurushq.sdk.protect.client.model.rulescontainer.ContractAddressWhitelistingRules;
 import com.taurushq.sdk.protect.client.model.rulescontainer.DecodedRulesContainer;
@@ -34,6 +37,7 @@ import com.taurushq.sdk.protect.openapi.model.TgvalidatordSignedWhitelistedContr
 
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -43,12 +47,10 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -68,14 +70,6 @@ public class WhitelistedAssetService {
 
     private static final Logger LOGGER = Logger.getLogger(WhitelistedAssetService.class.getName());
     private static final Gson GSON = new Gson();
-    private static final Pattern IS_NFT_TRAILING_PATTERN =
-            Pattern.compile(",\"isNFT\":(true|false)");
-    private static final Pattern IS_NFT_LEADING_PATTERN =
-            Pattern.compile("\"isNFT\":(true|false),");
-    private static final Pattern KIND_TYPE_TRAILING_PATTERN =
-            Pattern.compile(",\"kindType\":\"[^\"]*\"");
-    private static final Pattern KIND_TYPE_LEADING_PATTERN =
-            Pattern.compile("\"kindType\":\"[^\"]*\",");
 
     private final ContractWhitelistingApi contractWhitelistingApi;
     private final ApiExceptionMapper apiExceptionMapper;
@@ -252,12 +246,12 @@ public class WhitelistedAssetService {
      * @throws ApiException       if the API call fails
      * @throws WhitelistException if verification fails
      */
-    java.util.Map<String, SignedWhitelistedAssetEnvelope> verifiedAssetsById(final List<String> ids)
+    Map<String, SignedWhitelistedAssetEnvelope> verifiedAssetsById(final List<String> ids)
             throws ApiException, WhitelistException {
         WhitelistedAssetResult result = getWhitelistedAssets(
                 ids.size(), 0, null, null, null, Boolean.TRUE, null, ids);
 
-        java.util.Map<String, SignedWhitelistedAssetEnvelope> byId = new java.util.HashMap<>();
+        Map<String, SignedWhitelistedAssetEnvelope> byId = new HashMap<>();
         for (SignedWhitelistedAssetEnvelope envelope : result.getAssets()) {
             // The id lives on the ENVELOPE: getWhitelistedAsset() is gated on
             // verification having run, so reading through it here would couple the key
@@ -301,36 +295,51 @@ public class WhitelistedAssetService {
     }
 
     /**
-     * Signs and submits an approval for the given whitelisted assets, all-or-nothing.
+     * Signs and submits an approval for the reviewed whitelisted assets, all-or-nothing.
      * <p>
-     * Each asset is re-read through the verified path and the hashes THOSE rows carry are
-     * what gets signed, so the approver's signature covers metadata this SDK checked rather
-     * than whatever a caller was handed.
+     * {@code selection} comes from a verified read —
+     * {@link WhitelistedAssetResult#select(List)} or
+     * {@link WhitelistedAssetResult#selectAll()} — and carries the metadata hash each row
+     * had AT REVIEW TIME. Each asset is then re-read through the verified path and its hash
+     * must still equal the pin, so the approver's signature covers the content the approver
+     * actually reviewed and not merely "whatever the server returns under these ids".
+     * Without the pin a response-controlling server could substitute a row whose existing
+     * signatures already satisfy the container it presents and harvest a genuine approver
+     * signature over content the approver never saw — the same attack
+     * {@code GovernanceRuleService.approveRulesProposal} pins against with its mandatory
+     * {@code expectedContainerHash}. An empty selection is therefore an error, never
+     * "approve nothing".
+     * <p>
      * {@link ContractWhitelistingService#approveWhitelistedContracts} takes an opaque
      * signature over hashes nothing verified.
      * <p>
-     * Any asset that is missing or fails verification aborts the whole call and nothing is
-     * signed: one signature covers every hash in the batch, so a partial approval would mean
-     * the caller believes they approved more than they did.
+     * Any asset that is missing, fails verification, or whose hash no longer matches the
+     * pin aborts the whole call and nothing is signed: one signature covers every hash in
+     * the batch, so a partial approval would mean the caller believes they approved more
+     * than they did.
      *
-     * @param ids        the whitelisted asset IDs to approve
+     * @param selection  the rows pinned by a preceding verified read
      * @param privateKey the approver's P-256 private key
      * @param comment    the approval comment
      * @throws ApiException       if the API call fails
-     * @throws WhitelistException if any asset is missing or fails verification
+     * @throws WhitelistException if any asset is missing, fails verification, or changed
+     *                            since it was reviewed
      */
-    public void approveWhitelistedAssets(final List<Long> ids, final PrivateKey privateKey,
+    public void approveWhitelistedAssets(final WhitelistedAssetApproval selection,
+                                         final PrivateKey privateKey,
                                          final String comment) throws ApiException, WhitelistException {
-        checkNotNull(ids, "ids cannot be null");
-        checkArgument(!ids.isEmpty(), "ids cannot be empty");
+        checkNotNull(selection, "selection cannot be null: pin the rows with "
+                + "result.select(ids) or result.selectAll() from a verified read");
+        checkArgument(!selection.isEmpty(), "selection cannot be empty: pin the rows with "
+                + "result.select(ids) or result.selectAll() from a verified read");
         checkNotNull(privateKey, "privateKey cannot be null");
         checkArgument(!Strings.isNullOrEmpty(comment), "comment is required");
-        ids.forEach(id -> checkArgument(id != null && id > 0,
+        selection.getIds().forEach(id -> checkArgument(id != null && id > 0,
                 "whitelisted asset id cannot be zero or negative"));
 
         // Sorted on a COPY, as the request-approval path does, so the signed order is
-        // independent of the order the caller passed and their list is not mutated.
-        List<Long> sorted = new ArrayList<>(ids);
+        // independent of the order the caller selected in.
+        List<Long> sorted = new ArrayList<>(selection.getIds());
         Collections.sort(sorted);
 
         // ONE id-filtered page through the verifying list path, not one GET per id. The
@@ -339,24 +348,12 @@ public class WhitelistedAssetService {
         // of each. includeForApproval is required: the rows being approved are pending,
         // so the default list does not return them.
         List<String> idStrings = sorted.stream().map(String::valueOf).collect(Collectors.toList());
-        java.util.Map<String, SignedWhitelistedAssetEnvelope> byId =
+        Map<String, SignedWhitelistedAssetEnvelope> byId =
                 verifiedAssetsById(idStrings);
 
         List<String> hashes = new ArrayList<>(sorted.size());
-        for (String id : idStrings) {
-            SignedWhitelistedAssetEnvelope envelope = byId.get(id);
-            if (envelope == null) {
-                // A page that silently omits a row must not become an approval of fewer
-                // rows than the caller asked for.
-                throw new IntegrityException(String.format(
-                        "refusing to sign: asset %s was not returned by the verified read", id));
-            }
-            if (envelope.getMetadata() == null
-                    || Strings.isNullOrEmpty(envelope.getMetadata().getHash())) {
-                throw new IntegrityException(String.format(
-                        "refusing to sign: asset %s has no metadata hash", id));
-            }
-            hashes.add(envelope.getMetadata().getHash());
+        for (Long id : sorted) {
+            hashes.add(pinnedHashOf(selection, byId, id));
         }
 
         String toSign = GSON.toJson(hashes);
@@ -381,6 +378,55 @@ public class WhitelistedAssetService {
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
+    }
+
+    /**
+     * Returns the hash to sign for one row, after proving the re-read row is the row that
+     * was reviewed. The asset peer of the address service's method of the same name.
+     *
+     * <p>The value signed is the row's CURRENT {@code metadata.hash}, never the legacy
+     * variant step 4 matched: validatord rebuilds the hash array itself from the current
+     * schema and verifies the submitted signature against those bytes.
+     *
+     * @param selection the reviewed pin
+     * @param byId      the verified re-read, keyed by id string
+     * @param id        the row id
+     * @return the current metadata hash of a row that matches its pin
+     * @throws IntegrityException if the row is absent, has no hash, was not reviewed, or
+     *                            changed since review
+     */
+    private static String pinnedHashOf(final WhitelistedAssetApproval selection,
+                                       final Map<String, SignedWhitelistedAssetEnvelope> byId,
+                                       final long id) {
+        SignedWhitelistedAssetEnvelope envelope = byId.get(String.valueOf(id));
+        if (envelope == null) {
+            // A page that silently omits a row must not become an approval of fewer
+            // rows than the caller asked for.
+            throw new IntegrityException(String.format(
+                    "refusing to sign: asset %d was not returned by the verified read", id));
+        }
+        if (envelope.getMetadata() == null
+                || Strings.isNullOrEmpty(envelope.getMetadata().getHash())) {
+            throw new IntegrityException(String.format(
+                    "refusing to sign: asset %d has no metadata hash", id));
+        }
+
+        String pinnedHash = selection.pinnedHash(id);
+        if (Strings.isNullOrEmpty(pinnedHash)) {
+            throw new IntegrityException(String.format(
+                    "refusing to sign: asset %d is not in the reviewed selection", id));
+        }
+
+        String currentHash = envelope.getMetadata().getHash();
+        // Constant-time, matching how approveRulesProposal compares its container pin.
+        if (!MessageDigest.isEqual(pinnedHash.getBytes(StandardCharsets.US_ASCII),
+                currentHash.getBytes(StandardCharsets.US_ASCII))) {
+            throw new IntegrityException(String.format(
+                    "refusing to sign: whitelisted asset %d changed since it was reviewed: "
+                            + "reviewed hash %s, re-read hash %s. Re-read, re-review and "
+                            + "re-approve", id, pinnedHash, currentHash));
+        }
+        return currentHash;
     }
 
     /**
@@ -455,16 +501,17 @@ public class WhitelistedAssetService {
         // Step 3: Decode rulesContainer
         DecodedRulesContainer rulesContainer = decodeRulesContainer(envelope);
 
-        // Step 4: Verify metadata.hash is in signed hashes list
-        String verifiedHash = verifyHashInSignedHashes(envelope);
+        // Step 4: Verify metadata.hash is in signed hashes list, and carry forward the
+        // payload the matched hash covers.
+        LegacyPayloadVariant matched = verifyHashInSignedHashes(envelope);
 
         // Step 5: Verify whitelist signatures are valid per governance rules
-        verifyWhitelistSignatures(envelope, rulesContainer, verifiedHash);
+        verifyWhitelistSignatures(envelope, rulesContainer, matched.getHash());
 
-        // Step 6: the envelope DERIVES the asset from its own signed payloadAsString.
-        // It used to be parsed here and handed to a public setter, which meant the
-        // "verified" marker could be flipped with an asset the caller chose.
-        envelope.markVerified(rulesContainer);
+        // Step 6: the envelope DERIVES the asset from the payload the matched signature
+        // COVERED. It used to be parsed here and handed to a public setter, which meant
+        // the "verified" marker could be flipped with an asset the caller chose.
+        envelope.markVerified(rulesContainer, matched.getPayload());
     }
 
     /**
@@ -551,24 +598,37 @@ public class WhitelistedAssetService {
      * Verifies that the metadata hash is present in at least one signature's hashes list.
      * For backward compatibility, also tries alternative hashes for assets signed
      * before certain fields were added to the schema.
+     *
+     * <p>Returns BOTH the hash that was found (which may be a legacy hash) and the payload
+     * that hash covers, so step 6 parses the bytes a signature actually covered rather than
+     * the delivered text. See {@link LegacyPayloadVariant}: the strips are not injective,
+     * so a server can append what they remove. No asset identity field is injectable
+     * through the CURRENT asset strips, but the payload is carried anyway so the asset flow
+     * cannot drift from the address flow and a future schema change cannot silently reopen
+     * it here.
+     *
+     * <p>The legacy strips are the ASSET ones ({@code isNFT}, {@code kindType}) — a
+     * different function from the address ones, deliberately.
      */
-    private String verifyHashInSignedHashes(SignedWhitelistedAssetEnvelope envelope)
+    private LegacyPayloadVariant verifyHashInSignedHashes(SignedWhitelistedAssetEnvelope envelope)
             throws WhitelistException {
         String metadataHash = envelope.getMetadata().getHash();
+        String payloadAsString = envelope.getMetadata().getPayloadAsString();
         List<WhitelistSignature> signatures = envelope.getSignedAsset().getSignatures();
 
         // First, try the provided hash directly
         if (SignatureVerifier.verifyHashCoverage(metadataHash, signatures)) {
-            return metadataHash;
+            return new LegacyPayloadVariant(metadataHash, payloadAsString);
         }
 
         // If not found, try alternative hashes for backward compatibility
         // (handles assets signed before schema changes)
-        for (String legacyHash : computeLegacyHashes(envelope.getMetadata().getPayloadAsString())) {
-            if (SignatureVerifier.verifyHashCoverage(legacyHash, signatures)) {
+        for (LegacyPayloadVariant variant
+                : AssetHashHelper.computeAssetLegacyPayloadVariants(payloadAsString)) {
+            if (SignatureVerifier.verifyHashCoverage(variant.getHash(), signatures)) {
                 // Returned rather than written back onto the caller's envelope:
                 // verification must not mutate its input.
-                return legacyHash;
+                return variant;
             }
         }
 
@@ -576,52 +636,6 @@ public class WhitelistedAssetService {
             LOGGER.warning("Metadata hash not found in any signature's hashes list");
         }
         throw new IntegrityException("metadata hash not found in any signature's hashes list");
-    }
-
-    /**
-     * Computes legacy hashes by applying transformation combinations to handle schema evolution.
-     * Returns a list of possible legacy hashes to try.
-     *
-     * <p>Strategies cover schema evolution scenarios for contract addresses:
-     * <ul>
-     *   <li>Strategy 1: Remove optional fields that may have been added after signing</li>
-     * </ul>
-     *
-     * @param payloadAsString the current payload string
-     * @return list of legacy hashes to try (may be empty if no transformations apply)
-     */
-    private List<String> computeLegacyHashes(String payloadAsString) {
-        if (payloadAsString == null) {
-            return Collections.emptyList();
-        }
-
-        Set<String> uniqueHashes = new LinkedHashSet<>();
-
-        // Strategy 1: Remove optional fields that might not have existed when signed
-        // E.g., remove "isNFT" field if it was added later
-        String withoutIsNFT = IS_NFT_TRAILING_PATTERN.matcher(payloadAsString).replaceAll("");
-        withoutIsNFT = IS_NFT_LEADING_PATTERN.matcher(withoutIsNFT).replaceAll("");
-        if (!withoutIsNFT.equals(payloadAsString)) {
-            uniqueHashes.add(CryptoTPV1.calculateHexHash(withoutIsNFT));
-        }
-
-        // Strategy 2: Remove "kindType" field if it was added later
-        String withoutKindType = KIND_TYPE_TRAILING_PATTERN.matcher(payloadAsString).replaceAll("");
-        withoutKindType = KIND_TYPE_LEADING_PATTERN.matcher(withoutKindType).replaceAll("");
-        if (!withoutKindType.equals(payloadAsString)) {
-            uniqueHashes.add(CryptoTPV1.calculateHexHash(withoutKindType));
-        }
-
-        // Strategy 3: Remove both isNFT and kindType
-        String withoutBoth = IS_NFT_TRAILING_PATTERN.matcher(payloadAsString).replaceAll("");
-        withoutBoth = IS_NFT_LEADING_PATTERN.matcher(withoutBoth).replaceAll("");
-        withoutBoth = KIND_TYPE_TRAILING_PATTERN.matcher(withoutBoth).replaceAll("");
-        withoutBoth = KIND_TYPE_LEADING_PATTERN.matcher(withoutBoth).replaceAll("");
-        if (!withoutBoth.equals(payloadAsString)) {
-            uniqueHashes.add(CryptoTPV1.calculateHexHash(withoutBoth));
-        }
-
-        return new ArrayList<>(uniqueHashes);
     }
 
     /**
@@ -661,32 +675,57 @@ public class WhitelistedAssetService {
                 precomputeHashesJson(envelope.getSignedAsset().getSignatures());
 
         // Keyed off the SIGNED payload, not the response. See the address service.
-        String[] ruleKey = WhitelistHashHelper.resolveRuleKey(
+        ResolvedRuleKey ruleKey = WhitelistHashHelper.resolveRuleKeyWithSource(
                 envelope.getMetadata().getPayloadAsString(),
                 envelope.getBlockchain(), envelope.getNetwork());
 
-        // Find matching contract address whitelisting rules
-        ContractAddressWhitelistingRules whitelistRules = rulesContainer.findContractAddressWhitelistingRules(
-                ruleKey[0], ruleKey[1]);
-        if (whitelistRules == null) {
+        // Which rules to enforce. When the payload carries the network, exactly one rule
+        // applies. When it does not — includeNetworkInPayload off, and that flag has no
+        // proto backing so it is never signed and cannot be consulted — the network came
+        // from the UNSIGNED DTO, which would let a response-controlling server name
+        // whichever tier for this chain has the weakest thresholds. Enforce every tier that
+        // value could have selected. A chain with one reachable tier behaves as before.
+        List<ContractAddressWhitelistingRules> applicableRules = new ArrayList<>();
+        if (ruleKey.isNetworkFromPayload()) {
+            ContractAddressWhitelistingRules exact =
+                    rulesContainer.findContractAddressWhitelistingRules(
+                            ruleKey.getBlockchain(), ruleKey.getNetwork());
+            if (exact != null) {
+                applicableRules.add(exact);
+            }
+        } else {
+            applicableRules.addAll(
+                    rulesContainer.findContractAddressWhitelistingRuleCandidates(
+                            ruleKey.getBlockchain()));
+        }
+        if (applicableRules.isEmpty()) {
             throw new WhitelistException("no contract address whitelisting rules found for blockchain="
-                    + envelope.getBlockchain() + " network=" + envelope.getNetwork());
+                    + ruleKey.getBlockchain() + " network=" + ruleKey.getNetwork());
         }
 
-        // Contract whitelisting uses parallelThresholds directly (no rule lines matching)
-        List<SequentialThresholds> parallelThresholds = whitelistRules.getParallelThresholds();
-        if (parallelThresholds == null || parallelThresholds.isEmpty()) {
-            throw new WhitelistException("no threshold rules defined");
-        }
+        for (ContractAddressWhitelistingRules whitelistRules : applicableRules) {
+            // Contract whitelisting uses parallelThresholds directly (no rule lines matching)
+            List<SequentialThresholds> parallelThresholds = whitelistRules.getParallelThresholds();
+            if (parallelThresholds == null || parallelThresholds.isEmpty()) {
+                throw new WhitelistException("no threshold rules defined");
+            }
 
-        // Try to verify all paths
-        List<String> pathFailures = tryVerifyAllPaths(
-                parallelThresholds, rulesContainer, envelope.getSignedAsset().getSignatures(),
-                metadataHash, hashesJsonBySignature);
-        if (!pathFailures.isEmpty()) {
-            throw new WhitelistException("signature verification failed for whitelisted asset (ID: "
-                    + envelope.getId() + ") : no approval path satisfied the threshold requirements. "
-                    + String.join("; ", pathFailures));
+            // Try to verify all paths
+            List<String> pathFailures = tryVerifyAllPaths(
+                    parallelThresholds, rulesContainer, envelope.getSignedAsset().getSignatures(),
+                    metadataHash, hashesJsonBySignature);
+            if (!pathFailures.isEmpty()) {
+                String scope = "blockchain=" + whitelistRules.getBlockchain()
+                        + " network=" + whitelistRules.getNetwork();
+                if (applicableRules.size() > 1) {
+                    scope += " (enforced because the signed payload carries no network, so the "
+                            + "response could otherwise choose which quorum applies)";
+                }
+                throw new WhitelistException("signature verification failed for whitelisted asset (ID: "
+                        + envelope.getId() + ") against " + scope
+                        + " : no approval path satisfied the threshold requirements. "
+                        + String.join("; ", pathFailures));
+            }
         }
     }
 

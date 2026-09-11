@@ -15,7 +15,7 @@ import base64
 import binascii
 import json
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Callable, List, Optional
+from typing import TYPE_CHECKING, Callable, List, Optional, Tuple
 
 from cryptography.exceptions import InvalidSignature
 
@@ -29,11 +29,11 @@ from taurus_protect.helpers.signature_verifier import (
     verify_governance_rules_signatures,
 )
 from taurus_protect.helpers.whitelist_hash_helper import (
+    compute_legacy_payload_variants,
     contains_hash,
-    resolve_rule_key,
-    verify_hash_coverage,
-    compute_legacy_hashes,
     parse_whitelisted_address_from_json,
+    resolve_rule_key_with_source,
+    verify_hash_coverage,
 )
 from taurus_protect.models.governance_rules import (
     RULE_SOURCE_TYPE_INTERNAL_WALLET,
@@ -55,11 +55,27 @@ if TYPE_CHECKING:
 
 @dataclass
 class AddressVerificationResult:
-    """Result of 6-step whitelisted address verification."""
+    """Result of 6-step whitelisted address verification.
+
+    Attributes:
+        rules_container: The decoded and verified rules container.
+        verified_hash: The hash that was matched during verification. May differ from
+            ``metadata.hash`` when a legacy variant matched.
+        verified_payload: The payload ``verified_hash`` covers, and the bytes
+            ``verified_whitelisted_address`` was parsed from. When a legacy variant
+            matched, this is that variant rather than ``metadata.payload_as_string`` --
+            the delivered payload carries members no signature covered.
+
+            ``metadata.payload_as_string`` is deliberately left untouched: a caller
+            needs it to reproduce ``metadata.hash``. Read this field instead when the
+            question is "what was actually signed".
+        verified_whitelisted_address: The address parsed from ``verified_payload``.
+    """
 
     rules_container: DecodedRulesContainer
     verified_hash: str
     verified_whitelisted_address: WhitelistedAddress
+    verified_payload: str
 
 
 def _line_has_untyped_source(line: AddressWhitelistingLine) -> bool:
@@ -145,21 +161,26 @@ class WhitelistedAddressVerifier:
             # Step 3: Decode rules container
             rules_container = self._decode_rules_container(envelope, rules_container_decoder)
 
-        # Step 4: Verify hash coverage
-        verified_hash = self._verify_hash_in_signed_hashes(envelope)
+        # Step 4: Verify hash coverage.
+        #
+        # verified_hash may differ from metadata.hash if a legacy variant matched, and
+        # verified_payload is then that variant rather than the delivered payload.
+        verified_hash, verified_payload = self._verify_hash_in_signed_hashes(envelope)
 
         # Step 5: Verify whitelist signatures
         self._verify_whitelist_signatures(envelope, rules_container, verified_hash)
 
-        # Step 6: Parse WhitelistedAddress from verified payload
-        verified_whitelisted_address = parse_whitelisted_address_from_json(
-            envelope.metadata.payload_as_string
-        )
+        # Step 6: Parse WhitelistedAddress from the payload the matched signature
+        # COVERED, which is not always the payload the server delivered. Parsing the
+        # delivered text here would hand back members the legacy strip removed -- i.e.
+        # values no signature covered.
+        verified_whitelisted_address = parse_whitelisted_address_from_json(verified_payload)
 
         return AddressVerificationResult(
             rules_container=rules_container,
             verified_hash=verified_hash,
             verified_whitelisted_address=verified_whitelisted_address,
+            verified_payload=verified_payload,
         )
 
     def _verify_metadata_hash(self, envelope: SignedWhitelistedAddressEnvelope) -> None:
@@ -235,12 +256,22 @@ class WhitelistedAddressVerifier:
     def _verify_hash_in_signed_hashes(
         self,
         envelope: SignedWhitelistedAddressEnvelope,
-    ) -> str:
+    ) -> Tuple[str, str]:
         """
         Verify that the metadata hash is covered by at least one signature.
 
         Step 4 of the verification flow.
-        Returns the hash that was found (may be a legacy hash).
+
+        Returns BOTH the hash that was found (which may be a legacy hash) and the
+        payload that hash covers. The payload is what step 6 must parse: when a legacy
+        variant is the match, the delivered payload contains members no signature
+        covered, so parsing the delivered text would return unsigned values as
+        verified. See :class:`LegacyPayloadVariant` for the attack this closes.
+
+        When the current hash matches, the matched payload IS the delivered payload.
+
+        Returns:
+            ``(matched_hash, matched_payload)``.
         """
         if envelope.signed_address is None:
             raise IntegrityError("signedAddress is nil")
@@ -253,13 +284,13 @@ class WhitelistedAddressVerifier:
 
         # Try the provided hash first using constant-time comparison
         if verify_hash_coverage(metadata_hash, signatures):
-            return metadata_hash
+            return metadata_hash, envelope.metadata.payload_as_string
 
-        # Try legacy hashes for backward compatibility
-        legacy_hashes = compute_legacy_hashes(envelope.metadata.payload_as_string)
-        for legacy_hash in legacy_hashes:
-            if verify_hash_coverage(legacy_hash, signatures):
-                return legacy_hash
+        # Try legacy variants for backward compatibility. The variant's PAYLOAD travels
+        # with its hash so step 6 parses the bytes the signature actually covered.
+        for variant in compute_legacy_payload_variants(envelope.metadata.payload_as_string):
+            if verify_hash_coverage(variant.hash, signatures):
+                return variant.hash, variant.payload
 
         raise IntegrityError("metadata hash is not covered by any signature")
 
@@ -277,46 +308,74 @@ class WhitelistedAddressVerifier:
         # Which rules judge this address is decided by the SIGNED payload, not by
         # the surrounding response. A DTO with an empty blockchain would select the
         # global-default tier -- broader than the rule the address belongs to.
-        blockchain, network = resolve_rule_key(
+        blockchain, network, network_from_payload = resolve_rule_key_with_source(
             envelope.metadata.payload_as_string if envelope.metadata else None,
             envelope.blockchain,
             envelope.network,
         )
 
-        # Find matching address whitelisting rules
-        whitelist_rules = rules_container.find_address_whitelisting_rules(
-            blockchain, network
-        )
-        if whitelist_rules is None:
+        # WHICH rules to enforce.
+        #
+        # When the payload carries the network, the key is fully signed and one rule
+        # applies. When it does NOT -- include_network_in_payload off, the common case in
+        # captured production data -- the network came from the UNSIGNED DTO, so a single
+        # lookup would let a response-controlling server choose which quorum the row must
+        # meet. Enforce EVERY tier that value could have selected instead. For a chain with
+        # one reachable tier this is identical to the old behaviour; it only bites where a
+        # container really does hold a weaker second tier for the chain, which is exactly
+        # the case worth refusing.
+        applicable_rules: List[AddressWhitelistingRules] = []
+        if network_from_payload:
+            single = rules_container.find_address_whitelisting_rules(blockchain, network)
+            if single is not None:
+                applicable_rules = [single]
+        else:
+            applicable_rules = rules_container.find_address_whitelisting_rule_candidates(
+                blockchain
+            )
+        if not applicable_rules:
             raise WhitelistError(
                 f"no address whitelisting rules found for blockchain={blockchain} "
                 f"network={network}"
             )
 
-        # Determine which thresholds to use based on rule lines
-        parallel_thresholds = self._get_applicable_thresholds(whitelist_rules, envelope)
-        if not parallel_thresholds:
-            raise WhitelistError("no threshold rules defined")
-
-        # Try to verify all paths (OR logic - only one needs to succeed)
-        path_failures = self._try_verify_all_paths(
-            parallel_thresholds,
-            rules_container,
-            envelope.signed_address.signatures,
-            metadata_hash,
-        )
-        if path_failures:
-            envelope_id = ""
-            if envelope.metadata and envelope.metadata.payload_as_string:
-                try:
-                    payload = json.loads(envelope.metadata.payload_as_string)
-                    envelope_id = str(payload.get("id", ""))
-                except (json.JSONDecodeError, ValueError):
-                    pass
-            raise WhitelistError(
-                f"signature verification failed for whitelisted address (ID: {envelope_id}): "
-                f"no approval path satisfied the threshold requirements. {'; '.join(path_failures)}"
+        for whitelist_rules in applicable_rules:
+            # Determine which thresholds to use based on rule lines
+            parallel_thresholds = self._get_applicable_thresholds(
+                whitelist_rules, envelope
             )
+            if not parallel_thresholds:
+                raise WhitelistError("no threshold rules defined")
+
+            # Try to verify all paths (OR logic - only one needs to succeed)
+            path_failures = self._try_verify_all_paths(
+                parallel_thresholds,
+                rules_container,
+                envelope.signed_address.signatures,
+                metadata_hash,
+            )
+            if path_failures:
+                envelope_id = ""
+                if envelope.metadata and envelope.metadata.payload_as_string:
+                    try:
+                        payload = json.loads(envelope.metadata.payload_as_string)
+                        envelope_id = str(payload.get("id", ""))
+                    except (json.JSONDecodeError, ValueError):
+                        pass
+                scope = (
+                    f"blockchain={whitelist_rules.currency} "
+                    f"network={whitelist_rules.network}"
+                )
+                if not network_from_payload and len(applicable_rules) > 1:
+                    scope += (
+                        " (enforced because the signed payload carries no network, so "
+                        "the response could otherwise choose which quorum applies)"
+                    )
+                raise WhitelistError(
+                    f"signature verification failed for whitelisted address "
+                    f"(ID: {envelope_id}) against {scope}: no approval path satisfied "
+                    f"the threshold requirements. {'; '.join(path_failures)}"
+                )
 
     def _get_applicable_thresholds(
         self,

@@ -1,6 +1,12 @@
 package service
 
 import (
+	"context"
+	"crypto/ecdsa"
+	"errors"
+	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/crypto"
+	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/model"
+	"strings"
 	"testing"
 
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/model/taurusnetwork"
@@ -272,50 +278,73 @@ func TestTaurusNetworkPledgeService_RejectPledge_EmptyID(t *testing.T) {
 	}
 }
 
-func TestTaurusNetworkPledgeService_ApprovePledgeActions_NilRequest(t *testing.T) {
-	svc := &TaurusNetworkPledgeService{
-		api:       nil,
-		errMapper: NewErrorMapper(),
-	}
+// T5: the approval verifies every metadata hash before signing, and signs inside the SDK.
+// It used to take an opaque caller-computed signature with only a non-empty check, so the
+// approver's key attested to a hash nothing had checked. Python already verified; Go did not.
+func TestTaurusNetworkPledgeService_ApprovePledgeActions_RejectsBadInput(t *testing.T) {
+	svc := &TaurusNetworkPledgeService{api: nil, errMapper: NewErrorMapper()}
+	key := approveTestKey(t)
 
-	_, err := svc.ApprovePledgeActions(nil, nil)
-	if err == nil {
-		t.Error("ApprovePledgeActions should return error for nil request")
-	}
-	if err.Error() != "request cannot be nil" {
-		t.Errorf("ApprovePledgeActions error = %v, want 'request cannot be nil'", err)
+	for _, tc := range []struct {
+		name    string
+		actions []taurusnetwork.PledgeAction
+		key     *ecdsa.PrivateKey
+		want    string
+	}{
+		{"no actions", nil, key, "actions cannot be empty"},
+		{"nil key", []taurusnetwork.PledgeAction{{ID: "1"}}, nil, "privateKey cannot be nil"},
+		{"no metadata", []taurusnetwork.PledgeAction{{ID: "1"}}, key, "has no metadata"},
+		{"no hash", []taurusnetwork.PledgeAction{
+			{ID: "1", Metadata: &model.RequestMetadata{}},
+		}, key, "has no metadata hash"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := svc.ApprovePledgeActions(context.Background(), tc.actions, tc.key, "c")
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("got %v, want an error containing %q", err, tc.want)
+			}
+		})
 	}
 }
 
-func TestTaurusNetworkPledgeService_ApprovePledgeActions_EmptyIDs(t *testing.T) {
-	svc := &TaurusNetworkPledgeService{
-		api:       nil,
-		errMapper: NewErrorMapper(),
-	}
+// A hash with no payload cannot be verified, so it must not be signed — the same rule the
+// request-approval path applies.
+func TestTaurusNetworkPledgeService_ApprovePledgeActions_RefusesHashWithoutPayload(t *testing.T) {
+	svc := &TaurusNetworkPledgeService{api: nil, errMapper: NewErrorMapper()}
 
-	_, err := svc.ApprovePledgeActions(nil, &taurusnetwork.ApprovePledgeActionsRequest{})
+	_, err := svc.ApprovePledgeActions(context.Background(), []taurusnetwork.PledgeAction{
+		{ID: "1", Metadata: &model.RequestMetadata{Hash: "deadbeef"}},
+	}, approveTestKey(t), "c")
 	if err == nil {
-		t.Error("ApprovePledgeActions should return error for empty ids")
+		t.Fatal("signed a hash whose payload was absent, so nothing could verify it")
 	}
-	if err.Error() != "ids cannot be empty" {
-		t.Errorf("ApprovePledgeActions error = %v, want 'ids cannot be empty'", err)
+	var integrityErr *model.IntegrityError
+	if !errors.As(err, &integrityErr) {
+		t.Errorf("want an IntegrityError, got %T: %v", err, err)
 	}
 }
 
-func TestTaurusNetworkPledgeService_ApprovePledgeActions_MissingSignature(t *testing.T) {
-	svc := &TaurusNetworkPledgeService{
-		api:       nil,
-		errMapper: NewErrorMapper(),
-	}
+// The finding itself: payloadAsString describes one action while the hash commits to another.
+// The approver reads the payload; without this check they sign the hash.
+func TestTaurusNetworkPledgeService_ApprovePledgeActions_RefusesAMismatchedHash(t *testing.T) {
+	svc := &TaurusNetworkPledgeService{api: nil, errMapper: NewErrorMapper()}
 
-	_, err := svc.ApprovePledgeActions(nil, &taurusnetwork.ApprovePledgeActionsRequest{
-		Ids: []string{"action-1"},
-	})
+	benign := `{"action":"ADD_COLLATERAL","amount":"1"}`
+	_, err := svc.ApprovePledgeActions(context.Background(), []taurusnetwork.PledgeAction{
+		{ID: "1", Metadata: &model.RequestMetadata{
+			// The hash of some OTHER payload — e.g. a full withdrawal to an attacker address.
+			Hash:            crypto.CalculateHexHash(`{"action":"WITHDRAW","amount":"all"}`),
+			PayloadAsString: benign,
+		}},
+	}, approveTestKey(t), "c")
 	if err == nil {
-		t.Error("ApprovePledgeActions should return error for missing signature")
+		t.Fatal("signed a hash that does not commit to the payload the approver reviewed")
 	}
-	if err.Error() != "signature is required" {
-		t.Errorf("ApprovePledgeActions error = %v, want 'signature is required'", err)
+	if !strings.Contains(err.Error(), "hash verification failed") {
+		t.Errorf("error should name the mismatch, got %q", err)
+	}
+	if !strings.Contains(err.Error(), "computed=") || !strings.Contains(err.Error(), "provided=") {
+		t.Errorf("error should carry both hashes so the failure is debuggable, got %q", err)
 	}
 }
 

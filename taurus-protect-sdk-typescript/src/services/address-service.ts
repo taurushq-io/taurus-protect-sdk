@@ -9,17 +9,24 @@
 
 import type {
   AddressesApi,
+  TgvalidatordAddress,
   TgvalidatordCreateAddressRequest,
   TgvalidatordGetAddressProofOfReserveReply,
   WalletServiceCreateAddressAttributesBody,
 } from "../internal/openapi";
-import { ConfigurationError, NotFoundError, ServerError, ValidationError } from "../errors";
+import {
+  ConfigurationError,
+  IntegrityError,
+  NotFoundError,
+  ServerError,
+  ValidationError,
+} from "../errors";
 import { verifyAddressSignature } from "../helpers";
 import type { RulesContainerCache } from "../cache";
 import type { DecodedRulesContainer } from "../models/governance-rules";
 import type { Address, CreateAddressRequest, ListAddressesOptions } from "../models/address";
 import type { Pagination } from "../models/pagination";
-import { addressFromDto, addressesFromDto } from "../mappers/address";
+import { addressFromDto } from "../mappers/address";
 import { BaseService } from "./base";
 
 /**
@@ -100,13 +107,11 @@ export class AddressService extends BaseService {
         throw new NotFoundError(`Address ${addressId} not found`);
       }
 
-      const address = addressFromDto(result);
+      // Through the ONE verification seam. See verifiedAddress.
+      const address = await this.verifiedAddress(result);
       if (address == null) {
         throw new NotFoundError(`Address ${addressId} not found`);
       }
-
-      // CRITICAL: Verify signature using HSM public key from rules container
-      await this.verifyAddressSignature(address);
 
       return address;
     });
@@ -150,18 +155,8 @@ export class AddressService extends BaseService {
         network: options?.network,
       });
 
-      const addresses = addressesFromDto(response.result);
-
-      // CRITICAL: Verify signatures for all addresses
-      // Pre-fetch rules container once to avoid N+1 cache lookups
-      let rulesContainer: DecodedRulesContainer | undefined;
-      if (this.rulesCache && addresses.length > 0) {
-        rulesContainer = await this.rulesCache.get();
-      }
-
-      for (const address of addresses) {
-        await this.verifyAddressSignature(address, rulesContainer);
-      }
+      // CRITICAL: every row goes through the ONE verification seam.
+      const addresses = await this.verifiedAddresses(response.result);
 
       // Extract pagination
       const totalItems = response.totalItems
@@ -199,18 +194,8 @@ export class AddressService extends BaseService {
         network: options?.network,
       });
 
-      const addresses = addressesFromDto(response.result);
-
-      // CRITICAL: Verify signatures for all addresses
-      // Pre-fetch rules container once to avoid N+1 cache lookups
-      let rulesContainer: DecodedRulesContainer | undefined;
-      if (this.rulesCache && addresses.length > 0) {
-        rulesContainer = await this.rulesCache.get();
-      }
-
-      for (const address of addresses) {
-        await this.verifyAddressSignature(address, rulesContainer);
-      }
+      // CRITICAL: every row goes through the ONE verification seam.
+      const addresses = await this.verifiedAddresses(response.result);
 
       // Extract pagination
       const totalItems = response.totalItems
@@ -225,11 +210,18 @@ export class AddressService extends BaseService {
   }
 
   /**
-   * Creates a new address.
+   * Creates a new address, with mandatory signature verification of the reply.
+   *
+   * The created address is returned only once its HSM signature has been verified.
+   * Creation can be asynchronous, so a reply may legitimately carry no address string
+   * yet — that comes back with its `status` and nothing to verify. What never happens
+   * is a non-empty `address` being returned unverified. See `verifiedAddress`.
    *
    * @param request - Address creation parameters
    * @returns The created address
    * @throws ValidationError if required fields are missing
+   * @throws IntegrityError if the reply carries an address string that cannot be
+   *   verified — either it has no HSM signature, or the signature does not verify
    * @throws APIError if API request fails
    */
   async create(request: CreateAddressRequest): Promise<Address> {
@@ -261,7 +253,11 @@ export class AddressService extends BaseService {
         throw new ServerError("Failed to create address: no result returned");
       }
 
-      const address = addressFromDto(result);
+      // Through the same seam as every read. The create reply carries the same
+      // TgvalidatordAddress the read paths return, signature included, so there was
+      // never a reason for this path to be the unverified one — and callers of create
+      // are precisely the ones about to publish or fund a fresh deposit address.
+      const address = await this.verifiedAddress(result);
       if (address == null) {
         throw new ServerError("Failed to create address: invalid response");
       }
@@ -279,6 +275,7 @@ export class AddressService extends BaseService {
    * @param customerId - Optional customer identifier
    * @returns The created address
    * @throws ValidationError if required fields are missing or invalid
+   * @throws IntegrityError if the reply carries an unverifiable address string
    * @throws APIError if API request fails
    */
   async createAddress(
@@ -389,24 +386,104 @@ export class AddressService extends BaseService {
   }
 
   /**
-   * Verifies the signature of an address using the rules container.
+   * The ONE construction seam for an {@link Address}.
    *
-   * @param address - The address to verify
-   * @param rulesContainer - Optional pre-fetched rules container. If undefined,
-   *   will be fetched from cache. Pass this when verifying multiple addresses
-   *   to avoid N+1 cache lookups.
-   * @throws IntegrityError if signature verification fails
+   * Every path that returns an Address goes through here — `get`, `list`,
+   * `listWithOptions` and `create` — because "remember to verify" was a rule rather
+   * than the only available construction path, and `create` is what that cost:
+   * `AssetService.getAssetAddresses` had already been fixed for exactly this and the
+   * create path was missed anyway. Same reasoning as the request service's
+   * verification seam.
+   *
+   * The rule it enforces: **never return a non-empty `Address.address` string that
+   * has not been verified.** It branches on the address STRING, not on `status`,
+   * because `status` is server-controlled and so cannot be the thing that decides
+   * whether a check runs:
+   *
+   * - address empty → return as-is. Asynchronous creation is real (`status` is one of
+   *   created/creating/signed/observed/confirmed), and an address that has not been
+   *   generated yet carries no destination: nothing to verify, nothing to misuse.
+   * - address present, signature absent → refuse. Returning it would hand the caller
+   *   an attacker-controllable destination in the same type as a verified one, which
+   *   is the whole defect. The caller re-reads through this same seam once the status
+   *   advances.
+   * - address present, signature present → verify against the HSMSLOT key.
+   *
+   * The refusal is raised BEFORE the rules container is fetched: there is nothing the
+   * container could say that would make an unsigned address string usable.
+   *
+   * @param dto - The address DTO straight off the wire
+   * @param rulesContainer - Optional pre-fetched container. Pass it when verifying
+   *   several addresses to avoid an N+1 of cache lookups.
+   * @returns The verified address, or undefined when the DTO maps to nothing (each
+   *   caller raises its own not-found/invalid-response error, which differ)
+   * @throws IntegrityError if the address string cannot be shown to be genuine
    */
-  private async verifyAddressSignature(
-    address: Address,
+  private async verifiedAddress(
+    dto: TgvalidatordAddress,
     rulesContainer?: DecodedRulesContainer
-  ): Promise<void> {
-    // Get rules container if not provided
+  ): Promise<Address | undefined> {
+    const address = addressFromDto(dto);
+    if (address == null) {
+      return undefined;
+    }
+
+    if (!address.address) {
+      return address;
+    }
+
+    if (!address.signature) {
+      throw new IntegrityError(
+        `address ${address.id} (status ${JSON.stringify(address.status ?? "")}) carries an ` +
+          `address string but no HSM signature; refusing to return an unverified ` +
+          `destination. Re-read once the status reaches "signed"`
+      );
+    }
+
     const rules = rulesContainer ?? (await this.rulesCache.get());
 
-    // The helper throws on every failure — missing signature, missing address,
-    // absent HSM key, or a signature that does not verify — so the checks this
-    // wrapper used to duplicate now live in one place shared with the peers.
-    verifyAddressSignature(address.address, address.signature ?? "", rules, address.id);
+    // The helper throws on every failure — absent HSM key, or a signature that does
+    // not verify — so those checks live in one place shared with the peer services.
+    verifyAddressSignature(address.address, address.signature, rules, address.id);
+
+    return address;
+  }
+
+  /**
+   * Maps and verifies a page of address DTOs through {@link verifiedAddress}.
+   *
+   * The container is fetched once for the whole page rather than per row.
+   *
+   * @param dtos - The address DTOs from a list reply
+   * @returns The verified addresses
+   * @throws IntegrityError if any row cannot be shown to be genuine
+   */
+  private async verifiedAddresses(
+    dtos: TgvalidatordAddress[] | null | undefined
+  ): Promise<Address[]> {
+    if (dtos == null || dtos.length === 0) {
+      return [];
+    }
+
+    // Pre-fetch the rules container once to avoid N+1 cache lookups — but only when a
+    // row actually carries a signature to check. Fetching unconditionally would make a
+    // page of unsigned rows fail with a governance-fetch error instead of the integrity
+    // refusal that names the offending row, which is the wrong diagnosis and breaks the
+    // ordering `verifiedAddress` documents (refuse before fetching).
+    const anySignatureToCheck = dtos.some(
+      (dto) => Boolean(dto.address) && Boolean(dto.signature)
+    );
+    const rulesContainer = anySignatureToCheck
+      ? await this.rulesCache.get()
+      : undefined;
+
+    const addresses: Address[] = [];
+    for (const dto of dtos) {
+      const address = await this.verifiedAddress(dto, rulesContainer);
+      if (address !== undefined) {
+        addresses.push(address);
+      }
+    }
+    return addresses;
   }
 }

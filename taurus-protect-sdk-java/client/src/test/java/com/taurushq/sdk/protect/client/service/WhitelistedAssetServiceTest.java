@@ -1,6 +1,11 @@
 package com.taurushq.sdk.protect.client.service;
 
 import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
+import com.taurushq.sdk.protect.client.model.IntegrityException;
+import com.taurushq.sdk.protect.client.model.SignedWhitelistedAssetEnvelope;
+import com.taurushq.sdk.protect.client.model.WhitelistMetadata;
+import com.taurushq.sdk.protect.client.model.WhitelistedAssetApproval;
+import com.taurushq.sdk.protect.client.model.WhitelistedAssetResult;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,10 +15,13 @@ import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.ECGenParameterSpec;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class WhitelistedAssetServiceTest {
 
@@ -94,39 +102,66 @@ class WhitelistedAssetServiceTest {
 
     // Approval is all-or-nothing: one signature covers every hash in the batch, so a row
     // this SDK could not verify has to stop the call before anything is signed. Argument
-    // validation is what is reachable here — the project forbids mocking, so the
+    // validation is what is reachable here -- the project forbids mocking, so the
     // verify-then-sign path is covered by the Go/Python/TypeScript suites.
+
+    /**
+     * Mints the content pin the way a caller does: off the result of a verified read.
+     *
+     * <p>{@code WhitelistedAssetApproval} has no public constructor, so this is the only
+     * route to one -- which is the point of the type. A hand-built value would pin nothing
+     * and the approval path refuses it.
+     */
+    private static WhitelistedAssetApproval reviewed(final Long... ids) {
+        List<SignedWhitelistedAssetEnvelope> envelopes = new ArrayList<>();
+        for (Long id : ids) {
+            SignedWhitelistedAssetEnvelope envelope = new SignedWhitelistedAssetEnvelope();
+            envelope.setId(id);
+            WhitelistMetadata metadata = new WhitelistMetadata();
+            metadata.setHash("hash-" + id);
+            envelope.setMetadata(metadata);
+            envelopes.add(envelope);
+        }
+        WhitelistedAssetResult result = new WhitelistedAssetResult();
+        result.setAssets(envelopes);
+        return result.select(Arrays.asList(ids));
+    }
+
     @Test
-    void approveWhitelistedAssets_throwsOnNullIds() {
+    void approveWhitelistedAssets_throwsOnNullSelection() {
         assertThrows(NullPointerException.class, () ->
                 service().approveWhitelistedAssets(null, testPrivateKey, "c"));
     }
 
     @Test
-    void approveWhitelistedAssets_throwsOnEmptyIds() {
-        assertThrows(IllegalArgumentException.class, () ->
-                service().approveWhitelistedAssets(Collections.emptyList(), testPrivateKey, "c"));
+    void approveWhitelistedAssets_refusesAnEmptyPin() {
+        // An empty pin must not silently restore unpinned approval, so `select` refuses to
+        // mint one at all.
+        WhitelistedAssetResult empty = new WhitelistedAssetResult();
+        empty.setAssets(Collections.emptyList());
+
+        IntegrityException e = assertThrows(IntegrityException.class, empty::selectAll);
+        assertTrue(e.getMessage().contains("no verified"), e.getMessage());
     }
 
     @Test
     void approveWhitelistedAssets_throwsOnNullPrivateKey() {
         assertThrows(NullPointerException.class, () ->
-                service().approveWhitelistedAssets(Collections.singletonList(1L), null, "c"));
+                service().approveWhitelistedAssets(reviewed(1L), null, "c"));
     }
 
     @Test
     void approveWhitelistedAssets_throwsOnMissingComment() {
         assertThrows(IllegalArgumentException.class, () ->
-                service().approveWhitelistedAssets(Collections.singletonList(1L),
-                        testPrivateKey, ""));
+                service().approveWhitelistedAssets(reviewed(1L), testPrivateKey, ""));
     }
 
     // A zero or negative id would be sorted into the signed array with no row behind it.
     @Test
     void approveWhitelistedAssets_throwsOnNonPositiveId() {
         assertThrows(IllegalArgumentException.class, () ->
-                service().approveWhitelistedAssets(Arrays.asList(1L, 0L), testPrivateKey, "c"));
+                service().approveWhitelistedAssets(reviewed(1L, 0L), testPrivateKey, "c"));
         assertThrows(IllegalArgumentException.class, () ->
-                service().approveWhitelistedAssets(Arrays.asList(1L, -3L), testPrivateKey, "c"));
+                service().approveWhitelistedAssets(reviewed(1L, -3L), testPrivateKey, "c"));
     }
 }

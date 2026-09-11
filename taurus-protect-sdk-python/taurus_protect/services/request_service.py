@@ -12,8 +12,8 @@ from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePrivateKey
 
 from taurus_protect.crypto.hashing import calculate_hex_hash
-from taurus_protect.errors import IntegrityError
 from taurus_protect.crypto.signing import sign_data
+from taurus_protect.errors import APIError, IntegrityError
 from taurus_protect.mappers.request import request_from_dto
 from taurus_protect.models.pagination import Pagination
 from taurus_protect.models.request import (
@@ -105,8 +105,17 @@ class RequestService(BaseService):
             # tell a verified request from one that merely came back.
             return self._verified_request(result)
         except Exception as e:
-            from taurus_protect.errors import APIError, IntegrityError
 
+            # IntegrityError is a plain Exception, NOT an APIError, so a funnel that
+            # omits it hands the failure to _handle_error, which maps an unknown
+            # exception to ServerError(500) -- and ServerError.is_retryable() is True.
+            # The documented contract of IntegrityError is "security-critical, NEVER
+            # retry", so the omission inverts it.
+            #
+            # On the six create paths this is worse than a taxonomy slip: the request is
+            # ALREADY created server-side, so _verified_request puts the id in the error
+            # precisely so the caller can reconcile "rather than retrying and creating a
+            # second request". Reporting it as retryable invites exactly that.
             if isinstance(e, (APIError, IntegrityError, ValueError)):
                 raise
             raise self._handle_error(e) from e
@@ -170,9 +179,10 @@ class RequestService(BaseService):
 
             return requests, pagination
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            # See get(): IntegrityError is not an APIError, so omitting it here turns a
+            # security failure into a retryable ServerError(500).
+            if isinstance(e, (APIError, IntegrityError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -224,9 +234,10 @@ class RequestService(BaseService):
 
             return requests, pagination
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            # See get(): IntegrityError is not an APIError, so omitting it here turns a
+            # security failure into a retryable ServerError(500).
+            if isinstance(e, (APIError, IntegrityError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -304,9 +315,10 @@ class RequestService(BaseService):
                 return int(signed_requests)
             return 0
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            # See get(): IntegrityError is not an APIError, so omitting it here turns a
+            # security failure into a retryable ServerError(500).
+            if isinstance(e, (APIError, IntegrityError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -360,9 +372,10 @@ class RequestService(BaseService):
             }
             self._requests_api.request_service_reject_requests(body=body)
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            # See get(): IntegrityError is not an APIError, so omitting it here turns a
+            # security failure into a retryable ServerError(500).
+            if isinstance(e, (APIError, IntegrityError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -423,15 +436,15 @@ class RequestService(BaseService):
 
             result = getattr(resp, "result", None)
             if result is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to create request: no result returned")
 
             return self._verified_request(result)
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            # See get(): IntegrityError is not an APIError, so omitting it here turns a
+            # security failure into a retryable ServerError(500).
+            if isinstance(e, (APIError, IntegrityError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -474,15 +487,15 @@ class RequestService(BaseService):
 
             result = getattr(resp, "result", None)
             if result is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to create request: no result returned")
 
             return self._verified_request(result)
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            # See get(): IntegrityError is not an APIError, so omitting it here turns a
+            # security failure into a retryable ServerError(500).
+            if isinstance(e, (APIError, IntegrityError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -525,15 +538,15 @@ class RequestService(BaseService):
 
             result = getattr(resp, "result", None)
             if result is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to create request: no result returned")
 
             return self._verified_request(result)
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            # See get(): IntegrityError is not an APIError, so omitting it here turns a
+            # security failure into a retryable ServerError(500).
+            if isinstance(e, (APIError, IntegrityError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -576,15 +589,15 @@ class RequestService(BaseService):
 
             result = getattr(resp, "result", None)
             if result is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to create request: no result returned")
 
             return self._verified_request(result)
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            # See get(): IntegrityError is not an APIError, so omitting it here turns a
+            # security failure into a retryable ServerError(500).
+            if isinstance(e, (APIError, IntegrityError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -621,15 +634,15 @@ class RequestService(BaseService):
 
             result = getattr(resp, "result", None)
             if result is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to create cancel request: no result")
 
             return self._verified_request(result)
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            # See get(): IntegrityError is not an APIError, so omitting it here turns a
+            # security failure into a retryable ServerError(500).
+            if isinstance(e, (APIError, IntegrityError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -672,15 +685,15 @@ class RequestService(BaseService):
 
             result = getattr(resp, "result", None)
             if result is None:
-                from taurus_protect.errors import APIError
 
                 raise APIError(500, "Failed to create incoming request: no result")
 
             return self._verified_request(result)
         except Exception as e:
-            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, ValueError)):
+            # See get(): IntegrityError is not an APIError, so omitting it here turns a
+            # security failure into a retryable ServerError(500).
+            if isinstance(e, (APIError, IntegrityError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 

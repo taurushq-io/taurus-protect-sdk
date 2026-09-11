@@ -3,13 +3,11 @@ package com.taurushq.sdk.protect.client.service;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.taurushq.sdk.protect.client.cache.RulesContainerCache;
-import com.taurushq.sdk.protect.client.helper.AddressSignatureVerifier;
 import com.taurushq.sdk.protect.client.mapper.AssetMapper;
 import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
 import com.taurushq.sdk.protect.client.model.Address;
 import com.taurushq.sdk.protect.client.model.ApiException;
 import com.taurushq.sdk.protect.client.model.Wallet;
-import com.taurushq.sdk.protect.client.model.rulescontainer.DecodedRulesContainer;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import com.taurushq.sdk.protect.openapi.api.AssetsApi;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordAsset;
@@ -111,15 +109,14 @@ public class AssetService {
             TgvalidatordGetAssetAddressesReply reply = assetsApi.walletServiceGetAssetAddresses(request);
             List<Address> addresses = AssetMapper.INSTANCE.fromAddressDTOList(reply.getAddresses());
 
-            // Fail-fast, as AddressService does: one unverifiable address is not a row to
-            // skip past when the caller is choosing where funds go.
-            if (addresses != null && !addresses.isEmpty()) {
-                DecodedRulesContainer rulesContainer = rulesContainerCache.getDecodedRulesContainer();
-                for (Address address : addresses) {
-                    AddressSignatureVerifier.verifyAddressSignature(address, rulesContainer);
-                }
-            }
-            return addresses;
+            // Through AddressService's seam, not a copy of it. This service reads the
+            // same Address entity, so a second implementation of "when is an address
+            // string trustworthy" is a second place for it to drift — which is exactly
+            // how createAddress ended up with no verification at all. The seam also
+            // handles the asynchronous-creation row (empty address, status "creating")
+            // that the previous inline loop rejected outright.
+            return AddressService.verifiedAddresses(addresses,
+                    rulesContainerCache::getDecodedRulesContainer);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }

@@ -49,6 +49,17 @@ def _envelope(address_id: str, hash_value: str):
     )
 
 
+def _reviewed(**id_to_hash: str) -> "WhitelistedAddressApproval":
+    """Mints the content pin the way a caller does -- from a verified read.
+
+    ``_pinned`` is private, so a hand-built value pins nothing and the approval refuses
+    it. That is the guard; ``test_rejects_bad_input`` exercises it directly.
+    """
+    from taurus_protect.models.whitelisted_address import WhitelistedAddressApproval
+
+    return WhitelistedAddressApproval(dict(id_to_hash))
+
+
 class TestApproveWhitelistedAddresses:
     def test_signs_the_verified_hashes_in_sorted_order(self) -> None:
         service = _service()
@@ -62,7 +73,9 @@ class TestApproveWhitelistedAddresses:
             "_verified_addresses",
             return_value=([_envelope("3", "hash-3"), _envelope("7", "hash-7")], []),
         ):
-            service.approve([7, 3], _key(), "batch approval")
+            service.approve(
+                _reviewed(**{"7": "hash-7", "3": "hash-3"}), _key(), "batch approval"
+            )
 
         # ONE list call filtered by ids, not one GET per id.
         api.whitelist_service_get_whitelisted_addresses.assert_called_once()
@@ -87,7 +100,9 @@ class TestApproveWhitelistedAddresses:
             service, "_verified_addresses", return_value=([_envelope("3", "hash-3")], [])
         ):
             with pytest.raises(IntegrityError, match="was not returned by the verified read"):
-                service.approve([7, 3], _key(), "batch approval")
+                service.approve(
+                    _reviewed(**{"7": "hash-7", "3": "hash-3"}), _key(), "batch approval"
+                )
 
         api.whitelist_service_approve_whitelisted_address.assert_not_called()
 
@@ -102,21 +117,46 @@ class TestApproveWhitelistedAddresses:
             service, "_verified_addresses", return_value=([_envelope("3", "")], [])
         ):
             with pytest.raises(IntegrityError, match="has no metadata hash"):
-                service.approve([3], _key(), "batch approval")
+                service.approve(_reviewed(**{"3": "hash-3"}), _key(), "batch approval")
 
         api.whitelist_service_approve_whitelisted_address.assert_not_called()
 
     @pytest.mark.parametrize(
-        "ids,key,comment",
+        "selection,key,comment",
         [
-            ([], "key", "ok"),
-            ([1], None, "ok"),
-            ([1], "key", ""),
-            ([0], "key", "ok"),
-            (["1"], "key", "ok"),
+            # An empty pin must be refused rather than treated as "approve nothing": an
+            # empty one silently restores the unpinned behaviour the pin exists to remove.
+            ({}, "key", "ok"),
+            ({"1": "aaa"}, None, "ok"),
+            ({"1": "aaa"}, "key", ""),
+            ({"0": "aaa"}, "key", "ok"),
         ],
     )
-    def test_rejects_bad_input(self, ids, key, comment) -> None:
+    def test_rejects_bad_input(self, selection, key, comment) -> None:
         service = _service()
         with pytest.raises(ValueError):
-            service.approve(ids, _key() if key else None, comment)
+            service.approve(_reviewed(**selection), _key() if key else None, comment)
+
+    def test_refuses_a_row_that_changed_since_review(self) -> None:
+        """The finding itself: the re-read returns a row under the requested id whose
+        metadata hash is NOT the one the approver reviewed. Without the pin this signs
+        the substituted hash."""
+        service = _service()
+        api = service._api
+        api.whitelist_service_get_whitelisted_addresses.return_value = MagicMock(
+            result=[MagicMock()], total_items="1"
+        )
+
+        with patch.object(
+            service,
+            "_verified_addresses",
+            return_value=([_envelope("3", "substituted-hash")], []),
+        ):
+            with pytest.raises(IntegrityError):
+                service.approve(
+                    _reviewed(**{"3": "the-hash-the-approver-reviewed"}),
+                    _key(),
+                    "batch approval",
+                )
+
+        api.whitelist_service_approve_whitelisted_address.assert_not_called()

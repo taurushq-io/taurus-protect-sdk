@@ -387,6 +387,59 @@ func (r *DecodedRulesContainer) FindAddressWhitelistingRules(blockchain, network
 	return globalDefault
 }
 
+// FindAddressWhitelistingRuleCandidates returns every rule the tier walk could select for this
+// blockchain across all possible network values.
+//
+// This exists because the network half of the rule key is NOT always signed. Governance carries a
+// per-rule includeNetworkInPayload flag, and when it is off the signed payload has no `network`
+// member at all — the common case in captured production data. The key then falls back to the
+// network on the unsigned response DTO, which hands a response-controlling server the choice of
+// WHICH rule judges the row, and therefore which group quorum it must meet. That is not closeable
+// by reading the flag: includeNetworkInPayload has no proto backing in any of the four SDKs
+// (request_reply.proto's AddressWhitelistingRules carries only currency, parallelThresholds,
+// properties, network, lines), so it is never part of the SuperAdmin-signed container.
+//
+// So when the network is unsigned the caller must satisfy EVERY rule this returns, not the one the
+// DTO named. Where a chain has a single reachable tier — again the common case — the set has one
+// element and behaviour is unchanged.
+//
+// Reachability, mirroring the tier walk above: every rule for this chain is reachable by naming
+// its network; the chain's wildcard-network rule is reachable by naming a network no exact rule
+// covers; and the global default is reachable ONLY when the chain has no wildcard-network rule,
+// because priority 2 would otherwise win.
+func (r *DecodedRulesContainer) FindAddressWhitelistingRuleCandidates(
+	blockchain string,
+) []*AddressWhitelistingRules {
+	if r.AddressWhitelistingRules == nil {
+		return nil
+	}
+
+	var candidates []*AddressWhitelistingRules
+	var globalDefault *AddressWhitelistingRules
+	chainHasWildcardNetwork := false
+
+	for _, rule := range r.AddressWhitelistingRules {
+		if isWildcard(rule.Currency) {
+			if globalDefault == nil {
+				globalDefault = rule
+			}
+			continue
+		}
+		if rule.Currency != blockchain {
+			continue
+		}
+		candidates = append(candidates, rule)
+		if isWildcard(rule.Network) {
+			chainHasWildcardNetwork = true
+		}
+	}
+
+	if !chainHasWildcardNetwork && globalDefault != nil {
+		candidates = append(candidates, globalDefault)
+	}
+	return candidates
+}
+
 // FindContractAddressWhitelistingRules finds ContractAddressWhitelistingRules matching the given blockchain and network.
 func (r *DecodedRulesContainer) FindContractAddressWhitelistingRules(blockchain, network string) *ContractAddressWhitelistingRules {
 	if r.ContractAddressWhitelistingRules == nil {
@@ -422,6 +475,42 @@ func (r *DecodedRulesContainer) FindContractAddressWhitelistingRules(blockchain,
 		return blockchainOnlyMatch
 	}
 	return globalDefault
+}
+
+// FindContractAddressWhitelistingRuleCandidates is the asset peer of
+// FindAddressWhitelistingRuleCandidates. Same reasoning: when the signed payload omits
+// `network`, the unsigned response DTO would otherwise choose which quorum judges the asset.
+func (r *DecodedRulesContainer) FindContractAddressWhitelistingRuleCandidates(
+	blockchain string,
+) []*ContractAddressWhitelistingRules {
+	if r.ContractAddressWhitelistingRules == nil {
+		return nil
+	}
+
+	var candidates []*ContractAddressWhitelistingRules
+	var globalDefault *ContractAddressWhitelistingRules
+	chainHasWildcardNetwork := false
+
+	for _, rule := range r.ContractAddressWhitelistingRules {
+		if isWildcard(rule.Blockchain) {
+			if globalDefault == nil {
+				globalDefault = rule
+			}
+			continue
+		}
+		if rule.Blockchain != blockchain {
+			continue
+		}
+		candidates = append(candidates, rule)
+		if isWildcard(rule.Network) {
+			chainHasWildcardNetwork = true
+		}
+	}
+
+	if !chainHasWildcardNetwork && globalDefault != nil {
+		candidates = append(candidates, globalDefault)
+	}
+	return candidates
 }
 
 // FindUserByID finds a RuleUser by ID.

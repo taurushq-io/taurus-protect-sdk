@@ -75,6 +75,21 @@ public class Address {
     private String label;
 
     /**
+     * The status of address creation, as reported by the API.
+     * <p>
+     * One of {@code created}, {@code creating}, {@code signed}, {@code observed} or
+     * {@code confirmed}. {@code creating} is used for asynchronous address creation:
+     * the row exists but the blockchain address string is still empty and the HSM has
+     * not signed anything yet.
+     * <p>
+     * This field is what lets the SDK tell "not signed yet" apart from "signature
+     * stripped": both arrive with no signature, but only the first has an empty address
+     * string, and only the second is an attack. It is a non-security field taken from
+     * the DTO — never rely on it to decide whether a signature was checked.
+     */
+    private String status;
+
+    /**
      * The cryptographic signature of the address for integrity verification.
      */
     private String signature;
@@ -277,6 +292,33 @@ public class Address {
      */
     public void setLabel(String label) {
         this.label = label;
+    }
+
+    /**
+     * Returns the status of address creation.
+     * <p>
+     * One of {@code created}, {@code creating}, {@code signed}, {@code observed} or
+     * {@code confirmed}; {@code creating} means asynchronous creation is still in
+     * flight, so {@link #getAddress()} is empty and no signature exists yet.
+     *
+     * @return the creation status, or {@code null} if the API did not report one
+     */
+    public String getStatus() {
+        return status;
+    }
+
+    /**
+     * Sets the status of address creation.
+     * <p>
+     * The setter is named {@code setStatus} on purpose: MapStruct follows JavaBean
+     * conventions and silently skips a property whose setter is not {@code set*},
+     * which is how {@code Address.disabled} and {@code Wallet.omnibus} were once
+     * dropped without any build failure.
+     *
+     * @param status the creation status to set
+     */
+    public void setStatus(String status) {
+        this.status = status;
     }
 
     /**

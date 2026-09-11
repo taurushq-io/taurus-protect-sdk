@@ -12,6 +12,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from taurus_protect.helpers.whitelisted_asset_verifier import AssetVerificationResult
 from taurus_protect.services.whitelisted_asset_service import (
     WhitelistedAssetService,
 )
@@ -42,11 +43,14 @@ def create_mock_dto_with_payload(
         "tenant_id": "tenant-1",
         "tenantId": "tenant-1",
         "metadata": metadata,
-        "signed_contract_address": None,
+        # _verified_asset refuses an envelope missing any of these three before it
+        # verifies anything, so they have to be present for a field-sourcing test to
+        # reach step 6 at all. The values are opaque: the verifier is stubbed.
+        "signed_contract_address": MockDTO(payload="{}", signatures=[]),
         "signedContractAddress": None,
-        "rules_container": None,
+        "rules_container": "cnt",
         "rulesContainer": None,
-        "rules_signatures": None,
+        "rules_signatures": "sig",
         "rulesSignatures": None,
         "status": "APPROVED",
         "action": None,
@@ -70,10 +74,32 @@ def create_mock_dto_with_payload(
     return MockDTO(**dto_attrs)
 
 
-def _create_service_with_mock_verifier() -> WhitelistedAssetService:
-    """Create a WhitelistedAssetService with a mocked verifier for unit tests.
+def _verifier_reporting_delivered_payload() -> MagicMock:
+    """A stubbed verifier whose step-4 answer is "the delivered payload matched".
 
-    The verifier is always required, but for field sourcing tests we mock it
+    Step 6 now parses ``AssetVerificationResult.verified_payload`` rather than
+    ``metadata.payload_as_string``, so a bare ``MagicMock()`` verifier hands the parse a
+    mock object. These tests are about field SOURCING, not about which variant matched,
+    so the stub reports the delivered payload -- the case where the two DIFFER is what
+    ``TestLegacyVariantIsWhatStep6Parses`` covers, with real signatures.
+    """
+    verifier = MagicMock()
+
+    def _verify(asset: Any, *_args: Any, **_kwargs: Any) -> Any:
+        return AssetVerificationResult(
+            rules_container=MagicMock(),
+            verified_hash=asset.metadata.hash if asset.metadata else "",
+            verified_payload=asset.metadata.payload_as_string if asset.metadata else "",
+        )
+
+    verifier.verify_whitelisted_asset.side_effect = _verify
+    return verifier
+
+
+def _create_service_with_mock_verifier() -> WhitelistedAssetService:
+    """Create a WhitelistedAssetService with a stubbed verifier for unit tests.
+
+    The verifier is always required, but for field sourcing tests we stub it
     to avoid needing real SuperAdmin keys.
     """
     api_client = MagicMock()
@@ -85,9 +111,18 @@ def _create_service_with_mock_verifier() -> WhitelistedAssetService:
         super_admin_keys=mock_keys,
         min_valid_signatures=1,
     )
-    # Replace the real verifier with a mock to skip actual verification
-    service._verifier = MagicMock()
+    service._verifier = _verifier_reporting_delivered_payload()
     return service
+
+
+def _verified(service: WhitelistedAssetService, dto: Any) -> Any:
+    """Map a DTO and run the verification seam, i.e. what every read path does.
+
+    Field sourcing is asserted THROUGH this rather than off ``_map_asset_from_dto``:
+    the mapper no longer parses the payload at all, because at map time nothing has
+    been verified. Step 6 is in ``_verified_asset``.
+    """
+    return service._verified_asset(WhitelistedAssetService._map_asset_from_dto(dto), dto=dto)
 
 
 class TestWhitelistedAssetServiceSecurity:
@@ -124,7 +159,7 @@ class TestWhitelistedAssetServiceSecurity:
             },
         )
 
-        asset = WhitelistedAssetService._map_asset_from_dto(dto)
+        asset = _verified(service, dto)
 
         # Security-critical fields MUST come from payload
         assert asset.name == "Verified Token Name"
@@ -152,7 +187,7 @@ class TestWhitelistedAssetServiceSecurity:
             },
         )
 
-        asset = WhitelistedAssetService._map_asset_from_dto(dto)
+        asset = _verified(service, dto)
 
         # Symbol should be None, not the DTO value
         assert asset.symbol is None
@@ -180,7 +215,7 @@ class TestWhitelistedAssetServiceSecurity:
             },
         )
 
-        asset = WhitelistedAssetService._map_asset_from_dto(dto)
+        asset = _verified(service, dto)
 
         # All security fields should be None (not from DTO)
         assert asset.name is None
@@ -198,7 +233,7 @@ class TestWhitelistedAssetServiceSecurity:
         }
 
         dto = create_mock_dto_with_payload(payload)
-        asset = WhitelistedAssetService._map_asset_from_dto(dto)
+        asset = _verified(service, dto)
 
         assert asset.contract_address == "0xsnake_case_address"
 
@@ -211,7 +246,7 @@ class TestWhitelistedAssetServiceSecurity:
         }
 
         dto = create_mock_dto_with_payload(payload)
-        asset = WhitelistedAssetService._map_asset_from_dto(dto)
+        asset = _verified(service, dto)
 
         assert asset.contract_address == "0xcamel_case_address"
 
@@ -222,13 +257,13 @@ class TestWhitelistedAssetServiceSecurity:
         # Test lowercase
         payload1 = {"blockchain": "eth"}
         dto1 = create_mock_dto_with_payload(payload1)
-        asset1 = WhitelistedAssetService._map_asset_from_dto(dto1)
+        asset1 = _verified(service, dto1)
         assert asset1.blockchain == "eth"
 
         # Test capitalized (Blockchain with capital B)
         payload2 = {"Blockchain": "ETH"}
         dto2 = create_mock_dto_with_payload(payload2)
-        asset2 = WhitelistedAssetService._map_asset_from_dto(dto2)
+        asset2 = _verified(service, dto2)
         assert asset2.blockchain == "ETH"
 
     def test_non_security_fields_can_come_from_dto(
@@ -246,7 +281,7 @@ class TestWhitelistedAssetServiceSecurity:
             },
         )
 
-        asset = WhitelistedAssetService._map_asset_from_dto(dto)
+        asset = _verified(service, dto)
 
         # Non-security fields are fine from DTO
         assert asset.status == "APPROVED"
@@ -254,9 +289,12 @@ class TestWhitelistedAssetServiceSecurity:
         assert asset.rule == "rule-1"
 
     def test_list_always_verifies_each_asset(self) -> None:
-        """Test that list() calls _verify_asset for each asset."""
-        from unittest.mock import patch
+        """Every row list() returns has been through the verifier.
 
+        Asserted on the VERIFIER, not on a service-private wrapper: the wrapper is the
+        thing under test, so counting calls to it would pass against a wrapper that
+        verifies nothing.
+        """
         service = _create_service_with_mock_verifier()
 
         payload = {
@@ -272,21 +310,15 @@ class TestWhitelistedAssetServiceSecurity:
 
         service._api.whitelist_service_get_whitelisted_contracts.return_value = mock_reply
 
-        # Mock _verify_asset to avoid precondition checks on missing
-        # rules_container/signed_contract_address in the test DTO
-        with patch.object(service, "_verify_asset") as mock_verify:
-            assets, pagination = service.list(limit=50, offset=0)
+        assets, pagination = service.list(limit=50, offset=0)
 
         # Should return both assets and verify each one
         assert len(assets) == 2
         assert all(a.name == "Test Token" for a in assets)
-        # _verify_asset should have been called for each asset
-        assert mock_verify.call_count == 2
+        assert service._verifier.verify_whitelisted_asset.call_count == 2
 
     def test_list_for_approval_always_verifies_each_asset(self) -> None:
         """The for-approval rows an approver inspects must be verified too."""
-        from unittest.mock import patch
-
         service = _create_service_with_mock_verifier()
 
         dto = create_mock_dto_with_payload(
@@ -302,16 +334,13 @@ class TestWhitelistedAssetServiceSecurity:
             mock_reply
         )
 
-        with patch.object(service, "_verify_asset") as mock_verify:
-            assets, pagination = service.list_for_approval(limit=50, offset=0)
+        assets, pagination = service.list_for_approval(limit=50, offset=0)
 
         assert len(assets) == 2
-        assert mock_verify.call_count == 2
+        assert service._verifier.verify_whitelisted_asset.call_count == 2
         assert pagination is not None
 
     def test_list_for_approval_passes_filters(self) -> None:
-        from unittest.mock import patch
-
         service = _create_service_with_mock_verifier()
 
         mock_reply = MagicMock()
@@ -323,8 +352,7 @@ class TestWhitelistedAssetServiceSecurity:
             mock_reply
         )
 
-        with patch.object(service, "_verify_asset"):
-            service.list_for_approval(ids=["3", "4"], limit=25, offset=50)
+        service.list_for_approval(ids=["3", "4"], limit=25, offset=50)
 
         api.whitelist_service_get_whitelisted_contracts_for_approval.assert_called_once_with(
             ids=["3", "4"], limit="25", offset="50"
@@ -337,6 +365,28 @@ class TestWhitelistedAssetServiceSecurity:
             service.list_for_approval(limit=0)
         with pytest.raises(ValueError):
             service.list_for_approval(offset=-1)
+
+
+def _reviewed_assets(**id_to_hash: str) -> "WhitelistedAssetApproval":
+    """Mints the content pin the way a caller does -- from the ASSET OBJECTS a verified
+    read returned, via ``WhitelistedAssetApproval.select``.
+
+    ``_pinned`` is private, so a hand-built value pins nothing and the approval refuses
+    it; ``test_rejects_bad_input`` exercises that directly.
+    """
+    from taurus_protect.models.whitelisted_address import (
+        WhitelistedAsset,
+        WhitelistedAssetApproval,
+        WhitelistedAssetMetadata,
+    )
+
+    assets = [
+        WhitelistedAsset(
+            id=aid, metadata=WhitelistedAssetMetadata(hash=h, payload_as_string="{}")
+        )
+        for aid, h in id_to_hash.items()
+    ]
+    return WhitelistedAssetApproval.select(assets, *id_to_hash.keys())
 
 
 class TestApproveWhitelistedAssets:
@@ -364,9 +414,10 @@ class TestApproveWhitelistedAssets:
 
         # Row 1 verifies, row 2 does not: the mixed batch is the case that separates
         # all-or-nothing from sign-the-survivors.
-        def verify(asset: Any, dto: Any = None) -> None:
+        def verify(asset: Any, dto: Any = None) -> Any:
             if asset.id == "asset-456":
                 raise IntegrityError("hash mismatch")
+            return asset
 
         api = service._api
         api.whitelist_service_get_whitelisted_contract.side_effect = [
@@ -379,9 +430,13 @@ class TestApproveWhitelistedAssets:
             ),
         ]
 
-        with patch.object(service, "_verify_asset", side_effect=verify):
+        with patch.object(service, "_verified_asset", side_effect=verify):
             with pytest.raises(IntegrityError, match="refusing to sign"):
-                service.approve([1, 2], self._key(), "batch approval")
+                service.approve(
+                    _reviewed_assets(**{"1": "abc123", "2": "abc123"}),
+                    self._key(),
+                    "batch approval",
+                )
 
         api.whitelist_service_approve_whitelisted_contract.assert_not_called()
 
@@ -411,8 +466,12 @@ class TestApproveWhitelistedAssets:
             result=[row("3"), row("7")], total_items="2"
         )
 
-        with patch.object(service, "_verify_asset"):
-            service.approve([7, 3], self._key(), "batch approval")
+        with patch.object(service, "_verified_asset", side_effect=lambda asset, dto=None: asset):
+            service.approve(
+                _reviewed_assets(**{"7": "hash-7", "3": "hash-3"}),
+                self._key(),
+                "batch approval",
+            )
 
         # ONE list call, not one GET per id.
         api.whitelist_service_get_whitelisted_contracts.assert_called_once()
@@ -440,30 +499,124 @@ class TestApproveWhitelistedAssets:
             result=[], total_items="0"
         )
 
-        with patch.object(service, "_verify_asset"):
+        with patch.object(service, "_verified_asset", side_effect=lambda asset, dto=None: asset):
             with pytest.raises(IntegrityError, match="was not returned by the verified read"):
-                service.approve([7, 3], self._key(), "batch approval")
+                service.approve(
+                _reviewed_assets(**{"7": "hash-7", "3": "hash-3"}),
+                self._key(),
+                "batch approval",
+            )
+
+        api.whitelist_service_approve_whitelisted_contract.assert_not_called()
+
+    def test_refuses_to_sign_a_row_that_changed_since_it_was_reviewed(self) -> None:
+        """The content pin. Verification alone does not catch this: the substituted row is
+        a genuine, validly-signed whitelist entry -- just not the one the approver read.
+
+        Without the pin a response-controlling server answers the id-filtered re-read with
+        a DIFFERENT row whose existing signatures already satisfy the container it
+        presents, and harvests a real approver signature over content never reviewed.
+        """
+        from unittest.mock import patch
+
+        from taurus_protect.errors import IntegrityError
+
+        service = _create_service_with_mock_verifier()
+        api = service._api
+
+        substituted = create_mock_dto_with_payload(
+            {"name": "T", "symbol": "T", "contract_address": "0xEVIL"},
+            {"id": "3", "metadata": MockDTO(
+                hash="hash-substituted",
+                payload={},
+                payload_as_string="{}",
+                payloadAsString="{}",
+            )},
+        )
+        api.whitelist_service_get_whitelisted_contracts.return_value = MagicMock(
+            result=[substituted], total_items="1"
+        )
+
+        with patch.object(
+            service, "_verified_asset", side_effect=lambda asset, dto=None: asset
+        ):
+            with pytest.raises(IntegrityError, match="changed since it was reviewed"):
+                service.approve(
+                    _reviewed_assets(**{"3": "hash-3"}), self._key(), "batch approval"
+                )
 
         api.whitelist_service_approve_whitelisted_contract.assert_not_called()
 
     def test_rejects_bad_input(self) -> None:
+        from taurus_protect.models.whitelisted_address import WhitelistedAssetApproval
+
         service = _create_service_with_mock_verifier()
         key = self._key()
 
-        with pytest.raises(ValueError, match="ids cannot be empty"):
-            service.approve([], key, "c")
+        with pytest.raises(ValueError, match="selection cannot be empty"):
+            # A hand-built value pins nothing, and must be refused rather than treated as
+            # "approve nothing" -- an empty pin must not silently restore the unpinned
+            # behaviour, the same rule approve_rules_proposal's container pin follows.
+            service.approve(WhitelistedAssetApproval({}), key, "c")
+        with pytest.raises(ValueError, match="cannot select an empty set of ids"):
+            # And `select` refuses to mint one in the first place.
+            _reviewed_assets()
         with pytest.raises(ValueError, match="private_key is required"):
-            service.approve([1], None, "c")
+            service.approve(_reviewed_assets(**{"1": "abc123"}), None, "c")
         with pytest.raises(ValueError, match="comment is required"):
-            service.approve([1], key, "")
+            service.approve(_reviewed_assets(**{"1": "abc123"}), key, "")
         with pytest.raises(ValueError, match="positive integer"):
-            service.approve([0], key, "c")
+            service.approve(_reviewed_assets(**{"0": "abc123"}), key, "c")
 
         service._api.whitelist_service_approve_whitelisted_contract.assert_not_called()
 
 
 class TestMapAssetFromDto:
-    """Direct tests for _map_asset_from_dto static method."""
+    """Direct tests for the _map_asset_from_dto static method.
+
+    The mapper is deliberately identity-BLIND now: at map time nothing has been
+    verified, so ``name``/``symbol``/``blockchain``/``network``/``contract_address``/
+    ``decimals``/``token_id`` are left unset and filled in by ``_verified_asset`` from
+    the payload step 4 matched. Asserting them here would re-pin the defect.
+    """
+
+    @pytest.fixture
+    def service(self) -> WhitelistedAssetService:
+        return _create_service_with_mock_verifier()
+
+    def test_the_mapper_never_sources_an_identity_field(self) -> None:
+        """The mapper must not read the payload, even when one is present.
+
+        A payload delivered alongside an envelope is unverified: the legacy-hash
+        tolerance means the bytes a signature covered can differ from the bytes
+        delivered, so a value read here is a value no signature covered.
+        """
+        dto = create_mock_dto_with_payload(
+            {
+                "name": "Delivered Name",
+                "symbol": "DLV",
+                "blockchain": "ETH",
+                "network": "mainnet",
+                "contractAddress": "0xdelivered",
+                "decimals": 18,
+                "tokenId": "7",
+            }
+        )
+
+        asset = WhitelistedAssetService._map_asset_from_dto(dto)
+
+        assert asset.name is None
+        assert asset.symbol is None
+        assert asset.blockchain is None
+        assert asset.network is None
+        assert asset.contract_address is None
+        assert asset.decimals is None
+        assert asset.token_id is None
+        # Non-security fields and the verification material are still mapped.
+        assert asset.id == "asset-123"
+        assert asset.status == "APPROVED"
+        assert asset.metadata is not None
+        assert asset.metadata.hash == "abc123"
 
     def test_no_metadata_returns_none_security_fields(self) -> None:
         """Test that missing metadata results in None for security fields."""
@@ -496,24 +649,30 @@ class TestMapAssetFromDto:
         assert asset.blockchain is None
         assert asset.network is None
 
-    def test_payload_as_string_is_used_not_payload_dict(self) -> None:
-        """Test that payload_as_string is used for extraction, not the raw payload dict.
+    def test_verified_payload_is_used_not_payload_dict(
+        self, service: WhitelistedAssetService
+    ) -> None:
+        """The identity comes from the VERIFIED payload, never the raw payload dict.
 
-        SECURITY: This test verifies that even if metadata.payload is None or different,
-        we extract from payload_as_string which is the cryptographically verified source.
+        SECURITY: even when ``metadata.payload`` carries data, extraction reads the
+        payload verification cleared -- the cryptographically committed source.
         """
         metadata = MockDTO(
             hash="abc",
-            payload=None,  # DTO payload is None, but payload_as_string has data
+            payload={"name": "attacker"},  # unverified object, must be ignored
             payload_as_string='{"name":"test"}',
+            payloadAsString=None,
         )
 
         dto = MockDTO(
             id="asset-1",
             metadata=metadata,
-            signed_contract_address=None,
-            rules_container=None,
-            rules_signatures=None,
+            signed_contract_address=MockDTO(payload="{}", signatures=[]),
+            signedContractAddress=None,
+            rules_container="cnt",
+            rulesContainer=None,
+            rules_signatures="sig",
+            rulesSignatures=None,
             status="PENDING",
             action=None,
             rule=None,
@@ -522,10 +681,8 @@ class TestMapAssetFromDto:
             business_rule_enabled=False,
         )
 
-        asset = WhitelistedAssetService._map_asset_from_dto(dto)
+        asset = _verified(service, dto)
 
-        # SECURITY: Name should come from payload_as_string (verified source),
-        # not from the None payload dict (unverified)
         assert asset.name == "test"
 
     def test_signed_contract_address_mapping(self) -> None:

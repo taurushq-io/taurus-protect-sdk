@@ -33,7 +33,7 @@
         {
           "name": "create",
           "signature": "create(request: CreateAddressRequest): Promise<Address>",
-          "doc": "Creates a new address."
+          "doc": "Creates a new address, with mandatory signature verification of the reply."
         },
         {
           "name": "createAddress",
@@ -588,7 +588,7 @@
         {
           "name": "approve",
           "signature": "approve(request: ApproveMultiFactorSignatureRequest): Promise<void>",
-          "doc": "Approve a multi-factor signature."
+          "doc": ""
         },
         {
           "name": "create",
@@ -598,7 +598,7 @@
         {
           "name": "get",
           "signature": "get(id: string): Promise<MultiFactorSignatureInfo>",
-          "doc": "Get multi-factor signature entity info by ID."
+          "doc": ""
         },
         {
           "name": "reject",
@@ -647,8 +647,8 @@
         },
         {
           "name": "approvePledgeActions",
-          "signature": "approvePledgeActions(actionIds: string[], signature: string, comment?: string): Promise<number>",
-          "doc": "Approves multiple pledge actions with ECDSA signature."
+          "signature": "approvePledgeActions(actions: PledgeAction[], privateKey: KeyObject, comment?: string): Promise<number>",
+          "doc": "Approves one or more pledge actions, verifying every metadata hash it is about to"
         },
         {
           "name": "createPledge",
@@ -1187,8 +1187,8 @@
       "methods": [
         {
           "name": "approve",
-          "signature": "approve(ids: string[], privateKey: KeyObject, comment: string): Promise<void>",
-          "doc": "Signs and submits an approval for the given whitelisted addresses, all-or-nothing."
+          "signature": "approve(selection: WhitelistedAddressApproval, privateKey: KeyObject, comment: string): Promise<void>",
+          "doc": ""
         },
         {
           "name": "get",
@@ -1197,8 +1197,8 @@
         },
         {
           "name": "getEnvelope",
-          "signature": "getEnvelope(addressId: string): Promise<SignedWhitelistedAddressEnvelope>",
-          "doc": "Gets the signed envelope for a whitelisted address."
+          "signature": "getEnvelope(addressId: string): Promise<Verified<SignedWhitelistedAddressEnvelope>>",
+          "doc": "Gets the signed envelope for a whitelisted address, after verifying it."
         },
         {
           "name": "getWithVerification",
@@ -1227,8 +1227,8 @@
       "methods": [
         {
           "name": "approve",
-          "signature": "approve(ids: number[], privateKey: KeyObject, comment: string): Promise<void>",
-          "doc": "Signs and submits an approval for the given whitelisted assets, all-or-nothing."
+          "signature": "approve(selection: WhitelistedAssetApproval, privateKey: KeyObject, comment: string): Promise<void>",
+          "doc": ""
         },
         {
           "name": "get",

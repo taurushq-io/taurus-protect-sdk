@@ -15,6 +15,7 @@ import (
 
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/internal/openapi"
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/crypto"
+	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/model"
 )
 
 // recordingAssetServer answers every asset read with the same unverifiable row and
@@ -88,6 +89,28 @@ func approveTestKey(t *testing.T) *ecdsa.PrivateKey {
 	return key
 }
 
+// reviewedAssetSelection mints the content pin from a verified read, the only producer.
+// A hand-built model.WhitelistedAssetApproval{} pins nothing, because its field is unexported.
+func reviewedAssetSelection(t *testing.T, idToHash map[string]string) *model.WhitelistedAssetApproval {
+	t.Helper()
+
+	result := &model.WhitelistedAssetResult{}
+	ids := make([]string, 0, len(idToHash))
+	for id, hash := range idToHash {
+		result.Assets = append(result.Assets, &model.WhitelistedAsset{
+			ID:       id,
+			Metadata: &model.WhitelistedAssetMetadata{Hash: hash},
+		})
+		ids = append(ids, id)
+	}
+
+	selection, err := result.Select(ids...)
+	if err != nil {
+		t.Fatalf("minting the reviewed selection: %v", err)
+	}
+	return selection
+}
+
 // 10A: one signature covers every hash in the batch, so a row that did not verify has to
 // abort the whole call. Signing the survivors would tell the approver they approved less
 // than they did — and the API takes one signature, so there is no partial submission.
@@ -95,7 +118,9 @@ func TestApproveWhitelistedAssetsSignsNothingWhenARowFailsVerification(t *testin
 	rec := &recordingAssetServer{}
 	svc := approveAssetService(t, rec)
 
-	err := svc.ApproveWhitelistedAssets(context.Background(), []string{"1", "2"}, approveTestKey(t), "batch approval")
+	err := svc.ApproveWhitelistedAssets(context.Background(),
+		reviewedAssetSelection(t, map[string]string{"1": "aaa", "2": "bbb"}),
+		approveTestKey(t), "batch approval")
 	if err == nil {
 		t.Fatal("an unverifiable row must abort the approval")
 	}
@@ -112,24 +137,31 @@ func TestApproveWhitelistedAssetsRejectsBadInput(t *testing.T) {
 	svc := approveAssetService(t, rec)
 	key := approveTestKey(t)
 
+	one := reviewedAssetSelection(t, map[string]string{"1": "aaa"})
+
 	cases := []struct {
-		name    string
-		ids     []string
-		key     *ecdsa.PrivateKey
-		comment string
-		want    string
+		name      string
+		selection *model.WhitelistedAssetApproval
+		key       *ecdsa.PrivateKey
+		comment   string
+		want      string
 	}{
-		{"no ids", nil, key, "c", "ids cannot be empty"},
-		{"nil key", []string{"1"}, nil, "c", "privateKey cannot be nil"},
-		{"no comment", []string{"1"}, key, "", "comment is required"},
+		// An empty pin must be refused rather than treated as approve-nothing, or it
+		// silently restores the unpinned behaviour the pin exists to remove.
+		{"nil selection", nil, key, "c", "selection cannot be empty"},
+		{"forged empty selection", &model.WhitelistedAssetApproval{}, key, "c", "selection cannot be empty"},
+		{"nil key", one, nil, "c", "privateKey cannot be nil"},
+		{"no comment", one, key, "", "comment is required"},
 		// The IDs are sorted numerically before signing, so a non-numeric one has no
 		// defined position in the signed array.
-		{"non-numeric id", []string{"1", "abc"}, key, "c", "not a valid numeric ID"},
+		{"non-numeric id",
+			reviewedAssetSelection(t, map[string]string{"1": "aaa", "abc": "bbb"}),
+			key, "c", "not a valid numeric ID"},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			err := svc.ApproveWhitelistedAssets(context.Background(), tc.ids, tc.key, tc.comment)
+			err := svc.ApproveWhitelistedAssets(context.Background(), tc.selection, tc.key, tc.comment)
 			if err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("got %v, want an error containing %q", err, tc.want)
 			}

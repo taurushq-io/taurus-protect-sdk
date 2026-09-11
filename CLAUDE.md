@@ -93,8 +93,9 @@ Baselines measured against committed `main`/`master` (see `CLAUDE.local.md` for 
 
 | Gate | Command | Baseline on master |
 |---|---|---|
+| Java tests | **`mvn test -o`** (whole reactor — `-pl client` skips the openapi module's own suite) | 0 failures |
 | Java Checkstyle | `mvn checkstyle:check -pl client` | **0 — a real gate; do not break it** |
-| Java PMD | `mvn pmd:check -pl client` | 10 violations (already red) |
+| Java PMD | `mvn pmd:check -pl client` | **0 — a real gate since 2026-09-10** (was 10; all of it unused imports, unnecessary FQNs and two unchained causes) |
 | Java SpotBugs | `mvn spotbugs:check -pl client` (**no `-o`**) | 0 bugs |
 | Go | `go build ./... && go vet ./...` (whole module — see below) `&& golangci-lint run` | 0 issues |
 | Go 32-bit | `GOARCH=386 go build ./pkg/...` | worth checking; a `math.MaxUint32` compare broke it once |
@@ -151,6 +152,16 @@ because nothing enumerated the signing surface so a new signer inherited no rule
 Rationale, keying design and how to add a site are in
 [`scripts/signing-sites/CLAUDE.md`](scripts/signing-sites/CLAUDE.md), loaded when you work
 there.
+
+**A `counts` assertion is NOT consumption — check for a reader in each of the four suites.**
+Every loader asserts the file's `counts` block, and that is what the repo describes as the
+"a case added and consumed by nobody fails loudly" guard. It is weaker than it reads: it proves
+each section has the declared NUMBER of vectors, not that anything asserts their OUTCOMES.
+Three sections shipped consumed by the Go suite alone (`legacy_hash`, `rule_tier_candidates`,
+and `canonical_string` in `crypto-test-vectors.json`), and the cost was concrete — **Python
+shipped the exact single-tier rule lookup `rule_tier_candidates` exists to forbid**, while
+three SDKs carried the fix and no gate went red. So when adding a section, grep for a reader in
+all four suites; and when trusting a section, do the same before believing it covers you.
 
 **Verification behaviour vectors** cover the primitives that had drifted apart: which
 `(blockchain, network)` pair selects the governance rules (`resolveRuleKey`), whether a
@@ -262,6 +273,51 @@ apiKey/apiSecret/bearer params). Three variants, aligned everywhere:
   (Go `bearerTransport`, Java `ApiKeyTPV1Auth.setBearerTokenProvider`, Python `bearer_rest.py`, TS `bearer-middleware.ts`).
 - `Credentials` lives at: Go `pkg/protect/credentials.go`; Java `client/.../client/Credentials.java`;
   Python `taurus_protect/credentials.py`; TS `src/credentials.ts`.
+- **BOTH transports refuse redirects by default AND pin the host, and both guards are required.**
+  The bearer half got this in 2026-09; the api-key (TPV1) half was left with neither until
+  2026-09-10, which was worse rather than equivalent. Because the Authorization header is created
+  *inside* `RoundTrip`, below net/http's redirect handling, the follow-up request net/http
+  synthesises from a server-supplied `Location` carries nothing for net/http to strip — and the
+  TPV1 transport then mints a **brand-new, fully valid signature** (fresh nonce and timestamp)
+  over the attacker-chosen method, host, path, query and body. That is a signing oracle, not a
+  replayed credential: a `303` turns any signed call into an authenticated GET of the
+  intermediary's choosing, with the response flowing back through them, and the 10-hop limit
+  allows ten per legitimate call. `apiKeyCredentials.apply` therefore keeps the host it is handed
+  (it used to discard it with `_ string`) and fails closed on an unparseable one, exactly as the
+  bearer half does. Tests:
+  `TestTPV1SignatureIsNotSentToARedirectTarget` / `…CrossHostEvenWhenRedirectsAreFollowed`,
+  mirroring the bearer pair — plus a same-host test, or "refuse everything" would pass both.
+- **The TPV1 canonical string upper-cases the HTTP method, in all four SDKs and the Postman
+  script.** Python and TS always did; Java and Go signed it verbatim, so a caller issuing a
+  lowercase `get` produced a different canonical string in the two families and one of them could
+  not authenticate. Methods are case-sensitive per RFC 9110 and every real caller sends upper
+  case, so normalising removes the split without changing what a working deployment signs.
+  Pinned by the `canonical_string` group in `docs/test-vectors/crypto-test-vectors.json` — which
+  did not exist before: the `hmac_sha256` group HMACs a hardcoded string that merely *looks* like
+  a canonical message, and no consumer routed through `calculateSignedHeader`, which is how the
+  split survived. **This is not the injectivity defect** — that one changes what a correct caller
+  signs and needs a versioned scheme (TPV2); see `TODOS.md`.
+
+## Generated clients: a 2xx with no body must not yield a nil reply
+
+Go's generated `decode` reported SUCCESS without populating the typed reply for two bodies a
+server fully controls — an empty one, and the JSON literal `null` — so `Execute` returned
+`(nil, resp, nil)` and the very next line in every hand-written service was a nil-pointer
+dereference. Measured: ~110 unchecked `resp.<Field>` dereferences across 38 service files, and
+even the apparently-careful `if resp.Result == nil` is itself a dereference of a nil `resp`.
+
+That is a whole-process kill rather than a failed call — nothing in the SDK recovers — so in
+`tg-protect-mcpd`, which runs one client per tenant in one daemon, a single empty 200 aimed at one
+tenant takes down every tenant, repeatably. A server that merely errors cannot do that.
+
+The guard (`assertReplyDecoded`) lives in the SHARED decode path, and is applied in **two places
+that must stay in step**: `taurus-protect-sdk-go/internal/openapi/client.go` (the committed
+generated file) and `scripts/resources/templates/go/client.mustache` (a newly vendored template
+override passed to the generator with `-t`). The template is what makes it survive
+`./build.sh generate`, which does `rm -rf internal/openapi` — a hand-edit to the generated file
+alone is silently reverted. Only the "asked to populate a typed reply and got nil" shape is an
+error: `*string`, `*os.File`, `[]byte`, value types and `google.protobuf.Empty` endpoints all
+legitimately accept an empty body.
 
 ## Security Invariants (Cross-SDK)
 
@@ -429,6 +485,79 @@ apiKey/apiSecret/bearer params). Three variants, aligned everywhere:
   now `hashesToSignByID` in both whitelist services — the rename is deliberate, so the old name
   cannot be reintroduced by muscle memory. Do not "align" the other three to TypeScript here.
   The caller's ascending-id sort is not cosmetic either: it reproduces the server's own ordering.
+- **Step 6 parses the payload the matched signature COVERED, not the payload the server sent.**
+  The legacy-hash tolerance in step 4 accepts a hash over a regex-STRIPPED rewrite of
+  `payloadAsString`, and the strips are not injective — so a server can append a member the strip
+  removes (`,"label":"X"` before the closing brace, or a `contractType` on a row that has none),
+  have the residue land exactly on the genuinely signed bytes, pass every signature check, and
+  have step 6 return the appended value as verified. Step 4 therefore carries the matched
+  PAYLOAD forward alongside the hash it already returned, and step 6 parses that.
+  Two consequences worth knowing before "simplifying" it:
+  - The exposure is NOT limited to rows with no inner labels. validatord rebuilds
+    `linkedInternalAddresses[].label` on every read from live DB relations rather than from the
+    signed envelope, so for a row signed before per-object labels existed, stripping *every*
+    label lands on the signed bytes too. Both injectable members (`label` at either level,
+    `contractType`) are reachable on any legacy row; only the regex alphabet bounds it, since
+    `[^"]*` cannot contain a quote.
+  - **Accepted regression:** `linkedInternalAddresses[].label` comes back empty for
+    strategy-2-era rows. Those labels were never signed. Do not "fix" it by merging the
+    delivered labels back in.
+  Duplicate JSON object keys are rejected in all four parsers as the second defence, because the
+  appended-`contractType` shape is not a duplicate of anything and the appended-`label` shape is.
+  Gated by the `legacy_hash` section of `scripts/resources/verification-behaviour-vectors.json`,
+  which asserts the PARSED MODEL — `docs/test-vectors/crypto-test-vectors.json` asserts hashes
+  and is structurally blind to this, because the attack moves no hash.
+- **A whitelist approval signs a CONTENT PIN, not a list of ids.** `approve` takes a selection
+  minted by the preceding verified read (`result.Select(ids...)` / `SelectAll()`), carrying the
+  metadata hash each row had at review time, and refuses to sign when a re-read row's hash
+  differs. Without it the approval re-read by id and signed whatever came back, so a
+  response-controlling server could substitute a row whose existing signatures already satisfy
+  the container it presents and harvest a genuine approver signature over content nobody
+  reviewed. Same mitigation as `approveRulesProposal`'s mandatory `expectedContainerHash`;
+  compare constant-time, and **an empty pin must be an error** — an empty one silently restores
+  the unpinned behaviour. The witness type's map is private/unexported in every SDK, so a
+  hand-built value is forgeable but useless (the `helper.VerifiedAsset` property).
+  A mismatch is a REAL signal: `metadata.hash` is recomputed server-side on every read from the
+  immutable envelope plus the row's LIVE linked-address/linked-wallet rows, so renaming a linked
+  address moves it. Report both hashes and say to re-read, re-review, re-approve.
+- **Every path that returns an `Address` verifies the HSM signature, through ONE seam.**
+  `createAddress` was the last one that did not, and it is the highest-value moment for
+  substitution — its caller is about to publish or fund a fresh deposit address. A seam
+  (`verifiedAddress`, like `RequestService.verifiedRequest`) rather than a per-path check,
+  because `AssetService.getAssetAddresses` had already been fixed for exactly this and the create
+  path was missed anyway. **The async case is real** (`status` is one of
+  `created`/`creating`/`signed`/`observed`/`confirmed`), so the rule is not "always throw" but
+  *never return a non-empty address string that has not been verified*: signature present →
+  verify; signature absent and address non-empty → refuse; address empty → fine, nothing to
+  misuse. Java needed `status` added to its `Address` model to express this at all.
+- **`includeNetworkInPayload` is NOT signed and must never be consulted as if it were.**
+  `AddressWhitelistingRules` in `scripts/resources/proto/schema/v1/request_reply.proto:3434-3449`
+  carries only `currency`, `parallelThresholds`, `properties`, `network`, `lines` — the flag has
+  no proto backing in any of the four SDKs (model-only in Go/Java/Python, absent in TS, populated
+  only from the JSON bridge in Python). So when the signed payload omits `network`, there is no
+  authenticated way to learn whether that was legitimate. The rule instead: enforce EVERY rule
+  tier the unsigned DTO network could have selected, rather than the one it named. Reachability
+  mirrors the tier walk — all rules for the chain, plus the chain's wildcard-network rule, plus
+  the global default *only* when the chain has no wildcard-network rule. With a single reachable
+  tier this is a no-op, which is the common case. Gated by the `rule_tier_candidates` section of
+  `verification-behaviour-vectors.json`.
+- **Every signing path emits COMPACT JSON, and a space is a rejected signature.** The array of
+  hashes an approver signs is rebuilt server-side and the submitted signature verified against
+  *those* bytes, so the separator is part of the protocol. Go `json.Marshal`, Java/TS
+  `JSON.stringify` and Python `json.dumps(..., separators=(",", ":"))` all agree — but Python's
+  DEFAULT separators put a space after each comma, and `approve_pledge_actions` was signing
+  `["a", "b"]` while every whitelist path in the same SDK signed `["a","b"]`. One-element
+  batches masked it. Pass the separators explicitly on any new Python signing path.
+- **A row-level failure and a call-level failure need DIFFERENT exception types, and the
+  distinction has to survive a new check being added.** The rule the SDKs enforce — an
+  unverifiable ROW is excluded, an unusable CONTAINER aborts the call — is only as good as the
+  type each new check throws. Java is where this bites, because `WhitelistException` is checked
+  and `IntegrityException extends SecurityException` is not: the duplicate-JSON-key rejection
+  first shipped throwing the unchecked one, which escapes every `catch (WhitelistException)`,
+  so one unparseable row would have aborted a whole listing through a brand-new door. Both
+  public parse entry points declare `throws WhitelistException`, which is what made the break
+  visible instead of silent. **Throw the row-level type for anything that is one row's
+  problem.**
 - **The row→container binding is authenticated, not taken on trust.** In normalized list mode a
   row picks its rules container out of `rulesContainers` by `rulesContainerHash` — and both the
   label and the container come from the same response. All four SDKs now recompute the label and
@@ -501,6 +630,21 @@ break a copy-pasted port:
 | ruleset creation time | `CreatedAt` | `getCreationDate()` | `creation_date` | `creationDate` |
 | history `total_items` | `int64` | `String` | `Optional[str]` | `number` |
 | address list result rows | `Addresses` | `getEnvelopes()` | `addresses` | `items` |
+
+**And one that differs WITHIN each SDK rather than between them, which is why it is not in the
+table: the whitelisting rule's chain field.** Address rules call it `currency`, contract-address
+rules call it `blockchain` — in all four SDKs (Go `Currency`/`Blockchain`, Java
+`currency`/`blockchain`, Python and TS the same). It mirrors the proto, so it is not fixable.
+
+**A shared walk over both families that reads one name is FAIL-OPEN**, which is what makes this
+worth a note rather than a footnote: a rule whose chain field reads empty is treated as the
+*wildcard global default* — the broadest tier — so every contract rule silently becomes a global
+default and the narrow tiers vanish. Hit for real on 2026-09-10 while adding
+`find_*_whitelisting_rule_candidates` to Python: one `_rule_candidates` helper served both
+families and read `rule.currency`, which the asset suite caught only because an unrelated test
+asserted on the error string. Python resolves it with a `_rule_chain(rule)` accessor trying
+`currency` then `blockchain`; the other three have separate typed walks and cannot make the
+mistake. Do not "simplify" the accessor away.
 
 The `total_items` one bites hardest: reducing it by the exclusion count is integer
 arithmetic in Go/TS and needs re-stringifying in Java/Python. Keep each SDK's existing
@@ -641,6 +785,32 @@ only became a gate once the input carried the `properties` keys in reverse-sorte
 also what an edited container actually looks like. Same rule for the file-driven gates: delete the
 shared vector file and confirm the suite goes red.
 
+**Three sharper variants of this, all found in the 2026-09-10 security-scan pass.** Each one had
+a green suite sitting on top of a live vulnerability, so none of them was visible as a failure:
+
+- **A test can assert the vulnerable behaviour.** `test_legacy_hash_without_contract_type`
+  (Python) and the TS/Python create-address happy-paths *pinned* the defect: they asserted that an
+  unsigned `contractType` comes back, and that a create reply with **no signature at all** yields
+  an `Address`. Those had to be inverted, not adjusted. When a security fix leaves an existing
+  test failing, read it before re-baselining — it may be the finding.
+- **A test can exercise a private production method through an inline copy of it.** Java's
+  legacy-hash tests re-implement the regexes with `String.replaceAll` because
+  `computeLegacyHashes` is private (`CrossSdkCryptoVectorTest`,
+  `WhitelistedAddressServiceLegacyHashTest`, `WhitelistVerificationFlowTest`). Fixing production
+  and not the copies leaves the gate **green while asserting the old behaviour**. Grep for a
+  duplicated implementation before trusting a test that covers a private method.
+- **A test can name the property it does not test.**
+  `TestCase2_LabelPatternDoesNotAffectMainLabel` (and its three peers) claims the main `label` is
+  unaffected by the strip — but its fixture puts the main `label` *before* other fields, so the
+  "followed by `}`" case it purports to rule out is never constructed. It passed against the
+  vulnerable regex for the entire life of the defect.
+
+And the reason the whole class survived: **the full `VerifyWhitelistedAddress` flow was only ever
+called with nil inputs in the Go suite.** Every other address test drove steps 1-5 individually,
+so nothing exercised step 6 with real signatures, and `VerificationResult.VerifiedAddress` had
+exactly one reader in the module. If a verification flow's end-to-end test does not exist, no
+amount of per-step coverage substitutes for it.
+
 ### A bulk rename can silently un-name a test, and the suite still says "passed"
 
 Renaming `_contains_hash` → `contains_hash` with a plain string replace also rewrote
@@ -776,6 +946,18 @@ Two things not to undo:
   unambiguous) and the memo key. One deliberate exception: `userSignaturesFromBase64`
   catches the error and returns an empty list, because its contract is "no signatures on
   parse failure" — which is fail-closed, since an empty list satisfies no threshold.
+  **Validate without a quantified-group regex.** TypeScript's well-formedness test was
+  `/^(?:[A-Za-z0-9+/]{4})*.../`, which recurses per four-character group in V8: a
+  multi-megabyte input threw `RangeError: Maximum call stack size exceeded` out of the
+  decoder instead of returning a decision (1.6 MB passed in 27 ms, 5.6 MB threw). Fails
+  closed, so availability rather than a bypass — but a `RangeError` escapes every
+  `catch (e) { if (e instanceof …) }` funnel in the SDK, and the decoder is reachable from any
+  governance response through the signature-verification decode and the memo key, not only the
+  size-capped container decode. It is a linear scan over the same accepted set now; Go, Python
+  and Java were never affected. **And no SDK tests its own decoder** — the property is
+  documented four times and pinned nowhere, which is the shape this repo keeps rediscovering by
+  grep. TypeScript's `tests/unit/helpers/strict-base64.test.ts` is the accept/reject table to
+  lift into a shared vector file; see `TODOS.md`.
 - **`approveRulesProposal` PINS the content the approver reviewed.** It takes a required
   `expectedContainerHash` (`proposalContainerHash` of the reviewed proposal), re-fetches,
   and aborts **without signing** if the container differs. Without that pin a server able

@@ -15,6 +15,7 @@ import {
   NotFoundError,
   ValidationError,
 } from "../errors";
+import { constantTimeCompare } from "../helpers/constant-time";
 import { containerHashLabel } from "../helpers/whitelist-hash-helper";
 import {
   WhitelistedAddressVerifier,
@@ -22,7 +23,9 @@ import {
   type RulesContainerDecoder,
   type UserSignaturesDecoder,
 } from "../helpers/whitelisted-address-verifier";
+import type { Verified } from "../helpers/verified";
 import type { DecodedRulesContainer } from "../models/governance-rules";
+import { WhitelistedAddressApproval } from "../models/whitelisted-address";
 import type {
   WhitelistedAddress,
   SignedWhitelistedAddressEnvelope,
@@ -113,6 +116,90 @@ export interface ListWhitelistedAddressesResult {
    * completeness must check this rather than inferring from `items.length`.
    */
   excludedUnverified: ExcludedWhitelistedAddress[];
+  /**
+   * Pins the named rows for {@link WhitelistedAddressService.approve}, recording the
+   * metadata hash each one carried on THIS read.
+   *
+   * An id that is not in this result is an error rather than a silent omission: it means
+   * the caller is trying to approve something this read did not return — either it was
+   * excluded as unverifiable, or it was never on the page — and approving fewer rows
+   * than asked for would tell the approver they approved more than they did.
+   *
+   * @param ids - the row ids to pin
+   * @throws {@link ValidationError} If `ids` is empty or names a row not in this result
+   * @throws {@link IntegrityError} If a named row carries no metadata hash to pin to
+   */
+  select(...ids: string[]): WhitelistedAddressApproval;
+  /**
+   * Pins every row this read returned.
+   *
+   * Note it pins what SURVIVED verification, not what the server sent: rows in
+   * `excludedUnverified` are not included, so a caller who wants to know about them must
+   * read that field. Approving is all-or-nothing over what is pinned here.
+   *
+   * @throws {@link IntegrityError} If this read returned no verified rows
+   */
+  selectAll(): WhitelistedAddressApproval;
+}
+
+/**
+ * Assembles a list result and attaches the two selection methods over the hashes the
+ * read captured.
+ *
+ * A module-level function rather than a method so both `list` and `listForApproval`
+ * mint the same shape — the two readers that would otherwise drift, exactly as
+ * `rethrowIfNotRowLevel` was extracted for.
+ *
+ * @param items - the rows that survived verification
+ * @param pagination - the page window, already reduced by the exclusions
+ * @param excludedUnverified - the rows withheld, with reasons
+ * @param pinnedHashes - row id -> the metadata hash that row carried on this read
+ */
+function buildAddressListResult(
+  items: WhitelistedAddress[],
+  pagination: Pagination | undefined,
+  excludedUnverified: ExcludedWhitelistedAddress[],
+  pinnedHashes: ReadonlyMap<string, string>
+): ListWhitelistedAddressesResult {
+  const select = (...ids: string[]): WhitelistedAddressApproval => {
+    if (ids.length === 0) {
+      throw new ValidationError("cannot select an empty set of ids");
+    }
+    const pinned = new Map<string, string>();
+    for (const id of ids) {
+      const hash = pinnedHashes.get(id);
+      if (hash === undefined) {
+        throw new ValidationError(
+          `whitelisted address ${id} is not in this verified read: it was either ` +
+            `excluded as unverifiable or not on this page`
+        );
+      }
+      if (!hash) {
+        throw new IntegrityError(
+          `whitelisted address ${id} carries no metadata hash, so there is nothing ` +
+            `to pin the approval to`
+        );
+      }
+      pinned.set(id, hash);
+    }
+    return new WhitelistedAddressApproval(pinned);
+  };
+
+  return {
+    items,
+    pagination,
+    excludedUnverified,
+    select,
+    selectAll: (): WhitelistedAddressApproval => {
+      const ids = [...pinnedHashes.keys()];
+      if (ids.length === 0) {
+        throw new IntegrityError(
+          "this read returned no verified addresses to approve"
+        );
+      }
+      return select(...ids);
+    },
+  };
 }
 
 /**
@@ -264,11 +351,17 @@ export class WhitelistedAddressService extends BaseService {
   }
 
   /**
-   * Gets the signed envelope for a whitelisted address.
+   * Gets the signed envelope for a whitelisted address, after verifying it.
    *
-   * The envelope is returned only once all six steps pass, so a caller reading its
-   * raw fields is reading data that was checked. It used to return the mapped
-   * envelope with nothing verified, which made it a way around the verified reads.
+   * Returns what verification PRODUCED, not the input: the branded type is the caller's
+   * proof that the fields they are about to read were checked, and a read path that
+   * skipped `verify()` cannot produce one — it will not compile.
+   *
+   * This used to run the verification and then return the unverified INPUT envelope,
+   * discarding the result. Structurally that is the same defect the `Verified<>` brand
+   * was introduced for: the type could not tell an envelope off the wire from one the
+   * verifier had cleared, so the two were interchangeable and only the asset side got
+   * it right.
    *
    * @param addressId - The address ID to retrieve
    * @returns The verified signed envelope
@@ -278,7 +371,9 @@ export class WhitelistedAddressService extends BaseService {
    * @throws WhitelistError if governance thresholds are not met
    * @throws APIError if API request fails
    */
-  async getEnvelope(addressId: string): Promise<SignedWhitelistedAddressEnvelope> {
+  async getEnvelope(
+    addressId: string
+  ): Promise<Verified<SignedWhitelistedAddressEnvelope>> {
     if (!addressId) {
       throw new ValidationError("addressId is required");
     }
@@ -293,13 +388,11 @@ export class WhitelistedAddressService extends BaseService {
         throw new NotFoundError(`Whitelisted address ${addressId} not found`);
       }
 
-      const envelope = this.mapDtoToEnvelope(dto, addressId);
-      this.verifier.verify(
-        envelope,
+      return this.verifier.verify(
+        this.mapDtoToEnvelope(dto, addressId),
         this.rulesContainerDecoder,
         this.userSignaturesDecoder
-      );
-      return envelope;
+      ).verifiedEnvelope;
     });
   }
 
@@ -358,6 +451,10 @@ export class WhitelistedAddressService extends BaseService {
       const rows = response.result ?? [];
       const items: WhitelistedAddress[] = [];
       const excludedUnverified: ExcludedWhitelistedAddress[] = [];
+      // The content pin, captured while the DTO is still in hand: this SDK's
+      // WhitelistedAddress carries no metadata, so the hash an approver would sign is
+      // not recoverable from `items` afterwards.
+      const pinnedHashes = new Map<string, string>();
 
       for (const dto of rows) {
         const dtoId = dto.id ?? "";
@@ -376,6 +473,7 @@ export class WhitelistedAddressService extends BaseService {
             cached
           );
           items.push(this.withEnvelopeFields(result.verifiedWhitelistedAddress, dto));
+          pinnedHashes.set(dtoId, dto.metadata?.hash ?? "");
         } catch (error: unknown) {
           rethrowIfNotRowLevel(error);
           excludedUnverified.push({
@@ -411,7 +509,12 @@ export class WhitelistedAddressService extends BaseService {
         ? { totalItems, offset, limit }
         : undefined;
 
-      return { items, pagination, excludedUnverified };
+      return buildAddressListResult(
+        items,
+        pagination,
+        excludedUnverified,
+        pinnedHashes
+      );
     });
   }
 
@@ -464,6 +567,7 @@ export class WhitelistedAddressService extends BaseService {
       const rows = response.result ?? [];
       const items: WhitelistedAddress[] = [];
       const excludedUnverified: ExcludedWhitelistedAddress[] = [];
+      const pinnedHashes = new Map<string, string>();
 
       for (const dto of rows) {
         const rowId = dto.id ?? "";
@@ -476,6 +580,7 @@ export class WhitelistedAddressService extends BaseService {
           items.push(
             this.withEnvelopeFields(result.verifiedWhitelistedAddress, dto)
           );
+          pinnedHashes.set(rowId, dto.metadata?.hash ?? "");
         } catch (error: unknown) {
           rethrowIfNotRowLevel(error);
           excludedUnverified.push({
@@ -500,41 +605,64 @@ export class WhitelistedAddressService extends BaseService {
           ? undefined
           : Math.max(0, reportedTotal - excludedUnverified.length);
 
-      return {
+      return buildAddressListResult(
         items,
-        pagination:
-          totalItems !== undefined
-            ? { limit, offset, totalItems, hasMore: totalItems > offset + limit }
-            : undefined,
+        // TypeScript's Pagination is {totalItems, offset, limit} — it has no `hasMore`,
+        // unlike Go's. Keep the shape per SDK rather than inventing a field here.
+        totalItems !== undefined ? { limit, offset, totalItems } : undefined,
         excludedUnverified,
-      };
+        pinnedHashes
+      );
     });
   }
 
   /**
-   * Signs and submits an approval for the given whitelisted addresses, all-or-nothing.
+   * Signs and submits an approval for the whitelisted addresses an approver REVIEWED,
+   * all-or-nothing.
    *
-   * The batch is re-read through the verifying path and the hashes THOSE rows carry are
-   * what gets signed, so the approver's signature covers metadata this SDK checked
-   * rather than whatever a caller was handed. Same shape as
-   * `WhitelistedAssetService.approve`.
+   * The selection comes from a preceding verified read — `result.select(...)` or
+   * `result.selectAll()` on {@link list} / {@link listForApproval} — so it carries the
+   * metadata hash each row had at review time. The batch is then re-read through the
+   * verifying path and every re-read hash must equal its pin, or the call aborts and
+   * NOTHING is signed.
    *
-   *   ids -> sort numerically -> ONE filtered verified page -> completeness check
-   *                                                                   |
-   *                                                                   v
-   *                                       sign(JSON(hashes)) -> POST once
+   *   selection -> sort numerically -> ONE filtered verified page -> completeness check
+   *                                                                        |
+   *                                                        pin == re-read hash ?
+   *                                                                        |
+   *                                            sign(JSON(hashes)) -> POST once
    *
-   * Any address that is missing or fails verification aborts the whole call and nothing
-   * is signed: one signature covers every hash in the batch, so a partial approval would
-   * mean the caller believes they approved more than they did.
+   * The pin is what defeats the substitution the re-read alone cannot see: the API takes
+   * only ids, so without it a response-controlling server can answer the review call
+   * with one row and the re-read with another whose existing signatures already satisfy
+   * the container it presents — harvesting a genuine approver signature over content the
+   * approver never saw. An abort here is CORRECT, not a false positive; the remedy is
+   * re-read, re-review, re-approve. Note `metadata.hash` is recomputed by validatord on
+   * every read from live linked-address/wallet rows, so renaming a linked wallet moves
+   * it legitimately — which is precisely the change an approver most needs to be told
+   * about.
+   *
+   * Taking a `string[]` of ids was the previous shape and is deliberately gone: an
+   * optional pin that defaults to "no pin" restores the unpinned behaviour silently,
+   * which is the mistake `approveRulesProposal` already records.
+   *
+   * @param selection - rows pinned by a verified read
+   * @param privateKey - the approver's P-256 private key
+   * @param comment - the approval comment
+   * @throws {@link ValidationError} If the selection is empty or an argument is missing
+   * @throws {@link IntegrityError} If a row is missing, unverifiable, or has moved
+   *   since it was reviewed
    */
   async approve(
-    ids: string[],
+    selection: WhitelistedAddressApproval,
     privateKey: KeyObject,
     comment: string
   ): Promise<void> {
-    if (!ids || ids.length === 0) {
-      throw new ValidationError("ids cannot be empty");
+    if (!selection || selection.isEmpty()) {
+      throw new ValidationError(
+        "selection cannot be empty: pin the rows with result.select(...ids) or " +
+          "result.selectAll() from a verified read"
+      );
     }
     if (!privateKey) {
       throw new ValidationError("privateKey is required");
@@ -542,6 +670,7 @@ export class WhitelistedAddressService extends BaseService {
     if (!comment || comment.trim() === "") {
       throw new ValidationError("comment is required");
     }
+    const ids = selection.ids();
     for (const id of ids) {
       if (!/^\d+$/.test(id)) {
         throw new ValidationError(
@@ -571,6 +700,23 @@ export class WhitelistedAddressService extends BaseService {
           `refusing to sign: address ${id} has no metadata hash`
         );
       }
+
+      // The pin. Constant-time because this compares hash material, matching how
+      // approveRulesProposal handles its container pin.
+      const pinned = selection.pinnedHash(id);
+      if (pinned === undefined) {
+        throw new IntegrityError(
+          `refusing to sign: address ${id} is not in the reviewed selection`
+        );
+      }
+      if (!constantTimeCompare(pinned, hash)) {
+        throw new IntegrityError(
+          `refusing to sign: whitelisted address ${id} changed since it was reviewed: ` +
+            `reviewed hash ${pinned}, re-read hash ${hash}. Re-read, re-review and ` +
+            `re-approve`
+        );
+      }
+
       hashes.push(hash);
     }
 

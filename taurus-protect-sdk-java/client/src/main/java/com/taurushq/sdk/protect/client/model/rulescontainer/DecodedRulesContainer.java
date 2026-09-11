@@ -3,6 +3,7 @@ package com.taurushq.sdk.protect.client.model.rulescontainer;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.security.PublicKey;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -465,6 +466,109 @@ public class DecodedRulesContainer extends RulesNodeWithProperties {
             return blockchainOnlyMatch;
         }
         return globalDefault;
+    }
+
+    /**
+     * Returns every AddressWhitelistingRules the tier walk could select for this
+     * blockchain, across all possible network values.
+     *
+     * <p>This exists because the network half of the rule key is NOT always signed.
+     * Governance carries a per-rule {@code includeNetworkInPayload} flag, and when it is
+     * off the signed payload has no {@code network} member at all — the common case in
+     * captured production data. The key then falls back to the network on the UNSIGNED
+     * response DTO, which hands a response-controlling server the choice of WHICH rule
+     * judges the row, and therefore which group quorum it must meet: an older or laxer
+     * tier for the same chain will do.
+     *
+     * <p>That is not closeable by reading the flag. {@code includeNetworkInPayload} has no
+     * proto backing in any of the four SDKs — {@code request_reply.proto}'s
+     * {@code AddressWhitelistingRules} carries only {@code currency},
+     * {@code parallelThresholds}, {@code properties}, {@code network} and {@code lines} —
+     * so it is never part of the SuperAdmin-signed container and cannot be consulted.
+     *
+     * <p>So when the network is unsigned the caller must satisfy EVERY rule this returns,
+     * not the one the DTO named. Where a chain has a single reachable tier — again the
+     * common case — the set has one element and behaviour is unchanged.
+     *
+     * <p>Reachability mirrors {@link #findAddressWhitelistingRules(String, String)}: every
+     * rule for this chain is reachable by naming its network; the chain's wildcard-network
+     * rule is reachable by naming a network no exact rule covers; and the global default
+     * is reachable ONLY when the chain has no wildcard-network rule, because priority 2
+     * would otherwise win.
+     *
+     * @param blockchain the chain from the signed payload
+     * @return the reachable rules, exact tiers first; empty when none is reachable
+     */
+    public List<AddressWhitelistingRules> findAddressWhitelistingRuleCandidates(
+            final String blockchain) {
+        List<AddressWhitelistingRules> candidates = new ArrayList<>();
+        if (addressWhitelistingRules == null) {
+            return candidates;
+        }
+
+        AddressWhitelistingRules globalDefault = null;
+        boolean chainHasWildcardNetwork = false;
+
+        for (AddressWhitelistingRules rule : addressWhitelistingRules) {
+            if (isGlobalDefaultRule(rule)) {
+                if (globalDefault == null) {
+                    globalDefault = rule;
+                }
+                continue;
+            }
+            if (!matches(rule.getCurrency(), blockchain)) {
+                continue;
+            }
+            candidates.add(rule);
+            if (hasWildcardNetwork(rule)) {
+                chainHasWildcardNetwork = true;
+            }
+        }
+
+        if (!chainHasWildcardNetwork && globalDefault != null) {
+            candidates.add(globalDefault);
+        }
+        return candidates;
+    }
+
+    /**
+     * The asset peer of {@link #findAddressWhitelistingRuleCandidates(String)}. Same
+     * reasoning: when the signed payload omits {@code network}, the unsigned response DTO
+     * would otherwise choose which quorum judges the asset.
+     *
+     * @param blockchain the chain from the signed payload
+     * @return the reachable rules, exact tiers first; empty when none is reachable
+     */
+    public List<ContractAddressWhitelistingRules> findContractAddressWhitelistingRuleCandidates(
+            final String blockchain) {
+        List<ContractAddressWhitelistingRules> candidates = new ArrayList<>();
+        if (contractAddressWhitelistingRules == null) {
+            return candidates;
+        }
+
+        ContractAddressWhitelistingRules globalDefault = null;
+        boolean chainHasWildcardNetwork = false;
+
+        for (ContractAddressWhitelistingRules rule : contractAddressWhitelistingRules) {
+            if (isWildcard(rule.getBlockchain())) {
+                if (globalDefault == null) {
+                    globalDefault = rule;
+                }
+                continue;
+            }
+            if (!matches(rule.getBlockchain(), blockchain)) {
+                continue;
+            }
+            candidates.add(rule);
+            if (isWildcard(rule.getNetwork())) {
+                chainHasWildcardNetwork = true;
+            }
+        }
+
+        if (!chainHasWildcardNetwork && globalDefault != null) {
+            candidates.add(globalDefault);
+        }
+        return candidates;
     }
 
     /**

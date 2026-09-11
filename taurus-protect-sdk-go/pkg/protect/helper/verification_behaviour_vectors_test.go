@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/crypto"
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/model"
 )
 
@@ -23,10 +24,31 @@ const behaviourVectorsRelPath = "../../../../scripts/resources/verification-beha
 
 type behaviourVectors struct {
 	Counts struct {
-		RuleKey      int `json:"rule_key"`
-		HashCoverage int `json:"hash_coverage"`
-		ContainsHash int `json:"contains_hash"`
+		RuleKey            int `json:"rule_key"`
+		HashCoverage       int `json:"hash_coverage"`
+		ContainsHash       int `json:"contains_hash"`
+		LegacyHash         int `json:"legacy_hash"`
+		RuleTierCandidates int `json:"rule_tier_candidates"`
 	} `json:"counts"`
+	LegacyHash []struct {
+		Description          string `json:"description"`
+		SignedPayload        string `json:"signed_payload"`
+		DeliveredPayload     string `json:"delivered_payload"`
+		Expect               string `json:"expect"`
+		ExpectMatchedPayload string `json:"expect_matched_payload"`
+	} `json:"legacy_hash"`
+	RuleTierCandidates []struct {
+		Description string `json:"description"`
+		Rules       []struct {
+			Blockchain string `json:"blockchain"`
+			Network    string `json:"network"`
+		} `json:"rules"`
+		Blockchain       string `json:"blockchain"`
+		ExpectCandidates []struct {
+			Blockchain string `json:"blockchain"`
+			Network    string `json:"network"`
+		} `json:"expect_candidates"`
+	} `json:"rule_tier_candidates"`
 	RuleKey []struct {
 		Description     string `json:"description"`
 		PayloadAsString string `json:"payload_as_string"`
@@ -75,7 +97,81 @@ func loadBehaviourVectors(t *testing.T) behaviourVectors {
 	if len(v.ContainsHash) != v.Counts.ContainsHash {
 		t.Fatalf("contains_hash: got %d vectors, file declares %d", len(v.ContainsHash), v.Counts.ContainsHash)
 	}
+	if len(v.LegacyHash) != v.Counts.LegacyHash {
+		t.Fatalf("legacy_hash: got %d vectors, file declares %d", len(v.LegacyHash), v.Counts.LegacyHash)
+	}
+	if len(v.RuleTierCandidates) != v.Counts.RuleTierCandidates {
+		t.Fatalf("rule_tier_candidates: got %d vectors, file declares %d",
+			len(v.RuleTierCandidates), v.Counts.RuleTierCandidates)
+	}
 	return v
+}
+
+// TestVerificationBehaviourVectors_LegacyHash pins WHICH PAYLOAD step 6 must parse.
+//
+// The vector gives the payload a signer covered and the payload the server delivered. The SDK
+// must decide, from the delivered payload alone, which variant a signature over the signed
+// payload covers — and hand back THAT payload. Asserting the hash alone (which is all
+// crypto-test-vectors.json does) cannot catch the defect, because the attack does not move any
+// hash: it changes which string the parse reads.
+func TestVerificationBehaviourVectors_LegacyHash(t *testing.T) {
+	for _, tc := range loadBehaviourVectors(t).LegacyHash {
+		t.Run(tc.Description, func(t *testing.T) {
+			coveredHash := crypto.CalculateHexHash(tc.SignedPayload)
+
+			matchedPayload := ""
+			matched := false
+			if crypto.CalculateHexHash(tc.DeliveredPayload) == coveredHash {
+				matchedPayload, matched = tc.DeliveredPayload, true
+			} else {
+				for _, variant := range ComputeLegacyPayloadVariants(tc.DeliveredPayload) {
+					if variant.Hash == coveredHash {
+						matchedPayload, matched = variant.Payload, true
+						break
+					}
+				}
+			}
+
+			if tc.Expect == "no_match" {
+				if matched {
+					t.Fatalf("expected no variant to be covered, but %q matched", matchedPayload)
+				}
+				return
+			}
+			if !matched {
+				t.Fatal("expected a covered variant, found none")
+			}
+			if matchedPayload != tc.ExpectMatchedPayload {
+				t.Errorf("matched payload:\n got  %q\n want %q", matchedPayload, tc.ExpectMatchedPayload)
+			}
+		})
+	}
+}
+
+// TestVerificationBehaviourVectors_RuleTierCandidates pins the set of rules that must be enforced
+// when the signed payload omits `network`. Too few leaves the server free to pick the quorum; too
+// many rejects rows governance would accept.
+func TestVerificationBehaviourVectors_RuleTierCandidates(t *testing.T) {
+	for _, tc := range loadBehaviourVectors(t).RuleTierCandidates {
+		t.Run(tc.Description, func(t *testing.T) {
+			container := &model.DecodedRulesContainer{}
+			for _, r := range tc.Rules {
+				container.AddressWhitelistingRules = append(container.AddressWhitelistingRules,
+					&model.AddressWhitelistingRules{Currency: r.Blockchain, Network: r.Network})
+			}
+
+			got := container.FindAddressWhitelistingRuleCandidates(tc.Blockchain)
+			if len(got) != len(tc.ExpectCandidates) {
+				t.Fatalf("got %d candidates, want %d", len(got), len(tc.ExpectCandidates))
+			}
+			for i, want := range tc.ExpectCandidates {
+				if got[i].Currency != want.Blockchain || got[i].Network != want.Network {
+					t.Errorf("candidate %d = %q/%q, want %q/%q",
+						i, got[i].Currency, got[i].Network, want.Blockchain, want.Network)
+				}
+			}
+		})
+	}
 }
 
 func TestVerificationBehaviourVectors_RuleKey(t *testing.T) {

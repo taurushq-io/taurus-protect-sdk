@@ -141,12 +141,13 @@ func TestIntegration_CaptureRawWhitelistedAssetResponse(t *testing.T) {
 	ctx := context.Background()
 
 	// Get whitelisted assets
-	assets, _, err := client.WhitelistedAssets().ListWhitelistedAssets(ctx, &model.ListWhitelistedAssetsOptions{
+	assetResult, err := client.WhitelistedAssets().ListWhitelistedAssets(ctx, &model.ListWhitelistedAssetsOptions{
 		Limit: 10,
 	})
 	if err != nil {
 		t.Fatalf("ListWhitelistedAssets error: %v", err)
 	}
+	assets := assetResult.Assets
 
 	if len(assets) == 0 {
 		t.Skip("No whitelisted assets available for capture")

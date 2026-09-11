@@ -340,7 +340,7 @@ func TestStep4_VerifyHashCoverageSuccess(t *testing.T) {
 		},
 	}
 
-	foundHash, err := v.verifyHashInSignedHashes(addr)
+	foundHash, _, err := v.verifyHashInSignedHashes(addr)
 	if err != nil {
 		t.Errorf("Step 4 should pass: verifyHashInSignedHashes() unexpected error: %v", err)
 		return
@@ -387,7 +387,7 @@ func TestStep4_VerifyHashCoverageFailure_UsesLegacy(t *testing.T) {
 		},
 	}
 
-	foundHash, err := v.verifyHashInSignedHashes(addr)
+	foundHash, foundPayload, err := v.verifyHashInSignedHashes(addr)
 	if err != nil {
 		t.Errorf("Step 4 should pass with legacy hash: verifyHashInSignedHashes() unexpected error: %v", err)
 		return
@@ -396,6 +396,17 @@ func TestStep4_VerifyHashCoverageFailure_UsesLegacy(t *testing.T) {
 	// Should return the legacy hash since that's what was signed
 	if foundHash != legacyHash {
 		t.Errorf("Step 4 should return legacy hash: got %q, want %q", foundHash, legacyHash)
+	}
+
+	// And it must return the payload that hash COVERS, not the delivered payload. Step 6
+	// parses this, so returning the delivered text here is what let a server append a
+	// member the strip removes and have it come back as verified.
+	if foundPayload != testdata.Case1LegacyPayload {
+		t.Errorf("Step 4 should return the legacy PAYLOAD, not the delivered one:\n got  %q\n want %q",
+			foundPayload, testdata.Case1LegacyPayload)
+	}
+	if foundPayload == currentPayload {
+		t.Error("Step 4 returned the delivered payload; step 6 would then parse unsigned members")
 	}
 }
 
@@ -427,7 +438,7 @@ func TestStep4_VerifyHashCoverageFailure(t *testing.T) {
 		},
 	}
 
-	_, err := v.verifyHashInSignedHashes(addr)
+	_, _, err := v.verifyHashInSignedHashes(addr)
 	if err == nil {
 		t.Error("Step 4 should fail: verifyHashInSignedHashes() expected IntegrityError, got nil")
 		return

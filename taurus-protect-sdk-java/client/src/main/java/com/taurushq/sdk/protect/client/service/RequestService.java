@@ -286,7 +286,7 @@ public class RequestService {
                 verifyMetadataHash(r);
             } catch (IntegrityException e) {
                 throw new IntegrityException(String.format(
-                        "refusing to sign request %d: %s", r.getId(), e.getMessage()));
+                        "refusing to sign request %d: %s", r.getId(), e.getMessage()), e);
             }
         });
 
@@ -427,7 +427,8 @@ public class RequestService {
         try {
             verifyMetadataHash(r);
         } catch (IntegrityException e) {
-            throw new IntegrityException(String.format("request %s: %s", r.getId(), e.getMessage()));
+            throw new IntegrityException(
+                    String.format("request %s: %s", r.getId(), e.getMessage()), e);
         }
         return r;
     }

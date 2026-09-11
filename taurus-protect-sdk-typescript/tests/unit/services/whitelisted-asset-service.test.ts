@@ -17,6 +17,7 @@
  */
 
 import * as crypto from 'crypto';
+import { WhitelistedAssetApproval } from '../../../src/models/whitelisted-asset';
 
 import { verifySignature } from '../../../src/crypto';
 import { WhitelistedAssetService } from '../../../src/services/whitelisted-asset-service';
@@ -442,6 +443,19 @@ describe('WhitelistedAssetService', () => {
       namedCurve: 'prime256v1',
     }).privateKey;
 
+    /**
+     * Mints the content pin the way a caller does — from a verified read. `#pinned` is a
+     * true private field, so an object literal is not an instance and cannot reach
+     * `approve` at all; that is the guard, and these tests exercise it.
+     */
+    const reviewedSelection = (
+      idToHash: Record<number, string>
+    ): WhitelistedAssetApproval =>
+      new WhitelistedAssetApproval(
+        new Map(Object.entries(idToHash).map(([id, h]) => [Number(id), h]))
+      );
+
+
     it('signs nothing when one row of the batch fails verification', async () => {
       const { api, svc, fixture } = signedSetup();
       const tampered = JSON.stringify({
@@ -464,9 +478,13 @@ describe('WhitelistedAssetService', () => {
         totalItems: '2',
       });
 
-      await expect(svc.approve([1, 2], approverKey, 'batch approval')).rejects.toThrow(
-        /refusing to sign/
-      );
+      await expect(
+        svc.approve(
+          reviewedSelection({ 1: fixture.envelope.metadata.hash, 2: fixture.envelope.metadata.hash }),
+          approverKey,
+          'batch approval'
+        )
+      ).rejects.toThrow(/refusing to sign/);
       expect(api.whitelistServiceApproveWhitelistedContract).not.toHaveBeenCalled();
     });
 
@@ -481,7 +499,11 @@ describe('WhitelistedAssetService', () => {
         totalItems: '2',
       });
 
-      await svc.approve([7, 3], approverKey, 'batch approval');
+      await svc.approve(
+        reviewedSelection({ 7: fixture.envelope.metadata.hash, 3: fixture.envelope.metadata.hash }),
+        approverKey,
+        'batch approval'
+      );
 
       expect(api.whitelistServiceGetWhitelistedContracts).toHaveBeenCalledTimes(1);
       const listArgs = api.whitelistServiceGetWhitelistedContracts.mock
@@ -517,12 +539,22 @@ describe('WhitelistedAssetService', () => {
     it('rejects bad input without reaching the API', async () => {
       const { api, svc } = signedSetup();
 
-      await expect(svc.approve([], approverKey, 'c')).rejects.toThrow('ids cannot be empty');
+      // An empty pin must be refused rather than treated as "approve nothing": an empty
+      // one silently restores the unpinned behaviour the pin exists to remove.
+      await expect(svc.approve(reviewedSelection({}), approverKey, 'c')).rejects.toThrow(
+        'selection cannot be empty'
+      );
       await expect(
-        svc.approve([1], undefined as unknown as crypto.KeyObject, 'c')
+        svc.approve(
+          reviewedSelection({ 1: 'aaa' }),
+          undefined as unknown as crypto.KeyObject,
+          'c'
+        )
       ).rejects.toThrow('privateKey is required');
-      await expect(svc.approve([1], approverKey, '')).rejects.toThrow('comment is required');
-      await expect(svc.approve([0], approverKey, 'c')).rejects.toThrow(
+      await expect(svc.approve(reviewedSelection({ 1: 'aaa' }), approverKey, '')).rejects.toThrow(
+        'comment is required'
+      );
+      await expect(svc.approve(reviewedSelection({ 0: 'aaa' }), approverKey, 'c')).rejects.toThrow(
         'must be a positive integer'
       );
 

@@ -1,92 +1,73 @@
-"""Unit tests for multi-factor signature mapper functions."""
+"""Unit tests for the multi-factor signature entity-type mapping.
 
-from datetime import datetime, timezone
-from types import SimpleNamespace
+The kind is the only thing in a multi-factor signature reply that tells a caller which
+verifying reader to check ``payload_to_sign`` against, so neither direction of the
+mapping is allowed to default an unknown value to something plausible.
+"""
 
+from __future__ import annotations
+
+import pytest
+
+from taurus_protect._internal.openapi.models.tgvalidatord_multi_factor_signatures_entity_type import (  # noqa: E501
+    TgvalidatordMultiFactorSignaturesEntityType,
+)
+from taurus_protect.errors import IntegrityError
+from taurus_protect.models.multi_factor_signature import MultiFactorSignatureEntityType
 from taurus_protect.services.multi_factor_signature_service import (
-    MultiFactorSignatureChallenge,
-    MultiFactorSignatureService,
+    _entity_type_from_dto,
+    _entity_type_to_dto,
 )
 
 
-class TestMapChallengeFromDto:
-    """Tests for MultiFactorSignatureService._map_challenge_from_dto."""
+class TestEntityTypeToDto:
+    """Domain enum -> generated enum."""
 
-    def test_maps_all_fields(self) -> None:
-        created = datetime(2024, 6, 15, 12, 0, 0, tzinfo=timezone.utc)
-        expires = datetime(2024, 6, 15, 12, 5, 0, tzinfo=timezone.utc)
-        dto = SimpleNamespace(
-            id="ch-1",
-            request_id="req-100",
-            user_id="u-1",
-            status="PENDING",
-            challenge_type="TOTP",
-            challengeType=None,
-            created_at=created,
-            createdAt=None,
-            expires_at=expires,
-            expiresAt=None,
+    @pytest.mark.parametrize(
+        "kind",
+        [
+            MultiFactorSignatureEntityType.REQUEST,
+            MultiFactorSignatureEntityType.WHITELISTED_ADDRESS,
+            MultiFactorSignatureEntityType.WHITELISTED_CONTRACT,
+        ],
+    )
+    def test_maps_every_kind(self, kind: MultiFactorSignatureEntityType) -> None:
+        assert _entity_type_to_dto(kind) == TgvalidatordMultiFactorSignaturesEntityType(
+            kind.value
         )
-        result = MultiFactorSignatureService._map_challenge_from_dto(dto)
-        assert result.id == "ch-1"
-        assert result.request_id == "req-100"
-        assert result.user_id == "u-1"
-        assert result.status == "PENDING"
-        assert result.challenge_type == "TOTP"
-        assert result.created_at == created
-        assert result.expires_at == expires
 
-    def test_handles_camelcase_fields(self) -> None:
-        dto = SimpleNamespace(
-            id="ch-2",
-            request_id=None,
-            user_id=None,
-            status="VERIFIED",
-            challenge_type=None,
-            challengeType="SMS",
-            created_at=None,
-            createdAt="2024-01-01",
-            expires_at=None,
-            expiresAt="2024-01-02",
+    def test_accepts_the_plain_string_form(self) -> None:
+        assert (
+            _entity_type_to_dto("WHITELISTED_ADDRESS")
+            == TgvalidatordMultiFactorSignaturesEntityType.WHITELISTED_ADDRESS
         )
-        result = MultiFactorSignatureService._map_challenge_from_dto(dto)
-        assert result.id == "ch-2"
-        assert result.challenge_type == "SMS"
-        assert result.created_at == "2024-01-01"
-        assert result.expires_at == "2024-01-02"
 
-    def test_handles_none_optional_fields(self) -> None:
-        dto = SimpleNamespace(
-            id="ch-3",
-            request_id=None,
-            user_id=None,
-            status=None,
-            challenge_type=None,
-            challengeType=None,
-            created_at=None,
-            createdAt=None,
-            expires_at=None,
-            expiresAt=None,
-        )
-        result = MultiFactorSignatureService._map_challenge_from_dto(dto)
-        assert result.id == "ch-3"
-        assert result.request_id is None
-        assert result.user_id is None
-        assert result.status is None
-        assert result.challenge_type is None
+    def test_refuses_an_unknown_kind(self) -> None:
+        """Sending the wrong kind would put an entity through the wrong approval channel."""
+        with pytest.raises(ValueError, match="unknown multi-factor signature entity type"):
+            _entity_type_to_dto("WALLET")
 
-    def test_result_is_challenge_instance(self) -> None:
-        dto = SimpleNamespace(
-            id="ch-4",
-            request_id="42",
-            user_id="u-5",
-            status="EXPIRED",
-            challenge_type="EMAIL",
-            challengeType=None,
-            created_at=None,
-            createdAt=None,
-            expires_at=None,
-            expiresAt=None,
+
+class TestEntityTypeFromDto:
+    """Generated enum -> domain enum."""
+
+    def test_maps_the_generated_enum(self) -> None:
+        assert (
+            _entity_type_from_dto(TgvalidatordMultiFactorSignaturesEntityType.REQUEST)
+            is MultiFactorSignatureEntityType.REQUEST
         )
-        result = MultiFactorSignatureService._map_challenge_from_dto(dto)
-        assert isinstance(result, MultiFactorSignatureChallenge)
+
+    def test_maps_a_bare_string(self) -> None:
+        assert (
+            _entity_type_from_dto("WHITELISTED_CONTRACT")
+            is MultiFactorSignatureEntityType.WHITELISTED_CONTRACT
+        )
+
+    def test_an_unknown_kind_is_an_integrity_error_not_a_default(self) -> None:
+        """Defaulting would tell the caller a payload covers a REQUEST when it does not."""
+        with pytest.raises(IntegrityError, match="unknown multi-factor signature entity type"):
+            _entity_type_from_dto("SOMETHING_NEW")
+
+    def test_a_missing_kind_is_an_integrity_error(self) -> None:
+        with pytest.raises(IntegrityError, match="carries no entity type"):
+            _entity_type_from_dto(None)

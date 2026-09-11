@@ -7,13 +7,13 @@ import logging
 import base64
 import binascii
 import hashlib
+import hmac
 import json
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Tuple
 
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 
 from taurus_protect.crypto.signing import sign_data
-from taurus_protect._internal.openapi.exceptions import ApiException
 from taurus_protect.errors import ContainerIntegrityError, APIError, IntegrityError, WhitelistError
 from taurus_protect.helpers.signature_verifier import verify_governance_rules_signatures
 from taurus_protect.helpers.whitelisted_address_verifier import WhitelistedAddressVerifier
@@ -28,6 +28,7 @@ from taurus_protect.models.whitelisted_address import (
     SignedWhitelistedAddress,
     SignedWhitelistedAddressEnvelope,
     WhitelistedAddress,
+    WhitelistedAddressApproval,
     WhitelistedAddressListResult,
     WhitelistMetadata,
     WhitelistSignature,
@@ -173,9 +174,16 @@ class WhitelistedAddressService(BaseService):
         except IntegrityError:
             raise
         except Exception as e:
-            if isinstance(e, ApiException):
-                raise self._handle_error(e)
-            raise
+            # Funnel on the SDK error taxonomy, not on the raw generated ApiException.
+            # Keying on ApiException left every other failure -- a urllib3 transport
+            # error, say -- propagating unmapped, so a caller could not treat it as an
+            # APIError at all. And the pass-through list must name IntegrityError and
+            # WhitelistError explicitly: both are plain Exceptions, so _handle_error
+            # would map them to ServerError(500), whose is_retryable() is True. That
+            # inverts the documented "security error, DO NOT retry" contract.
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
+                raise
+            raise self._handle_error(e) from e
 
     def list(
         self,
@@ -231,7 +239,6 @@ class WhitelistedAddressService(BaseService):
             # fail-closed: an omitted destination cannot be selected.
             rows = list(reply.result or [])
             envelopes, excluded = self._verified_addresses(rows, rules_container_cache)
-            addresses = [e.verified_whitelisted_address for e in envelopes]
 
             # The server counts rows it returned; the caller receives only those that
             # verified. Reporting the server's total lets a filtered page pass for a
@@ -246,17 +253,21 @@ class WhitelistedAddressService(BaseService):
                     update={"total_items": max(0, pagination.total_items - len(excluded))}
                 )
 
-            return WhitelistedAddressListResult(
-                addresses=addresses,
+            # From the ENVELOPES, so the result also carries the metadata hash each row
+            # had in this read -- the pin result.select(...) hands to approve().
+            return WhitelistedAddressListResult.from_verified_envelopes(
+                envelopes,
                 pagination=pagination,
                 excluded_unverified=excluded,
             )
         except IntegrityError:
             raise
         except Exception as e:
-            if isinstance(e, ApiException):
-                raise self._handle_error(e)
-            raise
+            # See above: funnel on the SDK taxonomy, and never let IntegrityError or
+            # WhitelistError be remapped to a retryable ServerError(500).
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
+                raise
+            raise self._handle_error(e) from e
 
     def list_for_approval(
         self,
@@ -306,7 +317,6 @@ class WhitelistedAddressService(BaseService):
             # are used and the cache starts empty.
             rows = list(reply.result or [])
             envelopes, excluded = self._verified_addresses(rows, {})
-            addresses = [e.verified_whitelisted_address for e in envelopes]
 
             pagination = self._extract_pagination(
                 getattr(reply, "total_items", None), offset, limit
@@ -316,62 +326,101 @@ class WhitelistedAddressService(BaseService):
                     update={"total_items": max(0, pagination.total_items - len(excluded))}
                 )
 
-            return WhitelistedAddressListResult(
-                addresses=addresses,
+            # See list(): from the envelopes, so result.select(...) can pin the hashes
+            # the approver is about to review.
+            return WhitelistedAddressListResult.from_verified_envelopes(
+                envelopes,
                 pagination=pagination,
                 excluded_unverified=excluded,
             )
         except IntegrityError:
             raise
         except Exception as e:
-            if isinstance(e, ApiException):
-                raise self._handle_error(e)
-            raise
+            # See above: funnel on the SDK taxonomy, and never let IntegrityError or
+            # WhitelistError be remapped to a retryable ServerError(500).
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
+                raise
+            raise self._handle_error(e) from e
 
     def approve(
         self,
-        ids: List[int],
+        selection: WhitelistedAddressApproval,
         private_key: Any,
         comment: str,
     ) -> None:
         """
-        Sign and submit an approval for the given whitelisted addresses, all-or-nothing.
+        Sign and submit an approval for the reviewed whitelisted addresses,
+        all-or-nothing.
 
-        The batch is re-read through the verifying path and the hashes THOSE rows carry
-        are what gets signed, so the approver's signature covers metadata this SDK
-        checked rather than whatever a caller was handed. Same shape as
-        ``WhitelistedAssetService.approve``.
+        ``selection`` comes from a verified read -- ``result.select(*ids)`` or
+        ``result.select_all()`` -- and carries the metadata hash each row had AT REVIEW
+        TIME. That pin is the point::
 
-        ids -> sort numerically -> ONE filtered verified page -> completeness check
-                                                                        |
-                                                                        v
-                                                    sign(JSON(hashes)) -> POST once
+            verified read -> select(ids) -> pinned hashes
+                                                 |
+              sort -> ONE filtered verified re-read -> completeness -> PIN MATCH --+
+                                                                                   v
+                                              sign(JSON(hashes)) -> POST once
 
-        Any address that is missing or fails verification aborts the whole call and
-        nothing is signed: one signature covers every hash in the batch, so a partial
-        approval would mean the caller believes they approved more than they did.
+        Without it the approval accepted bare ids and signed whatever the server
+        returned under them, so a response-controlling server could substitute a row
+        whose existing signatures already satisfy the container it presents and harvest
+        a genuine approver signature over content the approver never saw.
+        ``GovernanceRuleService.approve_rules_proposal`` was hardened the same way with
+        its mandatory ``expected_container_hash``; an empty pin must not silently
+        restore the old behaviour, which is why an empty selection RAISES rather than
+        meaning "approve nothing".
+
+        A pin mismatch is a REAL signal, not a false positive. The metadata hash is
+        recomputed by the server on every read from the immutable envelope plus the
+        row's live linked-address and linked-wallet rows, so it moves when a linked
+        address is renamed. Normally that also breaks signature coverage and the row is
+        excluded anyway; for a legacy-signed row it can move while the row still
+        verifies. Either way the content changed since review, so re-read, re-review and
+        re-approve -- exactly as for a changed rules proposal.
+
+        Any address that is missing, fails verification, or whose hash no longer matches
+        the pin aborts the whole call and nothing is signed: one signature covers every
+        hash in the batch, so a partial approval would mean the caller believes they
+        approved more than they did.
 
         Args:
-            ids: The whitelisted address IDs to approve.
+            selection: The reviewed rows, pinned by a verified read.
             private_key: The approver's P-256 private key.
             comment: The approval comment.
 
         Raises:
             ValueError: If any argument is missing or malformed.
-            IntegrityError: If any address is missing, unverifiable, or has no hash.
+            IntegrityError: If any address is missing, unverifiable, has no hash, or
+                no longer matches the reviewed pin.
             APIError: If the API call fails.
         """
-        if not ids:
-            raise ValueError("ids cannot be empty")
+        if selection is None or selection.is_empty():
+            raise ValueError(
+                "selection cannot be empty: pin the rows with result.select(ids...) or "
+                "result.select_all() from a verified read"
+            )
         if private_key is None:
             raise ValueError("private_key is required")
         if not comment:
             raise ValueError("comment is required")
-        for address_id in ids:
-            if not isinstance(address_id, int) or isinstance(address_id, bool) or address_id <= 0:
+
+        ids: List[int] = []
+        for raw_id in selection.ids():
+            try:
+                parsed = int(raw_id)
+            except (TypeError, ValueError) as exc:
                 raise ValueError(
-                    f"whitelisted address ID {address_id!r} must be a positive integer"
+                    f"whitelisted address ID {raw_id!r} is not a valid numeric ID"
+                ) from exc
+            # A non-positive id has no defined position in the signed array, and
+            # reporting it as "not returned by the verified read" after a round trip
+            # would blame the server for the caller's argument.
+            if parsed <= 0:
+                raise ValueError(
+                    f"whitelisted address ID {raw_id!r} must be a positive integer"
                 )
+            ids.append(parsed)
 
         # The endpoint requires ascending order, and sorting here also makes the signed
         # order independent of the order the caller passed.
@@ -388,7 +437,10 @@ class WhitelistedAddressService(BaseService):
             )
             cache = self._build_rules_container_cache(reply)
             envelopes, _ = self._verified_addresses(list(reply.result or []), cache)
-        except IntegrityError:
+        except (APIError, IntegrityError, WhitelistError):
+            # The SDK taxonomy propagates unchanged, so a transport failure is not
+            # reported as an integrity failure (and stays retryable). Go wraps with %w
+            # and keeps the type reachable via errors.As; `raise ... from` does not.
             raise
         except Exception as e:
             raise IntegrityError(f"refusing to sign: the verified read failed: {e}") from e
@@ -413,6 +465,22 @@ class WhitelistedAddressService(BaseService):
                 raise IntegrityError(
                     f"refusing to sign: address {address_id} has no metadata hash"
                 )
+
+            # The pin. Constant-time because this compares hash material, matching
+            # approve_rules_proposal's use of hmac.compare_digest on its container pin.
+            pinned_hash = selection.pinned_hash(address_id)
+            if not pinned_hash:
+                raise IntegrityError(
+                    f"refusing to sign: address {address_id} is not in the reviewed "
+                    "selection"
+                )
+            if not hmac.compare_digest(pinned_hash, addr.metadata.hash):
+                raise IntegrityError(
+                    f"refusing to sign: whitelisted address {address_id} changed since "
+                    f"it was reviewed: reviewed hash {pinned_hash}, re-read hash "
+                    f"{addr.metadata.hash}. Re-read, re-review and re-approve"
+                )
+
             hashes.append(addr.metadata.hash)
 
         to_sign = json.dumps(hashes, separators=(",", ":"))
@@ -428,9 +496,11 @@ class WhitelistedAddressService(BaseService):
             )
             self._api.whitelist_service_approve_whitelisted_address(body=body)
         except Exception as e:
-            if isinstance(e, ApiException):
-                raise self._handle_error(e)
-            raise
+            # See above: funnel on the SDK taxonomy, and never let IntegrityError or
+            # WhitelistError be remapped to a retryable ServerError(500).
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
+                raise
+            raise self._handle_error(e) from e
 
     def _verified_addresses(
         self,

@@ -254,17 +254,37 @@ public class SignedWhitelistedAssetEnvelope {
      * {@code TODOS.md} — a witness type the verifier alone can mint. This closes the
      * exploitable half without it.
      *
-     * @param rulesContainer the verified rules container
+     * <p><b>{@code verifiedPayload} is the payload the matched signature COVERED, which
+     * is not always the payload the server delivered.</b> Step 4 accepts
+     * backward-compatible rewrites of the delivered payload ({@code isNFT},
+     * {@code kindType}), and those strips are not injective, so parsing the DELIVERED
+     * text can return members no signature covered. The address flow is where that is
+     * directly exploitable today; the asset flow takes the same parameter so the two
+     * cannot drift, and so a schema change that makes a stripped asset field readable
+     * does not silently reopen it here. {@code metadata.getPayloadAsString()} is left
+     * untouched, because a caller needs it to reproduce {@code metadata.hash}.
+     *
+     * @param rulesContainer  the verified rules container
+     * @param verifiedPayload the payload the matched signature covered — step 4's
+     *                        {@code LegacyPayloadVariant.getPayload()}, NOT
+     *                        {@code metadata.payloadAsString}
      * @throws WhitelistException if the signed payload is absent or unparseable
      */
-    public void markVerified(final DecodedRulesContainer rulesContainer)
+    public void markVerified(final DecodedRulesContainer rulesContainer,
+                             final String verifiedPayload)
             throws WhitelistException {
         if (this.metadata == null || Strings.isNullOrEmpty(this.metadata.getPayloadAsString())) {
             throw new WhitelistException(
                     "cannot mark verified: the envelope carries no signed payload");
         }
+        if (Strings.isNullOrEmpty(verifiedPayload)) {
+            // Not a defaulting opportunity: falling back to metadata.payloadAsString is
+            // exactly the defect this parameter exists to close.
+            throw new WhitelistException("cannot mark verified: no verified payload was "
+                    + "supplied; step 4 must hand over the payload it matched");
+        }
         this.verifiedWhitelistedAsset =
-                AssetHashHelper.parseWhitelistedAssetFromJson(this.metadata.getPayloadAsString());
+                AssetHashHelper.parseWhitelistedAssetFromJson(verifiedPayload);
         this.verifiedRulesContainer = rulesContainer;
         this.isInitialized.set(true);
     }

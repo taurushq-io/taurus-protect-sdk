@@ -279,16 +279,52 @@ valid, err := crypto.VerifySignature(userPublicKey, hashesJSON, signature.UserSi
 **Purpose:** Return only values that were actually covered by the verified signatures.
 
 **Process:**
-1. Parse `metadata.payloadAsString` (the verified source) into the `model.WhitelistedAddress`
+1. Parse **the payload step 4 matched** — `VerificationResult.VerifiedPayload`, which is
+   `metadata.payloadAsString` when the current hash matched and the recovered legacy variant
+   otherwise — into the `model.WhitelistedAddress`
 2. Security-critical fields — `Address`, `Label`, `Memo`, `CustomerID`, `AddressType`,
-   `Blockchain`, `Network` — are read **only** from that payload
+   `Blockchain`, `TnParticipantID` — are read **only** from that payload
 3. When the payload omits a field the result stays empty; it is never back-filled from the
-   unverified DTO
+   unverified DTO. `Network` is the single exception: a correctly-signed payload omits it when the
+   governing rule's `includeNetworkInPayload` is off, so the DTO value is kept as a label — safe
+   only because rule selection no longer lets an unsigned network reach a weaker quorum
+   (see "Selecting the governance rules" in `docs/INTEGRITY_VERIFICATION.md`)
 4. Non-security fields (`Status`, `Action`, `Rule`, `CreatedAt`) may come from the DTO
 
 **Security:** Steps 1-5 prove the envelope is authentic; this step is what stops an
 attacker-supplied label or address reaching the caller. Implemented in
 `helper/whitelisted_address_verifier.go`.
+
+> **Why it parses the MATCHED payload and not the delivered one.** Step 4's legacy tolerance
+> accepts a hash over a regex-*stripped* rewrite of `payloadAsString`, and the strips are not
+> injective — so a server can append a member the strip removes (`,"label":"X"` before the closing
+> brace, or a `contractType` on a row whose signed payload has none), have the residue land exactly
+> on the genuinely signed bytes, pass every signature check, and have a step 6 that parsed the
+> delivered text hand back the appended value as verified (`encoding/json` keeps the last of two
+> duplicate keys). `ComputeLegacyPayloadVariants` therefore carries each variant's payload
+> alongside its hash, and `verifyHashInSignedHashes` returns both.
+>
+> `rejectDuplicateObjectKeys` is the second defence, and both are needed: the appended
+> `contractType` shape is not a duplicate of anything, while the appended `label` shape is.
+>
+> `whitelisted_address_legacy_injection_test.go` drives both shapes end to end with real
+> signatures — the full flow had no such test before, which is why every legacy test passed against
+> the vulnerability. Accepted consequence: `LinkedInternalAddresses[].Label` comes back empty for
+> rows signed before per-object labels existed, because validatord rebuilds those labels on every
+> read from live DB relations and they were never signed.
+
+### The service returns the verifier's payload-derived model, not the mapper's
+
+Both service seams used to discard the verification result (`_, err :=`), so `GetWhitelistedAddress`
+and both list paths returned the object `mapper.WhitelistedAddressFromDTO` built — which re-parsed
+the **delivered** payload and left `Blockchain`, `Network` and `TnParticipantID` at their DTO
+values. `applyVerifiedIdentity` in `service/whitelisted_address.go` now copies the verified fields
+onto the returned model, which closes both that and the step-6 problem above in one place.
+
+The mapper's parse failure is also fatal now rather than silently zeroing every identity field.
+That ordering was load-bearing: step 5 reads `LinkedInternalAddresses`/`LinkedWallets` from the
+mapper, so silent zeros mean `shouldCheckRuleLines == false` and a quiet fall-through to the
+container default thresholds, which may be weaker than the matching line's.
 
 ### Verification on List Paths: Exclude vs Abort
 

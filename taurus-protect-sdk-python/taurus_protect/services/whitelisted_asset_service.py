@@ -2,17 +2,22 @@
 
 from __future__ import annotations
 
+import hmac
 import json
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
 
-from taurus_protect._internal.openapi.exceptions import ApiException
 from taurus_protect.crypto.signing import sign_data
+from taurus_protect.errors import APIError, IntegrityError, WhitelistError
+from taurus_protect.helpers.whitelist_hash_helper import (
+    parse_whitelisted_asset_identity_from_json,
+)
 from taurus_protect.models.pagination import Pagination
 from taurus_protect.models.whitelisted_address import (
     SignedContractAddress,
     WhitelistedAsset,
+    WhitelistedAssetApproval,
     WhitelistedAssetMetadata,
     WhitelistSignatureEntry,
     WhitelistUserSignature,
@@ -108,13 +113,18 @@ class WhitelistedAssetService(BaseService):
                 raise NotFoundError(f"Whitelisted asset {asset_id} not found")
 
             asset = self._map_asset_from_dto(result)
-            self._verify_asset(asset, dto=result)
-
-            return asset
+            return self._verified_asset(asset, dto=result)
         except Exception as e:
-            if isinstance(e, ApiException):
-                raise self._handle_error(e)
-            raise
+            # Funnel on the SDK error taxonomy, not on the raw generated ApiException.
+            # Keying on ApiException left every other failure -- a urllib3 transport
+            # error, say -- propagating unmapped, so a caller could not treat it as an
+            # APIError at all. And the pass-through list must name IntegrityError and
+            # WhitelistError explicitly: both are plain Exceptions, so _handle_error
+            # would map them to ServerError(500), whose is_retryable() is True. That
+            # inverts the documented "security error, DO NOT retry" contract.
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
+                raise
+            raise self._handle_error(e) from e
 
     def list(
         self,
@@ -164,8 +174,7 @@ class WhitelistedAssetService(BaseService):
             if reply.result:
                 for dto in reply.result:
                     asset = self._map_asset_from_dto(dto)
-                    self._verify_asset(asset, dto=dto)
-                    assets.append(asset)
+                    assets.append(self._verified_asset(asset, dto=dto))
 
             pagination = self._extract_pagination(
                 getattr(reply, "total_items", None),
@@ -174,9 +183,11 @@ class WhitelistedAssetService(BaseService):
             )
             return assets, pagination
         except Exception as e:
-            if isinstance(e, ApiException):
-                raise self._handle_error(e)
-            raise
+            # See above: funnel on the SDK taxonomy, and never let IntegrityError or
+            # WhitelistError be remapped to a retryable ServerError(500).
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
+                raise
+            raise self._handle_error(e) from e
 
     def list_for_approval(
         self,
@@ -220,8 +231,7 @@ class WhitelistedAssetService(BaseService):
             if reply.result:
                 for dto in reply.result:
                     asset = self._map_asset_from_dto(dto)
-                    self._verify_asset(asset, dto=dto)
-                    assets.append(asset)
+                    assets.append(self._verified_asset(asset, dto=dto))
 
             pagination = self._extract_pagination(
                 getattr(reply, "total_items", None),
@@ -230,50 +240,75 @@ class WhitelistedAssetService(BaseService):
             )
             return assets, pagination
         except Exception as e:
-            if isinstance(e, ApiException):
-                raise self._handle_error(e)
-            raise
+            # See above: funnel on the SDK taxonomy, and never let IntegrityError or
+            # WhitelistError be remapped to a retryable ServerError(500).
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
+                raise
+            raise self._handle_error(e) from e
 
     def approve(
         self,
-        ids: List[int],
+        selection: WhitelistedAssetApproval,
         private_key: Any,
         comment: str,
     ) -> None:
         """
-        Sign and submit an approval for the given whitelisted assets, all-or-nothing.
+        Sign and submit an approval for the reviewed whitelisted assets, all-or-nothing.
 
-        Each asset is re-read through the verified path and the hashes THOSE rows carry
-        are what gets signed, so the approver's signature covers metadata this SDK
-        checked rather than whatever a caller was handed.
+        ``selection`` comes from a verified read --
+        ``WhitelistedAssetApproval.select(assets, *ids)`` or ``.select_all(assets)`` --
+        and carries the metadata hash each row had AT REVIEW TIME. Each asset is then
+        re-read through the verified path and the re-read hash must equal the pin, so
+        the approver's signature covers content the approver actually saw rather than
+        whatever the server chooses to return under those ids. Without the pin a
+        response-controlling server could substitute a row whose existing signatures
+        already satisfy the container it presents and harvest a genuine approver
+        signature over content the approver never reviewed. An empty selection RAISES
+        rather than meaning "approve nothing", so the pin cannot be silently bypassed.
+
         ``ContractWhitelistingService.approve_whitelisted_contracts`` takes an opaque
         signature over hashes nothing verified.
 
-        Any asset that is missing or fails verification aborts the whole call and nothing
-        is signed: one signature covers every hash in the batch, so a partial approval
-        would mean the caller believes they approved more than they did.
+        Any asset that is missing, fails verification, or whose hash no longer matches
+        the pin aborts the whole call and nothing is signed: one signature covers every
+        hash in the batch, so a partial approval would mean the caller believes they
+        approved more than they did.
 
         Args:
-            ids: The whitelisted asset IDs to approve.
+            selection: The reviewed rows, pinned from a verified read.
             private_key: The approver's P-256 private key.
             comment: The approval comment.
 
         Raises:
             ValueError: If any argument is missing or malformed.
-            IntegrityError: If any asset is missing, unverifiable, or has no hash.
+            IntegrityError: If any asset is missing, unverifiable, has no hash, or no
+                longer matches the reviewed pin.
             APIError: If the API call fails.
         """
-        if not ids:
-            raise ValueError("ids cannot be empty")
+        if selection is None or selection.is_empty():
+            raise ValueError(
+                "selection cannot be empty: pin the rows with "
+                "WhitelistedAssetApproval.select(assets, ids...) or "
+                ".select_all(assets) from a verified read"
+            )
         if private_key is None:
             raise ValueError("private_key is required")
         if not comment:
             raise ValueError("comment is required")
-        for asset_id in ids:
-            if not isinstance(asset_id, int) or isinstance(asset_id, bool) or asset_id <= 0:
-                raise ValueError(f"whitelisted asset ID {asset_id!r} must be a positive integer")
 
-        from taurus_protect.errors import IntegrityError
+        ids: List[int] = []
+        for raw_id in selection.ids():
+            try:
+                parsed = int(raw_id)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    f"whitelisted asset ID {raw_id!r} is not a valid numeric ID"
+                ) from exc
+            if parsed <= 0:
+                raise ValueError(
+                    f"whitelisted asset ID {raw_id!r} must be a positive integer"
+                )
+            ids.append(parsed)
 
         # Sorted numerically, as the request-approval path does, so the signed order is
         # independent of the order the caller passed.
@@ -291,6 +326,11 @@ class WhitelistedAssetService(BaseService):
                 ids=id_strings,
                 include_for_approval=True,
             )
+        except (APIError, IntegrityError, WhitelistError):
+            # The SDK taxonomy propagates unchanged, so a transport failure is not
+            # reported as an integrity failure (and stays retryable). Go wraps with %w
+            # and keeps the type reachable via errors.As; `raise ... from` does not.
+            raise
         except Exception as e:
             raise IntegrityError(f"refusing to sign: the verified read failed: {e}") from e
 
@@ -310,6 +350,21 @@ class WhitelistedAssetService(BaseService):
                 raise IntegrityError(
                     f"refusing to sign: asset {asset_id} has no metadata hash"
                 )
+
+            # The pin. Constant-time because this compares hash material, matching
+            # approve_rules_proposal's use of hmac.compare_digest on its container pin.
+            pinned_hash = selection.pinned_hash(asset_id)
+            if not pinned_hash:
+                raise IntegrityError(
+                    f"refusing to sign: asset {asset_id} is not in the reviewed selection"
+                )
+            if not hmac.compare_digest(pinned_hash, asset.metadata.hash):
+                raise IntegrityError(
+                    f"refusing to sign: whitelisted asset {asset_id} changed since it "
+                    f"was reviewed: reviewed hash {pinned_hash}, re-read hash "
+                    f"{asset.metadata.hash}. Re-read, re-review and re-approve"
+                )
+
             hashes.append(asset.metadata.hash)
 
         to_sign = json.dumps(hashes, separators=(",", ":"))
@@ -327,22 +382,38 @@ class WhitelistedAssetService(BaseService):
             )
             self._api.whitelist_service_approve_whitelisted_contract(body=body)
         except Exception as e:
-            if isinstance(e, ApiException):
-                raise self._handle_error(e)
-            raise
+            # See above: funnel on the SDK taxonomy, and never let IntegrityError or
+            # WhitelistError be remapped to a retryable ServerError(500).
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
+                raise
+            raise self._handle_error(e) from e
 
-    def _verify_asset(
+    def _verified_asset(
         self,
         asset: WhitelistedAsset,
         dto: Optional[Any] = None,
-    ) -> None:
+    ) -> WhitelistedAsset:
         """
-        Perform the 5-step integrity verification on a whitelisted asset.
+        Run the 5-step verification, then step 6: populate the identity fields from the
+        payload a counted signature COVERED.
+
+        This is the ONE seam every asset-returning path uses (``get``, ``list``,
+        ``list_for_approval``), so an identity field cannot come from anywhere else.
+
+        ``_map_asset_from_dto`` deliberately leaves ``name``/``symbol``/``blockchain``/
+        ``network``/``contract_address``/``decimals``/``token_id`` unset: nothing has
+        been verified at map time, and it used to read them out of the DELIVERED
+        payload. That is the injection this closes -- for a legacy-signed row the strip
+        recovers the signed bytes while the delivered payload can carry an appended
+        member the parse would still read.
 
         Args:
-            asset: The asset to verify.
+            asset: The mapped envelope, with identity fields still unset.
             dto: The original DTO envelope (provides blockchain/network for rules lookup
                 when the verified payload omits these fields).
+
+        Returns:
+            The same asset with its identity fields sourced from the verified payload.
 
         Raises:
             IntegrityError: If verification fails.
@@ -355,8 +426,6 @@ class WhitelistedAssetService(BaseService):
             or not asset.rules_container
             or asset.signed_contract_address is None
         ):
-            from taurus_protect.errors import IntegrityError
-
             raise IntegrityError("verification enabled but required data missing")
 
         from taurus_protect.mappers.governance_rules import (
@@ -374,7 +443,7 @@ class WhitelistedAssetService(BaseService):
             getattr(dto, "network", None) if dto else None
         )
 
-        self._verifier.verify_whitelisted_asset(
+        result = self._verifier.verify_whitelisted_asset(
             asset,
             rules_container_from_base64,
             user_signatures_from_base64,
@@ -382,15 +451,32 @@ class WhitelistedAssetService(BaseService):
             dto_network=dto_network,
         )
 
+        # Step 6. result.verified_payload, NOT asset.metadata.payload_as_string: when
+        # step 4 matched a legacy variant, those two differ by exactly the members no
+        # signature covered.
+        return asset.model_copy(
+            update=parse_whitelisted_asset_identity_from_json(result.verified_payload)
+        )
+
     @staticmethod
     def _map_asset_from_dto(dto: Any) -> WhitelistedAsset:
-        """Map OpenAPI DTO to asset model."""
-        import json
+        """
+        Map an OpenAPI DTO to the asset envelope, WITHOUT any identity field.
 
+        ``name``/``symbol``/``blockchain``/``network``/``contract_address``/
+        ``decimals``/``token_id`` are left ``None`` here and filled in by
+        :meth:`_verified_asset` from the payload a counted signature covered. This used
+        to parse ``payload_as_string`` at map time -- before any signature had been
+        checked -- and the legacy-hash tolerance makes that exploitable: for a row
+        signed before ``isNFT``/``kindType`` existed, the strip recovers the signed
+        bytes while the delivered payload can carry members no signature covered.
+
+        Leaving them unset rather than parsing early also means a caller who somehow
+        reaches this mapper gets nulls instead of unverified values.
+        """
         # Map metadata if present
         metadata = None
         dto_metadata = getattr(dto, "metadata", None)
-        payload: dict = {}
         if dto_metadata:
             payload_as_string = getattr(dto_metadata, "payload_as_string", None) or getattr(
                 dto_metadata, "payloadAsString", None
@@ -402,15 +488,6 @@ class WhitelistedAssetService(BaseService):
                 # remains unchanged (hash still verifies).
                 payload_as_string=payload_as_string,
             )
-            # SECURITY: Extract payload dict from verified payload_as_string ONLY
-            # (not from dto_metadata.payload which is unverified)
-            if payload_as_string:
-                try:
-                    parsed = json.loads(payload_as_string)
-                    if isinstance(parsed, dict):
-                        payload = parsed
-                except json.JSONDecodeError:
-                    pass  # payload remains empty dict
 
         # Map signed contract address if present
         signed_contract_address = None
@@ -453,18 +530,11 @@ class WhitelistedAssetService(BaseService):
 
         # SECURITY: All security-critical fields MUST come from verified payload only.
         # No DTO fallbacks allowed - this prevents attackers from bypassing verification
-        # by manipulating DTO fields that differ from the signed payload.
+        # by manipulating DTO fields that differ from the signed payload. They are set
+        # by _verified_asset, from the payload step 4 matched -- not here.
         return WhitelistedAsset(
             id=str(getattr(dto, "id", "")),
             tenant_id=getattr(dto, "tenant_id", None) or getattr(dto, "tenantId", None),
-            # Security-critical fields from verified payload only (no DTO fallback)
-            name=payload.get("name"),
-            symbol=payload.get("symbol"),
-            blockchain=payload.get("blockchain") or payload.get("Blockchain"),
-            network=payload.get("network") or payload.get("Network"),
-            contract_address=payload.get("contract_address") or payload.get("contractAddress"),
-            decimals=payload.get("decimals"),
-            token_id=payload.get("token_id") or payload.get("tokenId"),
             # Non-security fields can come from DTO
             status=getattr(dto, "status", None),
             action=getattr(dto, "action", None),

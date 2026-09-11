@@ -3,7 +3,13 @@
  */
 
 import { AddressService } from '../../../src/services/address-service';
-import { ConfigurationError, ValidationError, NotFoundError } from '../../../src/errors';
+import {
+  ConfigurationError,
+  IntegrityError,
+  NotFoundError,
+  ValidationError,
+} from '../../../src/errors';
+import { verifyAddressSignature } from '../../../src/helpers';
 import type { AddressesApi } from '../../../src/internal/openapi/apis/AddressesApi';
 import type { RulesContainerCache } from '../../../src/cache';
 import type { DecodedRulesContainer } from '../../../src/models/governance-rules';
@@ -42,6 +48,10 @@ describe('AddressService', () => {
   let service: AddressService;
 
   beforeEach(() => {
+    // clearAllMocks (not resetAllMocks) so the module-level
+    // verifyAddressSignature mock keeps its implementation while its call
+    // record starts empty — several tests below assert it was NOT called.
+    jest.clearAllMocks();
     mockApi = createMockAddressesApi();
     mockRulesCache = createMockRulesCache();
     service = new AddressService(mockApi, mockRulesCache);
@@ -113,6 +123,51 @@ describe('AddressService', () => {
       expect(result.items[1].address).toBe('0xbbb');
     });
 
+    it('should refuse a row that carries an address but no signature', async () => {
+      mockApi.walletServiceGetAddresses.mockResolvedValue({
+        result: [
+          { id: '1', walletId: '100', address: '0xaaa', currency: 'ETH', signature: 'c2ln' },
+          { id: '2', walletId: '100', address: '0xunsigned', currency: 'ETH' },
+        ],
+        totalItems: '2',
+      });
+
+      await expect(service.list(100)).rejects.toThrow(IntegrityError);
+      await expect(service.list(100)).rejects.toThrow(/no HSM signature/);
+    });
+
+    it('should diagnose an all-unsigned page as an integrity failure, not a governance fetch failure', async () => {
+      // Ordering: the refusal must be raised BEFORE the rules container is fetched.
+      // Pre-fetching unconditionally makes a page of unsigned rows fail with whatever
+      // the governance fetch says, which names the wrong culprit.
+      mockRulesCache.get.mockRejectedValue(
+        new Error('governance rules unavailable')
+      );
+      mockApi.walletServiceGetAddresses.mockResolvedValue({
+        result: [{ id: '1', walletId: '100', address: '0xunsigned', currency: 'ETH' }],
+        totalItems: '1',
+      });
+
+      await expect(service.list(100)).rejects.toThrow(/no HSM signature/);
+      expect(mockRulesCache.get).not.toHaveBeenCalled();
+    });
+
+    it('should return a still-creating row without fetching the container', async () => {
+      mockRulesCache.get.mockRejectedValue(
+        new Error('governance rules unavailable')
+      );
+      mockApi.walletServiceGetAddresses.mockResolvedValue({
+        result: [{ id: '1', walletId: '100', address: '', currency: 'ETH', status: 'creating' }],
+        totalItems: '1',
+      });
+
+      const result = await service.list(100);
+
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].address).toBe('');
+      expect(mockRulesCache.get).not.toHaveBeenCalled();
+    });
+
     it('should throw ValidationError when walletId is invalid', async () => {
       await expect(service.list(0)).rejects.toThrow(ValidationError);
       await expect(service.list(0)).rejects.toThrow('walletId must be positive');
@@ -138,6 +193,11 @@ describe('AddressService', () => {
           address: '0xnew',
           currency: 'ETH',
           label: 'New Address',
+          // A signature is REQUIRED for a reply that carries an address string.
+          // This fixture used to omit it and the test asserted success, which
+          // pinned the defect: the create reply's address was returned unverified.
+          signature: 'dGVzdHNpZw==',
+          status: 'signed',
         },
       });
 
@@ -150,6 +210,90 @@ describe('AddressService', () => {
       expect(address).toBeDefined();
       expect(address.id).toBe('789');
       expect(address.label).toBe('New Address');
+      expect(verifyAddressSignature).toHaveBeenCalled();
+    });
+
+    it('should refuse to return a created address that carries no HSM signature', async () => {
+      // The highest-value moment for substitution: the caller is about to publish or
+      // fund this deposit address. A reply with an address string and no signature must
+      // not hand that string back in the same type a verified address uses.
+      mockApi.walletServiceCreateAddress.mockResolvedValue({
+        result: {
+          id: '789',
+          walletId: '123',
+          address: '0xattackerControlled',
+          currency: 'ETH',
+          label: 'New Address',
+          status: 'created',
+        },
+      });
+
+      await expect(
+        service.create({ walletId: '123', label: 'New Address' })
+      ).rejects.toThrow(IntegrityError);
+      await expect(
+        service.create({ walletId: '123', label: 'New Address' })
+      ).rejects.toThrow(/no HSM signature/);
+    });
+
+    it('should not leak the unverified address string in the refusal message', async () => {
+      mockApi.walletServiceCreateAddress.mockResolvedValue({
+        result: {
+          id: '789',
+          walletId: '123',
+          address: '0xattackerControlled',
+          currency: 'ETH',
+          status: 'created',
+        },
+      });
+
+      await expect(
+        service.create({ walletId: '123', label: 'New Address' })
+      ).rejects.toThrow(/status "created"/);
+    });
+
+    it('should return an address with no address string yet (async creation)', async () => {
+      // Asynchronous creation is real: status is one of created/creating/signed/
+      // observed/confirmed, so a reply can legitimately arrive before the HSM signed.
+      // Nothing to verify and nothing to misuse — the caller re-reads through get().
+      mockApi.walletServiceCreateAddress.mockResolvedValue({
+        result: {
+          id: '789',
+          walletId: '123',
+          address: '',
+          currency: 'ETH',
+          label: 'New Address',
+          status: 'creating',
+        },
+      });
+
+      const address = await service.create({ walletId: '123', label: 'New Address' });
+
+      expect(address.id).toBe('789');
+      expect(address.address).toBe('');
+      expect(address.status).toBe('creating');
+      // Nothing was verified because there was nothing to verify.
+      expect(verifyAddressSignature).not.toHaveBeenCalled();
+    });
+
+    it('should propagate a verification failure on the create path', async () => {
+      mockApi.walletServiceCreateAddress.mockResolvedValue({
+        result: {
+          id: '789',
+          walletId: '123',
+          address: '0xnew',
+          currency: 'ETH',
+          signature: 'dGVzdHNpZw==',
+          status: 'signed',
+        },
+      });
+      (verifyAddressSignature as jest.Mock).mockImplementationOnce(() => {
+        throw new IntegrityError('address signature verification failed');
+      });
+
+      await expect(
+        service.create({ walletId: '123', label: 'New Address' })
+      ).rejects.toThrow(IntegrityError);
     });
 
     it('should throw ValidationError when walletId is missing', async () => {

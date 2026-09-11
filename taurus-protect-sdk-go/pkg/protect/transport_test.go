@@ -167,7 +167,7 @@ func TestNewHTTPClient(t *testing.T) {
 	defer auth.Close()
 
 	baseClient := &http.Client{}
-	client := newHTTPClient(auth, baseClient)
+	client := newHTTPClient(auth, "", baseClient)
 
 	if client == nil {
 		t.Fatal("newHTTPClient() returned nil")
@@ -197,7 +197,7 @@ func TestNewHTTPClient_WithCustomTransport(t *testing.T) {
 		Transport: customTransport,
 	}
 
-	client := newHTTPClient(auth, baseClient)
+	client := newHTTPClient(auth, "", baseClient)
 
 	transport, ok := client.Transport.(*TPV1Transport)
 	if !ok {

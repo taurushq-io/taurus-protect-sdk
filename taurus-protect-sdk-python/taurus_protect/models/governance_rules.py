@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import threading
 from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, PrivateAttr, field_validator
 
@@ -474,6 +474,100 @@ class DecodedRulesContainer(BaseModel):
                 global_default = rule
 
         return blockchain_only_match or global_default
+
+    def find_address_whitelisting_rule_candidates(
+        self, blockchain: str
+    ) -> List[AddressWhitelistingRules]:
+        """
+        Every rule the tier walk could select for this blockchain, across all possible
+        network values.
+
+        This exists because the network half of the rule key is **not always signed**.
+        Governance carries a per-rule ``includeNetworkInPayload`` flag, and when it is off
+        the signed payload has no ``network`` member at all -- the common case in captured
+        production data. The key then falls back to the network on the *unsigned* response
+        DTO, which hands a response-controlling server the choice of WHICH rule judges the
+        row, and therefore which group quorum it must meet.
+
+        It is not closeable by reading the flag: ``includeNetworkInPayload`` has no proto
+        backing in any of the four SDKs (``AddressWhitelistingRules`` carries only
+        ``currency``, ``parallelThresholds``, ``properties``, ``network``, ``lines``), so it
+        is never part of the SuperAdmin-signed container.
+
+        So when the network is unsigned the caller must satisfy **every** rule this returns,
+        not the one the DTO named. Where a chain has a single reachable tier -- again the
+        common case -- the set has one element and behaviour is unchanged.
+
+        Reachability mirrors the tier walk in :meth:`find_address_whitelisting_rules`: every
+        rule for this chain is reachable by naming its network; the chain's wildcard-network
+        rule is reachable by naming a network no exact rule covers; and the global default is
+        reachable ONLY when the chain has no wildcard-network rule, because the chain's own
+        wildcard would otherwise win.
+
+        Args:
+            blockchain: The chain from the signed payload.
+
+        Returns:
+            The reachable rules, in container order with the global default last.
+        """
+        return self._rule_candidates(self.address_whitelisting_rules, blockchain)
+
+    def find_contract_address_whitelisting_rule_candidates(
+        self, blockchain: str
+    ) -> List[ContractAddressWhitelistingRules]:
+        """
+        The asset peer of :meth:`find_address_whitelisting_rule_candidates`. Same
+        reachability rule, same reason.
+
+        Args:
+            blockchain: The chain from the signed payload.
+
+        Returns:
+            The reachable rules, in container order with the global default last.
+        """
+        return self._rule_candidates(self.contract_address_whitelisting_rules, blockchain)
+
+    @classmethod
+    def _rule_candidates(cls, rules: Optional[List[Any]], blockchain: str) -> List[Any]:
+        """Shared reachability walk for both rule families.
+
+        ``_rule_chain`` exists because the two families name the same field differently in
+        THIS SDK: ``AddressWhitelistingRules.currency`` vs
+        ``ContractAddressWhitelistingRules.blockchain``. Reading one name would silently
+        treat every contract rule as a wildcard global default -- which is fail-OPEN, since
+        the global default is the broadest tier. Do not "simplify" it to a single attribute.
+        """
+        if not rules:
+            return []
+
+        candidates: List[Any] = []
+        global_default: Optional[Any] = None
+        chain_has_wildcard_network = False
+
+        for rule in rules:
+            chain = cls._rule_chain(rule)
+            if cls._is_wildcard(chain):
+                if global_default is None:
+                    global_default = rule
+                continue
+            if chain != blockchain:
+                continue
+            candidates.append(rule)
+            if cls._is_wildcard(rule.network):
+                chain_has_wildcard_network = True
+
+        if not chain_has_wildcard_network and global_default is not None:
+            candidates.append(global_default)
+
+        return candidates
+
+    @staticmethod
+    def _rule_chain(rule: Any) -> Optional[str]:
+        """The chain a rule applies to, under whichever name its family uses."""
+        chain = getattr(rule, "currency", None)
+        if chain is None:
+            chain = getattr(rule, "blockchain", None)
+        return chain
 
     @staticmethod
     def _is_wildcard(value: Optional[str]) -> bool:

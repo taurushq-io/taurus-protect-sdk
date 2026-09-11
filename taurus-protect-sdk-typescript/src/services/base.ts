@@ -4,7 +4,15 @@
  * Provides common functionality for error handling and response mapping.
  */
 
-import { APIError, IntegrityError, ServerError, mapHttpError } from "../errors";
+import {
+  APIError,
+  ConfigurationError,
+  IntegrityError,
+  RequestMetadataError,
+  ServerError,
+  WhitelistError,
+  mapHttpError,
+} from "../errors";
 import { ResponseError } from "../internal/openapi/runtime";
 
 /**
@@ -53,6 +61,43 @@ async function readErrorBody(response: Response): Promise<ErrorBody | undefined>
 }
 
 /**
+ * SDK errors that must reach the caller exactly as raised.
+ *
+ * These are verdicts this SDK reached about a response, or about its own
+ * configuration — not transport failures. Every one of them extends plain `Error`
+ * rather than `APIError`, which is precisely why they used to fall through to
+ * `handleError`'s final branch and come back as a **retryable** `ServerError(500)`:
+ *
+ * - `IntegrityError` (and its `ContainerIntegrityError` subclass) — a signature, hash
+ *   or rules container did not check out.
+ * - `WhitelistError` — governance thresholds were not met.
+ * - `RequestMetadataError` (and its `UnverifiedMetadataError` subclass) — metadata
+ *   could not be read, or was read before verification cleared it.
+ * - `ConfigurationError` — this SDK is misconfigured; retrying cannot fix it.
+ *
+ * Relabelling any of them as a 5xx is wrong in two directions. It tells the caller to
+ * retry a response the adversary controls, and it disguises a governance
+ * misconfiguration as a transient outage. Both `getEnvelope` doc comments promise
+ * `@throws WhitelistError`, which was unreachable through `execute` until this list
+ * existed.
+ *
+ * Kept in step with `rethrowIfNotRowLevel` (`./row-level-error.ts`), the sibling
+ * classification for what a lenient list path may absorb into `excludedUnverified`.
+ * A type belonging to one and not the other is a bug in whichever is stale.
+ *
+ * @param error - The thrown value
+ * @returns true if the value must be re-thrown unchanged
+ */
+function isPassThroughSdkError(error: unknown): boolean {
+  return (
+    error instanceof IntegrityError ||
+    error instanceof WhitelistError ||
+    error instanceof RequestMetadataError ||
+    error instanceof ConfigurationError
+  );
+}
+
+/**
  * Base class for all service implementations.
  *
  * Provides:
@@ -82,8 +127,12 @@ export abstract class BaseService {
   /**
    * Handles API errors, converting OpenAPI ResponseError to appropriate SDK errors.
    *
+   * Only a transport-level `ResponseError` is mapped to an HTTP-shaped error, and only
+   * an unrecognised throw is wrapped. Verdicts this SDK reached itself pass through —
+   * see {@link isPassThroughSdkError} for why that matters.
+   *
    * @param error - The error thrown by the OpenAPI client
-   * @throws APIError or appropriate subclass
+   * @throws APIError or appropriate subclass, or the original SDK error unchanged
    */
   protected async handleError(error: unknown): Promise<never> {
     if (error instanceof ResponseError) {
@@ -93,7 +142,7 @@ export abstract class BaseService {
     if (error instanceof APIError) {
       throw error;
     }
-    if (error instanceof IntegrityError) {
+    if (isPassThroughSdkError(error)) {
       throw error;
     }
     if (error instanceof Error) {

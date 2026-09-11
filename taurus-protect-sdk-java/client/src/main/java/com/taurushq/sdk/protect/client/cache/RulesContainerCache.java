@@ -121,10 +121,17 @@ public class RulesContainerCache {
         // Perform network I/O outside the lock
         DecodedRulesContainer newContainer = null;
         ApiException exception = null;
+        boolean settled = false;
         try {
             newContainer = doFetch();
+            settled = true;
         } catch (ApiException e) {
             exception = e;
+            settled = true;
+        } finally {
+            if (!settled) {
+                releaseTheFetchSlot();
+            }
         }
 
         // Update cache and notify waiting threads
@@ -139,6 +146,30 @@ public class RulesContainerCache {
             cacheTimestamp = System.currentTimeMillis();
             lock.notifyAll();
             return cachedContainer;
+        }
+    }
+
+    /**
+     * Clears the single-flight flag and wakes every waiter, for the path where the fetch
+     * threw something the {@code catch (ApiException)} above does not see.
+     *
+     * <p>This is not defensive tidying. {@code doFetch()} runs governance verification,
+     * whose {@code IntegrityException} is <b>unchecked</b> ({@code extends
+     * SecurityException}), and the error-body path can raise {@code StackOverflowError}.
+     * Either one escaped before {@code fetching} was cleared, so every later caller parked
+     * on the untimed {@code lock.wait()} and never woke: <b>one crafted {@code /rules}
+     * response permanently wedged address, asset and price verification process-wide</b> --
+     * a denial of service on the whole verification surface from a single response.
+     *
+     * <p>{@code fetchException} is deliberately NOT set here: it is typed
+     * {@code ApiException} and the escaping throwable propagates to this caller on its
+     * own. Waiters re-check the cache, find it stale, and take a fresh turn at the fetch
+     * -- which is the correct outcome, since nothing was cached.
+     */
+    private void releaseTheFetchSlot() {
+        synchronized (lock) {
+            fetching = false;
+            lock.notifyAll();
         }
     }
 
@@ -174,10 +205,17 @@ public class RulesContainerCache {
         // Perform network I/O outside the lock
         DecodedRulesContainer newContainer = null;
         ApiException exception = null;
+        boolean settled = false;
         try {
             newContainer = doFetch();
+            settled = true;
         } catch (ApiException e) {
             exception = e;
+            settled = true;
+        } finally {
+            if (!settled) {
+                releaseTheFetchSlot();
+            }
         }
 
         // Update cache and notify waiting threads

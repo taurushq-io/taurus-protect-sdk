@@ -581,24 +581,24 @@
       "name": "MultiFactorSignatureService",
       "methods": [
         {
-          "name": "create_challenge",
-          "signature": "create_challenge(request_id: 'int', challenge_type: 'str') -> 'str'",
-          "doc": "Create a new multi-factor signature challenge."
+          "name": "approve_multi_factor_signature",
+          "signature": "approve_multi_factor_signature(id: 'str', signature: 'str', comment: 'str' = '') -> 'MultiFactorSignatureApprovalResult'",
+          "doc": "Approve a multi-factor signature request."
         },
         {
-          "name": "get_challenge",
-          "signature": "get_challenge(challenge_id: 'str') -> 'MultiFactorSignatureChallenge'",
-          "doc": "Get a multi-factor signature challenge by ID."
+          "name": "create_multi_factor_signatures",
+          "signature": "create_multi_factor_signatures(entity_ids: 'List[str]', entity_type: 'Union[MultiFactorSignatureEntityType, str]') -> 'MultiFactorSignatureResult'",
+          "doc": "Create a batch of multi-factor signature requests."
         },
         {
-          "name": "list_challenges",
-          "signature": "list_challenges(request_id: 'Optional[int]' = None, limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[MultiFactorSignatureChallenge], Optional[Pagination]]'",
-          "doc": "List multi-factor signature challenges."
+          "name": "get_multi_factor_signature_info",
+          "signature": "get_multi_factor_signature_info(id: 'str') -> 'MultiFactorSignatureInfo'",
+          "doc": "Retrieve information about a multi-factor signature request."
         },
         {
-          "name": "verify_challenge",
-          "signature": "verify_challenge(challenge_id: 'str', response: 'str') -> 'bool'",
-          "doc": "Verify a multi-factor signature challenge response."
+          "name": "reject_multi_factor_signature",
+          "signature": "reject_multi_factor_signature(id: 'str', comment: 'str' = '') -> 'None'",
+          "doc": "Reject a multi-factor signature request."
         }
       ]
     },
@@ -1197,8 +1197,8 @@
       "methods": [
         {
           "name": "approve",
-          "signature": "approve(ids: 'List[int]', private_key: 'Any', comment: 'str') -> 'None'",
-          "doc": "Sign and submit an approval for the given whitelisted addresses, all-or-nothing."
+          "signature": "approve(selection: 'WhitelistedAddressApproval', private_key: 'Any', comment: 'str') -> 'None'",
+          "doc": "Sign and submit an approval for the reviewed whitelisted addresses,"
         },
         {
           "name": "get",
@@ -1227,8 +1227,8 @@
       "methods": [
         {
           "name": "approve",
-          "signature": "approve(ids: 'List[int]', private_key: 'Any', comment: 'str') -> 'None'",
-          "doc": "Sign and submit an approval for the given whitelisted assets, all-or-nothing."
+          "signature": "approve(selection: 'WhitelistedAssetApproval', private_key: 'Any', comment: 'str') -> 'None'",
+          "doc": "Sign and submit an approval for the reviewed whitelisted assets, all-or-nothing."
         },
         {
           "name": "get",

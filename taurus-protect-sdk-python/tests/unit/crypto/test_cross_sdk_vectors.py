@@ -121,3 +121,59 @@ class TestCrossSdkLegacyAssetHash:
                 f"Original hash mismatch for {vec['description']}: "
                 f"got {result}, expected {vec['original_hash']}"
             )
+
+
+class TestCrossSdkCanonicalString:
+    """The TPV1 canonical string, pinned by value across all four SDKs.
+
+    **Nothing pinned this before 2026-09-10, and that is how a real interop break shipped.**
+    The ``hmac_sha256`` group HMACs a hardcoded string that merely *looks* like a canonical
+    message, and no consumer routed through the signing path -- so Python and TypeScript
+    could upper-case the HTTP method while Java and Go signed it verbatim, leaving a caller
+    who issued a lowercase ``get`` unable to authenticate against one of the two families.
+
+    Asserting the SIGNATURE is what pins the MESSAGE: the secret is fixed, so a signature
+    match means the exact byte string was signed. Reconstructing the message in the test
+    would assert a copy of the implementation instead -- the trap this repo records.
+
+    This section was consumed by the Go suite alone until now; the other three had the code
+    fix and no gate, which is the same asymmetry that let the split survive in the first
+    place.
+    """
+
+    def test_canonical_string_vectors(self, vectors: Dict[str, Any]) -> None:
+        import time
+        import uuid
+        from unittest.mock import patch
+
+        from taurus_protect.crypto.tpv1 import TPV1Auth
+
+        group = vectors["canonical_string"]
+        cases = group["cases"]
+        assert len(cases) == group["count"], (
+            f"canonical_string: {len(cases)} cases, file declares {group['count']}"
+        )
+
+        for vec in cases:
+            # Driven through the REAL sign_request, which mints its own nonce and
+            # timestamp -- so they are patched rather than the message rebuilt.
+            auth = TPV1Auth(vec["api_key"], group["secret_hex"])
+            try:
+                with patch.object(uuid, "uuid4", return_value=vec["nonce"]), patch.object(
+                    time, "time", return_value=vec["timestamp"] / 1000
+                ):
+                    header = auth.sign_request(
+                        vec["method"],
+                        vec["host"],
+                        vec["path"],
+                        vec["query"] or None,
+                        vec["content_type"] or None,
+                        vec["body"] or None,
+                    )
+            finally:
+                auth.close()
+
+            assert f"Signature={vec['expected_signature']}" in header, (
+                f"canonical string mismatch for {vec['description']}: "
+                f"got {header}, expected a signature over {vec['expected_message']!r}"
+            )

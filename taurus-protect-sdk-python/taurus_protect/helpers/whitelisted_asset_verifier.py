@@ -15,7 +15,7 @@ import binascii
 import hmac
 import json
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Callable, List, Optional
+from typing import TYPE_CHECKING, Callable, List, Optional, Tuple
 
 from cryptography.exceptions import InvalidSignature
 
@@ -29,12 +29,13 @@ from taurus_protect.helpers.signature_verifier import (
     verify_governance_rules_signatures,
 )
 from taurus_protect.helpers.whitelist_hash_helper import (
-    compute_asset_legacy_hashes,
+    compute_asset_legacy_payload_variants,
     contains_hash,
-    resolve_rule_key,
+    resolve_rule_key_with_source,
     verify_hash_coverage,
 )
 from taurus_protect.models.governance_rules import (
+    ContractAddressWhitelistingRules,
     DecodedRulesContainer,
     RuleUserSignature,
     SequentialThresholds,
@@ -47,9 +48,22 @@ if TYPE_CHECKING:
 
 @dataclass
 class AssetVerificationResult:
-    """Result of whitelisted asset verification."""
+    """Result of whitelisted asset verification.
+
+    Attributes:
+        rules_container: The decoded and verified rules container.
+        verified_hash: The hash that was matched in step 4. May differ from
+            ``metadata.hash`` when a legacy variant matched.
+        verified_payload: The payload ``verified_hash`` covers. Step 6 for assets runs
+            in ``services/whitelisted_asset_service.py``, and it must parse THIS rather
+            than ``metadata.payload_as_string`` -- when a legacy variant matched, the
+            delivered payload carries members no signature covered. See
+            :class:`taurus_protect.helpers.whitelist_hash_helper.LegacyPayloadVariant`.
+    """
 
     rules_container: DecodedRulesContainer
+    verified_hash: str
+    verified_payload: str
 
 
 class WhitelistedAssetVerifier:
@@ -142,8 +156,11 @@ class WhitelistedAssetVerifier:
         # Step 3: Decode rules container
         rules_container = self._decode_rules_container(asset, rules_container_decoder)
 
-        # Step 4: Verify hash coverage
-        verified_hash = self._verify_hash_in_signed_hashes(asset)
+        # Step 4: Verify hash coverage.
+        #
+        # verified_hash may differ from metadata.hash if a legacy variant matched, and
+        # verified_payload is then that variant rather than the delivered payload.
+        verified_hash, verified_payload = self._verify_hash_in_signed_hashes(asset)
 
         # Step 5: Verify whitelist signatures.
         #
@@ -155,7 +172,11 @@ class WhitelistedAssetVerifier:
             asset, rules_container, verified_hash, dto_blockchain, dto_network
         )
 
-        return AssetVerificationResult(rules_container=rules_container)
+        return AssetVerificationResult(
+            rules_container=rules_container,
+            verified_hash=verified_hash,
+            verified_payload=verified_payload,
+        )
 
     def _verify_metadata_hash(self, asset: WhitelistedAsset) -> None:
         """
@@ -227,18 +248,26 @@ class WhitelistedAssetVerifier:
         except (ValueError, KeyError, binascii.Error) as e:
             raise IntegrityError(f"failed to decode rules container: {e}") from e
 
-    def _verify_hash_in_signed_hashes(self, asset: WhitelistedAsset) -> str:
+    def _verify_hash_in_signed_hashes(self, asset: WhitelistedAsset) -> Tuple[str, str]:
         """
         Verify that the metadata hash is covered by at least one signature.
 
         Step 4 of the verification flow.
-        Returns the hash that was found (may be a legacy hash).
+
+        Returns BOTH the hash that was found (which may be a legacy hash) and the
+        payload that hash covers -- step 6 must parse the latter, because when a legacy
+        variant matched, the delivered payload carries members no signature covered.
+        Mirrors the address verifier; see
+        :class:`taurus_protect.helpers.whitelist_hash_helper.LegacyPayloadVariant`.
 
         Uses constant-time comparison to prevent timing side-channel attacks
         that could leak information about the hash value.
 
         Supports legacy hashes for backward compatibility with assets signed
         before schema changes (e.g., before isNFT or kindType was added).
+
+        Returns:
+            ``(matched_hash, matched_payload)``.
         """
         if asset.signed_contract_address is None:
             raise IntegrityError("signedContractAddress is nil")
@@ -251,14 +280,14 @@ class WhitelistedAssetVerifier:
 
         # Try the provided hash first using constant-time comparison
         if verify_hash_coverage(metadata_hash, signatures):
-            return metadata_hash
+            return metadata_hash, asset.metadata.payload_as_string
 
-        # Try legacy hashes for backward compatibility
-        # This handles assets signed before schema changes (e.g., before isNFT or kindType was added)
-        legacy_hashes = compute_asset_legacy_hashes(asset.metadata.payload_as_string)
-        for legacy_hash in legacy_hashes:
-            if verify_hash_coverage(legacy_hash, signatures):
-                return legacy_hash
+        # Try legacy variants for backward compatibility. This handles assets signed
+        # before schema changes (e.g. before isNFT or kindType was added); the variant's
+        # PAYLOAD travels with its hash so step 6 parses the bytes the signature covered.
+        for variant in compute_asset_legacy_payload_variants(asset.metadata.payload_as_string):
+            if verify_hash_coverage(variant.hash, signatures):
+                return variant.hash, variant.payload
 
         raise IntegrityError("metadata hash is not covered by any signature")
 
@@ -285,39 +314,62 @@ class WhitelistedAssetVerifier:
         metadata_hash = verified_hash
 
         # Keyed off the SIGNED payload, not the response. See the address verifier.
-        blockchain, network = resolve_rule_key(
+        blockchain, network, network_from_payload = resolve_rule_key_with_source(
             asset.metadata.payload_as_string if asset.metadata else None,
             lookup_blockchain or asset.blockchain,
             lookup_network or asset.network,
         )
 
-        # Find matching contract address whitelisting rules
-        whitelist_rules = rules_container.find_contract_address_whitelisting_rules(
-            blockchain, network
-        )
-        if whitelist_rules is None:
+        # WHICH rules to enforce. Same reasoning as the address verifier: the network half
+        # of the key is not always signed, so when it came from the unsigned DTO a single
+        # lookup would let a response-controlling server choose which quorum applies.
+        applicable_rules: List[ContractAddressWhitelistingRules] = []
+        if network_from_payload:
+            single = rules_container.find_contract_address_whitelisting_rules(
+                blockchain, network
+            )
+            if single is not None:
+                applicable_rules = [single]
+        else:
+            applicable_rules = (
+                rules_container.find_contract_address_whitelisting_rule_candidates(
+                    blockchain
+                )
+            )
+        if not applicable_rules:
             raise WhitelistError(
                 f"no contract address whitelisting rules found for blockchain={blockchain} "
                 f"network={network}"
             )
 
-        # Contract whitelisting uses parallelThresholds directly
-        parallel_thresholds = whitelist_rules.parallel_thresholds
-        if not parallel_thresholds:
-            raise WhitelistError("no threshold rules defined")
+        for whitelist_rules in applicable_rules:
+            # Contract whitelisting uses parallelThresholds directly
+            parallel_thresholds = whitelist_rules.parallel_thresholds
+            if not parallel_thresholds:
+                raise WhitelistError("no threshold rules defined")
 
-        # Try to verify all paths (OR logic - only one needs to succeed)
-        path_failures = self._try_verify_all_paths(
-            parallel_thresholds,
-            rules_container,
-            asset.signed_contract_address.signatures,
-            metadata_hash,
-        )
-        if path_failures:
-            raise WhitelistError(
-                f"signature verification failed for whitelisted asset (ID: {asset.id}): "
-                f"no approval path satisfied the threshold requirements. {'; '.join(path_failures)}"
+            # Try to verify all paths (OR logic - only one needs to succeed)
+            path_failures = self._try_verify_all_paths(
+                parallel_thresholds,
+                rules_container,
+                asset.signed_contract_address.signatures,
+                metadata_hash,
             )
+            if path_failures:
+                scope = (
+                    f"blockchain={whitelist_rules.blockchain} "
+                    f"network={whitelist_rules.network}"
+                )
+                if not network_from_payload and len(applicable_rules) > 1:
+                    scope += (
+                        " (enforced because the signed payload carries no network, so "
+                        "the response could otherwise choose which quorum applies)"
+                    )
+                raise WhitelistError(
+                    f"signature verification failed for whitelisted asset "
+                    f"(ID: {asset.id}) against {scope}: no approval path satisfied the "
+                    f"threshold requirements. {'; '.join(path_failures)}"
+                )
 
     def _try_verify_all_paths(
         self,

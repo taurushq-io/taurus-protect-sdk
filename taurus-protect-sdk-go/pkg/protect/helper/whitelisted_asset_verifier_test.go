@@ -448,7 +448,7 @@ func TestAssetVerifier_Step4_HashCoverage(t *testing.T) {
 				PayloadAsString: payload,
 			},
 		}
-		_, err := v.verifyHashInSignedHashes(asset)
+		_, _, err := v.verifyHashInSignedHashes(asset)
 		if err == nil {
 			t.Error("expected error for nil signedContractAddress")
 		}
@@ -462,7 +462,7 @@ func TestAssetVerifier_Step4_HashCoverage(t *testing.T) {
 				PayloadAsString: payload,
 			},
 		}
-		_, err := v.verifyHashInSignedHashes(asset)
+		_, _, err := v.verifyHashInSignedHashes(asset)
 		if err == nil {
 			t.Error("expected error for empty signatures")
 		}
@@ -480,7 +480,7 @@ func TestAssetVerifier_Step4_HashCoverage(t *testing.T) {
 				PayloadAsString: payload,
 			},
 		}
-		foundHash, err := v.verifyHashInSignedHashes(asset)
+		foundHash, _, err := v.verifyHashInSignedHashes(asset)
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}
@@ -501,7 +501,7 @@ func TestAssetVerifier_Step4_HashCoverage(t *testing.T) {
 				PayloadAsString: payload,
 			},
 		}
-		_, err := v.verifyHashInSignedHashes(asset)
+		_, _, err := v.verifyHashInSignedHashes(asset)
 		if err == nil {
 			t.Error("expected error when hash not covered")
 		}
@@ -538,7 +538,7 @@ func TestAssetVerifier_Step4_LegacyHashFallback(t *testing.T) {
 				PayloadAsString: payload,
 			},
 		}
-		foundHash, err := v.verifyHashInSignedHashes(asset)
+		foundHash, _, err := v.verifyHashInSignedHashes(asset)
 		if err != nil {
 			t.Errorf("unexpected error: %v", err)
 		}

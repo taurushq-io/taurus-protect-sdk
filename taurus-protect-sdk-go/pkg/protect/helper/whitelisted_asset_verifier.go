@@ -32,6 +32,10 @@ type AssetVerificationResult struct {
 	// VerifiedHash is the hash that was matched during verification.
 	// This may differ from the input hash if a legacy hash format was used.
 	VerifiedHash string
+	// VerifiedPayload is the payload VerifiedHash covers. Step 6 for assets runs in the
+	// service, so it must parse THIS rather than Metadata.PayloadAsString: when a legacy
+	// variant matched, the delivered payload carries members no signature covered.
+	VerifiedPayload string
 }
 
 // 5-step verification for a whitelisted asset, plus the parse that makes it usable.
@@ -137,7 +141,7 @@ func (v *WhitelistedAssetVerifier) VerifyWhitelistedAsset(
 
 	// Step 4: Verify hash coverage
 	// verifiedHash may differ from asset.Metadata.Hash if a legacy hash format was matched
-	verifiedHash, err := v.verifyHashInSignedHashes(asset)
+	verifiedHash, verifiedPayload, err := v.verifyHashInSignedHashes(asset)
 	if err != nil {
 		return nil, err
 	}
@@ -148,8 +152,9 @@ func (v *WhitelistedAssetVerifier) VerifyWhitelistedAsset(
 	}
 
 	return &AssetVerificationResult{
-		RulesContainer: rulesContainer,
-		VerifiedHash:   verifiedHash,
+		RulesContainer:  rulesContainer,
+		VerifiedHash:    verifiedHash,
+		VerifiedPayload: verifiedPayload,
 	}, nil
 }
 
@@ -256,33 +261,39 @@ func (v *WhitelistedAssetVerifier) decodeRulesContainer(
 
 // verifyHashInSignedHashes verifies that the metadata hash is covered by at least one signature.
 // Step 4 of the verification flow.
-// Returns the hash that was found (may be a legacy hash for backward compatibility).
-func (v *WhitelistedAssetVerifier) verifyHashInSignedHashes(asset *model.WhitelistedAsset) (string, error) {
+//
+// Returns BOTH the hash that was found (which may be a legacy hash) and the payload that hash
+// covers. Step 6 runs in the service here rather than in this verifier, so the payload travels
+// on AssetVerificationResult — see the address verifier for why parsing the delivered payload
+// instead is a verification bypass.
+func (v *WhitelistedAssetVerifier) verifyHashInSignedHashes(
+	asset *model.WhitelistedAsset,
+) (matchedHash string, matchedPayload string, err error) {
 	if asset.SignedContractAddress == nil {
-		return "", &model.IntegrityError{Message: "signedContractAddress is nil"}
+		return "", "", &model.IntegrityError{Message: "signedContractAddress is nil"}
 	}
 
 	signatures := asset.SignedContractAddress.Signatures
 	if len(signatures) == 0 {
-		return "", &model.IntegrityError{Message: "no signatures in signedContractAddress"}
+		return "", "", &model.IntegrityError{Message: "no signatures in signedContractAddress"}
 	}
 
 	// Try the provided hash first
 	providedHash := asset.Metadata.Hash
 	if VerifyHashCoverage(providedHash, signatures) {
-		return providedHash, nil
+		return providedHash, asset.Metadata.PayloadAsString, nil
 	}
 
-	// Try legacy hashes for backward compatibility
-	// This handles assets signed before schema changes (e.g., before isNFT or kindType was added)
-	legacyHashes := ComputeAssetLegacyHashes(asset.Metadata.PayloadAsString)
-	for _, legacyHash := range legacyHashes {
-		if VerifyHashCoverage(legacyHash, signatures) {
-			return legacyHash, nil
+	// Try legacy variants for backward compatibility. This handles assets signed before schema
+	// changes (e.g., before isNFT or kindType was added); the variant's PAYLOAD travels with
+	// its hash so step 6 parses the bytes the signature actually covered.
+	for _, variant := range ComputeAssetLegacyPayloadVariants(asset.Metadata.PayloadAsString) {
+		if VerifyHashCoverage(variant.Hash, signatures) {
+			return variant.Hash, variant.Payload, nil
 		}
 	}
 
-	return "", &model.IntegrityError{
+	return "", "", &model.IntegrityError{
 		Message: "metadata hash is not covered by any signature",
 	}
 }
@@ -296,33 +307,50 @@ func (v *WhitelistedAssetVerifier) verifyWhitelistSignatures(
 ) error {
 
 	// Keyed off the SIGNED payload, not the response. See the address verifier.
-	blockchain, network, err := resolveRuleKeyFor(asset.Metadata, asset.Blockchain, asset.Network)
+	blockchain, network, networkFromPayload, err := resolveRuleKeyFor(
+		asset.Metadata, asset.Blockchain, asset.Network)
 	if err != nil {
 		return err
 	}
 
-	// Find matching contract address whitelisting rules
-	whitelistRules := rulesContainer.FindContractAddressWhitelistingRules(blockchain, network)
-	if whitelistRules == nil {
+	// When the payload omits `network` the key is only partly signed, so enforce every tier
+	// the unsigned DTO value could have selected rather than the one it named. See the address
+	// verifier and model.FindContractAddressWhitelistingRuleCandidates.
+	var applicableRules []*model.ContractAddressWhitelistingRules
+	if networkFromPayload {
+		if r := rulesContainer.FindContractAddressWhitelistingRules(blockchain, network); r != nil {
+			applicableRules = []*model.ContractAddressWhitelistingRules{r}
+		}
+	} else {
+		applicableRules = rulesContainer.FindContractAddressWhitelistingRuleCandidates(blockchain)
+	}
+	if len(applicableRules) == 0 {
 		return &model.WhitelistError{
 			Message: fmt.Sprintf("no contract address whitelisting rules found for blockchain=%s network=%s",
 				blockchain, network),
 		}
 	}
 
-	// Contract whitelisting uses parallelThresholds directly (no rule lines matching)
-	parallelThresholds := whitelistRules.ParallelThresholds
-	if len(parallelThresholds) == 0 {
-		return &model.WhitelistError{Message: "no threshold rules defined"}
-	}
+	for _, whitelistRules := range applicableRules {
+		// Contract whitelisting uses parallelThresholds directly (no rule lines matching)
+		parallelThresholds := whitelistRules.ParallelThresholds
+		if len(parallelThresholds) == 0 {
+			return &model.WhitelistError{Message: "no threshold rules defined"}
+		}
 
-	// Try to verify all paths (OR logic - only one needs to succeed)
-	pathFailures := tryVerifyAllPaths(parallelThresholds, rulesContainer, asset.SignedContractAddress.Signatures, metadataHash)
-	if len(pathFailures) > 0 {
-		return &model.WhitelistError{
-			Message: fmt.Sprintf("signature verification failed for whitelisted asset (ID: %s): "+
-				"no approval path satisfied the threshold requirements. %s",
-				asset.ID, strings.Join(pathFailures, "; ")),
+		// Try to verify all paths (OR logic - only one needs to succeed)
+		pathFailures := tryVerifyAllPaths(parallelThresholds, rulesContainer, asset.SignedContractAddress.Signatures, metadataHash)
+		if len(pathFailures) > 0 {
+			scope := fmt.Sprintf("blockchain=%s network=%s", whitelistRules.Blockchain, whitelistRules.Network)
+			if !networkFromPayload && len(applicableRules) > 1 {
+				scope += " (enforced because the signed payload carries no network, so the " +
+					"response could otherwise choose which quorum applies)"
+			}
+			return &model.WhitelistError{
+				Message: fmt.Sprintf("signature verification failed for whitelisted asset (ID: %s) "+
+					"against %s: no approval path satisfied the threshold requirements. %s",
+					asset.ID, scope, strings.Join(pathFailures, "; ")),
+			}
 		}
 	}
 

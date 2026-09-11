@@ -20,6 +20,7 @@ import type { KeyObject } from "crypto";
 import { calculateHexHash, verifySignature, decodePublicKeyPem } from "../crypto";
 import { IntegrityError, WhitelistError } from "../errors";
 import type {
+  ContractAddressWhitelistingRules,
   DecodedRulesContainer,
   RuleUserSignature,
   GroupThreshold,
@@ -27,6 +28,7 @@ import type {
 } from "../models/governance-rules";
 import {
   findContractAddressWhitelistingRules,
+  findContractAddressWhitelistingRuleCandidates,
   findUserById,
   findGroupById,
 } from "../models/governance-rules";
@@ -40,10 +42,10 @@ import type { WhitelistSignatureEntry } from "../models/whitelisted-address";
 import { constantTimeCompare } from "./constant-time";
 import { keyFingerprint, verifyGovernanceRulesSignatures } from "./signature-verifier";
 import {
-  computeAssetLegacyHashes,
+  computeAssetLegacyPayloadVariants,
   verifyHashCoverage,
   containsHash,
-  resolveRuleKey,
+  resolveRuleKeyWithSource,
 } from "./whitelist-hash-helper";
 import { attestVerified } from "./verified";
 import { strictBase64Decode } from "./strict-base64";
@@ -182,17 +184,19 @@ export class WhitelistedAssetVerifier {
       rulesContainerDecoder
     );
 
-    // Step 4: Verify hash in signed hashes list. Returns the hash actually
-    // covered, which may be a legacy one.
-    const verifiedHash = this.verifyHashInSignedHashes(envelope);
+    // Step 4: Verify hash in signed hashes list. Returns the hash actually covered,
+    // which may be a legacy one, together with the PAYLOAD that hash covers.
+    const { hash: verifiedHash, payload: verifiedPayload } =
+      this.verifyHashInSignedHashes(envelope);
 
     // Step 5: Verify whitelist signatures against the hash step 4 matched
     this.verifyWhitelistSignatures(envelope, rulesContainer, verifiedHash);
 
-    // Parse and return verified asset
-    const verifiedAsset = parseWhitelistedAssetFromJson(
-      envelope.metadata.payloadAsString
-    );
+    // Step 6: Parse the payload the matched signature COVERED, not the delivered one.
+    // No asset field is injectable through the isNFT/kindType strips today, but the two
+    // flows must stay symmetric: a schema change that makes a stripped member readable
+    // would otherwise silently reopen the address defect here.
+    const verifiedAsset = parseWhitelistedAssetFromJson(verifiedPayload);
 
     // Set the ID from the envelope (not in the signed payload)
     const assetWithId: WhitelistedAsset = {
@@ -203,6 +207,7 @@ export class WhitelistedAssetVerifier {
     return {
       verifiedAsset: assetWithId,
       verifiedHash,
+      verifiedPayload,
       // The single point where the marker is applied: every step above has passed.
       verifiedEnvelope: attestVerified(envelope),
     };
@@ -316,18 +321,21 @@ export class WhitelistedAssetVerifier {
    * before schema changes (e.g., before isNFT or kindType was added).
    *
    * Returns the hash that was actually covered — the current one, or the legacy
-   * variant that matched. Returning `void` and letting the caller re-read
-   * `metadata.hash` meant a legacy-signed asset passed step 4 and then failed
-   * step 5, because step 5 looked for a hash no signature covers. Go and Python
-   * both carry the matched hash forward.
+   * variant that matched — together with the PAYLOAD that hash covers. Returning
+   * `void` and letting the caller re-read `metadata.hash` meant a legacy-signed asset
+   * passed step 4 and then failed step 5, because step 5 looked for a hash no signature
+   * covers. Go and Python both carry the matched hash forward.
+   *
+   * The payload travels with it because step 6 must parse the bytes the signature
+   * covered; see the address verifier for the injection that closes.
    *
    * @param envelope - The signed whitelisted asset envelope
-   * @returns the covered hash
+   * @returns the covered hash and the bytes it covers
    * @throws IntegrityError if hash is not covered by any signature
    */
   private verifyHashInSignedHashes(
     envelope: SignedWhitelistedAssetEnvelope
-  ): string {
+  ): { hash: string; payload: string } {
     if (!envelope.signedContractAddress) {
       throw new IntegrityError("signedContractAddress is null or undefined");
     }
@@ -341,17 +349,16 @@ export class WhitelistedAssetVerifier {
 
     // Try the provided hash first
     if (verifyHashCoverage(metadataHash, signatures)) {
-      return metadataHash;
+      return { hash: metadataHash, payload: envelope.metadata.payloadAsString };
     }
 
-    // Try legacy hashes for backward compatibility
+    // Try legacy variants for backward compatibility
     // This handles assets signed before schema changes (e.g., before isNFT or kindType was added)
-    const legacyHashes = computeAssetLegacyHashes(
+    for (const variant of computeAssetLegacyPayloadVariants(
       envelope.metadata.payloadAsString
-    );
-    for (const legacyHash of legacyHashes) {
-      if (verifyHashCoverage(legacyHash, signatures)) {
-        return legacyHash;
+    )) {
+      if (verifyHashCoverage(variant.hash, signatures)) {
+        return { hash: variant.hash, payload: variant.payload };
       }
     }
 
@@ -372,44 +379,64 @@ export class WhitelistedAssetVerifier {
   ): void {
 
     // Keyed off the SIGNED payload, not the response. See the address verifier.
-    const { blockchain, network } = resolveRuleKey(
+    const { blockchain, network, networkFromPayload } = resolveRuleKeyWithSource(
       envelope.metadata?.payloadAsString,
       envelope.blockchain,
       envelope.network
     );
 
-    // Find matching contract address whitelisting rules
-    const whitelistRules = findContractAddressWhitelistingRules(
-      rulesContainer,
-      blockchain,
-      network
-    );
+    // Which rules to enforce: one when the network is signed, every reachable tier when
+    // it is not. See findContractAddressWhitelistingRuleCandidates — an unsigned network
+    // otherwise lets the response pick which group quorum judges the asset.
+    let applicableRules: ContractAddressWhitelistingRules[];
+    if (networkFromPayload) {
+      const exact = findContractAddressWhitelistingRules(
+        rulesContainer,
+        blockchain,
+        network
+      );
+      applicableRules = exact ? [exact] : [];
+    } else {
+      applicableRules = findContractAddressWhitelistingRuleCandidates(
+        rulesContainer,
+        blockchain
+      );
+    }
 
-    if (!whitelistRules) {
+    if (applicableRules.length === 0) {
       throw new WhitelistError(
         `no contract address whitelisting rules found for blockchain=${blockchain} network=${network}`
       );
     }
 
-    // Contract whitelisting uses parallelThresholds directly (no rule lines matching)
-    const parallelThresholds = whitelistRules.parallelThresholds;
-    if (!parallelThresholds || parallelThresholds.length === 0) {
-      throw new WhitelistError("no threshold rules defined");
-    }
+    for (const whitelistRules of applicableRules) {
+      // Contract whitelisting uses parallelThresholds directly (no rule lines matching)
+      const parallelThresholds = whitelistRules.parallelThresholds;
+      if (!parallelThresholds || parallelThresholds.length === 0) {
+        throw new WhitelistError("no threshold rules defined");
+      }
 
-    // Try to verify all paths (OR logic - only one needs to succeed)
-    const pathFailures = this.tryVerifyAllPaths(
-      parallelThresholds,
-      rulesContainer,
-      envelope.signedContractAddress.signatures,
-      metadataHash
-    );
-
-    if (pathFailures.length > 0) {
-      throw new WhitelistError(
-        `signature verification failed for whitelisted asset (ID: ${envelope.id}): ` +
-          `no approval path satisfied the threshold requirements. ${pathFailures.join("; ")}`
+      // Try to verify all paths (OR logic - only one needs to succeed)
+      const pathFailures = this.tryVerifyAllPaths(
+        parallelThresholds,
+        rulesContainer,
+        envelope.signedContractAddress.signatures,
+        metadataHash
       );
+
+      if (pathFailures.length > 0) {
+        let scope = `blockchain=${whitelistRules.blockchain ?? ""} network=${whitelistRules.network ?? ""}`;
+        if (!networkFromPayload && applicableRules.length > 1) {
+          scope +=
+            " (enforced because the signed payload carries no network, so the " +
+            "response could otherwise choose which quorum applies)";
+        }
+        throw new WhitelistError(
+          `signature verification failed for whitelisted asset (ID: ${envelope.id}) ` +
+            `against ${scope}: no approval path satisfied the threshold requirements. ` +
+            `${pathFailures.join("; ")}`
+        );
+      }
     }
   }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -84,9 +85,14 @@ func (s *WhitelistedAddressService) GetWhitelistedAddress(ctx context.Context, i
 	}
 
 	// Now safe to call mapper (extracts from verified PayloadAsString)
-	addr := mapper.WhitelistedAddressFromDTO(resp.Result)
+	addr, err := mapper.WhitelistedAddressFromDTO(resp.Result)
+	if err != nil {
+		return nil, err
+	}
 
-	// Full verification (rules container signatures, whitelist signatures) — always enforced
+	// Full verification (rules container signatures, whitelist signatures) — always enforced.
+	// verifyAddress also replaces the identity fields with the ones the verified payload
+	// carries, so what is returned here is payload-derived, not DTO-derived.
 	if addr != nil {
 		if err := s.verifyAddress(addr); err != nil {
 			return nil, err
@@ -246,29 +252,44 @@ func (s *WhitelistedAddressService) ListWhitelistedAddressesForApproval(
 	}, nil
 }
 
-// ApproveWhitelistedAddresses signs and submits an approval for the given whitelisted
+// ApproveWhitelistedAddresses signs and submits an approval for the reviewed whitelisted
 // addresses, all-or-nothing.
 //
-// It re-reads the batch through the verifying path and signs the hashes THOSE rows carry,
-// so the approver's signature covers metadata this SDK checked rather than whatever a
-// caller was handed. Same shape as ApproveWhitelistedAssets.
+// `selection` comes from a verified read — `result.Select(ids...)` or `result.SelectAll()` — and
+// carries the metadata hash each row had AT REVIEW TIME. That pin is the point:
 //
-//	ids ─▶ sort numerically ─▶ ONE filtered verified page ─▶ completeness check
-//	                                                                │
-//	                                                                ▼
-//	                                            sign(JSON(hashes)) ─▶ POST once
+//	verified read ─▶ Select(ids) ─▶ pinned hashes
+//	                                     │
+//	  sort ─▶ ONE filtered verified re-read ─▶ completeness ─▶ PIN MATCH ─┐
+//	                                                                      ▼
+//	                                                  sign(JSON(hashes)) ─▶ POST once
 //
-// Any address that is missing or fails verification aborts the whole call and nothing is
-// signed: one signature covers every hash in the batch, so a partial approval would mean
-// the caller believes they approved more than they did.
+// Without it the approval accepted bare ids and signed whatever the server returned under them,
+// so a response-controlling server could substitute a row whose existing signatures already
+// satisfy the container it presents and harvest a genuine approver signature over content the
+// approver never saw. GovernanceRuleService.ApproveRulesProposal was hardened the same way with
+// its mandatory expectedContainerHash; an empty pin must not silently restore the old behaviour,
+// which is why an empty selection is an error rather than "approve nothing".
+//
+// A pin mismatch is a REAL signal, not a false positive. The metadata hash is recomputed by the
+// server on every read from the immutable envelope plus the row's live linked-address and
+// linked-wallet rows, so it moves when a linked address is renamed. Normally that also breaks
+// signature coverage and the row is excluded anyway; for a legacy-signed row it can move while
+// the row still verifies. Either way the content changed since review, so re-read, re-review and
+// re-approve — exactly as for a changed rules proposal.
+//
+// Any address that is missing, fails verification, or whose hash no longer matches the pin aborts
+// the whole call and nothing is signed: one signature covers every hash in the batch, so a
+// partial approval would mean the caller believes they approved more than they did.
 func (s *WhitelistedAddressService) ApproveWhitelistedAddresses(
 	ctx context.Context,
-	ids []string,
+	selection *model.WhitelistedAddressApproval,
 	privateKey *ecdsa.PrivateKey,
 	comment string,
 ) error {
-	if len(ids) == 0 {
-		return fmt.Errorf("ids cannot be empty")
+	if selection.IsEmpty() {
+		return fmt.Errorf("selection cannot be empty: pin the rows with " +
+			"result.Select(ids...) or result.SelectAll() from a verified read")
 	}
 	if privateKey == nil {
 		return fmt.Errorf("privateKey cannot be nil")
@@ -276,6 +297,8 @@ func (s *WhitelistedAddressService) ApproveWhitelistedAddresses(
 	if comment == "" {
 		return fmt.Errorf("comment is required")
 	}
+
+	ids := selection.IDs()
 
 	// The endpoint requires ascending order, and sorting here also makes the signed
 	// order independent of the order the caller passed.
@@ -324,6 +347,23 @@ func (s *WhitelistedAddressService) ApproveWhitelistedAddresses(
 				Message: fmt.Sprintf("refusing to sign: address %s has no metadata hash", id),
 			}
 		}
+
+		// The pin. Constant-time because this compares hash material, matching
+		// ApproveRulesProposal's use of subtle.ConstantTimeCompare on its container pin.
+		pinnedHash, pinned := selection.PinnedHash(id)
+		if !pinned {
+			return &model.IntegrityError{
+				Message: fmt.Sprintf("refusing to sign: address %s is not in the reviewed selection", id),
+			}
+		}
+		if subtle.ConstantTimeCompare([]byte(pinnedHash), []byte(addr.Metadata.Hash)) != 1 {
+			return &model.IntegrityError{
+				Message: fmt.Sprintf("refusing to sign: whitelisted address %s changed since it was "+
+					"reviewed: reviewed hash %s, re-read hash %s. Re-read, re-review and re-approve",
+					id, pinnedHash, addr.Metadata.Hash),
+			}
+		}
+
 		hashes = append(hashes, addr.Metadata.Hash)
 	}
 
@@ -409,12 +449,23 @@ func (s *WhitelistedAddressService) verifiedAddresses(
 		verified = append(verified, dto)
 	}
 
-	// Now safe to call mapper (extracts from verified PayloadAsString)
-	mapped := mapper.WhitelistedAddressesFromDTO(verified)
-
-	// Full verification (rules container signatures, whitelist signatures) — always enforced
-	addresses := make([]*model.WhitelistedAddress, 0, len(mapped))
-	for _, addr := range mapped {
+	// Now safe to call mapper (extracts from verified PayloadAsString).
+	//
+	// Mapped ROW BY ROW rather than in bulk: a signed payload this SDK cannot parse is one
+	// bad row, so it belongs in ExcludedUnverified like every other row-level failure. The
+	// bulk form would fail the whole page.
+	addresses := make([]*model.WhitelistedAddress, 0, len(verified))
+	for i := range verified {
+		addr, err := mapper.WhitelistedAddressFromDTO(&verified[i])
+		if err != nil {
+			addrID := ""
+			if verified[i].Id != nil {
+				addrID = *verified[i].Id
+			}
+			s.logExcluded(ctx, addrID, i, err)
+			excluded = append(excluded, model.ExcludedWhitelistedAddress{ID: addrID, Reason: err.Error()})
+			continue
+		}
 		if addr == nil {
 			continue
 		}
@@ -713,13 +764,55 @@ func (s *WhitelistedAddressService) verifyAddressWithCache(addr *model.Whitelist
 		return &model.IntegrityError{Message: "verification enabled but required data missing"}
 	}
 
-	_, err := s.verifier.VerifyWhitelistedAddress(
+	result, err := s.verifier.VerifyWhitelistedAddress(
 		addr,
 		mapper.RulesContainerFromBase64,
 		mapper.UserSignaturesFromBase64,
 		cached,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+	applyVerifiedIdentity(addr, result.VerifiedAddress)
+	return nil
+}
+
+// applyVerifiedIdentity overwrites the identity fields on addr with the values parsed from the
+// payload verification actually cleared.
+//
+// Both service seams used to discard the verifier's result (`_, err :=`), so every read path
+// except GetWhitelistedAddressEnvelope returned the mapper's object instead. That left two
+// defects live:
+//
+//   - TnParticipantID came from the unsigned DTO although the signed payload carries it and
+//     nothing cross-checked the two, so a server could attribute a genuinely whitelisted
+//     address to a different Taurus-NETWORK participant and the SDK returned it as verified.
+//   - When step 4 matched a LEGACY hash, the mapper had parsed the DELIVERED payload — which
+//     carries the members the legacy strip removed, i.e. values no signature covered.
+//
+// Network is the one field that keeps its DTO value when the payload omits it: the payload
+// legitimately has no `network` member when the governing rule's includeNetworkInPayload is
+// off, and blanking the label would lose information the caller needs. That is safe only
+// because rule selection no longer lets an unsigned network reach a weaker quorum — see
+// helper.ResolveRuleKey.
+func applyVerifiedIdentity(addr *model.WhitelistedAddress, verified *model.WhitelistedAddress) {
+	if addr == nil || verified == nil {
+		return
+	}
+	addr.Blockchain = verified.Blockchain
+	addr.TnParticipantID = verified.TnParticipantID
+	if verified.Network != "" {
+		addr.Network = verified.Network
+	}
+	addr.Address = verified.Address
+	addr.Label = verified.Label
+	addr.Memo = verified.Memo
+	addr.CustomerId = verified.CustomerId
+	addr.ContractType = verified.ContractType
+	addr.AddressType = verified.AddressType
+	addr.ExchangeAccountId = verified.ExchangeAccountId
+	addr.LinkedInternalAddresses = verified.LinkedInternalAddresses
+	addr.LinkedWallets = verified.LinkedWallets
 }
 
 // verifyMetadataHashFromDTO verifies the metadata hash before calling the mapper.
@@ -764,12 +857,16 @@ func (s *WhitelistedAddressService) verifyAddress(addr *model.WhitelistedAddress
 		return &model.IntegrityError{Message: "verification enabled but required data missing"}
 	}
 
-	_, err := s.verifier.VerifyWhitelistedAddress(
+	result, err := s.verifier.VerifyWhitelistedAddress(
 		addr,
 		mapper.RulesContainerFromBase64,
 		mapper.UserSignaturesFromBase64,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+	applyVerifiedIdentity(addr, result.VerifiedAddress)
+	return nil
 }
 
 // GetWhitelistedAddressEnvelope retrieves a whitelisted address envelope by ID and performs

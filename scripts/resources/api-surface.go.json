@@ -752,8 +752,8 @@
         },
         {
           "name": "ApprovePledgeActions",
-          "signature": "ApprovePledgeActions(ctx context.Context, req *taurusnetwork.ApprovePledgeActionsRequest) (*taurusnetwork.ApprovePledgeActionsResponse, error)",
-          "doc": "ApprovePledgeActions approves one or more pledge actions."
+          "signature": "ApprovePledgeActions(ctx context.Context, actions []taurusnetwork.PledgeAction, privateKey *ecdsa.PrivateKey, comment string) (*taurusnetwork.ApprovePledgeActionsResponse, error)",
+          "doc": "ApprovePledgeActions approves one or more pledge actions, verifying every metadata hash it"
         },
         {
           "name": "CreatePledge",
@@ -1082,8 +1082,8 @@
       "methods": [
         {
           "name": "ApproveWhitelistedAddresses",
-          "signature": "ApproveWhitelistedAddresses(ctx context.Context, ids []string, privateKey *ecdsa.PrivateKey, comment string) error",
-          "doc": "ApproveWhitelistedAddresses signs and submits an approval for the given whitelisted"
+          "signature": "ApproveWhitelistedAddresses(ctx context.Context, selection *model.WhitelistedAddressApproval, privateKey *ecdsa.PrivateKey, comment string) error",
+          "doc": "ApproveWhitelistedAddresses signs and submits an approval for the reviewed whitelisted"
         },
         {
           "name": "GetWhitelistedAddress",
@@ -1112,8 +1112,8 @@
       "methods": [
         {
           "name": "ApproveWhitelistedAssets",
-          "signature": "ApproveWhitelistedAssets(ctx context.Context, ids []string, privateKey *ecdsa.PrivateKey, comment string) error",
-          "doc": "ApproveWhitelistedAssets signs and submits an approval for the given whitelisted"
+          "signature": "ApproveWhitelistedAssets(ctx context.Context, selection *model.WhitelistedAssetApproval, privateKey *ecdsa.PrivateKey, comment string) error",
+          "doc": "ApproveWhitelistedAssets signs and submits an approval for the reviewed whitelisted"
         },
         {
           "name": "GetWhitelistedAsset",
@@ -1127,12 +1127,12 @@
         },
         {
           "name": "ListWhitelistedAssets",
-          "signature": "ListWhitelistedAssets(ctx context.Context, opts *model.ListWhitelistedAssetsOptions) ([]*model.WhitelistedAsset, *model.Pagination, error)",
+          "signature": "ListWhitelistedAssets(ctx context.Context, opts *model.ListWhitelistedAssetsOptions) (*model.WhitelistedAssetResult, error)",
           "doc": "ListWhitelistedAssets retrieves a list of whitelisted assets."
         },
         {
           "name": "ListWhitelistedAssetsForApproval",
-          "signature": "ListWhitelistedAssetsForApproval(ctx context.Context, opts *model.ListWhitelistedAssetsForApprovalOptions) ([]*model.WhitelistedAsset, *model.Pagination, error)",
+          "signature": "ListWhitelistedAssetsForApproval(ctx context.Context, opts *model.ListWhitelistedAssetsForApprovalOptions) (*model.WhitelistedAssetResult, error)",
           "doc": "ListWhitelistedAssetsForApproval retrieves assets awaiting approval, verified the same"
         }
       ]

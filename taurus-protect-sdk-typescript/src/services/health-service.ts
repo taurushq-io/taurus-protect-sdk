@@ -65,22 +65,19 @@ export class HealthService extends BaseService {
     try {
       const response = await this.healthApi.healthServiceGetHealthChecks({});
 
-      const resp = response as Record<string, unknown>;
-      const checks = resp.checks ?? resp.healthChecks ?? resp.result;
-
-      // Determine overall health status
-      let healthy = true;
-      if (Array.isArray(checks)) {
-        healthy = checks.every((check) => {
-          const c = check as Record<string, unknown>;
-          return c.healthy === true || c.status === 'healthy' || c.status === 'HEALTHY';
-        });
-      }
+      // The reply groups the checks by name; each check reports "success", "failure"
+      // or "deactivated". Healthy means no check failed.
+      const checks = Object.values(response.groups ?? {}).flatMap(
+        (group) => group.healthChecks ?? []
+      );
+      const failed = checks.filter((check) => check.status?.toLowerCase() === 'failure');
 
       return {
-        status: healthy ? 'healthy' : 'unhealthy',
-        version: resp.version as string | undefined,
-        message: resp.message as string | undefined,
+        status: failed.length === 0 ? 'healthy' : 'unhealthy',
+        message:
+          failed.length === 0
+            ? undefined
+            : `${failed.length} of ${checks.length} health checks failed`,
       };
     } catch (error) {
       // If health check fails, return unhealthy status
@@ -121,25 +118,15 @@ export class HealthService extends BaseService {
     return this.execute(async () => {
       const response = await this.healthApi.statusServiceGetGlobalComponentStatus({});
 
-      const resp = response as Record<string, unknown>;
-      const status = resp.status ?? resp.componentStatus ?? resp.result;
-
-      let statusStr = 'unknown';
-      let healthy = false;
-
-      if (typeof status === 'string') {
-        statusStr = status;
-        healthy = status.toLowerCase() === 'healthy' || status.toLowerCase() === 'ok';
-      } else if (typeof status === 'object' && status) {
-        const s = status as Record<string, unknown>;
-        statusStr = (s.status as string) ?? (s.state as string) ?? 'unknown';
-        healthy = s.healthy === true || statusStr.toLowerCase() === 'healthy';
-      }
+      // clusterStatus is "up", "degraded" or "down".
+      const clusterStatus = response.clusterStatus ?? 'unknown';
+      const healthy = clusterStatus.toLowerCase() === 'up';
 
       return {
-        status: healthy ? 'healthy' : statusStr,
-        version: resp.version as string | undefined,
-        message: resp.message as string | undefined,
+        status: healthy ? 'healthy' : clusterStatus,
+        message: healthy
+          ? undefined
+          : `${response.working ?? '0'} of ${response.total ?? '0'} components working`,
       };
     });
   }

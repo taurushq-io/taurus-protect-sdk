@@ -55,7 +55,16 @@ export interface TgvalidatordGetADAStakePoolInfoReply {
      * @memberof TgvalidatordGetADAStakePoolInfoReply
      */
     epoch?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetADAStakePoolInfoReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetADAStakePoolInfoReplyWireKeys: ReadonlySet<string> = new Set(['pledge', 'margin', 'fixedCost', 'url', 'activeStake', 'epoch']);
 
 /**
  * Check if a given object implements the TgvalidatordGetADAStakePoolInfoReply interface.
@@ -72,7 +81,7 @@ export function TgvalidatordGetADAStakePoolInfoReplyFromJSONTyped(json: any, ign
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetADAStakePoolInfoReply = {
         
         'pledge': json['pledge'] == null ? undefined : json['pledge'],
         'margin': json['margin'] == null ? undefined : json['margin'],
@@ -81,6 +90,16 @@ export function TgvalidatordGetADAStakePoolInfoReplyFromJSONTyped(json: any, ign
         'activeStake': json['activeStake'] == null ? undefined : json['activeStake'],
         'epoch': json['epoch'] == null ? undefined : json['epoch'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetADAStakePoolInfoReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetADAStakePoolInfoReplyToJSON(json: any): TgvalidatordGetADAStakePoolInfoReply {
@@ -100,6 +119,7 @@ export function TgvalidatordGetADAStakePoolInfoReplyFromJSONTyped(json: any, ign
         'url': value['url'],
         'activeStake': value['activeStake'],
         'epoch': value['epoch'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -36,7 +36,10 @@ type TgvalidatordBusinessRule struct {
 	EntityType *string `json:"entityType,omitempty"`
 	// entityID is the identifier of the affected entity. For wallets, addresses, and currencies this is their ID. For exchanges this is the exchange label. This field is blank for global rules.
 	EntityID *string `json:"entityID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordBusinessRule TgvalidatordBusinessRule
 
 // NewTgvalidatordBusinessRule instantiates a new TgvalidatordBusinessRule object
 // This constructor will assign default values to properties that have it defined,
@@ -520,7 +523,45 @@ func (o TgvalidatordBusinessRule) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.EntityID) {
 		toSerialize["entityID"] = o.EntityID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordBusinessRule) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordBusinessRule := _TgvalidatordBusinessRule{}
+
+	err = json.Unmarshal(data, &varTgvalidatordBusinessRule)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordBusinessRule(varTgvalidatordBusinessRule)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "tenantId")
+		delete(additionalProperties, "currency")
+		delete(additionalProperties, "walletId")
+		delete(additionalProperties, "ruleKey")
+		delete(additionalProperties, "ruleValue")
+		delete(additionalProperties, "ruleGroup")
+		delete(additionalProperties, "ruleDescription")
+		delete(additionalProperties, "ruleValidation")
+		delete(additionalProperties, "addressId")
+		delete(additionalProperties, "currencyInfo")
+		delete(additionalProperties, "entityType")
+		delete(additionalProperties, "entityID")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordBusinessRule struct {

@@ -39,7 +39,16 @@ export interface TgvalidatordGetSignedWhitelistedContractAddressEnvelopesReply {
      * @memberof TgvalidatordGetSignedWhitelistedContractAddressEnvelopesReply
      */
     totalItems?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetSignedWhitelistedContractAddressEnvelopesReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetSignedWhitelistedContractAddressEnvelopesReplyWireKeys: ReadonlySet<string> = new Set(['result', 'totalItems']);
 
 /**
  * Check if a given object implements the TgvalidatordGetSignedWhitelistedContractAddressEnvelopesReply interface.
@@ -56,11 +65,21 @@ export function TgvalidatordGetSignedWhitelistedContractAddressEnvelopesReplyFro
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetSignedWhitelistedContractAddressEnvelopesReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordSignedWhitelistedContractAddressEnvelopeFromJSON)),
         'totalItems': json['totalItems'] == null ? undefined : json['totalItems'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetSignedWhitelistedContractAddressEnvelopesReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetSignedWhitelistedContractAddressEnvelopesReplyToJSON(json: any): TgvalidatordGetSignedWhitelistedContractAddressEnvelopesReply {
@@ -76,6 +95,7 @@ export function TgvalidatordGetSignedWhitelistedContractAddressEnvelopesReplyFro
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordSignedWhitelistedContractAddressEnvelopeToJSON)),
         'totalItems': value['totalItems'],
+        ...value['additionalProperties'],
     };
 }
 

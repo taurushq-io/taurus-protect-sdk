@@ -248,7 +248,16 @@ export interface TgvalidatordTransaction {
      * @memberof TgvalidatordTransaction
      */
     isConfirmed?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTransaction
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTransactionWireKeys: ReadonlySet<string> = new Set(['id', 'direction', 'currency', 'sources', 'destinations', 'amount', 'amountMainUnit', 'fee', 'feeMainUnit', 'hash', 'block', 'receptionDate', 'confirmationDate', 'transactionId', 'type', 'uniqueId', 'blockchain', 'arg1', 'arg2', 'currencyInfo', 'network', 'requestId', 'confirmationBlock', 'requestVisible', 'travelRule', 'status', 'platformFees', 'attributes', 'forkNumber', 'fees', 'isConfirmed']);
 
 /**
  * Check if a given object implements the TgvalidatordTransaction interface.
@@ -265,7 +274,7 @@ export function TgvalidatordTransactionFromJSONTyped(json: any, ignoreDiscrimina
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTransaction = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'direction': json['direction'] == null ? undefined : json['direction'],
@@ -299,6 +308,16 @@ export function TgvalidatordTransactionFromJSONTyped(json: any, ignoreDiscrimina
         'fees': json['fees'] == null ? undefined : ((json['fees'] as Array<any>).map(TgvalidatordTransactionFeesFromJSON)),
         'isConfirmed': json['isConfirmed'] == null ? undefined : json['isConfirmed'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTransactionWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTransactionToJSON(json: any): TgvalidatordTransaction {
@@ -343,6 +362,7 @@ export function TgvalidatordTransactionFromJSONTyped(json: any, ignoreDiscrimina
         'forkNumber': value['forkNumber'],
         'fees': value['fees'] == null ? undefined : ((value['fees'] as Array<any>).map(TgvalidatordTransactionFeesToJSON)),
         'isConfirmed': value['isConfirmed'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -6,8 +6,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from taurus_protect._internal.openapi import ActionsApi
 from taurus_protect.errors import NotFoundError
+from taurus_protect.models.pagination import Pagination
 from taurus_protect.services.action_service import ActionService
+from tests.unit.transport_stub import StubTransport, api_client
 
 
 class TestGet:
@@ -54,49 +57,35 @@ class TestGet:
 
 
 class TestList:
-    """Tests for ActionService.list()."""
+    """ActionService.list over the real generated client (next offset = offset + rows)."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        actions_api = MagicMock()
-        service = ActionService(api_client=api_client, actions_api=actions_api)
-        return service, actions_api
+    def _service(self) -> ActionService:
+        ac = api_client()
+        return ActionService(ac, ActionsApi(ac))
 
-    def test_list_returns_actions_and_pagination(self) -> None:
-        service, api = self._make_service()
+    def test_rows_and_pagination(self) -> None:
+        with StubTransport(
+            {"result": [{"id": "a1"}, {"id": "a2"}], "totalItems": "3"}
+        ) as transport:
+            actions, pagination = self._service().list(limit=2)
 
-        reply = MagicMock()
-        reply.result = [MagicMock()]
-        reply.total_items = "10"
-        api.action_service_get_actions.return_value = reply
+        assert [a.id for a in actions] == ["a1", "a2"]
+        assert pagination == Pagination(
+            limit=2, offset=0, total_items=3, next_offset=2, has_more=True
+        )
+        assert transport.last.query == [("limit", "2")]
 
-        with patch(
-            "taurus_protect.services.action_service.actions_from_dto",
-            return_value=[MagicMock()],
-        ):
-            actions, pagination = service.list()
+    def test_empty_reply(self) -> None:
+        with StubTransport({}):
+            actions, pagination = self._service().list()
 
-        assert len(actions) == 1
-
-    def test_list_raises_for_invalid_limit(self) -> None:
-        service, _ = self._make_service()
-
-        with pytest.raises(ValueError, match="limit must be positive"):
-            service.list(limit=0)
-
-    def test_list_raises_for_negative_offset(self) -> None:
-        service, _ = self._make_service()
-
-        with pytest.raises(ValueError, match="offset cannot be negative"):
-            service.list(offset=-1)
-
-    def test_list_returns_empty_when_no_result(self) -> None:
-        service, api = self._make_service()
-
-        reply = MagicMock()
-        reply.result = None
-        reply.total_items = None
-        api.action_service_get_actions.return_value = reply
-
-        actions, pagination = service.list()
         assert actions == []
+        assert pagination == Pagination(limit=20, offset=0)
+
+    @pytest.mark.parametrize("kwargs,name", [({"limit": 101}, "limit"), ({"offset": -1}, "offset")])
+    def test_invalid_page_window_sends_nothing(self, kwargs: dict, name: str) -> None:
+        with StubTransport() as transport:
+            with pytest.raises(ValueError, match=name):
+                self._service().list(**kwargs)
+
+        assert transport.requests == []

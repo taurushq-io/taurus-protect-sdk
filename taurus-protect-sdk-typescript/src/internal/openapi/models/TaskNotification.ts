@@ -37,7 +37,16 @@ export interface TaskNotification {
      * @memberof TaskNotification
      */
     numberOfReminders?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TaskNotification
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TaskNotificationWireKeys: ReadonlySet<string> = new Set(['emailAddresses', 'notificationMessage', 'numberOfReminders']);
 
 /**
  * Check if a given object implements the TaskNotification interface.
@@ -54,12 +63,22 @@ export function TaskNotificationFromJSONTyped(json: any, ignoreDiscriminator: bo
     if (json == null) {
         return json;
     }
-    return {
+    const result: TaskNotification = {
         
         'emailAddresses': json['emailAddresses'] == null ? undefined : json['emailAddresses'],
         'notificationMessage': json['notificationMessage'] == null ? undefined : json['notificationMessage'],
         'numberOfReminders': json['numberOfReminders'] == null ? undefined : json['numberOfReminders'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TaskNotificationWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TaskNotificationToJSON(json: any): TaskNotification {
@@ -76,6 +95,7 @@ export function TaskNotificationFromJSONTyped(json: any, ignoreDiscriminator: bo
         'emailAddresses': value['emailAddresses'],
         'notificationMessage': value['notificationMessage'],
         'numberOfReminders': value['numberOfReminders'],
+        ...value['additionalProperties'],
     };
 }
 

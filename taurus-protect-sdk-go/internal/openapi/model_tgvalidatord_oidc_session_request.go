@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -23,6 +22,7 @@ var _ MappedNullable = &TgvalidatordOIDCSessionRequest{}
 type TgvalidatordOIDCSessionRequest struct {
 	Code string `json:"code"`
 	State string `json:"state"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordOIDCSessionRequest TgvalidatordOIDCSessionRequest
@@ -106,6 +106,11 @@ func (o TgvalidatordOIDCSessionRequest) ToMap() (map[string]interface{}, error) 
 	toSerialize := map[string]interface{}{}
 	toSerialize["code"] = o.Code
 	toSerialize["state"] = o.State
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -134,15 +139,21 @@ func (o *TgvalidatordOIDCSessionRequest) UnmarshalJSON(data []byte) (err error) 
 
 	varTgvalidatordOIDCSessionRequest := _TgvalidatordOIDCSessionRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordOIDCSessionRequest)
+	err = json.Unmarshal(data, &varTgvalidatordOIDCSessionRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordOIDCSessionRequest(varTgvalidatordOIDCSessionRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "code")
+		delete(additionalProperties, "state")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

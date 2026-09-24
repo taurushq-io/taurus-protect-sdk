@@ -33,8 +33,27 @@ describe('ReservationService', () => {
       } as never);
 
       const reservations = await service.list();
-      expect(reservations).toBeDefined();
-      expect(reservations.length).toBeGreaterThanOrEqual(0);
+      expect(reservations.items.map((r) => r.id)).toEqual(['res-1', 'res-2']);
+      expect(reservations.pagination).toEqual({ pageSize: 20, nextCursor: '', hasMore: false });
+    });
+
+    it('should return the reply cursor and send it back as NEXT', async () => {
+      mockApi.walletServiceGetReservations.mockResolvedValue({
+        result: [{ id: 'res-1' }],
+        cursor: { currentPage: 'next-page', hasNext: true },
+      } as never);
+
+      const first = await service.list({ pageSize: 1 });
+      expect(first.pagination).toEqual({ pageSize: 1, nextCursor: 'next-page', hasMore: true });
+
+      await service.list({ pageSize: 1, cursor: first.pagination.nextCursor });
+      expect(mockApi.walletServiceGetReservations).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          cursorCurrentPage: 'next-page',
+          cursorPageRequest: 'NEXT',
+          cursorPageSize: '1',
+        })
+      );
     });
 
     it('should pass filter options to API', async () => {
@@ -61,7 +80,7 @@ describe('ReservationService', () => {
       } as never);
 
       const reservations = await service.list();
-      expect(reservations).toHaveLength(0);
+      expect(reservations.items).toHaveLength(0);
     });
 
     it('should work without options', async () => {

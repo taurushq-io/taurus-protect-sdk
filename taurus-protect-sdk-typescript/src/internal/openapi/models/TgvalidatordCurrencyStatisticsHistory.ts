@@ -58,7 +58,16 @@ export interface TgvalidatordCurrencyStatisticsHistory {
      * @memberof TgvalidatordCurrencyStatisticsHistory
      */
     currencyInfo?: TgvalidatordCurrency;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCurrencyStatisticsHistory
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCurrencyStatisticsHistoryWireKeys: ReadonlySet<string> = new Set(['symbol', 'blockchain', 'history', 'currencyInfo']);
 
 /**
  * Check if a given object implements the TgvalidatordCurrencyStatisticsHistory interface.
@@ -75,13 +84,23 @@ export function TgvalidatordCurrencyStatisticsHistoryFromJSONTyped(json: any, ig
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCurrencyStatisticsHistory = {
         
         'symbol': json['symbol'] == null ? undefined : json['symbol'],
         'blockchain': json['blockchain'] == null ? undefined : json['blockchain'],
         'history': json['history'] == null ? undefined : ((json['history'] as Array<any>).map(TgvalidatordAggregatedStatsHistoryPointFromJSON)),
         'currencyInfo': json['currencyInfo'] == null ? undefined : TgvalidatordCurrencyFromJSON(json['currencyInfo']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCurrencyStatisticsHistoryWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCurrencyStatisticsHistoryToJSON(json: any): TgvalidatordCurrencyStatisticsHistory {
@@ -99,6 +118,7 @@ export function TgvalidatordCurrencyStatisticsHistoryFromJSONTyped(json: any, ig
         'blockchain': value['blockchain'],
         'history': value['history'] == null ? undefined : ((value['history'] as Array<any>).map(TgvalidatordAggregatedStatsHistoryPointToJSON)),
         'currencyInfo': TgvalidatordCurrencyToJSON(value['currencyInfo']),
+        ...value['additionalProperties'],
     };
 }
 

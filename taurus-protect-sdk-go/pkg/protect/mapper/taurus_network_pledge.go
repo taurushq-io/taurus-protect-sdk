@@ -279,5 +279,3 @@ func PledgeActionTrailsFromDTO(dtos []openapi.TgvalidatordTnPledgeActionTrail) [
 	}
 	return trails
 }
-
-// Note: CursorPaginationFromDTO is defined in change.go

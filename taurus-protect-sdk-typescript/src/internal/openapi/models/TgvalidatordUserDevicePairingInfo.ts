@@ -45,9 +45,18 @@ export interface TgvalidatordUserDevicePairingInfo {
      * @memberof TgvalidatordUserDevicePairingInfo
      */
     apiKey?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordUserDevicePairingInfo
+     */
+    additionalProperties?: { [key: string]: any };
 }
 
 
+
+const TgvalidatordUserDevicePairingInfoWireKeys: ReadonlySet<string> = new Set(['status', 'pairingID', 'apiKey']);
 
 /**
  * Check if a given object implements the TgvalidatordUserDevicePairingInfo interface.
@@ -66,12 +75,22 @@ export function TgvalidatordUserDevicePairingInfoFromJSONTyped(json: any, ignore
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordUserDevicePairingInfo = {
         
         'status': TgvalidatordUserDevicePairingInfoStatusFromJSON(json['status']),
         'pairingID': json['pairingID'],
         'apiKey': json['apiKey'] == null ? undefined : json['apiKey'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordUserDevicePairingInfoWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordUserDevicePairingInfoToJSON(json: any): TgvalidatordUserDevicePairingInfo {
@@ -88,6 +107,7 @@ export function TgvalidatordUserDevicePairingInfoFromJSONTyped(json: any, ignore
         'status': TgvalidatordUserDevicePairingInfoStatusToJSON(value['status']),
         'pairingID': value['pairingID'],
         'apiKey': value['apiKey'],
+        ...value['additionalProperties'],
     };
 }
 

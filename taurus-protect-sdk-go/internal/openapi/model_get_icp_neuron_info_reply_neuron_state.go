@@ -34,32 +34,23 @@ var AllowedGetICPNeuronInfoReplyNeuronStateEnumValues = []GetICPNeuronInfoReplyN
 	"NeuronStateSpawning",
 }
 
+// UnmarshalJSON keeps a value this client does not know instead of failing the whole reply;
+// IsValid reports whether it is one of the generated constants.
 func (v *GetICPNeuronInfoReplyNeuronState) UnmarshalJSON(src []byte) error {
 	var value string
 	err := json.Unmarshal(src, &value)
 	if err != nil {
-		return err
+		return fmt.Errorf("decoding GetICPNeuronInfoReplyNeuronState: %w", err)
 	}
-	enumTypeValue := GetICPNeuronInfoReplyNeuronState(value)
-	for _, existing := range AllowedGetICPNeuronInfoReplyNeuronStateEnumValues {
-		if existing == enumTypeValue {
-			*v = enumTypeValue
-			return nil
-		}
-	}
-
-	return fmt.Errorf("%+v is not a valid GetICPNeuronInfoReplyNeuronState", value)
+	*v = GetICPNeuronInfoReplyNeuronState(value)
+	return nil
 }
 
-// NewGetICPNeuronInfoReplyNeuronStateFromValue returns a pointer to a valid GetICPNeuronInfoReplyNeuronState
-// for the value passed as argument, or an error if the value passed is not allowed by the enum
+// NewGetICPNeuronInfoReplyNeuronStateFromValue returns a pointer to a GetICPNeuronInfoReplyNeuronState holding v, known or not.
+// The error is always nil; use IsValid to tell a generated constant from a newer server value.
 func NewGetICPNeuronInfoReplyNeuronStateFromValue(v string) (*GetICPNeuronInfoReplyNeuronState, error) {
 	ev := GetICPNeuronInfoReplyNeuronState(v)
-	if ev.IsValid() {
-		return &ev, nil
-	} else {
-		return nil, fmt.Errorf("invalid value '%v' for GetICPNeuronInfoReplyNeuronState: valid values are %v", v, AllowedGetICPNeuronInfoReplyNeuronStateEnumValues)
-	}
+	return &ev, nil
 }
 
 // IsValid return true if the value is valid for the enum, false otherwise

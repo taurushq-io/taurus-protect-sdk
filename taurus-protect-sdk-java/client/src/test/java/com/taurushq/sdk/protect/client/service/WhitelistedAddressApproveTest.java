@@ -3,6 +3,7 @@ package com.taurushq.sdk.protect.client.service;
 import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
 import com.taurushq.sdk.protect.client.model.ExcludedWhitelistedAddress;
 import com.taurushq.sdk.protect.client.model.IntegrityException;
+import com.taurushq.sdk.protect.client.model.OffsetPagination;
 import com.taurushq.sdk.protect.client.model.SignedWhitelistedAddressEnvelope;
 import com.taurushq.sdk.protect.client.model.WhitelistMetadata;
 import com.taurushq.sdk.protect.client.model.WhitelistedAddressApproval;
@@ -68,8 +69,17 @@ class WhitelistedAddressApproveTest {
             envelope.setMetadata(metadata);
             envelopes.add(envelope);
         }
-        return new WhitelistedAddressListResult(envelopes, Collections.emptyList())
+        return new WhitelistedAddressListResult(envelopes, Collections.emptyList(), ANY_PAGE)
                 .select(Arrays.asList(ids));
+    }
+
+    /** Pinning does not read the pagination; any page will do. */
+    private static final OffsetPagination ANY_PAGE = new OffsetPagination(20, 0, 0, 0, false);
+
+    private static WhitelistedAddressListResult verified(
+            final List<TgvalidatordSignedWhitelistedAddressEnvelope> rows) throws Exception {
+        return service().verifiedAddresses(rows, new HashMap<>(),
+                PagedOperation.WHITELISTED_ADDRESSES_FOR_APPROVAL, 20, 0, null);
     }
 
     private static TgvalidatordSignedWhitelistedAddressEnvelope row(final String id) {
@@ -85,16 +95,14 @@ class WhitelistedAddressApproveTest {
         // Nothing in these rows can verify, and rows-returned-but-none-surviving is
         // systemic: an empty list would be indistinguishable from an empty whitelist.
         IntegrityException e = assertThrows(IntegrityException.class,
-                () -> service().verifiedAddresses(
-                        Arrays.asList(row("1"), row("2")), new HashMap<>(), null));
+                () -> verified(Arrays.asList(row("1"), row("2"))));
         assertTrue(e.getMessage().contains("failed verification"), e.getMessage());
     }
 
     @Test
     @DisplayName("an empty page is not a verification failure")
     void emptyPageIsNotAFailure() throws Exception {
-        WhitelistedAddressListResult result =
-                service().verifiedAddresses(Collections.emptyList(), new HashMap<>(), null);
+        WhitelistedAddressListResult result = verified(Collections.emptyList());
 
         assertTrue(result.getEnvelopes().isEmpty());
         assertTrue(result.getExcludedUnverified().isEmpty());
@@ -118,7 +126,7 @@ class WhitelistedAddressApproveTest {
         // `select` refuses to mint one in the first place.
         IntegrityException e = assertThrows(IntegrityException.class,
                 () -> new WhitelistedAddressListResult(
-                        Collections.emptyList(), Collections.emptyList()).selectAll());
+                        Collections.emptyList(), Collections.emptyList(), ANY_PAGE).selectAll());
         assertTrue(e.getMessage().contains("no verified whitelisted addresses"),
                 e.getMessage());
     }
@@ -145,8 +153,7 @@ class WhitelistedAddressApproveTest {
         // One row verifies nothing, so it is named rather than silently dropped. The
         // all-dropped guard fires first here, which is itself the stronger signal.
         IntegrityException e = assertThrows(IntegrityException.class,
-                () -> service().verifiedAddresses(
-                        Collections.singletonList(row("42")), new HashMap<>(), null));
+                () -> verified(Collections.singletonList(row("42"))));
         assertTrue(e.getMessage().contains("1 whitelisted address(es)"), e.getMessage());
 
         ExcludedWhitelistedAddress excluded = new ExcludedWhitelistedAddress("42", "why");

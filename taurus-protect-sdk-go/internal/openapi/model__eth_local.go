@@ -25,7 +25,10 @@ type ETHLocal struct {
 	CreatorAddressId *string `json:"creatorAddressId,omitempty"`
 	ForwarderKind *TgvalidatordFeePayerForwarderKind `json:"forwarderKind,omitempty"`
 	DomainSeparator *string `json:"domainSeparator,omitempty" validate:"regexp=^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=)?$"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _ETHLocal ETHLocal
 
 // NewETHLocal instantiates a new ETHLocal object
 // This constructor will assign default values to properties that have it defined,
@@ -264,7 +267,38 @@ func (o ETHLocal) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.DomainSeparator) {
 		toSerialize["domainSeparator"] = o.DomainSeparator
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *ETHLocal) UnmarshalJSON(data []byte) (err error) {
+	varETHLocal := _ETHLocal{}
+
+	err = json.Unmarshal(data, &varETHLocal)
+
+	if err != nil {
+		return err
+	}
+
+	*o = ETHLocal(varETHLocal)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "addressId")
+		delete(additionalProperties, "forwarderAddressId")
+		delete(additionalProperties, "autoApprove")
+		delete(additionalProperties, "creatorAddressId")
+		delete(additionalProperties, "forwarderKind")
+		delete(additionalProperties, "domainSeparator")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableETHLocal struct {

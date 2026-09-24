@@ -46,7 +46,10 @@ type TgvalidatordFiatProviderOperation struct {
 	Comment *string `json:"comment,omitempty"`
 	// Details of the operation
 	OperationDetails *string `json:"operationDetails,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordFiatProviderOperation TgvalidatordFiatProviderOperation
 
 // NewTgvalidatordFiatProviderOperation instantiates a new TgvalidatordFiatProviderOperation object
 // This constructor will assign default values to properties that have it defined,
@@ -705,7 +708,50 @@ func (o TgvalidatordFiatProviderOperation) ToMap() (map[string]interface{}, erro
 	if !IsNil(o.OperationDetails) {
 		toSerialize["operationDetails"] = o.OperationDetails
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordFiatProviderOperation) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordFiatProviderOperation := _TgvalidatordFiatProviderOperation{}
+
+	err = json.Unmarshal(data, &varTgvalidatordFiatProviderOperation)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordFiatProviderOperation(varTgvalidatordFiatProviderOperation)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "provider")
+		delete(additionalProperties, "label")
+		delete(additionalProperties, "operationType")
+		delete(additionalProperties, "operationIdentifier")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "creationDate")
+		delete(additionalProperties, "updateDate")
+		delete(additionalProperties, "currencyID")
+		delete(additionalProperties, "currencyInfo")
+		delete(additionalProperties, "operationDirection")
+		delete(additionalProperties, "fromAccountID")
+		delete(additionalProperties, "toAccountID")
+		delete(additionalProperties, "fromDetails")
+		delete(additionalProperties, "toDetails")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "operationDetails")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordFiatProviderOperation struct {

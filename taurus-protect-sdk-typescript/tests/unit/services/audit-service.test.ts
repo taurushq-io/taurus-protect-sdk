@@ -23,69 +23,82 @@ describe('AuditService', () => {
   });
 
   describe('list', () => {
-    it('should return audit trails', async () => {
+    it('should read the rows from `result` and the actor from the nested user', async () => {
       mockApi.auditServiceGetAuditTrails.mockResolvedValue({
-        auditTrails: [
+        result: [
           {
             id: '1',
             action: 'CREATE',
             entity: 'WALLET',
-            user: { email: 'user@example.com' },
-            date: new Date('2024-01-01'),
+            user: { id: 'u1', email: 'user@example.com', externalUserId: 'ext-1' },
+            creationDate: new Date('2024-01-01'),
           },
           {
             id: '2',
             action: 'UPDATE',
             entity: 'ADDRESS',
             user: { email: 'admin@example.com' },
-            date: new Date('2024-01-02'),
+            creationDate: new Date('2024-01-02'),
           },
         ],
-      } as any);
+        cursor: { currentPage: 'next-page', hasNext: true },
+      });
 
       const result = await service.list();
 
-      expect(result).toHaveLength(2);
+      expect(result.items).toHaveLength(2);
+      expect(result.items[0]).toMatchObject({
+        id: '1',
+        userId: 'u1',
+        userEmail: 'user@example.com',
+        externalUserId: 'ext-1',
+      });
+      expect(result.pagination).toEqual({
+        pageSize: 20,
+        nextCursor: 'next-page',
+        hasMore: true,
+      });
     });
 
-    it('should pass pagination options', async () => {
-      mockApi.auditServiceGetAuditTrails.mockResolvedValue({
-        auditTrails: [],
-      } as any);
+    it('should pass the page size and continue from a cursor', async () => {
+      mockApi.auditServiceGetAuditTrails.mockResolvedValue({ result: [] });
 
-      await service.list({ limit: 100 });
+      await service.list({ pageSize: 100, cursor: 'next-page' });
 
       expect(mockApi.auditServiceGetAuditTrails).toHaveBeenCalledWith(
         expect.objectContaining({
           cursorPageSize: '100',
+          cursorCurrentPage: 'next-page',
+          cursorPageRequest: 'NEXT',
         })
       );
     });
 
-    it('should throw ValidationError when limit is invalid', async () => {
-      await expect(service.list({ limit: 0 })).rejects.toThrow(ValidationError);
-      await expect(service.list({ limit: 0 })).rejects.toThrow('limit must be positive');
-      await expect(service.list({ limit: -1 })).rejects.toThrow(ValidationError);
+    it('should throw ValidationError when the page size is out of bounds', async () => {
+      await expect(service.list({ pageSize: 101 })).rejects.toThrow(ValidationError);
+      await expect(service.list({ pageSize: 101 })).rejects.toThrow('pageSize must be at most 100, got 101');
+      await expect(service.list({ pageSize: -1 })).rejects.toThrow(ValidationError);
+      expect(mockApi.auditServiceGetAuditTrails).not.toHaveBeenCalled();
     });
 
-    it('should use default limit when not provided', async () => {
-      mockApi.auditServiceGetAuditTrails.mockResolvedValue({
-        auditTrails: [],
-      } as any);
+    it('should send the default page size when none is given', async () => {
+      mockApi.auditServiceGetAuditTrails.mockResolvedValue({});
 
-      await service.list();
+      const result = await service.list();
 
       expect(mockApi.auditServiceGetAuditTrails).toHaveBeenCalledWith(
         expect.objectContaining({
-          cursorPageSize: '50',
+          cursorPageSize: '20',
         })
       );
+      expect(result).toEqual({
+        items: [],
+        pagination: { pageSize: 20, nextCursor: '', hasMore: false },
+      });
     });
 
     it('should pass filter options to API', async () => {
-      mockApi.auditServiceGetAuditTrails.mockResolvedValue({
-        auditTrails: [],
-      } as any);
+      mockApi.auditServiceGetAuditTrails.mockResolvedValue({ result: [] });
 
       await service.list({
         entities: ['WALLET'],

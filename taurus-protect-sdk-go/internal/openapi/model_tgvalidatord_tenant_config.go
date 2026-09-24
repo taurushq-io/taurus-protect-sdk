@@ -31,7 +31,10 @@ type TgvalidatordTenantConfig struct {
 	IsProtectEngineCold *bool `json:"isProtectEngineCold,omitempty"`
 	IsColdProtectEngineOffline *bool `json:"isColdProtectEngineOffline,omitempty"`
 	IsPhysicalAirGapEnabled *bool `json:"isPhysicalAirGapEnabled,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTenantConfig TgvalidatordTenantConfig
 
 // NewTgvalidatordTenantConfig instantiates a new TgvalidatordTenantConfig object
 // This constructor will assign default values to properties that have it defined,
@@ -480,7 +483,44 @@ func (o TgvalidatordTenantConfig) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.IsPhysicalAirGapEnabled) {
 		toSerialize["isPhysicalAirGapEnabled"] = o.IsPhysicalAirGapEnabled
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTenantConfig) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTenantConfig := _TgvalidatordTenantConfig{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTenantConfig)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTenantConfig(varTgvalidatordTenantConfig)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "superAdminMinimumSignatures")
+		delete(additionalProperties, "baseCurrency")
+		delete(additionalProperties, "isMFAMandatory")
+		delete(additionalProperties, "excludeContainer")
+		delete(additionalProperties, "tenantId")
+		delete(additionalProperties, "feeLimitFactor")
+		delete(additionalProperties, "protectEngineVersion")
+		delete(additionalProperties, "restrictSourcesForWhitelistedAddresses")
+		delete(additionalProperties, "nftMinting")
+		delete(additionalProperties, "isProtectEngineCold")
+		delete(additionalProperties, "isColdProtectEngineOffline")
+		delete(additionalProperties, "isPhysicalAirGapEnabled")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTenantConfig struct {

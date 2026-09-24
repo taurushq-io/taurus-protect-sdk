@@ -26,7 +26,10 @@ type CreatePledgeRequestPledgeDurationSetupRequest struct {
 	EndOfMinimumDurationDate *time.Time `json:"endOfMinimumDurationDate,omitempty"`
 	// The duration of the notice period occuring after doing an unpledge.When an unpledge is performed, the target participant will be able to perform withdrawals until the end of the notice period. (example 48h after the unpledge)When this field is not set, the pledge is considered 'At sight', so the owner can unpledge at anytime and the target can't withdraw anymore. Example of value: '86400s' for 1 day.
 	NoticePeriodDuration *string `json:"noticePeriodDuration,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _CreatePledgeRequestPledgeDurationSetupRequest CreatePledgeRequestPledgeDurationSetupRequest
 
 // NewCreatePledgeRequestPledgeDurationSetupRequest instantiates a new CreatePledgeRequestPledgeDurationSetupRequest object
 // This constructor will assign default values to properties that have it defined,
@@ -160,7 +163,35 @@ func (o CreatePledgeRequestPledgeDurationSetupRequest) ToMap() (map[string]inter
 	if !IsNil(o.NoticePeriodDuration) {
 		toSerialize["noticePeriodDuration"] = o.NoticePeriodDuration
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *CreatePledgeRequestPledgeDurationSetupRequest) UnmarshalJSON(data []byte) (err error) {
+	varCreatePledgeRequestPledgeDurationSetupRequest := _CreatePledgeRequestPledgeDurationSetupRequest{}
+
+	err = json.Unmarshal(data, &varCreatePledgeRequestPledgeDurationSetupRequest)
+
+	if err != nil {
+		return err
+	}
+
+	*o = CreatePledgeRequestPledgeDurationSetupRequest(varCreatePledgeRequestPledgeDurationSetupRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "minimumDuration")
+		delete(additionalProperties, "endOfMinimumDurationDate")
+		delete(additionalProperties, "noticePeriodDuration")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableCreatePledgeRequestPledgeDurationSetupRequest struct {

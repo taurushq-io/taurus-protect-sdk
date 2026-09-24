@@ -33,7 +33,16 @@ export interface TgvalidatordGetConfigTenantReply {
      * @memberof TgvalidatordGetConfigTenantReply
      */
     config?: TgvalidatordTenantConfig;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetConfigTenantReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetConfigTenantReplyWireKeys: ReadonlySet<string> = new Set(['config']);
 
 /**
  * Check if a given object implements the TgvalidatordGetConfigTenantReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetConfigTenantReplyFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetConfigTenantReply = {
         
         'config': json['config'] == null ? undefined : TgvalidatordTenantConfigFromJSON(json['config']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetConfigTenantReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetConfigTenantReplyToJSON(json: any): TgvalidatordGetConfigTenantReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetConfigTenantReplyFromJSONTyped(json: any, ignoreD
     return {
         
         'config': TgvalidatordTenantConfigToJSON(value['config']),
+        ...value['additionalProperties'],
     };
 }
 

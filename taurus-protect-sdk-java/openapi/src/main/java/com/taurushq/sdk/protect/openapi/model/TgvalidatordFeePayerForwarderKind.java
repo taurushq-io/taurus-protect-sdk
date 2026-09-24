@@ -25,15 +25,21 @@ import com.google.gson.stream.JsonWriter;
 
 /**
  * Gets or Sets tgvalidatordFeePayerForwarderKind
+ * <p>
+ * An open set of values: a value this client was not generated with is kept as-is, so
+ * {@link #fromValue} never throws and a new server value cannot fail a whole decode.
  */
 @JsonAdapter(TgvalidatordFeePayerForwarderKind.Adapter.class)
-public enum TgvalidatordFeePayerForwarderKind {
+public final class TgvalidatordFeePayerForwarderKind {
   
-  OPEN_ZEPPELIN_FORWARDER("OpenZeppelinForwarder");
+  public static final TgvalidatordFeePayerForwarderKind OPEN_ZEPPELIN_FORWARDER = new TgvalidatordFeePayerForwarderKind("OpenZeppelinForwarder");
+  
 
-  private String value;
+  private static final TgvalidatordFeePayerForwarderKind[] knownValues = { OPEN_ZEPPELIN_FORWARDER };
 
-  TgvalidatordFeePayerForwarderKind(String value) {
+  private final String value;
+
+  private TgvalidatordFeePayerForwarderKind(String value) {
     this.value = value;
   }
 
@@ -41,18 +47,53 @@ public enum TgvalidatordFeePayerForwarderKind {
     return value;
   }
 
+  /**
+   * Returns the values this client was generated with.
+   *
+   * @return a new array of the known values
+   */
+  public static TgvalidatordFeePayerForwarderKind[] values() {
+    return knownValues.clone();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    return Objects.equals(value, ((TgvalidatordFeePayerForwarderKind) o).value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(value);
+  }
+
   @Override
   public String toString() {
     return String.valueOf(value);
   }
 
+  /**
+   * Returns the known constant for a value, or a new instance carrying a value this client
+   * does not know. Never throws.
+   *
+   * @param value the wire value
+   * @return the matching instance, or null for a null value
+   */
   public static TgvalidatordFeePayerForwarderKind fromValue(String value) {
-    for (TgvalidatordFeePayerForwarderKind b : TgvalidatordFeePayerForwarderKind.values()) {
+    if (value == null) {
+      return null;
+    }
+    for (TgvalidatordFeePayerForwarderKind b : knownValues) {
       if (b.value.equals(value)) {
         return b;
       }
     }
-    throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    return new TgvalidatordFeePayerForwarderKind(value);
   }
 
   public static class Adapter extends TypeAdapter<TgvalidatordFeePayerForwarderKind> {

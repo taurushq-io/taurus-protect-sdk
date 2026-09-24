@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordBlockchainAsset{}
 type TgvalidatordBlockchainAsset struct {
 	HederaNativeTokenAsset *TgvalidatordHederaNativeTokenAsset `json:"hederaNativeTokenAsset,omitempty"`
 	SolanaNativeTokenAsset *TgvalidatordSolanaNativeTokenAsset `json:"solanaNativeTokenAsset,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordBlockchainAsset TgvalidatordBlockchainAsset
 
 // NewTgvalidatordBlockchainAsset instantiates a new TgvalidatordBlockchainAsset object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordBlockchainAsset) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.SolanaNativeTokenAsset) {
 		toSerialize["solanaNativeTokenAsset"] = o.SolanaNativeTokenAsset
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordBlockchainAsset) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordBlockchainAsset := _TgvalidatordBlockchainAsset{}
+
+	err = json.Unmarshal(data, &varTgvalidatordBlockchainAsset)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordBlockchainAsset(varTgvalidatordBlockchainAsset)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "hederaNativeTokenAsset")
+		delete(additionalProperties, "solanaNativeTokenAsset")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordBlockchainAsset struct {

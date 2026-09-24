@@ -46,7 +46,16 @@ export interface TgvalidatordGetBusinessRulesV2Reply {
      * @memberof TgvalidatordGetBusinessRulesV2Reply
      */
     cursor?: TgvalidatordResponseCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetBusinessRulesV2Reply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetBusinessRulesV2ReplyWireKeys: ReadonlySet<string> = new Set(['result', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetBusinessRulesV2Reply interface.
@@ -63,11 +72,21 @@ export function TgvalidatordGetBusinessRulesV2ReplyFromJSONTyped(json: any, igno
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetBusinessRulesV2Reply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordBusinessRuleFromJSON)),
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetBusinessRulesV2ReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetBusinessRulesV2ReplyToJSON(json: any): TgvalidatordGetBusinessRulesV2Reply {
@@ -83,6 +102,7 @@ export function TgvalidatordGetBusinessRulesV2ReplyFromJSONTyped(json: any, igno
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordBusinessRuleToJSON)),
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
+        ...value['additionalProperties'],
     };
 }
 

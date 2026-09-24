@@ -38,7 +38,10 @@ type TgvalidatordBlockchainEntity struct {
 	// Underlying layer 1 blockchain network, only relevant when isLayer2Chain is true
 	Layer1Network *string `json:"layer1Network,omitempty"`
 	XtzInfo *TgvalidatordXTZBlockchainInfo `json:"xtzInfo,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordBlockchainEntity TgvalidatordBlockchainEntity
 
 // NewTgvalidatordBlockchainEntity instantiates a new TgvalidatordBlockchainEntity object
 // This constructor will assign default values to properties that have it defined,
@@ -522,7 +525,45 @@ func (o TgvalidatordBlockchainEntity) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.XtzInfo) {
 		toSerialize["xtzInfo"] = o.XtzInfo
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordBlockchainEntity) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordBlockchainEntity := _TgvalidatordBlockchainEntity{}
+
+	err = json.Unmarshal(data, &varTgvalidatordBlockchainEntity)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordBlockchainEntity(varTgvalidatordBlockchainEntity)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "symbol")
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "baseCurrency")
+		delete(additionalProperties, "dotInfo")
+		delete(additionalProperties, "ethInfo")
+		delete(additionalProperties, "network")
+		delete(additionalProperties, "chainId")
+		delete(additionalProperties, "blackholeAddress")
+		delete(additionalProperties, "confirmations")
+		delete(additionalProperties, "blockHeight")
+		delete(additionalProperties, "isLayer2Chain")
+		delete(additionalProperties, "layer1Network")
+		delete(additionalProperties, "xtzInfo")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordBlockchainEntity struct {

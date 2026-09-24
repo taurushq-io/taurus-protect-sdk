@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordComputeAddressesSignatureRequest{}
 type TgvalidatordComputeAddressesSignatureRequest struct {
 	WalletId *string `json:"walletId,omitempty"`
 	AddressId *string `json:"addressId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordComputeAddressesSignatureRequest TgvalidatordComputeAddressesSignatureRequest
 
 // NewTgvalidatordComputeAddressesSignatureRequest instantiates a new TgvalidatordComputeAddressesSignatureRequest object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordComputeAddressesSignatureRequest) ToMap() (map[string]interf
 	if !IsNil(o.AddressId) {
 		toSerialize["addressId"] = o.AddressId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordComputeAddressesSignatureRequest) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordComputeAddressesSignatureRequest := _TgvalidatordComputeAddressesSignatureRequest{}
+
+	err = json.Unmarshal(data, &varTgvalidatordComputeAddressesSignatureRequest)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordComputeAddressesSignatureRequest(varTgvalidatordComputeAddressesSignatureRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "walletId")
+		delete(additionalProperties, "addressId")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordComputeAddressesSignatureRequest struct {

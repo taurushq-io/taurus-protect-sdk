@@ -25,7 +25,16 @@ export interface TgvalidatordExternalAddressDetails {
      * @memberof TgvalidatordExternalAddressDetails
      */
     address?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordExternalAddressDetails
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordExternalAddressDetailsWireKeys: ReadonlySet<string> = new Set(['address']);
 
 /**
  * Check if a given object implements the TgvalidatordExternalAddressDetails interface.
@@ -42,10 +51,20 @@ export function TgvalidatordExternalAddressDetailsFromJSONTyped(json: any, ignor
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordExternalAddressDetails = {
         
         'address': json['address'] == null ? undefined : json['address'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordExternalAddressDetailsWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordExternalAddressDetailsToJSON(json: any): TgvalidatordExternalAddressDetails {
@@ -60,6 +79,7 @@ export function TgvalidatordExternalAddressDetailsFromJSONTyped(json: any, ignor
     return {
         
         'address': value['address'],
+        ...value['additionalProperties'],
     };
 }
 

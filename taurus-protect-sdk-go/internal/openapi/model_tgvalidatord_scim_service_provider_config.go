@@ -29,7 +29,10 @@ type TgvalidatordScimServiceProviderConfig struct {
 	Etag *ScimServiceProviderConfigEtag `json:"etag,omitempty"`
 	AuthenticationSchemes []ScimServiceProviderConfigAuthenticationScheme `json:"authenticationSchemes,omitempty"`
 	Meta *TgvalidatordScimMeta `json:"meta,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordScimServiceProviderConfig TgvalidatordScimServiceProviderConfig
 
 // NewTgvalidatordScimServiceProviderConfig instantiates a new TgvalidatordScimServiceProviderConfig object
 // This constructor will assign default values to properties that have it defined,
@@ -408,7 +411,42 @@ func (o TgvalidatordScimServiceProviderConfig) ToMap() (map[string]interface{}, 
 	if !IsNil(o.Meta) {
 		toSerialize["meta"] = o.Meta
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordScimServiceProviderConfig) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordScimServiceProviderConfig := _TgvalidatordScimServiceProviderConfig{}
+
+	err = json.Unmarshal(data, &varTgvalidatordScimServiceProviderConfig)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordScimServiceProviderConfig(varTgvalidatordScimServiceProviderConfig)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "schemas")
+		delete(additionalProperties, "documentationUri")
+		delete(additionalProperties, "patch")
+		delete(additionalProperties, "bulk")
+		delete(additionalProperties, "filter")
+		delete(additionalProperties, "changePassword")
+		delete(additionalProperties, "sort")
+		delete(additionalProperties, "etag")
+		delete(additionalProperties, "authenticationSchemes")
+		delete(additionalProperties, "meta")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordScimServiceProviderConfig struct {

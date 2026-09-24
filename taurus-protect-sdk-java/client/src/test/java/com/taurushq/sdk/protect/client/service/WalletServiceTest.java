@@ -1,10 +1,12 @@
 package com.taurushq.sdk.protect.client.service;
 
 import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
+import com.taurushq.sdk.protect.client.testutil.StubTransport;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class WalletServiceTest {
@@ -75,9 +77,17 @@ class WalletServiceTest {
     }
 
     @Test
-    void getWallets_throwsOnZeroLimit() {
+    void getWallets_zeroLimitSendsTheDefault() throws Exception {
+        // 0 used to be rejected; it now means "unset", and a page size is always sent.
+        StubTransport stub = StubTransport.replying("{}");
+        new WalletService(stub.client(), apiExceptionMapper).getWallets(0, 0);
+        assertEquals("20", stub.only().param("limit"));
+    }
+
+    @Test
+    void getWallets_throwsAboveTheMaximum() {
         assertThrows(IllegalArgumentException.class, () ->
-                walletService.getWallets(0, 0));
+                walletService.getWallets(101, 0));
     }
 
     @Test
@@ -93,9 +103,11 @@ class WalletServiceTest {
     }
 
     @Test
-    void getWalletsByName_throwsOnZeroLimit() {
-        assertThrows(IllegalArgumentException.class, () ->
-                walletService.getWalletsByName("wallet", 0, 0));
+    void getWalletsByName_zeroLimitSendsTheDefault() throws Exception {
+        StubTransport stub = StubTransport.replying("{}");
+        new WalletService(stub.client(), apiExceptionMapper).getWalletsByName("wallet", 0, 0);
+        assertEquals("20", stub.only().param("limit"));
+        assertEquals("wallet", stub.only().param("name"));
     }
 
     @Test

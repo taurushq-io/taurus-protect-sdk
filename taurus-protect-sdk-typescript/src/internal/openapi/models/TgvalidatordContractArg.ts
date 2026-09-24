@@ -45,7 +45,16 @@ export interface TgvalidatordContractArg {
      * @memberof TgvalidatordContractArg
      */
     value?: TgvalidatordContractArgValue;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordContractArg
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordContractArgWireKeys: ReadonlySet<string> = new Set(['name', 'type', 'value']);
 
 /**
  * Check if a given object implements the TgvalidatordContractArg interface.
@@ -62,12 +71,22 @@ export function TgvalidatordContractArgFromJSONTyped(json: any, ignoreDiscrimina
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordContractArg = {
         
         'name': json['name'] == null ? undefined : json['name'],
         'type': json['type'] == null ? undefined : json['type'],
         'value': json['value'] == null ? undefined : TgvalidatordContractArgValueFromJSON(json['value']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordContractArgWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordContractArgToJSON(json: any): TgvalidatordContractArg {
@@ -84,6 +103,7 @@ export function TgvalidatordContractArgFromJSONTyped(json: any, ignoreDiscrimina
         'name': value['name'],
         'type': value['type'],
         'value': TgvalidatordContractArgValueToJSON(value['value']),
+        ...value['additionalProperties'],
     };
 }
 

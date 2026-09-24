@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -23,6 +22,7 @@ var _ MappedNullable = &TgvalidatordApproveMultiFactorSignatureReply{}
 type TgvalidatordApproveMultiFactorSignatureReply struct {
 	// number of signatures
 	Signatures string `json:"signatures"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordApproveMultiFactorSignatureReply TgvalidatordApproveMultiFactorSignatureReply
@@ -80,6 +80,11 @@ func (o TgvalidatordApproveMultiFactorSignatureReply) MarshalJSON() ([]byte, err
 func (o TgvalidatordApproveMultiFactorSignatureReply) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["signatures"] = o.Signatures
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -107,15 +112,20 @@ func (o *TgvalidatordApproveMultiFactorSignatureReply) UnmarshalJSON(data []byte
 
 	varTgvalidatordApproveMultiFactorSignatureReply := _TgvalidatordApproveMultiFactorSignatureReply{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordApproveMultiFactorSignatureReply)
+	err = json.Unmarshal(data, &varTgvalidatordApproveMultiFactorSignatureReply)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordApproveMultiFactorSignatureReply(varTgvalidatordApproveMultiFactorSignatureReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "signatures")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

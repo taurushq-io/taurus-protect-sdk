@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordIDResult{}
 // TgvalidatordIDResult struct for TgvalidatordIDResult
 type TgvalidatordIDResult struct {
 	Id *string `json:"id,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordIDResult TgvalidatordIDResult
 
 // NewTgvalidatordIDResult instantiates a new TgvalidatordIDResult object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordIDResult) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Id) {
 		toSerialize["id"] = o.Id
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordIDResult) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordIDResult := _TgvalidatordIDResult{}
+
+	err = json.Unmarshal(data, &varTgvalidatordIDResult)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordIDResult(varTgvalidatordIDResult)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordIDResult struct {

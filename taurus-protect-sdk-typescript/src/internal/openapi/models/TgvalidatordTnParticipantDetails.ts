@@ -59,7 +59,16 @@ export interface TgvalidatordTnParticipantDetails {
      * @memberof TgvalidatordTnParticipantDetails
      */
     supportedBlockchains?: Array<TgvalidatordBlockchainEntity>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTnParticipantDetails
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTnParticipantDetailsWireKeys: ReadonlySet<string> = new Set(['contactPersons', 'attributesSpecifications', 'supportedBlockchains']);
 
 /**
  * Check if a given object implements the TgvalidatordTnParticipantDetails interface.
@@ -76,12 +85,22 @@ export function TgvalidatordTnParticipantDetailsFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTnParticipantDetails = {
         
         'contactPersons': json['contactPersons'] == null ? undefined : ((json['contactPersons'] as Array<any>).map(TgvalidatordTnContactPersonFromJSON)),
         'attributesSpecifications': json['attributesSpecifications'] == null ? undefined : ((json['attributesSpecifications'] as Array<any>).map(TgvalidatordTnParticipantAttributeSpecificationFromJSON)),
         'supportedBlockchains': json['supportedBlockchains'] == null ? undefined : ((json['supportedBlockchains'] as Array<any>).map(TgvalidatordBlockchainEntityFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTnParticipantDetailsWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTnParticipantDetailsToJSON(json: any): TgvalidatordTnParticipantDetails {
@@ -98,6 +117,7 @@ export function TgvalidatordTnParticipantDetailsFromJSONTyped(json: any, ignoreD
         'contactPersons': value['contactPersons'] == null ? undefined : ((value['contactPersons'] as Array<any>).map(TgvalidatordTnContactPersonToJSON)),
         'attributesSpecifications': value['attributesSpecifications'] == null ? undefined : ((value['attributesSpecifications'] as Array<any>).map(TgvalidatordTnParticipantAttributeSpecificationToJSON)),
         'supportedBlockchains': value['supportedBlockchains'] == null ? undefined : ((value['supportedBlockchains'] as Array<any>).map(TgvalidatordBlockchainEntityToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

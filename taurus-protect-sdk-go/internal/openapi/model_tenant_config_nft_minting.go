@@ -21,7 +21,10 @@ var _ MappedNullable = &TenantConfigNFTMinting{}
 type TenantConfigNFTMinting struct {
 	Enabled *bool `json:"enabled,omitempty"`
 	PublicBaseURL *string `json:"publicBaseURL,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TenantConfigNFTMinting TenantConfigNFTMinting
 
 // NewTenantConfigNFTMinting instantiates a new TenantConfigNFTMinting object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TenantConfigNFTMinting) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.PublicBaseURL) {
 		toSerialize["publicBaseURL"] = o.PublicBaseURL
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TenantConfigNFTMinting) UnmarshalJSON(data []byte) (err error) {
+	varTenantConfigNFTMinting := _TenantConfigNFTMinting{}
+
+	err = json.Unmarshal(data, &varTenantConfigNFTMinting)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TenantConfigNFTMinting(varTenantConfigNFTMinting)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "enabled")
+		delete(additionalProperties, "publicBaseURL")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTenantConfigNFTMinting struct {

@@ -52,7 +52,16 @@ export interface GenericCreateContractXTZContract {
      * @memberof GenericCreateContractXTZContract
      */
     delegate?: XTZContractDelegate;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof GenericCreateContractXTZContract
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const GenericCreateContractXTZContractWireKeys: ReadonlySet<string> = new Set(['code', 'storage', 'delegate']);
 
 /**
  * Check if a given object implements the GenericCreateContractXTZContract interface.
@@ -69,12 +78,22 @@ export function GenericCreateContractXTZContractFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: GenericCreateContractXTZContract = {
         
         'code': json['code'] == null ? undefined : json['code'],
         'storage': json['storage'] == null ? undefined : TgvalidatordXTZContractArgFromJSON(json['storage']),
         'delegate': json['delegate'] == null ? undefined : XTZContractDelegateFromJSON(json['delegate']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!GenericCreateContractXTZContractWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function GenericCreateContractXTZContractToJSON(json: any): GenericCreateContractXTZContract {
@@ -91,6 +110,7 @@ export function GenericCreateContractXTZContractFromJSONTyped(json: any, ignoreD
         'code': value['code'],
         'storage': TgvalidatordXTZContractArgToJSON(value['storage']),
         'delegate': XTZContractDelegateToJSON(value['delegate']),
+        ...value['additionalProperties'],
     };
 }
 

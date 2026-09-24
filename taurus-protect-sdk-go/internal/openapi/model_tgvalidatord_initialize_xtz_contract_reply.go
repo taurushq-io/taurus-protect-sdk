@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordInitializeXTZContractReply{}
 // TgvalidatordInitializeXTZContractReply struct for TgvalidatordInitializeXTZContractReply
 type TgvalidatordInitializeXTZContractReply struct {
 	Result *string `json:"result,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordInitializeXTZContractReply TgvalidatordInitializeXTZContractReply
 
 // NewTgvalidatordInitializeXTZContractReply instantiates a new TgvalidatordInitializeXTZContractReply object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordInitializeXTZContractReply) ToMap() (map[string]interface{},
 	if !IsNil(o.Result) {
 		toSerialize["result"] = o.Result
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordInitializeXTZContractReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordInitializeXTZContractReply := _TgvalidatordInitializeXTZContractReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordInitializeXTZContractReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordInitializeXTZContractReply(varTgvalidatordInitializeXTZContractReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "result")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordInitializeXTZContractReply struct {

@@ -81,7 +81,16 @@ export interface TgvalidatordCurrencyStatistics {
      * @memberof TgvalidatordCurrencyStatistics
      */
     currencyInfo?: TgvalidatordCurrency;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCurrencyStatistics
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCurrencyStatisticsWireKeys: ReadonlySet<string> = new Set(['symbol', 'blockchain', 'avgBalancePerAddress', 'addressesCount', 'walletsCount', 'totalBalance', 'baseCurrencyTotalValue', 'baseCurrencyTotalValueMainUnit', 'currencyInfo']);
 
 /**
  * Check if a given object implements the TgvalidatordCurrencyStatistics interface.
@@ -98,7 +107,7 @@ export function TgvalidatordCurrencyStatisticsFromJSONTyped(json: any, ignoreDis
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCurrencyStatistics = {
         
         'symbol': json['symbol'] == null ? undefined : json['symbol'],
         'blockchain': json['blockchain'] == null ? undefined : json['blockchain'],
@@ -110,6 +119,16 @@ export function TgvalidatordCurrencyStatisticsFromJSONTyped(json: any, ignoreDis
         'baseCurrencyTotalValueMainUnit': json['baseCurrencyTotalValueMainUnit'] == null ? undefined : json['baseCurrencyTotalValueMainUnit'],
         'currencyInfo': json['currencyInfo'] == null ? undefined : TgvalidatordCurrencyFromJSON(json['currencyInfo']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCurrencyStatisticsWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCurrencyStatisticsToJSON(json: any): TgvalidatordCurrencyStatistics {
@@ -132,6 +151,7 @@ export function TgvalidatordCurrencyStatisticsFromJSONTyped(json: any, ignoreDis
         'baseCurrencyTotalValue': value['baseCurrencyTotalValue'],
         'baseCurrencyTotalValueMainUnit': value['baseCurrencyTotalValueMainUnit'],
         'currencyInfo': TgvalidatordCurrencyToJSON(value['currencyInfo']),
+        ...value['additionalProperties'],
     };
 }
 

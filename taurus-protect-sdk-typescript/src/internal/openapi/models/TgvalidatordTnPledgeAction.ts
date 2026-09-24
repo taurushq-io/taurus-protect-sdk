@@ -119,7 +119,16 @@ export interface TgvalidatordTnPledgeAction {
      * @memberof TgvalidatordTnPledgeAction
      */
     pledgeWithdrawalID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTnPledgeAction
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTnPledgeActionWireKeys: ReadonlySet<string> = new Set(['id', 'pledgeID', 'actionType', 'status', 'metadata', 'rule', 'approvers', 'needsApprovalFrom', 'createdAt', 'lastApprovalDate', 'envelope', 'trails', 'pledgeWithdrawalID']);
 
 /**
  * Check if a given object implements the TgvalidatordTnPledgeAction interface.
@@ -136,7 +145,7 @@ export function TgvalidatordTnPledgeActionFromJSONTyped(json: any, ignoreDiscrim
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTnPledgeAction = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'pledgeID': json['pledgeID'] == null ? undefined : json['pledgeID'],
@@ -152,6 +161,16 @@ export function TgvalidatordTnPledgeActionFromJSONTyped(json: any, ignoreDiscrim
         'trails': json['trails'] == null ? undefined : ((json['trails'] as Array<any>).map(TgvalidatordTnPledgeActionTrailFromJSON)),
         'pledgeWithdrawalID': json['pledgeWithdrawalID'] == null ? undefined : json['pledgeWithdrawalID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTnPledgeActionWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTnPledgeActionToJSON(json: any): TgvalidatordTnPledgeAction {
@@ -178,6 +197,7 @@ export function TgvalidatordTnPledgeActionFromJSONTyped(json: any, ignoreDiscrim
         'envelope': value['envelope'],
         'trails': value['trails'] == null ? undefined : ((value['trails'] as Array<any>).map(TgvalidatordTnPledgeActionTrailToJSON)),
         'pledgeWithdrawalID': value['pledgeWithdrawalID'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -43,7 +43,16 @@ export interface TnPledgePledgeDurationSetup {
      * @memberof TnPledgePledgeDurationSetup
      */
     endOfNoticePeriodDate?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TnPledgePledgeDurationSetup
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TnPledgePledgeDurationSetupWireKeys: ReadonlySet<string> = new Set(['minimumDuration', 'endOfMinimumDurationDate', 'noticePeriodDuration', 'endOfNoticePeriodDate']);
 
 /**
  * Check if a given object implements the TnPledgePledgeDurationSetup interface.
@@ -60,13 +69,23 @@ export function TnPledgePledgeDurationSetupFromJSONTyped(json: any, ignoreDiscri
     if (json == null) {
         return json;
     }
-    return {
+    const result: TnPledgePledgeDurationSetup = {
         
         'minimumDuration': json['minimumDuration'] == null ? undefined : json['minimumDuration'],
         'endOfMinimumDurationDate': json['endOfMinimumDurationDate'] == null ? undefined : (new Date(json['endOfMinimumDurationDate'])),
         'noticePeriodDuration': json['noticePeriodDuration'] == null ? undefined : json['noticePeriodDuration'],
         'endOfNoticePeriodDate': json['endOfNoticePeriodDate'] == null ? undefined : (new Date(json['endOfNoticePeriodDate'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TnPledgePledgeDurationSetupWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TnPledgePledgeDurationSetupToJSON(json: any): TnPledgePledgeDurationSetup {
@@ -84,6 +103,7 @@ export function TnPledgePledgeDurationSetupFromJSONTyped(json: any, ignoreDiscri
         'endOfMinimumDurationDate': value['endOfMinimumDurationDate'] == null ? undefined : ((value['endOfMinimumDurationDate']).toISOString()),
         'noticePeriodDuration': value['noticePeriodDuration'],
         'endOfNoticePeriodDate': value['endOfNoticePeriodDate'] == null ? undefined : ((value['endOfNoticePeriodDate']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

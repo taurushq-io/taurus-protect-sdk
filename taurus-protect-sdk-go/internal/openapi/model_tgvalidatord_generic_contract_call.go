@@ -23,7 +23,10 @@ type TgvalidatordGenericContractCall struct {
 	Eth *TgvalidatordContractCall `json:"eth,omitempty"`
 	Xtz *TgvalidatordXTZContractCall `json:"xtz,omitempty"`
 	Evm *TgvalidatordContractCall `json:"evm,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGenericContractCall TgvalidatordGenericContractCall
 
 // NewTgvalidatordGenericContractCall instantiates a new TgvalidatordGenericContractCall object
 // This constructor will assign default values to properties that have it defined,
@@ -192,7 +195,36 @@ func (o TgvalidatordGenericContractCall) ToMap() (map[string]interface{}, error)
 	if !IsNil(o.Evm) {
 		toSerialize["evm"] = o.Evm
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGenericContractCall) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGenericContractCall := _TgvalidatordGenericContractCall{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGenericContractCall)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGenericContractCall(varTgvalidatordGenericContractCall)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "eth")
+		delete(additionalProperties, "xtz")
+		delete(additionalProperties, "evm")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGenericContractCall struct {

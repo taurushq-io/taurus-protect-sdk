@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/internal/openapi"
@@ -38,36 +37,32 @@ func (s *ExchangeService) GetExchange(ctx context.Context, id string) (*model.Ex
 
 // ListExchanges retrieves a list of exchange accounts with optional filtering and pagination.
 func (s *ExchangeService) ListExchanges(ctx context.Context, opts *model.ListExchangesOptions) (*model.ListExchangesResult, error) {
-	req := s.api.ExchangeServiceGetExchanges(ctx)
+	if opts == nil {
+		opts = &model.ListExchangesOptions{}
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, opts.CurrentPage, opts.PageRequest)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if opts.CurrencyID != "" {
-			req = req.CurrencyID(opts.CurrencyID)
-		}
-		if opts.IncludeBaseCurrencyValuation {
-			req = req.IncludeBaseCurrencyValuation(opts.IncludeBaseCurrencyValuation)
-		}
-		if opts.ExchangeLabel != "" {
-			req = req.ExchangeLabel(opts.ExchangeLabel)
-		}
-		if opts.SortOrder != "" {
-			req = req.SortOrder(opts.SortOrder)
-		}
-		if opts.Status != "" {
-			req = req.Status(opts.Status)
-		}
-		if opts.OnlyPositiveBalance {
-			req = req.OnlyPositiveBalance(opts.OnlyPositiveBalance)
-		}
-		if opts.CurrentPage != "" {
-			req = req.CursorCurrentPage(opts.CurrentPage)
-		}
-		if opts.PageRequest != "" {
-			req = req.CursorPageRequest(opts.PageRequest)
-		}
-		if opts.PageSize > 0 {
-			req = req.CursorPageSize(fmt.Sprintf("%d", opts.PageSize))
-		}
+	req := applyCursorQuery(s.api.ExchangeServiceGetExchanges(ctx), window)
+	if opts.CurrencyID != "" {
+		req = req.CurrencyID(opts.CurrencyID)
+	}
+	if opts.IncludeBaseCurrencyValuation {
+		req = req.IncludeBaseCurrencyValuation(opts.IncludeBaseCurrencyValuation)
+	}
+	if opts.ExchangeLabel != "" {
+		req = req.ExchangeLabel(opts.ExchangeLabel)
+	}
+	if opts.SortOrder != "" {
+		req = req.SortOrder(opts.SortOrder)
+	}
+	if opts.Status != "" {
+		req = req.Status(opts.Status)
+	}
+	if opts.OnlyPositiveBalance {
+		req = req.OnlyPositiveBalance(opts.OnlyPositiveBalance)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -79,18 +74,11 @@ func (s *ExchangeService) ListExchanges(ctx context.Context, opts *model.ListExc
 		Exchanges: mapper.ExchangesFromDTO(resp.Result),
 	}
 
-	// Parse cursor pagination info
-	if resp.Cursor != nil {
-		if resp.Cursor.CurrentPage != nil {
-			result.CurrentPage = *resp.Cursor.CurrentPage
-		}
-		if resp.Cursor.HasPrevious != nil {
-			result.HasPrevious = *resp.Cursor.HasPrevious
-		}
-		if resp.Cursor.HasNext != nil {
-			result.HasNext = *resp.Cursor.HasNext
-		}
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor})
+	if err != nil {
+		return nil, err
 	}
+	result.Page = page
 
 	return result, nil
 }

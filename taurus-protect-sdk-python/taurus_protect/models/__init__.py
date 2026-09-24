@@ -1,5 +1,6 @@
 """Domain models for Taurus-PROTECT SDK."""
 
+from taurus_protect.models import rule_cell as rule_cell
 from taurus_protect.models.action import (
     Action,
     ActionAttribute,
@@ -7,6 +8,12 @@ from taurus_protect.models.action import (
     ActionTrail,
 )
 from taurus_protect.models.address import Address, AddressAttribute, CreateAddressRequest
+from taurus_protect.models.asset import (
+    AssetAddressV2,
+    AssetOperationV2,
+    AssetV2,
+    QueryAssetAddressesResult,
+)
 from taurus_protect.models.audit import (
     Audit,
     Change,
@@ -14,10 +21,6 @@ from taurus_protect.models.audit import (
     CreateChangeRequest,
     Job,
     ListChangesOptions,
-)
-from taurus_protect.models.business_rule import (
-    BusinessRule,
-    BusinessRuleResult,
 )
 from taurus_protect.models.balance import Balance
 from taurus_protect.models.blockchain import (
@@ -27,12 +30,18 @@ from taurus_protect.models.blockchain import (
     ExchangeRate,
     FiatCurrency,
     FiatProviderAccount,
+    FiatProviderEntity,
+)
+from taurus_protect.models.business_rule import (
+    BusinessRule,
+    BusinessRuleResult,
 )
 from taurus_protect.models.currency import (
     AssetBalance,
     Currency,
     NFTCollectionBalance,
 )
+from taurus_protect.models.earn import EarnReward
 from taurus_protect.models.governance_rules import (
     AddressWhitelistingLine,
     AddressWhitelistingRules,
@@ -41,8 +50,8 @@ from taurus_protect.models.governance_rules import (
     CosmosDetails,
     DecodedRulesContainer,
     EvmCallContract,
-    GovernanceRules,
     ExcludedRuleset,
+    GovernanceRules,
     GovernanceRulesHistoryResult,
     GovernanceRulesTrail,
     GroupThreshold,
@@ -62,15 +71,18 @@ from taurus_protect.models.governance_rules import (
     TransactionRules,
     XtzCallContract,
 )
-from taurus_protect.models import rule_cell as rule_cell
-from taurus_protect.models.rule_cell import RuleCell
 from taurus_protect.models.multi_factor_signature import (
     MultiFactorSignatureApprovalResult,
     MultiFactorSignatureEntityType,
     MultiFactorSignatureInfo,
     MultiFactorSignatureResult,
 )
-from taurus_protect.models.pagination import Pagination
+from taurus_protect.models.pagination import (
+    DEFAULT_PAGE_SIZE,
+    MAX_PAGE_SIZE,
+    CursorPage,
+    Pagination,
+)
 from taurus_protect.models.request import (
     Attribute,
     CreateExternalTransferRequest,
@@ -85,6 +97,7 @@ from taurus_protect.models.request import (
     RequestTrail,
     SignedRequest,
 )
+from taurus_protect.models.rule_cell import RuleCell
 from taurus_protect.models.staking import (
     FeeEstimate,
     FeePayer,
@@ -128,6 +141,7 @@ from taurus_protect.models.taurus_network import (  # Participant models; Pledge
     ListPledgeActionsOptions,
     ListPledgesOptions,
     ListPledgeWithdrawalsOptions,
+    ListSettlementsForApprovalOptions,
     ListSettlementsOptions,
     ListSharedAddressesOptions,
     ListSharedAssetsOptions,
@@ -177,7 +191,7 @@ from taurus_protect.models.token_metadata import (
     FATokenMetadata,
     TokenMetadata,
 )
-from taurus_protect.models.transaction import Transaction
+from taurus_protect.models.transaction import Transaction, TransactionExport
 from taurus_protect.models.user import (
     Group,
     GroupUser,
@@ -256,6 +270,14 @@ __all__ = [
     "ExchangeRate",
     "FiatCurrency",
     "FiatProviderAccount",
+    "FiatProviderEntity",
+    # Asset v2
+    "AssetAddressV2",
+    "AssetOperationV2",
+    "AssetV2",
+    "QueryAssetAddressesResult",
+    # Earn
+    "EarnReward",
     # Request
     "Attribute",
     "Request",
@@ -271,6 +293,7 @@ __all__ = [
     "CreateExternalTransferRequest",
     # Transaction
     "Transaction",
+    "TransactionExport",
     # Governance Rules
     "GovernanceRules",
     "ExcludedRuleset",
@@ -315,6 +338,9 @@ __all__ = [
     "VisibilityGroup",
     "VisibilityGroupUser",
     # Pagination
+    "CursorPage",
+    "DEFAULT_PAGE_SIZE",
+    "MAX_PAGE_SIZE",
     "Pagination",
     # Staking and Fees
     "Validator",
@@ -415,6 +441,7 @@ __all__ = [
     # Taurus Network - Settlement
     "AcceptSettlementRequest",
     "CreateSettlementRequest",
+    "ListSettlementsForApprovalOptions",
     "ListSettlementsOptions",
     "RejectSettlementRequest",
     "Settlement",

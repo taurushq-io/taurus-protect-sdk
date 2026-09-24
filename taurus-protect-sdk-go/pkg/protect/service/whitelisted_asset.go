@@ -83,46 +83,61 @@ func (s *WhitelistedAssetService) GetWhitelistedAsset(ctx context.Context, id st
 	return asset, nil
 }
 
-// ListWhitelistedAssets retrieves a list of whitelisted assets.
+// ListWhitelistedAssets retrieves one page of whitelisted assets, verifying every row.
+// Result.Pagination is never nil; continue with its NextOffset until HasMore is false.
 func (s *WhitelistedAssetService) ListWhitelistedAssets(ctx context.Context, opts *model.ListWhitelistedAssetsOptions) (*model.WhitelistedAssetResult, error) {
-	req := s.api.WhitelistServiceGetWhitelistedContracts(ctx)
+	if opts == nil {
+		opts = &model.ListWhitelistedAssetsOptions{}
+	}
+	window, err := resolveOffsetWindow(opts.Limit, opts.Offset)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if opts.Limit > 0 {
-			req = req.Limit(fmt.Sprintf("%d", opts.Limit))
-		}
-		if opts.Offset > 0 {
-			req = req.Offset(fmt.Sprintf("%d", opts.Offset))
-		}
-		if opts.Query != "" {
-			req = req.Query(opts.Query)
-		}
-		if opts.Blockchain != "" {
-			req = req.Blockchain(opts.Blockchain)
-		}
-		if opts.Network != "" {
-			req = req.Network(opts.Network)
-		}
-		if opts.IncludeForApproval {
-			req = req.IncludeForApproval(true)
-		}
-		if len(opts.KindTypes) > 0 {
-			req = req.KindTypes(opts.KindTypes)
-		}
-		if len(opts.IDs) > 0 {
-			req = req.WhitelistedContractAddressIds(opts.IDs)
-		}
+	req := applyOffsetWindow(s.api.WhitelistServiceGetWhitelistedContracts(ctx), window)
+	if opts.Query != "" {
+		req = req.Query(opts.Query)
+	}
+	if opts.Blockchain != "" {
+		req = req.Blockchain(opts.Blockchain)
+	}
+	if opts.Network != "" {
+		req = req.Network(opts.Network)
+	}
+	if opts.IncludeForApproval {
+		req = req.IncludeForApproval(true)
+	}
+	if len(opts.KindTypes) > 0 {
+		req = req.KindTypes(opts.KindTypes)
+	}
+	if len(opts.IDs) > 0 {
+		req = req.WhitelistedContractAddressIds(opts.IDs)
 	}
 
 	resp, httpResp, err := req.Execute()
 	if err != nil {
 		return nil, s.errMapper.MapError(err, httpResp)
 	}
+	return s.verifiedAssetPage(window, resp.Result, resp.TotalItems)
+}
 
-	assets := mapper.WhitelistedAssetsFromDTO(resp.Result)
+// verifiedAssetPage verifies every asset on a page — STRICT: one unverifiable row fails the
+// call. Rows on a page normally share one rules container, so steps 2-3 run once per distinct
+// container rather than per row.
+//
+// The next offset is offset + limit: validatord skips rows it cannot decode without giving up
+// their SQL slot, so a short page is not the end of the list.
+func (s *WhitelistedAssetService) verifiedAssetPage(
+	window offsetWindow,
+	rows []openapi.TgvalidatordSignedWhitelistedContractAddressEnvelope,
+	totalItems *string,
+) (*model.WhitelistedAssetResult, error) {
+	pagination, err := offsetPagination(rulePlusLimit, window, len(rows), 0, offsetReply{TotalItems: totalItems})
+	if err != nil {
+		return nil, err
+	}
 
-	// Verify integrity of each asset — always enforced. Rows on a page normally share one
-	// rules container, so steps 2-3 run once per distinct container rather than per row.
+	assets := mapper.WhitelistedAssetsFromDTO(rows)
 	containers := newInlineContainerCache(s.verifier)
 	for _, asset := range assets {
 		if asset != nil {
@@ -132,28 +147,10 @@ func (s *WhitelistedAssetService) ListWhitelistedAssets(ctx context.Context, opt
 		}
 	}
 
-	var limit, offset int64
-	if opts != nil {
-		limit, offset = opts.Limit, opts.Offset
-	}
 	return &model.WhitelistedAssetResult{
 		Assets:     assets,
-		Pagination: assetPagination(resp.TotalItems, limit, offset),
+		Pagination: pagination,
 	}, nil
-}
-
-// assetPagination builds the page window from the server's total.
-func assetPagination(totalItems *string, limit, offset int64) *model.Pagination {
-	if totalItems == nil {
-		return nil
-	}
-	pagination := &model.Pagination{Limit: limit, Offset: offset}
-	if total, err := strconv.ParseInt(*totalItems, 10, 64); err == nil {
-		pagination.TotalItems = total
-		// Overflow-safe: offset+limit can wrap on caller-supplied values.
-		pagination.HasMore = total > offset && total-offset > limit
-	}
-	return pagination
 }
 
 // ListWhitelistedAssetsForApproval retrieves assets awaiting approval, verified the same
@@ -166,42 +163,24 @@ func (s *WhitelistedAssetService) ListWhitelistedAssetsForApproval(
 	ctx context.Context,
 	opts *model.ListWhitelistedAssetsForApprovalOptions,
 ) (*model.WhitelistedAssetResult, error) {
-	req := s.api.WhitelistServiceGetWhitelistedContractsForApproval(ctx)
+	if opts == nil {
+		opts = &model.ListWhitelistedAssetsForApprovalOptions{}
+	}
+	window, err := resolveOffsetWindow(opts.Limit, opts.Offset)
+	if err != nil {
+		return nil, err
+	}
 
-	var limit, offset int64
-	if opts != nil {
-		if opts.Limit > 0 {
-			req = req.Limit(fmt.Sprintf("%d", opts.Limit))
-		}
-		if opts.Offset > 0 {
-			req = req.Offset(fmt.Sprintf("%d", opts.Offset))
-		}
-		if len(opts.IDs) > 0 {
-			req = req.Ids(opts.IDs)
-		}
-		limit, offset = opts.Limit, opts.Offset
+	req := applyOffsetWindow(s.api.WhitelistServiceGetWhitelistedContractsForApproval(ctx), window)
+	if len(opts.IDs) > 0 {
+		req = req.Ids(opts.IDs)
 	}
 
 	resp, httpResp, err := req.Execute()
 	if err != nil {
 		return nil, s.errMapper.MapError(err, httpResp)
 	}
-
-	assets := mapper.WhitelistedAssetsFromDTO(resp.Result)
-
-	containers := newInlineContainerCache(s.verifier)
-	for _, asset := range assets {
-		if asset != nil {
-			if err := s.verifyAsset(asset, containers); err != nil {
-				return nil, fmt.Errorf("verification failed for asset %s: %w", asset.ID, err)
-			}
-		}
-	}
-
-	return &model.WhitelistedAssetResult{
-		Assets:     assets,
-		Pagination: assetPagination(resp.TotalItems, limit, offset),
-	}, nil
+	return s.verifiedAssetPage(window, resp.Result, resp.TotalItems)
 }
 
 // GetWhitelistedAssetEnvelope retrieves a whitelisted asset envelope by ID and performs
@@ -392,28 +371,28 @@ func populateVerifiedIdentity(asset *model.WhitelistedAsset, verifiedPayload str
 // verifiedAssetsByID re-reads a batch of assets through the verifying list path,
 // filtered by id, and returns them keyed by id.
 //
-//	ids ─▶ ONE filtered page ─▶ verify every row ─▶ map by id
+//	ids ─▶ filtered pages of ≤ MaxPageSize ids ─▶ verify every row ─▶ map by id
 //
-// One round trip and one rules-container fetch for the whole batch. The per-id GET this
-// replaced cost both per id, so a 50-id approval was 50 sequential round trips each
-// running the full 6-step chain.
+// One round trip per 100 ids. The per-id GET this replaced cost a round trip and the full
+// 6-step chain per id, so a 50-id approval was 50 sequential round trips.
 func (s *WhitelistedAssetService) verifiedAssetsByID(
 	ctx context.Context,
 	ids []string,
 ) (map[string]*model.WhitelistedAsset, error) {
-	result, err := s.ListWhitelistedAssets(ctx, &model.ListWhitelistedAssetsOptions{
-		IDs:                ids,
-		Limit:              int64(len(ids)),
-		IncludeForApproval: true,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("refusing to sign: the verified read failed: %w", err)
-	}
-
-	byID := make(map[string]*model.WhitelistedAsset, len(result.Assets))
-	for _, asset := range result.Assets {
-		if asset != nil {
-			byID[asset.ID] = asset
+	byID := make(map[string]*model.WhitelistedAsset, len(ids))
+	for _, batch := range chunkIDs(ids, model.MaxPageSize) {
+		result, err := s.ListWhitelistedAssets(ctx, &model.ListWhitelistedAssetsOptions{
+			IDs:                batch,
+			Limit:              int64(len(batch)),
+			IncludeForApproval: true,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("refusing to sign: the verified read failed: %w", err)
+		}
+		for _, asset := range result.Assets {
+			if asset != nil {
+				byID[asset.ID] = asset
+			}
 		}
 	}
 	return byID, nil
@@ -433,7 +412,7 @@ func (s *WhitelistedAssetService) verifiedAssetsByID(
 // signed: one signature covers every hash in the batch, so a partial approval would mean
 // the caller believes they approved more than they did.
 //
-//	ids ─▶ sort numerically ─▶ ONE id-filtered verified page
+//	ids ─▶ sort numerically ─▶ id-filtered verified pages (≤ 100 ids each)
 //	                                          │
 //	                                          ▼
 //	                            completeness check ──miss──▶ abort, nothing signed
@@ -474,11 +453,9 @@ func (s *WhitelistedAssetService) ApproveWhitelistedAssets(
 		return a < b
 	})
 
-	// ONE id-filtered page through the verifying list path, not one GET per id. The list
-	// path verifies every row and fetches the rules container once per call, so a 50-id
-	// approval costs one round trip and one container fetch instead of fifty of each.
-	// IncludeForApproval is required: the rows being approved are pending, so the default
-	// list does not return them.
+	// Id-filtered pages through the verifying list path, not one GET per id: a 50-id approval
+	// costs one round trip instead of fifty. IncludeForApproval is required: the rows being
+	// approved are pending, so the default list does not return them.
 	verified, err := s.verifiedAssetsByID(ctx, sortedIDs)
 	if err != nil {
 		return err

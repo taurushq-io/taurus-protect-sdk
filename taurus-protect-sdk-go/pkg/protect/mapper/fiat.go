@@ -75,3 +75,37 @@ func FiatProviderAccountsFromDTO(dtos []openapi.TgvalidatordFiatProviderAccount)
 	}
 	return accounts
 }
+
+// FiatProviderEntityFromDTO converts an OpenAPI FiatProviderEntity to a domain FiatProviderEntity.
+func FiatProviderEntityFromDTO(dto *openapi.TgvalidatordFiatProviderEntity) *model.FiatProviderEntity {
+	if dto == nil {
+		return nil
+	}
+	entity := &model.FiatProviderEntity{
+		ID:                safeString(dto.Id),
+		Provider:          safeString(dto.Provider),
+		Label:             safeString(dto.Label),
+		AccountIdentifier: safeString(dto.AccountIdentifier),
+		Name:              safeString(dto.Name),
+		Details:           safeString(dto.Details),
+	}
+	if dto.CreationDate != nil {
+		entity.CreationDate = *dto.CreationDate
+	}
+	if dto.UpdateDate != nil {
+		entity.UpdateDate = *dto.UpdateDate
+	}
+	return entity
+}
+
+// FiatProviderEntitiesFromDTO converts a slice of OpenAPI FiatProviderEntity to domain entities.
+func FiatProviderEntitiesFromDTO(dtos []openapi.TgvalidatordFiatProviderEntity) []*model.FiatProviderEntity {
+	if dtos == nil {
+		return nil
+	}
+	entities := make([]*model.FiatProviderEntity, len(dtos))
+	for i := range dtos {
+		entities[i] = FiatProviderEntityFromDTO(&dtos[i])
+	}
+	return entities
+}

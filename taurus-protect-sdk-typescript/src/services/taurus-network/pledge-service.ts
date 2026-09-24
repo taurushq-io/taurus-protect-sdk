@@ -14,15 +14,14 @@ import type {
   TgvalidatordTnPledgeWithdrawal,
 } from '../../internal/openapi/models/index';
 import { BaseService } from '../base';
-
-/**
- * Cursor-based pagination information.
- */
-export interface CursorPagination {
-  currentPage?: string;
-  hasNext: boolean;
-  hasPrevious: boolean;
-}
+import type {
+  ListPledgesOptions,
+  ListPledgeActionsOptions,
+  ListPledgeActionsForApprovalOptions,
+  ListPledgeWithdrawalsOptions,
+} from '../../models/taurus-network/pledge';
+import { buildCursorPage, cursorRequest, type CursorPage } from '../../models/pagination';
+import { cursorQuery } from '../paging';
 
 /**
  * Pledge trail entry.
@@ -150,46 +149,6 @@ export interface PledgeWithdrawal {
   externalReferenceId?: string;
   trails?: PledgeWithdrawalTrail[];
   createdAt?: Date;
-}
-
-/**
- * Options for listing pledges.
- */
-export interface ListPledgesOptions {
-  ownerParticipantId?: string;
-  targetParticipantId?: string;
-  sharedAddressIds?: string[];
-  currencyId?: string;
-  statuses?: string[];
-  sortOrder?: string;
-  pageSize?: number;
-  currentPage?: string;
-  pageRequest?: string;
-}
-
-/**
- * Options for listing pledge actions.
- */
-export interface ListPledgeActionsOptions {
-  ids?: string[];
-  pledgeId?: string;
-  types?: string[];
-  sortOrder?: string;
-  pageSize?: number;
-  currentPage?: string;
-  pageRequest?: string;
-}
-
-/**
- * Options for listing pledge withdrawals.
- */
-export interface ListPledgeWithdrawalsOptions {
-  pledgeId?: string;
-  withdrawalStatus?: string;
-  sortOrder?: string;
-  pageSize?: number;
-  currentPage?: string;
-  pageRequest?: string;
 }
 
 /**
@@ -457,25 +416,6 @@ function verifyPledgeActionMetadata(actions: PledgeAction[]): void {
 }
 
 /**
- * Extracts cursor pagination from response.
- */
-function extractCursorPagination(cursor?: {
-  currentPage?: string;
-  hasNext?: boolean;
-  hasPrevious?: boolean;
-}): CursorPagination | undefined {
-  if (!cursor) {
-    return undefined;
-  }
-
-  return {
-    currentPage: cursor.currentPage,
-    hasNext: cursor.hasNext ?? false,
-    hasPrevious: cursor.hasPrevious ?? false,
-  };
-}
-
-/**
  * Service for Taurus Network pledge operations.
  *
  * Provides operations for creating, updating, and managing pledges between
@@ -544,13 +484,15 @@ export class PledgeService extends BaseService {
   /**
    * Lists pledges with optional filtering.
    *
-   * @param options - Optional filtering and pagination options
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
    * @returns Pledges list and pagination info
    * @throws {@link APIError} If API request fails
    */
   async list(
     options?: ListPledgesOptions
-  ): Promise<{ pledges: Pledge[]; pagination?: CursorPagination }> {
+  ): Promise<{ pledges: Pledge[]; pagination: CursorPage }> {
+    const page = cursorRequest(options);
+
     return this.execute(async () => {
       const response = await this.pledgeApi.taurusNetworkServiceGetPledges({
         ownerParticipantID: options?.ownerParticipantId,
@@ -559,9 +501,7 @@ export class PledgeService extends BaseService {
         currencyID: options?.currencyId,
         statuses: options?.statuses,
         sortOrder: options?.sortOrder,
-        cursorCurrentPage: options?.currentPage,
-        cursorPageRequest: options?.pageRequest,
-        cursorPageSize: options?.pageSize ? String(options.pageSize) : undefined,
+        ...cursorQuery(page),
       });
 
       const pledges: Pledge[] = [];
@@ -576,7 +516,7 @@ export class PledgeService extends BaseService {
 
       return {
         pledges,
-        pagination: extractCursorPagination(response.cursor),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
       };
     });
   }
@@ -823,22 +763,22 @@ export class PledgeService extends BaseService {
    * Every action's metadata hash is verified against the payload delivered with it,
    * so the content a reviewer reads is content the hash commits to.
    *
-   * @param options - Optional filtering and pagination options
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
    * @returns Pledge actions list and pagination info
    * @throws {@link IntegrityError} If any action's hash does not cover its payload
    * @throws {@link APIError} If API request fails
    */
   async listPledgeActions(
     options?: ListPledgeActionsOptions
-  ): Promise<{ actions: PledgeAction[]; pagination?: CursorPagination }> {
+  ): Promise<{ actions: PledgeAction[]; pagination: CursorPage }> {
+    const page = cursorRequest(options);
+
     return this.execute(async () => {
       const response = await this.pledgeApi.taurusNetworkServiceGetPledgeActions({
         ids: options?.ids,
         pledgeID: options?.pledgeId,
         sortOrder: options?.sortOrder,
-        cursorCurrentPage: options?.currentPage,
-        cursorPageRequest: options?.pageRequest,
-        cursorPageSize: options?.pageSize ? String(options.pageSize) : undefined,
+        ...cursorQuery(page),
       });
 
       const actions: PledgeAction[] = [];
@@ -855,7 +795,7 @@ export class PledgeService extends BaseService {
 
       return {
         actions,
-        pagination: extractCursorPagination(response.cursor),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
       };
     });
   }
@@ -868,22 +808,22 @@ export class PledgeService extends BaseService {
    * Every action's metadata hash is verified against the payload delivered with it,
    * so the content a reviewer reads is content the hash commits to.
    *
-   * @param options - Optional filtering and pagination options
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
    * @returns Pledge actions list and pagination info
    * @throws {@link IntegrityError} If any action's hash does not cover its payload
    * @throws {@link APIError} If API request fails
    */
   async listPledgeActionsForApproval(
-    options?: ListPledgeActionsOptions
-  ): Promise<{ actions: PledgeAction[]; pagination?: CursorPagination }> {
+    options?: ListPledgeActionsForApprovalOptions
+  ): Promise<{ actions: PledgeAction[]; pagination: CursorPage }> {
+    const page = cursorRequest(options);
+
     return this.execute(async () => {
       const response = await this.pledgeApi.taurusNetworkServiceGetPledgeActionsForApproval({
         ids: options?.ids,
         types: options?.types,
         sortOrder: options?.sortOrder,
-        cursorCurrentPage: options?.currentPage,
-        cursorPageRequest: options?.pageRequest,
-        cursorPageSize: options?.pageSize ? String(options.pageSize) : undefined,
+        ...cursorQuery(page),
       });
 
       const actions: PledgeAction[] = [];
@@ -900,7 +840,7 @@ export class PledgeService extends BaseService {
 
       return {
         actions,
-        pagination: extractCursorPagination(response.cursor),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
       };
     });
   }
@@ -1025,21 +965,21 @@ export class PledgeService extends BaseService {
   /**
    * Lists pledge withdrawals with optional filtering.
    *
-   * @param options - Optional filtering and pagination options
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
    * @returns Withdrawals list and pagination info
    * @throws {@link APIError} If API request fails
    */
   async listPledgeWithdrawals(
     options?: ListPledgeWithdrawalsOptions
-  ): Promise<{ withdrawals: PledgeWithdrawal[]; pagination?: CursorPagination }> {
+  ): Promise<{ withdrawals: PledgeWithdrawal[]; pagination: CursorPage }> {
+    const page = cursorRequest(options);
+
     return this.execute(async () => {
       const response = await this.pledgeApi.taurusNetworkServiceGetPledgesWithdrawals({
         pledgeID: options?.pledgeId,
         withdrawalStatus: options?.withdrawalStatus,
         sortOrder: options?.sortOrder,
-        cursorCurrentPage: options?.currentPage,
-        cursorPageRequest: options?.pageRequest,
-        cursorPageSize: options?.pageSize ? String(options.pageSize) : undefined,
+        ...cursorQuery(page),
       });
 
       const withdrawals: PledgeWithdrawal[] = [];
@@ -1054,7 +994,7 @@ export class PledgeService extends BaseService {
 
       return {
         withdrawals,
-        pagination: extractCursorPagination(response.cursor),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
       };
     });
   }

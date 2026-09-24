@@ -27,7 +27,10 @@ type TgvalidatordAssetEvent struct {
 	BlockchainEvent *TgvalidatordBlockchainEvent `json:"blockchainEvent,omitempty"`
 	CreatedAt *time.Time `json:"createdAt,omitempty"`
 	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordAssetEvent TgvalidatordAssetEvent
 
 // NewTgvalidatordAssetEvent instantiates a new TgvalidatordAssetEvent object
 // This constructor will assign default values to properties that have it defined,
@@ -301,7 +304,39 @@ func (o TgvalidatordAssetEvent) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.UpdatedAt) {
 		toSerialize["updatedAt"] = o.UpdatedAt
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordAssetEvent) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordAssetEvent := _TgvalidatordAssetEvent{}
+
+	err = json.Unmarshal(data, &varTgvalidatordAssetEvent)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordAssetEvent(varTgvalidatordAssetEvent)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "tenantID")
+		delete(additionalProperties, "hash")
+		delete(additionalProperties, "asset")
+		delete(additionalProperties, "blockchainEvent")
+		delete(additionalProperties, "createdAt")
+		delete(additionalProperties, "updatedAt")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordAssetEvent struct {

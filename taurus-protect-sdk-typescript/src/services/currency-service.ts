@@ -79,10 +79,7 @@ export class CurrencyService extends BaseService {
         includeLogo: options?.includeLogo,
       });
 
-      const result =
-        (response as Record<string, unknown>).currencies ??
-        (response as Record<string, unknown>).result;
-      return currenciesFromDto(result as unknown[]);
+      return currenciesFromDto(response.result);
     });
   }
 
@@ -167,10 +164,7 @@ export class CurrencyService extends BaseService {
         showDisabled: true,
       });
 
-      const result =
-        (response as Record<string, unknown>).currency ??
-        (response as Record<string, unknown>).result;
-      const currency = currencyFromDto(result);
+      const currency = currencyFromDto(response.result);
 
       if (!currency) {
         throw new NotFoundError(
@@ -202,13 +196,18 @@ export class CurrencyService extends BaseService {
     return this.execute(async () => {
       const response = await this.currenciesApi.walletServiceGetBaseCurrency();
 
-      const result =
-        (response as Record<string, unknown>).currency ??
-        (response as Record<string, unknown>).result;
-      const currency = currencyFromDto(result);
-
-      if (!currency) {
+      // The reply names the base currency; it does not carry the currency itself.
+      const baseCurrency = response.result;
+      if (!baseCurrency) {
         throw new NotFoundError('Base currency not configured');
+      }
+
+      const currencies = await this.list({ showDisabled: true });
+      const currency =
+        currencies.find((c) => c.id === baseCurrency) ??
+        currencies.find((c) => c.symbol === baseCurrency);
+      if (!currency) {
+        throw new NotFoundError(`Base currency '${baseCurrency}' not found`);
       }
 
       return currency;

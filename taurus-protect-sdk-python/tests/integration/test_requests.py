@@ -17,11 +17,10 @@ logger = logging.getLogger(__name__)
 @pytest.mark.integration
 def test_list_requests(client: ProtectClient) -> None:
     """Test listing requests with pagination."""
-    requests, pagination = client.requests.list(limit=10)
+    requests, page = client.requests.list(page_size=10)
 
     logger.info(f"Found {len(requests)} requests")
-    if pagination is not None:
-        logger.info(f"Total items: {pagination.total_items}, HasMore: {pagination.has_more}")
+    logger.info(f"HasMore: {page.has_more}")
 
     for r in requests:
         logger.info(f"Request: ID={r.id}, Status={r.status.value}, Currency={r.currency}")
@@ -31,7 +30,7 @@ def test_list_requests(client: ProtectClient) -> None:
 def test_get_request(client: ProtectClient) -> None:
     """Test getting a single request by ID and verify metadata exists."""
     # First, get a list to find a valid request ID
-    requests, _ = client.requests.list(limit=1)
+    requests, _ = client.requests.list(page_size=1)
 
     if len(requests) == 0:
         pytest.skip("No requests available for testing")
@@ -51,7 +50,7 @@ def test_get_request(client: ProtectClient) -> None:
 def test_request_metadata_verification(client: ProtectClient) -> None:
     """Test request metadata verification - verify hash, payload, and fields."""
     # Get a request
-    requests, _ = client.requests.list(limit=1)
+    requests, _ = client.requests.list(page_size=1)
 
     if len(requests) == 0:
         pytest.skip("No requests available for testing")
@@ -94,11 +93,9 @@ def test_list_requests_by_status(client: ProtectClient) -> None:
     from taurus_protect.models import RequestStatus
 
     # List requests with CONFIRMED status
-    requests, pagination = client.requests.list(limit=10, statuses=[RequestStatus.CONFIRMED])
+    requests, page = client.requests.list(page_size=10, statuses=[RequestStatus.CONFIRMED])
 
-    logger.info(f"Found {len(requests)} CONFIRMED requests")
-    if pagination is not None:
-        logger.info(f"Total CONFIRMED items: {pagination.total_items}")
+    logger.info(f"Found {len(requests)} CONFIRMED requests (more: {page.has_more})")
 
     for r in requests:
         logger.info(f"Request: ID={r.id}, Status={r.status.value}, Currency={r.currency}")
@@ -106,8 +103,8 @@ def test_list_requests_by_status(client: ProtectClient) -> None:
         assert r.status == RequestStatus.CONFIRMED, f"Expected CONFIRMED status, got {r.status}"
 
     # Also try PENDING status
-    pending_requests, pending_pagination = client.requests.list(limit=5, statuses=[RequestStatus.PENDING])
+    pending_requests, pending_page = client.requests.list(
+        page_size=5, statuses=[RequestStatus.PENDING]
+    )
 
-    logger.info(f"Found {len(pending_requests)} PENDING requests")
-    if pending_pagination is not None:
-        logger.info(f"Total PENDING items: {pending_pagination.total_items}")
+    logger.info(f"Found {len(pending_requests)} PENDING requests (more: {pending_page.has_more})")

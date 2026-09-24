@@ -31,7 +31,16 @@ export interface TgvalidatordOIDCSessionRequest {
      * @memberof TgvalidatordOIDCSessionRequest
      */
     state: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordOIDCSessionRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordOIDCSessionRequestWireKeys: ReadonlySet<string> = new Set(['code', 'state']);
 
 /**
  * Check if a given object implements the TgvalidatordOIDCSessionRequest interface.
@@ -50,11 +59,21 @@ export function TgvalidatordOIDCSessionRequestFromJSONTyped(json: any, ignoreDis
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordOIDCSessionRequest = {
         
         'code': json['code'],
         'state': json['state'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordOIDCSessionRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordOIDCSessionRequestToJSON(json: any): TgvalidatordOIDCSessionRequest {
@@ -70,6 +89,7 @@ export function TgvalidatordOIDCSessionRequestFromJSONTyped(json: any, ignoreDis
         
         'code': value['code'],
         'state': value['state'],
+        ...value['additionalProperties'],
     };
 }
 

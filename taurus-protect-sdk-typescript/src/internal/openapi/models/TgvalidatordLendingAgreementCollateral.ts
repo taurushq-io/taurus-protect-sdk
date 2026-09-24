@@ -111,7 +111,16 @@ export interface TgvalidatordLendingAgreementCollateral {
      * @memberof TgvalidatordLendingAgreementCollateral
      */
     pledgeActionID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordLendingAgreementCollateral
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordLendingAgreementCollateralWireKeys: ReadonlySet<string> = new Set(['id', 'lenderParticipantID', 'borrowerParticipantID', 'lendingAgreementID', 'amount', 'currencyID', 'status', 'pledgeID', 'sharedAddressID', 'createdAt', 'updatedAt', 'currencyInfo', 'amountMainUnit', 'pledgeActionID']);
 
 /**
  * Check if a given object implements the TgvalidatordLendingAgreementCollateral interface.
@@ -128,7 +137,7 @@ export function TgvalidatordLendingAgreementCollateralFromJSONTyped(json: any, i
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordLendingAgreementCollateral = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'lenderParticipantID': json['lenderParticipantID'] == null ? undefined : json['lenderParticipantID'],
@@ -145,6 +154,16 @@ export function TgvalidatordLendingAgreementCollateralFromJSONTyped(json: any, i
         'amountMainUnit': json['amountMainUnit'] == null ? undefined : json['amountMainUnit'],
         'pledgeActionID': json['pledgeActionID'] == null ? undefined : json['pledgeActionID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordLendingAgreementCollateralWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordLendingAgreementCollateralToJSON(json: any): TgvalidatordLendingAgreementCollateral {
@@ -172,6 +191,7 @@ export function TgvalidatordLendingAgreementCollateralFromJSONTyped(json: any, i
         'currencyInfo': TgvalidatordCurrencyToJSON(value['currencyInfo']),
         'amountMainUnit': value['amountMainUnit'],
         'pledgeActionID': value['pledgeActionID'],
+        ...value['additionalProperties'],
     };
 }
 

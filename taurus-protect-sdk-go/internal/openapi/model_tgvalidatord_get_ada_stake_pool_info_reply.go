@@ -25,7 +25,10 @@ type TgvalidatordGetADAStakePoolInfoReply struct {
 	Url *string `json:"url,omitempty"`
 	ActiveStake *string `json:"activeStake,omitempty"`
 	Epoch *string `json:"epoch,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetADAStakePoolInfoReply TgvalidatordGetADAStakePoolInfoReply
 
 // NewTgvalidatordGetADAStakePoolInfoReply instantiates a new TgvalidatordGetADAStakePoolInfoReply object
 // This constructor will assign default values to properties that have it defined,
@@ -264,7 +267,38 @@ func (o TgvalidatordGetADAStakePoolInfoReply) ToMap() (map[string]interface{}, e
 	if !IsNil(o.Epoch) {
 		toSerialize["epoch"] = o.Epoch
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetADAStakePoolInfoReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetADAStakePoolInfoReply := _TgvalidatordGetADAStakePoolInfoReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetADAStakePoolInfoReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetADAStakePoolInfoReply(varTgvalidatordGetADAStakePoolInfoReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "pledge")
+		delete(additionalProperties, "margin")
+		delete(additionalProperties, "fixedCost")
+		delete(additionalProperties, "url")
+		delete(additionalProperties, "activeStake")
+		delete(additionalProperties, "epoch")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetADAStakePoolInfoReply struct {

@@ -134,17 +134,60 @@ class FiatProviderAccount(BaseModel):
         id: Unique account identifier.
         name: Account name.
         provider: Provider name.
-        currency_code: Currency code.
-        balance: Current balance.
+        label: Provider label.
+        account_type: Account type.
+        account_identifier: The provider's identifier for the account.
+        currency_id: Currency identifier.
+        currency_code: Currency symbol.
+        balance: Total balance.
+        base_currency_valuation: Balance valued in the tenant's base currency.
+        created_at: When the account was created.
+        updated_at: When the account was last updated.
         enabled: Whether the account is enabled.
     """
 
     id: str = Field(description="Unique account identifier")
     name: Optional[str] = Field(default=None, description="Account name")
     provider: Optional[str] = Field(default=None, description="Provider name")
-    currency_code: Optional[str] = Field(default=None, description="Currency code")
-    balance: Optional[str] = Field(default=None, description="Current balance")
+    label: Optional[str] = Field(default=None, description="Provider label")
+    account_type: Optional[str] = Field(default=None, description="Account type")
+    account_identifier: Optional[str] = Field(default=None, description="Provider identifier")
+    currency_id: Optional[str] = Field(default=None, description="Currency ID")
+    currency_code: Optional[str] = Field(default=None, description="Currency symbol")
+    balance: Optional[str] = Field(default=None, description="Total balance")
+    base_currency_valuation: Optional[str] = Field(
+        default=None, description="Balance in the base currency"
+    )
+    created_at: Optional[datetime] = Field(default=None, description="Creation timestamp")
+    updated_at: Optional[datetime] = Field(default=None, description="Last update timestamp")
     enabled: bool = Field(default=True, description="Whether enabled")
+
+    model_config = {"frozen": True}
+
+
+class FiatProviderEntity(BaseModel):
+    """
+    An entity registered with a fiat provider.
+
+    Attributes:
+        id: Unique entity identifier.
+        provider: Provider name.
+        label: Provider label.
+        account_identifier: The provider's identifier for the entity.
+        name: Entity name.
+        details: Provider-specific details.
+        created_at: When the entity was created.
+        updated_at: When the entity was last updated.
+    """
+
+    id: str = Field(description="Unique entity identifier")
+    provider: Optional[str] = Field(default=None, description="Provider name")
+    label: Optional[str] = Field(default=None, description="Provider label")
+    account_identifier: Optional[str] = Field(default=None, description="Provider identifier")
+    name: Optional[str] = Field(default=None, description="Entity name")
+    details: Optional[str] = Field(default=None, description="Provider-specific details")
+    created_at: Optional[datetime] = Field(default=None, description="Creation timestamp")
+    updated_at: Optional[datetime] = Field(default=None, description="Last update timestamp")
 
     model_config = {"frozen": True}
 

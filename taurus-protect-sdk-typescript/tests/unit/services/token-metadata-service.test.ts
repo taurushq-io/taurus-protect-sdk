@@ -24,56 +24,31 @@ describe('TokenMetadataService', () => {
     service = new TokenMetadataService(mockApi);
   });
 
-  describe('getERCTokenMetadata', () => {
-    it('should throw ValidationError when network is empty', async () => {
-      await expect(
-        service.getERCTokenMetadata({ network: '', contract: '0x123' })
-      ).rejects.toThrow(ValidationError);
-      await expect(
-        service.getERCTokenMetadata({ network: '', contract: '0x123' })
-      ).rejects.toThrow('network is required');
-    });
+  it('does not wrap the deprecated ERC metadata endpoint', () => {
+    expect('getERCTokenMetadata' in service).toBe(false);
+  });
 
-    it('should throw ValidationError when contract is empty', async () => {
-      await expect(
-        service.getERCTokenMetadata({ network: 'mainnet', contract: '' })
-      ).rejects.toThrow(ValidationError);
-      await expect(
-        service.getERCTokenMetadata({ network: 'mainnet', contract: '' })
-      ).rejects.toThrow('contract is required');
-    });
-
-    it('should return token metadata', async () => {
-      mockApi.tokenMetadataServiceGetERCTokenMetadata.mockResolvedValue({
-        result: {
-          name: 'USD Coin',
-          decimals: '6',
-          uri: 'https://example.com',
-        },
+  describe('getEVMERC ERC-20 metadata', () => {
+    it('should map the ERC fields and handle a missing result', async () => {
+      mockApi.tokenMetadataServiceGetEVMERCTokenMetadata.mockResolvedValue({
+        result: { name: 'USD Coin', decimals: '6', uri: 'https://example.com' },
       } as never);
 
-      const metadata = await service.getERCTokenMetadata({
+      const metadata = await service.getEVMERCTokenMetadata({
         network: 'mainnet',
         contract: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
         blockchain: 'ETH',
       });
-
-      expect(metadata).toBeDefined();
       expect(metadata.name).toBe('USD Coin');
       expect(metadata.decimals).toBe('6');
-    });
+      expect(mockApi.tokenMetadataServiceGetERCTokenMetadata).not.toHaveBeenCalled();
 
-    it('should handle missing result', async () => {
-      mockApi.tokenMetadataServiceGetERCTokenMetadata.mockResolvedValue({
+      mockApi.tokenMetadataServiceGetEVMERCTokenMetadata.mockResolvedValue({
         result: undefined,
       } as never);
-
-      const metadata = await service.getERCTokenMetadata({
-        network: 'mainnet',
-        contract: '0x123',
-      });
-
-      expect(metadata).toBeDefined();
+      await expect(
+        service.getEVMERCTokenMetadata({ network: 'mainnet', contract: '0x1', blockchain: 'ETH' })
+      ).resolves.toEqual({});
     });
   });
 

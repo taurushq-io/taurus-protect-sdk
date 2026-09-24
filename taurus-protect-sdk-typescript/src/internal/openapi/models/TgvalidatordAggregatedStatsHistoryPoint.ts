@@ -39,7 +39,16 @@ export interface TgvalidatordAggregatedStatsHistoryPoint {
      * @memberof TgvalidatordAggregatedStatsHistoryPoint
      */
     statsData?: TgvalidatordAggregatedStatsData;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordAggregatedStatsHistoryPoint
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordAggregatedStatsHistoryPointWireKeys: ReadonlySet<string> = new Set(['pointDate', 'statsData']);
 
 /**
  * Check if a given object implements the TgvalidatordAggregatedStatsHistoryPoint interface.
@@ -56,11 +65,21 @@ export function TgvalidatordAggregatedStatsHistoryPointFromJSONTyped(json: any, 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordAggregatedStatsHistoryPoint = {
         
         'pointDate': json['pointDate'] == null ? undefined : (new Date(json['pointDate'])),
         'statsData': json['statsData'] == null ? undefined : TgvalidatordAggregatedStatsDataFromJSON(json['statsData']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordAggregatedStatsHistoryPointWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordAggregatedStatsHistoryPointToJSON(json: any): TgvalidatordAggregatedStatsHistoryPoint {
@@ -76,6 +95,7 @@ export function TgvalidatordAggregatedStatsHistoryPointFromJSONTyped(json: any, 
         
         'pointDate': value['pointDate'] == null ? undefined : ((value['pointDate']).toISOString()),
         'statsData': TgvalidatordAggregatedStatsDataToJSON(value['statsData']),
+        ...value['additionalProperties'],
     };
 }
 

@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordGetCryptoPunkMetadataReply{}
 // TgvalidatordGetCryptoPunkMetadataReply struct for TgvalidatordGetCryptoPunkMetadataReply
 type TgvalidatordGetCryptoPunkMetadataReply struct {
 	Result *TgvalidatordCryptoPunkMetadata `json:"result,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetCryptoPunkMetadataReply TgvalidatordGetCryptoPunkMetadataReply
 
 // NewTgvalidatordGetCryptoPunkMetadataReply instantiates a new TgvalidatordGetCryptoPunkMetadataReply object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordGetCryptoPunkMetadataReply) ToMap() (map[string]interface{},
 	if !IsNil(o.Result) {
 		toSerialize["result"] = o.Result
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetCryptoPunkMetadataReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetCryptoPunkMetadataReply := _TgvalidatordGetCryptoPunkMetadataReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetCryptoPunkMetadataReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetCryptoPunkMetadataReply(varTgvalidatordGetCryptoPunkMetadataReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "result")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetCryptoPunkMetadataReply struct {

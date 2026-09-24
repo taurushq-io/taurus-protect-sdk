@@ -55,7 +55,16 @@ export interface TgvalidatordCreateAddressAttributeRequest {
      * @memberof TgvalidatordCreateAddressAttributeRequest
      */
     isfile?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateAddressAttributeRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateAddressAttributeRequestWireKeys: ReadonlySet<string> = new Set(['key', 'value', 'contentType', 'type', 'subtype', 'isfile']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateAddressAttributeRequest interface.
@@ -72,7 +81,7 @@ export function TgvalidatordCreateAddressAttributeRequestFromJSONTyped(json: any
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateAddressAttributeRequest = {
         
         'key': json['key'] == null ? undefined : json['key'],
         'value': json['value'] == null ? undefined : json['value'],
@@ -81,6 +90,16 @@ export function TgvalidatordCreateAddressAttributeRequestFromJSONTyped(json: any
         'subtype': json['subtype'] == null ? undefined : json['subtype'],
         'isfile': json['isfile'] == null ? undefined : json['isfile'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateAddressAttributeRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateAddressAttributeRequestToJSON(json: any): TgvalidatordCreateAddressAttributeRequest {
@@ -100,6 +119,7 @@ export function TgvalidatordCreateAddressAttributeRequestFromJSONTyped(json: any
         'type': value['type'],
         'subtype': value['subtype'],
         'isfile': value['isfile'],
+        ...value['additionalProperties'],
     };
 }
 

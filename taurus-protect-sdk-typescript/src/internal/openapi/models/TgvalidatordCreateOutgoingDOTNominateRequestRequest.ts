@@ -55,7 +55,16 @@ export interface TgvalidatordCreateOutgoingDOTNominateRequestRequest {
      * @memberof TgvalidatordCreateOutgoingDOTNominateRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingDOTNominateRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingDOTNominateRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'validatorWLAIds', 'feeLimit', 'comment', 'transactionReference', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingDOTNominateRequestRequest interface.
@@ -74,7 +83,7 @@ export function TgvalidatordCreateOutgoingDOTNominateRequestRequestFromJSONTyped
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingDOTNominateRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'validatorWLAIds': json['validatorWLAIds'],
@@ -83,6 +92,16 @@ export function TgvalidatordCreateOutgoingDOTNominateRequestRequestFromJSONTyped
         'transactionReference': json['transactionReference'] == null ? undefined : json['transactionReference'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingDOTNominateRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingDOTNominateRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingDOTNominateRequestRequest {
@@ -102,6 +121,7 @@ export function TgvalidatordCreateOutgoingDOTNominateRequestRequestFromJSONTyped
         'comment': value['comment'],
         'transactionReference': value['transactionReference'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

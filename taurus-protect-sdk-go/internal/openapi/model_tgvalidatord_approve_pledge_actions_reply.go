@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordApprovePledgeActionsReply{}
 type TgvalidatordApprovePledgeActionsReply struct {
 	// The number of pledge actions that were successfully approved.
 	Signatures *string `json:"signatures,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordApprovePledgeActionsReply TgvalidatordApprovePledgeActionsReply
 
 // NewTgvalidatordApprovePledgeActionsReply instantiates a new TgvalidatordApprovePledgeActionsReply object
 // This constructor will assign default values to properties that have it defined,
@@ -85,7 +88,33 @@ func (o TgvalidatordApprovePledgeActionsReply) ToMap() (map[string]interface{}, 
 	if !IsNil(o.Signatures) {
 		toSerialize["signatures"] = o.Signatures
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordApprovePledgeActionsReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordApprovePledgeActionsReply := _TgvalidatordApprovePledgeActionsReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordApprovePledgeActionsReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordApprovePledgeActionsReply(varTgvalidatordApprovePledgeActionsReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "signatures")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordApprovePledgeActionsReply struct {

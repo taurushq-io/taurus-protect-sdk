@@ -20,7 +20,7 @@ type ApiKeyVerificationType string
 
 // List of ApiKeyVerificationType
 const (
-	APIKEYVERIFICATIONTYPE_HMAC  ApiKeyVerificationType = "HMAC"
+	APIKEYVERIFICATIONTYPE_HMAC ApiKeyVerificationType = "HMAC"
 	APIKEYVERIFICATIONTYPE_ECDSA ApiKeyVerificationType = "ECDSA"
 )
 
@@ -30,32 +30,23 @@ var AllowedApiKeyVerificationTypeEnumValues = []ApiKeyVerificationType{
 	"ECDSA",
 }
 
+// UnmarshalJSON keeps a value this client does not know instead of failing the whole reply;
+// IsValid reports whether it is one of the generated constants.
 func (v *ApiKeyVerificationType) UnmarshalJSON(src []byte) error {
 	var value string
 	err := json.Unmarshal(src, &value)
 	if err != nil {
-		return err
+		return fmt.Errorf("decoding ApiKeyVerificationType: %w", err)
 	}
-	enumTypeValue := ApiKeyVerificationType(value)
-	for _, existing := range AllowedApiKeyVerificationTypeEnumValues {
-		if existing == enumTypeValue {
-			*v = enumTypeValue
-			return nil
-		}
-	}
-
-	return fmt.Errorf("%+v is not a valid ApiKeyVerificationType", value)
+	*v = ApiKeyVerificationType(value)
+	return nil
 }
 
-// NewApiKeyVerificationTypeFromValue returns a pointer to a valid ApiKeyVerificationType
-// for the value passed as argument, or an error if the value passed is not allowed by the enum
+// NewApiKeyVerificationTypeFromValue returns a pointer to a ApiKeyVerificationType holding v, known or not.
+// The error is always nil; use IsValid to tell a generated constant from a newer server value.
 func NewApiKeyVerificationTypeFromValue(v string) (*ApiKeyVerificationType, error) {
 	ev := ApiKeyVerificationType(v)
-	if ev.IsValid() {
-		return &ev, nil
-	} else {
-		return nil, fmt.Errorf("invalid value '%v' for ApiKeyVerificationType: valid values are %v", v, AllowedApiKeyVerificationTypeEnumValues)
-	}
+	return &ev, nil
 }
 
 // IsValid return true if the value is valid for the enum, false otherwise
@@ -108,3 +99,4 @@ func (v *NullableApiKeyVerificationType) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
+

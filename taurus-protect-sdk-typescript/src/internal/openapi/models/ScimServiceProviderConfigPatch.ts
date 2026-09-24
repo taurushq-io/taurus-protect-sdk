@@ -25,7 +25,16 @@ export interface ScimServiceProviderConfigPatch {
      * @memberof ScimServiceProviderConfigPatch
      */
     supported?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof ScimServiceProviderConfigPatch
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const ScimServiceProviderConfigPatchWireKeys: ReadonlySet<string> = new Set(['supported']);
 
 /**
  * Check if a given object implements the ScimServiceProviderConfigPatch interface.
@@ -42,10 +51,20 @@ export function ScimServiceProviderConfigPatchFromJSONTyped(json: any, ignoreDis
     if (json == null) {
         return json;
     }
-    return {
+    const result: ScimServiceProviderConfigPatch = {
         
         'supported': json['supported'] == null ? undefined : json['supported'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!ScimServiceProviderConfigPatchWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function ScimServiceProviderConfigPatchToJSON(json: any): ScimServiceProviderConfigPatch {
@@ -60,6 +79,7 @@ export function ScimServiceProviderConfigPatchFromJSONTyped(json: any, ignoreDis
     return {
         
         'supported': value['supported'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -67,7 +67,16 @@ export interface TgvalidatordCreateOutgoingXLMClawbackRequestRequest {
      * @memberof TgvalidatordCreateOutgoingXLMClawbackRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingXLMClawbackRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingXLMClawbackRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'toAddressId', 'toWhitelistedAddressId', 'destinationAddressMemo', 'amount', 'feeLimit', 'comment', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingXLMClawbackRequestRequest interface.
@@ -86,7 +95,7 @@ export function TgvalidatordCreateOutgoingXLMClawbackRequestRequestFromJSONTyped
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingXLMClawbackRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'toAddressId': json['toAddressId'] == null ? undefined : json['toAddressId'],
@@ -97,6 +106,16 @@ export function TgvalidatordCreateOutgoingXLMClawbackRequestRequestFromJSONTyped
         'comment': json['comment'] == null ? undefined : json['comment'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingXLMClawbackRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingXLMClawbackRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingXLMClawbackRequestRequest {
@@ -118,6 +137,7 @@ export function TgvalidatordCreateOutgoingXLMClawbackRequestRequestFromJSONTyped
         'feeLimit': value['feeLimit'],
         'comment': value['comment'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

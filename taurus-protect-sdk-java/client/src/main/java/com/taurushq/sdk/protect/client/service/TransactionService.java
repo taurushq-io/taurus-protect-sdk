@@ -3,7 +3,10 @@ package com.taurushq.sdk.protect.client.service;
 import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
 import com.taurushq.sdk.protect.client.mapper.TransactionMapper;
 import com.taurushq.sdk.protect.client.model.ApiException;
+import com.taurushq.sdk.protect.client.model.Pagination;
 import com.taurushq.sdk.protect.client.model.Transaction;
+import com.taurushq.sdk.protect.client.model.TransactionExportResult;
+import com.taurushq.sdk.protect.client.model.TransactionResult;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import com.taurushq.sdk.protect.openapi.api.TransactionsApi;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordExportTransactionsReply;
@@ -29,21 +32,22 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * <p>
  * Example usage:
  * <pre>{@code
- * // Get recent transactions
- * List<Transaction> transactions = client.getTransactionService()
- *     .getTransactions(null, null, "ETH", null, 50, 0);
+ * // Get recent transactions, one page at a time
+ * TransactionResult page = client.getTransactionService()
+ *     .getTransactions(null, null, "ETH", null, 20, 0);
+ * // next page: .getTransactions(null, null, "ETH", null, 20, page.getPagination().getNextOffset())
  *
  * // Get transactions for a specific address
- * List<Transaction> addrTx = client.getTransactionService()
+ * TransactionResult addrTx = client.getTransactionService()
  *     .getTransactionsByAddress("0x...", 100, 0);
  *
  * // Get a transaction by its blockchain hash
  * Transaction tx = client.getTransactionService()
  *     .getTransactionByHash("0x1234...");
  *
- * // Export transactions to CSV
- * String csv = client.getTransactionService()
- *     .exportTransactions(startDate, endDate, "ETH", "outgoing", 1000, 0);
+ * // Export up to 1000 transactions as CSV
+ * TransactionExportResult csv = client.getTransactionService()
+ *     .exportTransactions(startDate, endDate, "ETH", "outgoing", null, null, "csv", 1000);
  * }</pre>
  *
  * @see Transaction
@@ -129,25 +133,26 @@ public class TransactionService {
 
 
     /**
-     * Gets transactions with filtering.
+     * Gets a page of transactions.
      *
      * @param from      filter transactions after this date (optional)
      * @param to        filter transactions before this date (optional)
      * @param currency  filter by currency ID or symbol (optional)
      * @param direction filter by direction: "incoming" or "outgoing" (optional)
-     * @param limit     the maximum number of transactions to return
-     * @param offset    the offset for pagination
-     * @return the list of transactions
-     * @throws ApiException the api exception
+     * @param limit     the page size, 0 for the default ({@link Pagination#DEFAULT_PAGE_SIZE})
+     * @param offset    the offset, 0 for the first page
+     * @return the transactions and their pagination
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if limit or offset is out of range
      */
-    public List<Transaction> getTransactions(final OffsetDateTime from, final OffsetDateTime to,
+    public TransactionResult getTransactions(final OffsetDateTime from, final OffsetDateTime to,
                                              final String currency, final String direction,
-                                             final int limit, final int offset) throws ApiException {
+                                             final int limit, final long offset) throws ApiException {
         return getTransactions(from, to, currency, direction, null, null, limit, offset);
     }
 
     /**
-     * Gets transactions with filtering, including by chain.
+     * Gets a page of transactions, including by chain.
      *
      * <p>The API accepts blockchain and network on this endpoint and the Go and TypeScript
      * SDKs expose both; this SDK used to hardcode them to null, so the filters were
@@ -159,26 +164,27 @@ public class TransactionService {
      * @param direction  filter by direction: "incoming" or "outgoing" (optional)
      * @param blockchain filter by blockchain, e.g. "ETH" (optional)
      * @param network    filter by network, e.g. "mainnet" (optional)
-     * @param limit      the maximum number of transactions to return
-     * @param offset     the offset for pagination
-     * @return the list of transactions
-     * @throws ApiException the api exception
+     * @param limit      the page size, 0 for the default
+     * @param offset     the offset, 0 for the first page
+     * @return the transactions and their pagination
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if limit or offset is out of range
      */
-    public List<Transaction> getTransactions(final OffsetDateTime from, final OffsetDateTime to,
+    public TransactionResult getTransactions(final OffsetDateTime from, final OffsetDateTime to,
                                              final String currency, final String direction,
                                              final String blockchain, final String network,
-                                             final int limit, final int offset) throws ApiException {
+                                             final int limit, final long offset) throws ApiException {
 
-        checkArgument(limit > 0, "limit must be positive");
-        checkArgument(offset >= 0, "offset cannot be negative");
+        final int size = PagedOperation.TRANSACTIONS.resolveSize("limit", limit);
+        final long start = Pagination.resolveOffset("offset", offset);
 
         try {
             TgvalidatordGetTransactionsReply reply = transactionsApi.transactionServiceGetTransactions(
                     currency,                   // currency
                     direction,                  // direction
                     null,                       // query
-                    String.valueOf(limit),      // limit
-                    String.valueOf(offset),     // offset
+                    String.valueOf(size),       // limit
+                    start == 0 ? null : String.valueOf(start), // offset
                     from,                       // from
                     to,                         // to
                     null,                       // transactionIds
@@ -196,11 +202,7 @@ public class TransactionService {
                     null,                       // excludeUnknownSourceDestination
                     null                        // customerId
             );
-
-            if (reply.getResult() == null) {
-                return Collections.emptyList();
-            }
-            return TransactionMapper.INSTANCE.fromDTO(reply.getResult());
+            return toResult(reply, size, start);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
@@ -208,28 +210,30 @@ public class TransactionService {
 
 
     /**
-     * Gets transactions for a specific address.
+     * Gets a page of the transactions of an address.
      *
      * @param address the address string (blockchain address)
-     * @param limit   the maximum number of transactions to return
-     * @param offset  the offset for pagination
-     * @return the list of transactions
-     * @throws ApiException the api exception
+     * @param limit   the page size, 0 for the default
+     * @param offset  the offset, 0 for the first page
+     * @return the transactions and their pagination
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if address is empty or limit or offset is out of range
      */
-    public List<Transaction> getTransactionsByAddress(final String address, final int limit, final int offset) throws ApiException {
+    public TransactionResult getTransactionsByAddress(final String address, final int limit,
+                                                      final long offset) throws ApiException {
 
         checkNotNull(address, "address cannot be null");
         checkArgument(!address.isEmpty(), "address cannot be empty");
-        checkArgument(limit > 0, "limit must be positive");
-        checkArgument(offset >= 0, "offset cannot be negative");
+        final int size = PagedOperation.TRANSACTIONS.resolveSize("limit", limit);
+        final long start = Pagination.resolveOffset("offset", offset);
 
         try {
             TgvalidatordGetTransactionsReply reply = transactionsApi.transactionServiceGetTransactions(
                     null,                       // currency
                     null,                       // direction
                     null,                       // query
-                    String.valueOf(limit),      // limit
-                    String.valueOf(offset),     // offset
+                    String.valueOf(size),       // limit
+                    start == 0 ? null : String.valueOf(start), // offset
                     null,                       // from
                     null,                       // to
                     null,                       // transactionIds
@@ -247,14 +251,19 @@ public class TransactionService {
                     null,                       // excludeUnknownSourceDestination
                     null                        // customerId
             );
-
-            if (reply.getResult() == null) {
-                return Collections.emptyList();
-            }
-            return TransactionMapper.INSTANCE.fromDTO(reply.getResult());
+            return toResult(reply, size, start);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
+    }
+
+    private static TransactionResult toResult(final TgvalidatordGetTransactionsReply reply,
+                                              final int limit, final long offset) {
+        List<TgvalidatordTransaction> rows = reply.getResult() == null
+                ? Collections.emptyList() : reply.getResult();
+        return new TransactionResult(TransactionMapper.INSTANCE.fromDTO(rows),
+                PagedOperation.TRANSACTIONS.offsetPage(limit, offset, rows.size(), 0,
+                        reply.getTotalItems(), null));
     }
 
 
@@ -311,25 +320,30 @@ public class TransactionService {
 
 
     /**
-     * Exports transactions to CSV format.
+     * Exports transactions in the server's default format (JSON).
+     * <p>
+     * The export cannot page (the server ignores any offset); a larger limit is the only way
+     * to export more rows. Compare {@link TransactionExportResult#getTotalItems()} with the
+     * limit to tell whether the export was cut short.
      *
      * @param from      filter transactions after this date (optional)
      * @param to        filter transactions before this date (optional)
      * @param currency  filter by currency ID or symbol (optional)
      * @param direction filter by direction: "incoming" or "outgoing" (optional)
-     * @param limit     the maximum number of transactions to export
-     * @param offset    the offset for pagination
-     * @return the CSV content as a string
-     * @throws ApiException the api exception
+     * @param limit     how many transactions to export, 0 for the default
+     *                  ({@link Pagination#DEFAULT_PAGE_SIZE}); no SDK maximum
+     * @return the exported text and the number of matching transactions
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if limit is negative
      */
-    public String exportTransactions(final OffsetDateTime from, final OffsetDateTime to,
-                                      final String currency, final String direction,
-                                      final int limit, final int offset) throws ApiException {
-        return exportTransactions(from, to, currency, direction, null, null, limit, offset);
+    public TransactionExportResult exportTransactions(final OffsetDateTime from, final OffsetDateTime to,
+                                                      final String currency, final String direction,
+                                                      final int limit) throws ApiException {
+        return exportTransactions(from, to, currency, direction, null, null, null, limit);
     }
 
     /**
-     * Exports transactions to CSV format, including by chain.
+     * Exports transactions in the server's default format (JSON), including by chain.
      *
      * @param from       filter transactions after this date (optional)
      * @param to         filter transactions before this date (optional)
@@ -337,30 +351,52 @@ public class TransactionService {
      * @param direction  filter by direction: "incoming" or "outgoing" (optional)
      * @param blockchain filter by blockchain, e.g. "ETH" (optional)
      * @param network    filter by network, e.g. "mainnet" (optional)
-     * @param limit      the maximum number of transactions to export
-     * @param offset     the offset for pagination
-     * @return the CSV content as a string
-     * @throws ApiException the api exception
+     * @param limit      how many transactions to export, 0 for the default; no SDK maximum
+     * @return the exported text and the number of matching transactions
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if limit is negative
      */
-    public String exportTransactions(final OffsetDateTime from, final OffsetDateTime to,
-                                      final String currency, final String direction,
-                                      final String blockchain, final String network,
-                                      final int limit, final int offset) throws ApiException {
+    public TransactionExportResult exportTransactions(final OffsetDateTime from, final OffsetDateTime to,
+                                                      final String currency, final String direction,
+                                                      final String blockchain, final String network,
+                                                      final int limit) throws ApiException {
+        return exportTransactions(from, to, currency, direction, blockchain, network, null, limit);
+    }
 
-        checkArgument(limit > 0, "limit must be positive");
-        checkArgument(offset >= 0, "offset cannot be negative");
+    /**
+     * Exports transactions in the given format, including by chain.
+     *
+     * @param from       filter transactions after this date (optional)
+     * @param to         filter transactions before this date (optional)
+     * @param currency   filter by currency ID or symbol (optional)
+     * @param direction  filter by direction: "incoming" or "outgoing" (optional)
+     * @param blockchain filter by blockchain, e.g. "ETH" (optional)
+     * @param network    filter by network, e.g. "mainnet" (optional)
+     * @param format     "json", "csv" or "csv_simple", null for the server default (JSON)
+     * @param limit      how many transactions to export, 0 for the default; no SDK maximum
+     * @return the exported text and the number of matching transactions
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if limit is negative
+     */
+    public TransactionExportResult exportTransactions(final OffsetDateTime from, final OffsetDateTime to,
+                                                      final String currency, final String direction,
+                                                      final String blockchain, final String network,
+                                                      final String format, final int limit)
+            throws ApiException {
+
+        final int size = PagedOperation.TRANSACTION_EXPORT.resolveSize("limit", limit);
 
         try {
             TgvalidatordExportTransactionsReply reply = transactionsApi.transactionServiceExportTransactions(
                     currency,                   // currency
                     direction,                  // direction
                     null,                       // query
-                    String.valueOf(limit),      // limit
-                    String.valueOf(offset),     // offset
+                    String.valueOf(size),       // limit
+                    null,                       // offset: ignored by the server
                     from,                       // from
                     to,                         // to
                     null,                       // transactionIds
-                    "csv",                      // format
+                    format,                     // format
                     null,                       // type
                     null,                       // source
                     null,                       // destination
@@ -375,7 +411,7 @@ public class TransactionService {
                     null                        // address
             );
 
-            return reply.getResult();
+            return TransactionExportResult.of(reply.getResult(), reply.getTotalItems());
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }

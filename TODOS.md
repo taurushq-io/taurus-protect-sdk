@@ -337,7 +337,7 @@ behaviour into a shared vector gate.
 ## 3. Promote the rich-container fixture to a shared vector
 
 **What:** Move the hand-built "rich container" fixture out of the four round-trip suites
-into `scripts/resources/`, the way the eight lossless vectors now are, and assert its
+into `scripts/resources/`, the way the nine lossless vectors now are, and assert its
 encoded bytes are identical across SDKs.
 
 **Why:** It is the most complex container the suites build — users, groups, thresholds,
@@ -613,7 +613,8 @@ break rather than a silent one. Keep that alignment when adding a check to eithe
 
 **What:** Three related gaps in the request/asset list paths. (1) Only Go reports request-list
 exclusions **on the result**; Java, Python and TypeScript log them where no caller can read
-them. (2) Python reports the server's unadjusted `total_items` after excluding rows. (3) No SDK
+them. (2) ~~Python reports the server's unadjusted `total_items` after excluding rows~~ — resolved
+2026-09-24 by the shared offset helper, which reduces totals in all four. (3) No SDK
 errors when rows came back from the request endpoint and none survived — that guard exists only
 on the whitelist path (`whitelisted_address.go:237`).
 
@@ -728,24 +729,174 @@ plainly that the spec now leads them.
 `List*Options` gap is then un-fillable by hand, and the absence looks like an SDK design
 choice rather than a codegen lag.
 
-**Context:** Confirmed missing 2026-09-03: `PriceService_QueryPricesV2`, `GetPriceByID`, and
-the `entities` / `fieldKey` / `fieldValue` parameters on `ChangeServiceGetChanges`. The
-consequences reach the service layer:
+**Context:** Adopted 2026-09-24 with `scripts/swagger/adopt-from-validatord.py`:
+`PriceService_QueryPricesV2`, `AssetServiceV2_{QueryAssetsV2,QueryAssetAddressesV2,ListAssetOperationsV2}`,
+`EarnService_GetRewards`, `FiatProviderService_GetFiatProviderEntities`, and `includeDisabledAddresses`
+on `WalletService_GetAddresses`. Still missing, with consequences at the service layer:
 
 | Missing | Consequence |
 |---|---|
-| `PriceService_QueryPricesV2`, `GetPriceByID` | `ListPrices` is stuck on `GetPrices`, which takes `google.protobuf.Empty` — no filters, no pagination at all |
+| `PriceService_GetPriceByID` | no read of one price by id; callers page `QueryPricesV2` |
 | `Entities`, `FieldKey`, `FieldValue` on `ChangeServiceGetChanges` | `ListChangesOptions` can only reach 8 of the endpoint's 11 fields |
 
 Grep the generated client before writing any builder call — a plausible-looking method that
 does not exist costs an options field, a mapping and a consumer before the compiler says so.
 Do **not** do a wholesale spec refresh: that pulls in every validatord change since the
 snapshot, an uncontrolled diff across all services, on top of an already-large uncommitted
-tree. Patch only the new path plus its request/response schemas.
+tree. Patch only the new path plus its request/response schemas — the adopt script does
+exactly that and refuses anything that removes or retypes a member.
 
 **Depends on:** a decision on regenerating all four SDKs together vs recording the spec as
 ahead of them. The "Adopt the whitelisted-address export endpoint" entry above is the same
 codegen job and should be batched with it.
+
+---
+
+## Codegen is not byte-reproducible (Java dates, Go formatting)
+
+**What:** Make `scripts/generate-openapi.sh` reproduce the committed generated clients exactly
+when the spec has not changed: Java with `hideGenerationTimestamp=true`, Go with one formatting
+convention for every generated file.
+
+**Why:** Regenerating from an unchanged spec rewrites every Java file (each carries a
+`@Generated(date = …)` stamp) and reformats 10 Go files that happen to be committed gofmt'd while
+the generator's output is not. So the diff of a real spec change drowns in noise, and "only the
+files the patch explains" has to be established by a comparison script instead of `git diff`.
+TypeScript and Python already regenerate byte-exact.
+
+**Context:** Measured 2026-09-24 while adopting six operations. Turning either fix on churns the
+whole generated tree once (every Java file loses its date; either the 10 Go files or all the others
+change format), so it wants its own commit, separate from any spec change.
+
+**Depends on:** nothing.
+
+---
+
+## Paged operations no SDK wraps
+
+**What:** Nine paged operations in the shared swagger have no method in any SDK. When one is
+wrapped, add it to `scripts/pagination-vectors/generate.py` first, so it lands on the pagination
+contract (root `CLAUDE.md` § Pagination) with vectors in all four suites.
+
+| Operation | Paging |
+|---|---|
+| `RequestService_GetAutoTransferEventHandlers` | `cursor.*` |
+| `RequestService_GetRequestBundles`, `RequestService_GetRequestBundlesForApproval` | `cursor.*` |
+| `StatisticsService_GetIndividualTagStats` | `cursor.*` |
+| `StatisticsService_GetPortfolioStatisticsHistoryExport` | `cursor.*` |
+| `WalletService_GetAddressesStatus` | `cursor.*` |
+| `WalletService_GetAddressTokens` | token (`cursor` bytes + `limit`), like wallet tokens |
+| `StatisticsService_GetCurrencyStatisticsHistory` | body `limit` only |
+| `StatisticsService_GetForApprovalStatistics` | `limit` only |
+
+**Why:** Found by diffing the swagger's paged operations against the vector inventory on
+2026-09-24. The remaining four paged operations in the spec are deprecated
+(`RequestService_GetRequests`, `RequestService_GetRequestsForApproval`,
+`RuleService_GetBusinessRules`, `WalletService_GetWalletsInfo`) and must stay unwrapped.
+
+**Depends on:** a caller that needs one of them.
+
+---
+
+## validatord: the approval queue ignores `externalRequestIDs`
+
+**What:** Ask validatord to pass `ExternalRequestIDs` through the approval paginator's data getter
+(`pkg/request/service/paginator/paginator.go`, `GetRequestsForApprovalV2`), then offer the filter on
+the four SDKs' approval-queue methods again and flip the error vector.
+
+**Why:** The swagger declares the parameter and the controller copies it into the paginator request,
+but the data getter drops it, so a filtered call returns the whole queue. Until 2026-09-24 Python and
+TypeScript sent it anyway, handing callers an unfiltered queue that read as filtered; all four now
+refuse it.
+
+**Depends on:** a tg-validatord change (out of scope for the SDK repo).
+
+---
+
+## Paged operations missing from some SDKs
+
+**What:** Wrap these in the SDKs that lack them, on the pagination contract (their vectors already
+exist; each loader lists the operation as not wrapped, with a reason, and fails if it starts being
+wrapped without an adapter).
+
+| Operation | Missing in |
+|---|---|
+| `FiatProviderService_GetFiatProviderCounterpartyAccounts`, `FiatProviderService_GetFiatProviderOperations` | Go, Python |
+| `WalletService_GetNFTCollectionBalances` | Go |
+| `StakingService_GetStakeAccounts` | Python |
+| `PriceService_ExportPricesHistory`, `StatisticsService_GetAggregatedTagStats`, `StatisticsService_GetPortfolioStatisticsHistory` | Python, TypeScript, Java (Go only) |
+| `ExchangeService_GetExchanges`, `TaurusNetworkService_GetSharedAssets`, `TaurusNetworkService_GetLendingAgreementsForApproval`, `TaurusNetworkService_GetPledgeActions`, `TaurusNetworkService_GetPledgeActionsForApproval`, `TaurusNetworkService_GetSettlementsForApproval` | Java |
+
+**Why:** Found by the 2026-09-24 pagination pass, whose vector loaders must name every operation
+they skip. The Java Taurus-NETWORK gaps are the "systematically thinner" item above.
+
+**Depends on:** nothing.
+
+---
+
+## Row mappers read fields the generated types do not have
+
+**What:** Delete, or map from the real wire name, model fields that are always empty because the
+generated row type has no such member.
+
+| SDK | Fields |
+|---|---|
+| TypeScript | Currency `isNative`, `isDisabled`, `price`, `priceCurrency`; Webhook `secret`, `failureCount`, `lastFailureMessage`; User/Group `updatedAt`; AuditTrail `entityId`, `description`, `ipAddress` |
+| Python | fee payer `address`, `balance`, `status`; Job maps only `name` (its statistics are dropped) |
+
+**Why:** The 2026-09-24 pass moved every REPLY-level read onto the generated types (that is how six
+lists had been returning `[]`), but left row mappers alone. A field that is always `undefined` /
+`None` reads as "the server said nothing" — `Currency.isDisabled` in particular reads as enabled.
+Removing a field is a breaking model change, hence a separate item.
+
+**Depends on:** nothing.
+
+---
+
+## Python service-layer leftovers from the pagination pass
+
+**What:** (1) Non-list reads still use `getattr(resp, …)`: address get/create/proof, pledge writes,
+webhook create, fiat `get_account`, exchange reads. (2) `_handle_error` turns any non-SDK exception —
+real code bugs included — into a retryable `ServerError(500)`. (3) `VisibilityGroupService.get`
+swallows every exception while fetching group users (a bare `except Exception: pass`, which the
+repo's anti-patterns forbid). (4) About 30 service files import error classes inside functions.
+(5) `docs/SERVICES.md` still carries stale prose rows (`approve_request`/`reject_request`, lending
+cancel/accept, sharing create/revoke).
+
+**Why:** (2) is the one that matters: a `TypeError` from a defect reported as a retryable server
+error invites retries of a bug and hides it — the same class the whitelist error taxonomy fixed.
+
+**Depends on:** nothing.
+
+---
+
+## Asset holders are matched on the exact address string
+
+**What:** `QueryAssetAddresses` keeps an INTERNAL/WHITELISTED holder row only when its address
+equals the verified reader's byte for byte. If validatord ever opens the endpoint beyond Canton,
+decide the comparison per chain (EVM checksum case, for one) before a valid row is excluded.
+
+**Why:** Today `AssetControllerV2.QueryAssetAddressesV2` refuses any non-Canton asset
+(`internal/api/v1/asset-controller-v2.go:855`), and Canton party ids are exact strings, so the
+strict match is correct. Also align one edge: TypeScript excludes an id the verified reader returns
+twice, Go keeps the last, Python de-duplicates the request.
+
+**Depends on:** validatord widening the endpoint.
+
+---
+
+## Go: typed not-found for empty single reads, and a multi-currency wallet filter
+
+**What:** (1) Single reads report "nothing there" three ways — `(nil, nil)` from
+`GetWhitelistedAsset`, `GetCurrency`, `GetTenantConfig`, `GetPortfolioStatistics`, `GetRules*`; an
+untyped `"… not found"` error from others; a real 404 from the rest. Return one typed not-found.
+(2) `ListWalletsOptions.Currency` is a single string although validatord accepts up to 10
+currencies per search (`pkg/forge/wallet/interface.go:102`); add `Currencies []string`.
+
+**Why:** `tg-protect-mcpd` maps all three shapes to not-found by hand, and its `wallets_search`
+ids fallback runs one follow-up search per distinct currency instead of one per ten.
+
+**Depends on:** nothing.
 
 ---
 

@@ -31,7 +31,16 @@ export interface TaurusNetworkServiceInitiateWithdrawPledgeBody {
      * @memberof TaurusNetworkServiceInitiateWithdrawPledgeBody
      */
     amount: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TaurusNetworkServiceInitiateWithdrawPledgeBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TaurusNetworkServiceInitiateWithdrawPledgeBodyWireKeys: ReadonlySet<string> = new Set(['destinationSharedAddressID', 'amount']);
 
 /**
  * Check if a given object implements the TaurusNetworkServiceInitiateWithdrawPledgeBody interface.
@@ -49,11 +58,21 @@ export function TaurusNetworkServiceInitiateWithdrawPledgeBodyFromJSONTyped(json
     if (json == null) {
         return json;
     }
-    return {
+    const result: TaurusNetworkServiceInitiateWithdrawPledgeBody = {
         
         'destinationSharedAddressID': json['destinationSharedAddressID'] == null ? undefined : json['destinationSharedAddressID'],
         'amount': json['amount'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TaurusNetworkServiceInitiateWithdrawPledgeBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TaurusNetworkServiceInitiateWithdrawPledgeBodyToJSON(json: any): TaurusNetworkServiceInitiateWithdrawPledgeBody {
@@ -69,6 +88,7 @@ export function TaurusNetworkServiceInitiateWithdrawPledgeBodyFromJSONTyped(json
         
         'destinationSharedAddressID': value['destinationSharedAddressID'],
         'amount': value['amount'],
+        ...value['additionalProperties'],
     };
 }
 

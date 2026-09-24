@@ -163,7 +163,16 @@ export interface TgvalidatordHederaNativeTokenState {
      * @memberof TgvalidatordHederaNativeTokenState
      */
     pauseKey?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordHederaNativeTokenState
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordHederaNativeTokenStateWireKeys: ReadonlySet<string> = new Set(['name', 'symbol', 'memo', 'totalSupply', 'autoRenewPeriod', 'decimals', 'freezeDefault', 'initialSupply', 'treasuryAccountID', 'type', 'pauseStatus', 'deleted', 'createdTimestamp', 'expiryTimestamp', 'modificationTimestamp', 'autoRenewAccount', 'customFees', 'adminKey', 'feeScheduleKey', 'freezeKey', 'kycKey', 'supplyKey', 'wipeKey', 'pauseKey']);
 
 /**
  * Check if a given object implements the TgvalidatordHederaNativeTokenState interface.
@@ -180,7 +189,7 @@ export function TgvalidatordHederaNativeTokenStateFromJSONTyped(json: any, ignor
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordHederaNativeTokenState = {
         
         'name': json['name'] == null ? undefined : json['name'],
         'symbol': json['symbol'] == null ? undefined : json['symbol'],
@@ -207,6 +216,16 @@ export function TgvalidatordHederaNativeTokenStateFromJSONTyped(json: any, ignor
         'wipeKey': json['wipeKey'] == null ? undefined : json['wipeKey'],
         'pauseKey': json['pauseKey'] == null ? undefined : json['pauseKey'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordHederaNativeTokenStateWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordHederaNativeTokenStateToJSON(json: any): TgvalidatordHederaNativeTokenState {
@@ -244,6 +263,7 @@ export function TgvalidatordHederaNativeTokenStateFromJSONTyped(json: any, ignor
         'supplyKey': value['supplyKey'],
         'wipeKey': value['wipeKey'],
         'pauseKey': value['pauseKey'],
+        ...value['additionalProperties'],
     };
 }
 

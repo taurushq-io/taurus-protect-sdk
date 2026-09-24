@@ -85,7 +85,16 @@ export interface TgvalidatordChange {
      * @memberof TgvalidatordChange
      */
     creatorExternalId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordChange
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordChangeWireKeys: ReadonlySet<string> = new Set(['id', 'tenantId', 'creatorId', 'action', 'entityId', 'entity', 'changes', 'creationDate', 'comment', 'entityUUID', 'creatorExternalId']);
 
 /**
  * Check if a given object implements the TgvalidatordChange interface.
@@ -102,7 +111,7 @@ export function TgvalidatordChangeFromJSONTyped(json: any, ignoreDiscriminator: 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordChange = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'tenantId': json['tenantId'] == null ? undefined : json['tenantId'],
@@ -116,6 +125,16 @@ export function TgvalidatordChangeFromJSONTyped(json: any, ignoreDiscriminator: 
         'entityUUID': json['entityUUID'] == null ? undefined : json['entityUUID'],
         'creatorExternalId': json['creatorExternalId'] == null ? undefined : json['creatorExternalId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordChangeWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordChangeToJSON(json: any): TgvalidatordChange {
@@ -140,6 +159,7 @@ export function TgvalidatordChangeFromJSONTyped(json: any, ignoreDiscriminator: 
         'comment': value['comment'],
         'entityUUID': value['entityUUID'],
         'creatorExternalId': value['creatorExternalId'],
+        ...value['additionalProperties'],
     };
 }
 

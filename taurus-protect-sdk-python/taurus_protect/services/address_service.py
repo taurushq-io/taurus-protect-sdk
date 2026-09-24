@@ -2,13 +2,23 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
-from taurus_protect.errors import APIError, IntegrityError, NotFoundError
+from taurus_protect.errors import APIError, ContainerIntegrityError, IntegrityError, NotFoundError
 from taurus_protect.mappers.address import address_from_dto
 from taurus_protect.models.address import Address, CreateAddressRequest, ListAddressesOptions
-from taurus_protect.models.pagination import Pagination
+from taurus_protect.models.pagination import (
+    REPLY_OFFSET,
+    Pagination,
+    offset_pagination,
+    offset_query,
+    resolve_offset,
+    resolve_page_size,
+)
 from taurus_protect.services._base import BaseService
+
+# validatord caps an addressIds filter at 50.
+MAX_ADDRESS_IDS = 50
 
 if TYPE_CHECKING:
     from taurus_protect.cache.rules_container_cache import RulesContainerCache
@@ -38,7 +48,7 @@ class AddressService(BaseService):
         >>> print(f"Address: {address.address}")
         >>>
         >>> # List addresses for a wallet (all signatures verified)
-        >>> addresses, pagination = client.addresses.list(wallet_id=123, limit=50)
+        >>> addresses, pagination = client.addresses.list(wallet_id=123, limit=100)
     """
 
     def __init__(
@@ -109,7 +119,9 @@ class AddressService(BaseService):
                 raise
             raise self._handle_error(e) from e
 
-    def _verified_address(self, dto: Any, rules_container: Optional[Any] = None) -> Optional[Address]:
+    def _verified_address(
+        self, dto: Any, rules_container: Optional[Any] = None
+    ) -> Optional[Address]:
         """
         The ONE construction seam for an :class:`Address`.
 
@@ -160,19 +172,21 @@ class AddressService(BaseService):
     def list(
         self,
         wallet_id: int,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> Tuple[List[Address], Optional[Pagination]]:
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        exclude_disabled: Optional[bool] = None,
+    ) -> Tuple[List[Address], Pagination]:
         """
-        List addresses for a wallet with mandatory signature verification.
+        List a wallet's addresses, one page at a time, with mandatory signature verification.
 
         Args:
             wallet_id: The wallet ID to list addresses for.
-            limit: Maximum number of addresses to return.
-            offset: Number of addresses to skip.
+            limit: Page size (default 20, max 100).
+            offset: Number of addresses to skip; pass ``pagination.next_offset`` to continue.
+            exclude_disabled: True hides disabled addresses, False includes them.
 
         Returns:
-            Tuple of (addresses list, pagination info).
+            Tuple of (addresses, pagination).
 
         Raises:
             ValueError: If wallet_id is invalid or limit/offset are invalid.
@@ -181,47 +195,50 @@ class AddressService(BaseService):
         """
         if wallet_id <= 0:
             raise ValueError("wallet_id must be positive")
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
+        return self.list_with_options(
+            ListAddressesOptions(
+                wallet_id=str(wallet_id),
+                limit=limit,
+                offset=offset,
+                exclude_disabled=exclude_disabled,
+            )
+        )
+
+    def list_with_options(
+        self,
+        options: Optional[ListAddressesOptions] = None,
+    ) -> Tuple[List[Address], Pagination]:
+        """
+        List addresses with filters, one page at a time, with mandatory signature verification.
+
+        Args:
+            options: Filters and page window; every field reaches the wire.
+
+        Returns:
+            Tuple of (addresses, pagination).
+
+        Raises:
+            ValueError: If limit or offset are invalid.
+            IntegrityError: If signature verification fails for any address.
+            APIError: If API request fails.
+        """
+        opts = options or ListAddressesOptions()
+        limit = resolve_page_size(opts.limit, "limit")
+        offset = resolve_offset(opts.offset)
+
+        include_disabled = None
+        if opts.exclude_disabled is not None:
+            include_disabled = "exclude" if opts.exclude_disabled else "include"
 
         try:
             resp = self._addresses_api.wallet_service_get_addresses(
-                currency=None,
-                query=None,
-                limit=str(limit),
-                offset=str(offset),
-                score_provider=None,
-                score_in_below=None,
-                score_out_below=None,
-                score_exclusive=None,
-                only_positive_balance=None,
-                sort_by=None,
-                sort_order=None,
-                balance_below=None,
-                balance_above=None,
-                wallet_id=str(wallet_id),
-                customer_id=None,
-                coinfirm_score_greater=None,
-                chainalysis_score_greater=None,
-                tag_ids=None,
-                blockchain=None,
-                network=None,
-                address_ids=None,
-                nfts=None,
-                addresses=None,
-                score_filter_score_provider=None,
-                score_filter_scorechain_filters_score_in_below=None,
-                score_filter_scorechain_filters_score_out_below=None,
-                score_filter_scorechain_filters_score_exclusive=None,
-                score_filter_coinfirm_filters_score_greater=None,
-                score_filter_chainalysis_filters_score_greater=None,
-                score_filter_elliptic_filters_score_greater=None,
-                score_filter_trmlabs_filters_score_greater=None,
+                query=opts.query,
+                wallet_id=opts.wallet_id,
+                include_disabled_addresses=include_disabled,
+                **offset_query(limit, offset),
             )
 
-            rows = list(getattr(resp, "result", None) or [])
+            rows = resp.result or []
 
             # Every row through the one seam. Pre-fetch the rules container once to
             # avoid an N+1 cache lookup.
@@ -234,12 +251,15 @@ class AddressService(BaseService):
                 if address is not None:
                     addresses.append(address)
 
-            pagination = self._extract_pagination(
-                total_items=getattr(resp, "total_items", None),
-                offset=getattr(resp, "offset", None),
+            pagination = offset_pagination(
+                REPLY_OFFSET,
                 limit=limit,
+                offset=offset,
+                served_rows=len(rows),
+                total_items=resp.total_items,
+                reply_offset=resp.offset,
+                excluded=len(rows) - len(addresses),
             )
-
             return addresses, pagination
         except Exception as e:
 
@@ -250,87 +270,55 @@ class AddressService(BaseService):
                 raise
             raise self._handle_error(e) from e
 
-    def list_with_options(
-        self,
-        options: Optional[ListAddressesOptions] = None,
-    ) -> Tuple[List[Address], Optional[Pagination]]:
+    def _verified_addresses_by_id(
+        self, address_ids: List[str]
+    ) -> Tuple[Dict[str, Address], Dict[str, str]]:
         """
-        List addresses with full filtering options.
+        Re-read managed addresses by id, every returned row through :meth:`_verified_address`.
+
+        One request per ``MAX_ADDRESS_IDS`` ids. A row whose signature is missing or does
+        not verify is reported under its id, not raised, so the caller decides without
+        it. A rules container that cannot verify any address is not a property of one
+        row, so it aborts the call, as does any request error.
 
         Args:
-            options: Optional filtering and pagination options.
+            address_ids: The address ids to read.
 
         Returns:
-            Tuple of (addresses list, pagination info).
+            The verified addresses by id, and the failure reason by id.
 
         Raises:
-            IntegrityError: If signature verification fails for any address.
-            APIError: If API request fails.
+            IntegrityError: If the rules container has no HSMSLOT key.
+            APIError: If an API request fails.
         """
-        opts = options or ListAddressesOptions()
-
+        verified: Dict[str, Address] = {}
+        failed: Dict[str, str] = {}
         try:
-            resp = self._addresses_api.wallet_service_get_addresses(
-                currency=None,
-                query=opts.query,
-                limit=str(opts.limit) if opts.limit > 0 else None,
-                offset=str(opts.offset) if opts.offset > 0 else None,
-                score_provider=None,
-                score_in_below=None,
-                score_out_below=None,
-                score_exclusive=None,
-                only_positive_balance=None,
-                sort_by=None,
-                sort_order=None,
-                balance_below=None,
-                balance_above=None,
-                wallet_id=opts.wallet_id,
-                customer_id=None,
-                coinfirm_score_greater=None,
-                chainalysis_score_greater=None,
-                tag_ids=None,
-                blockchain=None,
-                network=None,
-                address_ids=None,
-                nfts=None,
-                addresses=None,
-                score_filter_score_provider=None,
-                score_filter_scorechain_filters_score_in_below=None,
-                score_filter_scorechain_filters_score_out_below=None,
-                score_filter_scorechain_filters_score_exclusive=None,
-                score_filter_coinfirm_filters_score_greater=None,
-                score_filter_chainalysis_filters_score_greater=None,
-                score_filter_elliptic_filters_score_greater=None,
-                score_filter_trmlabs_filters_score_greater=None,
-            )
-
-            rows = list(getattr(resp, "result", None) or [])
-
-            # Every row through the one seam. Pre-fetch the rules container once to
-            # avoid an N+1 cache lookup.
-            rules_container = None
-            if rows:
-                rules_container = self._rules_cache.get_decoded_rules_container()
-            addresses = []
-            for dto in rows:
-                address = self._verified_address(dto, rules_container)
-                if address is not None:
-                    addresses.append(address)
-
-            pagination = self._extract_pagination(
-                total_items=getattr(resp, "total_items", None),
-                offset=getattr(resp, "offset", None),
-                limit=opts.limit,
-            )
-
-            return addresses, pagination
+            rules_container = self._rules_cache.get_decoded_rules_container()
+            if rules_container is None or rules_container.get_hsm_public_key() is None:
+                raise IntegrityError(
+                    "the rules container has no HSMSLOT key, so no address can be verified"
+                )
+            for start in range(0, len(address_ids), MAX_ADDRESS_IDS):
+                chunk = address_ids[start : start + MAX_ADDRESS_IDS]
+                resp = self._addresses_api.wallet_service_get_addresses(
+                    address_ids=chunk, limit=str(len(chunk))
+                )
+                for dto in resp.result or []:
+                    try:
+                        address = self._verified_address(dto, rules_container)
+                    except ContainerIntegrityError:
+                        raise
+                    except IntegrityError as exc:
+                        failed[str(dto.id)] = exc.message
+                        continue
+                    if address is not None and address.id:
+                        verified[str(address.id)] = address
         except Exception as e:
-
-            # See list(): IntegrityError must not be remapped to a retryable
-            # ServerError(500). ValueError joins it so an argument error stays one.
             if isinstance(e, (APIError, IntegrityError, ValueError)):
                 raise
             raise self._handle_error(e) from e
+        return verified, failed
 
     def create(self, request: CreateAddressRequest) -> Address:
         """

@@ -33,7 +33,16 @@ export interface TgvalidatordGetReservationReply {
      * @memberof TgvalidatordGetReservationReply
      */
     result?: TgvalidatordReservation;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetReservationReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetReservationReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetReservationReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetReservationReplyFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetReservationReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordReservationFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetReservationReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetReservationReplyToJSON(json: any): TgvalidatordGetReservationReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetReservationReplyFromJSONTyped(json: any, ignoreDi
     return {
         
         'result': TgvalidatordReservationToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

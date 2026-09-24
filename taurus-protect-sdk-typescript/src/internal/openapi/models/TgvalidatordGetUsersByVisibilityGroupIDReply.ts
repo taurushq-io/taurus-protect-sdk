@@ -33,7 +33,16 @@ export interface TgvalidatordGetUsersByVisibilityGroupIDReply {
      * @memberof TgvalidatordGetUsersByVisibilityGroupIDReply
      */
     result?: Array<TgvalidatordInternalUser>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetUsersByVisibilityGroupIDReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetUsersByVisibilityGroupIDReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetUsersByVisibilityGroupIDReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetUsersByVisibilityGroupIDReplyFromJSONTyped(json: 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetUsersByVisibilityGroupIDReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordInternalUserFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetUsersByVisibilityGroupIDReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetUsersByVisibilityGroupIDReplyToJSON(json: any): TgvalidatordGetUsersByVisibilityGroupIDReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetUsersByVisibilityGroupIDReplyFromJSONTyped(json: 
     return {
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordInternalUserToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

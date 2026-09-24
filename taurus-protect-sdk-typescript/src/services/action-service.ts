@@ -10,7 +10,13 @@ import { NotFoundError, ValidationError } from '../errors';
 import type { ActionsApi } from '../internal/openapi/apis/ActionsApi';
 import { actionEnvelopeFromDto, actionEnvelopesFromDto } from '../mappers/action';
 import type { ActionEnvelope, ListActionsOptions } from '../models/action';
+import {
+  buildOffsetPagination,
+  offsetRequest,
+  type PaginatedResult,
+} from '../models/pagination';
 import { BaseService } from './base';
+import { offsetQuery } from './paging';
 
 /**
  * Service for managing automated actions in the Taurus-PROTECT system.
@@ -21,9 +27,9 @@ import { BaseService } from './base';
  *
  * @example
  * ```typescript
- * // List all actions
- * const actions = await actionService.list();
- * for (const action of actions) {
+ * // First page of actions
+ * const { items, pagination } = await actionService.list();
+ * for (const action of items) {
  *   console.log(`${action.id}: ${action.label} (${action.status})`);
  * }
  *
@@ -31,8 +37,10 @@ import { BaseService } from './base';
  * const action = await actionService.get('action-123');
  * console.log(`Action: ${action.label}, Auto-approve: ${action.autoApprove}`);
  *
- * // List with pagination
- * const paged = await actionService.list({ limit: '10', offset: '0' });
+ * // Next page
+ * if (pagination.hasMore) {
+ *   await actionService.list({ offset: pagination.nextOffset });
+ * }
  * ```
  */
 export class ActionService extends BaseService {
@@ -49,56 +57,38 @@ export class ActionService extends BaseService {
   }
 
   /**
-   * Lists all actions.
+   * Lists a page of actions.
    *
-   * @returns Array of action envelopes
+   * @param options - Filters, `limit` (1-100, default 20) and `offset`
+   * @returns The page of actions and its pagination, including the server's total
+   * @throws {@link ValidationError} If limit or offset are out of bounds
    * @throws {@link APIError} If API request fails
    *
    * @example
    * ```typescript
-   * const actions = await actionService.list();
-   * for (const action of actions) {
-   *   console.log(`${action.id}: ${action.label}`);
+   * const page = await actionService.list({ limit: 10 });
+   * for (const action of page.items) {
+   *   console.log(`Action ${action.id}: ${action.label} (${action.status})`);
+   * }
+   * if (page.pagination.hasMore) {
+   *   await actionService.list({ limit: 10, offset: page.pagination.nextOffset });
    * }
    * ```
    */
-  async list(): Promise<ActionEnvelope[]>;
+  async list(options?: ListActionsOptions): Promise<PaginatedResult<ActionEnvelope>> {
+    const page = offsetRequest(options);
 
-  /**
-   * Lists actions with optional filters.
-   *
-   * @param options - Optional filtering and pagination options
-   * @returns Array of action envelopes
-   * @throws {@link APIError} If API request fails
-   *
-   * @example
-   * ```typescript
-   * // List with pagination
-   * const actions = await actionService.list({
-   *   limit: '10',
-   *   offset: '0',
-   * });
-   *
-   * // List specific actions by ID
-   * const specific = await actionService.list({
-   *   ids: ['action-1', 'action-2'],
-   * });
-   * ```
-   */
-  async list(options: ListActionsOptions): Promise<ActionEnvelope[]>;
-
-  async list(options?: ListActionsOptions): Promise<ActionEnvelope[]> {
     return this.execute(async () => {
       const response = await this.actionsApi.actionServiceGetActions({
-        limit: options?.limit,
-        offset: options?.offset,
+        ...offsetQuery(page),
         ids: options?.ids,
       });
 
-      const result =
-        (response as Record<string, unknown>).result ??
-        (response as Record<string, unknown>).actions;
-      return actionEnvelopesFromDto(result as unknown[]);
+      const rows = response.result ?? [];
+      return {
+        items: actionEnvelopesFromDto(rows),
+        pagination: buildOffsetPagination('plus_rows', page, response, rows.length),
+      };
     });
   }
 
@@ -129,10 +119,7 @@ export class ActionService extends BaseService {
         id: actionId,
       });
 
-      const result =
-        (response as Record<string, unknown>).action ??
-        (response as Record<string, unknown>).result;
-      const action = actionEnvelopeFromDto(result);
+      const action = actionEnvelopeFromDto(response.action);
 
       if (!action) {
         throw new NotFoundError(`Action with id '${actionId}' not found`);

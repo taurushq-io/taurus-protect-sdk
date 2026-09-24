@@ -40,7 +40,10 @@ type TgvalidatordContractTemplateResource struct {
 	// If true, the template is marked as have been audited. The audit
 	Audited *bool `json:"audited,omitempty"`
 	ContractTemplate *TgvalidatordBlockchainContractTemplate `json:"contractTemplate,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordContractTemplateResource TgvalidatordContractTemplateResource
 
 // NewTgvalidatordContractTemplateResource instantiates a new TgvalidatordContractTemplateResource object
 // This constructor will assign default values to properties that have it defined,
@@ -629,7 +632,48 @@ func (o TgvalidatordContractTemplateResource) ToMap() (map[string]interface{}, e
 	if !IsNil(o.ContractTemplate) {
 		toSerialize["contractTemplate"] = o.ContractTemplate
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordContractTemplateResource) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordContractTemplateResource := _TgvalidatordContractTemplateResource{}
+
+	err = json.Unmarshal(data, &varTgvalidatordContractTemplateResource)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordContractTemplateResource(varTgvalidatordContractTemplateResource)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "tenantID")
+		delete(additionalProperties, "version")
+		delete(additionalProperties, "createdAt")
+		delete(additionalProperties, "updatedAt")
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "contractTemplateType")
+		delete(additionalProperties, "contractVersion")
+		delete(additionalProperties, "deploymentData")
+		delete(additionalProperties, "author")
+		delete(additionalProperties, "description")
+		delete(additionalProperties, "attributes")
+		delete(additionalProperties, "provided")
+		delete(additionalProperties, "audited")
+		delete(additionalProperties, "contractTemplate")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordContractTemplateResource struct {

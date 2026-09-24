@@ -2,6 +2,8 @@
  * Webhook models for Taurus-PROTECT SDK.
  */
 
+import type { CursorPage, CursorPageOptions } from './pagination';
+
 /**
  * Webhook status enum.
  */
@@ -36,18 +38,28 @@ export interface Webhook {
 }
 
 /**
- * Options for listing webhooks.
+ * Options for listing webhooks. A cursor list: `pageSize` 1-100 (default 20) and the
+ * `cursor` of a previous page.
  */
-export interface ListWebhooksOptions {
-  /** Maximum number of webhooks to return */
-  limit?: number;
-  /** Filter by event type */
+export interface ListWebhooksOptions extends CursorPageOptions {
+  /** Filter by webhook type */
   type?: string;
   /** Filter by URL */
   url?: string;
   /** Sort order (ASC or DESC) */
   sortOrder?: 'ASC' | 'DESC';
 }
+
+/**
+ * A page of webhooks.
+ */
+export interface ListWebhooksResult {
+  /** The webhooks of this page */
+  readonly items: Webhook[];
+  /** Cursor pagination: continue with `cursor: pagination.nextCursor` while `hasMore` */
+  readonly pagination: CursorPage;
+}
+
 
 /**
  * Request for creating a webhook.

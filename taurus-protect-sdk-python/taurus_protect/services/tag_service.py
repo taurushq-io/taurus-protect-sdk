@@ -96,43 +96,27 @@ class TagService(BaseService):
 
     def list(
         self,
-        limit: int = 50,
-        offset: int = 0,
+        *,
+        query: Optional[str] = None,
+        ids: Optional[List[str]] = None,
     ) -> List[Tag]:
         """
-        List tags.
-
-        Note: The tags API does not support pagination parameters,
-        so limit and offset are provided for API consistency but
-        filtering is done client-side.
+        List tags: every tag the endpoint returns, which does not page.
 
         Args:
-            limit: Maximum number of tags to return (must be positive).
-            offset: Number of tags to skip (must be non-negative).
+            query: Keep only tags whose value contains this substring.
+            ids: Keep only these tag IDs.
 
         Returns:
-            List of tags.
+            Every matching tag.
 
         Raises:
-            ValueError: If limit or offset are invalid.
             APIError: If API request fails.
         """
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
-
         try:
-            resp = self._tags_api.tag_service_get_tags(
-                ids=None,
-                query=None,
-            )
+            resp = self._tags_api.tag_service_get_tags(ids=ids or None, query=query)
 
-            result = getattr(resp, "result", None)
-            tags = tags_from_dto(result) if result else []
-
-            # Apply client-side pagination since API doesn't support it
-            return tags[offset : offset + limit]
+            return tags_from_dto(resp.result or [])
         except Exception as e:
             from taurus_protect.errors import APIError
 

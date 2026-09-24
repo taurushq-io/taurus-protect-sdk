@@ -24,7 +24,10 @@ type TgvalidatordScimGroupsList struct {
 	Resources []TgvalidatordScimGroup `json:"Resources,omitempty"`
 	ItemsPerPage *int64 `json:"itemsPerPage,omitempty"`
 	StartIndex *int64 `json:"startIndex,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordScimGroupsList TgvalidatordScimGroupsList
 
 // NewTgvalidatordScimGroupsList instantiates a new TgvalidatordScimGroupsList object
 // This constructor will assign default values to properties that have it defined,
@@ -228,7 +231,37 @@ func (o TgvalidatordScimGroupsList) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.StartIndex) {
 		toSerialize["startIndex"] = o.StartIndex
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordScimGroupsList) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordScimGroupsList := _TgvalidatordScimGroupsList{}
+
+	err = json.Unmarshal(data, &varTgvalidatordScimGroupsList)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordScimGroupsList(varTgvalidatordScimGroupsList)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "schemas")
+		delete(additionalProperties, "totalResults")
+		delete(additionalProperties, "Resources")
+		delete(additionalProperties, "itemsPerPage")
+		delete(additionalProperties, "startIndex")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordScimGroupsList struct {

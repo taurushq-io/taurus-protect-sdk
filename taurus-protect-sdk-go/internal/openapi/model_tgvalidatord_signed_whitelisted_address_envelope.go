@@ -38,7 +38,10 @@ type TgvalidatordSignedWhitelistedAddressEnvelope struct {
 	TnParticipantID *string `json:"tnParticipantID,omitempty"`
 	// (super-admin) Signature of rule container used for verification
 	RulesSignatures *string `json:"rulesSignatures,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordSignedWhitelistedAddressEnvelope TgvalidatordSignedWhitelistedAddressEnvelope
 
 // NewTgvalidatordSignedWhitelistedAddressEnvelope instantiates a new TgvalidatordSignedWhitelistedAddressEnvelope object
 // This constructor will assign default values to properties that have it defined,
@@ -697,7 +700,50 @@ func (o TgvalidatordSignedWhitelistedAddressEnvelope) ToMap() (map[string]interf
 	if !IsNil(o.RulesSignatures) {
 		toSerialize["rulesSignatures"] = o.RulesSignatures
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordSignedWhitelistedAddressEnvelope) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordSignedWhitelistedAddressEnvelope := _TgvalidatordSignedWhitelistedAddressEnvelope{}
+
+	err = json.Unmarshal(data, &varTgvalidatordSignedWhitelistedAddressEnvelope)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordSignedWhitelistedAddressEnvelope(varTgvalidatordSignedWhitelistedAddressEnvelope)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "tenantId")
+		delete(additionalProperties, "signedAddress")
+		delete(additionalProperties, "metadata")
+		delete(additionalProperties, "action")
+		delete(additionalProperties, "scores")
+		delete(additionalProperties, "trails")
+		delete(additionalProperties, "rulesContainer")
+		delete(additionalProperties, "rule")
+		delete(additionalProperties, "approvers")
+		delete(additionalProperties, "attributes")
+		delete(additionalProperties, "rulesContainerHash")
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "network")
+		delete(additionalProperties, "visibilityGroupID")
+		delete(additionalProperties, "tnParticipantID")
+		delete(additionalProperties, "rulesSignatures")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordSignedWhitelistedAddressEnvelope struct {

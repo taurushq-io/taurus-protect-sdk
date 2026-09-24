@@ -24,88 +24,81 @@ func NewTransactionService(client *openapi.APIClient) *TransactionService {
 	}
 }
 
-// ListTransactions retrieves a list of transactions.
+// ListTransactions retrieves one page of transactions. The returned pagination is never nil;
+// continue with its NextOffset until HasMore is false.
 func (s *TransactionService) ListTransactions(ctx context.Context, opts *model.ListTransactionsOptions) ([]*model.Transaction, *model.Pagination, error) {
-	req := s.api.TransactionServiceGetTransactions(ctx)
-
-	if opts != nil {
-		if opts.Limit > 0 {
-			req = req.Limit(fmt.Sprintf("%d", opts.Limit))
-		}
-		if opts.Offset > 0 {
-			req = req.Offset(fmt.Sprintf("%d", opts.Offset))
-		}
-		if opts.Currency != "" {
-			req = req.Currency(opts.Currency)
-		}
-		if opts.Direction != "" {
-			req = req.Direction(opts.Direction)
-		}
-		if opts.Blockchain != "" {
-			req = req.Blockchain(opts.Blockchain)
-		}
-		if opts.Network != "" {
-			req = req.Network(opts.Network)
-		}
-		if opts.Query != "" {
-			req = req.Query(opts.Query)
-		}
-		if opts.FromDate != nil {
-			req = req.From(*opts.FromDate)
-		}
-		if opts.ToDate != nil {
-			req = req.To(*opts.ToDate)
-		}
-		// Exact selectors. Query also matches hash and transaction id, but as a
-		// six-column ILIKE scan — prefer these when the value is known exactly.
-		if len(opts.IDs) > 0 {
-			req = req.Ids(opts.IDs)
-		}
-		if len(opts.Hashes) > 0 {
-			req = req.Hashes(opts.Hashes)
-		}
-		if len(opts.TransactionIDs) > 0 {
-			req = req.TransactionIds(opts.TransactionIDs)
-		}
-		if opts.Address != "" {
-			req = req.Address(opts.Address)
-		}
-		if opts.Source != "" {
-			req = req.Source(opts.Source)
-		}
-		if opts.Destination != "" {
-			req = req.Destination(opts.Destination)
-		}
-		if opts.AmountAbove != "" {
-			req = req.AmountAbove(opts.AmountAbove)
-		}
+	if opts == nil {
+		opts = &model.ListTransactionsOptions{}
+	}
+	window, err := resolveOffsetWindow(opts.Limit, opts.Offset)
+	if err != nil {
+		return nil, nil, err
 	}
 
+	req := applyOffsetWindow(s.api.TransactionServiceGetTransactions(ctx), window)
+	if opts.Currency != "" {
+		req = req.Currency(opts.Currency)
+	}
+	if opts.Direction != "" {
+		req = req.Direction(opts.Direction)
+	}
+	if opts.Blockchain != "" {
+		req = req.Blockchain(opts.Blockchain)
+	}
+	if opts.Network != "" {
+		req = req.Network(opts.Network)
+	}
+	if opts.Query != "" {
+		req = req.Query(opts.Query)
+	}
+	if opts.FromDate != nil {
+		req = req.From(*opts.FromDate)
+	}
+	if opts.ToDate != nil {
+		req = req.To(*opts.ToDate)
+	}
+	// Exact selectors. Query also matches hash and transaction id, but as a
+	// six-column ILIKE scan — prefer these when the value is known exactly.
+	if len(opts.IDs) > 0 {
+		req = req.Ids(opts.IDs)
+	}
+	if len(opts.Hashes) > 0 {
+		req = req.Hashes(opts.Hashes)
+	}
+	if len(opts.TransactionIDs) > 0 {
+		req = req.TransactionIds(opts.TransactionIDs)
+	}
+	if opts.Address != "" {
+		req = req.Address(opts.Address)
+	}
+	if opts.Source != "" {
+		req = req.Source(opts.Source)
+	}
+	if opts.Destination != "" {
+		req = req.Destination(opts.Destination)
+	}
+	if opts.AmountAbove != "" {
+		req = req.AmountAbove(opts.AmountAbove)
+	}
+
+	return s.transactionsPage(req, window)
+}
+
+// transactionsPage executes a GetTransactions request. The next offset is offset + rows: on
+// the post-filter path the total is an upper bound, and a page that made no progress ends the
+// walk.
+func (s *TransactionService) transactionsPage(req openapi.ApiTransactionServiceGetTransactionsRequest, window offsetWindow) ([]*model.Transaction, *model.Pagination, error) {
 	resp, httpResp, err := req.Execute()
 	if err != nil {
 		return nil, nil, s.errMapper.MapError(err, httpResp)
 	}
 
-	transactions := mapper.TransactionsFromDTO(resp.Result)
-
-	var pagination *model.Pagination
-	if resp.TotalItems != nil {
-		pagination = &model.Pagination{}
-		if total, err := strconv.ParseInt(*resp.TotalItems, 10, 64); err == nil {
-			pagination.TotalItems = total
-		}
-		if opts != nil {
-			pagination.Limit = opts.Limit
-			pagination.Offset = opts.Offset
-		}
-		// Use overflow-safe comparison: check if there are more items beyond offset+limit
-		// Instead of: offset+limit < totalItems (which can overflow)
-		// We use: totalItems > offset && totalItems-offset > limit
-		pagination.HasMore = pagination.TotalItems > pagination.Offset &&
-			pagination.TotalItems-pagination.Offset > pagination.Limit
+	pagination, err := offsetPagination(rulePlusRows, window, len(resp.Result), 0,
+		offsetReply{TotalItems: resp.TotalItems})
+	if err != nil {
+		return nil, nil, err
 	}
-
-	return transactions, pagination, nil
+	return mapper.TransactionsFromDTO(resp.Result), pagination, nil
 }
 
 // GetTransaction retrieves a transaction by ID.
@@ -154,107 +147,85 @@ func (s *TransactionService) GetTransactionByHash(ctx context.Context, hash stri
 	return mapper.TransactionFromDTO(&resp.Result[0]), nil
 }
 
-// ListTransactionsByAddress retrieves a list of transactions for a specific address.
+// ListTransactionsByAddress retrieves one page of transactions for a specific address. The
+// returned pagination is never nil; continue with its NextOffset until HasMore is false.
 func (s *TransactionService) ListTransactionsByAddress(ctx context.Context, address string, opts *model.ListTransactionsByAddressOptions) ([]*model.Transaction, *model.Pagination, error) {
 	if address == "" {
 		return nil, nil, fmt.Errorf("address cannot be empty")
 	}
-
-	req := s.api.TransactionServiceGetTransactions(ctx).
-		Address(address)
-
-	if opts != nil {
-		if opts.Limit > 0 {
-			req = req.Limit(fmt.Sprintf("%d", opts.Limit))
-		}
-		if opts.Offset > 0 {
-			req = req.Offset(fmt.Sprintf("%d", opts.Offset))
-		}
-		if opts.Currency != "" {
-			req = req.Currency(opts.Currency)
-		}
-		if opts.Direction != "" {
-			req = req.Direction(opts.Direction)
-		}
-		if opts.Blockchain != "" {
-			req = req.Blockchain(opts.Blockchain)
-		}
+	if opts == nil {
+		opts = &model.ListTransactionsByAddressOptions{}
 	}
-
-	resp, httpResp, err := req.Execute()
+	window, err := resolveOffsetWindow(opts.Limit, opts.Offset)
 	if err != nil {
-		return nil, nil, s.errMapper.MapError(err, httpResp)
+		return nil, nil, err
 	}
 
-	transactions := mapper.TransactionsFromDTO(resp.Result)
-
-	var pagination *model.Pagination
-	if resp.TotalItems != nil {
-		pagination = &model.Pagination{}
-		if total, err := strconv.ParseInt(*resp.TotalItems, 10, 64); err == nil {
-			pagination.TotalItems = total
-		}
-		if opts != nil {
-			pagination.Limit = opts.Limit
-			pagination.Offset = opts.Offset
-		}
-		// Use overflow-safe comparison: check if there are more items beyond offset+limit
-		// Instead of: offset+limit < totalItems (which can overflow)
-		// We use: totalItems > offset && totalItems-offset > limit
-		pagination.HasMore = pagination.TotalItems > pagination.Offset &&
-			pagination.TotalItems-pagination.Offset > pagination.Limit
+	req := applyOffsetWindow(s.api.TransactionServiceGetTransactions(ctx), window).Address(address)
+	if opts.Currency != "" {
+		req = req.Currency(opts.Currency)
+	}
+	if opts.Direction != "" {
+		req = req.Direction(opts.Direction)
+	}
+	if opts.Blockchain != "" {
+		req = req.Blockchain(opts.Blockchain)
 	}
 
-	return transactions, pagination, nil
+	return s.transactionsPage(req, window)
 }
 
-// ExportTransactions exports transactions in the specified format.
-// The format can be "csv", "json", or "csv_simple". If not specified, defaults to "csv".
-// Returns the exported data as a string.
-func (s *TransactionService) ExportTransactions(ctx context.Context, opts *model.ExportTransactionsOptions) (string, error) {
-	req := s.api.TransactionServiceExportTransactions(ctx)
+// ExportTransactions exports transactions as text: json (the server's default when Format is
+// empty), csv or csv_simple. The export cannot page — validatord always exports from the first
+// matching transaction — so Limit (default 20, no SDK maximum) is the only size control, and
+// TotalItems above Limit means the export was truncated.
+func (s *TransactionService) ExportTransactions(ctx context.Context, opts *model.ExportTransactionsOptions) (*model.ExportTransactionsResult, error) {
+	if opts == nil {
+		opts = &model.ExportTransactionsOptions{}
+	}
+	limit, err := resolveSize("Limit", opts.Limit, 0)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if opts.Limit > 0 {
-			req = req.Limit(fmt.Sprintf("%d", opts.Limit))
-		}
-		if opts.Offset > 0 {
-			req = req.Offset(fmt.Sprintf("%d", opts.Offset))
-		}
-		if opts.Currency != "" {
-			req = req.Currency(opts.Currency)
-		}
-		if opts.Direction != "" {
-			req = req.Direction(opts.Direction)
-		}
-		if opts.Blockchain != "" {
-			req = req.Blockchain(opts.Blockchain)
-		}
-		if opts.Format != "" {
-			req = req.Format(opts.Format)
-		}
-		if opts.From != nil {
-			req = req.From(*opts.From)
-		}
-		if opts.To != nil {
-			req = req.To(*opts.To)
-		}
-		if opts.Address != "" {
-			req = req.Address(opts.Address)
-		}
-		if opts.Query != "" {
-			req = req.Query(opts.Query)
-		}
+	req := s.api.TransactionServiceExportTransactions(ctx).Limit(strconv.FormatInt(limit, 10))
+	if opts.Currency != "" {
+		req = req.Currency(opts.Currency)
+	}
+	if opts.Direction != "" {
+		req = req.Direction(opts.Direction)
+	}
+	if opts.Blockchain != "" {
+		req = req.Blockchain(opts.Blockchain)
+	}
+	if opts.Format != "" {
+		req = req.Format(opts.Format)
+	}
+	if opts.From != nil {
+		req = req.From(*opts.From)
+	}
+	if opts.To != nil {
+		req = req.To(*opts.To)
+	}
+	if opts.Address != "" {
+		req = req.Address(opts.Address)
+	}
+	if opts.Query != "" {
+		req = req.Query(opts.Query)
 	}
 
 	resp, httpResp, err := req.Execute()
 	if err != nil {
-		return "", s.errMapper.MapError(err, httpResp)
+		return nil, s.errMapper.MapError(err, httpResp)
 	}
 
-	if resp.Result == nil {
-		return "", nil
+	total, err := parseCount("totalItems", resp.TotalItems)
+	if err != nil {
+		return nil, err
 	}
-
-	return *resp.Result, nil
+	result := &model.ExportTransactionsResult{TotalItems: total}
+	if resp.Result != nil {
+		result.Data = *resp.Result
+	}
+	return result, nil
 }

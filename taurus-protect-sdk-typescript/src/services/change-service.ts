@@ -6,7 +6,7 @@
 
 import { NotFoundError, ValidationError } from '../errors';
 import type { ChangesApi } from '../internal/openapi/apis/ChangesApi';
-import { changeFromDto, createChangeRequestToDto, listChangesResultFromDto } from '../mappers/change';
+import { changeFromDto, changesFromDto, createChangeRequestToDto } from '../mappers/change';
 import type {
   Change,
   CreateChangeRequest,
@@ -14,7 +14,9 @@ import type {
   ListChangesForApprovalOptions,
   ListChangesResult,
 } from '../models/change';
+import { buildCursorPage, cursorRequest } from '../models/pagination';
 import { BaseService } from './base';
+import { cursorQuery } from './paging';
 
 /**
  * Service for managing configuration changes in the Taurus-PROTECT system.
@@ -79,9 +81,7 @@ export class ChangeService extends BaseService {
 
     return this.execute(async () => {
       const response = await this.changesApi.changeServiceGetChange({ id });
-      const resp = response as Record<string, unknown>;
-      const result = resp.result ?? resp.change;
-      const change = changeFromDto(result);
+      const change = changeFromDto(response.result);
 
       if (!change) {
         throw new NotFoundError(`Change with id '${id}' not found`);
@@ -111,30 +111,32 @@ export class ChangeService extends BaseService {
    *
    * // Paginate through results
    * const firstPage = await changeService.list({ pageSize: 50 });
-   * if (firstPage.hasNext) {
+   * if (firstPage.pagination.hasMore) {
    *   const nextPage = await changeService.list({
    *     pageSize: 50,
-   *     currentPage: firstPage.currentPage,
-   *     pageRequest: 'NEXT',
+   *     cursor: firstPage.pagination.nextCursor,
    *   });
    * }
    * ```
    */
   async list(options?: ListChangesOptions): Promise<ListChangesResult> {
+    const page = cursorRequest(options);
+
     return this.execute(async () => {
       const response = await this.changesApi.changeServiceGetChanges({
         entity: options?.entity,
         status: options?.status,
         creatorId: options?.creatorId,
         sortOrder: options?.sortOrder,
-        cursorCurrentPage: options?.currentPage,
-        cursorPageRequest: options?.pageRequest,
-        cursorPageSize: options?.pageSize?.toString(),
+        ...cursorQuery(page),
         entityIDs: options?.entityIDs,
         entityUUIDs: options?.entityUUIDs,
       });
 
-      return listChangesResultFromDto(response);
+      return {
+        changes: changesFromDto(response.result),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
+      };
     });
   }
 
@@ -157,18 +159,21 @@ export class ChangeService extends BaseService {
    * ```
    */
   async listForApproval(options?: ListChangesForApprovalOptions): Promise<ListChangesResult> {
+    const page = cursorRequest(options);
+
     return this.execute(async () => {
       const response = await this.changesApi.changeServiceGetChangesForApproval({
         entities: options?.entities,
         sortOrder: options?.sortOrder,
-        cursorCurrentPage: options?.currentPage,
-        cursorPageRequest: options?.pageRequest,
-        cursorPageSize: options?.pageSize?.toString(),
+        ...cursorQuery(page),
         entityIDs: options?.entityIDs,
         entityUUIDs: options?.entityUUIDs,
       });
 
-      return listChangesResultFromDto(response);
+      return {
+        changes: changesFromDto(response.result),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
+      };
     });
   }
 
@@ -300,9 +305,7 @@ export class ChangeService extends BaseService {
       // existing contract with the OpenAPI client.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const response = await this.changesApi.changeServiceCreateChange({ body: dto as any });
-      const resp = response as Record<string, unknown>;
-      const result = resp.result as Record<string, unknown> | undefined;
-      return result?.id != null ? String(result.id) : '';
+      return response.result?.id ?? '';
     });
   }
 }

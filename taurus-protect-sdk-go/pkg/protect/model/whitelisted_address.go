@@ -131,9 +131,9 @@ type Score struct {
 
 // ListWhitelistedAddressesOptions contains options for listing whitelisted addresses.
 type ListWhitelistedAddressesOptions struct {
-	// Limit is the maximum number of addresses to return.
+	// Limit is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
 	Limit int64
-	// Offset is the number of addresses to skip.
+	// Offset is the number of addresses to skip; continue with Pagination.NextOffset.
 	Offset int64
 	// Blockchain filters by blockchain.
 	Blockchain string
@@ -233,9 +233,9 @@ type ExcludedWhitelistedAddress struct {
 // The approval queue is a different ENDPOINT, not a status filter on the general list:
 // it is scoped to what the calling user may act on, which no filter reproduces.
 type ListWhitelistedAddressesForApprovalOptions struct {
-	// Limit is the maximum number of rows to return.
+	// Limit is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
 	Limit int64
-	// Offset is the number of rows to skip.
+	// Offset is the number of rows to skip; continue with Pagination.NextOffset.
 	Offset int64
 	// IDs filters by specific whitelisted address IDs.
 	IDs []string
@@ -255,8 +255,8 @@ type ListWhitelistedAddressesForApprovalOptions struct {
 type WhitelistedAddressResult struct {
 	// Addresses is the list of verified whitelisted addresses in the current page.
 	Addresses []*WhitelistedAddress
-	// Pagination carries the page window, with TotalItems already reduced by the
-	// number of excluded rows so HasMore stays honest.
+	// Pagination is never nil. TotalItems is reduced by the excluded rows; NextOffset and
+	// HasMore count every row the server returned, so exclusions never shift a walk.
 	Pagination *Pagination
 	// ExcludedUnverified names the rows dropped from Addresses, with the reason.
 	ExcludedUnverified []ExcludedWhitelistedAddress

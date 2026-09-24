@@ -21,7 +21,10 @@ var _ MappedNullable = &ScimServiceScimPatchGroupBody{}
 type ScimServiceScimPatchGroupBody struct {
 	Schemas []string `json:"schemas,omitempty"`
 	Operations []TgvalidatordScimOperation `json:"Operations,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _ScimServiceScimPatchGroupBody ScimServiceScimPatchGroupBody
 
 // NewScimServiceScimPatchGroupBody instantiates a new ScimServiceScimPatchGroupBody object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o ScimServiceScimPatchGroupBody) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Operations) {
 		toSerialize["Operations"] = o.Operations
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *ScimServiceScimPatchGroupBody) UnmarshalJSON(data []byte) (err error) {
+	varScimServiceScimPatchGroupBody := _ScimServiceScimPatchGroupBody{}
+
+	err = json.Unmarshal(data, &varScimServiceScimPatchGroupBody)
+
+	if err != nil {
+		return err
+	}
+
+	*o = ScimServiceScimPatchGroupBody(varScimServiceScimPatchGroupBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "schemas")
+		delete(additionalProperties, "Operations")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableScimServiceScimPatchGroupBody struct {

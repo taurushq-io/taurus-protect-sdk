@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -35,6 +34,7 @@ type TgvalidatordCreateOutgoingXLMSetTrustlineFlagsRequestRequest struct {
 	Comment *string `json:"comment,omitempty"`
 	// Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingXLMSetTrustlineFlagsRequestRequest TgvalidatordCreateOutgoingXLMSetTrustlineFlagsRequestRequest
@@ -337,6 +337,11 @@ func (o TgvalidatordCreateOutgoingXLMSetTrustlineFlagsRequestRequest) ToMap() (m
 	if !IsNil(o.ExternalRequestId) {
 		toSerialize["externalRequestId"] = o.ExternalRequestId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -364,15 +369,27 @@ func (o *TgvalidatordCreateOutgoingXLMSetTrustlineFlagsRequestRequest) Unmarshal
 
 	varTgvalidatordCreateOutgoingXLMSetTrustlineFlagsRequestRequest := _TgvalidatordCreateOutgoingXLMSetTrustlineFlagsRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingXLMSetTrustlineFlagsRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingXLMSetTrustlineFlagsRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingXLMSetTrustlineFlagsRequestRequest(varTgvalidatordCreateOutgoingXLMSetTrustlineFlagsRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "trustorInternalAddressId")
+		delete(additionalProperties, "trustorWhitelistedAddressId")
+		delete(additionalProperties, "setFlags")
+		delete(additionalProperties, "clearFlags")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "externalRequestId")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

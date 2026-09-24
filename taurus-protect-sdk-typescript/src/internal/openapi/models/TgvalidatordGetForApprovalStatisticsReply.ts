@@ -61,7 +61,16 @@ export interface TgvalidatordGetForApprovalStatisticsReply {
      * @memberof TgvalidatordGetForApprovalStatisticsReply
      */
     pledgesCount?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetForApprovalStatisticsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetForApprovalStatisticsReplyWireKeys: ReadonlySet<string> = new Set(['requestsCount', 'accountChangesCount', 'contractCallsCount', 'whitelistedAddressesCount', 'whitelistedContractsCount', 'settlementsCount', 'pledgesCount']);
 
 /**
  * Check if a given object implements the TgvalidatordGetForApprovalStatisticsReply interface.
@@ -78,7 +87,7 @@ export function TgvalidatordGetForApprovalStatisticsReplyFromJSONTyped(json: any
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetForApprovalStatisticsReply = {
         
         'requestsCount': json['requestsCount'] == null ? undefined : json['requestsCount'],
         'accountChangesCount': json['accountChangesCount'] == null ? undefined : json['accountChangesCount'],
@@ -88,6 +97,16 @@ export function TgvalidatordGetForApprovalStatisticsReplyFromJSONTyped(json: any
         'settlementsCount': json['settlementsCount'] == null ? undefined : json['settlementsCount'],
         'pledgesCount': json['pledgesCount'] == null ? undefined : json['pledgesCount'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetForApprovalStatisticsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetForApprovalStatisticsReplyToJSON(json: any): TgvalidatordGetForApprovalStatisticsReply {
@@ -108,6 +127,7 @@ export function TgvalidatordGetForApprovalStatisticsReplyFromJSONTyped(json: any
         'whitelistedContractsCount': value['whitelistedContractsCount'],
         'settlementsCount': value['settlementsCount'],
         'pledgesCount': value['pledgesCount'],
+        ...value['additionalProperties'],
     };
 }
 

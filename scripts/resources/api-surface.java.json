@@ -12,12 +12,12 @@
         },
         {
           "name": "getActions",
-          "signature": "getActions(): List<ActionEnvelope>",
+          "signature": "getActions(): ActionResult",
           "doc": ""
         },
         {
           "name": "getActions",
-          "signature": "getActions(String, String, List<String>): List<ActionEnvelope>",
+          "signature": "getActions(int, long, List<String>): ActionResult",
           "doc": ""
         }
       ]
@@ -57,7 +57,12 @@
         },
         {
           "name": "getAddresses",
-          "signature": "getAddresses(long, int, int): List<Address>",
+          "signature": "getAddresses(Long, int, long, Boolean): AddressResult",
+          "doc": ""
+        },
+        {
+          "name": "getAddresses",
+          "signature": "getAddresses(long, int, long): AddressResult",
           "doc": ""
         }
       ]
@@ -82,22 +87,47 @@
       "methods": [
         {
           "name": "getAssetAddresses",
-          "signature": "getAssetAddresses(String): List<Address>",
+          "signature": "getAssetAddresses(String): AssetAddressesResult",
           "doc": ""
         },
         {
           "name": "getAssetAddresses",
-          "signature": "getAssetAddresses(String, String, String, String): List<Address>",
+          "signature": "getAssetAddresses(String, String, String, ApiRequestCursor): AssetAddressesResult",
+          "doc": ""
+        },
+        {
+          "name": "getAssetAddresses",
+          "signature": "getAssetAddresses(String, String, String, Integer, String): AssetAddressesResult",
           "doc": ""
         },
         {
           "name": "getAssetWallets",
-          "signature": "getAssetWallets(String): List<Wallet>",
+          "signature": "getAssetWallets(String): AssetWalletsResult",
           "doc": ""
         },
         {
           "name": "getAssetWallets",
-          "signature": "getAssetWallets(String, String): List<Wallet>",
+          "signature": "getAssetWallets(String, ApiRequestCursor): AssetWalletsResult",
+          "doc": ""
+        },
+        {
+          "name": "getAssetWallets",
+          "signature": "getAssetWallets(String, Integer, String): AssetWalletsResult",
+          "doc": ""
+        },
+        {
+          "name": "listAssetOperations",
+          "signature": "listAssetOperations(String, String, String, Integer, String): AssetOperationV2Result",
+          "doc": ""
+        },
+        {
+          "name": "queryAssetAddresses",
+          "signature": "queryAssetAddresses(String, String, String, Integer, String): AssetAddressV2Result",
+          "doc": ""
+        },
+        {
+          "name": "queryAssets",
+          "signature": "queryAssets(String, String, String, String, String, String, Integer, String): AssetV2Result",
           "doc": ""
         }
       ]
@@ -113,6 +143,11 @@
         {
           "name": "getAuditTrails",
           "signature": "getAuditTrails(String, List<String>, List<String>, OffsetDateTime, OffsetDateTime, ApiRequestCursor): AuditTrailResult",
+          "doc": ""
+        },
+        {
+          "name": "getAuditTrails",
+          "signature": "getAuditTrails(String, List<String>, List<String>, OffsetDateTime, OffsetDateTime, Integer, String): AuditTrailResult",
           "doc": ""
         }
       ]
@@ -131,8 +166,18 @@
           "doc": ""
         },
         {
+          "name": "getBalances",
+          "signature": "getBalances(String, Integer, String): BalanceResult",
+          "doc": ""
+        },
+        {
           "name": "getNFTCollectionBalances",
           "signature": "getNFTCollectionBalances(String, String, ApiRequestCursor): NFTCollectionBalanceResult",
+          "doc": ""
+        },
+        {
+          "name": "getNFTCollectionBalances",
+          "signature": "getNFTCollectionBalances(String, String, Integer, String): NFTCollectionBalanceResult",
           "doc": ""
         }
       ]
@@ -161,13 +206,28 @@
           "doc": ""
         },
         {
+          "name": "getBusinessRules",
+          "signature": "getBusinessRules(Integer, String): BusinessRuleResult",
+          "doc": ""
+        },
+        {
           "name": "getBusinessRulesByCurrency",
           "signature": "getBusinessRulesByCurrency(String, ApiRequestCursor): BusinessRuleResult",
           "doc": ""
         },
         {
+          "name": "getBusinessRulesByCurrency",
+          "signature": "getBusinessRulesByCurrency(String, Integer, String): BusinessRuleResult",
+          "doc": ""
+        },
+        {
           "name": "getBusinessRulesByWallet",
           "signature": "getBusinessRulesByWallet(long, ApiRequestCursor): BusinessRuleResult",
+          "doc": ""
+        },
+        {
+          "name": "getBusinessRulesByWallet",
+          "signature": "getBusinessRulesByWallet(long, Integer, String): BusinessRuleResult",
           "doc": ""
         },
         {
@@ -206,8 +266,18 @@
           "doc": ""
         },
         {
+          "name": "getChanges",
+          "signature": "getChanges(String, String, Integer, String): ChangeResult",
+          "doc": ""
+        },
+        {
           "name": "getChangesForApproval",
           "signature": "getChangesForApproval(ApiRequestCursor): ChangeResult",
+          "doc": ""
+        },
+        {
+          "name": "getChangesForApproval",
+          "signature": "getChangesForApproval(Integer, String): ChangeResult",
           "doc": ""
         },
         {
@@ -248,11 +318,6 @@
         {
           "name": "createWhitelistedContract",
           "signature": "createWhitelistedContract(String, String, String, String, String, int, String, String): String",
-          "doc": ""
-        },
-        {
-          "name": "deleteWhitelistedContract",
-          "signature": "deleteWhitelistedContract(String, String): String",
           "doc": ""
         },
         {
@@ -298,6 +363,16 @@
       ]
     },
     {
+      "name": "EarnService",
+      "methods": [
+        {
+          "name": "listRewards",
+          "signature": "listRewards(String, Integer, String): EarnRewardResult",
+          "doc": ""
+        }
+      ]
+    },
+    {
       "name": "ExchangeService",
       "methods": [
         {
@@ -332,12 +407,12 @@
         },
         {
           "name": "getFeePayers",
-          "signature": "getFeePayers(): List<FeePayer>",
+          "signature": "getFeePayers(): FeePayerResult",
           "doc": ""
         },
         {
           "name": "getFeePayers",
-          "signature": "getFeePayers(Integer, Integer, List<String>, String, String): List<FeePayer>",
+          "signature": "getFeePayers(int, long, List<String>, String, String): FeePayerResult",
           "doc": ""
         }
       ]
@@ -366,6 +441,11 @@
           "doc": ""
         },
         {
+          "name": "getFiatProviderAccounts",
+          "signature": "getFiatProviderAccounts(String, String, String, String, Integer, String): FiatProviderAccountResult",
+          "doc": ""
+        },
+        {
           "name": "getFiatProviderCounterpartyAccount",
           "signature": "getFiatProviderCounterpartyAccount(String): FiatProviderCounterpartyAccount",
           "doc": ""
@@ -373,6 +453,11 @@
         {
           "name": "getFiatProviderCounterpartyAccounts",
           "signature": "getFiatProviderCounterpartyAccounts(String, String, String, String, ApiRequestCursor): FiatProviderCounterpartyAccountResult",
+          "doc": ""
+        },
+        {
+          "name": "getFiatProviderCounterpartyAccounts",
+          "signature": "getFiatProviderCounterpartyAccounts(String, String, String, String, Integer, String): FiatProviderCounterpartyAccountResult",
           "doc": ""
         },
         {
@@ -386,8 +471,18 @@
           "doc": ""
         },
         {
+          "name": "getFiatProviderOperations",
+          "signature": "getFiatProviderOperations(String, String, String, Integer, String): FiatProviderOperationResult",
+          "doc": ""
+        },
+        {
           "name": "getFiatProviders",
           "signature": "getFiatProviders(): List<FiatProvider>",
+          "doc": ""
+        },
+        {
+          "name": "listFiatProviderEntities",
+          "signature": "listFiatProviderEntities(String, String, String, Integer, String): FiatProviderEntityResult",
           "doc": ""
         }
       ]
@@ -432,12 +527,12 @@
         },
         {
           "name": "getRulesHistory",
-          "signature": "getRulesHistory(int): GovernanceRulesHistoryResult",
+          "signature": "getRulesHistory(Integer): GovernanceRulesHistoryResult",
           "doc": ""
         },
         {
           "name": "getRulesHistory",
-          "signature": "getRulesHistory(int, byte[]): GovernanceRulesHistoryResult",
+          "signature": "getRulesHistory(Integer, String): GovernanceRulesHistoryResult",
           "doc": ""
         },
         {
@@ -482,12 +577,12 @@
       "methods": [
         {
           "name": "getGroups",
-          "signature": "getGroups(): List<Group>",
+          "signature": "getGroups(): GroupResult",
           "doc": ""
         },
         {
           "name": "getGroups",
-          "signature": "getGroups(String, String, List<String>, List<String>, String): List<Group>",
+          "signature": "getGroups(int, long, List<String>, List<String>, String): GroupResult",
           "doc": ""
         }
       ]
@@ -567,7 +662,12 @@
         },
         {
           "name": "getPrices",
-          "signature": "getPrices(): List<Price>",
+          "signature": "getPrices(): PriceResult",
+          "doc": ""
+        },
+        {
+          "name": "getPrices",
+          "signature": "getPrices(String, List<String>, Boolean, String, Integer, String): PriceResult",
           "doc": ""
         }
       ]
@@ -636,8 +736,18 @@
           "doc": ""
         },
         {
+          "name": "getRequests",
+          "signature": "getRequests(OffsetDateTime, OffsetDateTime, String, List<RequestStatus>, Integer, String): RequestResult",
+          "doc": ""
+        },
+        {
           "name": "getRequestsForApproval",
           "signature": "getRequestsForApproval(ApiRequestCursor): RequestResult",
+          "doc": ""
+        },
+        {
+          "name": "getRequestsForApproval",
+          "signature": "getRequestsForApproval(Integer, String): RequestResult",
           "doc": ""
         },
         {
@@ -667,12 +777,17 @@
         },
         {
           "name": "getReservations",
-          "signature": "getReservations(): List<Reservation>",
+          "signature": "getReservations(): ReservationResult",
           "doc": ""
         },
         {
           "name": "getReservations",
-          "signature": "getReservations(String, String, String, List<String>, String): List<Reservation>",
+          "signature": "getReservations(String, String, String, List<String>, ApiRequestCursor): ReservationResult",
+          "doc": ""
+        },
+        {
+          "name": "getReservations",
+          "signature": "getReservations(String, String, String, List<String>, Integer, String): ReservationResult",
           "doc": ""
         }
       ]
@@ -723,6 +838,11 @@
         {
           "name": "getStakeAccounts",
           "signature": "getStakeAccounts(String, String, String, ApiRequestCursor): StakeAccountResult",
+          "doc": ""
+        },
+        {
+          "name": "getStakeAccounts",
+          "signature": "getStakeAccounts(String, String, String, Integer, String): StakeAccountResult",
           "doc": ""
         },
         {
@@ -781,6 +901,11 @@
           "doc": ""
         },
         {
+          "name": "getLendingAgreements",
+          "signature": "getLendingAgreements(String, Integer, String): LendingAgreementResult",
+          "doc": ""
+        },
+        {
           "name": "getLendingOffer",
           "signature": "getLendingOffer(String): LendingOffer",
           "doc": ""
@@ -788,6 +913,11 @@
         {
           "name": "getLendingOffers",
           "signature": "getLendingOffers(List<String>, String, String, String, ApiRequestCursor): LendingOfferResult",
+          "doc": ""
+        },
+        {
+          "name": "getLendingOffers",
+          "signature": "getLendingOffers(List<String>, String, String, String, Integer, String): LendingOfferResult",
           "doc": ""
         }
       ]
@@ -826,8 +956,18 @@
           "doc": ""
         },
         {
+          "name": "list",
+          "signature": "list(String, String, List<String>, String, String, Integer, String): PledgeResult",
+          "doc": ""
+        },
+        {
           "name": "listWithdrawals",
           "signature": "listWithdrawals(String, String, String, ApiRequestCursor): PledgeWithdrawalResult",
+          "doc": ""
+        },
+        {
+          "name": "listWithdrawals",
+          "signature": "listWithdrawals(String, String, String, Integer, String): PledgeWithdrawalResult",
           "doc": ""
         }
       ]
@@ -843,6 +983,11 @@
         {
           "name": "getSettlements",
           "signature": "getSettlements(String, List<String>, String, ApiRequestCursor): SettlementResult",
+          "doc": ""
+        },
+        {
+          "name": "getSettlements",
+          "signature": "getSettlements(String, List<String>, String, Integer, String): SettlementResult",
           "doc": ""
         }
       ]
@@ -861,11 +1006,6 @@
       "name": "TokenMetadataService",
       "methods": [
         {
-          "name": "getERCTokenMetadata",
-          "signature": "getERCTokenMetadata(String, String, String, Boolean, String): TokenMetadata",
-          "doc": ""
-        },
-        {
           "name": "getEVMERCTokenMetadata",
           "signature": "getEVMERCTokenMetadata(String, String, String, Boolean, String): TokenMetadata",
           "doc": ""
@@ -882,12 +1022,17 @@
       "methods": [
         {
           "name": "exportTransactions",
-          "signature": "exportTransactions(OffsetDateTime, OffsetDateTime, String, String, String, String, int, int): String",
+          "signature": "exportTransactions(OffsetDateTime, OffsetDateTime, String, String, String, String, String, int): TransactionExportResult",
           "doc": ""
         },
         {
           "name": "exportTransactions",
-          "signature": "exportTransactions(OffsetDateTime, OffsetDateTime, String, String, int, int): String",
+          "signature": "exportTransactions(OffsetDateTime, OffsetDateTime, String, String, String, String, int): TransactionExportResult",
+          "doc": ""
+        },
+        {
+          "name": "exportTransactions",
+          "signature": "exportTransactions(OffsetDateTime, OffsetDateTime, String, String, int): TransactionExportResult",
           "doc": ""
         },
         {
@@ -902,17 +1047,17 @@
         },
         {
           "name": "getTransactions",
-          "signature": "getTransactions(OffsetDateTime, OffsetDateTime, String, String, String, String, int, int): List<Transaction>",
+          "signature": "getTransactions(OffsetDateTime, OffsetDateTime, String, String, String, String, int, long): TransactionResult",
           "doc": ""
         },
         {
           "name": "getTransactions",
-          "signature": "getTransactions(OffsetDateTime, OffsetDateTime, String, String, int, int): List<Transaction>",
+          "signature": "getTransactions(OffsetDateTime, OffsetDateTime, String, String, int, long): TransactionResult",
           "doc": ""
         },
         {
           "name": "getTransactionsByAddress",
-          "signature": "getTransactionsByAddress(String, int, int): List<Transaction>",
+          "signature": "getTransactionsByAddress(String, int, long): TransactionResult",
           "doc": ""
         }
       ]
@@ -957,7 +1102,7 @@
         },
         {
           "name": "getUsers",
-          "signature": "getUsers(int, int): List<User>",
+          "signature": "getUsers(int, long): UserResult",
           "doc": ""
         },
         {
@@ -1022,17 +1167,27 @@
         },
         {
           "name": "getWalletTokens",
-          "signature": "getWalletTokens(long, int): List<AssetBalance>",
+          "signature": "getWalletTokens(long, Integer): WalletTokensResult",
+          "doc": ""
+        },
+        {
+          "name": "getWalletTokens",
+          "signature": "getWalletTokens(long, Integer, String): WalletTokensResult",
           "doc": ""
         },
         {
           "name": "getWallets",
-          "signature": "getWallets(int, int): List<Wallet>",
+          "signature": "getWallets(int, long): WalletResult",
+          "doc": ""
+        },
+        {
+          "name": "getWallets",
+          "signature": "getWallets(int, long, Boolean): WalletResult",
           "doc": ""
         },
         {
           "name": "getWalletsByName",
-          "signature": "getWalletsByName(String, int, int): List<Wallet>",
+          "signature": "getWalletsByName(String, int, long): WalletResult",
           "doc": ""
         }
       ]
@@ -1043,6 +1198,11 @@
         {
           "name": "getWebhookCalls",
           "signature": "getWebhookCalls(String, String, String, String, ApiRequestCursor): WebhookCallResult",
+          "doc": ""
+        },
+        {
+          "name": "getWebhookCalls",
+          "signature": "getWebhookCalls(String, String, String, String, Integer, String): WebhookCallResult",
           "doc": ""
         }
       ]
@@ -1063,6 +1223,11 @@
         {
           "name": "getWebhooks",
           "signature": "getWebhooks(String, String, ApiRequestCursor): WebhookResult",
+          "doc": ""
+        },
+        {
+          "name": "getWebhooks",
+          "signature": "getWebhooks(String, String, Integer, String): WebhookResult",
           "doc": ""
         },
         {
@@ -1092,32 +1257,27 @@
         },
         {
           "name": "getWhitelistedAddresses",
-          "signature": "getWhitelistedAddresses(int, int): List<SignedWhitelistedAddressEnvelope>",
+          "signature": "getWhitelistedAddresses(int, long): WhitelistedAddressListResult",
           "doc": ""
         },
         {
           "name": "getWhitelistedAddresses",
-          "signature": "getWhitelistedAddresses(int, int, String): List<SignedWhitelistedAddressEnvelope>",
+          "signature": "getWhitelistedAddresses(int, long, String): WhitelistedAddressListResult",
           "doc": ""
         },
         {
           "name": "getWhitelistedAddresses",
-          "signature": "getWhitelistedAddresses(int, int, String, String): List<SignedWhitelistedAddressEnvelope>",
+          "signature": "getWhitelistedAddresses(int, long, String, String): WhitelistedAddressListResult",
           "doc": ""
         },
         {
           "name": "getWhitelistedAddresses",
-          "signature": "getWhitelistedAddresses(int, int, String, String, boolean): List<SignedWhitelistedAddressEnvelope>",
+          "signature": "getWhitelistedAddresses(int, long, String, String, boolean): WhitelistedAddressListResult",
           "doc": ""
         },
         {
           "name": "getWhitelistedAddressesForApproval",
-          "signature": "getWhitelistedAddressesForApproval(int, int, List<String>, Boolean): WhitelistedAddressListResult",
-          "doc": ""
-        },
-        {
-          "name": "getWhitelistedAddressesWithExclusions",
-          "signature": "getWhitelistedAddressesWithExclusions(int, int, String, String, boolean): WhitelistedAddressListResult",
+          "signature": "getWhitelistedAddressesForApproval(int, long, List<String>, Boolean): WhitelistedAddressListResult",
           "doc": ""
         }
       ]
@@ -1142,27 +1302,27 @@
         },
         {
           "name": "getWhitelistedAssets",
-          "signature": "getWhitelistedAssets(int, int): List<SignedWhitelistedAssetEnvelope>",
+          "signature": "getWhitelistedAssets(int, long): WhitelistedAssetResult",
           "doc": ""
         },
         {
           "name": "getWhitelistedAssets",
-          "signature": "getWhitelistedAssets(int, int, String): List<SignedWhitelistedAssetEnvelope>",
+          "signature": "getWhitelistedAssets(int, long, String): WhitelistedAssetResult",
           "doc": ""
         },
         {
           "name": "getWhitelistedAssets",
-          "signature": "getWhitelistedAssets(int, int, String, String): List<SignedWhitelistedAssetEnvelope>",
+          "signature": "getWhitelistedAssets(int, long, String, String): WhitelistedAssetResult",
           "doc": ""
         },
         {
           "name": "getWhitelistedAssets",
-          "signature": "getWhitelistedAssets(int, int, String, String, String, Boolean, List<String>, List<String>): WhitelistedAssetResult",
+          "signature": "getWhitelistedAssets(int, long, String, String, String, Boolean, List<String>, List<String>): WhitelistedAssetResult",
           "doc": ""
         },
         {
           "name": "getWhitelistedAssetsForApproval",
-          "signature": "getWhitelistedAssetsForApproval(int, int, List<String>): WhitelistedAssetResult",
+          "signature": "getWhitelistedAssetsForApproval(int, long, List<String>): WhitelistedAssetResult",
           "doc": ""
         }
       ]

@@ -25,7 +25,10 @@ type ScoreFilterScorechainFilters struct {
 	ScoreOutBelow *string `json:"scoreOutBelow,omitempty"`
 	// By default when both Scorechain scores scoreInBelow and scoreOutBelow are provided, it returns the addresses matching (scoreInBelow AND scoreOutBelow). When scoreExclusive is set to true, it will return the addresses matching (scoreInBelow OR scoreOutBelow).
 	ScoreExclusive *bool `json:"scoreExclusive,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _ScoreFilterScorechainFilters ScoreFilterScorechainFilters
 
 // NewScoreFilterScorechainFilters instantiates a new ScoreFilterScorechainFilters object
 // This constructor will assign default values to properties that have it defined,
@@ -159,7 +162,35 @@ func (o ScoreFilterScorechainFilters) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.ScoreExclusive) {
 		toSerialize["scoreExclusive"] = o.ScoreExclusive
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *ScoreFilterScorechainFilters) UnmarshalJSON(data []byte) (err error) {
+	varScoreFilterScorechainFilters := _ScoreFilterScorechainFilters{}
+
+	err = json.Unmarshal(data, &varScoreFilterScorechainFilters)
+
+	if err != nil {
+		return err
+	}
+
+	*o = ScoreFilterScorechainFilters(varScoreFilterScorechainFilters)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "scoreInBelow")
+		delete(additionalProperties, "scoreOutBelow")
+		delete(additionalProperties, "scoreExclusive")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableScoreFilterScorechainFilters struct {

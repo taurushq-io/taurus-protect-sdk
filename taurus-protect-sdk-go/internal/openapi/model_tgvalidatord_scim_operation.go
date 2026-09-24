@@ -22,7 +22,10 @@ type TgvalidatordScimOperation struct {
 	Op *string `json:"op,omitempty"`
 	Path *string `json:"path,omitempty"`
 	Value map[string]interface{} `json:"value,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordScimOperation TgvalidatordScimOperation
 
 // NewTgvalidatordScimOperation instantiates a new TgvalidatordScimOperation object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordScimOperation) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Value) {
 		toSerialize["value"] = o.Value
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordScimOperation) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordScimOperation := _TgvalidatordScimOperation{}
+
+	err = json.Unmarshal(data, &varTgvalidatordScimOperation)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordScimOperation(varTgvalidatordScimOperation)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "op")
+		delete(additionalProperties, "path")
+		delete(additionalProperties, "value")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordScimOperation struct {

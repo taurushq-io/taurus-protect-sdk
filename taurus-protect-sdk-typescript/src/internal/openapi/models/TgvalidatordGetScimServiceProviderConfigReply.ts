@@ -33,7 +33,16 @@ export interface TgvalidatordGetScimServiceProviderConfigReply {
      * @memberof TgvalidatordGetScimServiceProviderConfigReply
      */
     result?: TgvalidatordScimServiceProviderConfig;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetScimServiceProviderConfigReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetScimServiceProviderConfigReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetScimServiceProviderConfigReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetScimServiceProviderConfigReplyFromJSONTyped(json:
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetScimServiceProviderConfigReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordScimServiceProviderConfigFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetScimServiceProviderConfigReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetScimServiceProviderConfigReplyToJSON(json: any): TgvalidatordGetScimServiceProviderConfigReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetScimServiceProviderConfigReplyFromJSONTyped(json:
     return {
         
         'result': TgvalidatordScimServiceProviderConfigToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

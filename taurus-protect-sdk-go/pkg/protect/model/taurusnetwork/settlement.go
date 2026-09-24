@@ -1,6 +1,10 @@
 package taurusnetwork
 
-import "time"
+import (
+	"time"
+
+	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/model"
+)
 
 // Settlement represents a Taurus-NETWORK settlement.
 type Settlement struct {
@@ -126,24 +130,22 @@ type ListSettlementsOptions struct {
 	Statuses []string
 	// SortOrder specifies the sort order (ASC or DESC).
 	SortOrder string
-	// CurrentPage is the base64-encoded cursor for the current page.
-	CurrentPage string
-	// PageRequest indicates which page to request (FIRST, PREVIOUS, NEXT, LAST).
-	PageRequest string
-	// PageSize is the number of items per page.
+	// PageSize is the page size: 0 selects model.DefaultPageSize, above model.MaxPageSize is an error.
 	PageSize int64
+	// Cursor is a previous page's Page.NextCursor; the SDK then requests the NEXT page.
+	Cursor string
+	// CurrentPage and PageRequest (FIRST, PREVIOUS, NEXT, LAST) page by hand; neither can be
+	// combined with Cursor.
+	CurrentPage string
+	PageRequest string
 }
 
 // ListSettlementsResult contains the result of listing settlements.
 type ListSettlementsResult struct {
 	// Settlements is the list of settlements.
 	Settlements []*Settlement `json:"settlements"`
-	// CurrentPage is the base64-encoded cursor for the current page.
-	CurrentPage string `json:"current_page,omitempty"`
-	// HasPrevious indicates if there is a previous page.
-	HasPrevious bool `json:"has_previous"`
-	// HasNext indicates if there is a next page.
-	HasNext bool `json:"has_next"`
+	// Page continues the list: pass Page.NextCursor as the next Cursor until HasMore is false.
+	Page model.CursorPage `json:"page"`
 }
 
 // ListSettlementsForApprovalOptions contains options for listing settlements for approval.
@@ -152,24 +154,22 @@ type ListSettlementsForApprovalOptions struct {
 	IDs []string
 	// SortOrder specifies the sort order (ASC or DESC).
 	SortOrder string
-	// CurrentPage is the base64-encoded cursor for the current page.
-	CurrentPage string
-	// PageRequest indicates which page to request (FIRST, PREVIOUS, NEXT, LAST).
-	PageRequest string
-	// PageSize is the number of items per page.
+	// PageSize is the page size: 0 selects model.DefaultPageSize, above model.MaxPageSize is an error.
 	PageSize int64
+	// Cursor is a previous page's Page.NextCursor; the SDK then requests the NEXT page.
+	Cursor string
+	// CurrentPage and PageRequest (FIRST, PREVIOUS, NEXT, LAST) page by hand; neither can be
+	// combined with Cursor.
+	CurrentPage string
+	PageRequest string
 }
 
 // ListSettlementsForApprovalResult contains the result of listing settlements for approval.
 type ListSettlementsForApprovalResult struct {
 	// Settlements is the list of settlements pending approval.
 	Settlements []*Settlement `json:"settlements"`
-	// CurrentPage is the base64-encoded cursor for the current page.
-	CurrentPage string `json:"current_page,omitempty"`
-	// HasPrevious indicates if there is a previous page.
-	HasPrevious bool `json:"has_previous"`
-	// HasNext indicates if there is a next page.
-	HasNext bool `json:"has_next"`
+	// Page continues the list: pass Page.NextCursor as the next Cursor until HasMore is false.
+	Page model.CursorPage `json:"page"`
 }
 
 // Settlement status constants.

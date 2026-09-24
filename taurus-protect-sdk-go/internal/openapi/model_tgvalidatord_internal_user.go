@@ -42,7 +42,10 @@ type TgvalidatordInternalUser struct {
 	ApiKeys []TgvalidatordInternalUserApiKey `json:"apiKeys,omitempty"`
 	VisibilityGroups []InternalUserVisibilityGroup `json:"visibilityGroups,omitempty"`
 	PublicKeyEnforcedInRules *bool `json:"publicKeyEnforcedInRules,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordInternalUser TgvalidatordInternalUser
 
 // NewTgvalidatordInternalUser instantiates a new TgvalidatordInternalUser object
 // This constructor will assign default values to properties that have it defined,
@@ -841,7 +844,54 @@ func (o TgvalidatordInternalUser) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.PublicKeyEnforcedInRules) {
 		toSerialize["publicKeyEnforcedInRules"] = o.PublicKeyEnforcedInRules
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordInternalUser) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordInternalUser := _TgvalidatordInternalUser{}
+
+	err = json.Unmarshal(data, &varTgvalidatordInternalUser)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordInternalUser(varTgvalidatordInternalUser)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "tenantId")
+		delete(additionalProperties, "externalUserId")
+		delete(additionalProperties, "firstName")
+		delete(additionalProperties, "lastName")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "email")
+		delete(additionalProperties, "roles")
+		delete(additionalProperties, "passwordChanged")
+		delete(additionalProperties, "publicKey")
+		delete(additionalProperties, "groups")
+		delete(additionalProperties, "enforcedInRules")
+		delete(additionalProperties, "creationDate")
+		delete(additionalProperties, "updateDate")
+		delete(additionalProperties, "totpEnabled")
+		delete(additionalProperties, "keyContainer")
+		delete(additionalProperties, "username")
+		delete(additionalProperties, "lastLogin")
+		delete(additionalProperties, "attributes")
+		delete(additionalProperties, "apiKeys")
+		delete(additionalProperties, "visibilityGroups")
+		delete(additionalProperties, "publicKeyEnforcedInRules")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordInternalUser struct {

@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordGetVisibilityGroupsReply{}
 // TgvalidatordGetVisibilityGroupsReply struct for TgvalidatordGetVisibilityGroupsReply
 type TgvalidatordGetVisibilityGroupsReply struct {
 	Result []TgvalidatordInternalVisibilityGroup `json:"result,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetVisibilityGroupsReply TgvalidatordGetVisibilityGroupsReply
 
 // NewTgvalidatordGetVisibilityGroupsReply instantiates a new TgvalidatordGetVisibilityGroupsReply object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordGetVisibilityGroupsReply) ToMap() (map[string]interface{}, e
 	if !IsNil(o.Result) {
 		toSerialize["result"] = o.Result
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetVisibilityGroupsReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetVisibilityGroupsReply := _TgvalidatordGetVisibilityGroupsReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetVisibilityGroupsReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetVisibilityGroupsReply(varTgvalidatordGetVisibilityGroupsReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "result")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetVisibilityGroupsReply struct {

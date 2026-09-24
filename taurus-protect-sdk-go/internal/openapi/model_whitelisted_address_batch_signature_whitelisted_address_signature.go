@@ -29,7 +29,10 @@ type WhitelistedAddressBatchSignatureWhitelistedAddressSignature struct {
 	Message *string `json:"Message,omitempty"`
 	CreationDate *time.Time `json:"CreationDate,omitempty"`
 	UpdateDate *time.Time `json:"UpdateDate,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _WhitelistedAddressBatchSignatureWhitelistedAddressSignature WhitelistedAddressBatchSignatureWhitelistedAddressSignature
 
 // NewWhitelistedAddressBatchSignatureWhitelistedAddressSignature instantiates a new WhitelistedAddressBatchSignatureWhitelistedAddressSignature object
 // This constructor will assign default values to properties that have it defined,
@@ -373,7 +376,41 @@ func (o WhitelistedAddressBatchSignatureWhitelistedAddressSignature) ToMap() (ma
 	if !IsNil(o.UpdateDate) {
 		toSerialize["UpdateDate"] = o.UpdateDate
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *WhitelistedAddressBatchSignatureWhitelistedAddressSignature) UnmarshalJSON(data []byte) (err error) {
+	varWhitelistedAddressBatchSignatureWhitelistedAddressSignature := _WhitelistedAddressBatchSignatureWhitelistedAddressSignature{}
+
+	err = json.Unmarshal(data, &varWhitelistedAddressBatchSignatureWhitelistedAddressSignature)
+
+	if err != nil {
+		return err
+	}
+
+	*o = WhitelistedAddressBatchSignatureWhitelistedAddressSignature(varWhitelistedAddressBatchSignatureWhitelistedAddressSignature)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "ID")
+		delete(additionalProperties, "TenantID")
+		delete(additionalProperties, "BatchSignatureID")
+		delete(additionalProperties, "WhitelistedAddressID")
+		delete(additionalProperties, "MetadataHash")
+		delete(additionalProperties, "Status")
+		delete(additionalProperties, "Message")
+		delete(additionalProperties, "CreationDate")
+		delete(additionalProperties, "UpdateDate")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableWhitelistedAddressBatchSignatureWhitelistedAddressSignature struct {

@@ -49,7 +49,16 @@ export interface TgvalidatordActionEnvelopeTrail {
      * @memberof TgvalidatordActionEnvelopeTrail
      */
     actionStatus?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordActionEnvelopeTrail
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordActionEnvelopeTrailWireKeys: ReadonlySet<string> = new Set(['id', 'action', 'comment', 'date', 'actionStatus']);
 
 /**
  * Check if a given object implements the TgvalidatordActionEnvelopeTrail interface.
@@ -66,7 +75,7 @@ export function TgvalidatordActionEnvelopeTrailFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordActionEnvelopeTrail = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'action': json['action'] == null ? undefined : json['action'],
@@ -74,6 +83,16 @@ export function TgvalidatordActionEnvelopeTrailFromJSONTyped(json: any, ignoreDi
         'date': json['date'] == null ? undefined : (new Date(json['date'])),
         'actionStatus': json['actionStatus'] == null ? undefined : json['actionStatus'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordActionEnvelopeTrailWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordActionEnvelopeTrailToJSON(json: any): TgvalidatordActionEnvelopeTrail {
@@ -92,6 +111,7 @@ export function TgvalidatordActionEnvelopeTrailFromJSONTyped(json: any, ignoreDi
         'comment': value['comment'],
         'date': value['date'] == null ? undefined : ((value['date']).toISOString()),
         'actionStatus': value['actionStatus'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -61,7 +61,16 @@ export interface TgvalidatordCreateOutgoingCosmosWithdrawRewardRequestRequest {
      * @memberof TgvalidatordCreateOutgoingCosmosWithdrawRewardRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingCosmosWithdrawRewardRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingCosmosWithdrawRewardRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'toValidatorAddressId', 'feeLimit', 'gasLimit', 'comment', 'transactionReference', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingCosmosWithdrawRewardRequestRequest interface.
@@ -80,7 +89,7 @@ export function TgvalidatordCreateOutgoingCosmosWithdrawRewardRequestRequestFrom
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingCosmosWithdrawRewardRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'toValidatorAddressId': json['toValidatorAddressId'],
@@ -90,6 +99,16 @@ export function TgvalidatordCreateOutgoingCosmosWithdrawRewardRequestRequestFrom
         'transactionReference': json['transactionReference'] == null ? undefined : json['transactionReference'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingCosmosWithdrawRewardRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingCosmosWithdrawRewardRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingCosmosWithdrawRewardRequestRequest {
@@ -110,6 +129,7 @@ export function TgvalidatordCreateOutgoingCosmosWithdrawRewardRequestRequestFrom
         'comment': value['comment'],
         'transactionReference': value['transactionReference'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

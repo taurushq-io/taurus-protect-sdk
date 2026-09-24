@@ -76,7 +76,16 @@ export interface TgvalidatordAssetEvent {
      * @memberof TgvalidatordAssetEvent
      */
     updatedAt?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordAssetEvent
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordAssetEventWireKeys: ReadonlySet<string> = new Set(['id', 'tenantID', 'hash', 'asset', 'blockchainEvent', 'createdAt', 'updatedAt']);
 
 /**
  * Check if a given object implements the TgvalidatordAssetEvent interface.
@@ -93,7 +102,7 @@ export function TgvalidatordAssetEventFromJSONTyped(json: any, ignoreDiscriminat
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordAssetEvent = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'tenantID': json['tenantID'] == null ? undefined : json['tenantID'],
@@ -103,6 +112,16 @@ export function TgvalidatordAssetEventFromJSONTyped(json: any, ignoreDiscriminat
         'createdAt': json['createdAt'] == null ? undefined : (new Date(json['createdAt'])),
         'updatedAt': json['updatedAt'] == null ? undefined : (new Date(json['updatedAt'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordAssetEventWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordAssetEventToJSON(json: any): TgvalidatordAssetEvent {
@@ -123,6 +142,7 @@ export function TgvalidatordAssetEventFromJSONTyped(json: any, ignoreDiscriminat
         'blockchainEvent': TgvalidatordBlockchainEventToJSON(value['blockchainEvent']),
         'createdAt': value['createdAt'] == null ? undefined : ((value['createdAt']).toISOString()),
         'updatedAt': value['updatedAt'] == null ? undefined : ((value['updatedAt']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

@@ -26,7 +26,10 @@ type TgvalidatordCurrencyCollateralRequirement struct {
 	// The loan to value ratio of the lending offer, based on 2 decimals. Example: 12500 corresponds to my collateral shall be worth 125% of my loan
 	Ratio *string `json:"ratio,omitempty"`
 	CurrencyInfo *TgvalidatordCurrency `json:"currencyInfo,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordCurrencyCollateralRequirement TgvalidatordCurrencyCollateralRequirement
 
 // NewTgvalidatordCurrencyCollateralRequirement instantiates a new TgvalidatordCurrencyCollateralRequirement object
 // This constructor will assign default values to properties that have it defined,
@@ -265,7 +268,38 @@ func (o TgvalidatordCurrencyCollateralRequirement) ToMap() (map[string]interface
 	if !IsNil(o.CurrencyInfo) {
 		toSerialize["currencyInfo"] = o.CurrencyInfo
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordCurrencyCollateralRequirement) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordCurrencyCollateralRequirement := _TgvalidatordCurrencyCollateralRequirement{}
+
+	err = json.Unmarshal(data, &varTgvalidatordCurrencyCollateralRequirement)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordCurrencyCollateralRequirement(varTgvalidatordCurrencyCollateralRequirement)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "network")
+		delete(additionalProperties, "arg1")
+		delete(additionalProperties, "arg2")
+		delete(additionalProperties, "ratio")
+		delete(additionalProperties, "currencyInfo")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordCurrencyCollateralRequirement struct {

@@ -35,19 +35,23 @@ import type {
   SignedWhitelistedAssetEnvelope,
   WhitelistedAssetVerificationResult,
 } from "../models/whitelisted-asset";
-import type { Pagination } from "../models/pagination";
+import {
+  MAX_PAGE_SIZE,
+  buildOffsetPagination,
+  offsetRequest,
+  type OffsetPageOptions,
+  type OffsetRequest,
+  type Pagination,
+} from "../models/pagination";
 import { BaseService } from "./base";
+import { offsetQuery } from "./paging";
 import { rethrowIfNotRowLevel } from "./row-level-error";
 import type { Verified } from "../helpers/verified";
 
 /**
  * Options for listing whitelisted assets.
  */
-export interface ListWhitelistedAssetsOptions {
-  /** Maximum number of items to return (max 100). */
-  limit?: number;
-  /** Offset for pagination. */
-  offset?: number;
+export interface ListWhitelistedAssetsOptions extends OffsetPageOptions {
   /** Search query. */
   query?: string;
   /** Filter by blockchain. */
@@ -66,11 +70,7 @@ export interface ListWhitelistedAssetsOptions {
  * Options for listing whitelisted assets awaiting approval. The endpoint accepts only
  * these three.
  */
-export interface ListWhitelistedAssetsForApprovalOptions {
-  /** Maximum number of items to return (max 100). */
-  limit?: number;
-  /** Offset for pagination. */
-  offset?: number;
+export interface ListWhitelistedAssetsForApprovalOptions extends OffsetPageOptions {
   /** Filter by specific whitelisted asset IDs. */
   ids?: string[];
 }
@@ -91,8 +91,12 @@ export interface ExcludedWhitelistedAsset {
 export interface ListWhitelistedAssetsResult {
   /** List of verified whitelisted assets. */
   items: WhitelistedAsset[];
-  /** Pagination information. */
-  pagination: Pagination | undefined;
+  /**
+   * Offset pagination. `totalItems` excludes the rows withheld as unverifiable;
+   * `nextOffset` advances by the page size, because a skipped contract row keeps its
+   * slot on the server.
+   */
+  pagination: Pagination;
   /**
    * Rows that failed verification and are absent from `items`.
    *
@@ -131,7 +135,7 @@ export interface ListWhitelistedAssetsResult {
  */
 function buildAssetListResult(
   items: WhitelistedAsset[],
-  pagination: Pagination | undefined,
+  pagination: Pagination,
   excludedUnverified: ExcludedWhitelistedAsset[],
   pinnedHashes: ReadonlyMap<number, string>
 ): ListWhitelistedAssetsResult {
@@ -324,20 +328,11 @@ export class WhitelistedAssetService extends BaseService {
   async list(
     options?: ListWhitelistedAssetsOptions
   ): Promise<ListWhitelistedAssetsResult> {
-    const limit = options?.limit ?? 50;
-    const offset = options?.offset ?? 0;
-
-    if (limit <= 0) {
-      throw new ValidationError("limit must be positive");
-    }
-    if (offset < 0) {
-      throw new ValidationError("offset cannot be negative");
-    }
+    const page = offsetRequest(options);
 
     return this.execute(async () => {
       const response = await this.api.whitelistServiceGetWhitelistedContracts({
-        limit: String(limit),
-        offset: String(offset),
+        ...offsetQuery(page),
         query: options?.query,
         blockchain: options?.blockchain,
         network: options?.network,
@@ -346,7 +341,7 @@ export class WhitelistedAssetService extends BaseService {
         whitelistedContractAddressIds: options?.ids,
       });
 
-      return this.verifyPage(response, limit, offset);
+      return this.verifyPage(response, page);
     });
   }
 
@@ -364,25 +359,16 @@ export class WhitelistedAssetService extends BaseService {
   async listForApproval(
     options?: ListWhitelistedAssetsForApprovalOptions
   ): Promise<ListWhitelistedAssetsResult> {
-    const limit = options?.limit ?? 50;
-    const offset = options?.offset ?? 0;
-
-    if (limit <= 0) {
-      throw new ValidationError("limit must be positive");
-    }
-    if (offset < 0) {
-      throw new ValidationError("offset cannot be negative");
-    }
+    const page = offsetRequest(options);
 
     return this.execute(async () => {
       const response =
         await this.api.whitelistServiceGetWhitelistedContractsForApproval({
-          limit: String(limit),
-          offset: String(offset),
+          ...offsetQuery(page),
           ids: options?.ids,
         });
 
-      return this.verifyPage(response, limit, offset);
+      return this.verifyPage(response, page);
     });
   }
 
@@ -438,7 +424,7 @@ export class WhitelistedAssetService extends BaseService {
     // independent of the order the caller passed.
     const sortedIds = [...ids].sort((a, b) => a - b);
 
-    // ONE id-filtered page through the verifying path, not one GET per id. The list
+    // Id-filtered pages (100 ids each) through the verifying path, not one GET per id. The list
     // endpoint verifies every row and fetches the rules container once per call, so a
     // 50-id approval costs one round trip instead of fifty. includeForApproval is
     // required: the rows being approved are pending, so the default list omits them.
@@ -508,7 +494,7 @@ export class WhitelistedAssetService extends BaseService {
    * Re-reads a batch of assets through the verifying path, filtered by id, and returns
    * the hash to sign for each, keyed by id.
    *
-   *   ids -> ONE filtered page -> verify every row -> map id -> metadata.hash
+   *   ids -> filtered pages (100 ids each) -> verify every row -> map id -> metadata.hash
    *
    * The row must be VERIFIED before its hash is signed — that is what the re-read is
    * for. But the value signed is the row's CURRENT `metadata.hash`, not the
@@ -521,14 +507,25 @@ export class WhitelistedAssetService extends BaseService {
    * Signing an asset legacy variant (isNFT / kindType stripped) would be rejected.
    */
   private async hashesToSignByID(ids: number[]): Promise<Map<number, string>> {
+    const byID = new Map<number, string>();
+    // One id-filtered page per MAX_PAGE_SIZE ids, as on the address side.
+    for (let start = 0; start < ids.length; start += MAX_PAGE_SIZE) {
+      await this.collectHashesToSign(ids.slice(start, start + MAX_PAGE_SIZE), byID);
+    }
+    return byID;
+  }
+
+  /** Re-reads one id-filtered page for {@link hashesToSignByID}. */
+  private async collectHashesToSign(
+    ids: number[],
+    byID: Map<number, string>
+  ): Promise<void> {
     const response = await this.api.whitelistServiceGetWhitelistedContracts({
       limit: String(ids.length),
-      offset: "0",
       includeForApproval: true,
       whitelistedContractAddressIds: ids.map(String),
     });
 
-    const byID = new Map<number, string>();
     for (const dto of response.result ?? []) {
       const rowId = dto.id ? parseInt(dto.id, 10) : 0;
       try {
@@ -547,13 +544,11 @@ export class WhitelistedAssetService extends BaseService {
         continue;
       }
     }
-    return byID;
   }
 
   private verifyPage(
     response: TgvalidatordGetSignedWhitelistedContractAddressEnvelopesReply,
-    limit: number,
-    offset: number
+    page: OffsetRequest
   ): ListWhitelistedAssetsResult {
     const rows = response.result ?? [];
     const items: WhitelistedAsset[] = [];
@@ -584,23 +579,16 @@ export class WhitelistedAssetService extends BaseService {
       );
     }
 
-    // Reduced by the rows the caller never receives, as on the address side.
-    //
-    // The server counts rows it returned; excluded rows are not among `items`, so
-    // reporting the server's total lets a filtered page pass for a complete one and
-    // makes pagination promise rows that can never be read. The isNaN guard matters
-    // because Math.max(0, NaN - n) is NaN, which is !== undefined and would reach the
-    // caller as a NaN totalItems.
-    const reportedTotal = response.totalItems
-      ? parseInt(response.totalItems, 10)
-      : undefined;
-    const totalItems =
-      reportedTotal === undefined || isNaN(reportedTotal)
-        ? undefined
-        : Math.max(0, reportedTotal - excludedUnverified.length);
-    const pagination: Pagination | undefined = totalItems !== undefined
-      ? { totalItems, offset, limit }
-      : undefined;
+    // Excluded rows reduce the total the caller is told about, never the next offset:
+    // a skipped contract row keeps its slot on the server, so the next page starts a
+    // full page further on.
+    const pagination = buildOffsetPagination(
+      "plus_limit",
+      page,
+      response,
+      rows.length,
+      excludedUnverified.length
+    );
 
     return buildAssetListResult(items, pagination, excludedUnverified, pinnedHashes);
   }

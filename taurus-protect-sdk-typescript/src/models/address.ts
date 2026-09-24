@@ -2,6 +2,8 @@
  * Address models for Taurus-PROTECT SDK.
  */
 
+import type { OffsetPageOptions } from "./pagination";
+
 /**
  * Address status enum.
  */
@@ -112,19 +114,37 @@ export interface CreateAddressRequest {
 }
 
 /**
- * Options for listing addresses.
+ * Options for listing addresses. An offset list: `limit` 1-100 (default 20) and
+ * `offset` (a previous page's `pagination.nextOffset`).
  */
-export interface ListAddressesOptions {
+export interface ListAddressesOptions extends OffsetPageOptions {
   /** Filter by wallet ID */
   readonly walletId?: string;
-  /** Maximum items to return (default: 50, max: 1000) */
-  readonly limit?: number;
-  /** Number of items to skip */
-  readonly offset?: number;
   /** Search query */
   readonly query?: string;
   /** Filter by blockchain */
   readonly blockchain?: string;
   /** Filter by network */
   readonly network?: string;
+  /** Filter by Taurus address IDs (at most 50) */
+  readonly addressIds?: string[];
+  /** Filter by blockchain addresses (at most 100) */
+  readonly addresses?: string[];
+  /** Keep addresses carrying any of these tags */
+  readonly tagIds?: string[];
+  /** Keep only addresses with a positive balance */
+  readonly onlyPositiveBalance?: boolean;
+  /** Keep addresses whose balance is above this amount */
+  readonly balanceAbove?: string;
+  /** Keep addresses whose balance is below this amount */
+  readonly balanceBelow?: string;
+  /** Sort field */
+  readonly sortBy?: string;
+  /** Sort order ("ASC" or "DESC") */
+  readonly sortOrder?: string;
+  /**
+   * Leave disabled addresses out (sent as `includeDisabledAddresses=exclude`). Unset or
+   * false keeps the server default, which includes them.
+   */
+  readonly excludeDisabled?: boolean;
 }

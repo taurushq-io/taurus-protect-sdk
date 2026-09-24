@@ -3,65 +3,9 @@
  */
 
 import {
-  feeFromDto,
-  feesFromDto,
   feeV2FromDto,
   feesV2FromDto,
 } from '../../../src/mappers/fee';
-
-describe('feeFromDto', () => {
-  it('should map key and value', () => {
-    const dto = { key: 'gasPrice', value: '20000000000' };
-
-    const result = feeFromDto(dto);
-
-    expect(result).toBeDefined();
-    expect(result!.key).toBe('gasPrice');
-    expect(result!.value).toBe('20000000000');
-  });
-
-  it('should return undefined for null input', () => {
-    expect(feeFromDto(null)).toBeUndefined();
-  });
-
-  it('should return undefined for undefined input', () => {
-    expect(feeFromDto(undefined)).toBeUndefined();
-  });
-
-  it('should handle empty object', () => {
-    const result = feeFromDto({});
-    expect(result).toBeDefined();
-    expect(result!.key).toBeUndefined();
-    expect(result!.value).toBeUndefined();
-  });
-});
-
-describe('feesFromDto', () => {
-  it('should map array of fee DTOs', () => {
-    const dtos = [
-      { key: 'gasPrice', value: '20' },
-      { key: 'gasLimit', value: '21000' },
-    ];
-
-    const result = feesFromDto(dtos);
-
-    expect(result).toHaveLength(2);
-    expect(result[0].key).toBe('gasPrice');
-    expect(result[1].key).toBe('gasLimit');
-  });
-
-  it('should return empty array for null input', () => {
-    expect(feesFromDto(null)).toEqual([]);
-  });
-
-  it('should return empty array for undefined input', () => {
-    expect(feesFromDto(undefined)).toEqual([]);
-  });
-
-  it('should return empty array for empty array', () => {
-    expect(feesFromDto([])).toEqual([]);
-  });
-});
 
 describe('feeV2FromDto', () => {
   it('should map all fields from DTO', () => {

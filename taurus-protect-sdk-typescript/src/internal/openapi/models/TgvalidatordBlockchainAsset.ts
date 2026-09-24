@@ -46,7 +46,16 @@ export interface TgvalidatordBlockchainAsset {
      * @memberof TgvalidatordBlockchainAsset
      */
     solanaNativeTokenAsset?: TgvalidatordSolanaNativeTokenAsset;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordBlockchainAsset
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordBlockchainAssetWireKeys: ReadonlySet<string> = new Set(['hederaNativeTokenAsset', 'solanaNativeTokenAsset']);
 
 /**
  * Check if a given object implements the TgvalidatordBlockchainAsset interface.
@@ -63,11 +72,21 @@ export function TgvalidatordBlockchainAssetFromJSONTyped(json: any, ignoreDiscri
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordBlockchainAsset = {
         
         'hederaNativeTokenAsset': json['hederaNativeTokenAsset'] == null ? undefined : TgvalidatordHederaNativeTokenAssetFromJSON(json['hederaNativeTokenAsset']),
         'solanaNativeTokenAsset': json['solanaNativeTokenAsset'] == null ? undefined : TgvalidatordSolanaNativeTokenAssetFromJSON(json['solanaNativeTokenAsset']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordBlockchainAssetWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordBlockchainAssetToJSON(json: any): TgvalidatordBlockchainAsset {
@@ -83,6 +102,7 @@ export function TgvalidatordBlockchainAssetFromJSONTyped(json: any, ignoreDiscri
         
         'hederaNativeTokenAsset': TgvalidatordHederaNativeTokenAssetToJSON(value['hederaNativeTokenAsset']),
         'solanaNativeTokenAsset': TgvalidatordSolanaNativeTokenAssetToJSON(value['solanaNativeTokenAsset']),
+        ...value['additionalProperties'],
     };
 }
 

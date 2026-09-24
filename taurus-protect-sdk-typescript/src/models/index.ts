@@ -11,6 +11,7 @@ export * from './contract-whitelist';
 
 // Additional models
 export * from './action';
+export * from './asset';
 export * from './air-gap';
 export * from './audit';
 export * from './balance';
@@ -19,6 +20,7 @@ export * from './business-rule';
 export * from './change';
 export * from './config';
 export * from './currency';
+export * from './earn';
 export * from './exchange';
 export * from './fee';
 export * from './fee-payer';

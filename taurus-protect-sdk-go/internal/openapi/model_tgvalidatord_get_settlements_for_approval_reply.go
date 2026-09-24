@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordGetSettlementsForApprovalReply{}
 type TgvalidatordGetSettlementsForApprovalReply struct {
 	Result []TgvalidatordTnSettlement `json:"result,omitempty"`
 	Cursor *TgvalidatordResponseCursor `json:"cursor,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetSettlementsForApprovalReply TgvalidatordGetSettlementsForApprovalReply
 
 // NewTgvalidatordGetSettlementsForApprovalReply instantiates a new TgvalidatordGetSettlementsForApprovalReply object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordGetSettlementsForApprovalReply) ToMap() (map[string]interfac
 	if !IsNil(o.Cursor) {
 		toSerialize["cursor"] = o.Cursor
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetSettlementsForApprovalReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetSettlementsForApprovalReply := _TgvalidatordGetSettlementsForApprovalReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetSettlementsForApprovalReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetSettlementsForApprovalReply(varTgvalidatordGetSettlementsForApprovalReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "result")
+		delete(additionalProperties, "cursor")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetSettlementsForApprovalReply struct {

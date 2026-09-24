@@ -23,7 +23,10 @@ type TgvalidatordGetAddressTokensReply struct {
 	Total *string `json:"total,omitempty"`
 	Next *string `json:"next,omitempty" validate:"regexp=^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=)?$"`
 	TotalAssetBalance *TgvalidatordAssetBalance `json:"totalAssetBalance,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetAddressTokensReply TgvalidatordGetAddressTokensReply
 
 // NewTgvalidatordGetAddressTokensReply instantiates a new TgvalidatordGetAddressTokensReply object
 // This constructor will assign default values to properties that have it defined,
@@ -192,7 +195,36 @@ func (o TgvalidatordGetAddressTokensReply) ToMap() (map[string]interface{}, erro
 	if !IsNil(o.TotalAssetBalance) {
 		toSerialize["totalAssetBalance"] = o.TotalAssetBalance
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetAddressTokensReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetAddressTokensReply := _TgvalidatordGetAddressTokensReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetAddressTokensReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetAddressTokensReply(varTgvalidatordGetAddressTokensReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "balances")
+		delete(additionalProperties, "total")
+		delete(additionalProperties, "next")
+		delete(additionalProperties, "totalAssetBalance")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetAddressTokensReply struct {

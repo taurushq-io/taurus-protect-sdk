@@ -24,7 +24,10 @@ type TgvalidatordHederaNativeTokenTransaction struct {
 	Sender *string `json:"sender,omitempty"`
 	Sources []TgvalidatordHederaNativeTokenTransfer `json:"sources,omitempty"`
 	Destinations []TgvalidatordHederaNativeTokenTransfer `json:"destinations,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordHederaNativeTokenTransaction TgvalidatordHederaNativeTokenTransaction
 
 // NewTgvalidatordHederaNativeTokenTransaction instantiates a new TgvalidatordHederaNativeTokenTransaction object
 // This constructor will assign default values to properties that have it defined,
@@ -228,7 +231,37 @@ func (o TgvalidatordHederaNativeTokenTransaction) ToMap() (map[string]interface{
 	if !IsNil(o.Destinations) {
 		toSerialize["destinations"] = o.Destinations
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordHederaNativeTokenTransaction) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordHederaNativeTokenTransaction := _TgvalidatordHederaNativeTokenTransaction{}
+
+	err = json.Unmarshal(data, &varTgvalidatordHederaNativeTokenTransaction)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordHederaNativeTokenTransaction(varTgvalidatordHederaNativeTokenTransaction)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "transactionID")
+		delete(additionalProperties, "transactionType")
+		delete(additionalProperties, "sender")
+		delete(additionalProperties, "sources")
+		delete(additionalProperties, "destinations")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordHederaNativeTokenTransaction struct {

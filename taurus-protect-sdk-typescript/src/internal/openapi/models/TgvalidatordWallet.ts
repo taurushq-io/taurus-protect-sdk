@@ -168,7 +168,16 @@ export interface TgvalidatordWallet {
      * @memberof TgvalidatordWallet
      */
     externalWalletId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordWallet
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordWalletWireKeys: ReadonlySet<string> = new Set(['id', 'balance', 'currency', 'coin', 'name', 'container', 'seed', 'accountPath', 'addresses', 'isOmnibus', 'creationDate', 'updateDate', 'customerId', 'comment', 'disabled', 'blockchain', 'addressesCount', 'attributes', 'currencyInfo', 'externalWalletId']);
 
 /**
  * Check if a given object implements the TgvalidatordWallet interface.
@@ -185,7 +194,7 @@ export function TgvalidatordWalletFromJSONTyped(json: any, ignoreDiscriminator: 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordWallet = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'balance': json['balance'] == null ? undefined : TgvalidatordBalanceFromJSON(json['balance']),
@@ -208,6 +217,16 @@ export function TgvalidatordWalletFromJSONTyped(json: any, ignoreDiscriminator: 
         'currencyInfo': json['currencyInfo'] == null ? undefined : TgvalidatordCurrencyFromJSON(json['currencyInfo']),
         'externalWalletId': json['externalWalletId'] == null ? undefined : json['externalWalletId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordWalletWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordWalletToJSON(json: any): TgvalidatordWallet {
@@ -241,6 +260,7 @@ export function TgvalidatordWalletFromJSONTyped(json: any, ignoreDiscriminator: 
         'attributes': value['attributes'] == null ? undefined : ((value['attributes'] as Array<any>).map(TgvalidatordWalletAttributeToJSON)),
         'currencyInfo': TgvalidatordCurrencyToJSON(value['currencyInfo']),
         'externalWalletId': value['externalWalletId'],
+        ...value['additionalProperties'],
     };
 }
 

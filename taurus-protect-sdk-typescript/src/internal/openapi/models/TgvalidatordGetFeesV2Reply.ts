@@ -33,7 +33,16 @@ export interface TgvalidatordGetFeesV2Reply {
      * @memberof TgvalidatordGetFeesV2Reply
      */
     result?: Array<TgvalidatordFee>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetFeesV2Reply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetFeesV2ReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetFeesV2Reply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetFeesV2ReplyFromJSONTyped(json: any, ignoreDiscrim
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetFeesV2Reply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordFeeFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetFeesV2ReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetFeesV2ReplyToJSON(json: any): TgvalidatordGetFeesV2Reply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetFeesV2ReplyFromJSONTyped(json: any, ignoreDiscrim
     return {
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordFeeToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

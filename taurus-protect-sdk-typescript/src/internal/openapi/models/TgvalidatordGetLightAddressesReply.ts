@@ -33,7 +33,16 @@ export interface TgvalidatordGetLightAddressesReply {
      * @memberof TgvalidatordGetLightAddressesReply
      */
     result?: Array<TgvalidatordLightAddressInfo>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetLightAddressesReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetLightAddressesReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetLightAddressesReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetLightAddressesReplyFromJSONTyped(json: any, ignor
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetLightAddressesReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordLightAddressInfoFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetLightAddressesReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetLightAddressesReplyToJSON(json: any): TgvalidatordGetLightAddressesReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetLightAddressesReplyFromJSONTyped(json: any, ignor
     return {
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordLightAddressInfoToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

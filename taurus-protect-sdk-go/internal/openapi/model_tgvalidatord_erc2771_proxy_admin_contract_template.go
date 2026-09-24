@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordERC2771ProxyAdminContractTemplate{}
 // TgvalidatordERC2771ProxyAdminContractTemplate struct for TgvalidatordERC2771ProxyAdminContractTemplate
 type TgvalidatordERC2771ProxyAdminContractTemplate struct {
 	Evm *TgvalidatordEVMContractTemplateParams `json:"evm,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordERC2771ProxyAdminContractTemplate TgvalidatordERC2771ProxyAdminContractTemplate
 
 // NewTgvalidatordERC2771ProxyAdminContractTemplate instantiates a new TgvalidatordERC2771ProxyAdminContractTemplate object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordERC2771ProxyAdminContractTemplate) ToMap() (map[string]inter
 	if !IsNil(o.Evm) {
 		toSerialize["evm"] = o.Evm
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordERC2771ProxyAdminContractTemplate) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordERC2771ProxyAdminContractTemplate := _TgvalidatordERC2771ProxyAdminContractTemplate{}
+
+	err = json.Unmarshal(data, &varTgvalidatordERC2771ProxyAdminContractTemplate)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordERC2771ProxyAdminContractTemplate(varTgvalidatordERC2771ProxyAdminContractTemplate)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "evm")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordERC2771ProxyAdminContractTemplate struct {

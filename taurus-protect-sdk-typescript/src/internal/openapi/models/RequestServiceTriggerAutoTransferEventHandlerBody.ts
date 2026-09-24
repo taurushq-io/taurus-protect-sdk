@@ -31,7 +31,16 @@ export interface RequestServiceTriggerAutoTransferEventHandlerBody {
      * @memberof RequestServiceTriggerAutoTransferEventHandlerBody
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof RequestServiceTriggerAutoTransferEventHandlerBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const RequestServiceTriggerAutoTransferEventHandlerBodyWireKeys: ReadonlySet<string> = new Set(['destinationAddressId', 'externalRequestId']);
 
 /**
  * Check if a given object implements the RequestServiceTriggerAutoTransferEventHandlerBody interface.
@@ -49,11 +58,21 @@ export function RequestServiceTriggerAutoTransferEventHandlerBodyFromJSONTyped(j
     if (json == null) {
         return json;
     }
-    return {
+    const result: RequestServiceTriggerAutoTransferEventHandlerBody = {
         
         'destinationAddressId': json['destinationAddressId'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!RequestServiceTriggerAutoTransferEventHandlerBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function RequestServiceTriggerAutoTransferEventHandlerBodyToJSON(json: any): RequestServiceTriggerAutoTransferEventHandlerBody {
@@ -69,6 +88,7 @@ export function RequestServiceTriggerAutoTransferEventHandlerBodyFromJSONTyped(j
         
         'destinationAddressId': value['destinationAddressId'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -39,7 +39,10 @@ type TgvalidatordTravelRule struct {
 	Blockchain *string `json:"blockchain,omitempty"`
 	// The associated network (e.g. `mainnet`, `testnet`).
 	Network *string `json:"network,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTravelRule TgvalidatordTravelRule
 
 // NewTgvalidatordTravelRule instantiates a new TgvalidatordTravelRule object
 // This constructor will assign default values to properties that have it defined,
@@ -558,7 +561,46 @@ func (o TgvalidatordTravelRule) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Network) {
 		toSerialize["network"] = o.Network
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTravelRule) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTravelRule := _TgvalidatordTravelRule{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTravelRule)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTravelRule(varTgvalidatordTravelRule)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "originatorPersonTravelRuleData")
+		delete(additionalProperties, "originatorCompanyTravelRuleData")
+		delete(additionalProperties, "beneficiaryCompanyTravelRuleData")
+		delete(additionalProperties, "beneficiaryPersonTravelRuleData")
+		delete(additionalProperties, "currency")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "amountMainUnit")
+		delete(additionalProperties, "transactionHash")
+		delete(additionalProperties, "originatorParticipant")
+		delete(additionalProperties, "beneficiaryParticipant")
+		delete(additionalProperties, "initiationDate")
+		delete(additionalProperties, "confirmationDate")
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "network")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTravelRule struct {

@@ -31,7 +31,16 @@ export interface TgvalidatordGetOutgoingAirGapRequestRequests {
      * @memberof TgvalidatordGetOutgoingAirGapRequestRequests
      */
     signature?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetOutgoingAirGapRequestRequests
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetOutgoingAirGapRequestRequestsWireKeys: ReadonlySet<string> = new Set(['ids', 'signature']);
 
 /**
  * Check if a given object implements the TgvalidatordGetOutgoingAirGapRequestRequests interface.
@@ -48,11 +57,21 @@ export function TgvalidatordGetOutgoingAirGapRequestRequestsFromJSONTyped(json: 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetOutgoingAirGapRequestRequests = {
         
         'ids': json['ids'] == null ? undefined : json['ids'],
         'signature': json['signature'] == null ? undefined : json['signature'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetOutgoingAirGapRequestRequestsWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetOutgoingAirGapRequestRequestsToJSON(json: any): TgvalidatordGetOutgoingAirGapRequestRequests {
@@ -68,6 +87,7 @@ export function TgvalidatordGetOutgoingAirGapRequestRequestsFromJSONTyped(json: 
         
         'ids': value['ids'],
         'signature': value['signature'],
+        ...value['additionalProperties'],
     };
 }
 

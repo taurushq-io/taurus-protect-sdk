@@ -6,37 +6,26 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from taurus_protect.models.pagination import Pagination
 from taurus_protect.services.user_device_service import UserDeviceService
 
 
 class TestUserDeviceServiceList:
-    """Tests for UserDeviceService.list()."""
+    """UserDeviceService.list: the API cannot list pairings; the page is always empty."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        user_device_api = MagicMock()
-        service = UserDeviceService(
-            api_client=api_client, user_device_api=user_device_api
-        )
-        return service, user_device_api
+    def _make_service(self) -> UserDeviceService:
+        return UserDeviceService(api_client=MagicMock(), user_device_api=MagicMock())
 
-    def test_raises_on_invalid_limit(self) -> None:
-        service, _ = self._make_service()
-        with pytest.raises(ValueError, match="limit must be positive"):
-            service.list(limit=0)
+    @pytest.mark.parametrize("kwargs,name", [({"limit": 101}, "limit"), ({"offset": -1}, "offset")])
+    def test_invalid_page_window(self, kwargs: dict, name: str) -> None:
+        with pytest.raises(ValueError, match=name):
+            self._make_service().list(**kwargs)
 
-    def test_raises_on_negative_offset(self) -> None:
-        service, _ = self._make_service()
-        with pytest.raises(ValueError, match="offset cannot be negative"):
-            service.list(offset=-1)
-
-    def test_returns_empty_list(self) -> None:
-        service, _ = self._make_service()
-
-        pairings, pagination = service.list()
+    def test_returns_an_empty_page_with_pagination(self) -> None:
+        pairings, pagination = self._make_service().list()
 
         assert pairings == []
-        assert pagination is None
+        assert pagination == Pagination(limit=20, offset=0)
 
 
 class TestUserDeviceServiceGet:
@@ -45,9 +34,7 @@ class TestUserDeviceServiceGet:
     def _make_service(self) -> tuple:
         api_client = MagicMock()
         user_device_api = MagicMock()
-        service = UserDeviceService(
-            api_client=api_client, user_device_api=user_device_api
-        )
+        service = UserDeviceService(api_client=api_client, user_device_api=user_device_api)
         return service, user_device_api
 
     def test_raises_on_empty_id(self) -> None:
@@ -70,9 +57,7 @@ class TestUserDeviceServiceCreatePairing:
     def _make_service(self) -> tuple:
         api_client = MagicMock()
         user_device_api = MagicMock()
-        service = UserDeviceService(
-            api_client=api_client, user_device_api=user_device_api
-        )
+        service = UserDeviceService(api_client=api_client, user_device_api=user_device_api)
         return service, user_device_api
 
     def test_calls_api(self) -> None:
@@ -98,9 +83,7 @@ class TestUserDeviceServiceStartPairing:
     def _make_service(self) -> tuple:
         api_client = MagicMock()
         user_device_api = MagicMock()
-        service = UserDeviceService(
-            api_client=api_client, user_device_api=user_device_api
-        )
+        service = UserDeviceService(api_client=api_client, user_device_api=user_device_api)
         return service, user_device_api
 
     def test_raises_on_empty_pairing_id(self) -> None:
@@ -111,16 +94,12 @@ class TestUserDeviceServiceStartPairing:
     def test_raises_on_empty_nonce(self) -> None:
         service, _ = self._make_service()
         with pytest.raises(ValueError, match="nonce"):
-            service.start_pairing(
-                pairing_id="pair-1", nonce="", encryption_key="key"
-            )
+            service.start_pairing(pairing_id="pair-1", nonce="", encryption_key="key")
 
     def test_raises_on_empty_encryption_key(self) -> None:
         service, _ = self._make_service()
         with pytest.raises(ValueError, match="encryption_key"):
-            service.start_pairing(
-                pairing_id="pair-1", nonce="123456", encryption_key=""
-            )
+            service.start_pairing(pairing_id="pair-1", nonce="123456", encryption_key="")
 
 
 class TestUserDeviceServiceApprovePairing:
@@ -129,9 +108,7 @@ class TestUserDeviceServiceApprovePairing:
     def _make_service(self) -> tuple:
         api_client = MagicMock()
         user_device_api = MagicMock()
-        service = UserDeviceService(
-            api_client=api_client, user_device_api=user_device_api
-        )
+        service = UserDeviceService(api_client=api_client, user_device_api=user_device_api)
         return service, user_device_api
 
     def test_raises_on_empty_pairing_id(self) -> None:
@@ -151,9 +128,7 @@ class TestUserDeviceServiceGetPairingStatus:
     def _make_service(self) -> tuple:
         api_client = MagicMock()
         user_device_api = MagicMock()
-        service = UserDeviceService(
-            api_client=api_client, user_device_api=user_device_api
-        )
+        service = UserDeviceService(api_client=api_client, user_device_api=user_device_api)
         return service, user_device_api
 
     def test_raises_on_empty_pairing_id(self) -> None:

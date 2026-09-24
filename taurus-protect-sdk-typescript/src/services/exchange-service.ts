@@ -20,7 +20,9 @@ import type {
   ListExchangesOptions,
   ListExchangesResult,
 } from '../models/exchange';
+import { buildCursorPage, cursorRequest } from '../models/pagination';
 import { BaseService } from './base';
+import { cursorQuery } from './paging';
 
 /**
  * Service for managing exchange accounts in the Taurus-PROTECT system.
@@ -68,10 +70,11 @@ export class ExchangeService extends BaseService {
   }
 
   /**
-   * Lists exchange accounts.
+   * Lists a page of exchange accounts.
    *
-   * @param options - Optional filtering and pagination options
-   * @returns Result containing exchange accounts and pagination cursor
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
+   * @returns The page of exchange accounts and its cursor pagination
+   * @throws {@link ValidationError} If the page size or cursor options are invalid
    * @throws {@link APIError} If API request fails
    *
    * @example
@@ -89,18 +92,17 @@ export class ExchangeService extends BaseService {
    * // Paginate through results
    * let cursor: string | undefined;
    * do {
-   *   const page = await exchangeService.list({
-   *     pageSize: 50,
-   *     currentPage: cursor,
-   *   });
+   *   const page = await exchangeService.list({ pageSize: 50, cursor });
    *   for (const exchange of page.items) {
    *     console.log(exchange.id);
    *   }
-   *   cursor = page.nextCursor;
+   *   cursor = page.pagination.hasMore ? page.pagination.nextCursor : undefined;
    * } while (cursor);
    * ```
    */
   async list(options?: ListExchangesOptions): Promise<ListExchangesResult> {
+    const page = cursorRequest(options);
+
     return this.execute(async () => {
       const response = await this.exchangeApi.exchangeServiceGetExchanges({
         currencyID: options?.currencyId,
@@ -109,25 +111,12 @@ export class ExchangeService extends BaseService {
         sortOrder: options?.sortOrder,
         status: options?.status,
         onlyPositiveBalance: options?.onlyPositiveBalance,
-        cursorPageSize: options?.pageSize?.toString(),
-        cursorCurrentPage: options?.currentPage,
-        cursorPageRequest: options?.pageRequest,
+        ...cursorQuery(page),
       });
 
-      const result =
-        (response as Record<string, unknown>).result ??
-        (response as Record<string, unknown>).exchanges;
-      const items = exchangesFromDto(result as unknown[]);
-
-      // Extract next cursor from response
-      const cursor = (response as Record<string, unknown>).cursor as
-        | Record<string, unknown>
-        | undefined;
-      const nextCursor = cursor?.nextPage as string | undefined;
-
       return {
-        items,
-        nextCursor,
+        items: exchangesFromDto(response.result),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
       };
     });
   }
@@ -157,10 +146,7 @@ export class ExchangeService extends BaseService {
     return this.execute(async () => {
       const response = await this.exchangeApi.exchangeServiceGetExchange({ id });
 
-      const result =
-        (response as Record<string, unknown>).result ??
-        (response as Record<string, unknown>).exchange;
-      const exchange = exchangeFromDto(result);
+      const exchange = exchangeFromDto(response.result);
 
       if (!exchange) {
         throw new NotFoundError(`Exchange account with id '${id}' not found`);
@@ -190,10 +176,7 @@ export class ExchangeService extends BaseService {
     return this.execute(async () => {
       const response = await this.exchangeApi.exchangeServiceGetExchangeCounterparties();
 
-      const result =
-        (response as Record<string, unknown>).exchanges ??
-        (response as Record<string, unknown>).result;
-      return exchangeCounterpartiesFromDto(result as unknown[]);
+      return exchangeCounterpartiesFromDto(response.exchanges);
     });
   }
 
@@ -268,10 +251,7 @@ export class ExchangeService extends BaseService {
         format,
       });
 
-      const result =
-        (response as Record<string, unknown>).result ??
-        (response as Record<string, unknown>).data;
-      return (result as string) ?? '';
+      return response.result ?? '';
     });
   }
 }

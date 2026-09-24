@@ -73,7 +73,16 @@ export interface RequestBundleSignedRequestBundle {
      * @memberof RequestBundleSignedRequestBundle
      */
     confirmationDate?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof RequestBundleSignedRequestBundle
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const RequestBundleSignedRequestBundleWireKeys: ReadonlySet<string> = new Set(['id', 'status', 'transaction', 'hash', 'details', 'creationDate', 'updateDate', 'broadcastDate', 'confirmationDate']);
 
 /**
  * Check if a given object implements the RequestBundleSignedRequestBundle interface.
@@ -90,7 +99,7 @@ export function RequestBundleSignedRequestBundleFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: RequestBundleSignedRequestBundle = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'status': json['status'] == null ? undefined : json['status'],
@@ -102,6 +111,16 @@ export function RequestBundleSignedRequestBundleFromJSONTyped(json: any, ignoreD
         'broadcastDate': json['broadcastDate'] == null ? undefined : (new Date(json['broadcastDate'])),
         'confirmationDate': json['confirmationDate'] == null ? undefined : (new Date(json['confirmationDate'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!RequestBundleSignedRequestBundleWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function RequestBundleSignedRequestBundleToJSON(json: any): RequestBundleSignedRequestBundle {
@@ -124,6 +143,7 @@ export function RequestBundleSignedRequestBundleFromJSONTyped(json: any, ignoreD
         'updateDate': value['updateDate'] == null ? undefined : ((value['updateDate']).toISOString()),
         'broadcastDate': value['broadcastDate'] == null ? undefined : ((value['broadcastDate']).toISOString()),
         'confirmationDate': value['confirmationDate'] == null ? undefined : ((value['confirmationDate']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

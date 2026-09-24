@@ -33,7 +33,16 @@ export interface TgvalidatordUpdateWebhookStatusReply {
      * @memberof TgvalidatordUpdateWebhookStatusReply
      */
     webhook?: TgvalidatordWebhook;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordUpdateWebhookStatusReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordUpdateWebhookStatusReplyWireKeys: ReadonlySet<string> = new Set(['webhook']);
 
 /**
  * Check if a given object implements the TgvalidatordUpdateWebhookStatusReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordUpdateWebhookStatusReplyFromJSONTyped(json: any, ign
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordUpdateWebhookStatusReply = {
         
         'webhook': json['webhook'] == null ? undefined : TgvalidatordWebhookFromJSON(json['webhook']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordUpdateWebhookStatusReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordUpdateWebhookStatusReplyToJSON(json: any): TgvalidatordUpdateWebhookStatusReply {
@@ -68,6 +87,7 @@ export function TgvalidatordUpdateWebhookStatusReplyFromJSONTyped(json: any, ign
     return {
         
         'webhook': TgvalidatordWebhookToJSON(value['webhook']),
+        ...value['additionalProperties'],
     };
 }
 

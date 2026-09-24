@@ -44,22 +44,6 @@ export interface CryptoPunkMetadata {
 }
 
 /**
- * Options for getting ERC token metadata.
- */
-export interface GetERCTokenMetadataOptions {
-  /** The network (e.g., "mainnet", "goerli") */
-  network: string;
-  /** The contract address */
-  contract: string;
-  /** The token ID (required for ERC-721/1155, optional for ERC-20) */
-  tokenId?: string;
-  /** Whether to include base64 data (for NFTs) */
-  withData?: boolean;
-  /** The blockchain symbol (e.g., "ETH") */
-  blockchain?: string;
-}
-
-/**
  * Options for getting EVM ERC token metadata.
  */
 export interface GetEVMERCTokenMetadataOptions {

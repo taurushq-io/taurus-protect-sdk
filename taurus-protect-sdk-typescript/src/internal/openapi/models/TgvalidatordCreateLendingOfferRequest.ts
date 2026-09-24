@@ -57,7 +57,16 @@ export interface TgvalidatordCreateLendingOfferRequest {
      * @memberof TgvalidatordCreateLendingOfferRequest
      */
     amount?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateLendingOfferRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateLendingOfferRequestWireKeys: ReadonlySet<string> = new Set(['annualPercentageYield', 'duration', 'collateralRequirement', 'currencyID', 'amount']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateLendingOfferRequest interface.
@@ -74,7 +83,7 @@ export function TgvalidatordCreateLendingOfferRequestFromJSONTyped(json: any, ig
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateLendingOfferRequest = {
         
         'annualPercentageYield': json['annualPercentageYield'] == null ? undefined : json['annualPercentageYield'],
         'duration': json['duration'] == null ? undefined : json['duration'],
@@ -82,6 +91,16 @@ export function TgvalidatordCreateLendingOfferRequestFromJSONTyped(json: any, ig
         'currencyID': json['currencyID'] == null ? undefined : json['currencyID'],
         'amount': json['amount'] == null ? undefined : json['amount'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateLendingOfferRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateLendingOfferRequestToJSON(json: any): TgvalidatordCreateLendingOfferRequest {
@@ -100,6 +119,7 @@ export function TgvalidatordCreateLendingOfferRequestFromJSONTyped(json: any, ig
         'collateralRequirement': value['collateralRequirement'] == null ? undefined : ((value['collateralRequirement'] as Array<any>).map(CreateLendingOfferRequestCollateralRequirementToJSON)),
         'currencyID': value['currencyID'],
         'amount': value['amount'],
+        ...value['additionalProperties'],
     };
 }
 

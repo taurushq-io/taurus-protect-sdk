@@ -33,7 +33,16 @@ export interface TgvalidatordGetPublicKeysReply {
      * @memberof TgvalidatordGetPublicKeysReply
      */
     publicKeys?: Array<GetPublicKeysReplyPublicKey>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetPublicKeysReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetPublicKeysReplyWireKeys: ReadonlySet<string> = new Set(['publicKeys']);
 
 /**
  * Check if a given object implements the TgvalidatordGetPublicKeysReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetPublicKeysReplyFromJSONTyped(json: any, ignoreDis
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetPublicKeysReply = {
         
         'publicKeys': json['publicKeys'] == null ? undefined : ((json['publicKeys'] as Array<any>).map(GetPublicKeysReplyPublicKeyFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetPublicKeysReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetPublicKeysReplyToJSON(json: any): TgvalidatordGetPublicKeysReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetPublicKeysReplyFromJSONTyped(json: any, ignoreDis
     return {
         
         'publicKeys': value['publicKeys'] == null ? undefined : ((value['publicKeys'] as Array<any>).map(GetPublicKeysReplyPublicKeyToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

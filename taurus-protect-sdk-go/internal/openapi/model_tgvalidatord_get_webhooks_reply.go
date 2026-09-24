@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordGetWebhooksReply{}
 type TgvalidatordGetWebhooksReply struct {
 	Webhooks []TgvalidatordWebhook `json:"webhooks,omitempty"`
 	Cursor *TgvalidatordResponseCursor `json:"cursor,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetWebhooksReply TgvalidatordGetWebhooksReply
 
 // NewTgvalidatordGetWebhooksReply instantiates a new TgvalidatordGetWebhooksReply object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordGetWebhooksReply) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Cursor) {
 		toSerialize["cursor"] = o.Cursor
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetWebhooksReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetWebhooksReply := _TgvalidatordGetWebhooksReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetWebhooksReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetWebhooksReply(varTgvalidatordGetWebhooksReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "webhooks")
+		delete(additionalProperties, "cursor")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetWebhooksReply struct {

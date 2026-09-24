@@ -46,7 +46,16 @@ export interface TgvalidatordGetAssetsReply {
      * @memberof TgvalidatordGetAssetsReply
      */
     cursor?: TgvalidatordResponseCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetAssetsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetAssetsReplyWireKeys: ReadonlySet<string> = new Set(['result', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetAssetsReply interface.
@@ -63,11 +72,21 @@ export function TgvalidatordGetAssetsReplyFromJSONTyped(json: any, ignoreDiscrim
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetAssetsReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordAssetResourceFromJSON)),
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetAssetsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetAssetsReplyToJSON(json: any): TgvalidatordGetAssetsReply {
@@ -83,6 +102,7 @@ export function TgvalidatordGetAssetsReplyFromJSONTyped(json: any, ignoreDiscrim
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordAssetResourceToJSON)),
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
+        ...value['additionalProperties'],
     };
 }
 

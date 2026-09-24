@@ -57,7 +57,16 @@ export interface TgvalidatordFee {
      * @memberof TgvalidatordFee
      */
     updateDate?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordFee
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordFeeWireKeys: ReadonlySet<string> = new Set(['currencyId', 'value', 'denom', 'currencyInfo', 'updateDate']);
 
 /**
  * Check if a given object implements the TgvalidatordFee interface.
@@ -74,7 +83,7 @@ export function TgvalidatordFeeFromJSONTyped(json: any, ignoreDiscriminator: boo
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordFee = {
         
         'currencyId': json['currencyId'] == null ? undefined : json['currencyId'],
         'value': json['value'] == null ? undefined : json['value'],
@@ -82,6 +91,16 @@ export function TgvalidatordFeeFromJSONTyped(json: any, ignoreDiscriminator: boo
         'currencyInfo': json['currencyInfo'] == null ? undefined : TgvalidatordCurrencyFromJSON(json['currencyInfo']),
         'updateDate': json['updateDate'] == null ? undefined : (new Date(json['updateDate'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordFeeWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordFeeToJSON(json: any): TgvalidatordFee {
@@ -100,6 +119,7 @@ export function TgvalidatordFeeFromJSONTyped(json: any, ignoreDiscriminator: boo
         'denom': value['denom'],
         'currencyInfo': TgvalidatordCurrencyToJSON(value['currencyInfo']),
         'updateDate': value['updateDate'] == null ? undefined : ((value['updateDate']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

@@ -91,7 +91,16 @@ export interface TgvalidatordPersonTravelRuleData {
      * @memberof TgvalidatordPersonTravelRuleData
      */
     accountNumber?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordPersonTravelRuleData
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordPersonTravelRuleDataWireKeys: ReadonlySet<string> = new Set(['name', 'houseNumber', 'street', 'city', 'province', 'postalCode', 'country', 'idNumber', 'externalCustomerID', 'birthdate', 'birthPlace', 'accountNumber']);
 
 /**
  * Check if a given object implements the TgvalidatordPersonTravelRuleData interface.
@@ -108,7 +117,7 @@ export function TgvalidatordPersonTravelRuleDataFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordPersonTravelRuleData = {
         
         'name': json['name'] == null ? undefined : json['name'],
         'houseNumber': json['houseNumber'] == null ? undefined : json['houseNumber'],
@@ -123,6 +132,16 @@ export function TgvalidatordPersonTravelRuleDataFromJSONTyped(json: any, ignoreD
         'birthPlace': json['birthPlace'] == null ? undefined : json['birthPlace'],
         'accountNumber': json['accountNumber'] == null ? undefined : json['accountNumber'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordPersonTravelRuleDataWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordPersonTravelRuleDataToJSON(json: any): TgvalidatordPersonTravelRuleData {
@@ -148,6 +167,7 @@ export function TgvalidatordPersonTravelRuleDataFromJSONTyped(json: any, ignoreD
         'birthdate': value['birthdate'],
         'birthPlace': value['birthPlace'],
         'accountNumber': value['accountNumber'],
+        ...value['additionalProperties'],
     };
 }
 

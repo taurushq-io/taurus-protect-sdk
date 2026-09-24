@@ -38,7 +38,16 @@ export interface TgvalidatordResponseCursor {
      * @memberof TgvalidatordResponseCursor
      */
     hasNext?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordResponseCursor
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordResponseCursorWireKeys: ReadonlySet<string> = new Set(['currentPage', 'hasPrevious', 'hasNext']);
 
 /**
  * Check if a given object implements the TgvalidatordResponseCursor interface.
@@ -55,12 +64,22 @@ export function TgvalidatordResponseCursorFromJSONTyped(json: any, ignoreDiscrim
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordResponseCursor = {
         
         'currentPage': json['currentPage'] == null ? undefined : json['currentPage'],
         'hasPrevious': json['hasPrevious'] == null ? undefined : json['hasPrevious'],
         'hasNext': json['hasNext'] == null ? undefined : json['hasNext'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordResponseCursorWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordResponseCursorToJSON(json: any): TgvalidatordResponseCursor {
@@ -77,6 +96,7 @@ export function TgvalidatordResponseCursorFromJSONTyped(json: any, ignoreDiscrim
         'currentPage': value['currentPage'],
         'hasPrevious': value['hasPrevious'],
         'hasNext': value['hasNext'],
+        ...value['additionalProperties'],
     };
 }
 

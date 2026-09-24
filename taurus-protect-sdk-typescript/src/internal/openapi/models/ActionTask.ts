@@ -52,7 +52,16 @@ export interface ActionTask {
      * @memberof ActionTask
      */
     notification?: TaskNotification;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof ActionTask
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const ActionTaskWireKeys: ReadonlySet<string> = new Set(['kind', 'transfer', 'notification']);
 
 /**
  * Check if a given object implements the ActionTask interface.
@@ -69,12 +78,22 @@ export function ActionTaskFromJSONTyped(json: any, ignoreDiscriminator: boolean)
     if (json == null) {
         return json;
     }
-    return {
+    const result: ActionTask = {
         
         'kind': json['kind'] == null ? undefined : json['kind'],
         'transfer': json['transfer'] == null ? undefined : TaskTransferFromJSON(json['transfer']),
         'notification': json['notification'] == null ? undefined : TaskNotificationFromJSON(json['notification']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!ActionTaskWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function ActionTaskToJSON(json: any): ActionTask {
@@ -91,6 +110,7 @@ export function ActionTaskFromJSONTyped(json: any, ignoreDiscriminator: boolean)
         'kind': value['kind'],
         'transfer': TaskTransferToJSON(value['transfer']),
         'notification': TaskNotificationToJSON(value['notification']),
+        ...value['additionalProperties'],
     };
 }
 

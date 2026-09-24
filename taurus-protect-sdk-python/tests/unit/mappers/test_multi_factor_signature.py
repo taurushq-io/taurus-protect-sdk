@@ -2,7 +2,8 @@
 
 The kind is the only thing in a multi-factor signature reply that tells a caller which
 verifying reader to check ``payload_to_sign`` against, so neither direction of the
-mapping is allowed to default an unknown value to something plausible.
+mapping is allowed to default an unknown value to something plausible: an unknown kind
+passes through with its raw value.
 """
 
 from __future__ import annotations
@@ -12,7 +13,6 @@ import pytest
 from taurus_protect._internal.openapi.models.tgvalidatord_multi_factor_signatures_entity_type import (  # noqa: E501
     TgvalidatordMultiFactorSignaturesEntityType,
 )
-from taurus_protect.errors import IntegrityError
 from taurus_protect.models.multi_factor_signature import MultiFactorSignatureEntityType
 from taurus_protect.services.multi_factor_signature_service import (
     _entity_type_from_dto,
@@ -42,10 +42,12 @@ class TestEntityTypeToDto:
             == TgvalidatordMultiFactorSignaturesEntityType.WHITELISTED_ADDRESS
         )
 
-    def test_refuses_an_unknown_kind(self) -> None:
-        """Sending the wrong kind would put an entity through the wrong approval channel."""
-        with pytest.raises(ValueError, match="unknown multi-factor signature entity type"):
-            _entity_type_to_dto("WALLET")
+    def test_sends_an_unknown_kind_verbatim(self) -> None:
+        """validatord judges a kind it does not know; the SDK neither refuses nor substitutes."""
+        dto = _entity_type_to_dto("WALLET")
+
+        assert dto.value == "WALLET"
+        assert not any(dto is member for member in TgvalidatordMultiFactorSignaturesEntityType)
 
 
 class TestEntityTypeFromDto:
@@ -63,11 +65,17 @@ class TestEntityTypeFromDto:
             is MultiFactorSignatureEntityType.WHITELISTED_CONTRACT
         )
 
-    def test_an_unknown_kind_is_an_integrity_error_not_a_default(self) -> None:
+    @pytest.mark.parametrize(
+        "wire",
+        ["SOMETHING_NEW", TgvalidatordMultiFactorSignaturesEntityType("SOMETHING_NEW")],
+        ids=["bare string", "generated enum"],
+    )
+    def test_an_unknown_kind_keeps_its_raw_value_and_is_not_defaulted(self, wire: object) -> None:
         """Defaulting would tell the caller a payload covers a REQUEST when it does not."""
-        with pytest.raises(IntegrityError, match="unknown multi-factor signature entity type"):
-            _entity_type_from_dto("SOMETHING_NEW")
+        kind = _entity_type_from_dto(wire)
 
-    def test_a_missing_kind_is_an_integrity_error(self) -> None:
-        with pytest.raises(IntegrityError, match="carries no entity type"):
-            _entity_type_from_dto(None)
+        assert kind.value == "SOMETHING_NEW"
+        assert not any(kind is member for member in MultiFactorSignatureEntityType)
+
+    def test_a_missing_kind_stays_none(self) -> None:
+        assert _entity_type_from_dto(None) is None

@@ -5,6 +5,8 @@
  * atomic exchanges of assets between two participants.
  */
 
+import type { CursorNavigationOptions } from '../pagination';
+
 /**
  * Settlement status enum.
  */
@@ -162,15 +164,25 @@ export interface RejectSettlementRequest {
 // Filter options
 
 /**
- * Options for listing settlements.
+ * Options for listing settlements. A cursor list: `pageSize` 1-100 (default 20) and the
+ * `cursor` of a previous page.
  */
-export interface ListSettlementsOptions {
-  /** Maximum items to return (default: 50, max: 1000). */
-  readonly limit?: number;
-  /** Number of items to skip. */
-  readonly offset?: number;
-  /** Filter by statuses. */
+export interface ListSettlementsOptions extends CursorNavigationOptions {
+  /** Filter by counterparty participant ID */
+  readonly counterParticipantId?: string;
+  /** Filter by statuses */
   readonly statuses?: string[];
-  /** Filter by participant ID (creator or target). */
-  readonly participantId?: string;
+  /** Sort order ("ASC" or "DESC") */
+  readonly sortOrder?: string;
+}
+
+/**
+ * Options for listing the settlements awaiting approval. A cursor list: `pageSize` 1-100
+ * (default 20) and the `cursor` of a previous page.
+ */
+export interface ListSettlementsForApprovalOptions extends CursorNavigationOptions {
+  /** Filter by settlement IDs */
+  readonly ids?: string[];
+  /** Sort order ("ASC" or "DESC") */
+  readonly sortOrder?: string;
 }

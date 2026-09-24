@@ -1,3 +1,4 @@
+import type { CursorPage, CursorPageOptions } from './pagination';
 import type { RuleCell } from './rule-cell';
 
 export type { RuleCell } from './rule-cell';
@@ -243,14 +244,10 @@ export interface GovernanceRules {
 }
 
 /**
- * Options for listing governance rules history.
+ * Options for listing governance rules history. A token list: `pageSize` 1-100
+ * (default 20) and the `cursor` of a previous page.
  */
-export interface ListGovernanceRulesHistoryOptions {
-  /** Maximum number of rules to return (default: 50) */
-  readonly limit?: number;
-  /** Pagination cursor from a previous call */
-  readonly cursor?: string;
-}
+export type ListGovernanceRulesHistoryOptions = CursorPageOptions;
 
 /**
  * Result from listing governance rules history.
@@ -287,8 +284,11 @@ export interface GovernanceRulesHistoryResult {
    * and aborting would deny the whole audit trail.
    */
   readonly excludedUnverified: ExcludedRuleset[];
-  /** Cursor for fetching the next page, undefined if no more pages */
-  readonly nextCursor: string | undefined;
+  /**
+   * Cursor pagination: continue with `cursor: pagination.nextCursor` while `hasMore`.
+   * `totalItems` is the server's total less the entries withheld as unverifiable.
+   */
+  readonly pagination: CursorPage;
 }
 
 /**

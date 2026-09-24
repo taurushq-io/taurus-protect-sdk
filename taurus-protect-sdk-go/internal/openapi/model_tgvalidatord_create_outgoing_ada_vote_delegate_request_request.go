@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -33,6 +32,7 @@ type TgvalidatordCreateOutgoingADAVoteDelegateRequestRequest struct {
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
 	// string; Delegate representative: can be either 'ABSTAIN' (votes don't count), 'NOCONFIDENCE' (always vote against proposals) or an address (format drep1....).
 	Drep string `json:"drep"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingADAVoteDelegateRequestRequest TgvalidatordCreateOutgoingADAVoteDelegateRequestRequest
@@ -256,6 +256,11 @@ func (o TgvalidatordCreateOutgoingADAVoteDelegateRequestRequest) ToMap() (map[st
 		toSerialize["externalRequestId"] = o.ExternalRequestId
 	}
 	toSerialize["drep"] = o.Drep
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -284,15 +289,25 @@ func (o *TgvalidatordCreateOutgoingADAVoteDelegateRequestRequest) UnmarshalJSON(
 
 	varTgvalidatordCreateOutgoingADAVoteDelegateRequestRequest := _TgvalidatordCreateOutgoingADAVoteDelegateRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingADAVoteDelegateRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingADAVoteDelegateRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingADAVoteDelegateRequestRequest(varTgvalidatordCreateOutgoingADAVoteDelegateRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "useUnconfirmedFunds")
+		delete(additionalProperties, "externalRequestId")
+		delete(additionalProperties, "drep")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

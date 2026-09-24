@@ -25,7 +25,16 @@ export interface TgvalidatordScimRole {
      * @memberof TgvalidatordScimRole
      */
     value?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordScimRole
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordScimRoleWireKeys: ReadonlySet<string> = new Set(['value']);
 
 /**
  * Check if a given object implements the TgvalidatordScimRole interface.
@@ -42,10 +51,20 @@ export function TgvalidatordScimRoleFromJSONTyped(json: any, ignoreDiscriminator
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordScimRole = {
         
         'value': json['value'] == null ? undefined : json['value'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordScimRoleWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordScimRoleToJSON(json: any): TgvalidatordScimRole {
@@ -60,6 +79,7 @@ export function TgvalidatordScimRoleFromJSONTyped(json: any, ignoreDiscriminator
     return {
         
         'value': value['value'],
+        ...value['additionalProperties'],
     };
 }
 

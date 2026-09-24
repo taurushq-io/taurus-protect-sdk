@@ -20,7 +20,10 @@ var _ MappedNullable = &MaintenanceServiceForceKillBundleBody{}
 // MaintenanceServiceForceKillBundleBody struct for MaintenanceServiceForceKillBundleBody
 type MaintenanceServiceForceKillBundleBody struct {
 	TenantId *string `json:"tenantId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _MaintenanceServiceForceKillBundleBody MaintenanceServiceForceKillBundleBody
 
 // NewMaintenanceServiceForceKillBundleBody instantiates a new MaintenanceServiceForceKillBundleBody object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o MaintenanceServiceForceKillBundleBody) ToMap() (map[string]interface{}, 
 	if !IsNil(o.TenantId) {
 		toSerialize["tenantId"] = o.TenantId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *MaintenanceServiceForceKillBundleBody) UnmarshalJSON(data []byte) (err error) {
+	varMaintenanceServiceForceKillBundleBody := _MaintenanceServiceForceKillBundleBody{}
+
+	err = json.Unmarshal(data, &varMaintenanceServiceForceKillBundleBody)
+
+	if err != nil {
+		return err
+	}
+
+	*o = MaintenanceServiceForceKillBundleBody(varMaintenanceServiceForceKillBundleBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "tenantId")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableMaintenanceServiceForceKillBundleBody struct {

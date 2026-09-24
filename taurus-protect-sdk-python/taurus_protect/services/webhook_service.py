@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
 from taurus_protect.mappers.webhook import webhook_from_dto, webhooks_from_dto
-from taurus_protect.models.pagination import Pagination
+from taurus_protect.models.pagination import MAX_PAGE_SIZE, CursorPage, cursor_page, cursor_request
 from taurus_protect.models.webhook import Webhook
 from taurus_protect.services._base import BaseService
 
@@ -22,7 +22,7 @@ class WebhookService(BaseService):
 
     Example:
         >>> # List webhooks
-        >>> webhooks, pagination = client.webhooks.list(limit=50)
+        >>> webhooks, page = client.webhooks.list(page_size=100)
         >>> for webhook in webhooks:
         ...     print(f"{webhook.id}: {webhook.url} ({webhook.status})")
         >>>
@@ -53,53 +53,48 @@ class WebhookService(BaseService):
 
     def list(
         self,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> Tuple[List[Webhook], Optional[Pagination]]:
+        page_size: Optional[int] = None,
+        cursor: Optional[str] = None,
+        *,
+        type: Optional[str] = None,
+        url: Optional[str] = None,
+        sort_order: Optional[str] = None,
+        current_page: Optional[str] = None,
+        page_request: Optional[str] = None,
+    ) -> Tuple[List[Webhook], CursorPage]:
         """
-        List webhooks with pagination.
+        List webhooks, one page at a time.
 
         Args:
-            limit: Maximum number of webhooks to return (must be positive).
-            offset: Number of webhooks to skip (must be non-negative).
+            page_size: Page size (default 20, max 100).
+            cursor: ``page.next_cursor`` from the previous page, to continue.
+            type: Filter by webhook type.
+            url: Filter by URL.
+            sort_order: ASC or DESC.
+            current_page: Low-level page token; not with ``cursor``.
+            page_request: Low-level page direction (FIRST, PREVIOUS, NEXT, LAST).
 
         Returns:
-            Tuple of (webhooks list, pagination info).
+            Tuple of (webhooks, page).
 
         Raises:
-            ValueError: If limit or offset are invalid.
+            ValueError: If the page size is invalid or cursor options conflict.
             APIError: If API request fails.
         """
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
+        req = cursor_request(
+            page_size, cursor, current_page=current_page, page_request=page_request
+        )
 
         try:
             resp = self._webhooks_api.webhook_service_get_webhooks(
-                type=None,
-                url=None,
-                cursor_current_page=None,
-                cursor_page_request=None,
-                cursor_page_size=str(limit),
-                sort_order=None,
+                type=type,
+                url=url,
+                sort_order=sort_order,
+                **req.query_params(),
             )
 
-            webhooks_dto = getattr(resp, "webhooks", None)
-            webhooks = webhooks_from_dto(webhooks_dto) if webhooks_dto else []
-
-            # Extract pagination from cursor if available
-            cursor = getattr(resp, "cursor", None)
-            pagination = None
-            if cursor:
-                total_items = getattr(cursor, "total_items", None)
-                pagination = self._extract_pagination(
-                    total_items=total_items,
-                    offset=offset,
-                    limit=limit,
-                )
-
-            return webhooks, pagination
+            webhooks = webhooks_from_dto(resp.webhooks or [])
+            return webhooks, cursor_page(req.page_size, resp.cursor)
         except Exception as e:
             from taurus_protect.errors import APIError
 
@@ -111,8 +106,8 @@ class WebhookService(BaseService):
         """
         Get a webhook by ID.
 
-        Note: This method lists webhooks and filters by ID since the API
-        does not provide a direct get-by-ID endpoint.
+        The API has no get-by-ID endpoint, so this walks the webhooks page by page
+        until the ID is found.
 
         Args:
             webhook_id: The webhook ID to retrieve.
@@ -127,34 +122,17 @@ class WebhookService(BaseService):
         """
         self._validate_required(webhook_id, "webhook_id")
 
-        try:
-            # List webhooks and find the one with matching ID
-            resp = self._webhooks_api.webhook_service_get_webhooks(
-                type=None,
-                url=None,
-                cursor_current_page=None,
-                cursor_page_request=None,
-                cursor_page_size="100",
-                sort_order=None,
-            )
+        from taurus_protect.errors import NotFoundError
 
-            webhooks_dto = getattr(resp, "webhooks", None)
-            if webhooks_dto:
-                for dto in webhooks_dto:
-                    if getattr(dto, "id", None) == webhook_id:
-                        webhook = webhook_from_dto(dto)
-                        if webhook:
-                            return webhook
-
-            from taurus_protect.errors import NotFoundError
-
-            raise NotFoundError(f"Webhook {webhook_id} not found")
-        except Exception as e:
-            from taurus_protect.errors import APIError, NotFoundError
-
-            if isinstance(e, (APIError, NotFoundError, ValueError)):
-                raise
-            raise self._handle_error(e) from e
+        cursor: Optional[str] = None
+        while True:
+            webhooks, page = self.list(page_size=MAX_PAGE_SIZE, cursor=cursor)
+            for webhook in webhooks:
+                if webhook.id == webhook_id:
+                    return webhook
+            if not page.has_more:
+                raise NotFoundError(f"Webhook {webhook_id} not found")
+            cursor = page.next_cursor
 
     def create(
         self,

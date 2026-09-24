@@ -90,10 +90,7 @@ export class BlockchainService extends BaseService {
         includeBlockHeight: options?.includeBlockHeight,
       });
 
-      const result =
-        (response as Record<string, unknown>).blockchains ??
-        (response as Record<string, unknown>).result;
-      return blockchainsFromDto(result as unknown[]);
+      return blockchainsFromDto(response.blockchains);
     });
   }
 
@@ -137,10 +134,7 @@ export class BlockchainService extends BaseService {
         includeBlockHeight,
       });
 
-      const result =
-        (response as Record<string, unknown>).blockchains ??
-        (response as Record<string, unknown>).result;
-      const blockchains = blockchainsFromDto(result as unknown[]);
+      const blockchains = blockchainsFromDto(response.blockchains);
 
       if (blockchains.length === 0) {
         throw new NotFoundError(

@@ -67,7 +67,16 @@ export interface TgvalidatordSolanaNativeTokenState {
      * @memberof TgvalidatordSolanaNativeTokenState
      */
     freezeAuthority?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordSolanaNativeTokenState
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordSolanaNativeTokenStateWireKeys: ReadonlySet<string> = new Set(['name', 'symbol', 'decimals', 'type', 'uri', 'owner', 'mintAuthority', 'freezeAuthority']);
 
 /**
  * Check if a given object implements the TgvalidatordSolanaNativeTokenState interface.
@@ -84,7 +93,7 @@ export function TgvalidatordSolanaNativeTokenStateFromJSONTyped(json: any, ignor
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordSolanaNativeTokenState = {
         
         'name': json['name'] == null ? undefined : json['name'],
         'symbol': json['symbol'] == null ? undefined : json['symbol'],
@@ -95,6 +104,16 @@ export function TgvalidatordSolanaNativeTokenStateFromJSONTyped(json: any, ignor
         'mintAuthority': json['mintAuthority'] == null ? undefined : json['mintAuthority'],
         'freezeAuthority': json['freezeAuthority'] == null ? undefined : json['freezeAuthority'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordSolanaNativeTokenStateWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordSolanaNativeTokenStateToJSON(json: any): TgvalidatordSolanaNativeTokenState {
@@ -116,6 +135,7 @@ export function TgvalidatordSolanaNativeTokenStateFromJSONTyped(json: any, ignor
         'owner': value['owner'],
         'mintAuthority': value['mintAuthority'],
         'freezeAuthority': value['freezeAuthority'],
+        ...value['additionalProperties'],
     };
 }
 

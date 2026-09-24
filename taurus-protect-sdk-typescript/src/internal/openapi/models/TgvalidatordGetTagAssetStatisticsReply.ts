@@ -46,7 +46,16 @@ export interface TgvalidatordGetTagAssetStatisticsReply {
      * @memberof TgvalidatordGetTagAssetStatisticsReply
      */
     cursor?: TgvalidatordResponseCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetTagAssetStatisticsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetTagAssetStatisticsReplyWireKeys: ReadonlySet<string> = new Set(['result', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetTagAssetStatisticsReply interface.
@@ -63,11 +72,21 @@ export function TgvalidatordGetTagAssetStatisticsReplyFromJSONTyped(json: any, i
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetTagAssetStatisticsReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordTagAssetStatisticsFromJSON)),
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetTagAssetStatisticsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetTagAssetStatisticsReplyToJSON(json: any): TgvalidatordGetTagAssetStatisticsReply {
@@ -83,6 +102,7 @@ export function TgvalidatordGetTagAssetStatisticsReplyFromJSONTyped(json: any, i
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordTagAssetStatisticsToJSON)),
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
+        ...value['additionalProperties'],
     };
 }
 

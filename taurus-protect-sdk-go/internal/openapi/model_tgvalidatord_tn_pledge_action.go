@@ -33,7 +33,10 @@ type TgvalidatordTnPledgeAction struct {
 	Envelope *string `json:"envelope,omitempty"`
 	Trails []TgvalidatordTnPledgeActionTrail `json:"trails,omitempty"`
 	PledgeWithdrawalID *string `json:"pledgeWithdrawalID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTnPledgeAction TgvalidatordTnPledgeAction
 
 // NewTgvalidatordTnPledgeAction instantiates a new TgvalidatordTnPledgeAction object
 // This constructor will assign default values to properties that have it defined,
@@ -517,7 +520,45 @@ func (o TgvalidatordTnPledgeAction) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.PledgeWithdrawalID) {
 		toSerialize["pledgeWithdrawalID"] = o.PledgeWithdrawalID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTnPledgeAction) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTnPledgeAction := _TgvalidatordTnPledgeAction{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTnPledgeAction)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTnPledgeAction(varTgvalidatordTnPledgeAction)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "pledgeID")
+		delete(additionalProperties, "actionType")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "metadata")
+		delete(additionalProperties, "rule")
+		delete(additionalProperties, "approvers")
+		delete(additionalProperties, "needsApprovalFrom")
+		delete(additionalProperties, "createdAt")
+		delete(additionalProperties, "lastApprovalDate")
+		delete(additionalProperties, "envelope")
+		delete(additionalProperties, "trails")
+		delete(additionalProperties, "pledgeWithdrawalID")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTnPledgeAction struct {

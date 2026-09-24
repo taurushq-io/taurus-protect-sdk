@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordGetHealthCheckReply{}
 // TgvalidatordGetHealthCheckReply struct for TgvalidatordGetHealthCheckReply
 type TgvalidatordGetHealthCheckReply struct {
 	Health *TgvalidatordHealth `json:"health,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetHealthCheckReply TgvalidatordGetHealthCheckReply
 
 // NewTgvalidatordGetHealthCheckReply instantiates a new TgvalidatordGetHealthCheckReply object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordGetHealthCheckReply) ToMap() (map[string]interface{}, error)
 	if !IsNil(o.Health) {
 		toSerialize["health"] = o.Health
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetHealthCheckReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetHealthCheckReply := _TgvalidatordGetHealthCheckReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetHealthCheckReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetHealthCheckReply(varTgvalidatordGetHealthCheckReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "health")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetHealthCheckReply struct {

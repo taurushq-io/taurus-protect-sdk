@@ -33,7 +33,16 @@ export interface TgvalidatordGetRulesReply {
      * @memberof TgvalidatordGetRulesReply
      */
     result?: TgvalidatordRules;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetRulesReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetRulesReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetRulesReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetRulesReplyFromJSONTyped(json: any, ignoreDiscrimi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetRulesReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordRulesFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetRulesReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetRulesReplyToJSON(json: any): TgvalidatordGetRulesReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetRulesReplyFromJSONTyped(json: any, ignoreDiscrimi
     return {
         
         'result': TgvalidatordRulesToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

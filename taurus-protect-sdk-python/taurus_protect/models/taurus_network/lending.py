@@ -8,6 +8,8 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from taurus_protect.models.pagination import CursorListOptions
+
 
 class LendingAgreementStatus(str, Enum):
     """Lending agreement status enum."""
@@ -247,20 +249,21 @@ class CreateLendingAgreementAttachmentRequest(BaseModel):
 # Filter options
 
 
-class ListLendingOffersOptions(BaseModel):
-    """Options for listing lending offers."""
+class ListLendingOffersOptions(CursorListOptions):
+    """Options for listing lending offers. Every field reaches the wire."""
 
-    limit: int = Field(default=50, ge=1, le=1000, description="Maximum items to return")
-    offset: int = Field(default=0, ge=0, description="Number of items to skip")
+    currency_ids: Optional[List[str]] = Field(default=None, description="Filter by currencies")
     participant_id: Optional[str] = Field(default=None, description="Filter by participant ID")
-    currency_id: Optional[str] = Field(default=None, description="Filter by currency")
+    duration: Optional[str] = Field(default=None, description="Filter by duration")
+    sort_order: Optional[str] = Field(default=None, description="ASC or DESC")
 
 
-class ListLendingAgreementsOptions(BaseModel):
-    """Options for listing lending agreements."""
+class ListLendingAgreementsOptions(CursorListOptions):
+    """
+    Options for listing lending agreements.
 
-    limit: int = Field(default=50, ge=1, le=1000, description="Maximum items to return")
-    offset: int = Field(default=0, ge=0, description="Number of items to skip")
-    statuses: Optional[List[str]] = Field(default=None, description="Filter by statuses")
-    lender_participant_id: Optional[str] = Field(default=None, description="Filter by lender")
-    borrower_participant_id: Optional[str] = Field(default=None, description="Filter by borrower")
+    ``ids`` filters only the approval queue and is refused by the plain list.
+    """
+
+    ids: Optional[List[str]] = Field(default=None, description="Filter by agreement IDs")
+    sort_order: Optional[str] = Field(default=None, description="ASC or DESC")

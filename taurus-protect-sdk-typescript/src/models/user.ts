@@ -2,6 +2,8 @@
  * User and Group models for Taurus-PROTECT SDK.
  */
 
+import type { OffsetPageOptions } from './pagination';
+
 /**
  * User status enum.
  */
@@ -103,15 +105,14 @@ export interface Tag {
 }
 
 /**
- * Options for listing users.
+ * Options for listing users. An offset list: `limit` 1-100 (default 20) and `offset`
+ * (a previous page's `pagination.nextOffset`).
  */
-export interface ListUsersOptions {
-  /** Maximum number of users to return */
-  limit?: number;
-  /** Number of users to skip */
-  offset?: number;
+export interface ListUsersOptions extends OffsetPageOptions {
   /** Filter by user IDs */
   ids?: string[];
+  /** Filter by external user IDs */
+  externalUserIds?: string[];
   /** Filter by emails */
   emails?: string[];
   /** Search query */
@@ -129,13 +130,10 @@ export interface ListUsersOptions {
 }
 
 /**
- * Options for listing groups.
+ * Options for listing groups. An offset list: `limit` 1-100 (default 20) and `offset`
+ * (a previous page's `pagination.nextOffset`).
  */
-export interface ListGroupsOptions {
-  /** Maximum number of groups to return */
-  limit?: number;
-  /** Number of groups to skip */
-  offset?: number;
+export interface ListGroupsOptions extends OffsetPageOptions {
   /** Filter by group IDs */
   ids?: string[];
   /** Search query */
@@ -143,13 +141,12 @@ export interface ListGroupsOptions {
 }
 
 /**
- * Options for listing tags.
+ * Options for listing tags. The tags endpoint is not paged, so `list` returns every tag
+ * that matches.
  */
 export interface ListTagsOptions {
-  /** Maximum number of tags to return */
-  limit?: number;
-  /** Number of tags to skip */
-  offset?: number;
+  /** Filter by tag IDs */
+  ids?: string[];
   /** Search query */
   query?: string;
 }

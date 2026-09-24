@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -24,6 +23,7 @@ type MultiFactorSignatureServiceApproveMultiFactorSignatureBody struct {
 	// signature of the entities' metadata, encoded in base64
 	Signature string `json:"signature"`
 	Comment string `json:"comment"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _MultiFactorSignatureServiceApproveMultiFactorSignatureBody MultiFactorSignatureServiceApproveMultiFactorSignatureBody
@@ -107,6 +107,11 @@ func (o MultiFactorSignatureServiceApproveMultiFactorSignatureBody) ToMap() (map
 	toSerialize := map[string]interface{}{}
 	toSerialize["signature"] = o.Signature
 	toSerialize["comment"] = o.Comment
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -135,15 +140,21 @@ func (o *MultiFactorSignatureServiceApproveMultiFactorSignatureBody) UnmarshalJS
 
 	varMultiFactorSignatureServiceApproveMultiFactorSignatureBody := _MultiFactorSignatureServiceApproveMultiFactorSignatureBody{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varMultiFactorSignatureServiceApproveMultiFactorSignatureBody)
+	err = json.Unmarshal(data, &varMultiFactorSignatureServiceApproveMultiFactorSignatureBody)
 
 	if err != nil {
 		return err
 	}
 
 	*o = MultiFactorSignatureServiceApproveMultiFactorSignatureBody(varMultiFactorSignatureServiceApproveMultiFactorSignatureBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "signature")
+		delete(additionalProperties, "comment")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

@@ -43,7 +43,16 @@ export interface TgvalidatordApproveWhitelistedContractAddressRequest {
      * @memberof TgvalidatordApproveWhitelistedContractAddressRequest
      */
     ids: Array<string>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordApproveWhitelistedContractAddressRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordApproveWhitelistedContractAddressRequestWireKeys: ReadonlySet<string> = new Set(['signature', 'comment', 'whitelistedContractAddressIds', 'ids']);
 
 /**
  * Check if a given object implements the TgvalidatordApproveWhitelistedContractAddressRequest interface.
@@ -63,13 +72,23 @@ export function TgvalidatordApproveWhitelistedContractAddressRequestFromJSONType
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordApproveWhitelistedContractAddressRequest = {
         
         'signature': json['signature'],
         'comment': json['comment'],
         'whitelistedContractAddressIds': json['whitelistedContractAddressIds'] == null ? undefined : json['whitelistedContractAddressIds'],
         'ids': json['ids'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordApproveWhitelistedContractAddressRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordApproveWhitelistedContractAddressRequestToJSON(json: any): TgvalidatordApproveWhitelistedContractAddressRequest {
@@ -87,6 +106,7 @@ export function TgvalidatordApproveWhitelistedContractAddressRequestFromJSONType
         'comment': value['comment'],
         'whitelistedContractAddressIds': value['whitelistedContractAddressIds'],
         'ids': value['ids'],
+        ...value['additionalProperties'],
     };
 }
 

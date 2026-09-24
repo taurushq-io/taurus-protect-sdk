@@ -8,7 +8,13 @@ from taurus_protect.mappers.user_device import (
     user_device_pairing_from_dto,
     user_device_pairing_info_from_dto,
 )
-from taurus_protect.models.pagination import Pagination
+from taurus_protect.models.pagination import (
+    PLUS_ROWS,
+    Pagination,
+    offset_pagination,
+    resolve_offset,
+    resolve_page_size,
+)
 from taurus_protect.models.user_device import UserDevicePairing, UserDevicePairingInfo
 from taurus_protect.services._base import BaseService
 
@@ -53,34 +59,33 @@ class UserDeviceService(BaseService):
 
     def list(
         self,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> Tuple[List[UserDevicePairing], Optional[Pagination]]:
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> Tuple[List[UserDevicePairing], Pagination]:
         """
         List user device pairings.
 
         Note: The underlying API does not support listing pairings.
-        This method is provided for interface consistency but will
-        return an empty list.
+        This method is provided for interface consistency and always
+        returns an empty page.
 
         Args:
-            limit: Maximum number of pairings to return (must be positive).
-            offset: Number of pairings to skip (must be non-negative).
+            limit: Page size (default 20, max 100).
+            offset: Number of pairings to skip.
 
         Returns:
-            Tuple of (empty pairings list, None pagination).
+            Tuple of (an empty list, the empty page's pagination).
 
         Raises:
             ValueError: If limit or offset are invalid.
         """
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
+        page_size = resolve_page_size(limit, "limit")
+        start = resolve_offset(offset)
 
-        # The API does not support listing user device pairings
-        # Return empty list for interface consistency
-        return [], None
+        # The API does not support listing user device pairings.
+        return [], offset_pagination(
+            PLUS_ROWS, limit=page_size, offset=start, served_rows=0, total_items=0
+        )
 
     def get(self, device_id: str) -> UserDevicePairingInfo:
         """

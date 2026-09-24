@@ -2,13 +2,13 @@ package com.taurushq.sdk.protect.client.service;
 
 import com.google.common.base.Strings;
 import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
-import com.taurushq.sdk.protect.client.mapper.ApiResponseCursorMapper;
 import com.taurushq.sdk.protect.client.mapper.ChangeMapper;
 import com.taurushq.sdk.protect.client.model.ApiException;
 import com.taurushq.sdk.protect.client.model.ApiRequestCursor;
 import com.taurushq.sdk.protect.client.model.Change;
 import com.taurushq.sdk.protect.client.model.ChangeResult;
 import com.taurushq.sdk.protect.client.model.CreateChangeRequest;
+import com.taurushq.sdk.protect.client.model.Pagination;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import com.taurushq.sdk.protect.openapi.api.ChangesApi;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordApproveChangesRequest;
@@ -18,7 +18,6 @@ import com.taurushq.sdk.protect.openapi.model.TgvalidatordCreateChangeRequest;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetChangeReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetChangesReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordRejectChangesRequest;
-import com.taurushq.sdk.protect.openapi.model.TgvalidatordRequestCursor;
 
 import java.util.Collections;
 import java.util.List;
@@ -35,9 +34,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * <p>
  * Example usage:
  * <pre>{@code
- * // Get changes pending approval
- * ApiRequestCursor cursor = Pagination.first(50);
- * ChangeResult result = client.getChangeService().getChangesForApproval(cursor);
+ * // Get changes pending approval, one page at a time
+ * ChangeResult result = client.getChangeService().getChangesForApproval(20, null);
+ * // next page: getChangesForApproval(20, result.getPage().getNextCursor())
  *
  * // Approve a change
  * client.getChangeService().approveChange(changeId);
@@ -47,7 +46,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *
  * // Get changes with filters
  * ChangeResult filtered = client.getChangeService()
- *     .getChanges("user", "pending", cursor);
+ *     .getChanges("user", "pending", 20, null);
  * }</pre>
  *
  * @see ChangeResult
@@ -123,18 +122,33 @@ public class ChangeService {
 
 
     /**
-     * Gets changes with filters.
+     * Gets a page of changes with filters.
      *
-     * @param entity the entity type to filter by
-     * @param status the status to filter by
-     * @param cursor the request cursor for pagination
-     * @return the change result with list and response cursor
+     * @param entity   the entity type to filter by (optional)
+     * @param status   the status to filter by (optional)
+     * @param pageSize the page size, null or 0 for the default
+     * @param cursor   a previous page's {@code getPage().getNextCursor()}, null for the first page
+     * @return the changes and their page
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if the page size is out of range
+     */
+    public ChangeResult getChanges(final String entity, final String status, final Integer pageSize,
+                                   final String cursor) throws ApiException {
+        return getChanges(entity, status, Pagination.page(pageSize, cursor));
+    }
+
+    /**
+     * Gets a page of changes with filters, with a low-level request cursor.
+     *
+     * @param entity the entity type to filter by (optional)
+     * @param status the status to filter by (optional)
+     * @param cursor the request cursor, null for the first page with the default size
+     * @return the changes and their page
      * @throws ApiException the api exception
      */
-    public ChangeResult getChanges(final String entity, final String status, final ApiRequestCursor cursor) throws ApiException {
-        checkNotNull(cursor, "cursor cannot be null");
-
-        TgvalidatordRequestCursor requestCursor = ApiResponseCursorMapper.INSTANCE.toDTO(cursor);
+    public ChangeResult getChanges(final String entity, final String status, final ApiRequestCursor cursor)
+            throws ApiException {
+        final CursorRequest page = CursorRequest.of(cursor);
 
         try {
             TgvalidatordGetChangesReply reply = changesApi.changeServiceGetChanges(
@@ -143,25 +157,14 @@ public class ChangeService {
                     status,                             // status
                     null,                               // creatorId
                     null,                               // sortOrder
-                    requestCursor.getCurrentPage(),     // cursorCurrentPage
-                    requestCursor.getPageRequest(),     // cursorPageRequest
-                    requestCursor.getPageSize(),        // cursorPageSize
+                    page.currentPage(),                 // cursorCurrentPage
+                    page.pageRequest(),                 // cursorPageRequest
+                    page.pageSizeParam(),               // cursorPageSize
                     null,                               // entityIDs
                     null                                // entityUUIDs
             );
 
-            ChangeResult result = new ChangeResult();
-
-            List<TgvalidatordChange> changes = reply.getResult();
-            if (changes == null) {
-                result.setChanges(Collections.emptyList());
-            } else {
-                result.setChanges(ChangeMapper.INSTANCE.fromDTO(changes));
-            }
-
-            result.setCursor(ApiResponseCursorMapper.INSTANCE.fromDTO(reply.getCursor()));
-
-            return result;
+            return page.complete(toResult(reply.getResult()), PagedOperation.CHANGES, reply.getCursor(), null);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
@@ -169,43 +172,50 @@ public class ChangeService {
 
 
     /**
-     * Gets changes pending approval.
+     * Gets a page of changes pending approval.
      *
-     * @param cursor the request cursor for pagination
-     * @return the change result with list and response cursor
+     * @param pageSize the page size, null or 0 for the default
+     * @param cursor   a previous page's {@code getPage().getNextCursor()}, null for the first page
+     * @return the changes and their page
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if the page size is out of range
+     */
+    public ChangeResult getChangesForApproval(final Integer pageSize, final String cursor) throws ApiException {
+        return getChangesForApproval(Pagination.page(pageSize, cursor));
+    }
+
+    /**
+     * Gets a page of changes pending approval, with a low-level request cursor.
+     *
+     * @param cursor the request cursor, null for the first page with the default size
+     * @return the changes and their page
      * @throws ApiException the api exception
      */
     public ChangeResult getChangesForApproval(final ApiRequestCursor cursor) throws ApiException {
-        checkNotNull(cursor, "cursor cannot be null");
-
-        TgvalidatordRequestCursor requestCursor = ApiResponseCursorMapper.INSTANCE.toDTO(cursor);
+        final CursorRequest page = CursorRequest.of(cursor);
 
         try {
             TgvalidatordGetChangesReply reply = changesApi.changeServiceGetChangesForApproval(
                     null,                               // entities
                     null,                               // sortOrder
-                    requestCursor.getCurrentPage(),     // cursorCurrentPage
-                    requestCursor.getPageRequest(),     // cursorPageRequest
-                    requestCursor.getPageSize(),        // cursorPageSize
+                    page.currentPage(),                 // cursorCurrentPage
+                    page.pageRequest(),                 // cursorPageRequest
+                    page.pageSizeParam(),               // cursorPageSize
                     null,                               // entityIDs
                     null                                // entityUUIDs
             );
 
-            ChangeResult result = new ChangeResult();
-
-            List<TgvalidatordChange> changes = reply.getResult();
-            if (changes == null) {
-                result.setChanges(Collections.emptyList());
-            } else {
-                result.setChanges(ChangeMapper.INSTANCE.fromDTO(changes));
-            }
-
-            result.setCursor(ApiResponseCursorMapper.INSTANCE.fromDTO(reply.getCursor()));
-
-            return result;
+            return page.complete(toResult(reply.getResult()), PagedOperation.CHANGES_FOR_APPROVAL,
+                    reply.getCursor(), null);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
+    }
+
+    private static ChangeResult toResult(final List<TgvalidatordChange> changes) {
+        ChangeResult result = new ChangeResult();
+        result.setChanges(changes == null ? Collections.emptyList() : ChangeMapper.INSTANCE.fromDTO(changes));
+        return result;
     }
 
 

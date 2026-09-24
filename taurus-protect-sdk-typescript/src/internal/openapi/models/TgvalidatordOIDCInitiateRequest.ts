@@ -31,7 +31,16 @@ export interface TgvalidatordOIDCInitiateRequest {
      * @memberof TgvalidatordOIDCInitiateRequest
      */
     redirectUri: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordOIDCInitiateRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordOIDCInitiateRequestWireKeys: ReadonlySet<string> = new Set(['email', 'redirectUri']);
 
 /**
  * Check if a given object implements the TgvalidatordOIDCInitiateRequest interface.
@@ -50,11 +59,21 @@ export function TgvalidatordOIDCInitiateRequestFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordOIDCInitiateRequest = {
         
         'email': json['email'],
         'redirectUri': json['redirectUri'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordOIDCInitiateRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordOIDCInitiateRequestToJSON(json: any): TgvalidatordOIDCInitiateRequest {
@@ -70,6 +89,7 @@ export function TgvalidatordOIDCInitiateRequestFromJSONTyped(json: any, ignoreDi
         
         'email': value['email'],
         'redirectUri': value['redirectUri'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -20,13 +20,16 @@ var _ MappedNullable = &TgvalidatordInternalUserApiKey{}
 
 // TgvalidatordInternalUserApiKey struct for TgvalidatordInternalUserApiKey
 type TgvalidatordInternalUserApiKey struct {
-	Id               *string                 `json:"id,omitempty"`
-	CreationDate     *time.Time              `json:"creationDate,omitempty"`
-	RevealDate       *time.Time              `json:"revealDate,omitempty"`
-	LastUsed         *time.Time              `json:"lastUsed,omitempty"`
-	Revealable       *bool                   `json:"revealable,omitempty"`
+	Id *string `json:"id,omitempty"`
+	CreationDate *time.Time `json:"creationDate,omitempty"`
+	RevealDate *time.Time `json:"revealDate,omitempty"`
+	LastUsed *time.Time `json:"lastUsed,omitempty"`
+	Revealable *bool `json:"revealable,omitempty"`
 	VerificationType *ApiKeyVerificationType `json:"verificationType,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordInternalUserApiKey TgvalidatordInternalUserApiKey
 
 // NewTgvalidatordInternalUserApiKey instantiates a new TgvalidatordInternalUserApiKey object
 // This constructor will assign default values to properties that have it defined,
@@ -238,7 +241,7 @@ func (o *TgvalidatordInternalUserApiKey) SetVerificationType(v ApiKeyVerificatio
 }
 
 func (o TgvalidatordInternalUserApiKey) MarshalJSON() ([]byte, error) {
-	toSerialize, err := o.ToMap()
+	toSerialize,err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -265,7 +268,38 @@ func (o TgvalidatordInternalUserApiKey) ToMap() (map[string]interface{}, error) 
 	if !IsNil(o.VerificationType) {
 		toSerialize["verificationType"] = o.VerificationType
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordInternalUserApiKey) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordInternalUserApiKey := _TgvalidatordInternalUserApiKey{}
+
+	err = json.Unmarshal(data, &varTgvalidatordInternalUserApiKey)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordInternalUserApiKey(varTgvalidatordInternalUserApiKey)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "creationDate")
+		delete(additionalProperties, "revealDate")
+		delete(additionalProperties, "lastUsed")
+		delete(additionalProperties, "revealable")
+		delete(additionalProperties, "verificationType")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordInternalUserApiKey struct {
@@ -303,3 +337,5 @@ func (v *NullableTgvalidatordInternalUserApiKey) UnmarshalJSON(src []byte) error
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
+
+

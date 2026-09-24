@@ -55,7 +55,16 @@ export interface TgvalidatordCreateFiatProviderWithdrawalRequestRequest {
      * @memberof TgvalidatordCreateFiatProviderWithdrawalRequestRequest
      */
     externalRequestID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateFiatProviderWithdrawalRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateFiatProviderWithdrawalRequestRequestWireKeys: ReadonlySet<string> = new Set(['amount', 'fromAccountID', 'toAddressID', 'toAccountID', 'comment', 'externalRequestID']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateFiatProviderWithdrawalRequestRequest interface.
@@ -74,7 +83,7 @@ export function TgvalidatordCreateFiatProviderWithdrawalRequestRequestFromJSONTy
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateFiatProviderWithdrawalRequestRequest = {
         
         'amount': json['amount'],
         'fromAccountID': json['fromAccountID'],
@@ -83,6 +92,16 @@ export function TgvalidatordCreateFiatProviderWithdrawalRequestRequestFromJSONTy
         'comment': json['comment'] == null ? undefined : json['comment'],
         'externalRequestID': json['externalRequestID'] == null ? undefined : json['externalRequestID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateFiatProviderWithdrawalRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateFiatProviderWithdrawalRequestRequestToJSON(json: any): TgvalidatordCreateFiatProviderWithdrawalRequestRequest {
@@ -102,6 +121,7 @@ export function TgvalidatordCreateFiatProviderWithdrawalRequestRequestFromJSONTy
         'toAccountID': value['toAccountID'],
         'comment': value['comment'],
         'externalRequestID': value['externalRequestID'],
+        ...value['additionalProperties'],
     };
 }
 

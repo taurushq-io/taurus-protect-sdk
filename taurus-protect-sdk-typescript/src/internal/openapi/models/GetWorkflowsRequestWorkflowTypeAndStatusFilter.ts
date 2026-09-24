@@ -31,7 +31,16 @@ export interface GetWorkflowsRequestWorkflowTypeAndStatusFilter {
      * @memberof GetWorkflowsRequestWorkflowTypeAndStatusFilter
      */
     status?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof GetWorkflowsRequestWorkflowTypeAndStatusFilter
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const GetWorkflowsRequestWorkflowTypeAndStatusFilterWireKeys: ReadonlySet<string> = new Set(['workflowType', 'status']);
 
 /**
  * Check if a given object implements the GetWorkflowsRequestWorkflowTypeAndStatusFilter interface.
@@ -48,11 +57,21 @@ export function GetWorkflowsRequestWorkflowTypeAndStatusFilterFromJSONTyped(json
     if (json == null) {
         return json;
     }
-    return {
+    const result: GetWorkflowsRequestWorkflowTypeAndStatusFilter = {
         
         'workflowType': json['workflowType'] == null ? undefined : json['workflowType'],
         'status': json['status'] == null ? undefined : json['status'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!GetWorkflowsRequestWorkflowTypeAndStatusFilterWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function GetWorkflowsRequestWorkflowTypeAndStatusFilterToJSON(json: any): GetWorkflowsRequestWorkflowTypeAndStatusFilter {
@@ -68,6 +87,7 @@ export function GetWorkflowsRequestWorkflowTypeAndStatusFilterFromJSONTyped(json
         
         'workflowType': value['workflowType'],
         'status': value['status'],
+        ...value['additionalProperties'],
     };
 }
 

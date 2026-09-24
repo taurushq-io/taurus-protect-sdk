@@ -22,7 +22,10 @@ type TriggerBalance struct {
 	Target *ActionTarget `json:"target,omitempty"`
 	Comparator *ActionComparator `json:"comparator,omitempty"`
 	Amount *TgvalidatordActionAmount `json:"amount,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TriggerBalance TriggerBalance
 
 // NewTriggerBalance instantiates a new TriggerBalance object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TriggerBalance) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Amount) {
 		toSerialize["amount"] = o.Amount
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TriggerBalance) UnmarshalJSON(data []byte) (err error) {
+	varTriggerBalance := _TriggerBalance{}
+
+	err = json.Unmarshal(data, &varTriggerBalance)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TriggerBalance(varTriggerBalance)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "target")
+		delete(additionalProperties, "comparator")
+		delete(additionalProperties, "amount")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTriggerBalance struct {

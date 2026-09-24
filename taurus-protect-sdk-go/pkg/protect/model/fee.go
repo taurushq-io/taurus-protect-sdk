@@ -2,17 +2,8 @@ package model
 
 import "time"
 
-// Fee represents a fee estimate for a blockchain transaction.
-// This is returned by the deprecated v1 GetFees endpoint.
-type Fee struct {
-	// Key identifies the fee type (e.g., blockchain:network or currency ID).
-	Key string `json:"key"`
-	// Value is the fee amount as a string.
-	Value string `json:"value"`
-}
-
 // FeeV2 represents a native currency fee estimate with detailed information.
-// This is returned by the v2 GetFees endpoint.
+// This is returned by the GetFeesV2 endpoint.
 type FeeV2 struct {
 	// CurrencyID is the unique identifier of the native currency.
 	CurrencyID string `json:"currency_id,omitempty"`
@@ -26,13 +17,7 @@ type FeeV2 struct {
 	UpdateDate time.Time `json:"update_date,omitempty"`
 }
 
-// GetFeesResult contains the result of the deprecated v1 GetFees call.
-type GetFeesResult struct {
-	// Fees is the list of fee estimates.
-	Fees []*Fee `json:"fees"`
-}
-
-// GetFeesV2Result contains the result of the v2 GetFees call.
+// GetFeesV2Result contains the result of the GetFeesV2 call.
 type GetFeesV2Result struct {
 	// Fees is the list of native currency fee estimates.
 	Fees []*FeeV2 `json:"fees"`

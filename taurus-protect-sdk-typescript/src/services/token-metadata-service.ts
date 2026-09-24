@@ -7,25 +7,17 @@
 
 import { ValidationError } from '../errors';
 import type { TokenMetadataApi } from '../internal/openapi/apis/TokenMetadataApi';
+import type { TgvalidatordCryptoPunkMetadata } from '../internal/openapi/models/TgvalidatordCryptoPunkMetadata';
+import type { TgvalidatordERCTokenMetadata } from '../internal/openapi/models/TgvalidatordERCTokenMetadata';
+import type { TgvalidatordFATokenMetadata } from '../internal/openapi/models/TgvalidatordFATokenMetadata';
 import type {
   TokenMetadata,
   CryptoPunkMetadata,
-  GetERCTokenMetadataOptions,
   GetEVMERCTokenMetadataOptions,
   GetFATokenMetadataOptions,
   GetCryptoPunkMetadataOptions,
 } from '../models/token-metadata';
 import { BaseService } from './base';
-
-// Re-export types for backwards compatibility
-export type {
-  TokenMetadata,
-  CryptoPunkMetadata,
-  GetERCTokenMetadataOptions,
-  GetEVMERCTokenMetadataOptions,
-  GetFATokenMetadataOptions,
-  GetCryptoPunkMetadataOptions,
-} from '../models/token-metadata';
 
 /**
  * Service for retrieving token metadata.
@@ -36,7 +28,7 @@ export type {
  * @example
  * ```typescript
  * // Get ERC-20 token metadata
- * const usdc = await tokenMetadataService.getERCTokenMetadata({
+ * const usdc = await tokenMetadataService.getEVMERCTokenMetadata({
  *   network: 'mainnet',
  *   contract: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
  *   blockchain: 'ETH',
@@ -81,46 +73,6 @@ export class TokenMetadataService extends BaseService {
   constructor(tokenMetadataApi: TokenMetadataApi) {
     super();
     this.tokenMetadataApi = tokenMetadataApi;
-  }
-
-  /**
-   * Retrieves ERC token metadata (ERC-20, ERC-721, ERC-1155).
-   *
-   * @deprecated Use getEVMERCTokenMetadata instead
-   * @param options - The options for retrieving token metadata
-   * @returns The token metadata
-   * @throws {@link ValidationError} If required arguments are missing
-   * @throws {@link APIError} If API request fails
-   *
-   * @example
-   * ```typescript
-   * const metadata = await tokenMetadataService.getERCTokenMetadata({
-   *   network: 'mainnet',
-   *   contract: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-   *   blockchain: 'ETH',
-   * });
-   * console.log(`Token: ${metadata.name}, Decimals: ${metadata.decimals}`);
-   * ```
-   */
-  async getERCTokenMetadata(options: GetERCTokenMetadataOptions): Promise<TokenMetadata> {
-    if (!options.network || options.network.trim() === '') {
-      throw new ValidationError('network is required');
-    }
-    if (!options.contract || options.contract.trim() === '') {
-      throw new ValidationError('contract is required');
-    }
-
-    return this.execute(async () => {
-      const response = await this.tokenMetadataApi.tokenMetadataServiceGetERCTokenMetadata({
-        network: options.network,
-        contract: options.contract,
-        token: options.tokenId ?? '',
-        withData: options.withData,
-        blockchain: options.blockchain,
-      });
-
-      return this.mapERCTokenMetadata(response.result);
-    });
   }
 
   /**
@@ -263,51 +215,50 @@ export class TokenMetadataService extends BaseService {
   /**
    * Maps ERC token metadata from the API response to the domain model.
    */
-  private mapERCTokenMetadata(dto: unknown): TokenMetadata {
+  private mapERCTokenMetadata(dto: TgvalidatordERCTokenMetadata | undefined): TokenMetadata {
     if (!dto) {
       return {};
     }
-    const d = dto as Record<string, unknown>;
     return {
-      name: d.name as string | undefined,
-      description: d.description as string | undefined,
-      decimals: d.decimals as string | undefined,
-      dataType: d.dataType as string | undefined,
-      base64Data: d.base64Data as string | undefined,
-      uri: d.uri as string | undefined,
+      name: dto.name,
+      description: dto.description,
+      decimals: dto.decimals,
+      dataType: dto.dataType,
+      base64Data: dto.base64Data,
+      uri: dto.uri,
     };
   }
 
   /**
    * Maps FA token metadata from the API response to the domain model.
    */
-  private mapFATokenMetadata(dto: unknown): TokenMetadata {
+  private mapFATokenMetadata(dto: TgvalidatordFATokenMetadata | undefined): TokenMetadata {
     if (!dto) {
       return {};
     }
-    const d = dto as Record<string, unknown>;
     return {
-      name: d.name as string | undefined,
-      symbol: d.symbol as string | undefined,
-      decimals: d.decimals as string | undefined,
-      dataType: d.dataType as string | undefined,
-      base64Data: d.base64Data as string | undefined,
-      uri: d.uri as string | undefined,
+      name: dto.name,
+      symbol: dto.symbol,
+      decimals: dto.decimals,
+      dataType: dto.dataType,
+      base64Data: dto.base64Data,
+      uri: dto.uri,
     };
   }
 
   /**
    * Maps CryptoPunk metadata from the API response to the domain model.
    */
-  private mapCryptoPunkMetadata(dto: unknown): CryptoPunkMetadata {
+  private mapCryptoPunkMetadata(
+    dto: TgvalidatordCryptoPunkMetadata | undefined
+  ): CryptoPunkMetadata {
     if (!dto) {
       return {};
     }
-    const d = dto as Record<string, unknown>;
     return {
-      punkId: d.punkId as string | undefined,
-      punkAttributes: d.punkAttributes as string | undefined,
-      image: d.image as string | undefined,
+      punkId: dto.punkId,
+      punkAttributes: dto.punkAttributes,
+      image: dto.image,
     };
   }
 }

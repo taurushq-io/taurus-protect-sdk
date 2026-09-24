@@ -63,7 +63,16 @@ export interface TgvalidatordTnSettlementClip {
      * @memberof TgvalidatordTnSettlementClip
      */
     workflowID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTnSettlementClip
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTnSettlementClipWireKeys: ReadonlySet<string> = new Set(['id', 'index', 'firstLegTransactions', 'secondLegTransactions', 'status', 'workflowID']);
 
 /**
  * Check if a given object implements the TgvalidatordTnSettlementClip interface.
@@ -80,7 +89,7 @@ export function TgvalidatordTnSettlementClipFromJSONTyped(json: any, ignoreDiscr
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTnSettlementClip = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'index': json['index'] == null ? undefined : json['index'],
@@ -89,6 +98,16 @@ export function TgvalidatordTnSettlementClipFromJSONTyped(json: any, ignoreDiscr
         'status': json['status'] == null ? undefined : json['status'],
         'workflowID': json['workflowID'] == null ? undefined : json['workflowID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTnSettlementClipWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTnSettlementClipToJSON(json: any): TgvalidatordTnSettlementClip {
@@ -108,6 +127,7 @@ export function TgvalidatordTnSettlementClipFromJSONTyped(json: any, ignoreDiscr
         'secondLegTransactions': value['secondLegTransactions'] == null ? undefined : ((value['secondLegTransactions'] as Array<any>).map(TgvalidatordTnSettlementClipTransactionToJSON)),
         'status': value['status'],
         'workflowID': value['workflowID'],
+        ...value['additionalProperties'],
     };
 }
 

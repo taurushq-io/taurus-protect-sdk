@@ -25,7 +25,16 @@ export interface TgvalidatordTriggerExistentialRecomputeReply {
      * @memberof TgvalidatordTriggerExistentialRecomputeReply
      */
     message?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTriggerExistentialRecomputeReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTriggerExistentialRecomputeReplyWireKeys: ReadonlySet<string> = new Set(['message']);
 
 /**
  * Check if a given object implements the TgvalidatordTriggerExistentialRecomputeReply interface.
@@ -42,10 +51,20 @@ export function TgvalidatordTriggerExistentialRecomputeReplyFromJSONTyped(json: 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTriggerExistentialRecomputeReply = {
         
         'message': json['message'] == null ? undefined : json['message'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTriggerExistentialRecomputeReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTriggerExistentialRecomputeReplyToJSON(json: any): TgvalidatordTriggerExistentialRecomputeReply {
@@ -60,6 +79,7 @@ export function TgvalidatordTriggerExistentialRecomputeReplyFromJSONTyped(json: 
     return {
         
         'message': value['message'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordGetPortfolioStatisticsHistoryReply{}
 type TgvalidatordGetPortfolioStatisticsHistoryReply struct {
 	Result []TgvalidatordAggregatedStatsHistoryPoint `json:"result,omitempty"`
 	Cursor *TgvalidatordResponseCursor `json:"cursor,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetPortfolioStatisticsHistoryReply TgvalidatordGetPortfolioStatisticsHistoryReply
 
 // NewTgvalidatordGetPortfolioStatisticsHistoryReply instantiates a new TgvalidatordGetPortfolioStatisticsHistoryReply object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordGetPortfolioStatisticsHistoryReply) ToMap() (map[string]inte
 	if !IsNil(o.Cursor) {
 		toSerialize["cursor"] = o.Cursor
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetPortfolioStatisticsHistoryReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetPortfolioStatisticsHistoryReply := _TgvalidatordGetPortfolioStatisticsHistoryReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetPortfolioStatisticsHistoryReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetPortfolioStatisticsHistoryReply(varTgvalidatordGetPortfolioStatisticsHistoryReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "result")
+		delete(additionalProperties, "cursor")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetPortfolioStatisticsHistoryReply struct {

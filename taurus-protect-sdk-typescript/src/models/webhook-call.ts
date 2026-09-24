@@ -2,6 +2,8 @@
  * Webhook call models for Taurus-PROTECT SDK.
  */
 
+import type { CursorNavigationOptions, CursorPage } from './pagination';
+
 /**
  * Webhook call status enum.
  */
@@ -36,9 +38,10 @@ export interface WebhookCall {
 }
 
 /**
- * Options for listing webhook calls.
+ * Options for listing webhook calls. A cursor list: `pageSize` 1-100 (default 20) and the
+ * `cursor` of a previous page.
  */
-export interface ListWebhookCallsOptions {
+export interface ListWebhookCallsOptions extends CursorNavigationOptions {
   /** Filter by event ID */
   eventId?: string;
   /** Filter by webhook ID */
@@ -47,34 +50,15 @@ export interface ListWebhookCallsOptions {
   status?: WebhookCallStatus;
   /** Sort order (ASC or DESC, default DESC) */
   sortOrder?: 'ASC' | 'DESC';
-  /** Maximum number of calls to return */
-  limit?: number;
-  /** Pagination cursor for the current page */
-  cursorCurrentPage?: string;
-  /** Page request direction (FIRST, PREVIOUS, NEXT, LAST) */
-  cursorPageRequest?: 'FIRST' | 'PREVIOUS' | 'NEXT' | 'LAST';
 }
 
 /**
- * Response cursor for paginated webhook call results.
- */
-export interface WebhookCallResponseCursor {
-  /** Base64-encoded cursor for the next page */
-  readonly nextPage?: string;
-  /** Base64-encoded cursor for the previous page */
-  readonly previousPage?: string;
-  /** Whether there is a next page available */
-  readonly hasNextPage?: boolean;
-  /** Whether there is a previous page available */
-  readonly hasPreviousPage?: boolean;
-}
-
-/**
- * Paginated result of webhook calls.
+ * A page of webhook calls.
  */
 export interface WebhookCallResult {
   /** The webhook calls in this page */
   readonly calls: WebhookCall[];
-  /** Cursor for pagination */
-  readonly cursor?: WebhookCallResponseCursor;
+  /** Cursor pagination: continue with `cursor: pagination.nextCursor` while `hasMore` */
+  readonly pagination: CursorPage;
 }
+

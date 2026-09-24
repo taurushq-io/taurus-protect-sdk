@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -37,6 +36,7 @@ type TgvalidatordCreateAddressRequest struct {
 	Type *string `json:"type,omitempty"`
 	// Identifier for the address in the user's system. This must be unique. Attempting to create an address with an existing externalAddressId will return the originally created address instead of creating a new one.
 	ExternalAddressId *string `json:"externalAddressId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateAddressRequest TgvalidatordCreateAddressRequest
@@ -330,6 +330,11 @@ func (o TgvalidatordCreateAddressRequest) ToMap() (map[string]interface{}, error
 	if !IsNil(o.ExternalAddressId) {
 		toSerialize["externalAddressId"] = o.ExternalAddressId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -358,15 +363,27 @@ func (o *TgvalidatordCreateAddressRequest) UnmarshalJSON(data []byte) (err error
 
 	varTgvalidatordCreateAddressRequest := _TgvalidatordCreateAddressRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateAddressRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateAddressRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateAddressRequest(varTgvalidatordCreateAddressRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "walletId")
+		delete(additionalProperties, "label")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "customerId")
+		delete(additionalProperties, "nonHardenedDerivation")
+		delete(additionalProperties, "workchainId")
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "externalAddressId")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

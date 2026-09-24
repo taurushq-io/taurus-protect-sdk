@@ -55,7 +55,16 @@ export interface TgvalidatordTrail {
      * @memberof TgvalidatordTrail
      */
     date?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTrail
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTrailWireKeys: ReadonlySet<string> = new Set(['id', 'userId', 'externalUserId', 'action', 'comment', 'date']);
 
 /**
  * Check if a given object implements the TgvalidatordTrail interface.
@@ -72,7 +81,7 @@ export function TgvalidatordTrailFromJSONTyped(json: any, ignoreDiscriminator: b
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTrail = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'userId': json['userId'] == null ? undefined : json['userId'],
@@ -81,6 +90,16 @@ export function TgvalidatordTrailFromJSONTyped(json: any, ignoreDiscriminator: b
         'comment': json['comment'] == null ? undefined : json['comment'],
         'date': json['date'] == null ? undefined : (new Date(json['date'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTrailWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTrailToJSON(json: any): TgvalidatordTrail {
@@ -100,6 +119,7 @@ export function TgvalidatordTrailFromJSONTyped(json: any, ignoreDiscriminator: b
         'action': value['action'],
         'comment': value['comment'],
         'date': value['date'] == null ? undefined : ((value['date']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

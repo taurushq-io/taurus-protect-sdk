@@ -187,7 +187,16 @@ export interface TgvalidatordInternalUser {
      * @memberof TgvalidatordInternalUser
      */
     publicKeyEnforcedInRules?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordInternalUser
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordInternalUserWireKeys: ReadonlySet<string> = new Set(['id', 'tenantId', 'externalUserId', 'firstName', 'lastName', 'status', 'email', 'roles', 'passwordChanged', 'publicKey', 'groups', 'enforcedInRules', 'creationDate', 'updateDate', 'totpEnabled', 'keyContainer', 'username', 'lastLogin', 'attributes', 'apiKeys', 'visibilityGroups', 'publicKeyEnforcedInRules']);
 
 /**
  * Check if a given object implements the TgvalidatordInternalUser interface.
@@ -204,7 +213,7 @@ export function TgvalidatordInternalUserFromJSONTyped(json: any, ignoreDiscrimin
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordInternalUser = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'tenantId': json['tenantId'] == null ? undefined : json['tenantId'],
@@ -229,6 +238,16 @@ export function TgvalidatordInternalUserFromJSONTyped(json: any, ignoreDiscrimin
         'visibilityGroups': json['visibilityGroups'] == null ? undefined : ((json['visibilityGroups'] as Array<any>).map(InternalUserVisibilityGroupFromJSON)),
         'publicKeyEnforcedInRules': json['publicKeyEnforcedInRules'] == null ? undefined : json['publicKeyEnforcedInRules'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordInternalUserWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordInternalUserToJSON(json: any): TgvalidatordInternalUser {
@@ -264,6 +283,7 @@ export function TgvalidatordInternalUserFromJSONTyped(json: any, ignoreDiscrimin
         'apiKeys': value['apiKeys'] == null ? undefined : ((value['apiKeys'] as Array<any>).map(TgvalidatordInternalUserApiKeyToJSON)),
         'visibilityGroups': value['visibilityGroups'] == null ? undefined : ((value['visibilityGroups'] as Array<any>).map(InternalUserVisibilityGroupToJSON)),
         'publicKeyEnforcedInRules': value['publicKeyEnforcedInRules'],
+        ...value['additionalProperties'],
     };
 }
 

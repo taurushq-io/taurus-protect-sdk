@@ -28,32 +28,23 @@ var AllowedTgvalidatordGetAssetAddressesRequestSortingSortOrderEnumValues = []Tg
 	"DESC",
 }
 
+// UnmarshalJSON keeps a value this client does not know instead of failing the whole reply;
+// IsValid reports whether it is one of the generated constants.
 func (v *TgvalidatordGetAssetAddressesRequestSortingSortOrder) UnmarshalJSON(src []byte) error {
 	var value string
 	err := json.Unmarshal(src, &value)
 	if err != nil {
-		return err
+		return fmt.Errorf("decoding TgvalidatordGetAssetAddressesRequestSortingSortOrder: %w", err)
 	}
-	enumTypeValue := TgvalidatordGetAssetAddressesRequestSortingSortOrder(value)
-	for _, existing := range AllowedTgvalidatordGetAssetAddressesRequestSortingSortOrderEnumValues {
-		if existing == enumTypeValue {
-			*v = enumTypeValue
-			return nil
-		}
-	}
-
-	return fmt.Errorf("%+v is not a valid TgvalidatordGetAssetAddressesRequestSortingSortOrder", value)
+	*v = TgvalidatordGetAssetAddressesRequestSortingSortOrder(value)
+	return nil
 }
 
-// NewTgvalidatordGetAssetAddressesRequestSortingSortOrderFromValue returns a pointer to a valid TgvalidatordGetAssetAddressesRequestSortingSortOrder
-// for the value passed as argument, or an error if the value passed is not allowed by the enum
+// NewTgvalidatordGetAssetAddressesRequestSortingSortOrderFromValue returns a pointer to a TgvalidatordGetAssetAddressesRequestSortingSortOrder holding v, known or not.
+// The error is always nil; use IsValid to tell a generated constant from a newer server value.
 func NewTgvalidatordGetAssetAddressesRequestSortingSortOrderFromValue(v string) (*TgvalidatordGetAssetAddressesRequestSortingSortOrder, error) {
 	ev := TgvalidatordGetAssetAddressesRequestSortingSortOrder(v)
-	if ev.IsValid() {
-		return &ev, nil
-	} else {
-		return nil, fmt.Errorf("invalid value '%v' for TgvalidatordGetAssetAddressesRequestSortingSortOrder: valid values are %v", v, AllowedTgvalidatordGetAssetAddressesRequestSortingSortOrderEnumValues)
-	}
+	return &ev, nil
 }
 
 // IsValid return true if the value is valid for the enum, false otherwise

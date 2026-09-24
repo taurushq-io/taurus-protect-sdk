@@ -33,7 +33,16 @@ export interface TgvalidatordGetVisibilityGroupsReply {
      * @memberof TgvalidatordGetVisibilityGroupsReply
      */
     result?: Array<TgvalidatordInternalVisibilityGroup>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetVisibilityGroupsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetVisibilityGroupsReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetVisibilityGroupsReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetVisibilityGroupsReplyFromJSONTyped(json: any, ign
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetVisibilityGroupsReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordInternalVisibilityGroupFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetVisibilityGroupsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetVisibilityGroupsReplyToJSON(json: any): TgvalidatordGetVisibilityGroupsReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetVisibilityGroupsReplyFromJSONTyped(json: any, ign
     return {
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordInternalVisibilityGroupToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

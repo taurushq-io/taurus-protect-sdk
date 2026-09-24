@@ -18,7 +18,7 @@ import re  # noqa: F401
 import json
 
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from taurus_protect._internal.openapi.models.tgvalidatord_currency import TgvalidatordCurrency
 from taurus_protect._internal.openapi.models.tgvalidatord_currency_price_signature import TgvalidatordCurrencyPriceSignature
@@ -41,8 +41,11 @@ class TgvalidatordCurrencyPrice(BaseModel):
     update_date: Optional[datetime] = Field(default=None, alias="updateDate")
     currency_from_info: Optional[TgvalidatordCurrency] = Field(default=None, alias="currencyFromInfo")
     currency_to_info: Optional[TgvalidatordCurrency] = Field(default=None, alias="currencyToInfo")
+    id: Optional[StrictStr] = None
+    is_primary: Optional[StrictBool] = Field(default=None, alias="isPrimary")
+    status: Optional[StrictStr] = Field(default=None, description="Deviation status of the price, only valid when isPrimary is true")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["blockchain", "currencyFrom", "currencyTo", "decimals", "rate", "signatures", "changePercent24Hour", "source", "creationDate", "updateDate", "currencyFromInfo", "currencyToInfo"]
+    __properties: ClassVar[List[str]] = ["blockchain", "currencyFrom", "currencyTo", "decimals", "rate", "signatures", "changePercent24Hour", "source", "creationDate", "updateDate", "currencyFromInfo", "currencyToInfo", "id", "isPrimary", "status"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -126,7 +129,10 @@ class TgvalidatordCurrencyPrice(BaseModel):
             "creationDate": obj.get("creationDate"),
             "updateDate": obj.get("updateDate"),
             "currencyFromInfo": TgvalidatordCurrency.from_dict(obj["currencyFromInfo"]) if obj.get("currencyFromInfo") is not None else None,
-            "currencyToInfo": TgvalidatordCurrency.from_dict(obj["currencyToInfo"]) if obj.get("currencyToInfo") is not None else None
+            "currencyToInfo": TgvalidatordCurrency.from_dict(obj["currencyToInfo"]) if obj.get("currencyToInfo") is not None else None,
+            "id": obj.get("id"),
+            "isPrimary": obj.get("isPrimary"),
+            "status": obj.get("status")
         })
         # store additional fields in additional_properties
         for _key in obj.keys():

@@ -46,7 +46,16 @@ export interface TgvalidatordGetNFTCollectionBalancesReply {
      * @memberof TgvalidatordGetNFTCollectionBalancesReply
      */
     cursor?: TgvalidatordResponseCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetNFTCollectionBalancesReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetNFTCollectionBalancesReplyWireKeys: ReadonlySet<string> = new Set(['balances', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetNFTCollectionBalancesReply interface.
@@ -63,11 +72,21 @@ export function TgvalidatordGetNFTCollectionBalancesReplyFromJSONTyped(json: any
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetNFTCollectionBalancesReply = {
         
         'balances': json['balances'] == null ? undefined : ((json['balances'] as Array<any>).map(TgvalidatordNFTCollectionBalanceFromJSON)),
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetNFTCollectionBalancesReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetNFTCollectionBalancesReplyToJSON(json: any): TgvalidatordGetNFTCollectionBalancesReply {
@@ -83,6 +102,7 @@ export function TgvalidatordGetNFTCollectionBalancesReplyFromJSONTyped(json: any
         
         'balances': value['balances'] == null ? undefined : ((value['balances'] as Array<any>).map(TgvalidatordNFTCollectionBalanceToJSON)),
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
+        ...value['additionalProperties'],
     };
 }
 

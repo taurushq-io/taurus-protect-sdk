@@ -31,7 +31,16 @@ export interface TaurusNetworkServiceUpdatePledgeBody {
      * @memberof TaurusNetworkServiceUpdatePledgeBody
      */
     defaultDestinationInternalAddressID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TaurusNetworkServiceUpdatePledgeBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TaurusNetworkServiceUpdatePledgeBodyWireKeys: ReadonlySet<string> = new Set(['defaultDestinationSharedAddressID', 'defaultDestinationInternalAddressID']);
 
 /**
  * Check if a given object implements the TaurusNetworkServiceUpdatePledgeBody interface.
@@ -48,11 +57,21 @@ export function TaurusNetworkServiceUpdatePledgeBodyFromJSONTyped(json: any, ign
     if (json == null) {
         return json;
     }
-    return {
+    const result: TaurusNetworkServiceUpdatePledgeBody = {
         
         'defaultDestinationSharedAddressID': json['defaultDestinationSharedAddressID'] == null ? undefined : json['defaultDestinationSharedAddressID'],
         'defaultDestinationInternalAddressID': json['defaultDestinationInternalAddressID'] == null ? undefined : json['defaultDestinationInternalAddressID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TaurusNetworkServiceUpdatePledgeBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TaurusNetworkServiceUpdatePledgeBodyToJSON(json: any): TaurusNetworkServiceUpdatePledgeBody {
@@ -68,6 +87,7 @@ export function TaurusNetworkServiceUpdatePledgeBodyFromJSONTyped(json: any, ign
         
         'defaultDestinationSharedAddressID': value['defaultDestinationSharedAddressID'],
         'defaultDestinationInternalAddressID': value['defaultDestinationInternalAddressID'],
+        ...value['additionalProperties'],
     };
 }
 

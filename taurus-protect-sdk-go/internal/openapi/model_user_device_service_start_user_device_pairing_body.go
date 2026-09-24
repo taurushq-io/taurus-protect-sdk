@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -25,6 +24,7 @@ type UserDeviceServiceStartUserDevicePairingBody struct {
 	Nonce string `json:"nonce"`
 	// ECDSA publickey encoded in base64 format
 	PublicKey string `json:"publicKey"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _UserDeviceServiceStartUserDevicePairingBody UserDeviceServiceStartUserDevicePairingBody
@@ -108,6 +108,11 @@ func (o UserDeviceServiceStartUserDevicePairingBody) ToMap() (map[string]interfa
 	toSerialize := map[string]interface{}{}
 	toSerialize["nonce"] = o.Nonce
 	toSerialize["publicKey"] = o.PublicKey
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -136,15 +141,21 @@ func (o *UserDeviceServiceStartUserDevicePairingBody) UnmarshalJSON(data []byte)
 
 	varUserDeviceServiceStartUserDevicePairingBody := _UserDeviceServiceStartUserDevicePairingBody{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varUserDeviceServiceStartUserDevicePairingBody)
+	err = json.Unmarshal(data, &varUserDeviceServiceStartUserDevicePairingBody)
 
 	if err != nil {
 		return err
 	}
 
 	*o = UserDeviceServiceStartUserDevicePairingBody(varUserDeviceServiceStartUserDevicePairingBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "nonce")
+		delete(additionalProperties, "publicKey")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

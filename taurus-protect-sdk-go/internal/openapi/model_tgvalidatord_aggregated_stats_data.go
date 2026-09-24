@@ -27,7 +27,10 @@ type TgvalidatordAggregatedStatsData struct {
 	TotalBalance *string `json:"totalBalance,omitempty"`
 	// Balance converted in the base currency (fiat currency like CHF) in main unit
 	TotalBalanceBaseCurrency *string `json:"totalBalanceBaseCurrency,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordAggregatedStatsData TgvalidatordAggregatedStatsData
 
 // NewTgvalidatordAggregatedStatsData instantiates a new TgvalidatordAggregatedStatsData object
 // This constructor will assign default values to properties that have it defined,
@@ -231,7 +234,37 @@ func (o TgvalidatordAggregatedStatsData) ToMap() (map[string]interface{}, error)
 	if !IsNil(o.TotalBalanceBaseCurrency) {
 		toSerialize["totalBalanceBaseCurrency"] = o.TotalBalanceBaseCurrency
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordAggregatedStatsData) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordAggregatedStatsData := _TgvalidatordAggregatedStatsData{}
+
+	err = json.Unmarshal(data, &varTgvalidatordAggregatedStatsData)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordAggregatedStatsData(varTgvalidatordAggregatedStatsData)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "avgBalancePerAddress")
+		delete(additionalProperties, "addressesCount")
+		delete(additionalProperties, "walletsCount")
+		delete(additionalProperties, "totalBalance")
+		delete(additionalProperties, "totalBalanceBaseCurrency")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordAggregatedStatsData struct {

@@ -61,13 +61,13 @@ func TestAssetService_GetAssetAddresses_WithOptions(t *testing.T) {
 			},
 		},
 		{
-			name: "with limit and cursor",
+			name: "with page size and cursor",
 			request: &model.GetAssetAddressesRequest{
 				Asset: model.AssetFilter{
 					Currency: "ETH",
 				},
-				Limit:  50,
-				Cursor: "abc123",
+				PageSize: 50,
+				Cursor:   "abc123",
 			},
 		},
 		{
@@ -203,13 +203,13 @@ func TestAssetService_GetAssetWallets_WithOptions(t *testing.T) {
 			},
 		},
 		{
-			name: "with limit and cursor",
+			name: "with page size and cursor",
 			request: &model.GetAssetWalletsRequest{
 				Asset: model.AssetFilter{
 					Currency: "ETH",
 				},
-				Limit:  100,
-				Cursor: "cursor-xyz",
+				PageSize: 100,
+				Cursor:   "cursor-xyz",
 			},
 		},
 		{

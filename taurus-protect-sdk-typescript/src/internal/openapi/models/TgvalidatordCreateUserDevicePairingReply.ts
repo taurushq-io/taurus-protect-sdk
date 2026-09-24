@@ -25,7 +25,16 @@ export interface TgvalidatordCreateUserDevicePairingReply {
      * @memberof TgvalidatordCreateUserDevicePairingReply
      */
     pairingID: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateUserDevicePairingReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateUserDevicePairingReplyWireKeys: ReadonlySet<string> = new Set(['pairingID']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateUserDevicePairingReply interface.
@@ -43,10 +52,20 @@ export function TgvalidatordCreateUserDevicePairingReplyFromJSONTyped(json: any,
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateUserDevicePairingReply = {
         
         'pairingID': json['pairingID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateUserDevicePairingReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateUserDevicePairingReplyToJSON(json: any): TgvalidatordCreateUserDevicePairingReply {
@@ -61,6 +80,7 @@ export function TgvalidatordCreateUserDevicePairingReplyFromJSONTyped(json: any,
     return {
         
         'pairingID': value['pairingID'],
+        ...value['additionalProperties'],
     };
 }
 

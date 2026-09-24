@@ -57,7 +57,16 @@ export interface TgvalidatordGetAllGroupsStatusReply {
      * @memberof TgvalidatordGetAllGroupsStatusReply
      */
     componentStatus?: { [key: string]: TgvalidatordGroupStatus; };
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetAllGroupsStatusReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetAllGroupsStatusReplyWireKeys: ReadonlySet<string> = new Set(['total', 'working', 'failed', 'clusterGroupStatus', 'componentStatus']);
 
 /**
  * Check if a given object implements the TgvalidatordGetAllGroupsStatusReply interface.
@@ -74,7 +83,7 @@ export function TgvalidatordGetAllGroupsStatusReplyFromJSONTyped(json: any, igno
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetAllGroupsStatusReply = {
         
         'total': json['total'] == null ? undefined : json['total'],
         'working': json['working'] == null ? undefined : json['working'],
@@ -82,6 +91,16 @@ export function TgvalidatordGetAllGroupsStatusReplyFromJSONTyped(json: any, igno
         'clusterGroupStatus': json['clusterGroupStatus'] == null ? undefined : json['clusterGroupStatus'],
         'componentStatus': json['componentStatus'] == null ? undefined : (mapValues(json['componentStatus'], TgvalidatordGroupStatusFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetAllGroupsStatusReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetAllGroupsStatusReplyToJSON(json: any): TgvalidatordGetAllGroupsStatusReply {
@@ -100,6 +119,7 @@ export function TgvalidatordGetAllGroupsStatusReplyFromJSONTyped(json: any, igno
         'failed': value['failed'],
         'clusterGroupStatus': value['clusterGroupStatus'],
         'componentStatus': value['componentStatus'] == null ? undefined : (mapValues(value['componentStatus'], TgvalidatordGroupStatusToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

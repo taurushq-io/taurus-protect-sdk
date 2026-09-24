@@ -5,6 +5,7 @@ import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
 import com.taurushq.sdk.protect.client.mapper.TaurusNetworkMapper;
 import com.taurushq.sdk.protect.client.model.ApiException;
 import com.taurushq.sdk.protect.client.model.ApiRequestCursor;
+import com.taurushq.sdk.protect.client.model.Pagination;
 import com.taurushq.sdk.protect.client.model.taurusnetwork.Settlement;
 import com.taurushq.sdk.protect.client.model.taurusnetwork.SettlementResult;
 import com.taurushq.sdk.protect.openapi.ApiClient;
@@ -25,11 +26,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * Example usage:
  * <pre>{@code
  * // List settlements
- * SettlementResult settlements = client.getTaurusNetworkSettlementService()
- *     .getSettlements(null, null, null, null);
+ * SettlementResult settlements = client.taurusNetwork().settlements()
+ *     .getSettlements(null, null, null, 20, null);
  *
  * // Get a specific settlement
- * Settlement settlement = client.getTaurusNetworkSettlementService()
+ * Settlement settlement = client.taurusNetwork().settlements()
  *     .getSettlement("settlement-123");
  * }</pre>
  */
@@ -74,39 +75,49 @@ public class TaurusNetworkSettlementService {
     }
 
     /**
-     * Retrieves settlements with optional filtering.
+     * Retrieves a page of settlements with optional filtering.
      *
      * @param counterParticipantId filter by counter participant ID (optional)
      * @param statuses             filter by statuses (optional)
      * @param sortOrder            sort order for results (optional, "ASC" or "DESC")
-     * @param cursor               pagination cursor (optional, null for first page)
-     * @return a paginated result containing settlements
+     * @param pageSize             the page size, null or 0 for the default
+     * @param cursor               a previous page's {@code getPage().getNextCursor()}, null for the first page
+     * @return the settlements and their page
+     * @throws ApiException             if the API call fails
+     * @throws IllegalArgumentException if the page size is out of range
+     */
+    public SettlementResult getSettlements(final String counterParticipantId, final List<String> statuses,
+                                           final String sortOrder, final Integer pageSize, final String cursor)
+            throws ApiException {
+        return getSettlements(counterParticipantId, statuses, sortOrder, Pagination.page(pageSize, cursor));
+    }
+
+    /**
+     * Retrieves a page of settlements with optional filtering, with a low-level request cursor.
+     *
+     * @param counterParticipantId filter by counter participant ID (optional)
+     * @param statuses             filter by statuses (optional)
+     * @param sortOrder            sort order for results (optional, "ASC" or "DESC")
+     * @param cursor               the request cursor, null for the first page with the default size
+     * @return the settlements and their page
      * @throws ApiException if the API call fails
      */
     public SettlementResult getSettlements(final String counterParticipantId, final List<String> statuses,
                                            final String sortOrder, final ApiRequestCursor cursor)
             throws ApiException {
 
-        String cursorCurrentPage = null;
-        String cursorPageRequest = null;
-        String cursorPageSize = null;
-
-        if (cursor != null) {
-            cursorCurrentPage = cursor.getCurrentPage();
-            cursorPageRequest = cursor.getPageRequest() != null ? cursor.getPageRequest().name() : null;
-            cursorPageSize = String.valueOf(cursor.getPageSize());
-        }
+        final CursorRequest page = CursorRequest.of(cursor);
 
         try {
             TgvalidatordGetSettlementsReply reply = settlementApi.taurusNetworkServiceGetSettlements(
                     counterParticipantId,
                     statuses,
                     sortOrder,
-                    cursorCurrentPage,
-                    cursorPageRequest,
-                    cursorPageSize
+                    page.currentPage(),
+                    page.pageRequest(),
+                    page.pageSizeParam()
             );
-            return mapper.fromSettlementsReply(reply);
+            return page.complete(mapper.fromSettlementsReply(reply), PagedOperation.SETTLEMENTS);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }

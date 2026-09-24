@@ -39,7 +39,16 @@ export interface TaurusNetworkServiceCreateParticipantAttributeBody {
      * @memberof TaurusNetworkServiceCreateParticipantAttributeBody
      */
     shareToTaurusNetworkParticipant?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TaurusNetworkServiceCreateParticipantAttributeBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TaurusNetworkServiceCreateParticipantAttributeBodyWireKeys: ReadonlySet<string> = new Set(['attributeData', 'shareToTaurusNetworkParticipant']);
 
 /**
  * Check if a given object implements the TaurusNetworkServiceCreateParticipantAttributeBody interface.
@@ -56,11 +65,21 @@ export function TaurusNetworkServiceCreateParticipantAttributeBodyFromJSONTyped(
     if (json == null) {
         return json;
     }
-    return {
+    const result: TaurusNetworkServiceCreateParticipantAttributeBody = {
         
         'attributeData': json['attributeData'] == null ? undefined : TgvalidatordParticipantAttributeDataFromJSON(json['attributeData']),
         'shareToTaurusNetworkParticipant': json['shareToTaurusNetworkParticipant'] == null ? undefined : json['shareToTaurusNetworkParticipant'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TaurusNetworkServiceCreateParticipantAttributeBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TaurusNetworkServiceCreateParticipantAttributeBodyToJSON(json: any): TaurusNetworkServiceCreateParticipantAttributeBody {
@@ -76,6 +95,7 @@ export function TaurusNetworkServiceCreateParticipantAttributeBodyFromJSONTyped(
         
         'attributeData': TgvalidatordParticipantAttributeDataToJSON(value['attributeData']),
         'shareToTaurusNetworkParticipant': value['shareToTaurusNetworkParticipant'],
+        ...value['additionalProperties'],
     };
 }
 

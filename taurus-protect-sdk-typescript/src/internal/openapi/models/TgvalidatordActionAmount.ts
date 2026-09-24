@@ -31,7 +31,16 @@ export interface TgvalidatordActionAmount {
      * @memberof TgvalidatordActionAmount
      */
     cryptoAmount?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordActionAmount
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordActionAmountWireKeys: ReadonlySet<string> = new Set(['kind', 'cryptoAmount']);
 
 /**
  * Check if a given object implements the TgvalidatordActionAmount interface.
@@ -48,11 +57,21 @@ export function TgvalidatordActionAmountFromJSONTyped(json: any, ignoreDiscrimin
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordActionAmount = {
         
         'kind': json['kind'] == null ? undefined : json['kind'],
         'cryptoAmount': json['cryptoAmount'] == null ? undefined : json['cryptoAmount'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordActionAmountWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordActionAmountToJSON(json: any): TgvalidatordActionAmount {
@@ -68,6 +87,7 @@ export function TgvalidatordActionAmountFromJSONTyped(json: any, ignoreDiscrimin
         
         'kind': value['kind'],
         'cryptoAmount': value['cryptoAmount'],
+        ...value['additionalProperties'],
     };
 }
 

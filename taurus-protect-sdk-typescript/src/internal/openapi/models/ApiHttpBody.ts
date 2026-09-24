@@ -84,7 +84,16 @@ export interface ApiHttpBody {
      * @memberof ApiHttpBody
      */
     extensions?: Array<ProtobufAny>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof ApiHttpBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const ApiHttpBodyWireKeys: ReadonlySet<string> = new Set(['contentType', 'data', 'extensions']);
 
 /**
  * Check if a given object implements the ApiHttpBody interface.
@@ -101,12 +110,22 @@ export function ApiHttpBodyFromJSONTyped(json: any, ignoreDiscriminator: boolean
     if (json == null) {
         return json;
     }
-    return {
+    const result: ApiHttpBody = {
         
         'contentType': json['contentType'] == null ? undefined : json['contentType'],
         'data': json['data'] == null ? undefined : json['data'],
         'extensions': json['extensions'] == null ? undefined : ((json['extensions'] as Array<any>).map(ProtobufAnyFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!ApiHttpBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function ApiHttpBodyToJSON(json: any): ApiHttpBody {
@@ -123,6 +142,7 @@ export function ApiHttpBodyFromJSONTyped(json: any, ignoreDiscriminator: boolean
         'contentType': value['contentType'],
         'data': value['data'],
         'extensions': value['extensions'] == null ? undefined : ((value['extensions'] as Array<any>).map(ProtobufAnyToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

@@ -1,10 +1,11 @@
 package com.taurushq.sdk.protect.client.model;
 
 /**
- * A whitelisted-address row dropped from a list because it failed integrity
- * verification, and why.
+ * A row dropped from a list because it failed integrity verification, and why: a
+ * whitelisted address, or a v2 asset holder that its verified counterpart did not confirm.
  *
  * @see WhitelistedAddressListResult
+ * @see AssetAddressV2Result
  */
 public final class ExcludedWhitelistedAddress {
 
@@ -14,7 +15,7 @@ public final class ExcludedWhitelistedAddress {
     /**
      * Constructs an exclusion record.
      *
-     * @param id     the address ID, or null when the row carried no usable ID
+     * @param id     the row's ID, or what identifies it when it carried no usable ID
      * @param reason why the row failed verification
      */
     public ExcludedWhitelistedAddress(final String id, final String reason) {
@@ -23,9 +24,10 @@ public final class ExcludedWhitelistedAddress {
     }
 
     /**
-     * Returns the address ID, or null when the row carried no usable ID.
+     * Returns the row's ID. A whitelisted-address row without a usable ID gives null; an
+     * asset holder without one gives its address.
      *
-     * @return the address ID
+     * @return the ID
      */
     public String getId() {
         return id;

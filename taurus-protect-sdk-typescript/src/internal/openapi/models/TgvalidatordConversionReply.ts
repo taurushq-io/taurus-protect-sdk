@@ -64,7 +64,16 @@ export interface TgvalidatordConversionReply {
      * @memberof TgvalidatordConversionReply
      */
     fullBaseCurrency?: TgvalidatordCurrency;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordConversionReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordConversionReplyWireKeys: ReadonlySet<string> = new Set(['currencyFrom', 'baseCurrency', 'result', 'fullCurrencyFrom', 'fullBaseCurrency']);
 
 /**
  * Check if a given object implements the TgvalidatordConversionReply interface.
@@ -81,7 +90,7 @@ export function TgvalidatordConversionReplyFromJSONTyped(json: any, ignoreDiscri
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordConversionReply = {
         
         'currencyFrom': json['currencyFrom'] == null ? undefined : json['currencyFrom'],
         'baseCurrency': json['baseCurrency'] == null ? undefined : json['baseCurrency'],
@@ -89,6 +98,16 @@ export function TgvalidatordConversionReplyFromJSONTyped(json: any, ignoreDiscri
         'fullCurrencyFrom': json['fullCurrencyFrom'] == null ? undefined : TgvalidatordCurrencyFromJSON(json['fullCurrencyFrom']),
         'fullBaseCurrency': json['fullBaseCurrency'] == null ? undefined : TgvalidatordCurrencyFromJSON(json['fullBaseCurrency']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordConversionReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordConversionReplyToJSON(json: any): TgvalidatordConversionReply {
@@ -107,6 +126,7 @@ export function TgvalidatordConversionReplyFromJSONTyped(json: any, ignoreDiscri
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordConversionValueToJSON)),
         'fullCurrencyFrom': TgvalidatordCurrencyToJSON(value['fullCurrencyFrom']),
         'fullBaseCurrency': TgvalidatordCurrencyToJSON(value['fullBaseCurrency']),
+        ...value['additionalProperties'],
     };
 }
 

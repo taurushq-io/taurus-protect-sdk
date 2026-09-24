@@ -34,7 +34,10 @@ type TgvalidatordFiatProviderAccount struct {
 	CurrencyInfo *TgvalidatordCurrency `json:"currencyInfo,omitempty"`
 	// Valuation in the base currency main unit (CHF, EUR, USD etc...)
 	BaseCurrencyValuation *string `json:"baseCurrencyValuation,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordFiatProviderAccount TgvalidatordFiatProviderAccount
 
 // NewTgvalidatordFiatProviderAccount instantiates a new TgvalidatordFiatProviderAccount object
 // This constructor will assign default values to properties that have it defined,
@@ -483,7 +486,44 @@ func (o TgvalidatordFiatProviderAccount) ToMap() (map[string]interface{}, error)
 	if !IsNil(o.BaseCurrencyValuation) {
 		toSerialize["baseCurrencyValuation"] = o.BaseCurrencyValuation
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordFiatProviderAccount) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordFiatProviderAccount := _TgvalidatordFiatProviderAccount{}
+
+	err = json.Unmarshal(data, &varTgvalidatordFiatProviderAccount)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordFiatProviderAccount(varTgvalidatordFiatProviderAccount)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "provider")
+		delete(additionalProperties, "label")
+		delete(additionalProperties, "accountType")
+		delete(additionalProperties, "accountIdentifier")
+		delete(additionalProperties, "accountName")
+		delete(additionalProperties, "totalBalance")
+		delete(additionalProperties, "creationDate")
+		delete(additionalProperties, "updateDate")
+		delete(additionalProperties, "currencyID")
+		delete(additionalProperties, "currencyInfo")
+		delete(additionalProperties, "baseCurrencyValuation")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordFiatProviderAccount struct {

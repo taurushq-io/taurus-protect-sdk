@@ -135,7 +135,16 @@ export interface TgvalidatordFiatProviderOperation {
      * @memberof TgvalidatordFiatProviderOperation
      */
     operationDetails?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordFiatProviderOperation
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordFiatProviderOperationWireKeys: ReadonlySet<string> = new Set(['id', 'provider', 'label', 'operationType', 'operationIdentifier', 'amount', 'creationDate', 'updateDate', 'currencyID', 'currencyInfo', 'operationDirection', 'fromAccountID', 'toAccountID', 'fromDetails', 'toDetails', 'status', 'comment', 'operationDetails']);
 
 /**
  * Check if a given object implements the TgvalidatordFiatProviderOperation interface.
@@ -152,7 +161,7 @@ export function TgvalidatordFiatProviderOperationFromJSONTyped(json: any, ignore
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordFiatProviderOperation = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'provider': json['provider'] == null ? undefined : json['provider'],
@@ -173,6 +182,16 @@ export function TgvalidatordFiatProviderOperationFromJSONTyped(json: any, ignore
         'comment': json['comment'] == null ? undefined : json['comment'],
         'operationDetails': json['operationDetails'] == null ? undefined : json['operationDetails'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordFiatProviderOperationWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordFiatProviderOperationToJSON(json: any): TgvalidatordFiatProviderOperation {
@@ -204,6 +223,7 @@ export function TgvalidatordFiatProviderOperationFromJSONTyped(json: any, ignore
         'status': value['status'],
         'comment': value['comment'],
         'operationDetails': value['operationDetails'],
+        ...value['additionalProperties'],
     };
 }
 

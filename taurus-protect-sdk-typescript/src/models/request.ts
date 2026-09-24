@@ -1,3 +1,5 @@
+import type { CursorNavigationOptions } from "./pagination";
+
 /**
  * Status of a transaction request.
  *
@@ -245,15 +247,10 @@ export interface Approvers {
 }
 
 /**
- * Options for listing requests.
+ * Options for listing requests. A cursor list: `pageSize` 1-100 (default 20) and the
+ * `cursor` of a previous page.
  */
-export interface ListRequestsOptions {
-  /** Maximum number of requests to return */
-  limit?: number;
-  /** Page to request (for cursor-based pagination) */
-  pageRequest?: "FIRST" | "PREVIOUS" | "NEXT" | "LAST";
-  /** Current page cursor */
-  currentPage?: string;
+export interface ListRequestsOptions extends CursorNavigationOptions {
   /** Filter by request statuses */
   statuses?: RequestStatus[];
   /** Filter by request types */
@@ -273,15 +270,11 @@ export interface ListRequestsOptions {
 }
 
 /**
- * Options for listing requests pending approval.
+ * Options for listing requests pending approval. A cursor list: `pageSize` 1-100
+ * (default 20) and the `cursor` of a previous page. The approval queue has no status
+ * filter and no external-request-id filter (validatord's approval paginator drops it).
  */
-export interface ListRequestsForApprovalOptions {
-  /** Maximum number of requests to return */
-  limit?: number;
-  /** Page to request (for cursor-based pagination) */
-  pageRequest?: "FIRST" | "PREVIOUS" | "NEXT" | "LAST";
-  /** Current page cursor */
-  currentPage?: string;
+export interface ListRequestsForApprovalOptions extends CursorNavigationOptions {
   /** Filter by request types */
   types?: string[];
   /** Exclude request types */
@@ -292,8 +285,6 @@ export interface ListRequestsForApprovalOptions {
   currencyId?: string;
   /** Sort order */
   sortOrder?: "ASC" | "DESC";
-  /** Filter by external request IDs */
-  externalRequestIds?: string[];
 }
 
 /**

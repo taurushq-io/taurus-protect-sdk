@@ -100,7 +100,16 @@ export interface TgvalidatordReservation {
      * @memberof TgvalidatordReservation
      */
     resourceType?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordReservation
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordReservationWireKeys: ReadonlySet<string> = new Set(['id', 'amount', 'creationDate', 'kind', 'comment', 'addressid', 'address', 'currencyInfo', 'asset', 'resourceId', 'resourceType']);
 
 /**
  * Check if a given object implements the TgvalidatordReservation interface.
@@ -117,7 +126,7 @@ export function TgvalidatordReservationFromJSONTyped(json: any, ignoreDiscrimina
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordReservation = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'amount': json['amount'] == null ? undefined : json['amount'],
@@ -131,6 +140,16 @@ export function TgvalidatordReservationFromJSONTyped(json: any, ignoreDiscrimina
         'resourceId': json['resourceId'] == null ? undefined : json['resourceId'],
         'resourceType': json['resourceType'] == null ? undefined : json['resourceType'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordReservationWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordReservationToJSON(json: any): TgvalidatordReservation {
@@ -155,6 +174,7 @@ export function TgvalidatordReservationFromJSONTyped(json: any, ignoreDiscrimina
         'asset': TgvalidatordAssetToJSON(value['asset']),
         'resourceId': value['resourceId'],
         'resourceType': value['resourceType'],
+        ...value['additionalProperties'],
     };
 }
 

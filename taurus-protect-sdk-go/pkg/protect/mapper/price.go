@@ -21,6 +21,9 @@ func PriceFromDTO(dto *openapi.TgvalidatordCurrencyPrice) *model.Price {
 		Source:              safeString(dto.Source),
 		CurrencyFromInfo:    CurrencyInfoFromDTO(dto.CurrencyFromInfo),
 		CurrencyToInfo:      CurrencyInfoFromDTO(dto.CurrencyToInfo),
+		ID:                  safeString(dto.Id),
+		IsPrimary:           safeBool(dto.IsPrimary),
+		Status:              safeString(dto.Status),
 	}
 
 	// Convert timestamps

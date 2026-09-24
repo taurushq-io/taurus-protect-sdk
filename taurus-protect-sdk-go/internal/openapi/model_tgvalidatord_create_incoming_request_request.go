@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -32,6 +31,7 @@ type TgvalidatordCreateIncomingRequestRequest struct {
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
 	// [Coinbase Pro/Exchange] If this flag is set, the fee will directly be deduced from the withdrawal amount (total withdrawal of requested amount). If the flag is not set, the fees will be added to the withdrawal amount (total withdrawal of requested amount plus fees).
 	FeePaidByReceiver *bool `json:"feePaidByReceiver,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateIncomingRequestRequest TgvalidatordCreateIncomingRequestRequest
@@ -281,6 +281,11 @@ func (o TgvalidatordCreateIncomingRequestRequest) ToMap() (map[string]interface{
 	if !IsNil(o.FeePaidByReceiver) {
 		toSerialize["feePaidByReceiver"] = o.FeePaidByReceiver
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -310,15 +315,26 @@ func (o *TgvalidatordCreateIncomingRequestRequest) UnmarshalJSON(data []byte) (e
 
 	varTgvalidatordCreateIncomingRequestRequest := _TgvalidatordCreateIncomingRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateIncomingRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateIncomingRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateIncomingRequestRequest(varTgvalidatordCreateIncomingRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "fromExchangeId")
+		delete(additionalProperties, "toAddressId")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "transactionReference")
+		delete(additionalProperties, "externalRequestId")
+		delete(additionalProperties, "feePaidByReceiver")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

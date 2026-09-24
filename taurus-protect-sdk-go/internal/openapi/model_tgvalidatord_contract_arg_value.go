@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordContractArgValue{}
 type TgvalidatordContractArgValue struct {
 	Primitive *string `json:"primitive,omitempty"`
 	Composite []TgvalidatordContractArgValue `json:"composite,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordContractArgValue TgvalidatordContractArgValue
 
 // NewTgvalidatordContractArgValue instantiates a new TgvalidatordContractArgValue object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordContractArgValue) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Composite) {
 		toSerialize["composite"] = o.Composite
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordContractArgValue) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordContractArgValue := _TgvalidatordContractArgValue{}
+
+	err = json.Unmarshal(data, &varTgvalidatordContractArgValue)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordContractArgValue(varTgvalidatordContractArgValue)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "primitive")
+		delete(additionalProperties, "composite")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordContractArgValue struct {

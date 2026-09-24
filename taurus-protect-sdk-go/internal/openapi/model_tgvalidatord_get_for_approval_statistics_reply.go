@@ -26,7 +26,10 @@ type TgvalidatordGetForApprovalStatisticsReply struct {
 	WhitelistedContractsCount *string `json:"whitelistedContractsCount,omitempty"`
 	SettlementsCount *string `json:"settlementsCount,omitempty"`
 	PledgesCount *string `json:"pledgesCount,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetForApprovalStatisticsReply TgvalidatordGetForApprovalStatisticsReply
 
 // NewTgvalidatordGetForApprovalStatisticsReply instantiates a new TgvalidatordGetForApprovalStatisticsReply object
 // This constructor will assign default values to properties that have it defined,
@@ -300,7 +303,39 @@ func (o TgvalidatordGetForApprovalStatisticsReply) ToMap() (map[string]interface
 	if !IsNil(o.PledgesCount) {
 		toSerialize["pledgesCount"] = o.PledgesCount
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetForApprovalStatisticsReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetForApprovalStatisticsReply := _TgvalidatordGetForApprovalStatisticsReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetForApprovalStatisticsReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetForApprovalStatisticsReply(varTgvalidatordGetForApprovalStatisticsReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "requestsCount")
+		delete(additionalProperties, "accountChangesCount")
+		delete(additionalProperties, "contractCallsCount")
+		delete(additionalProperties, "whitelistedAddressesCount")
+		delete(additionalProperties, "whitelistedContractsCount")
+		delete(additionalProperties, "settlementsCount")
+		delete(additionalProperties, "pledgesCount")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetForApprovalStatisticsReply struct {

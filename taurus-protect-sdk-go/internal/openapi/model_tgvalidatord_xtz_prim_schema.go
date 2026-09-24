@@ -28,7 +28,10 @@ type TgvalidatordXTZPrimSchema struct {
 	Properties []TgvalidatordXTZPrimSchema `json:"properties,omitempty"`
 	NamedPair *bool `json:"namedPair,omitempty"`
 	Const *string `json:"const,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordXTZPrimSchema TgvalidatordXTZPrimSchema
 
 // NewTgvalidatordXTZPrimSchema instantiates a new TgvalidatordXTZPrimSchema object
 // This constructor will assign default values to properties that have it defined,
@@ -372,7 +375,41 @@ func (o TgvalidatordXTZPrimSchema) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Const) {
 		toSerialize["const"] = o.Const
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordXTZPrimSchema) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordXTZPrimSchema := _TgvalidatordXTZPrimSchema{}
+
+	err = json.Unmarshal(data, &varTgvalidatordXTZPrimSchema)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordXTZPrimSchema(varTgvalidatordXTZPrimSchema)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "title")
+		delete(additionalProperties, "prim")
+		delete(additionalProperties, "typeSignature")
+		delete(additionalProperties, "format")
+		delete(additionalProperties, "default")
+		delete(additionalProperties, "properties")
+		delete(additionalProperties, "namedPair")
+		delete(additionalProperties, "const")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordXTZPrimSchema struct {

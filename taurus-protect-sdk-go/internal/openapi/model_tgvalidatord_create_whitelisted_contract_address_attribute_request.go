@@ -25,7 +25,10 @@ type TgvalidatordCreateWhitelistedContractAddressAttributeRequest struct {
 	Type *string `json:"type,omitempty"`
 	Subtype *string `json:"subtype,omitempty"`
 	Isfile *bool `json:"isfile,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordCreateWhitelistedContractAddressAttributeRequest TgvalidatordCreateWhitelistedContractAddressAttributeRequest
 
 // NewTgvalidatordCreateWhitelistedContractAddressAttributeRequest instantiates a new TgvalidatordCreateWhitelistedContractAddressAttributeRequest object
 // This constructor will assign default values to properties that have it defined,
@@ -264,7 +267,38 @@ func (o TgvalidatordCreateWhitelistedContractAddressAttributeRequest) ToMap() (m
 	if !IsNil(o.Isfile) {
 		toSerialize["isfile"] = o.Isfile
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordCreateWhitelistedContractAddressAttributeRequest) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordCreateWhitelistedContractAddressAttributeRequest := _TgvalidatordCreateWhitelistedContractAddressAttributeRequest{}
+
+	err = json.Unmarshal(data, &varTgvalidatordCreateWhitelistedContractAddressAttributeRequest)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordCreateWhitelistedContractAddressAttributeRequest(varTgvalidatordCreateWhitelistedContractAddressAttributeRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "key")
+		delete(additionalProperties, "value")
+		delete(additionalProperties, "contentType")
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "subtype")
+		delete(additionalProperties, "isfile")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordCreateWhitelistedContractAddressAttributeRequest struct {

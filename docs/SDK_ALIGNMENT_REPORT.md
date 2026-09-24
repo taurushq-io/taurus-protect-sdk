@@ -17,6 +17,7 @@ suite, by `build.sh`, or by a script at the repo root:
 | Verification behaviour | `scripts/resources/verification-behaviour-vectors.json` (`rule_key` 12, `hash_coverage` 8, `contains_hash` 7, `memo_key` 8, **`legacy_hash` 7**, **`rule_tier_candidates` 5**) | The verification primitives: which `(blockchain, network)` selects the rules, hash coverage, memo-key injectivity, **which payload step 6 parses**, **which rule tiers apply when the network is unsigned** | all 4 unit suites |
 | Signed fixtures | `scripts/resources/verification-signed-fixtures.json` (10 SuperAdmin + 8 group vectors) | Both thresholds count DISTINCT SIGNING KEYS, not signature entries | all 4 unit suites |
 | Crypto + legacy hashes | `docs/test-vectors/crypto-test-vectors.json` (`legacy_hash_address` 3, `legacy_hash_asset` 3, **`canonical_string` 6**) | Hash/HMAC primitives, the legacy-hash strategies, **and the TPV1 canonical string** | all 4 unit suites |
+| Decode tolerance | `scripts/resources/decode-tolerance-vectors.json` (3 model, 4 enum, 3 service vectors) | Data the client does not know: unknown fields are kept and written back, unknown enum values keep their raw string, caller-supplied enum values are sent verbatim, an unknown asset-holder type comes back unverified | all 4 unit suites |
 | Signing-site inventory | `python3 scripts/signing-sites/check.py` | Every ECDSA signing site declares `verifies` or `signs-own-bytes` | repo-root script |
 | API-surface parity | `scripts/api-surface/diff.py` | Every service exists in all four SDKs; method-count deltas reported | `build.sh docs` |
 | Docs match code | `build.sh docs --check` | No documented method that does not exist; generated index current | `build.sh docs --check` |
@@ -80,7 +81,7 @@ so pytest stops collecting it. Compare the totals, not just the pass/fail line.
 **Java's PMD moved 10 → 0 in this pass**, so it is a real gate now rather than known-red debt.
 
 Service counts come from `scripts/resources/api-surface.<lang>.json`, regenerated from
-source by `build.sh docs`. The "43 services (38 core + 5 TaurusNetwork)" claim is measured
+source by `build.sh docs`. The "44 services (39 core + 5 TaurusNetwork)" claim is measured
 rather than repeated. Per-service method counts are deliberately **advisory**, not a gate:
 names differ by language idiom (Go `ListWallets` / Python `list` / Java `getWallets`), so
 normalising them either hides real gaps or invents false ones.
@@ -195,6 +196,60 @@ until they are pushed and it is bumped. Checked against this branch with a tempo
   61 generated OpenAPI APIs (this report said 56), Go 47 mapper / 42 model files (said
   83/46), Python 25 pledge and 15 sharing models (said 26/14), TypeScript 38 service getters
   (said 26).
+
+## Decode tolerance pass (2026-09-24)
+
+validatord added `currency.tokenInfo`, and every Go balances read failed with `json: unknown field
+"tokenInfo"`: openapi-generator's Go target decodes each model that has a required property with
+`DisallowUnknownFields`, which also applies to every struct nested under it. The four SDKs turned
+out to disagree on everything the client does not know:
+
+| Case | Go | Java | Python | TypeScript |
+|---|---|---|---|---|
+| Unknown field | failed | kept | kept | dropped |
+| Unknown enum value from the server | failed | failed | failed | kept |
+| Caller-supplied unknown enum value | sent | rejected | rejected | MFS entity type silently became `REQUEST` |
+| Unknown MFS entity kind from the server | raw | raw | `IntegrityError` | silently became `REQUEST` |
+
+They now share one contract, gated by `scripts/resources/decode-tolerance-vectors.json`:
+
+- **Unknown field:** decoding succeeds. It lands in the generated model's additional-properties map
+  (Go `AdditionalProperties`, Java `getAdditionalProperties()`, Python `additional_properties`,
+  TypeScript `additionalProperties`), holding only unknown keys, and is written back after the
+  known fields. Domain models do not expose it.
+- **Unknown enum value from the server:** decoding succeeds and the raw string is kept; known values
+  still resolve to the generated constant. Mappers hand the raw wire string to domain models; an
+  absent value stays absent.
+- **Caller-supplied enum value:** sent verbatim, with no client-side rejection and no substitution.
+  Dropping the old Java/Python check loses nothing: it only ever rejected *unknown* strings, which
+  validatord rejects itself, and never caught the real hazard — a known but wrong MFS kind.
+- **Asset holders:** a row of an unknown address type comes back unverified, in all four.
+
+| SDK | Unknown fields | Unknown enum values |
+|---|---|---|
+| Go | `disallowAdditionalPropertiesIfNotPresent=false`, now passed by all four scripts | `templates/go/model_enum.mustache` |
+| Java | already kept | `templates/java/libraries/okhttp-gson/modelEnum.mustache`: generated enums are open final classes |
+| Python | already kept | `templates/python/model_enum.mustache`: `_missing_` returns a pseudo-member with the raw `.value` |
+| TypeScript | `templates/typescript-fetch/modelGeneric*.mustache` | already a cast |
+
+Each `generate-openapi.sh` aborts if its override stops applying (strict decoders in Go,
+`Unexpected value` in Java, an enum without `_missing_` in Python, a model without unknown-field
+capture in TypeScript), so a generator upgrade cannot silently bring strictness back.
+
+Hand-written changes that followed:
+
+- **Java:** generated enum types are classes, so `switch`, `name()`, `ordinal()` and `EnumSet` on
+  them no longer compile — source-incompatible for SDK code outside this repo that relied on them.
+  `FeePayerMapper` now maps the forwarder kind with `getValue()` (`OpenZeppelinForwarder`, as Go);
+  MapStruct's implicit `name()` gave `OPEN_ZEPPELIN_FORWARDER`. `AssetService.queryAssetAddresses`
+  no longer rejects unknown filter values.
+- **Python:** `_enum_arg` is gone; the MFS kind is sent verbatim and read back raw (the domain
+  `MultiFactorSignatureEntityType` carries the same `_missing_`); `MultiFactorSignatureInfo.entity_type`
+  is Optional; pairing-info `status` is the wire string, not the generated enum object.
+- **TypeScript:** the MFS kind no longer defaults to `REQUEST` in either direction;
+  `MultiFactorSignatureInfo.entityType` is optional.
+
+Python's `_missing_` was verified on Python 3.12 with pydantic 2.13.4 only.
 
 ## Security-scan pass (2026-09-10)
 
@@ -435,7 +490,9 @@ differ's `aliases.json` points back at this table.
 | `Request.id` type | Java `long`, Go `string`, Python `Optional[int]`, TS `number` | Go uses `string` for all IDs to avoid precision loss |
 | Go `Request.Status` is a plain `string` | Others use a typed enum | Go idiom |
 | Go-only `WithLogger` / `protect.Logger` / `protect.Field` | Go gained an injectable logger; Java uses `java.util.logging`, Python `logging`, TypeScript `console.warn` | The SDK had no report channel at all, and list-path integrity exclusions must not be silent. Each SDK uses its own idiom rather than a common abstraction none of them asked for |
-| Go-only removal of generated `TgvalidatordMetadata.payload` | Java types it `Object`, Python is dynamic, TypeScript `any` — all accept the array the wire sends | Only `openapi-generator -g go` maps the untyped schema to `map[string]interface{}`, which fails to decode. Verified per SDK, not assumed |
+| Go-only removal of generated `TgvalidatordMetadata.payload` | Java types it `Object`, Python is dynamic, TypeScript `any` — all accept the array the wire sends | Only `openapi-generator -g go` maps the untyped schema to `map[string]interface{}`, which fails to decode. Verified per SDK, not assumed. The generated decoder also deletes `payload` from `AdditionalProperties`, so the raw object never reaches Go code |
+| Missing required fields | Go, Java and Python fail a reply that omits a property the spec marks required; TypeScript does not | Outside the decode-tolerance contract. Worth revisiting: validatord marshals with `EmitUnpopulated:false`, so a required field holding its zero value is omitted on the wire |
+| Status strings parsed by hand | Request, webhook and user status are plain strings in the spec, parsed into hand-written types differently. Seen so far: Python `RequestStatus.from_string` gives `UNKNOWN` for an unknown value, TypeScript webhook/user status give `undefined`, Java webhook status gives `null`; Go's `Request.Status` stays a plain string. Not yet compared field by field | Not generated enums, so outside the decode-tolerance contract; see the `RequestStatus` divergence below |
 
 | Whitelisted-asset envelope getter absent in Python | Go/Java/TS expose one | **Not a gap**: Python's `WhitelistedAsset` already carries the whole envelope (`metadata`, `rules_container`, `rules_signatures`, `signed_contract_address`). Go/Java/TS split asset-from-envelope; Python merged them, so a caller already has raw access |
 

@@ -46,7 +46,16 @@ export interface TgvalidatordGetStakeAccountsReply {
      * @memberof TgvalidatordGetStakeAccountsReply
      */
     cursor?: TgvalidatordResponseCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetStakeAccountsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetStakeAccountsReplyWireKeys: ReadonlySet<string> = new Set(['stakeAccounts', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetStakeAccountsReply interface.
@@ -63,11 +72,21 @@ export function TgvalidatordGetStakeAccountsReplyFromJSONTyped(json: any, ignore
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetStakeAccountsReply = {
         
         'stakeAccounts': json['stakeAccounts'] == null ? undefined : ((json['stakeAccounts'] as Array<any>).map(TgvalidatordStakeAccountFromJSON)),
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetStakeAccountsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetStakeAccountsReplyToJSON(json: any): TgvalidatordGetStakeAccountsReply {
@@ -83,6 +102,7 @@ export function TgvalidatordGetStakeAccountsReplyFromJSONTyped(json: any, ignore
         
         'stakeAccounts': value['stakeAccounts'] == null ? undefined : ((value['stakeAccounts'] as Array<any>).map(TgvalidatordStakeAccountToJSON)),
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
+        ...value['additionalProperties'],
     };
 }
 

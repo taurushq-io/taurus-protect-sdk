@@ -20,11 +20,14 @@ var _ MappedNullable = &TgvalidatordApiKey{}
 
 // TgvalidatordApiKey struct for TgvalidatordApiKey
 type TgvalidatordApiKey struct {
-	Id             *string    `json:"id,omitempty"`
-	TenantId       *string    `json:"tenantId,omitempty"`
+	Id *string `json:"id,omitempty"`
+	TenantId *string `json:"tenantId,omitempty"`
 	ExpirationDate *time.Time `json:"expirationDate,omitempty"`
-	CreationDate   *time.Time `json:"creationDate,omitempty"`
+	CreationDate *time.Time `json:"creationDate,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordApiKey TgvalidatordApiKey
 
 // NewTgvalidatordApiKey instantiates a new TgvalidatordApiKey object
 // This constructor will assign default values to properties that have it defined,
@@ -172,7 +175,7 @@ func (o *TgvalidatordApiKey) SetCreationDate(v time.Time) {
 }
 
 func (o TgvalidatordApiKey) MarshalJSON() ([]byte, error) {
-	toSerialize, err := o.ToMap()
+	toSerialize,err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -193,7 +196,36 @@ func (o TgvalidatordApiKey) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.CreationDate) {
 		toSerialize["creationDate"] = o.CreationDate
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordApiKey) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordApiKey := _TgvalidatordApiKey{}
+
+	err = json.Unmarshal(data, &varTgvalidatordApiKey)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordApiKey(varTgvalidatordApiKey)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "tenantId")
+		delete(additionalProperties, "expirationDate")
+		delete(additionalProperties, "creationDate")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordApiKey struct {
@@ -231,3 +263,5 @@ func (v *NullableTgvalidatordApiKey) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
+
+

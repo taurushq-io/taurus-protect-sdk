@@ -49,7 +49,16 @@ export interface TgvalidatordCreateOutgoingXLMClaimClaimableBalanceRequestReques
      * @memberof TgvalidatordCreateOutgoingXLMClaimClaimableBalanceRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingXLMClaimClaimableBalanceRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingXLMClaimClaimableBalanceRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'claimableBalanceID', 'feeLimit', 'comment', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingXLMClaimClaimableBalanceRequestRequest interface.
@@ -68,7 +77,7 @@ export function TgvalidatordCreateOutgoingXLMClaimClaimableBalanceRequestRequest
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingXLMClaimClaimableBalanceRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'claimableBalanceID': json['claimableBalanceID'],
@@ -76,6 +85,16 @@ export function TgvalidatordCreateOutgoingXLMClaimClaimableBalanceRequestRequest
         'comment': json['comment'] == null ? undefined : json['comment'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingXLMClaimClaimableBalanceRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingXLMClaimClaimableBalanceRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingXLMClaimClaimableBalanceRequestRequest {
@@ -94,6 +113,7 @@ export function TgvalidatordCreateOutgoingXLMClaimClaimableBalanceRequestRequest
         'feeLimit': value['feeLimit'],
         'comment': value['comment'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

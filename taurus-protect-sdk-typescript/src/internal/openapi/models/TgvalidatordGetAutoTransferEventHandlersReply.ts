@@ -46,7 +46,16 @@ export interface TgvalidatordGetAutoTransferEventHandlersReply {
      * @memberof TgvalidatordGetAutoTransferEventHandlersReply
      */
     handlers?: Array<TgvalidatordAutoTransferEventHandler>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetAutoTransferEventHandlersReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetAutoTransferEventHandlersReplyWireKeys: ReadonlySet<string> = new Set(['cursor', 'handlers']);
 
 /**
  * Check if a given object implements the TgvalidatordGetAutoTransferEventHandlersReply interface.
@@ -63,11 +72,21 @@ export function TgvalidatordGetAutoTransferEventHandlersReplyFromJSONTyped(json:
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetAutoTransferEventHandlersReply = {
         
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
         'handlers': json['handlers'] == null ? undefined : ((json['handlers'] as Array<any>).map(TgvalidatordAutoTransferEventHandlerFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetAutoTransferEventHandlersReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetAutoTransferEventHandlersReplyToJSON(json: any): TgvalidatordGetAutoTransferEventHandlersReply {
@@ -83,6 +102,7 @@ export function TgvalidatordGetAutoTransferEventHandlersReplyFromJSONTyped(json:
         
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
         'handlers': value['handlers'] == null ? undefined : ((value['handlers'] as Array<any>).map(TgvalidatordAutoTransferEventHandlerToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

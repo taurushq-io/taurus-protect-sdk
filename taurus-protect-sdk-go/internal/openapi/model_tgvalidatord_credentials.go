@@ -11,7 +11,6 @@ API version: 1.0
 package openapi
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 )
@@ -21,11 +20,12 @@ var _ MappedNullable = &TgvalidatordCredentials{}
 
 // TgvalidatordCredentials struct for TgvalidatordCredentials
 type TgvalidatordCredentials struct {
-	Email    *string `json:"email,omitempty"`
-	Password string  `json:"password"`
+	Email *string `json:"email,omitempty"`
+	Password string `json:"password"`
 	// Time-based One Time Password (2FA)
-	Totp     *string `json:"totp,omitempty"`
+	Totp *string `json:"totp,omitempty"`
 	Username *string `json:"username,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCredentials TgvalidatordCredentials
@@ -169,7 +169,7 @@ func (o *TgvalidatordCredentials) SetUsername(v string) {
 }
 
 func (o TgvalidatordCredentials) MarshalJSON() ([]byte, error) {
-	toSerialize, err := o.ToMap()
+	toSerialize,err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -188,6 +188,11 @@ func (o TgvalidatordCredentials) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Username) {
 		toSerialize["username"] = o.Username
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -204,10 +209,10 @@ func (o *TgvalidatordCredentials) UnmarshalJSON(data []byte) (err error) {
 	err = json.Unmarshal(data, &allProperties)
 
 	if err != nil {
-		return err
+		return err;
 	}
 
-	for _, requiredProperty := range requiredProperties {
+	for _, requiredProperty := range(requiredProperties) {
 		if _, exists := allProperties[requiredProperty]; !exists {
 			return fmt.Errorf("no value given for required property %v", requiredProperty)
 		}
@@ -215,15 +220,23 @@ func (o *TgvalidatordCredentials) UnmarshalJSON(data []byte) (err error) {
 
 	varTgvalidatordCredentials := _TgvalidatordCredentials{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCredentials)
+	err = json.Unmarshal(data, &varTgvalidatordCredentials)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCredentials(varTgvalidatordCredentials)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "email")
+		delete(additionalProperties, "password")
+		delete(additionalProperties, "totp")
+		delete(additionalProperties, "username")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }
@@ -263,3 +276,5 @@ func (v *NullableTgvalidatordCredentials) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
+
+

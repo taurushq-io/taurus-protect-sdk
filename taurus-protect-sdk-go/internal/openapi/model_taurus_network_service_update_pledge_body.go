@@ -23,7 +23,10 @@ type TaurusNetworkServiceUpdatePledgeBody struct {
 	DefaultDestinationSharedAddressID *string `json:"defaultDestinationSharedAddressID,omitempty"`
 	// The default destination internal address ID. This is the address where the funds will be sent on withdrawals. The ID represents an internal address which must be shared with the participant owning the pledge.
 	DefaultDestinationInternalAddressID *string `json:"defaultDestinationInternalAddressID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TaurusNetworkServiceUpdatePledgeBody TaurusNetworkServiceUpdatePledgeBody
 
 // NewTaurusNetworkServiceUpdatePledgeBody instantiates a new TaurusNetworkServiceUpdatePledgeBody object
 // This constructor will assign default values to properties that have it defined,
@@ -122,7 +125,34 @@ func (o TaurusNetworkServiceUpdatePledgeBody) ToMap() (map[string]interface{}, e
 	if !IsNil(o.DefaultDestinationInternalAddressID) {
 		toSerialize["defaultDestinationInternalAddressID"] = o.DefaultDestinationInternalAddressID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TaurusNetworkServiceUpdatePledgeBody) UnmarshalJSON(data []byte) (err error) {
+	varTaurusNetworkServiceUpdatePledgeBody := _TaurusNetworkServiceUpdatePledgeBody{}
+
+	err = json.Unmarshal(data, &varTaurusNetworkServiceUpdatePledgeBody)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TaurusNetworkServiceUpdatePledgeBody(varTaurusNetworkServiceUpdatePledgeBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "defaultDestinationSharedAddressID")
+		delete(additionalProperties, "defaultDestinationInternalAddressID")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTaurusNetworkServiceUpdatePledgeBody struct {

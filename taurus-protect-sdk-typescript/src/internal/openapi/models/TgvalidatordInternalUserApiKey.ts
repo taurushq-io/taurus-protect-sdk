@@ -63,9 +63,18 @@ export interface TgvalidatordInternalUserApiKey {
      * @memberof TgvalidatordInternalUserApiKey
      */
     verificationType?: ApiKeyVerificationType;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordInternalUserApiKey
+     */
+    additionalProperties?: { [key: string]: any };
 }
 
 
+
+const TgvalidatordInternalUserApiKeyWireKeys: ReadonlySet<string> = new Set(['id', 'creationDate', 'revealDate', 'lastUsed', 'revealable', 'verificationType']);
 
 /**
  * Check if a given object implements the TgvalidatordInternalUserApiKey interface.
@@ -82,7 +91,7 @@ export function TgvalidatordInternalUserApiKeyFromJSONTyped(json: any, ignoreDis
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordInternalUserApiKey = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'creationDate': json['creationDate'] == null ? undefined : (new Date(json['creationDate'])),
@@ -91,6 +100,16 @@ export function TgvalidatordInternalUserApiKeyFromJSONTyped(json: any, ignoreDis
         'revealable': json['revealable'] == null ? undefined : json['revealable'],
         'verificationType': json['verificationType'] == null ? undefined : ApiKeyVerificationTypeFromJSON(json['verificationType']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordInternalUserApiKeyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordInternalUserApiKeyToJSON(json: any): TgvalidatordInternalUserApiKey {
@@ -110,6 +129,7 @@ export function TgvalidatordInternalUserApiKeyFromJSONTyped(json: any, ignoreDis
         'lastUsed': value['lastUsed'] == null ? undefined : ((value['lastUsed']).toISOString()),
         'revealable': value['revealable'],
         'verificationType': ApiKeyVerificationTypeToJSON(value['verificationType']),
+        ...value['additionalProperties'],
     };
 }
 

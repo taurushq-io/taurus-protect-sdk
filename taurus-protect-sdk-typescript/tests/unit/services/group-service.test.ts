@@ -82,13 +82,13 @@ describe('GroupService', () => {
     });
 
     it('should throw ValidationError when limit is invalid', async () => {
-      await expect(service.list({ limit: 0 })).rejects.toThrow(ValidationError);
-      await expect(service.list({ limit: 0 })).rejects.toThrow('limit must be positive');
+      await expect(service.list({ limit: 101 })).rejects.toThrow(ValidationError);
+      await expect(service.list({ limit: 101 })).rejects.toThrow('limit must be at most 100, got 101');
     });
 
     it('should throw ValidationError when offset is negative', async () => {
       await expect(service.list({ offset: -1 })).rejects.toThrow(ValidationError);
-      await expect(service.list({ offset: -1 })).rejects.toThrow('offset cannot be negative');
+      await expect(service.list({ offset: -1 })).rejects.toThrow('offset must not be negative, got -1');
     });
 
     it('should use default limit and offset when not provided', async () => {
@@ -101,8 +101,8 @@ describe('GroupService', () => {
 
       expect(mockApi.userServiceGetGroups).toHaveBeenCalledWith(
         expect.objectContaining({
-          limit: '50',
-          offset: '0',
+          limit: '20',
+          offset: undefined,
         })
       );
     });

@@ -113,7 +113,16 @@ export interface TgvalidatordAssetResource {
      * @memberof TgvalidatordAssetResource
      */
     blockchainAsset?: TgvalidatordBlockchainAsset;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordAssetResource
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordAssetResourceWireKeys: ReadonlySet<string> = new Set(['id', 'tenantID', 'version', 'createdAt', 'updatedAt', 'label', 'assetType', 'asset', 'currencyID', 'assetAttributes', 'status', 'blockchainAsset']);
 
 /**
  * Check if a given object implements the TgvalidatordAssetResource interface.
@@ -130,7 +139,7 @@ export function TgvalidatordAssetResourceFromJSONTyped(json: any, ignoreDiscrimi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordAssetResource = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'tenantID': json['tenantID'] == null ? undefined : json['tenantID'],
@@ -145,6 +154,16 @@ export function TgvalidatordAssetResourceFromJSONTyped(json: any, ignoreDiscrimi
         'status': json['status'] == null ? undefined : json['status'],
         'blockchainAsset': json['blockchainAsset'] == null ? undefined : TgvalidatordBlockchainAssetFromJSON(json['blockchainAsset']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordAssetResourceWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordAssetResourceToJSON(json: any): TgvalidatordAssetResource {
@@ -170,6 +189,7 @@ export function TgvalidatordAssetResourceFromJSONTyped(json: any, ignoreDiscrimi
         'assetAttributes': value['assetAttributes'] == null ? undefined : ((value['assetAttributes'] as Array<any>).map(TgvalidatordAssetAttributeToJSON)),
         'status': value['status'],
         'blockchainAsset': TgvalidatordBlockchainAssetToJSON(value['blockchainAsset']),
+        ...value['additionalProperties'],
     };
 }
 

@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -23,6 +22,7 @@ var _ MappedNullable = &TgvalidatordUpdateRulesProposalRequest{}
 type TgvalidatordUpdateRulesProposalRequest struct {
 	// rulesContainer should respect base64 format.
 	RulesContainer string `json:"rulesContainer"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordUpdateRulesProposalRequest TgvalidatordUpdateRulesProposalRequest
@@ -80,6 +80,11 @@ func (o TgvalidatordUpdateRulesProposalRequest) MarshalJSON() ([]byte, error) {
 func (o TgvalidatordUpdateRulesProposalRequest) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["rulesContainer"] = o.RulesContainer
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -107,15 +112,20 @@ func (o *TgvalidatordUpdateRulesProposalRequest) UnmarshalJSON(data []byte) (err
 
 	varTgvalidatordUpdateRulesProposalRequest := _TgvalidatordUpdateRulesProposalRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordUpdateRulesProposalRequest)
+	err = json.Unmarshal(data, &varTgvalidatordUpdateRulesProposalRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordUpdateRulesProposalRequest(varTgvalidatordUpdateRulesProposalRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "rulesContainer")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

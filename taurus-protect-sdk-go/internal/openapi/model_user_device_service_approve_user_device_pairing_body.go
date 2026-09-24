@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -23,6 +22,7 @@ var _ MappedNullable = &UserDeviceServiceApproveUserDevicePairingBody{}
 type UserDeviceServiceApproveUserDevicePairingBody struct {
 	// A 6 digits number
 	Nonce string `json:"nonce"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _UserDeviceServiceApproveUserDevicePairingBody UserDeviceServiceApproveUserDevicePairingBody
@@ -80,6 +80,11 @@ func (o UserDeviceServiceApproveUserDevicePairingBody) MarshalJSON() ([]byte, er
 func (o UserDeviceServiceApproveUserDevicePairingBody) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["nonce"] = o.Nonce
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -107,15 +112,20 @@ func (o *UserDeviceServiceApproveUserDevicePairingBody) UnmarshalJSON(data []byt
 
 	varUserDeviceServiceApproveUserDevicePairingBody := _UserDeviceServiceApproveUserDevicePairingBody{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varUserDeviceServiceApproveUserDevicePairingBody)
+	err = json.Unmarshal(data, &varUserDeviceServiceApproveUserDevicePairingBody)
 
 	if err != nil {
 		return err
 	}
 
 	*o = UserDeviceServiceApproveUserDevicePairingBody(varUserDeviceServiceApproveUserDevicePairingBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "nonce")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

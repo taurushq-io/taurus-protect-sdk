@@ -55,7 +55,16 @@ export interface TgvalidatordGetNEARValidatorInfoReply {
      * @memberof TgvalidatordGetNEARValidatorInfoReply
      */
     isStakingPaused?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetNEARValidatorInfoReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetNEARValidatorInfoReplyWireKeys: ReadonlySet<string> = new Set(['validatorAddress', 'ownerId', 'totalStakedBalance', 'rewardFeeFraction', 'stakingKey', 'isStakingPaused']);
 
 /**
  * Check if a given object implements the TgvalidatordGetNEARValidatorInfoReply interface.
@@ -72,7 +81,7 @@ export function TgvalidatordGetNEARValidatorInfoReplyFromJSONTyped(json: any, ig
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetNEARValidatorInfoReply = {
         
         'validatorAddress': json['validatorAddress'] == null ? undefined : json['validatorAddress'],
         'ownerId': json['ownerId'] == null ? undefined : json['ownerId'],
@@ -81,6 +90,16 @@ export function TgvalidatordGetNEARValidatorInfoReplyFromJSONTyped(json: any, ig
         'stakingKey': json['stakingKey'] == null ? undefined : json['stakingKey'],
         'isStakingPaused': json['isStakingPaused'] == null ? undefined : json['isStakingPaused'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetNEARValidatorInfoReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetNEARValidatorInfoReplyToJSON(json: any): TgvalidatordGetNEARValidatorInfoReply {
@@ -100,6 +119,7 @@ export function TgvalidatordGetNEARValidatorInfoReplyFromJSONTyped(json: any, ig
         'rewardFeeFraction': value['rewardFeeFraction'],
         'stakingKey': value['stakingKey'],
         'isStakingPaused': value['isStakingPaused'],
+        ...value['additionalProperties'],
     };
 }
 

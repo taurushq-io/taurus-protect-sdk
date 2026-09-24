@@ -33,7 +33,16 @@ export interface TgvalidatordGetWhitelistedAddressAttributeReply {
      * @memberof TgvalidatordGetWhitelistedAddressAttributeReply
      */
     result?: TgvalidatordWhitelistedAddressAttribute;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetWhitelistedAddressAttributeReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetWhitelistedAddressAttributeReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetWhitelistedAddressAttributeReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetWhitelistedAddressAttributeReplyFromJSONTyped(jso
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetWhitelistedAddressAttributeReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordWhitelistedAddressAttributeFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetWhitelistedAddressAttributeReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetWhitelistedAddressAttributeReplyToJSON(json: any): TgvalidatordGetWhitelistedAddressAttributeReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetWhitelistedAddressAttributeReplyFromJSONTyped(jso
     return {
         
         'result': TgvalidatordWhitelistedAddressAttributeToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

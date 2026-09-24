@@ -183,7 +183,16 @@ export interface TgvalidatordRequest {
      * @memberof TgvalidatordRequest
      */
     travelRuleDataInput?: TgvalidatordTravelRuleDataInput;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordRequestWireKeys: ReadonlySet<string> = new Set(['id', 'tenantId', 'currency', 'envelope', 'status', 'trails', 'signedRequests', 'creationDate', 'updateDate', 'metadata', 'attributes', 'rule', 'approvers', 'type', 'currencyInfo', 'needsApprovalFrom', 'requestBundleId', 'externalRequestId', 'travelRuleDataInput']);
 
 /**
  * Check if a given object implements the TgvalidatordRequest interface.
@@ -200,7 +209,7 @@ export function TgvalidatordRequestFromJSONTyped(json: any, ignoreDiscriminator:
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordRequest = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'tenantId': json['tenantId'] == null ? undefined : json['tenantId'],
@@ -222,6 +231,16 @@ export function TgvalidatordRequestFromJSONTyped(json: any, ignoreDiscriminator:
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
         'travelRuleDataInput': json['travelRuleDataInput'] == null ? undefined : TgvalidatordTravelRuleDataInputFromJSON(json['travelRuleDataInput']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordRequestToJSON(json: any): TgvalidatordRequest {
@@ -254,6 +273,7 @@ export function TgvalidatordRequestFromJSONTyped(json: any, ignoreDiscriminator:
         'requestBundleId': value['requestBundleId'],
         'externalRequestId': value['externalRequestId'],
         'travelRuleDataInput': TgvalidatordTravelRuleDataInputToJSON(value['travelRuleDataInput']),
+        ...value['additionalProperties'],
     };
 }
 

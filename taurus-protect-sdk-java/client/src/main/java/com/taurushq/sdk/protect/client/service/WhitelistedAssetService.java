@@ -13,6 +13,7 @@ import com.taurushq.sdk.protect.client.mapper.RulesContainerMapper;
 import com.taurushq.sdk.protect.client.mapper.WhitelistedAssetMapper;
 import com.taurushq.sdk.protect.client.model.ApiException;
 import com.taurushq.sdk.protect.client.model.IntegrityException;
+import com.taurushq.sdk.protect.client.model.Pagination;
 import com.taurushq.sdk.protect.client.model.RuleUserSignature;
 import com.taurushq.sdk.protect.client.model.SignedWhitelistedAssetEnvelope;
 import com.taurushq.sdk.protect.client.model.WhitelistException;
@@ -141,78 +142,81 @@ public class WhitelistedAssetService {
     }
 
     /**
-     * Gets a list of whitelisted asset envelopes with pagination.
+     * Gets a page of whitelisted assets, verified.
      *
-     * @param limit  the maximum number of results
-     * @param offset the offset for pagination
-     * @return the list of signed whitelisted asset envelopes
+     * @param limit  the page size, 0 for the default ({@link Pagination#DEFAULT_PAGE_SIZE})
+     * @param offset the offset, 0 for the first page
+     * @return the verified envelopes and the page's pagination
      * @throws ApiException       if the API call fails
      * @throws WhitelistException if verification fails
      */
-    public List<SignedWhitelistedAssetEnvelope> getWhitelistedAssets(int limit, int offset)
+    public WhitelistedAssetResult getWhitelistedAssets(int limit, long offset)
             throws ApiException, WhitelistException {
         return getWhitelistedAssets(limit, offset, null, null);
     }
 
     /**
-     * Gets a list of whitelisted asset envelopes filtered by blockchain.
+     * Gets a page of whitelisted assets filtered by blockchain, verified.
      *
-     * @param limit      the maximum number of results
-     * @param offset     the offset for pagination
+     * @param limit      the page size, 0 for the default
+     * @param offset     the offset, 0 for the first page
      * @param blockchain filter by blockchain (e.g., "ETH", "BTC")
-     * @return the list of signed whitelisted asset envelopes
+     * @return the verified envelopes and the page's pagination
      * @throws ApiException       if the API call fails
      * @throws WhitelistException if verification fails
      */
-    public List<SignedWhitelistedAssetEnvelope> getWhitelistedAssets(int limit, int offset,
-                                                                      String blockchain)
+    public WhitelistedAssetResult getWhitelistedAssets(int limit, long offset, String blockchain)
             throws ApiException, WhitelistException {
         return getWhitelistedAssets(limit, offset, blockchain, null);
     }
 
     /**
-     * Gets a list of whitelisted asset envelopes filtered by blockchain and network.
+     * Gets a page of whitelisted assets filtered by blockchain and network, verified.
      *
-     * @param limit      the maximum number of results
-     * @param offset     the offset for pagination
+     * @param limit      the page size, 0 for the default
+     * @param offset     the offset, 0 for the first page
      * @param blockchain filter by blockchain (e.g., "ETH", "BTC")
      * @param network    filter by network (e.g., "mainnet", "testnet")
-     * @return the list of signed whitelisted asset envelopes
+     * @return the verified envelopes and the page's pagination
      * @throws ApiException       if the API call fails
      * @throws WhitelistException if verification fails
      */
-    public List<SignedWhitelistedAssetEnvelope> getWhitelistedAssets(int limit, int offset,
-                                                                      String blockchain, String network)
+    public WhitelistedAssetResult getWhitelistedAssets(int limit, long offset,
+                                                       String blockchain, String network)
             throws ApiException, WhitelistException {
-        return getWhitelistedAssets(limit, offset, blockchain, network,
-                null, null, null, null).getAssets();
+        return getWhitelistedAssets(limit, offset, blockchain, network, null, null, null, null);
     }
 
     /**
-     * Gets a page of whitelisted asset envelopes with the full filter set and the page total.
+     * Gets a page of whitelisted assets with the full filter set, verified.
+     * <p>
+     * Skipped rows keep their SQL slot on this endpoint, so a short page is not the end:
+     * continue while {@code getPagination().hasMore()}.
      *
-     * @param limit              the maximum number of results
-     * @param offset             the offset for pagination
+     * @param limit              the page size, 0 for the default
+     * @param offset             the offset, 0 for the first page
      * @param blockchain         filter by blockchain (e.g., "ETH", "BTC"), or null
      * @param network            filter by network (e.g., "mainnet", "testnet"), or null
      * @param query              search across address, symbol and name, or null
      * @param includeForApproval include assets pending approval, or null
      * @param kindTypes          filter by contract kind ("nft", "token"), or null
      * @param ids                filter by specific whitelisted asset IDs, or null
-     * @return the page of verified asset envelopes and the total item count
+     * @return the verified envelopes and the page's pagination
      * @throws ApiException       if the API call fails
      * @throws WhitelistException if verification fails
      */
-    public WhitelistedAssetResult getWhitelistedAssets(int limit, int offset,
+    public WhitelistedAssetResult getWhitelistedAssets(int limit, long offset,
                                                         String blockchain, String network,
                                                         String query, Boolean includeForApproval,
                                                         List<String> kindTypes, List<String> ids)
             throws ApiException, WhitelistException {
+        final int size = PagedOperation.WHITELISTED_CONTRACTS.resolveSize("limit", limit);
+        final long from = Pagination.resolveOffset("offset", offset);
         try {
             TgvalidatordGetSignedWhitelistedContractAddressEnvelopesReply reply =
                     contractWhitelistingApi.whitelistServiceGetWhitelistedContracts(
-                            String.valueOf(limit),
-                            String.valueOf(offset),
+                            String.valueOf(size),
+                            from == 0 ? null : String.valueOf(from),
                             query,
                             blockchain,
                             includeForApproval,
@@ -221,7 +225,7 @@ public class WhitelistedAssetService {
                             ids,
                             kindTypes);
 
-            return toVerifiedResult(reply);
+            return toVerifiedResult(reply, PagedOperation.WHITELISTED_CONTRACTS, size, from);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
@@ -232,12 +236,12 @@ public class WhitelistedAssetService {
      * returns them keyed by id.
      *
      * <pre>
-     *   ids -&gt; ONE filtered page -&gt; verify every row -&gt; map by id
+     *   ids -&gt; filtered pages of &lt;= 100 ids -&gt; verify every row -&gt; map by id
      * </pre>
      *
-     * <p>One round trip and one rules-container fetch for the whole batch. The per-id
-     * GET this replaced cost both per id, so a 50-id approval was 50 sequential round
-     * trips each running the full verification chain.
+     * <p>One round trip and one rules-container fetch per chunk of up to 100 ids. The
+     * per-id GET this replaced cost both per id, so a 50-id approval was 50 sequential
+     * round trips each running the full verification chain.
      *
      * <p>Package-private so the completeness behaviour can be tested directly.
      *
@@ -248,16 +252,19 @@ public class WhitelistedAssetService {
      */
     Map<String, SignedWhitelistedAssetEnvelope> verifiedAssetsById(final List<String> ids)
             throws ApiException, WhitelistException {
-        WhitelistedAssetResult result = getWhitelistedAssets(
-                ids.size(), 0, null, null, null, Boolean.TRUE, null, ids);
-
         Map<String, SignedWhitelistedAssetEnvelope> byId = new HashMap<>();
-        for (SignedWhitelistedAssetEnvelope envelope : result.getAssets()) {
-            // The id lives on the ENVELOPE: getWhitelistedAsset() is gated on
-            // verification having run, so reading through it here would couple the key
-            // to that gate for no reason.
-            if (envelope != null) {
-                byId.put(String.valueOf(envelope.getId()), envelope);
+        // In chunks of at most MAX_PAGE_SIZE ids, so no read asks for an oversized page.
+        for (int from = 0; from < ids.size(); from += Pagination.MAX_PAGE_SIZE) {
+            List<String> chunk = ids.subList(from, Math.min(ids.size(), from + Pagination.MAX_PAGE_SIZE));
+            WhitelistedAssetResult result = getWhitelistedAssets(
+                    chunk.size(), 0, null, null, null, Boolean.TRUE, null, chunk);
+            for (SignedWhitelistedAssetEnvelope envelope : result.getAssets()) {
+                // The id lives on the ENVELOPE: getWhitelistedAsset() is gated on
+                // verification having run, so reading through it here would couple the key
+                // to that gate for no reason.
+                if (envelope != null) {
+                    byId.put(String.valueOf(envelope.getId()), envelope);
+                }
             }
         }
         return byId;
@@ -265,30 +272,32 @@ public class WhitelistedAssetService {
 
     /**
      * Gets a page of whitelisted assets awaiting approval, verified as in
-     * {@link #getWhitelistedAssets(int, int)}.
+     * {@link #getWhitelistedAssets(int, long)}.
      * <p>
      * Without this the only reader of the for-approval endpoint was the unverified
      * contract-whitelisting service, so the rows an approver inspects before whitelisting a
      * contract address were never checked against governance.
      *
-     * @param limit  the maximum number of results
-     * @param offset the offset for pagination
+     * @param limit  the page size, 0 for the default
+     * @param offset the offset, 0 for the first page
      * @param ids    filter by specific whitelisted asset IDs, or null
-     * @return the page of verified asset envelopes and the total item count
+     * @return the verified envelopes and the page's pagination
      * @throws ApiException       if the API call fails
      * @throws WhitelistException if verification fails
      */
-    public WhitelistedAssetResult getWhitelistedAssetsForApproval(int limit, int offset,
+    public WhitelistedAssetResult getWhitelistedAssetsForApproval(int limit, long offset,
                                                                    List<String> ids)
             throws ApiException, WhitelistException {
+        final int size = PagedOperation.WHITELISTED_CONTRACTS_FOR_APPROVAL.resolveSize("limit", limit);
+        final long from = Pagination.resolveOffset("offset", offset);
         try {
             TgvalidatordGetSignedWhitelistedContractAddressEnvelopesReply reply =
                     contractWhitelistingApi.whitelistServiceGetWhitelistedContractsForApproval(
-                            String.valueOf(limit),
-                            String.valueOf(offset),
+                            String.valueOf(size),
+                            from == 0 ? null : String.valueOf(from),
                             ids);
 
-            return toVerifiedResult(reply);
+            return toVerifiedResult(reply, PagedOperation.WHITELISTED_CONTRACTS_FOR_APPROVAL, size, from);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
@@ -433,28 +442,23 @@ public class WhitelistedAssetService {
      * Maps and fully verifies every row of a reply.
      */
     private WhitelistedAssetResult toVerifiedResult(
-            TgvalidatordGetSignedWhitelistedContractAddressEnvelopesReply reply)
+            final TgvalidatordGetSignedWhitelistedContractAddressEnvelopesReply reply,
+            final PagedOperation op, final int limit, final long offset)
             throws WhitelistException {
         WhitelistedAssetResult result = new WhitelistedAssetResult();
         List<SignedWhitelistedAssetEnvelope> envelopes = new ArrayList<>();
 
-        if (reply.getResult() != null) {
-            for (TgvalidatordSignedWhitelistedContractAddressEnvelope dto : reply.getResult()) {
-                SignedWhitelistedAssetEnvelope envelope =
-                        WhitelistedAssetMapper.INSTANCE.fromDTO(dto);
-                initializeEnvelope(envelope);
-                envelopes.add(envelope);
-            }
+        List<TgvalidatordSignedWhitelistedContractAddressEnvelope> rows = reply.getResult() == null
+                ? Collections.emptyList() : reply.getResult();
+        for (TgvalidatordSignedWhitelistedContractAddressEnvelope dto : rows) {
+            SignedWhitelistedAssetEnvelope envelope =
+                    WhitelistedAssetMapper.INSTANCE.fromDTO(dto);
+            initializeEnvelope(envelope);
+            envelopes.add(envelope);
         }
 
         result.setAssets(envelopes);
-        if (reply.getTotalItems() != null) {
-            try {
-                result.setTotalItems(Long.parseLong(reply.getTotalItems()));
-            } catch (NumberFormatException e) {
-                result.setTotalItems(0L);
-            }
-        }
+        result.setPagination(op.offsetPage(limit, offset, rows.size(), 0, reply.getTotalItems(), null));
         return result;
     }
 

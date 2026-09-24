@@ -3,23 +3,19 @@ package com.taurushq.sdk.protect.client.model;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 /**
- * Cursor pagination information from API responses.
+ * Cursor pagination information from API responses, as the server sent it.
  * <p>
- * This class contains the pagination state from an API response, including
- * the current page token and whether more pages are available.
- * <p>
- * Use the convenience methods to create cursors for subsequent requests:
+ * This is the raw cursor: the current page token and whether a previous or next page
+ * exists. The contract value built from it is {@link CursorPage}, exposed by every cursor
+ * result as {@code getPage()}; use that to walk a list:
  * <pre>{@code
- * // Get wallets with pagination
- * List<Wallet> wallets = client.getWalletService().getWallets("ETH", Pagination.first(50));
- * ApiResponseCursor cursor = // obtained from response
- *
- * // Check and get next page
- * while (cursor.hasNext()) {
- *     wallets = client.getWalletService().getWallets("ETH", cursor.nextPage(50));
- *     cursor = // updated cursor from response
+ * ChangeResult page = client.getChangeService().getChanges(null, null, 20, null);
+ * while (page.getPage().hasMore()) {
+ *     page = client.getChangeService().getChanges(null, null, 20, page.getPage().getNextCursor());
  * }
  * }</pre>
+ * The methods below build a low-level {@link ApiRequestCursor}, which can also go
+ * backwards ({@link #previousPage(int)}).
  */
 public class ApiResponseCursor {
 

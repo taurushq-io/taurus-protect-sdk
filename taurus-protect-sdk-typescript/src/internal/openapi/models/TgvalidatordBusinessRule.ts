@@ -105,7 +105,16 @@ export interface TgvalidatordBusinessRule {
      * @memberof TgvalidatordBusinessRule
      */
     entityID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordBusinessRule
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordBusinessRuleWireKeys: ReadonlySet<string> = new Set(['id', 'tenantId', 'currency', 'walletId', 'ruleKey', 'ruleValue', 'ruleGroup', 'ruleDescription', 'ruleValidation', 'addressId', 'currencyInfo', 'entityType', 'entityID']);
 
 /**
  * Check if a given object implements the TgvalidatordBusinessRule interface.
@@ -122,7 +131,7 @@ export function TgvalidatordBusinessRuleFromJSONTyped(json: any, ignoreDiscrimin
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordBusinessRule = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'tenantId': json['tenantId'] == null ? undefined : json['tenantId'],
@@ -138,6 +147,16 @@ export function TgvalidatordBusinessRuleFromJSONTyped(json: any, ignoreDiscrimin
         'entityType': json['entityType'] == null ? undefined : json['entityType'],
         'entityID': json['entityID'] == null ? undefined : json['entityID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordBusinessRuleWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordBusinessRuleToJSON(json: any): TgvalidatordBusinessRule {
@@ -164,6 +183,7 @@ export function TgvalidatordBusinessRuleFromJSONTyped(json: any, ignoreDiscrimin
         'currencyInfo': TgvalidatordCurrencyToJSON(value['currencyInfo']),
         'entityType': value['entityType'],
         'entityID': value['entityID'],
+        ...value['additionalProperties'],
     };
 }
 

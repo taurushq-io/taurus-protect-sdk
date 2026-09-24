@@ -169,9 +169,9 @@ describe("WhitelistedAddressService.listForApproval", () => {
     );
   });
 
-  it("rejects a non-positive limit", async () => {
+  it("rejects a limit above the maximum", async () => {
     const { svc } = setup();
-    await expect(svc.listForApproval({ limit: 0 })).rejects.toThrow(
+    await expect(svc.listForApproval({ limit: 101 })).rejects.toThrow(
       ValidationError
     );
   });

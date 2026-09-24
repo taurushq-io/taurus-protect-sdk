@@ -22,7 +22,10 @@ type TgvalidatordSAMLAuthRequest struct {
 	Index *string `json:"index,omitempty"`
 	SignedTrackedRequest *string `json:"signedTrackedRequest,omitempty"`
 	Location *string `json:"location,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordSAMLAuthRequest TgvalidatordSAMLAuthRequest
 
 // NewTgvalidatordSAMLAuthRequest instantiates a new TgvalidatordSAMLAuthRequest object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordSAMLAuthRequest) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Location) {
 		toSerialize["location"] = o.Location
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordSAMLAuthRequest) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordSAMLAuthRequest := _TgvalidatordSAMLAuthRequest{}
+
+	err = json.Unmarshal(data, &varTgvalidatordSAMLAuthRequest)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordSAMLAuthRequest(varTgvalidatordSAMLAuthRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "index")
+		delete(additionalProperties, "signedTrackedRequest")
+		delete(additionalProperties, "location")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordSAMLAuthRequest struct {

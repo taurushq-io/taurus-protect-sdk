@@ -8,6 +8,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+from taurus_protect.models.pagination import CursorListOptions
+
 
 class PledgeStatus(str, Enum):
     """Pledge status enum."""
@@ -373,33 +375,42 @@ class RejectPledgeActionsRequest(BaseModel):
 # Filter options
 
 
-class ListPledgesOptions(BaseModel):
-    """Options for listing pledges."""
+class ListPledgesOptions(CursorListOptions):
+    """Options for listing pledges. Every field reaches the wire."""
 
-    limit: int = Field(default=50, ge=1, le=1000, description="Maximum items to return")
-    offset: int = Field(default=0, ge=0, description="Number of items to skip")
-    statuses: Optional[List[str]] = Field(default=None, description="Filter by statuses")
-    currency_id: Optional[str] = Field(default=None, description="Filter by currency")
-    direction: Optional[str] = Field(
-        default=None, description="Filter by direction (incoming/outgoing)"
+    owner_participant_id: Optional[str] = Field(default=None, description="Filter by owner")
+    target_participant_id: Optional[str] = Field(default=None, description="Filter by target")
+    shared_address_ids: Optional[List[str]] = Field(
+        default=None, description="Filter by shared address IDs"
     )
-    participant_id: Optional[str] = Field(default=None, description="Filter by participant ID")
-
-
-class ListPledgeActionsOptions(BaseModel):
-    """Options for listing pledge actions."""
-
-    limit: int = Field(default=50, ge=1, le=1000, description="Maximum items to return")
-    offset: int = Field(default=0, ge=0, description="Number of items to skip")
+    currency_id: Optional[str] = Field(default=None, description="Filter by currency")
     statuses: Optional[List[str]] = Field(default=None, description="Filter by statuses")
-    action_types: Optional[List[str]] = Field(default=None, description="Filter by action types")
+    sort_order: Optional[str] = Field(default=None, description="ASC or DESC")
+    attribute_filters_json: Optional[str] = Field(
+        default=None, description="Attribute filters, as JSON"
+    )
+    attribute_filters_operator: Optional[str] = Field(
+        default=None, description="How attribute filters combine (AND, OR)"
+    )
+
+
+class ListPledgeActionsOptions(CursorListOptions):
+    """
+    Options for listing pledge actions.
+
+    ``pledge_id`` filters only the plain list and ``types`` only the approval queue;
+    each list refuses the other's filter.
+    """
+
+    ids: Optional[List[str]] = Field(default=None, description="Filter by action IDs")
     pledge_id: Optional[str] = Field(default=None, description="Filter by pledge ID")
+    types: Optional[List[str]] = Field(default=None, description="Filter by action types")
+    sort_order: Optional[str] = Field(default=None, description="ASC or DESC")
 
 
-class ListPledgeWithdrawalsOptions(BaseModel):
-    """Options for listing pledge withdrawals."""
+class ListPledgeWithdrawalsOptions(CursorListOptions):
+    """Options for listing pledge withdrawals. Every field reaches the wire."""
 
-    limit: int = Field(default=50, ge=1, le=1000, description="Maximum items to return")
-    offset: int = Field(default=0, ge=0, description="Number of items to skip")
-    statuses: Optional[List[str]] = Field(default=None, description="Filter by statuses")
     pledge_id: Optional[str] = Field(default=None, description="Filter by pledge ID")
+    withdrawal_status: Optional[str] = Field(default=None, description="Filter by status")
+    sort_order: Optional[str] = Field(default=None, description="ASC or DESC")

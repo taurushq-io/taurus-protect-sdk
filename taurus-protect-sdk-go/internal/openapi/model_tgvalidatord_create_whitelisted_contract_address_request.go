@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -37,6 +36,7 @@ type TgvalidatordCreateWhitelistedContractAddressRequest struct {
 	Kind *string `json:"kind,omitempty"`
 	// Name of the blockchain network, eg. `mainnet`, `testnet`, or `sepolia`.
 	Network *string `json:"network,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateWhitelistedContractAddressRequest TgvalidatordCreateWhitelistedContractAddressRequest
@@ -330,6 +330,11 @@ func (o TgvalidatordCreateWhitelistedContractAddressRequest) ToMap() (map[string
 	if !IsNil(o.Network) {
 		toSerialize["network"] = o.Network
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -358,15 +363,27 @@ func (o *TgvalidatordCreateWhitelistedContractAddressRequest) UnmarshalJSON(data
 
 	varTgvalidatordCreateWhitelistedContractAddressRequest := _TgvalidatordCreateWhitelistedContractAddressRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateWhitelistedContractAddressRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateWhitelistedContractAddressRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateWhitelistedContractAddressRequest(varTgvalidatordCreateWhitelistedContractAddressRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "contractAddress")
+		delete(additionalProperties, "symbol")
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "decimals")
+		delete(additionalProperties, "tokenId")
+		delete(additionalProperties, "kind")
+		delete(additionalProperties, "network")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

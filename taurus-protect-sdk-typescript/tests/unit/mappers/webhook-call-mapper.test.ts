@@ -5,8 +5,6 @@
 import {
   webhookCallFromDto,
   webhookCallsFromDto,
-  webhookCallCursorFromDto,
-  webhookCallResultFromDto,
 } from '../../../src/mappers/webhook-call';
 
 describe('webhookCallFromDto', () => {
@@ -95,104 +93,5 @@ describe('webhookCallsFromDto', () => {
 
   it('should return empty array for empty array', () => {
     expect(webhookCallsFromDto([])).toEqual([]);
-  });
-});
-
-describe('webhookCallCursorFromDto', () => {
-  it('should map cursor with next and previous pages', () => {
-    const dto = {
-      nextPage: 'page-2',
-      previousPage: 'page-0',
-    };
-
-    const result = webhookCallCursorFromDto(dto);
-
-    expect(result).toBeDefined();
-    expect(result!.nextPage).toBe('page-2');
-    expect(result!.previousPage).toBe('page-0');
-    expect(result!.hasNextPage).toBe(true);
-    expect(result!.hasPreviousPage).toBe(true);
-  });
-
-  it('should handle snake_case field names', () => {
-    const dto = {
-      next_page: 'p2',
-      previous_page: 'p0',
-    };
-
-    const result = webhookCallCursorFromDto(dto);
-
-    expect(result!.nextPage).toBe('p2');
-    expect(result!.previousPage).toBe('p0');
-    expect(result!.hasNextPage).toBe(true);
-    expect(result!.hasPreviousPage).toBe(true);
-  });
-
-  it('should set hasNextPage to false when no nextPage', () => {
-    const dto = { previousPage: 'page-0' };
-
-    const result = webhookCallCursorFromDto(dto);
-
-    expect(result!.hasNextPage).toBe(false);
-    expect(result!.hasPreviousPage).toBe(true);
-  });
-
-  it('should set hasPreviousPage to false when no previousPage', () => {
-    const dto = { nextPage: 'page-2' };
-
-    const result = webhookCallCursorFromDto(dto);
-
-    expect(result!.hasNextPage).toBe(true);
-    expect(result!.hasPreviousPage).toBe(false);
-  });
-
-  it('should return undefined for null input', () => {
-    expect(webhookCallCursorFromDto(null)).toBeUndefined();
-  });
-
-  it('should return undefined for undefined input', () => {
-    expect(webhookCallCursorFromDto(undefined)).toBeUndefined();
-  });
-});
-
-describe('webhookCallResultFromDto', () => {
-  it('should map result with calls and cursor', () => {
-    const dto = {
-      calls: [
-        { id: 'wc-1', status: 'delivered' },
-        { id: 'wc-2', status: 'failed' },
-      ],
-      cursor: { nextPage: 'page-2' },
-    };
-
-    const result = webhookCallResultFromDto(dto);
-
-    expect(result.calls).toHaveLength(2);
-    expect(result.cursor).toBeDefined();
-    expect(result.cursor!.hasNextPage).toBe(true);
-  });
-
-  it('should return default for null input', () => {
-    const result = webhookCallResultFromDto(null);
-
-    expect(result.calls).toEqual([]);
-    expect(result.cursor).toBeUndefined();
-  });
-
-  it('should return default for undefined input', () => {
-    const result = webhookCallResultFromDto(undefined);
-
-    expect(result.calls).toEqual([]);
-  });
-
-  it('should handle missing cursor', () => {
-    const dto = {
-      calls: [{ id: 'wc-1' }],
-    };
-
-    const result = webhookCallResultFromDto(dto);
-
-    expect(result.calls).toHaveLength(1);
-    expect(result.cursor).toBeUndefined();
   });
 });

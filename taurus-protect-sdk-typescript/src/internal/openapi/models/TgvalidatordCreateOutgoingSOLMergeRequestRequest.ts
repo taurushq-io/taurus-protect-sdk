@@ -61,7 +61,16 @@ export interface TgvalidatordCreateOutgoingSOLMergeRequestRequest {
      * @memberof TgvalidatordCreateOutgoingSOLMergeRequestRequest
      */
     useUnconfirmedFunds?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingSOLMergeRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingSOLMergeRequestRequestWireKeys: ReadonlySet<string> = new Set(['addressId', 'fromStakeAccountDerivationIndex', 'toStakeAccountDerivationIndex', 'feeLimit', 'comment', 'externalRequestId', 'useUnconfirmedFunds']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingSOLMergeRequestRequest interface.
@@ -81,7 +90,7 @@ export function TgvalidatordCreateOutgoingSOLMergeRequestRequestFromJSONTyped(js
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingSOLMergeRequestRequest = {
         
         'addressId': json['addressId'],
         'fromStakeAccountDerivationIndex': json['fromStakeAccountDerivationIndex'],
@@ -91,6 +100,16 @@ export function TgvalidatordCreateOutgoingSOLMergeRequestRequestFromJSONTyped(js
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
         'useUnconfirmedFunds': json['useUnconfirmedFunds'] == null ? undefined : json['useUnconfirmedFunds'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingSOLMergeRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingSOLMergeRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingSOLMergeRequestRequest {
@@ -111,6 +130,7 @@ export function TgvalidatordCreateOutgoingSOLMergeRequestRequestFromJSONTyped(js
         'comment': value['comment'],
         'externalRequestId': value['externalRequestId'],
         'useUnconfirmedFunds': value['useUnconfirmedFunds'],
+        ...value['additionalProperties'],
     };
 }
 

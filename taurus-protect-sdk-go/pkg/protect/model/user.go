@@ -80,9 +80,9 @@ type UserAttribute struct {
 
 // ListUsersOptions contains options for listing users.
 type ListUsersOptions struct {
-	// Limit is the maximum number of users to return.
+	// Limit is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
 	Limit int64
-	// Offset is the number of users to skip.
+	// Offset is the number of users to skip; continue with Pagination.NextOffset.
 	Offset int64
 	// IDs filters by specific user IDs.
 	IDs []string
@@ -108,8 +108,7 @@ type ListUsersOptions struct {
 type ListUsersResult struct {
 	// Users is the list of users.
 	Users []*User `json:"users"`
-	// TotalItems is the total number of users matching the filter.
-	TotalItems int64 `json:"total_items"`
-	// Offset is the number of users skipped.
-	Offset int64 `json:"offset"`
+	// Pagination is never nil; continue with its NextOffset until HasMore is false. A
+	// synthetic daemon user may be appended beyond Limit; NextOffset accounts for it.
+	Pagination *Pagination `json:"pagination"`
 }

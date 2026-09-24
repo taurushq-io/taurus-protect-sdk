@@ -67,7 +67,8 @@ for (const file of files) {
       );
       const doc = ts
         .getJSDocCommentsAndTags(member)
-        .map((d) => (typeof d.comment === "string" ? d.comment : ""))
+        // A comment holding {@link} is a node array, not a string; read it as text so the summary survives.
+        .map((d) => ts.getTextOfJSDocComment(d.comment) ?? "")
         .join(" ")
         .split("\n")[0]
         .trim();

@@ -22,7 +22,10 @@ type TgvalidatordRequestCursor struct {
 	CurrentPage *string `json:"currentPage,omitempty"`
 	PageRequest *string `json:"pageRequest,omitempty"`
 	PageSize *string `json:"pageSize,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordRequestCursor TgvalidatordRequestCursor
 
 // NewTgvalidatordRequestCursor instantiates a new TgvalidatordRequestCursor object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordRequestCursor) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.PageSize) {
 		toSerialize["pageSize"] = o.PageSize
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordRequestCursor) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordRequestCursor := _TgvalidatordRequestCursor{}
+
+	err = json.Unmarshal(data, &varTgvalidatordRequestCursor)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordRequestCursor(varTgvalidatordRequestCursor)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "currentPage")
+		delete(additionalProperties, "pageRequest")
+		delete(additionalProperties, "pageSize")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordRequestCursor struct {

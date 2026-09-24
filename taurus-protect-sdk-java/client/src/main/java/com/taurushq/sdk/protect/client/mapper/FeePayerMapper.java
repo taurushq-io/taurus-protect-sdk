@@ -10,6 +10,7 @@ import com.taurushq.sdk.protect.openapi.model.ETHRemote;
 import com.taurushq.sdk.protect.openapi.model.FeePayerETH;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordFeePayer;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordFeePayerEnvelope;
+import com.taurushq.sdk.protect.openapi.model.TgvalidatordFeePayerForwarderKind;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.factory.Mappers;
@@ -72,4 +73,15 @@ public interface FeePayerMapper {
      * @return the domain model
      */
     FeePayerEthRemote fromEthRemoteDTO(ETHRemote dto);
+
+    /**
+     * Maps a forwarder kind to its wire value (e.g. {@code OpenZeppelinForwarder}), the string
+     * every SDK returns; a kind this SDK does not know passes through unchanged.
+     *
+     * @param kind the forwarder kind DTO
+     * @return its wire value, or null
+     */
+    default String forwarderKindToString(final TgvalidatordFeePayerForwarderKind kind) {
+        return kind == null ? null : kind.getValue();
+    }
 }

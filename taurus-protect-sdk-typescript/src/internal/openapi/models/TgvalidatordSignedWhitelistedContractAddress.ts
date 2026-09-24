@@ -39,7 +39,16 @@ export interface TgvalidatordSignedWhitelistedContractAddress {
      * @memberof TgvalidatordSignedWhitelistedContractAddress
      */
     payload?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordSignedWhitelistedContractAddress
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordSignedWhitelistedContractAddressWireKeys: ReadonlySet<string> = new Set(['signatures', 'payload']);
 
 /**
  * Check if a given object implements the TgvalidatordSignedWhitelistedContractAddress interface.
@@ -56,11 +65,21 @@ export function TgvalidatordSignedWhitelistedContractAddressFromJSONTyped(json: 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordSignedWhitelistedContractAddress = {
         
         'signatures': json['signatures'] == null ? undefined : ((json['signatures'] as Array<any>).map(TgvalidatordWhitelistSignatureFromJSON)),
         'payload': json['payload'] == null ? undefined : json['payload'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordSignedWhitelistedContractAddressWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordSignedWhitelistedContractAddressToJSON(json: any): TgvalidatordSignedWhitelistedContractAddress {
@@ -76,6 +95,7 @@ export function TgvalidatordSignedWhitelistedContractAddressFromJSONTyped(json: 
         
         'signatures': value['signatures'] == null ? undefined : ((value['signatures'] as Array<any>).map(TgvalidatordWhitelistSignatureToJSON)),
         'payload': value['payload'],
+        ...value['additionalProperties'],
     };
 }
 

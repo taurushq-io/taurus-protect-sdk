@@ -21,7 +21,10 @@ var _ MappedNullable = &ScoreFilterCoinfirmFilters{}
 type ScoreFilterCoinfirmFilters struct {
 	// Filter addresses with a Coinfirm C-score above threshold.
 	ScoreGreater *string `json:"scoreGreater,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _ScoreFilterCoinfirmFilters ScoreFilterCoinfirmFilters
 
 // NewScoreFilterCoinfirmFilters instantiates a new ScoreFilterCoinfirmFilters object
 // This constructor will assign default values to properties that have it defined,
@@ -85,7 +88,33 @@ func (o ScoreFilterCoinfirmFilters) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.ScoreGreater) {
 		toSerialize["scoreGreater"] = o.ScoreGreater
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *ScoreFilterCoinfirmFilters) UnmarshalJSON(data []byte) (err error) {
+	varScoreFilterCoinfirmFilters := _ScoreFilterCoinfirmFilters{}
+
+	err = json.Unmarshal(data, &varScoreFilterCoinfirmFilters)
+
+	if err != nil {
+		return err
+	}
+
+	*o = ScoreFilterCoinfirmFilters(varScoreFilterCoinfirmFilters)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "scoreGreater")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableScoreFilterCoinfirmFilters struct {

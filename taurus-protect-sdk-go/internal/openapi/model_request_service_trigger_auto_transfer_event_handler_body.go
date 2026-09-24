@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -25,6 +24,7 @@ type RequestServiceTriggerAutoTransferEventHandlerBody struct {
 	DestinationAddressId string `json:"destinationAddressId"`
 	// Identifier for the request in the user's system. This must be unique.
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _RequestServiceTriggerAutoTransferEventHandlerBody RequestServiceTriggerAutoTransferEventHandlerBody
@@ -117,6 +117,11 @@ func (o RequestServiceTriggerAutoTransferEventHandlerBody) ToMap() (map[string]i
 	if !IsNil(o.ExternalRequestId) {
 		toSerialize["externalRequestId"] = o.ExternalRequestId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -144,15 +149,21 @@ func (o *RequestServiceTriggerAutoTransferEventHandlerBody) UnmarshalJSON(data [
 
 	varRequestServiceTriggerAutoTransferEventHandlerBody := _RequestServiceTriggerAutoTransferEventHandlerBody{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varRequestServiceTriggerAutoTransferEventHandlerBody)
+	err = json.Unmarshal(data, &varRequestServiceTriggerAutoTransferEventHandlerBody)
 
 	if err != nil {
 		return err
 	}
 
 	*o = RequestServiceTriggerAutoTransferEventHandlerBody(varRequestServiceTriggerAutoTransferEventHandlerBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "destinationAddressId")
+		delete(additionalProperties, "externalRequestId")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

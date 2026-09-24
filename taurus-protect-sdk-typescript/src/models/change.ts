@@ -6,6 +6,8 @@
  * other administrative operations that follow an approval workflow.
  */
 
+import type { CursorNavigationOptions, CursorPage } from './pagination';
+
 /**
  * The status of a change request.
  */
@@ -44,21 +46,19 @@ export interface Change {
 }
 
 /**
- * Result of a change list query with cursor-based pagination.
+ * A page of changes.
  */
 export interface ListChangesResult {
   /** The list of changes in this page */
   readonly changes: Change[];
-  /** Current page cursor (base64 encoded) */
-  readonly currentPage?: string;
-  /** Whether there are more pages available */
-  readonly hasNext: boolean;
+  /** Cursor pagination: continue with `cursor: pagination.nextCursor` while `hasMore` */
+  readonly pagination: CursorPage;
 }
 
 /**
  * Options for listing changes.
  */
-export interface ListChangesOptions {
+export interface ListChangesOptions extends CursorNavigationOptions {
   /**
    * The entity type to filter by.
    * Can be one of: user, group, usergroup, businessrule, exchange, price, action,
@@ -73,12 +73,6 @@ export interface ListChangesOptions {
   creatorId?: string;
   /** Sort order (ASC or DESC, default DESC) */
   sortOrder?: 'ASC' | 'DESC';
-  /** Page size (default 50) */
-  pageSize?: number;
-  /** Current page cursor for pagination */
-  currentPage?: string;
-  /** Page request type (FIRST, PREVIOUS, NEXT, LAST) */
-  pageRequest?: 'FIRST' | 'PREVIOUS' | 'NEXT' | 'LAST';
   /** Filter by entity IDs (valid when entity type is given) */
   entityIDs?: string[];
   /** Filter by entity UUIDs (valid when entity type is given) */
@@ -107,17 +101,11 @@ export interface CreateChangeRequest {
 /**
  * Options for listing changes for approval.
  */
-export interface ListChangesForApprovalOptions {
+export interface ListChangesForApprovalOptions extends CursorNavigationOptions {
   /** Entity types to filter by */
   entities?: string[];
   /** Sort order (ASC or DESC, default DESC) */
   sortOrder?: 'ASC' | 'DESC';
-  /** Page size (default 50) */
-  pageSize?: number;
-  /** Current page cursor for pagination */
-  currentPage?: string;
-  /** Page request type (FIRST, PREVIOUS, NEXT, LAST) */
-  pageRequest?: 'FIRST' | 'PREVIOUS' | 'NEXT' | 'LAST';
   /** Filter by entity IDs (valid when one entity type is given) */
   entityIDs?: string[];
   /** Filter by entity UUIDs (valid when one entity type is given) */

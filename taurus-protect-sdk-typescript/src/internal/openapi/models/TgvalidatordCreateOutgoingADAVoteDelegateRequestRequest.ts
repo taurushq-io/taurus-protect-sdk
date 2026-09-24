@@ -55,7 +55,16 @@ export interface TgvalidatordCreateOutgoingADAVoteDelegateRequestRequest {
      * @memberof TgvalidatordCreateOutgoingADAVoteDelegateRequestRequest
      */
     drep: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingADAVoteDelegateRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingADAVoteDelegateRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'feeLimit', 'comment', 'useUnconfirmedFunds', 'externalRequestId', 'drep']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingADAVoteDelegateRequestRequest interface.
@@ -74,7 +83,7 @@ export function TgvalidatordCreateOutgoingADAVoteDelegateRequestRequestFromJSONT
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingADAVoteDelegateRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'feeLimit': json['feeLimit'] == null ? undefined : json['feeLimit'],
@@ -83,6 +92,16 @@ export function TgvalidatordCreateOutgoingADAVoteDelegateRequestRequestFromJSONT
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
         'drep': json['drep'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingADAVoteDelegateRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingADAVoteDelegateRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingADAVoteDelegateRequestRequest {
@@ -102,6 +121,7 @@ export function TgvalidatordCreateOutgoingADAVoteDelegateRequestRequestFromJSONT
         'useUnconfirmedFunds': value['useUnconfirmedFunds'],
         'externalRequestId': value['externalRequestId'],
         'drep': value['drep'],
+        ...value['additionalProperties'],
     };
 }
 

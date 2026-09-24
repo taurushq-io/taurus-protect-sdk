@@ -13,7 +13,7 @@
         {
           "name": "ListActions",
           "signature": "ListActions(ctx context.Context, opts *model.ListActionsOptions) (*model.ListActionsResult, error)",
-          "doc": "ListActions retrieves a list of actions with optional filtering and pagination."
+          "doc": "ListActions retrieves one page of actions. Result.Pagination is never nil; continue with its"
         }
       ]
     },
@@ -48,7 +48,7 @@
         {
           "name": "ListAddresses",
           "signature": "ListAddresses(ctx context.Context, opts *model.ListAddressesOptions) ([]*model.Address, *model.Pagination, error)",
-          "doc": "ListAddresses retrieves a list of addresses with mandatory signature verification."
+          "doc": "ListAddresses retrieves one page of addresses with mandatory signature verification."
         }
       ]
     },
@@ -73,12 +73,27 @@
         {
           "name": "GetAssetAddresses",
           "signature": "GetAssetAddresses(ctx context.Context, req *model.GetAssetAddressesRequest) (*model.GetAssetAddressesResult, error)",
-          "doc": "GetAssetAddresses retrieves address-level balances for a specific asset."
+          "doc": "GetAssetAddresses retrieves one page of address-level balances for a specific asset, each"
         },
         {
           "name": "GetAssetWallets",
           "signature": "GetAssetWallets(ctx context.Context, req *model.GetAssetWalletsRequest) (*model.GetAssetWalletsResult, error)",
-          "doc": "GetAssetWallets retrieves wallet-level balances for a specific asset."
+          "doc": "GetAssetWallets retrieves one page of wallet-level balances for a specific asset. Continue"
+        },
+        {
+          "name": "ListAssetOperations",
+          "signature": "ListAssetOperations(ctx context.Context, assetID string, opts *model.ListAssetOperationsOptions) (*model.ListAssetOperationsResult, error)",
+          "doc": "ListAssetOperations retrieves one page of the operations on a v2 asset. Continue with"
+        },
+        {
+          "name": "QueryAssetAddresses",
+          "signature": "QueryAssetAddresses(ctx context.Context, assetID string, opts *model.QueryAssetAddressesOptions) (*model.QueryAssetAddressesResult, error)",
+          "doc": "QueryAssetAddresses retrieves one page of the addresses holding a v2 asset, with their KYC"
+        },
+        {
+          "name": "QueryAssets",
+          "signature": "QueryAssets(ctx context.Context, opts *model.QueryAssetsOptions) (*model.QueryAssetsResult, error)",
+          "doc": "QueryAssets retrieves one page of the v2 asset registry (AssetServiceV2_QueryAssetsV2, which"
         }
       ]
     },
@@ -103,7 +118,7 @@
         {
           "name": "GetBalances",
           "signature": "GetBalances(ctx context.Context, opts *model.GetBalancesOptions) (*model.GetBalancesResult, error)",
-          "doc": "GetBalances retrieves the total balances for the tenant, for each asset."
+          "doc": "GetBalances retrieves one page of the tenant's total balances, one per asset. An asset is"
         }
       ]
     },
@@ -158,12 +173,12 @@
         {
           "name": "ListChanges",
           "signature": "ListChanges(ctx context.Context, opts *model.ListChangesOptions) (*model.ListChangesResult, error)",
-          "doc": "ListChanges retrieves a list of changes."
+          "doc": "ListChanges retrieves one page of changes. Continue with Page.NextCursor until"
         },
         {
           "name": "ListChangesForApproval",
           "signature": "ListChangesForApproval(ctx context.Context, opts *model.ListChangesForApprovalOptions) (*model.ListChangesResult, error)",
-          "doc": "ListChangesForApproval retrieves a list of changes pending approval for the current user."
+          "doc": "ListChangesForApproval retrieves one page of the changes awaiting the current user's"
         },
         {
           "name": "RejectChange",
@@ -199,6 +214,16 @@
           "name": "GetCurrency",
           "signature": "GetCurrency(ctx context.Context, opts *model.GetCurrencyOptions) (*model.Currency, error)",
           "doc": "GetCurrency retrieves a single currency by its filter criteria."
+        }
+      ]
+    },
+    {
+      "name": "EarnService",
+      "methods": [
+        {
+          "name": "ListRewards",
+          "signature": "ListRewards(ctx context.Context, opts *model.ListEarnRewardsOptions) (*model.ListEarnRewardsResult, error)",
+          "doc": "ListRewards retrieves one page of rewards (EarnService_GetRewards). Continue with"
         }
       ]
     },
@@ -243,7 +268,7 @@
         {
           "name": "ListFeePayers",
           "signature": "ListFeePayers(ctx context.Context, opts *model.ListFeePayersOptions) (*model.ListFeePayersResult, error)",
-          "doc": "ListFeePayers retrieves a list of fee payers with optional filtering."
+          "doc": "ListFeePayers retrieves one page of fee payers. Result.Pagination is never nil; continue with"
         }
       ]
     },
@@ -251,14 +276,9 @@
       "name": "FeeService",
       "methods": [
         {
-          "name": "GetFees",
-          "signature": "GetFees(ctx context.Context) (*model.GetFeesResult, error)",
-          "doc": "GetFees retrieves a list of fee estimates."
-        },
-        {
           "name": "GetFeesV2",
           "signature": "GetFeesV2(ctx context.Context) (*model.GetFeesV2Result, error)",
-          "doc": "GetFeesV2 retrieves a list of native currency fee estimates."
+          "doc": "GetFeesV2 retrieves the native currency fee estimates (FeeService_GetFeesV2). The deprecated"
         }
       ]
     },
@@ -273,7 +293,12 @@
         {
           "name": "ListFiatProviderAccounts",
           "signature": "ListFiatProviderAccounts(ctx context.Context, opts *model.ListFiatProviderAccountsOptions) (*model.ListFiatProviderAccountsResult, error)",
-          "doc": "ListFiatProviderAccounts retrieves a list of fiat provider accounts with optional filtering and pagination."
+          "doc": "ListFiatProviderAccounts retrieves one page of fiat provider accounts. Provider and Label are"
+        },
+        {
+          "name": "ListFiatProviderEntities",
+          "signature": "ListFiatProviderEntities(ctx context.Context, opts *model.ListFiatProviderEntitiesOptions) (*model.ListFiatProviderEntitiesResult, error)",
+          "doc": "ListFiatProviderEntities retrieves one page of the entities registered with fiat providers."
         },
         {
           "name": "ListFiatProviders",
@@ -363,7 +388,7 @@
         {
           "name": "ListGroups",
           "signature": "ListGroups(ctx context.Context, opts *model.ListGroupsOptions) (*model.ListGroupsResult, error)",
-          "doc": "ListGroups retrieves a list of groups with optional filtering and pagination."
+          "doc": "ListGroups retrieves one page of groups. Result.Pagination is never nil; continue with its"
         }
       ]
     },
@@ -441,9 +466,9 @@
           "doc": "GetPriceHistory retrieves the price history for a currency pair."
         },
         {
-          "name": "GetPrices",
-          "signature": "GetPrices(ctx context.Context) (*model.GetPricesResult, error)",
-          "doc": "GetPrices retrieves all available currency prices."
+          "name": "ListPrices",
+          "signature": "ListPrices(ctx context.Context, opts *model.ListPricesOptions) (*model.ListPricesResult, error)",
+          "doc": "ListPrices retrieves one page of currency prices (PriceService_QueryPricesV2), each verified"
         }
       ]
     },
@@ -503,12 +528,12 @@
         {
           "name": "ListRequests",
           "signature": "ListRequests(ctx context.Context, opts *model.ListRequestsOptions) (*model.RequestResult, error)",
-          "doc": "ListRequests retrieves a list of requests using cursor-based pagination."
+          "doc": "ListRequests retrieves one page of requests. Continue with Page.NextCursor until"
         },
         {
           "name": "ListRequestsForApproval",
           "signature": "ListRequestsForApproval(ctx context.Context, opts *model.ListRequestsOptions) (*model.RequestResult, error)",
-          "doc": "ListRequestsForApproval retrieves requests pending approval for the current user."
+          "doc": "ListRequestsForApproval retrieves one page of the requests awaiting the current user's"
         },
         {
           "name": "RejectRequest",
@@ -772,22 +797,22 @@
         },
         {
           "name": "ListPledgeActions",
-          "signature": "ListPledgeActions(ctx context.Context, opts *taurusnetwork.ListPledgeActionsOptions) ([]taurusnetwork.PledgeAction, *model.CursorPagination, error)",
+          "signature": "ListPledgeActions(ctx context.Context, opts *taurusnetwork.ListPledgeActionsOptions) ([]taurusnetwork.PledgeAction, *model.CursorPage, error)",
           "doc": "ListPledgeActions retrieves a list of pledge actions."
         },
         {
           "name": "ListPledgeActionsForApproval",
-          "signature": "ListPledgeActionsForApproval(ctx context.Context, opts *taurusnetwork.ListPledgeActionsForApprovalOptions) ([]taurusnetwork.PledgeAction, *model.CursorPagination, error)",
+          "signature": "ListPledgeActionsForApproval(ctx context.Context, opts *taurusnetwork.ListPledgeActionsForApprovalOptions) ([]taurusnetwork.PledgeAction, *model.CursorPage, error)",
           "doc": "ListPledgeActionsForApproval retrieves a list of pledge actions pending approval."
         },
         {
           "name": "ListPledgeWithdrawals",
-          "signature": "ListPledgeWithdrawals(ctx context.Context, opts *taurusnetwork.ListPledgeWithdrawalsOptions) ([]taurusnetwork.PledgeWithdrawal, *model.CursorPagination, error)",
+          "signature": "ListPledgeWithdrawals(ctx context.Context, opts *taurusnetwork.ListPledgeWithdrawalsOptions) ([]taurusnetwork.PledgeWithdrawal, *model.CursorPage, error)",
           "doc": "ListPledgeWithdrawals retrieves a list of pledge withdrawals."
         },
         {
           "name": "ListPledges",
-          "signature": "ListPledges(ctx context.Context, opts *taurusnetwork.ListPledgesOptions) ([]*taurusnetwork.Pledge, *model.CursorPagination, error)",
+          "signature": "ListPledges(ctx context.Context, opts *taurusnetwork.ListPledgesOptions) ([]*taurusnetwork.Pledge, *model.CursorPage, error)",
           "doc": "ListPledges retrieves a list of pledges with optional filters."
         },
         {
@@ -907,8 +932,8 @@
       "methods": [
         {
           "name": "ExportTransactions",
-          "signature": "ExportTransactions(ctx context.Context, opts *model.ExportTransactionsOptions) (string, error)",
-          "doc": "ExportTransactions exports transactions in the specified format."
+          "signature": "ExportTransactions(ctx context.Context, opts *model.ExportTransactionsOptions) (*model.ExportTransactionsResult, error)",
+          "doc": "ExportTransactions exports transactions as text: json (the server's default when Format is"
         },
         {
           "name": "GetTransaction",
@@ -923,12 +948,12 @@
         {
           "name": "ListTransactions",
           "signature": "ListTransactions(ctx context.Context, opts *model.ListTransactionsOptions) ([]*model.Transaction, *model.Pagination, error)",
-          "doc": "ListTransactions retrieves a list of transactions."
+          "doc": "ListTransactions retrieves one page of transactions. The returned pagination is never nil;"
         },
         {
           "name": "ListTransactionsByAddress",
           "signature": "ListTransactionsByAddress(ctx context.Context, address string, opts *model.ListTransactionsByAddressOptions) ([]*model.Transaction, *model.Pagination, error)",
-          "doc": "ListTransactionsByAddress retrieves a list of transactions for a specific address."
+          "doc": "ListTransactionsByAddress retrieves one page of transactions for a specific address. The"
         }
       ]
     },
@@ -978,12 +1003,12 @@
         {
           "name": "GetUsersByEmail",
           "signature": "GetUsersByEmail(ctx context.Context, emails []string) ([]*model.User, error)",
-          "doc": "GetUsersByEmail retrieves users by their email addresses."
+          "doc": "GetUsersByEmail retrieves the users with these email addresses. The emails are sent in"
         },
         {
           "name": "ListUsers",
           "signature": "ListUsers(ctx context.Context, opts *model.ListUsersOptions) (*model.ListUsersResult, error)",
-          "doc": "ListUsers retrieves a list of users with optional filtering."
+          "doc": "ListUsers retrieves one page of users. Result.Pagination is never nil; continue with its"
         }
       ]
     },
@@ -1032,13 +1057,13 @@
         },
         {
           "name": "GetWalletTokens",
-          "signature": "GetWalletTokens(ctx context.Context, walletID string, opts *model.GetWalletTokensOptions) ([]*model.AssetBalance, error)",
-          "doc": "GetWalletTokens retrieves token balances for a wallet."
+          "signature": "GetWalletTokens(ctx context.Context, walletID string, opts *model.GetWalletTokensOptions) (*model.WalletTokensResult, error)",
+          "doc": "GetWalletTokens retrieves one page of a wallet's token balances. Continue with"
         },
         {
           "name": "ListWallets",
           "signature": "ListWallets(ctx context.Context, opts *model.ListWalletsOptions) ([]*model.Wallet, *model.Pagination, error)",
-          "doc": "ListWallets retrieves a list of wallets."
+          "doc": "ListWallets retrieves one page of wallets. The returned pagination is never nil; continue"
         }
       ]
     },
@@ -1128,7 +1153,7 @@
         {
           "name": "ListWhitelistedAssets",
           "signature": "ListWhitelistedAssets(ctx context.Context, opts *model.ListWhitelistedAssetsOptions) (*model.WhitelistedAssetResult, error)",
-          "doc": "ListWhitelistedAssets retrieves a list of whitelisted assets."
+          "doc": "ListWhitelistedAssets retrieves one page of whitelisted assets, verifying every row."
         },
         {
           "name": "ListWhitelistedAssetsForApproval",
@@ -1159,11 +1184,6 @@
           "name": "CreateWhitelistedContractAttributes",
           "signature": "CreateWhitelistedContractAttributes(ctx context.Context, contractID string, reqs []model.CreateWhitelistedContractAttributeRequest) ([]model.WhitelistedContractAttribute, error)",
           "doc": "CreateWhitelistedContractAttributes creates multiple attributes on a whitelisted contract."
-        },
-        {
-          "name": "DeleteWhitelistedContract",
-          "signature": "DeleteWhitelistedContract(ctx context.Context, id string, comment string) (string, error)",
-          "doc": "DeleteWhitelistedContract deletes a whitelisted contract."
         },
         {
           "name": "DeleteWhitelistedContractAttribute",

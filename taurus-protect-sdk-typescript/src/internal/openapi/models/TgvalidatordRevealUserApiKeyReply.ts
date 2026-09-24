@@ -49,7 +49,16 @@ export interface TgvalidatordRevealUserApiKeyReply {
      * @memberof TgvalidatordRevealUserApiKeyReply
      */
     revealable?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordRevealUserApiKeyReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordRevealUserApiKeyReplyWireKeys: ReadonlySet<string> = new Set(['apiKeyId', 'secret', 'creationDate', 'revealDate', 'revealable']);
 
 /**
  * Check if a given object implements the TgvalidatordRevealUserApiKeyReply interface.
@@ -66,7 +75,7 @@ export function TgvalidatordRevealUserApiKeyReplyFromJSONTyped(json: any, ignore
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordRevealUserApiKeyReply = {
         
         'apiKeyId': json['apiKeyId'] == null ? undefined : json['apiKeyId'],
         'secret': json['secret'] == null ? undefined : json['secret'],
@@ -74,6 +83,16 @@ export function TgvalidatordRevealUserApiKeyReplyFromJSONTyped(json: any, ignore
         'revealDate': json['revealDate'] == null ? undefined : (new Date(json['revealDate'])),
         'revealable': json['revealable'] == null ? undefined : json['revealable'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordRevealUserApiKeyReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordRevealUserApiKeyReplyToJSON(json: any): TgvalidatordRevealUserApiKeyReply {
@@ -92,6 +111,7 @@ export function TgvalidatordRevealUserApiKeyReplyFromJSONTyped(json: any, ignore
         'creationDate': value['creationDate'] == null ? undefined : ((value['creationDate']).toISOString()),
         'revealDate': value['revealDate'] == null ? undefined : ((value['revealDate']).toISOString()),
         'revealable': value['revealable'],
+        ...value['additionalProperties'],
     };
 }
 

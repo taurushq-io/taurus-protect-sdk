@@ -46,7 +46,16 @@ export interface TgvalidatordGetSharedAssetsReply {
      * @memberof TgvalidatordGetSharedAssetsReply
      */
     cursor?: TgvalidatordResponseCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetSharedAssetsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetSharedAssetsReplyWireKeys: ReadonlySet<string> = new Set(['sharedAssets', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetSharedAssetsReply interface.
@@ -63,11 +72,21 @@ export function TgvalidatordGetSharedAssetsReplyFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetSharedAssetsReply = {
         
         'sharedAssets': json['sharedAssets'] == null ? undefined : ((json['sharedAssets'] as Array<any>).map(TgvalidatordTnSharedAssetFromJSON)),
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetSharedAssetsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetSharedAssetsReplyToJSON(json: any): TgvalidatordGetSharedAssetsReply {
@@ -83,6 +102,7 @@ export function TgvalidatordGetSharedAssetsReplyFromJSONTyped(json: any, ignoreD
         
         'sharedAssets': value['sharedAssets'] == null ? undefined : ((value['sharedAssets'] as Array<any>).map(TgvalidatordTnSharedAssetToJSON)),
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
+        ...value['additionalProperties'],
     };
 }
 

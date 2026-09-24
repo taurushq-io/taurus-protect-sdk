@@ -22,7 +22,10 @@ type TgvalidatordInitRemoteFeePayerReply struct {
 	RemoteEncrypted *string `json:"remoteEncrypted,omitempty" validate:"regexp=^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=)?$"`
 	RulesUpdated *bool `json:"rulesUpdated,omitempty"`
 	Checksum *string `json:"checksum,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordInitRemoteFeePayerReply TgvalidatordInitRemoteFeePayerReply
 
 // NewTgvalidatordInitRemoteFeePayerReply instantiates a new TgvalidatordInitRemoteFeePayerReply object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordInitRemoteFeePayerReply) ToMap() (map[string]interface{}, er
 	if !IsNil(o.Checksum) {
 		toSerialize["checksum"] = o.Checksum
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordInitRemoteFeePayerReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordInitRemoteFeePayerReply := _TgvalidatordInitRemoteFeePayerReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordInitRemoteFeePayerReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordInitRemoteFeePayerReply(varTgvalidatordInitRemoteFeePayerReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "remoteEncrypted")
+		delete(additionalProperties, "rulesUpdated")
+		delete(additionalProperties, "checksum")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordInitRemoteFeePayerReply struct {

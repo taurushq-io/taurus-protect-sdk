@@ -93,7 +93,16 @@ export interface RequestSignedRequest {
      * @memberof RequestSignedRequest
      */
     attributes?: Array<TgvalidatordSignedRequestAttribute>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof RequestSignedRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const RequestSignedRequestWireKeys: ReadonlySet<string> = new Set(['id', 'signedRequest', 'status', 'hash', 'block', 'details', 'creationDate', 'updateDate', 'broadcastDate', 'confirmationDate', 'attributes']);
 
 /**
  * Check if a given object implements the RequestSignedRequest interface.
@@ -110,7 +119,7 @@ export function RequestSignedRequestFromJSONTyped(json: any, ignoreDiscriminator
     if (json == null) {
         return json;
     }
-    return {
+    const result: RequestSignedRequest = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'signedRequest': json['signedRequest'] == null ? undefined : json['signedRequest'],
@@ -124,6 +133,16 @@ export function RequestSignedRequestFromJSONTyped(json: any, ignoreDiscriminator
         'confirmationDate': json['confirmationDate'] == null ? undefined : (new Date(json['confirmationDate'])),
         'attributes': json['attributes'] == null ? undefined : ((json['attributes'] as Array<any>).map(TgvalidatordSignedRequestAttributeFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!RequestSignedRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function RequestSignedRequestToJSON(json: any): RequestSignedRequest {
@@ -148,6 +167,7 @@ export function RequestSignedRequestFromJSONTyped(json: any, ignoreDiscriminator
         'broadcastDate': value['broadcastDate'] == null ? undefined : ((value['broadcastDate']).toISOString()),
         'confirmationDate': value['confirmationDate'] == null ? undefined : ((value['confirmationDate']).toISOString()),
         'attributes': value['attributes'] == null ? undefined : ((value['attributes'] as Array<any>).map(TgvalidatordSignedRequestAttributeToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

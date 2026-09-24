@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -40,6 +39,7 @@ type TgvalidatordCreateOutgoingXLMPathPaymentStrictReceiveRequestRequest struct 
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
 	// A memo can be specified if the destination is a whitelisted address on a blockchain supporting memos.
 	DestinationAddressMemo *string `json:"destinationAddressMemo,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingXLMPathPaymentStrictReceiveRequestRequest TgvalidatordCreateOutgoingXLMPathPaymentStrictReceiveRequestRequest
@@ -438,6 +438,11 @@ func (o TgvalidatordCreateOutgoingXLMPathPaymentStrictReceiveRequestRequest) ToM
 	if !IsNil(o.DestinationAddressMemo) {
 		toSerialize["destinationAddressMemo"] = o.DestinationAddressMemo
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -466,15 +471,30 @@ func (o *TgvalidatordCreateOutgoingXLMPathPaymentStrictReceiveRequestRequest) Un
 
 	varTgvalidatordCreateOutgoingXLMPathPaymentStrictReceiveRequestRequest := _TgvalidatordCreateOutgoingXLMPathPaymentStrictReceiveRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingXLMPathPaymentStrictReceiveRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingXLMPathPaymentStrictReceiveRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingXLMPathPaymentStrictReceiveRequestRequest(varTgvalidatordCreateOutgoingXLMPathPaymentStrictReceiveRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "maxSenderAmount")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "toAddressId")
+		delete(additionalProperties, "toWhitelistedAddressId")
+		delete(additionalProperties, "destinationAssetID")
+		delete(additionalProperties, "destinationAssetIssuer")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "externalRequestId")
+		delete(additionalProperties, "destinationAddressMemo")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

@@ -31,7 +31,6 @@ import pytest
 from taurus_protect.client import ProtectClient
 from taurus_protect.crypto.keys import decode_private_key_pem
 from taurus_protect.models.request import RequestStatus
-
 from tests.testutil import get_private_key
 
 # ---------------------------------------------------------------------------
@@ -246,18 +245,18 @@ def _run_transfer_flow(
 
         # Verify source address from verified payload
         metadata_source = metadata.get_source_address()
-        assert metadata_source == pair.source_address, (
-            f"{config.symbol} metadata source address should match the funded address"
-        )
+        assert (
+            metadata_source == pair.source_address
+        ), f"{config.symbol} metadata source address should match the funded address"
         print(f"{tag}Step 2: Source verified: {metadata_source}")
 
         # Verify destination address
         # For token transfers, the metadata destination is the token contract address
         metadata_destination = metadata.get_destination_address()
         if not config.is_token:
-            assert metadata_destination == pair.dest_address, (
-                f"{config.symbol} metadata destination address should match the target address"
-            )
+            assert (
+                metadata_destination == pair.dest_address
+            ), f"{config.symbol} metadata destination address should match the target address"
         token_note = " (token contract)" if config.is_token else " (verified)"
         print(f"{tag}Step 2: Destination: {metadata_destination}{token_note}")
 
@@ -265,9 +264,9 @@ def _run_transfer_flow(
         metadata_amount = metadata.get_amount()
         metadata_amount_value = metadata_amount.value_from if metadata_amount else None
         if not config.is_token and metadata_amount_value is not None:
-            assert int(metadata_amount_value) == int(config.transfer_amount), (
-                f"{config.symbol} metadata amount should match the transfer amount"
-            )
+            assert int(metadata_amount_value) == int(
+                config.transfer_amount
+            ), f"{config.symbol} metadata amount should match the transfer amount"
         amount_note = " (token transfer -- native value is 0)" if config.is_token else " (verified)"
         print(f"{tag}Step 2: Amount: {metadata_amount_value}{amount_note}")
 
@@ -324,9 +323,15 @@ def _run_transfer_flow(
 
             assert transaction is not None, f"{tag} transaction should be found by hash"
             assert transaction.tx_hash == tx_hash, f"{tag} transaction hash should match"
-            assert transaction.direction == "outgoing", f"{tag} transaction direction should be outgoing"
-            assert transaction.request_id == str(confirmed_request.id), f"{tag} transaction request_id should match"
-            print(f"{tag}Step 5: Transaction verified -- ID={transaction.id}, Block={transaction.block_height}")
+            assert (
+                transaction.direction == "outgoing"
+            ), f"{tag} transaction direction should be outgoing"
+            assert transaction.request_id == str(
+                confirmed_request.id
+            ), f"{tag} transaction request_id should match"
+            print(
+                f"{tag}Step 5: Transaction verified -- ID={transaction.id}, Block={transaction.block_height}"
+            )
         else:
             print(f"{tag}Step 5: No signed requests or transaction hash available, skipping")
 
@@ -362,7 +367,7 @@ def _find_native_addresses(
     tag: str,
 ) -> Optional[AddressPair]:
     """Find two funded native-currency addresses by scanning wallets."""
-    wallets_dtos, _ = client.assets.get_wallets(config.symbol)
+    wallets_dtos, _ = client.assets.get_wallets(config.symbol, page_size=100)
     if not wallets_dtos:
         print(f"{tag}  No wallets found via get_wallets")
         return None
@@ -459,7 +464,7 @@ def _find_token_addresses(
 ) -> Optional[AddressPair]:
     """Find two funded token addresses, checking gas balance on the native chain."""
     print(f"{tag}Step 0: Searching via AssetService (token)...")
-    token_dtos, _ = client.assets.get_addresses(config.symbol)
+    token_dtos, _ = client.assets.get_addresses(config.symbol, page_size=100)
     print(
         f"{tag}Step 0: AssetService returned"
         f" {len(token_dtos) if token_dtos else 0} token addresses"
@@ -473,11 +478,8 @@ def _find_token_addresses(
         return None
 
     # Fetch native currency addresses to check gas balance
-    print(
-        f"{tag}Step 0: Fetching {config.blockchain}"
-        f" addresses for gas balance check..."
-    )
-    native_dtos, _ = client.assets.get_addresses(config.blockchain)
+    print(f"{tag}Step 0: Fetching {config.blockchain}" f" addresses for gas balance check...")
+    native_dtos, _ = client.assets.get_addresses(config.blockchain, page_size=100)
     native_balance_by_addr: Dict[str, int] = {}
     if native_dtos:
         for n_dto in native_dtos:

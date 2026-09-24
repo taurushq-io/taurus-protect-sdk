@@ -27,7 +27,10 @@ type TgvalidatordWebhook struct {
 	TimeoutUntil *time.Time `json:"timeoutUntil,omitempty"`
 	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
 	CreatedAt *time.Time `json:"createdAt,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordWebhook TgvalidatordWebhook
 
 // NewTgvalidatordWebhook instantiates a new TgvalidatordWebhook object
 // This constructor will assign default values to properties that have it defined,
@@ -301,7 +304,39 @@ func (o TgvalidatordWebhook) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.CreatedAt) {
 		toSerialize["createdAt"] = o.CreatedAt
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordWebhook) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordWebhook := _TgvalidatordWebhook{}
+
+	err = json.Unmarshal(data, &varTgvalidatordWebhook)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordWebhook(varTgvalidatordWebhook)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "url")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "timeoutUntil")
+		delete(additionalProperties, "updatedAt")
+		delete(additionalProperties, "createdAt")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordWebhook struct {

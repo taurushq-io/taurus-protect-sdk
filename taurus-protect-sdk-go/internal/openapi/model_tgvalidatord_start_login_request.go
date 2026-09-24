@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordStartLoginRequest{}
 // TgvalidatordStartLoginRequest struct for TgvalidatordStartLoginRequest
 type TgvalidatordStartLoginRequest struct {
 	Email *string `json:"email,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordStartLoginRequest TgvalidatordStartLoginRequest
 
 // NewTgvalidatordStartLoginRequest instantiates a new TgvalidatordStartLoginRequest object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordStartLoginRequest) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Email) {
 		toSerialize["email"] = o.Email
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordStartLoginRequest) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordStartLoginRequest := _TgvalidatordStartLoginRequest{}
+
+	err = json.Unmarshal(data, &varTgvalidatordStartLoginRequest)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordStartLoginRequest(varTgvalidatordStartLoginRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "email")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordStartLoginRequest struct {

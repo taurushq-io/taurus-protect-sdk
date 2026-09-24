@@ -8,6 +8,8 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from taurus_protect.models.pagination import CursorListOptions
+
 
 class SettlementStatus(str, Enum):
     """Settlement status enum."""
@@ -172,12 +174,18 @@ class RejectSettlementRequest(BaseModel):
 # Filter options
 
 
-class ListSettlementsOptions(BaseModel):
-    """Options for listing settlements."""
+class ListSettlementsOptions(CursorListOptions):
+    """Options for listing settlements. Every field reaches the wire."""
 
-    limit: int = Field(default=50, ge=1, le=1000, description="Maximum items to return")
-    offset: int = Field(default=0, ge=0, description="Number of items to skip")
-    statuses: Optional[List[str]] = Field(default=None, description="Filter by statuses")
-    participant_id: Optional[str] = Field(
-        default=None, description="Filter by participant ID (creator or target)"
+    counter_participant_id: Optional[str] = Field(
+        default=None, description="Filter by counter participant (creator or target)"
     )
+    statuses: Optional[List[str]] = Field(default=None, description="Filter by statuses")
+    sort_order: Optional[str] = Field(default=None, description="ASC or DESC")
+
+
+class ListSettlementsForApprovalOptions(CursorListOptions):
+    """Options for listing settlements pending approval. Every field reaches the wire."""
+
+    ids: Optional[List[str]] = Field(default=None, description="Filter by settlement IDs")
+    sort_order: Optional[str] = Field(default=None, description="ASC or DESC")

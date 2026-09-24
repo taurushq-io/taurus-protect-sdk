@@ -81,11 +81,14 @@ generate() {
     rm -rf "$TEMP_DIR"
     mkdir -p "$TEMP_DIR"
 
-    # Generate TypeScript client using typescript-fetch generator
+    # Generate TypeScript client using typescript-fetch generator. The vendored model templates
+    # keep fields this client does not know in `additionalProperties` and write them back; see
+    # scripts/resources/templates/typescript-fetch/README.md.
     "$JAVA_CMD" -jar "$GENERATOR_JAR" generate \
         -g typescript-fetch \
         -i "$SPEC_FILE" \
         -o "$TEMP_DIR" \
+        -t "$RESOURCES_DIR/templates/typescript-fetch" \
         --skip-validate-spec \
         --additional-properties=typescriptThreePlus=true \
         --additional-properties=supportsES6=true \
@@ -134,6 +137,18 @@ generate() {
 
     # Clean up
     rm -rf "$TEMP_DIR"
+
+    # Fail loud if the model override stopped applying: without it, fields this client does not
+    # know are silently dropped instead of kept in additionalProperties like the other SDKs.
+    local models missing
+    models=$(grep -l "if (json == null)" "$OUTPUT_DIR/models/"*.ts || true)
+    if [[ -z "$models" ]]; then
+        error "No generated models with fields found in $OUTPUT_DIR/models"
+    fi
+    missing=$(grep -L -E 'WireKeys|\.\.\.json,' $models || true)
+    if [[ -n "$missing" ]]; then
+        error "Models generated without unknown-field capture (template override not applied): $missing"
+    fi
 
     info "OpenAPI generation completed successfully"
     info "Files are in: $OUTPUT_DIR"

@@ -14,8 +14,14 @@ import {
   walletFromDto,
   walletsFromDto,
 } from '../mappers/wallet';
-import type { AssetBalance } from '../models/balance';
-import type { Pagination, PaginatedResult } from '../models/pagination';
+import type { ListWalletTokensOptions, ListWalletTokensResult } from '../models/balance';
+import {
+  buildCursorPage,
+  buildOffsetPagination,
+  offsetRequest,
+  tokenRequest,
+  type PaginatedResult,
+} from '../models/pagination';
 import type {
   BalanceHistoryPoint,
   CreateWalletRequest,
@@ -23,6 +29,7 @@ import type {
   Wallet,
 } from '../models/wallet';
 import { BaseService } from './base';
+import { offsetQuery } from './paging';
 
 /**
  * Service for wallet management operations.
@@ -33,7 +40,7 @@ import { BaseService } from './base';
  * @example
  * ```typescript
  * // List wallets
- * const result = await walletService.list({ limit: 50, offset: 0 });
+ * const result = await walletService.list({ limit: 50 });
  * for (const wallet of result.items) {
  *   console.log(`${wallet.name}: ${wallet.currency}`);
  * }
@@ -100,18 +107,23 @@ export class WalletService extends BaseService {
   /**
    * Lists wallets with pagination and optional filtering.
    *
-   * @param options - Optional filtering and pagination options
-   * @returns Paginated result containing wallets and pagination info
-   * @throws {@link ValidationError} If limit or offset are invalid
+   * @param options - Optional filtering and pagination options (`limit` 1-100, default 20)
+   * @returns The page of wallets and its pagination; continue with
+   *   `offset: pagination.nextOffset` while `pagination.hasMore`
+   * @throws {@link ValidationError} If limit or offset are out of bounds
    * @throws {@link APIError} If API request fails
    *
    * @example
    * ```typescript
-   * // List first 50 wallets
-   * const result = await walletService.list({ limit: 50, offset: 0 });
-   * console.log(`Found ${result.pagination.totalItems} wallets`);
+   * let offset = 0;
+   * for (;;) {
+   *   const page = await walletService.list({ limit: 50, offset });
+   *   page.items.forEach((w) => console.log(w.name));
+   *   if (!page.pagination.hasMore) break;
+   *   offset = page.pagination.nextOffset;
+   * }
    *
-   * // List with filters
+   * // With filters
    * const filtered = await walletService.list({
    *   blockchain: 'ETH',
    *   excludeDisabled: true,
@@ -120,15 +132,7 @@ export class WalletService extends BaseService {
    * ```
    */
   async list(options?: ListWalletsOptions): Promise<PaginatedResult<Wallet>> {
-    const limit = options?.limit ?? 50;
-    const offset = options?.offset ?? 0;
-
-    if (limit <= 0) {
-      throw new ValidationError('limit must be positive');
-    }
-    if (offset < 0) {
-      throw new ValidationError('offset cannot be negative');
-    }
+    const page = offsetRequest(options);
 
     return this.execute(async () => {
       // Build currencies array from options
@@ -139,8 +143,7 @@ export class WalletService extends BaseService {
       const response = await this.walletsApi.walletServiceGetWalletsV2({
         currencies,
         query: options?.query,
-        limit: String(limit),
-        offset: offset > 0 ? String(offset) : undefined,
+        ...offsetQuery(page),
         name: options?.name,
         sortOrder: options?.sortOrder,
         excludeDisabled: options?.excludeDisabled,
@@ -151,17 +154,11 @@ export class WalletService extends BaseService {
         ids: options?.ids,
       });
 
-      const wallets = walletsFromDto(response.result);
-
-      const pagination: Pagination = {
-        totalItems: parseInt(response.totalItems ?? '0', 10),
-        offset: parseInt(response.offset ?? '0', 10),
-        limit,
-      };
-
+      const rows = response.result ?? [];
       return {
-        items: wallets,
-        pagination,
+        items: walletsFromDto(rows),
+        // The reply's offset is the NEXT page's offset, not the current one.
+        pagination: buildOffsetPagination('reply_offset', page, response, rows.length),
       };
     });
   }
@@ -360,38 +357,43 @@ export class WalletService extends BaseService {
   }
 
   /**
-   * Gets the list of tokens (asset balances) for a wallet.
-   *
-   * Returns the tokens with their balances held by the given wallet.
+   * Gets a page of the tokens (asset balances) a wallet holds.
    *
    * @param walletId - The wallet ID
-   * @param limit - Maximum number of tokens to return (default: 50)
-   * @returns Array of asset balances
+   * @param options - Page size (1-100, default 20) and the `cursor` of a previous page
+   * @returns The page of asset balances and its pagination, including the server's total
    * @throws {@link ValidationError} If arguments are invalid
    * @throws {@link APIError} If API request fails
    *
    * @example
    * ```typescript
-   * const tokens = await walletService.getWalletTokens(123);
-   * for (const token of tokens) {
-   *   console.log(`${token.currency}: ${token.balance}`);
-   * }
+   * let cursor: string | undefined;
+   * do {
+   *   const page = await walletService.getWalletTokens(123, { cursor });
+   *   page.items.forEach((t) => console.log(`${t.currency}: ${t.balance}`));
+   *   cursor = page.pagination.hasMore ? page.pagination.nextCursor : undefined;
+   * } while (cursor);
    * ```
    */
-  async getWalletTokens(walletId: number, limit: number = 50): Promise<AssetBalance[]> {
+  async getWalletTokens(
+    walletId: number,
+    options?: ListWalletTokensOptions
+  ): Promise<ListWalletTokensResult> {
     if (walletId <= 0) {
       throw new ValidationError('walletId must be positive');
     }
-    if (limit <= 0) {
-      throw new ValidationError('limit must be positive');
-    }
+    const page = tokenRequest(options);
 
     return this.execute(async () => {
       const response = await this.walletsApi.walletServiceGetWalletTokens({
         id: String(walletId),
-        limit: String(limit),
+        limit: page.limit,
+        cursor: page.cursor,
       });
-      return assetBalancesFromDto(response.balances);
+      return {
+        items: assetBalancesFromDto(response.balances),
+        pagination: buildCursorPage(page.pageSize, response.next, { total: response.total }),
+      };
     });
   }
 }

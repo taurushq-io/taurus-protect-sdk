@@ -10,11 +10,12 @@ import type { FiatApi } from '../internal/openapi/apis/FiatApi';
 import {
   fiatProvidersFromDto,
   fiatProviderAccountFromDto,
-  fiatProviderAccountResultFromDto,
+  fiatProviderAccountsFromDto,
   fiatProviderCounterpartyAccountFromDto,
-  fiatProviderCounterpartyAccountResultFromDto,
+  fiatProviderCounterpartyAccountsFromDto,
+  fiatProviderEntitiesFromDto,
   fiatProviderOperationFromDto,
-  fiatProviderOperationResultFromDto,
+  fiatProviderOperationsFromDto,
 } from '../mappers/fiat';
 import type {
   FiatProvider,
@@ -26,9 +27,13 @@ import type {
   FiatProviderOperationResult,
   ListFiatProviderAccountsOptions,
   ListFiatProviderCounterpartyAccountsOptions,
+  ListFiatProviderEntitiesOptions,
+  ListFiatProviderEntitiesResult,
   ListFiatProviderOperationsOptions,
 } from '../models/fiat';
+import { buildCursorPage, cursorRequest } from '../models/pagination';
 import { BaseService } from './base';
+import { cursorQuery } from './paging';
 
 /**
  * Service for managing fiat provider operations in the Taurus-PROTECT system.
@@ -81,10 +86,7 @@ export class FiatService extends BaseService {
   async getFiatProviders(): Promise<FiatProvider[]> {
     return this.execute(async () => {
       const response = await this.fiatApi.fiatProviderServiceGetFiatProviders();
-      const result =
-        (response as Record<string, unknown>).fiatProviders ??
-        (response as Record<string, unknown>).result;
-      return fiatProvidersFromDto(result as unknown[]);
+      return fiatProvidersFromDto(response.fiatProviders);
     });
   }
 
@@ -110,8 +112,7 @@ export class FiatService extends BaseService {
     return this.execute(async () => {
       const response =
         await this.fiatApi.fiatProviderServiceGetFiatProviderAccount({ id });
-      const result =
-        (response as Record<string, unknown>).result ?? response;
+      const result = response.result;
       const account = fiatProviderAccountFromDto(result);
       if (!account) {
         throw new ValidationError(`Fiat provider account '${id}' not found`);
@@ -121,11 +122,13 @@ export class FiatService extends BaseService {
   }
 
   /**
-   * Retrieves fiat provider accounts with optional filtering.
+   * Retrieves a page of fiat provider accounts.
    *
-   * @param options - Filter and pagination options
-   * @returns Paginated result containing fiat provider accounts
-   * @throws {@link ValidationError} If required options are missing
+   * @param options - Provider and label (required), filters, `pageSize` (1-100,
+   *   default 20) and `cursor`
+   * @returns The page of accounts and its cursor pagination
+   * @throws {@link ValidationError} If required options are missing or paging options
+   *   are invalid
    * @throws {@link APIError} If API request fails
    *
    * @example
@@ -151,6 +154,8 @@ export class FiatService extends BaseService {
       throw new ValidationError('label is required');
     }
 
+    const page = cursorRequest(options);
+
     return this.execute(async () => {
       const response =
         await this.fiatApi.fiatProviderServiceGetFiatProviderAccounts({
@@ -158,11 +163,12 @@ export class FiatService extends BaseService {
           label: options.label,
           accountType: options.accountType,
           sortOrder: options.sortOrder,
-          cursorCurrentPage: options.cursor?.currentPage,
-          cursorPageRequest: options.cursor?.pageRequest,
-          cursorPageSize: options.cursor?.pageSize?.toString(),
+          ...cursorQuery(page),
         });
-      return fiatProviderAccountResultFromDto(response);
+      return {
+        accounts: fiatProviderAccountsFromDto(response.result),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
+      };
     });
   }
 
@@ -192,8 +198,7 @@ export class FiatService extends BaseService {
         await this.fiatApi.fiatProviderServiceGetFiatProviderCounterpartyAccount(
           { id }
         );
-      const result =
-        (response as Record<string, unknown>).result ?? response;
+      const result = response.result;
       const account = fiatProviderCounterpartyAccountFromDto(result);
       if (!account) {
         throw new ValidationError(
@@ -205,11 +210,13 @@ export class FiatService extends BaseService {
   }
 
   /**
-   * Retrieves fiat provider counterparty accounts with optional filtering.
+   * Retrieves a page of fiat provider counterparty accounts.
    *
-   * @param options - Filter and pagination options
-   * @returns Paginated result containing fiat provider counterparty accounts
-   * @throws {@link ValidationError} If required options are missing
+   * @param options - Provider and label (required), filters, `pageSize` (1-100,
+   *   default 20) and `cursor`
+   * @returns The page of counterparty accounts and its cursor pagination
+   * @throws {@link ValidationError} If required options are missing or paging options
+   *   are invalid
    * @throws {@link APIError} If API request fails
    *
    * @example
@@ -234,20 +241,21 @@ export class FiatService extends BaseService {
       throw new ValidationError('label is required');
     }
 
+    const page = cursorRequest(options);
+
     return this.execute(async () => {
       const response =
-        await this.fiatApi.fiatProviderServiceGetFiatProviderCounterpartyAccounts(
-          {
-            provider: options.provider,
-            label: options.label,
-            counterpartyID: options.counterpartyId,
-            sortOrder: options.sortOrder,
-            cursorCurrentPage: options.cursor?.currentPage,
-            cursorPageRequest: options.cursor?.pageRequest,
-            cursorPageSize: options.cursor?.pageSize?.toString(),
-          }
-        );
-      return fiatProviderCounterpartyAccountResultFromDto(response);
+        await this.fiatApi.fiatProviderServiceGetFiatProviderCounterpartyAccounts({
+          provider: options.provider,
+          label: options.label,
+          counterpartyID: options.counterpartyId,
+          sortOrder: options.sortOrder,
+          ...cursorQuery(page),
+        });
+      return {
+        accounts: fiatProviderCounterpartyAccountsFromDto(response.result),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
+      };
     });
   }
 
@@ -273,8 +281,7 @@ export class FiatService extends BaseService {
     return this.execute(async () => {
       const response =
         await this.fiatApi.fiatProviderServiceGetFiatProviderOperation({ id });
-      const result =
-        (response as Record<string, unknown>).result ?? response;
+      const result = response.result;
       const operation = fiatProviderOperationFromDto(result);
       if (!operation) {
         throw new ValidationError(`Fiat provider operation '${id}' not found`);
@@ -284,10 +291,11 @@ export class FiatService extends BaseService {
   }
 
   /**
-   * Retrieves fiat provider operations with optional filtering.
+   * Retrieves a page of fiat provider operations.
    *
-   * @param options - Filter and pagination options (optional)
-   * @returns Paginated result containing fiat provider operations
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
+   * @returns The page of operations and its cursor pagination
+   * @throws {@link ValidationError} If the paging options are invalid
    * @throws {@link APIError} If API request fails
    *
    * @example
@@ -309,17 +317,58 @@ export class FiatService extends BaseService {
   async getFiatProviderOperations(
     options?: ListFiatProviderOperationsOptions
   ): Promise<FiatProviderOperationResult> {
+    const page = cursorRequest(options);
+
     return this.execute(async () => {
       const response =
         await this.fiatApi.fiatProviderServiceGetFiatProviderOperations({
           provider: options?.provider,
           label: options?.label,
           sortOrder: options?.sortOrder,
-          cursorCurrentPage: options?.cursor?.currentPage,
-          cursorPageRequest: options?.cursor?.pageRequest,
-          cursorPageSize: options?.cursor?.pageSize?.toString(),
+          ...cursorQuery(page),
         });
-      return fiatProviderOperationResultFromDto(response);
+      return {
+        operations: fiatProviderOperationsFromDto(response.result),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
+      };
+    });
+  }
+
+  /**
+   * Lists a page of fiat provider entities.
+   *
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
+   * @returns The page of entities and its cursor pagination
+   * @throws {@link ValidationError} If the page size is out of bounds
+   * @throws {@link APIError} If API request fails
+   *
+   * @example
+   * ```typescript
+   * let cursor: string | undefined;
+   * do {
+   *   const page = await fiatService.listFiatProviderEntities({ provider: 'bank', cursor });
+   *   page.items.forEach((e) => console.log(e.name));
+   *   cursor = page.pagination.hasMore ? page.pagination.nextCursor : undefined;
+   * } while (cursor);
+   * ```
+   */
+  async listFiatProviderEntities(
+    options?: ListFiatProviderEntitiesOptions
+  ): Promise<ListFiatProviderEntitiesResult> {
+    const page = cursorRequest(options);
+
+    return this.execute(async () => {
+      const response =
+        await this.fiatApi.fiatProviderServiceGetFiatProviderEntities({
+          provider: options?.provider,
+          label: options?.label,
+          sortOrder: options?.sortOrder,
+          ...cursorQuery(page),
+        });
+      return {
+        items: fiatProviderEntitiesFromDto(response.result),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
+      };
     });
   }
 }

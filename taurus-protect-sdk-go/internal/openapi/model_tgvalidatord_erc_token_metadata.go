@@ -25,7 +25,10 @@ type TgvalidatordERCTokenMetadata struct {
 	DataType *string `json:"dataType,omitempty"`
 	Base64Data *string `json:"base64Data,omitempty"`
 	Uri *string `json:"uri,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordERCTokenMetadata TgvalidatordERCTokenMetadata
 
 // NewTgvalidatordERCTokenMetadata instantiates a new TgvalidatordERCTokenMetadata object
 // This constructor will assign default values to properties that have it defined,
@@ -264,7 +267,38 @@ func (o TgvalidatordERCTokenMetadata) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Uri) {
 		toSerialize["uri"] = o.Uri
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordERCTokenMetadata) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordERCTokenMetadata := _TgvalidatordERCTokenMetadata{}
+
+	err = json.Unmarshal(data, &varTgvalidatordERCTokenMetadata)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordERCTokenMetadata(varTgvalidatordERCTokenMetadata)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "description")
+		delete(additionalProperties, "decimals")
+		delete(additionalProperties, "dataType")
+		delete(additionalProperties, "base64Data")
+		delete(additionalProperties, "uri")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordERCTokenMetadata struct {

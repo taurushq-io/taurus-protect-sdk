@@ -85,7 +85,16 @@ export interface TgvalidatordWorkflow {
      * @memberof TgvalidatordWorkflow
      */
     state?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordWorkflow
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordWorkflowWireKeys: ReadonlySet<string> = new Set(['id', 'tenantID', 'status', 'createdAt', 'updatedAt', 'scheduledFor', 'reservedBy', 'reservedUntil', 'workflowType', 'workflowPayload', 'state']);
 
 /**
  * Check if a given object implements the TgvalidatordWorkflow interface.
@@ -102,7 +111,7 @@ export function TgvalidatordWorkflowFromJSONTyped(json: any, ignoreDiscriminator
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordWorkflow = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'tenantID': json['tenantID'] == null ? undefined : json['tenantID'],
@@ -116,6 +125,16 @@ export function TgvalidatordWorkflowFromJSONTyped(json: any, ignoreDiscriminator
         'workflowPayload': json['workflowPayload'] == null ? undefined : json['workflowPayload'],
         'state': json['state'] == null ? undefined : json['state'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordWorkflowWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordWorkflowToJSON(json: any): TgvalidatordWorkflow {
@@ -140,6 +159,7 @@ export function TgvalidatordWorkflowFromJSONTyped(json: any, ignoreDiscriminator
         'workflowType': value['workflowType'],
         'workflowPayload': value['workflowPayload'],
         'state': value['state'],
+        ...value['additionalProperties'],
     };
 }
 

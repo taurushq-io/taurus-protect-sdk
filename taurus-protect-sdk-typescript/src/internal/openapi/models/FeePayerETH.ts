@@ -58,7 +58,16 @@ export interface FeePayerETH {
      * @memberof FeePayerETH
      */
     remoteEncrypted?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof FeePayerETH
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const FeePayerETHWireKeys: ReadonlySet<string> = new Set(['kind', 'local', 'remote', 'remoteEncrypted']);
 
 /**
  * Check if a given object implements the FeePayerETH interface.
@@ -75,13 +84,23 @@ export function FeePayerETHFromJSONTyped(json: any, ignoreDiscriminator: boolean
     if (json == null) {
         return json;
     }
-    return {
+    const result: FeePayerETH = {
         
         'kind': json['kind'] == null ? undefined : json['kind'],
         'local': json['local'] == null ? undefined : ETHLocalFromJSON(json['local']),
         'remote': json['remote'] == null ? undefined : ETHRemoteFromJSON(json['remote']),
         'remoteEncrypted': json['remoteEncrypted'] == null ? undefined : json['remoteEncrypted'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!FeePayerETHWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function FeePayerETHToJSON(json: any): FeePayerETH {
@@ -99,6 +118,7 @@ export function FeePayerETHFromJSONTyped(json: any, ignoreDiscriminator: boolean
         'local': ETHLocalToJSON(value['local']),
         'remote': ETHRemoteToJSON(value['remote']),
         'remoteEncrypted': value['remoteEncrypted'],
+        ...value['additionalProperties'],
     };
 }
 

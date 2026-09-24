@@ -22,7 +22,10 @@ type TgvalidatordTransactionAttribute struct {
 	Id *string `json:"id,omitempty"`
 	Key *string `json:"key,omitempty"`
 	Value *string `json:"value,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTransactionAttribute TgvalidatordTransactionAttribute
 
 // NewTgvalidatordTransactionAttribute instantiates a new TgvalidatordTransactionAttribute object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordTransactionAttribute) ToMap() (map[string]interface{}, error
 	if !IsNil(o.Value) {
 		toSerialize["value"] = o.Value
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTransactionAttribute) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTransactionAttribute := _TgvalidatordTransactionAttribute{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTransactionAttribute)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTransactionAttribute(varTgvalidatordTransactionAttribute)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "key")
+		delete(additionalProperties, "value")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTransactionAttribute struct {

@@ -25,7 +25,16 @@ export interface ScoreFilterCoinfirmFilters {
      * @memberof ScoreFilterCoinfirmFilters
      */
     scoreGreater?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof ScoreFilterCoinfirmFilters
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const ScoreFilterCoinfirmFiltersWireKeys: ReadonlySet<string> = new Set(['scoreGreater']);
 
 /**
  * Check if a given object implements the ScoreFilterCoinfirmFilters interface.
@@ -42,10 +51,20 @@ export function ScoreFilterCoinfirmFiltersFromJSONTyped(json: any, ignoreDiscrim
     if (json == null) {
         return json;
     }
-    return {
+    const result: ScoreFilterCoinfirmFilters = {
         
         'scoreGreater': json['scoreGreater'] == null ? undefined : json['scoreGreater'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!ScoreFilterCoinfirmFiltersWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function ScoreFilterCoinfirmFiltersToJSON(json: any): ScoreFilterCoinfirmFilters {
@@ -60,6 +79,7 @@ export function ScoreFilterCoinfirmFiltersFromJSONTyped(json: any, ignoreDiscrim
     return {
         
         'scoreGreater': value['scoreGreater'],
+        ...value['additionalProperties'],
     };
 }
 

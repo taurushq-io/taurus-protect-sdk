@@ -28,7 +28,10 @@ type TgvalidatordSecurityDomain struct {
 	CreationDate *time.Time `json:"creationDate,omitempty"`
 	UpdateDate *time.Time `json:"updateDate,omitempty"`
 	Enabled *bool `json:"enabled,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordSecurityDomain TgvalidatordSecurityDomain
 
 // NewTgvalidatordSecurityDomain instantiates a new TgvalidatordSecurityDomain object
 // This constructor will assign default values to properties that have it defined,
@@ -337,7 +340,40 @@ func (o TgvalidatordSecurityDomain) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Enabled) {
 		toSerialize["enabled"] = o.Enabled
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordSecurityDomain) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordSecurityDomain := _TgvalidatordSecurityDomain{}
+
+	err = json.Unmarshal(data, &varTgvalidatordSecurityDomain)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordSecurityDomain(varTgvalidatordSecurityDomain)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "tenantId")
+		delete(additionalProperties, "domain")
+		delete(additionalProperties, "mode")
+		delete(additionalProperties, "attributes")
+		delete(additionalProperties, "creationDate")
+		delete(additionalProperties, "updateDate")
+		delete(additionalProperties, "enabled")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordSecurityDomain struct {

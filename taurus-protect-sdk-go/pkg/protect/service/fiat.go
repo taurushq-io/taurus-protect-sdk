@@ -55,7 +55,8 @@ func (s *FiatService) GetFiatProviderAccount(ctx context.Context, id string) (*m
 	return mapper.FiatProviderAccountFromDTO(resp.Result), nil
 }
 
-// ListFiatProviderAccounts retrieves a list of fiat provider accounts with optional filtering and pagination.
+// ListFiatProviderAccounts retrieves one page of fiat provider accounts. Provider and Label are
+// required. Continue with Page.NextCursor until Page.HasMore is false.
 func (s *FiatService) ListFiatProviderAccounts(ctx context.Context, opts *model.ListFiatProviderAccountsOptions) (*model.ListFiatProviderAccountsResult, error) {
 	if opts == nil {
 		return nil, fmt.Errorf("options are required: provider and label must be specified")
@@ -66,48 +67,67 @@ func (s *FiatService) ListFiatProviderAccounts(ctx context.Context, opts *model.
 	if opts.Label == "" {
 		return nil, fmt.Errorf("label is required")
 	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, opts.CurrentPage, opts.PageRequest)
+	if err != nil {
+		return nil, err
+	}
 
-	req := s.api.FiatProviderServiceGetFiatProviderAccounts(ctx)
-	req = req.Provider(opts.Provider)
-	req = req.Label(opts.Label)
-
+	req := applyCursorQuery(s.api.FiatProviderServiceGetFiatProviderAccounts(ctx), window).
+		Provider(opts.Provider).
+		Label(opts.Label)
 	if opts.AccountType != "" {
 		req = req.AccountType(opts.AccountType)
 	}
 	if opts.SortOrder != "" {
 		req = req.SortOrder(opts.SortOrder)
 	}
-	if opts.CurrentPage != "" {
-		req = req.CursorCurrentPage(opts.CurrentPage)
+
+	resp, httpResp, err := req.Execute()
+	if err != nil {
+		return nil, s.errMapper.MapError(err, httpResp)
 	}
-	if opts.PageRequest != "" {
-		req = req.CursorPageRequest(opts.PageRequest)
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor})
+	if err != nil {
+		return nil, err
 	}
-	if opts.PageSize > 0 {
-		req = req.CursorPageSize(fmt.Sprintf("%d", opts.PageSize))
+	return &model.ListFiatProviderAccountsResult{
+		Accounts: mapper.FiatProviderAccountsFromDTO(resp.Result),
+		Page:     page,
+	}, nil
+}
+
+// ListFiatProviderEntities retrieves one page of the entities registered with fiat providers.
+// Continue with Page.NextCursor until Page.HasMore is false.
+func (s *FiatService) ListFiatProviderEntities(ctx context.Context, opts *model.ListFiatProviderEntitiesOptions) (*model.ListFiatProviderEntitiesResult, error) {
+	if opts == nil {
+		opts = &model.ListFiatProviderEntitiesOptions{}
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, "", "")
+	if err != nil {
+		return nil, err
+	}
+
+	req := applyCursorQuery(s.api.FiatProviderServiceGetFiatProviderEntities(ctx), window)
+	if opts.Provider != "" {
+		req = req.Provider(opts.Provider)
+	}
+	if opts.Label != "" {
+		req = req.Label(opts.Label)
+	}
+	if opts.SortOrder != "" {
+		req = req.SortOrder(opts.SortOrder)
 	}
 
 	resp, httpResp, err := req.Execute()
 	if err != nil {
 		return nil, s.errMapper.MapError(err, httpResp)
 	}
-
-	result := &model.ListFiatProviderAccountsResult{
-		Accounts: mapper.FiatProviderAccountsFromDTO(resp.Result),
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor})
+	if err != nil {
+		return nil, err
 	}
-
-	// Parse cursor pagination info
-	if resp.Cursor != nil {
-		if resp.Cursor.CurrentPage != nil {
-			result.CurrentPage = *resp.Cursor.CurrentPage
-		}
-		if resp.Cursor.HasPrevious != nil {
-			result.HasPrevious = *resp.Cursor.HasPrevious
-		}
-		if resp.Cursor.HasNext != nil {
-			result.HasNext = *resp.Cursor.HasNext
-		}
-	}
-
-	return result, nil
+	return &model.ListFiatProviderEntitiesResult{
+		Entities: mapper.FiatProviderEntitiesFromDTO(resp.Result),
+		Page:     page,
+	}, nil
 }

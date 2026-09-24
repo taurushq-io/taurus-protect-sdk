@@ -33,7 +33,16 @@ export interface TgvalidatordGetETHValidatorsInfoReply {
      * @memberof TgvalidatordGetETHValidatorsInfoReply
      */
     validators?: Array<TgvalidatordETHValidatorInfo>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetETHValidatorsInfoReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetETHValidatorsInfoReplyWireKeys: ReadonlySet<string> = new Set(['validators']);
 
 /**
  * Check if a given object implements the TgvalidatordGetETHValidatorsInfoReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetETHValidatorsInfoReplyFromJSONTyped(json: any, ig
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetETHValidatorsInfoReply = {
         
         'validators': json['validators'] == null ? undefined : ((json['validators'] as Array<any>).map(TgvalidatordETHValidatorInfoFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetETHValidatorsInfoReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetETHValidatorsInfoReplyToJSON(json: any): TgvalidatordGetETHValidatorsInfoReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetETHValidatorsInfoReplyFromJSONTyped(json: any, ig
     return {
         
         'validators': value['validators'] == null ? undefined : ((value['validators'] as Array<any>).map(TgvalidatordETHValidatorInfoToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

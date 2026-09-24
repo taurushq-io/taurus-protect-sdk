@@ -37,7 +37,16 @@ export interface TgvalidatordTnParticipantAttributeSpecification {
      * @memberof TgvalidatordTnParticipantAttributeSpecification
      */
     attributeDescription?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTnParticipantAttributeSpecification
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTnParticipantAttributeSpecificationWireKeys: ReadonlySet<string> = new Set(['attributeKey', 'attributeType', 'attributeDescription']);
 
 /**
  * Check if a given object implements the TgvalidatordTnParticipantAttributeSpecification interface.
@@ -54,12 +63,22 @@ export function TgvalidatordTnParticipantAttributeSpecificationFromJSONTyped(jso
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTnParticipantAttributeSpecification = {
         
         'attributeKey': json['attributeKey'] == null ? undefined : json['attributeKey'],
         'attributeType': json['attributeType'] == null ? undefined : json['attributeType'],
         'attributeDescription': json['attributeDescription'] == null ? undefined : json['attributeDescription'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTnParticipantAttributeSpecificationWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTnParticipantAttributeSpecificationToJSON(json: any): TgvalidatordTnParticipantAttributeSpecification {
@@ -76,6 +95,7 @@ export function TgvalidatordTnParticipantAttributeSpecificationFromJSONTyped(jso
         'attributeKey': value['attributeKey'],
         'attributeType': value['attributeType'],
         'attributeDescription': value['attributeDescription'],
+        ...value['additionalProperties'],
     };
 }
 

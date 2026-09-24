@@ -135,11 +135,19 @@ class TestCreateMultiFactorSignatures:
         assert body.entity_ids == ["10", "11"]
         assert body.entity_type == TgvalidatordMultiFactorSignaturesEntityType.REQUEST
 
-    def test_refuses_an_unknown_kind(self) -> None:
+    def test_sends_an_unknown_kind_verbatim(self) -> None:
+        """validatord judges a kind it does not know; the SDK neither refuses nor substitutes."""
         service, api = _make_service()
-        with pytest.raises(ValueError, match="unknown multi-factor signature entity type"):
-            service.create_multi_factor_signatures(["10"], "WALLET")
-        api.multi_factor_signature_service_create_multi_factor_signature_batch.assert_not_called()
+        reply = MagicMock()
+        reply.id = "batch-8"
+        api.multi_factor_signature_service_create_multi_factor_signature_batch.return_value = reply
+
+        service.create_multi_factor_signatures(["10"], "WALLET")
+
+        body = api.multi_factor_signature_service_create_multi_factor_signature_batch.call_args.kwargs[
+            "body"
+        ]
+        assert body.entity_type.value == "WALLET"
 
 
 class TestApproveMultiFactorSignature:

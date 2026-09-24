@@ -5,8 +5,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
 from taurus_protect.mappers._base import safe_bool, safe_int, safe_string
-from taurus_protect.models.blockchain import ExchangeRate, FiatCurrency, FiatProviderAccount
-from taurus_protect.models.pagination import Pagination
+from taurus_protect.models.blockchain import (
+    ExchangeRate,
+    FiatCurrency,
+    FiatProviderAccount,
+    FiatProviderEntity,
+)
+from taurus_protect.models.pagination import CursorPage, cursor_page, cursor_request
 from taurus_protect.services._base import BaseService
 
 if TYPE_CHECKING:
@@ -55,10 +60,10 @@ def fiat_currencies_from_dto(dtos: Any) -> List[FiatCurrency]:
 
 def fiat_provider_account_from_dto(dto: Any) -> Optional[FiatProviderAccount]:
     """
-    Convert an OpenAPI fiat provider account DTO to domain model.
+    Convert a generated ``TgvalidatordFiatProviderAccount`` to the domain model.
 
     Args:
-        dto: The OpenAPI DTO object.
+        dto: The generated account.
 
     Returns:
         FiatProviderAccount model or None if dto is None.
@@ -66,13 +71,45 @@ def fiat_provider_account_from_dto(dto: Any) -> Optional[FiatProviderAccount]:
     if dto is None:
         return None
 
+    currency_info = dto.currency_info
     return FiatProviderAccount(
-        id=safe_string(getattr(dto, "id", None)),
-        name=getattr(dto, "name", None),
-        provider=getattr(dto, "provider", None),
-        currency_code=getattr(dto, "currency_code", None) or getattr(dto, "currencyCode", None),
-        balance=getattr(dto, "balance", None),
-        enabled=safe_bool(getattr(dto, "enabled", True)),
+        id=safe_string(dto.id),
+        name=dto.account_name,
+        provider=dto.provider,
+        label=dto.label,
+        account_type=dto.account_type,
+        account_identifier=dto.account_identifier,
+        currency_id=dto.currency_id,
+        currency_code=currency_info.symbol if currency_info is not None else None,
+        balance=dto.total_balance,
+        base_currency_valuation=dto.base_currency_valuation,
+        created_at=dto.creation_date,
+        updated_at=dto.update_date,
+    )
+
+
+def fiat_provider_entity_from_dto(dto: Any) -> Optional[FiatProviderEntity]:
+    """
+    Convert a generated ``TgvalidatordFiatProviderEntity`` to the domain model.
+
+    Args:
+        dto: The generated entity.
+
+    Returns:
+        FiatProviderEntity model or None if dto is None.
+    """
+    if dto is None:
+        return None
+
+    return FiatProviderEntity(
+        id=safe_string(dto.id),
+        provider=dto.provider,
+        label=dto.label,
+        account_identifier=dto.account_identifier,
+        name=dto.name,
+        details=dto.details,
+        created_at=dto.creation_date,
+        updated_at=dto.update_date,
     )
 
 
@@ -99,8 +136,8 @@ class FiatService(BaseService):
     and manage fiat provider accounts.
 
     Example:
-        >>> # List fiat provider accounts
-        >>> accounts = client.fiat.list()
+        >>> # List a provider's fiat accounts
+        >>> accounts, page = client.fiat.list_fiat_provider_accounts("provider", "label")
         >>> for account in accounts:
         ...     print(f"{account.name}: {account.balance} {account.currency_code}")
         >>>
@@ -122,46 +159,110 @@ class FiatService(BaseService):
         self._fiat_api = fiat_api
         self._currencies_api = currencies_api
 
-    def list(
+    def list_fiat_provider_accounts(
         self,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> Tuple[List[FiatProviderAccount], Optional[Pagination]]:
+        provider: str,
+        label: str,
+        page_size: Optional[int] = None,
+        cursor: Optional[str] = None,
+        *,
+        account_type: Optional[str] = None,
+        sort_order: Optional[str] = None,
+        current_page: Optional[str] = None,
+        page_request: Optional[str] = None,
+    ) -> Tuple[List[FiatProviderAccount], CursorPage]:
         """
-        List fiat provider accounts with pagination.
+        List a fiat provider's accounts, one page at a time.
 
         Args:
-            limit: Maximum number of accounts to return (must be positive).
-            offset: Number of accounts to skip (must be non-negative).
+            provider: The fiat provider (required by the endpoint).
+            label: The provider label (required by the endpoint).
+            page_size: Page size (default 20, max 100).
+            cursor: ``page.next_cursor`` from the previous page, to continue.
+            account_type: Filter by account type.
+            sort_order: ASC or DESC.
+            current_page: Low-level page token; not with ``cursor``.
+            page_request: Low-level page direction (FIRST, PREVIOUS, NEXT, LAST).
 
         Returns:
-            Tuple of (accounts list, pagination info).
+            Tuple of (accounts, page).
 
         Raises:
-            ValueError: If limit or offset are invalid.
+            ValueError: If provider or label is empty, or paging options are invalid.
             APIError: If API request fails.
         """
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
+        self._validate_required(provider, "provider")
+        self._validate_required(label, "label")
+        req = cursor_request(
+            page_size, cursor, current_page=current_page, page_request=page_request
+        )
 
         try:
             resp = self._fiat_api.fiat_provider_service_get_fiat_provider_accounts(
-                limit=str(limit),
-                offset=str(offset),
+                provider=provider,
+                label=label,
+                account_type=account_type,
+                sort_order=sort_order,
+                **req.query_params(),
             )
 
-            result = getattr(resp, "result", None) or getattr(resp, "accounts", None)
-            accounts = fiat_provider_accounts_from_dto(result) if result else []
+            accounts = fiat_provider_accounts_from_dto(resp.result or [])
+            return accounts, cursor_page(req.page_size, resp.cursor)
+        except Exception as e:
+            from taurus_protect.errors import APIError
 
-            pagination = self._extract_pagination(
-                total_items=getattr(resp, "total_items", None) or getattr(resp, "totalItems", None),
-                offset=getattr(resp, "offset", None),
-                limit=limit,
+            if isinstance(e, (APIError, ValueError)):
+                raise
+            raise self._handle_error(e) from e
+
+    def list_fiat_provider_entities(
+        self,
+        provider: Optional[str] = None,
+        label: Optional[str] = None,
+        page_size: Optional[int] = None,
+        cursor: Optional[str] = None,
+        *,
+        sort_order: Optional[str] = None,
+        current_page: Optional[str] = None,
+        page_request: Optional[str] = None,
+    ) -> Tuple[List[FiatProviderEntity], CursorPage]:
+        """
+        List the entities registered with fiat providers, one page at a time.
+
+        Args:
+            provider: Filter by fiat provider.
+            label: Filter by provider label.
+            page_size: Page size (default 20, max 100).
+            cursor: ``page.next_cursor`` from the previous page, to continue.
+            sort_order: ASC or DESC.
+            current_page: Low-level page token; not with ``cursor``.
+            page_request: Low-level page direction (FIRST, PREVIOUS, NEXT, LAST).
+
+        Returns:
+            Tuple of (entities, page).
+
+        Raises:
+            ValueError: If the page size is invalid or cursor options conflict.
+            APIError: If API request fails.
+        """
+        req = cursor_request(
+            page_size, cursor, current_page=current_page, page_request=page_request
+        )
+
+        try:
+            resp = self._fiat_api.fiat_provider_service_get_fiat_provider_entities(
+                provider=provider,
+                label=label,
+                sort_order=sort_order,
+                **req.query_params(),
             )
 
-            return accounts, pagination
+            entities = [
+                e
+                for dto in resp.result or []
+                if (e := fiat_provider_entity_from_dto(dto)) is not None
+            ]
+            return entities, cursor_page(req.page_size, resp.cursor)
         except Exception as e:
             from taurus_protect.errors import APIError
 

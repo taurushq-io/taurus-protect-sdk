@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordBlockchainEvent{}
 type TgvalidatordBlockchainEvent struct {
 	EventType *string `json:"eventType,omitempty"`
 	HederaNativeTokenTransaction *TgvalidatordHederaNativeTokenTransaction `json:"hederaNativeTokenTransaction,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordBlockchainEvent TgvalidatordBlockchainEvent
 
 // NewTgvalidatordBlockchainEvent instantiates a new TgvalidatordBlockchainEvent object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordBlockchainEvent) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.HederaNativeTokenTransaction) {
 		toSerialize["hederaNativeTokenTransaction"] = o.HederaNativeTokenTransaction
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordBlockchainEvent) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordBlockchainEvent := _TgvalidatordBlockchainEvent{}
+
+	err = json.Unmarshal(data, &varTgvalidatordBlockchainEvent)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordBlockchainEvent(varTgvalidatordBlockchainEvent)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "eventType")
+		delete(additionalProperties, "hederaNativeTokenTransaction")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordBlockchainEvent struct {

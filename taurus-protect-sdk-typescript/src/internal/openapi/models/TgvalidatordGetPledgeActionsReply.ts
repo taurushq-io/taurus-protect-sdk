@@ -46,7 +46,16 @@ export interface TgvalidatordGetPledgeActionsReply {
      * @memberof TgvalidatordGetPledgeActionsReply
      */
     cursor?: TgvalidatordResponseCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetPledgeActionsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetPledgeActionsReplyWireKeys: ReadonlySet<string> = new Set(['result', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetPledgeActionsReply interface.
@@ -63,11 +72,21 @@ export function TgvalidatordGetPledgeActionsReplyFromJSONTyped(json: any, ignore
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetPledgeActionsReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordTnPledgeActionFromJSON)),
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetPledgeActionsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetPledgeActionsReplyToJSON(json: any): TgvalidatordGetPledgeActionsReply {
@@ -83,6 +102,7 @@ export function TgvalidatordGetPledgeActionsReplyFromJSONTyped(json: any, ignore
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordTnPledgeActionToJSON)),
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
+        ...value['additionalProperties'],
     };
 }
 

@@ -25,7 +25,16 @@ export interface TgvalidatordCreateLendingOfferReply {
      * @memberof TgvalidatordCreateLendingOfferReply
      */
     offerID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateLendingOfferReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateLendingOfferReplyWireKeys: ReadonlySet<string> = new Set(['offerID']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateLendingOfferReply interface.
@@ -42,10 +51,20 @@ export function TgvalidatordCreateLendingOfferReplyFromJSONTyped(json: any, igno
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateLendingOfferReply = {
         
         'offerID': json['offerID'] == null ? undefined : json['offerID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateLendingOfferReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateLendingOfferReplyToJSON(json: any): TgvalidatordCreateLendingOfferReply {
@@ -60,6 +79,7 @@ export function TgvalidatordCreateLendingOfferReplyFromJSONTyped(json: any, igno
     return {
         
         'offerID': value['offerID'],
+        ...value['additionalProperties'],
     };
 }
 

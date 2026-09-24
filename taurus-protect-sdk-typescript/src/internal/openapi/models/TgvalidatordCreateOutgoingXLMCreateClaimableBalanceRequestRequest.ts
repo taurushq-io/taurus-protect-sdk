@@ -91,7 +91,16 @@ export interface TgvalidatordCreateOutgoingXLMCreateClaimableBalanceRequestReque
      * @memberof TgvalidatordCreateOutgoingXLMCreateClaimableBalanceRequestRequest
      */
     sponsoredByAddressId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingXLMCreateClaimableBalanceRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingXLMCreateClaimableBalanceRequestRequestWireKeys: ReadonlySet<string> = new Set(['amount', 'feeLimit', 'fromAddressId', 'fromWalletId', 'toAddressId', 'toWhitelistedAddressId', 'comment', 'externalRequestId', 'destinationAddressMemo', 'absoluteTimeBefore', 'relativeTimeBefore', 'sponsoredByAddressId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingXLMCreateClaimableBalanceRequestRequest interface.
@@ -109,7 +118,7 @@ export function TgvalidatordCreateOutgoingXLMCreateClaimableBalanceRequestReques
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingXLMCreateClaimableBalanceRequestRequest = {
         
         'amount': json['amount'],
         'feeLimit': json['feeLimit'] == null ? undefined : json['feeLimit'],
@@ -124,6 +133,16 @@ export function TgvalidatordCreateOutgoingXLMCreateClaimableBalanceRequestReques
         'relativeTimeBefore': json['relativeTimeBefore'] == null ? undefined : json['relativeTimeBefore'],
         'sponsoredByAddressId': json['sponsoredByAddressId'] == null ? undefined : json['sponsoredByAddressId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingXLMCreateClaimableBalanceRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingXLMCreateClaimableBalanceRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingXLMCreateClaimableBalanceRequestRequest {
@@ -149,6 +168,7 @@ export function TgvalidatordCreateOutgoingXLMCreateClaimableBalanceRequestReques
         'absoluteTimeBefore': value['absoluteTimeBefore'],
         'relativeTimeBefore': value['relativeTimeBefore'],
         'sponsoredByAddressId': value['sponsoredByAddressId'],
+        ...value['additionalProperties'],
     };
 }
 

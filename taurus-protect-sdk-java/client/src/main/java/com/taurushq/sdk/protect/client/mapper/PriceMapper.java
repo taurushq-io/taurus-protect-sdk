@@ -28,12 +28,9 @@ public interface PriceMapper {
      * @param price the price
      * @return the price
      */
-    // signatures is ignored, not mapped: the generated TgvalidatordCurrencyPrice has no
-    // such field even though apis.swagger.json declares it, so there is nothing for
-    // MapStruct to read. Regenerating the openapi module turns this into a direct
-    // mapping; until then a caller verifying a price must supply the signatures it
-    // received. PriceVerifier does the checking either way.
-    @Mapping(target = "signatures", ignore = true)
+    // signatures maps by name (userId, signature) into PriceSignature; PriceVerifier needs
+    // them, and dropping them made every price fail once the rules container configures
+    // PRICEUPDATER keys.
     @Mapping(source = "creationDate", target = "createdAt")
     @Mapping(source = "updateDate", target = "updatedAt")
     Price fromDTO(TgvalidatordCurrencyPrice price);

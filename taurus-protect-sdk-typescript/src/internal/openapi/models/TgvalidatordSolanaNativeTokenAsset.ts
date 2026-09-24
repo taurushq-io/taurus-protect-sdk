@@ -39,7 +39,16 @@ export interface TgvalidatordSolanaNativeTokenAsset {
      * @memberof TgvalidatordSolanaNativeTokenAsset
      */
     state?: TgvalidatordSolanaNativeTokenState;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordSolanaNativeTokenAsset
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordSolanaNativeTokenAssetWireKeys: ReadonlySet<string> = new Set(['address', 'state']);
 
 /**
  * Check if a given object implements the TgvalidatordSolanaNativeTokenAsset interface.
@@ -56,11 +65,21 @@ export function TgvalidatordSolanaNativeTokenAssetFromJSONTyped(json: any, ignor
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordSolanaNativeTokenAsset = {
         
         'address': json['address'] == null ? undefined : json['address'],
         'state': json['state'] == null ? undefined : TgvalidatordSolanaNativeTokenStateFromJSON(json['state']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordSolanaNativeTokenAssetWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordSolanaNativeTokenAssetToJSON(json: any): TgvalidatordSolanaNativeTokenAsset {
@@ -76,6 +95,7 @@ export function TgvalidatordSolanaNativeTokenAssetFromJSONTyped(json: any, ignor
         
         'address': value['address'],
         'state': TgvalidatordSolanaNativeTokenStateToJSON(value['state']),
+        ...value['additionalProperties'],
     };
 }
 

@@ -78,10 +78,7 @@ export class ScoreService extends BaseService {
         },
       });
 
-      const result =
-        (response as Record<string, unknown>).scores ??
-        (response as Record<string, unknown>).result;
-      return scoresFromDto(result as unknown[]);
+      return scoresFromDto(response.scores);
     });
   }
 
@@ -124,10 +121,7 @@ export class ScoreService extends BaseService {
         },
       });
 
-      const result =
-        (response as Record<string, unknown>).scores ??
-        (response as Record<string, unknown>).result;
-      return scoresFromDto(result as unknown[]);
+      return scoresFromDto(response.scores);
     });
   }
 }

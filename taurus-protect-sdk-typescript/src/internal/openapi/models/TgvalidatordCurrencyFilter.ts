@@ -37,7 +37,16 @@ export interface TgvalidatordCurrencyFilter {
      * @memberof TgvalidatordCurrencyFilter
      */
     id?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCurrencyFilter
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCurrencyFilterWireKeys: ReadonlySet<string> = new Set(['symbol', 'blockchain', 'id']);
 
 /**
  * Check if a given object implements the TgvalidatordCurrencyFilter interface.
@@ -54,12 +63,22 @@ export function TgvalidatordCurrencyFilterFromJSONTyped(json: any, ignoreDiscrim
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCurrencyFilter = {
         
         'symbol': json['symbol'] == null ? undefined : json['symbol'],
         'blockchain': json['blockchain'] == null ? undefined : json['blockchain'],
         'id': json['id'] == null ? undefined : json['id'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCurrencyFilterWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCurrencyFilterToJSON(json: any): TgvalidatordCurrencyFilter {
@@ -76,6 +95,7 @@ export function TgvalidatordCurrencyFilterFromJSONTyped(json: any, ignoreDiscrim
         'symbol': value['symbol'],
         'blockchain': value['blockchain'],
         'id': value['id'],
+        ...value['additionalProperties'],
     };
 }
 

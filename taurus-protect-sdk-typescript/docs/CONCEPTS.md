@@ -411,17 +411,32 @@ try {
 
 ## Pagination
 
-The SDK provides two pagination patterns:
+Every list method follows the cross-SDK contract (repo-root `CLAUDE.md` § "Pagination
+(cross-SDK)", pinned by `scripts/resources/pagination-vectors.json` and
+`list-request-vectors.json`). Two families, one rule for page sizes:
+
+- **Page size**: `DEFAULT_PAGE_SIZE` (20) when unset or 0, at most `MAX_PAGE_SIZE` (100), and
+  always sent. Above 100, negative or fractional → `ValidationError` before any request; a
+  negative `offset` likewise. Exempt because they cannot page: price history (`limit` ≤ 365,
+  default 20) and the transaction export (`limit` default 20, no maximum — it always exports
+  from the first matching row, so it takes no offset and reports the server's `totalItems`).
+- **A reply field the SDK cannot read raises `PaginationError`**: a count that is not a
+  canonical decimal in [0, 2^53 - 1], a non-numeric reply offset, or a cursor that reports
+  `hasNext` without a `currentPage`. It is never read as 0 or "no more pages".
+- The pagination value is **never undefined** on success, the empty page `{}` included.
 
 ### Offset-Based Pagination
 
-Used by most list operations:
+Wallets, addresses, transactions, users, groups, fee payers, actions and the whitelists — the
+lists validatord offers no cursor for:
 
 ```typescript
 interface Pagination {
-  readonly totalItems: number;
-  readonly offset: number;
-  readonly limit: number;
+  readonly limit: number;       // the page size sent
+  readonly offset: number;      // the request's offset, never the reply's
+  readonly totalItems: number;  // server total, minus rows this SDK withheld (never below 0)
+  readonly nextOffset: number;  // pass back as `offset` while hasMore
+  readonly hasMore: boolean;
 }
 
 interface PaginatedResult<T> {
@@ -430,41 +445,56 @@ interface PaginatedResult<T> {
 }
 ```
 
-**Example:**
+`nextOffset` follows the endpoint's rule — the reply's `offset` for wallets and addresses,
+`offset + rows` for transactions/fee payers/actions, `offset + min(rows, limit)` for users and
+groups (a synthetic row can be appended), `offset + rows the server returned` for whitelisted
+addresses, `offset + limit` for whitelisted contracts — and `hasMore` is
+`nextOffset > offset && nextOffset < server total`. Rows withheld as unverifiable reduce
+`totalItems` only; they never shift `nextOffset`.
+
+**Example — walk every page:**
 
 ```typescript
-const result = await client.wallets.list({ limit: 50, offset: 0 });
-console.log(`Total: ${result.pagination.totalItems}`);
-console.log(`Page items: ${result.items.length}`);
+let offset = 0;
+for (;;) {
+  const page = await client.wallets.list({ limit: 100, offset });
+  page.items.forEach((w) => console.log(w.name));
+  if (!page.pagination.hasMore) break;
+  offset = page.pagination.nextOffset;
+}
 ```
 
 ### Cursor-Based Pagination
 
-Used by TaurusNetwork services:
+Every other list — requests, changes, audit trails, business rules, balances, exchanges, fiat,
+prices, reservations, webhooks, the v2 asset registry, earn rewards and Taurus-NETWORK. Options
+extend `CursorPageOptions` (`pageSize`, `cursor`); lists that had them keep the low-level
+`currentPage` / `pageRequest`, which cannot be combined with `cursor`:
 
 ```typescript
-interface CursorPagination {
-  readonly nextCursor: string | undefined;
-  readonly hasMore: boolean;
-}
-
-interface CursorPaginatedResult<T> {
-  readonly items: T[];
-  readonly pagination: CursorPagination;
+interface CursorPage {
+  readonly pageSize: number;     // the page size sent
+  readonly nextCursor: string;   // "" when there is no next page
+  readonly hasMore: boolean;     // the reply cursor's hasNext (or the token's presence)
+  readonly totalItems?: number;  // only where the server returns a total
 }
 ```
 
-**Example:**
+Each result carries it as `pagination` next to its rows (`requests`, `changes`, `rules`,
+`items`, ...). Passing `cursor` sends `currentPage=<cursor>` + `pageRequest=NEXT` + the page
+size. Cursors are opaque base64 strings, possibly containing `+ / =`; pass them back verbatim.
+Wallet tokens and governance-rules history use a token instead of a cursor object; the
+contract is the same.
+
+**Example — walk every page:**
 
 ```typescript
-let pageToken: string | undefined;
-const response = await client.taurusNetwork.lendingApi.getAllLendingOffers({
-  pageSize: 50,
-});
-const offers = response.result?.lendingOffers ?? [];
-for (const offer of offers) {
-  console.log(offer.id);
-}
+let cursor: string | undefined;
+do {
+  const page = await client.requests.list({ pageSize: 100, cursor });
+  page.requests.forEach((r) => console.log(r.id, r.status));
+  cursor = page.pagination.hasMore ? page.pagination.nextCursor : undefined;
+} while (cursor);
 ```
 
 ---

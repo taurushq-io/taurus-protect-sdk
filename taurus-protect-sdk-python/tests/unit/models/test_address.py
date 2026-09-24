@@ -1,6 +1,7 @@
 """Tests for address domain models."""
 
 from datetime import datetime, timezone
+from unittest.mock import MagicMock
 
 import pytest
 from pydantic import ValidationError
@@ -11,6 +12,7 @@ from taurus_protect.models.address import (
     CreateAddressRequest,
     ListAddressesOptions,
 )
+from taurus_protect.services.address_service import AddressService
 
 
 class TestAddressAttribute:
@@ -174,14 +176,14 @@ class TestListAddressesOptions:
     """Tests for ListAddressesOptions model."""
 
     def test_default_options(self) -> None:
-        """Test default options values."""
+        """Unset page fields resolve at call time: limit 20, offset 0."""
         options = ListAddressesOptions()
 
         assert options.wallet_id is None
-        assert options.limit == 50
-        assert options.offset == 0
+        assert options.limit is None
+        assert options.offset is None
         assert options.query is None
-        assert options.exclude_disabled is False
+        assert options.exclude_disabled is None
 
     def test_custom_options(self) -> None:
         """Test custom options values."""
@@ -199,17 +201,11 @@ class TestListAddressesOptions:
         assert options.query == "deposit"
         assert options.exclude_disabled is True
 
-    def test_limit_validation_min(self) -> None:
-        """Test limit minimum validation."""
-        with pytest.raises(ValidationError):
-            ListAddressesOptions(limit=0)
+    @pytest.mark.parametrize("field,value", [("limit", 101), ("limit", -1), ("offset", -1)])
+    def test_page_window_is_validated_by_the_one_resolver(self, field: str, value: int) -> None:
+        """Construction accepts any value; the list call refuses it before any request."""
+        options = ListAddressesOptions(**{field: value})
+        service = AddressService(MagicMock(), MagicMock(), rules_cache=MagicMock())
 
-    def test_limit_validation_max(self) -> None:
-        """Test limit maximum validation."""
-        with pytest.raises(ValidationError):
-            ListAddressesOptions(limit=1001)
-
-    def test_offset_validation_min(self) -> None:
-        """Test offset minimum validation."""
-        with pytest.raises(ValidationError):
-            ListAddressesOptions(offset=-1)
+        with pytest.raises(ValueError, match=field):
+            service.list_with_options(options)

@@ -17,7 +17,7 @@ taurus-protect-sdk-go/
 │   ├── options.go                  # Functional options
 │   ├── transport.go                # HTTP transport with TPV1
 │   ├── errors.go                   # Error types
-│   ├── service/                    # Service implementations (43 services: 38 core + 5 TaurusNetwork)
+│   ├── service/                    # Service implementations (44 services: 39 core + 5 TaurusNetwork)
 │   ├── model/                      # Domain models (42 model files)
 │   ├── mapper/                     # DTO converters (47 mapper files)
 │   ├── cache/                      # Rules container caching
@@ -63,7 +63,7 @@ taurus-protect-sdk-go/
 The client package is the main SDK that developers interact with. It provides:
 
 - **Client** - Entry point and service factory
-- **Services** - Business logic layer (43 services: 38 core + 5 TaurusNetwork)
+- **Services** - Business logic layer (44 services: 39 core + 5 TaurusNetwork)
 - **Models** - Clean domain objects
 - **Mappers** - Functions for DTO conversion
 - **Crypto** - Cryptographic verification utilities
@@ -79,7 +79,7 @@ pkg/protect/
 │   ├── wallet.go
 │   ├── address.go
 │   ├── request.go
-│   └── ... (43 services total: 38 core + 5 TaurusNetwork)
+│   └── ... (44 services total: 39 core + 5 TaurusNetwork)
 ├── model/                 # Domain models
 │   ├── wallet.go
 │   ├── address.go

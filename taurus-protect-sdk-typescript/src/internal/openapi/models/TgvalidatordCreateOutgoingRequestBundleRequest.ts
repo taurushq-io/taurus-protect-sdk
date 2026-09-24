@@ -33,7 +33,16 @@ export interface TgvalidatordCreateOutgoingRequestBundleRequest {
      * @memberof TgvalidatordCreateOutgoingRequestBundleRequest
      */
     requests: Array<TgvalidatordCreateOutgoingRequestRequest>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingRequestBundleRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingRequestBundleRequestWireKeys: ReadonlySet<string> = new Set(['requests']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingRequestBundleRequest interface.
@@ -51,10 +60,20 @@ export function TgvalidatordCreateOutgoingRequestBundleRequestFromJSONTyped(json
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingRequestBundleRequest = {
         
         'requests': ((json['requests'] as Array<any>).map(TgvalidatordCreateOutgoingRequestRequestFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingRequestBundleRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingRequestBundleRequestToJSON(json: any): TgvalidatordCreateOutgoingRequestBundleRequest {
@@ -69,6 +88,7 @@ export function TgvalidatordCreateOutgoingRequestBundleRequestFromJSONTyped(json
     return {
         
         'requests': ((value['requests'] as Array<any>).map(TgvalidatordCreateOutgoingRequestRequestToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

@@ -37,7 +37,16 @@ export interface TgvalidatordScimResource {
      * @memberof TgvalidatordScimResource
      */
     type?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordScimResource
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordScimResourceWireKeys: ReadonlySet<string> = new Set(['value', 'display', 'type']);
 
 /**
  * Check if a given object implements the TgvalidatordScimResource interface.
@@ -54,12 +63,22 @@ export function TgvalidatordScimResourceFromJSONTyped(json: any, ignoreDiscrimin
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordScimResource = {
         
         'value': json['value'] == null ? undefined : json['value'],
         'display': json['display'] == null ? undefined : json['display'],
         'type': json['type'] == null ? undefined : json['type'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordScimResourceWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordScimResourceToJSON(json: any): TgvalidatordScimResource {
@@ -76,6 +95,7 @@ export function TgvalidatordScimResourceFromJSONTyped(json: any, ignoreDiscrimin
         'value': value['value'],
         'display': value['display'],
         'type': value['type'],
+        ...value['additionalProperties'],
     };
 }
 

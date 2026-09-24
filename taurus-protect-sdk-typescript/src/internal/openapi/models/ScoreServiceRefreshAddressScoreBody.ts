@@ -25,7 +25,16 @@ export interface ScoreServiceRefreshAddressScoreBody {
      * @memberof ScoreServiceRefreshAddressScoreBody
      */
     scoreProvider?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof ScoreServiceRefreshAddressScoreBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const ScoreServiceRefreshAddressScoreBodyWireKeys: ReadonlySet<string> = new Set(['scoreProvider']);
 
 /**
  * Check if a given object implements the ScoreServiceRefreshAddressScoreBody interface.
@@ -42,10 +51,20 @@ export function ScoreServiceRefreshAddressScoreBodyFromJSONTyped(json: any, igno
     if (json == null) {
         return json;
     }
-    return {
+    const result: ScoreServiceRefreshAddressScoreBody = {
         
         'scoreProvider': json['scoreProvider'] == null ? undefined : json['scoreProvider'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!ScoreServiceRefreshAddressScoreBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function ScoreServiceRefreshAddressScoreBodyToJSON(json: any): ScoreServiceRefreshAddressScoreBody {
@@ -60,6 +79,7 @@ export function ScoreServiceRefreshAddressScoreBodyFromJSONTyped(json: any, igno
     return {
         
         'scoreProvider': value['scoreProvider'],
+        ...value['additionalProperties'],
     };
 }
 

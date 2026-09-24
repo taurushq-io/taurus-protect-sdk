@@ -25,7 +25,16 @@ export interface RequestServiceUpdateRequestStatusBody {
      * @memberof RequestServiceUpdateRequestStatusBody
      */
     status: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof RequestServiceUpdateRequestStatusBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const RequestServiceUpdateRequestStatusBodyWireKeys: ReadonlySet<string> = new Set(['status']);
 
 /**
  * Check if a given object implements the RequestServiceUpdateRequestStatusBody interface.
@@ -43,10 +52,20 @@ export function RequestServiceUpdateRequestStatusBodyFromJSONTyped(json: any, ig
     if (json == null) {
         return json;
     }
-    return {
+    const result: RequestServiceUpdateRequestStatusBody = {
         
         'status': json['status'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!RequestServiceUpdateRequestStatusBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function RequestServiceUpdateRequestStatusBodyToJSON(json: any): RequestServiceUpdateRequestStatusBody {
@@ -61,6 +80,7 @@ export function RequestServiceUpdateRequestStatusBodyFromJSONTyped(json: any, ig
     return {
         
         'status': value['status'],
+        ...value['additionalProperties'],
     };
 }
 

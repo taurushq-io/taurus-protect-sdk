@@ -27,7 +27,10 @@ type TaurusNetworkServiceCreateLendingAgreementAttachmentBody struct {
 	ContentType *string `json:"contentType,omitempty"`
 	// The type of the attachment to create. It is used to specify whether the attachment is embedded in the value itself or if it is a link to an externally hosted resource. Possible values are: 'EMBEDDED', 'EXTERNAL_LINK'.
 	Type *string `json:"type,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TaurusNetworkServiceCreateLendingAgreementAttachmentBody TaurusNetworkServiceCreateLendingAgreementAttachmentBody
 
 // NewTaurusNetworkServiceCreateLendingAgreementAttachmentBody instantiates a new TaurusNetworkServiceCreateLendingAgreementAttachmentBody object
 // This constructor will assign default values to properties that have it defined,
@@ -196,7 +199,36 @@ func (o TaurusNetworkServiceCreateLendingAgreementAttachmentBody) ToMap() (map[s
 	if !IsNil(o.Type) {
 		toSerialize["type"] = o.Type
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TaurusNetworkServiceCreateLendingAgreementAttachmentBody) UnmarshalJSON(data []byte) (err error) {
+	varTaurusNetworkServiceCreateLendingAgreementAttachmentBody := _TaurusNetworkServiceCreateLendingAgreementAttachmentBody{}
+
+	err = json.Unmarshal(data, &varTaurusNetworkServiceCreateLendingAgreementAttachmentBody)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TaurusNetworkServiceCreateLendingAgreementAttachmentBody(varTaurusNetworkServiceCreateLendingAgreementAttachmentBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "value")
+		delete(additionalProperties, "contentType")
+		delete(additionalProperties, "type")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTaurusNetworkServiceCreateLendingAgreementAttachmentBody struct {

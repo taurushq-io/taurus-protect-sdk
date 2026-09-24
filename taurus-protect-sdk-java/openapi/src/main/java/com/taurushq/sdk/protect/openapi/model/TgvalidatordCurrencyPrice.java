@@ -53,7 +53,7 @@ import com.taurushq.sdk.protect.openapi.JSON;
 /**
  * TgvalidatordCurrencyPrice
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2026-04-30T08:14:18.502158138Z[GMT]", comments = "Generator version: 7.9.0")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2026-09-24T07:59:44.783733678Z[GMT]", comments = "Generator version: 7.9.0")
 public class TgvalidatordCurrencyPrice {
   public static final String SERIALIZED_NAME_BLOCKCHAIN = "blockchain";
   @SerializedName(SERIALIZED_NAME_BLOCKCHAIN)
@@ -102,6 +102,18 @@ public class TgvalidatordCurrencyPrice {
   public static final String SERIALIZED_NAME_CURRENCY_TO_INFO = "currencyToInfo";
   @SerializedName(SERIALIZED_NAME_CURRENCY_TO_INFO)
   private TgvalidatordCurrency currencyToInfo;
+
+  public static final String SERIALIZED_NAME_ID = "id";
+  @SerializedName(SERIALIZED_NAME_ID)
+  private String id;
+
+  public static final String SERIALIZED_NAME_IS_PRIMARY = "isPrimary";
+  @SerializedName(SERIALIZED_NAME_IS_PRIMARY)
+  private Boolean isPrimary;
+
+  public static final String SERIALIZED_NAME_STATUS = "status";
+  @SerializedName(SERIALIZED_NAME_STATUS)
+  private String status;
 
   public TgvalidatordCurrencyPrice() {
   }
@@ -341,6 +353,63 @@ public class TgvalidatordCurrencyPrice {
     this.currencyToInfo = currencyToInfo;
   }
 
+
+  public TgvalidatordCurrencyPrice id(String id) {
+    this.id = id;
+    return this;
+  }
+
+  /**
+   * Get id
+   * @return id
+   */
+  @javax.annotation.Nullable
+  public String getId() {
+    return id;
+  }
+
+  public void setId(String id) {
+    this.id = id;
+  }
+
+
+  public TgvalidatordCurrencyPrice isPrimary(Boolean isPrimary) {
+    this.isPrimary = isPrimary;
+    return this;
+  }
+
+  /**
+   * Get isPrimary
+   * @return isPrimary
+   */
+  @javax.annotation.Nullable
+  public Boolean getIsPrimary() {
+    return isPrimary;
+  }
+
+  public void setIsPrimary(Boolean isPrimary) {
+    this.isPrimary = isPrimary;
+  }
+
+
+  public TgvalidatordCurrencyPrice status(String status) {
+    this.status = status;
+    return this;
+  }
+
+  /**
+   * Deviation status of the price, only valid when isPrimary is true
+   * @return status
+   */
+  @javax.annotation.Nullable
+  public String getStatus() {
+    return status;
+  }
+
+  public void setStatus(String status) {
+    this.status = status;
+  }
+
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -407,13 +476,16 @@ public class TgvalidatordCurrencyPrice {
         Objects.equals(this.creationDate, tgvalidatordCurrencyPrice.creationDate) &&
         Objects.equals(this.updateDate, tgvalidatordCurrencyPrice.updateDate) &&
         Objects.equals(this.currencyFromInfo, tgvalidatordCurrencyPrice.currencyFromInfo) &&
-        Objects.equals(this.currencyToInfo, tgvalidatordCurrencyPrice.currencyToInfo)&&
+        Objects.equals(this.currencyToInfo, tgvalidatordCurrencyPrice.currencyToInfo) &&
+        Objects.equals(this.id, tgvalidatordCurrencyPrice.id) &&
+        Objects.equals(this.isPrimary, tgvalidatordCurrencyPrice.isPrimary) &&
+        Objects.equals(this.status, tgvalidatordCurrencyPrice.status)&&
         Objects.equals(this.additionalProperties, tgvalidatordCurrencyPrice.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(blockchain, currencyFrom, currencyTo, decimals, rate, signatures, changePercent24Hour, source, creationDate, updateDate, currencyFromInfo, currencyToInfo, additionalProperties);
+    return Objects.hash(blockchain, currencyFrom, currencyTo, decimals, rate, signatures, changePercent24Hour, source, creationDate, updateDate, currencyFromInfo, currencyToInfo, id, isPrimary, status, additionalProperties);
   }
 
   @Override
@@ -432,6 +504,9 @@ public class TgvalidatordCurrencyPrice {
     sb.append("    updateDate: ").append(toIndentedString(updateDate)).append("\n");
     sb.append("    currencyFromInfo: ").append(toIndentedString(currencyFromInfo)).append("\n");
     sb.append("    currencyToInfo: ").append(toIndentedString(currencyToInfo)).append("\n");
+    sb.append("    id: ").append(toIndentedString(id)).append("\n");
+    sb.append("    isPrimary: ").append(toIndentedString(isPrimary)).append("\n");
+    sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -467,6 +542,9 @@ public class TgvalidatordCurrencyPrice {
     openapiFields.add("updateDate");
     openapiFields.add("currencyFromInfo");
     openapiFields.add("currencyToInfo");
+    openapiFields.add("id");
+    openapiFields.add("isPrimary");
+    openapiFields.add("status");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
@@ -527,6 +605,12 @@ public class TgvalidatordCurrencyPrice {
       // validate the optional field `currencyToInfo`
       if (jsonObj.get("currencyToInfo") != null && !jsonObj.get("currencyToInfo").isJsonNull()) {
         TgvalidatordCurrency.validateJsonElement(jsonObj.get("currencyToInfo"));
+      }
+      if ((jsonObj.get("id") != null && !jsonObj.get("id").isJsonNull()) && !jsonObj.get("id").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("id").toString()));
+      }
+      if ((jsonObj.get("status") != null && !jsonObj.get("status").isJsonNull()) && !jsonObj.get("status").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `status` to be a primitive type in the JSON string but got `%s`", jsonObj.get("status").toString()));
       }
   }
 

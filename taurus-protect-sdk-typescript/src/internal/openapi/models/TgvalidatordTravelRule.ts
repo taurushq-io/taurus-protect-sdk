@@ -118,7 +118,16 @@ export interface TgvalidatordTravelRule {
      * @memberof TgvalidatordTravelRule
      */
     network?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTravelRule
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTravelRuleWireKeys: ReadonlySet<string> = new Set(['originatorPersonTravelRuleData', 'originatorCompanyTravelRuleData', 'beneficiaryCompanyTravelRuleData', 'beneficiaryPersonTravelRuleData', 'currency', 'amount', 'amountMainUnit', 'transactionHash', 'originatorParticipant', 'beneficiaryParticipant', 'initiationDate', 'confirmationDate', 'blockchain', 'network']);
 
 /**
  * Check if a given object implements the TgvalidatordTravelRule interface.
@@ -135,7 +144,7 @@ export function TgvalidatordTravelRuleFromJSONTyped(json: any, ignoreDiscriminat
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTravelRule = {
         
         'originatorPersonTravelRuleData': json['originatorPersonTravelRuleData'] == null ? undefined : TgvalidatordPersonTravelRuleDataFromJSON(json['originatorPersonTravelRuleData']),
         'originatorCompanyTravelRuleData': json['originatorCompanyTravelRuleData'] == null ? undefined : TgvalidatordCompanyTravelRuleDataFromJSON(json['originatorCompanyTravelRuleData']),
@@ -152,6 +161,16 @@ export function TgvalidatordTravelRuleFromJSONTyped(json: any, ignoreDiscriminat
         'blockchain': json['blockchain'] == null ? undefined : json['blockchain'],
         'network': json['network'] == null ? undefined : json['network'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTravelRuleWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTravelRuleToJSON(json: any): TgvalidatordTravelRule {
@@ -179,6 +198,7 @@ export function TgvalidatordTravelRuleFromJSONTyped(json: any, ignoreDiscriminat
         'confirmationDate': value['confirmationDate'] == null ? undefined : ((value['confirmationDate']).toISOString()),
         'blockchain': value['blockchain'],
         'network': value['network'],
+        ...value['additionalProperties'],
     };
 }
 

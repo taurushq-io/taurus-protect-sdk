@@ -34,7 +34,10 @@ type TgvalidatordLendingAgreementAttachment struct {
 	FileSize *string `json:"fileSize,omitempty"`
 	CreatedAt *time.Time `json:"createdAt,omitempty"`
 	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordLendingAgreementAttachment TgvalidatordLendingAgreementAttachment
 
 // NewTgvalidatordLendingAgreementAttachment instantiates a new TgvalidatordLendingAgreementAttachment object
 // This constructor will assign default values to properties that have it defined,
@@ -413,7 +416,42 @@ func (o TgvalidatordLendingAgreementAttachment) ToMap() (map[string]interface{},
 	if !IsNil(o.UpdatedAt) {
 		toSerialize["updatedAt"] = o.UpdatedAt
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordLendingAgreementAttachment) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordLendingAgreementAttachment := _TgvalidatordLendingAgreementAttachment{}
+
+	err = json.Unmarshal(data, &varTgvalidatordLendingAgreementAttachment)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordLendingAgreementAttachment(varTgvalidatordLendingAgreementAttachment)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "lendingAgreementID")
+		delete(additionalProperties, "uploaderParticipantID")
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "contentType")
+		delete(additionalProperties, "value")
+		delete(additionalProperties, "fileSize")
+		delete(additionalProperties, "createdAt")
+		delete(additionalProperties, "updatedAt")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordLendingAgreementAttachment struct {

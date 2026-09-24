@@ -41,7 +41,7 @@ describeIntegration("Integration: WebhookService", () => {
   it("should list webhooks", async () => {
     const client = getTestClient();
     try {
-      const webhooks = await client.webhooks.list();
+      const webhooks = (await client.webhooks.list()).items;
 
       expect(webhooks).toBeDefined();
       expect(Array.isArray(webhooks)).toBe(true);
@@ -108,7 +108,7 @@ describeIntegration("Integration: FeePayerService", () => {
   it("should list fee payers", async () => {
     const client = getTestClient();
     try {
-      const feePayers = await client.feePayers.list();
+      const feePayers = (await client.feePayers.list()).items;
 
       expect(feePayers).toBeDefined();
       expect(Array.isArray(feePayers)).toBe(true);

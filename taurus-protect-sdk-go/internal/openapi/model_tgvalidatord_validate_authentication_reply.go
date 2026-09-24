@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordValidateAuthenticationReply{}
 type TgvalidatordValidateAuthenticationReply struct {
 	// A valid JWT for the user who made the original request
 	Jwt *string `json:"jwt,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordValidateAuthenticationReply TgvalidatordValidateAuthenticationReply
 
 // NewTgvalidatordValidateAuthenticationReply instantiates a new TgvalidatordValidateAuthenticationReply object
 // This constructor will assign default values to properties that have it defined,
@@ -85,7 +88,33 @@ func (o TgvalidatordValidateAuthenticationReply) ToMap() (map[string]interface{}
 	if !IsNil(o.Jwt) {
 		toSerialize["jwt"] = o.Jwt
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordValidateAuthenticationReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordValidateAuthenticationReply := _TgvalidatordValidateAuthenticationReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordValidateAuthenticationReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordValidateAuthenticationReply(varTgvalidatordValidateAuthenticationReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "jwt")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordValidateAuthenticationReply struct {

@@ -42,7 +42,10 @@ type TgvalidatordTnSharedAddress struct {
 	// Count of active pledges linked to the shared address.
 	PledgesCount *string `json:"pledgesCount,omitempty"`
 	Trails []TgvalidatordTnSharedAddressTrail `json:"trails,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTnSharedAddress TgvalidatordTnSharedAddress
 
 // NewTgvalidatordTnSharedAddress instantiates a new TgvalidatordTnSharedAddress object
 // This constructor will assign default values to properties that have it defined,
@@ -701,7 +704,50 @@ func (o TgvalidatordTnSharedAddress) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Trails) {
 		toSerialize["trails"] = o.Trails
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTnSharedAddress) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTnSharedAddress := _TgvalidatordTnSharedAddress{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTnSharedAddress)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTnSharedAddress(varTgvalidatordTnSharedAddress)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "internalAddressID")
+		delete(additionalProperties, "wladdressID")
+		delete(additionalProperties, "ownerParticipantId")
+		delete(additionalProperties, "targetParticipantId")
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "network")
+		delete(additionalProperties, "address")
+		delete(additionalProperties, "originLabel")
+		delete(additionalProperties, "originCreationDate")
+		delete(additionalProperties, "originDeletionDate")
+		delete(additionalProperties, "createdAt")
+		delete(additionalProperties, "updatedAt")
+		delete(additionalProperties, "targetAcceptedAt")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "proofOfOwnership")
+		delete(additionalProperties, "pledgesCount")
+		delete(additionalProperties, "trails")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTnSharedAddress struct {

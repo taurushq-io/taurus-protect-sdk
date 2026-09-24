@@ -19,7 +19,7 @@ import { BaseService } from './base';
  *
  * @example
  * ```typescript
- * // List tags
+ * // List every tag
  * const tags = await tagService.list();
  * for (const tag of tags) {
  *   console.log(`${tag.name}: ${tag.color}`);
@@ -77,8 +77,7 @@ export class TagService extends BaseService {
         ids: [tagId],
       });
 
-      const resp = response as Record<string, unknown>;
-      const result = resp.result as unknown[];
+      const result = response.result;
 
       if (!result || result.length === 0) {
         throw new NotFoundError(`Tag ${tagId} not found`);
@@ -94,48 +93,41 @@ export class TagService extends BaseService {
   }
 
   /**
-   * Lists tags.
+   * Lists every tag, optionally filtered by id or query.
    *
-   * Note: The tags API does not support pagination parameters,
-   * so limit and offset are provided for API consistency but
-   * filtering is done client-side.
+   * The tags endpoint is not paged, so the result is every tag the reply carries; there
+   * is no `limit` or `offset`, and passing either is rejected by name.
    *
-   * @param options - Optional filtering options
-   * @returns Array of tags
-   * @throws {@link ValidationError} If limit or offset are invalid
+   * @param options - Optional `ids` and `query` filters
+   * @returns Every matching tag
+   * @throws {@link ValidationError} If `limit` or `offset` is passed
    * @throws {@link APIError} If API request fails
    *
    * @example
    * ```typescript
-   * // List all tags
+   * // List every tag
    * const tags = await tagService.list();
    *
    * // Search tags
-   * const tags = await tagService.list({ query: 'important' });
+   * const matching = await tagService.list({ query: 'important' });
    * ```
    */
   async list(options?: ListTagsOptions): Promise<Tag[]> {
-    const limit = options?.limit ?? 50;
-    const offset = options?.offset ?? 0;
-
-    if (limit <= 0) {
-      throw new ValidationError('limit must be positive');
-    }
-    if (offset < 0) {
-      throw new ValidationError('offset cannot be negative');
+    // A caller still paging with limit/offset would get every tag on each call and
+    // could loop forever; refuse instead of ignoring them.
+    const paging = options as { limit?: unknown; offset?: unknown } | undefined;
+    if (paging?.limit !== undefined || paging?.offset !== undefined) {
+      throw new ValidationError(
+        "tags.list is not paged: it returns every tag, so limit and offset are not accepted"
+      );
     }
 
     return this.execute(async () => {
       const response = await this.tagsApi.tagServiceGetTags({
+        ids: options?.ids,
         query: options?.query,
       });
-
-      const resp = response as Record<string, unknown>;
-      const result = resp.result;
-      const tags = tagsFromDto(result as unknown[]);
-
-      // Apply client-side pagination since API doesn't support it
-      return tags.slice(offset, offset + limit);
+      return tagsFromDto(response.result);
     });
   }
 
@@ -172,9 +164,7 @@ export class TagService extends BaseService {
         },
       });
 
-      const resp = response as Record<string, unknown>;
-      const result = resp.result ?? resp.tag;
-      const tag = tagFromDto(result);
+      const tag = tagFromDto(response.result);
 
       if (!tag) {
         throw new ValidationError('Failed to create tag: no result returned');

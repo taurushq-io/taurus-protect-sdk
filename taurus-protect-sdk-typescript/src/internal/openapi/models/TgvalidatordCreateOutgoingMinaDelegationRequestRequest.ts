@@ -49,7 +49,16 @@ export interface TgvalidatordCreateOutgoingMinaDelegationRequestRequest {
      * @memberof TgvalidatordCreateOutgoingMinaDelegationRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingMinaDelegationRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingMinaDelegationRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'toWhitelistedAddressId', 'feeLimit', 'comment', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingMinaDelegationRequestRequest interface.
@@ -68,7 +77,7 @@ export function TgvalidatordCreateOutgoingMinaDelegationRequestRequestFromJSONTy
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingMinaDelegationRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'toWhitelistedAddressId': json['toWhitelistedAddressId'],
@@ -76,6 +85,16 @@ export function TgvalidatordCreateOutgoingMinaDelegationRequestRequestFromJSONTy
         'comment': json['comment'] == null ? undefined : json['comment'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingMinaDelegationRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingMinaDelegationRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingMinaDelegationRequestRequest {
@@ -94,6 +113,7 @@ export function TgvalidatordCreateOutgoingMinaDelegationRequestRequestFromJSONTy
         'feeLimit': value['feeLimit'],
         'comment': value['comment'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

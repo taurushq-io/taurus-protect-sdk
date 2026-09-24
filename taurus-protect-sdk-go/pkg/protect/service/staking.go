@@ -119,27 +119,23 @@ func (s *StakingService) GetNEARValidatorInfo(ctx context.Context, network, vali
 
 // ListStakeAccounts retrieves a list of stake accounts with optional filtering and pagination.
 func (s *StakingService) ListStakeAccounts(ctx context.Context, opts *model.ListStakeAccountsOptions) (*model.ListStakeAccountsResult, error) {
-	req := s.api.StakingServiceGetStakeAccounts(ctx)
+	if opts == nil {
+		opts = &model.ListStakeAccountsOptions{}
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, opts.CurrentPage, opts.PageRequest)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if opts.AddressID != "" {
-			req = req.AddressId(opts.AddressID)
-		}
-		if opts.AccountType != "" {
-			req = req.AccountType(opts.AccountType)
-		}
-		if opts.AccountAddress != "" {
-			req = req.AccountAddress(opts.AccountAddress)
-		}
-		if opts.CurrentPage != "" {
-			req = req.CursorCurrentPage(opts.CurrentPage)
-		}
-		if opts.PageRequest != "" {
-			req = req.CursorPageRequest(opts.PageRequest)
-		}
-		if opts.PageSize > 0 {
-			req = req.CursorPageSize(fmt.Sprintf("%d", opts.PageSize))
-		}
+	req := applyCursorQuery(s.api.StakingServiceGetStakeAccounts(ctx), window)
+	if opts.AddressID != "" {
+		req = req.AddressId(opts.AddressID)
+	}
+	if opts.AccountType != "" {
+		req = req.AccountType(opts.AccountType)
+	}
+	if opts.AccountAddress != "" {
+		req = req.AccountAddress(opts.AccountAddress)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -151,18 +147,11 @@ func (s *StakingService) ListStakeAccounts(ctx context.Context, opts *model.List
 		StakeAccounts: mapper.StakeAccountsFromDTO(resp.StakeAccounts),
 	}
 
-	// Parse cursor pagination info
-	if resp.Cursor != nil {
-		if resp.Cursor.CurrentPage != nil {
-			result.CurrentPage = *resp.Cursor.CurrentPage
-		}
-		if resp.Cursor.HasPrevious != nil {
-			result.HasPrevious = *resp.Cursor.HasPrevious
-		}
-		if resp.Cursor.HasNext != nil {
-			result.HasNext = *resp.Cursor.HasNext
-		}
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor})
+	if err != nil {
+		return nil, err
 	}
+	result.Page = page
 
 	return result, nil
 }

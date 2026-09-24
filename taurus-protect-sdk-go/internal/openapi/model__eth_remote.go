@@ -30,7 +30,10 @@ type ETHRemote struct {
 	CreatorAddressId *string `json:"creatorAddressId,omitempty"`
 	ForwarderKind *TgvalidatordFeePayerForwarderKind `json:"forwarderKind,omitempty"`
 	DomainSeparator *string `json:"domainSeparator,omitempty" validate:"regexp=^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=)?$"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _ETHRemote ETHRemote
 
 // NewETHRemote instantiates a new ETHRemote object
 // This constructor will assign default values to properties that have it defined,
@@ -444,7 +447,43 @@ func (o ETHRemote) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.DomainSeparator) {
 		toSerialize["domainSeparator"] = o.DomainSeparator
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *ETHRemote) UnmarshalJSON(data []byte) (err error) {
+	varETHRemote := _ETHRemote{}
+
+	err = json.Unmarshal(data, &varETHRemote)
+
+	if err != nil {
+		return err
+	}
+
+	*o = ETHRemote(varETHRemote)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "url")
+		delete(additionalProperties, "username")
+		delete(additionalProperties, "password")
+		delete(additionalProperties, "privateKey")
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "forwarderAddress")
+		delete(additionalProperties, "forwarderAddressId")
+		delete(additionalProperties, "creatorAddress")
+		delete(additionalProperties, "creatorAddressId")
+		delete(additionalProperties, "forwarderKind")
+		delete(additionalProperties, "domainSeparator")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableETHRemote struct {

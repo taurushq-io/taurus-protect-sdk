@@ -33,7 +33,16 @@ export interface TgvalidatordCreateOutgoingAddressToAddressRequestBundleRequest 
      * @memberof TgvalidatordCreateOutgoingAddressToAddressRequestBundleRequest
      */
     requests?: Array<TgvalidatordCreateAddressToAddressTransferOutgoingRequestRequest>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingAddressToAddressRequestBundleRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingAddressToAddressRequestBundleRequestWireKeys: ReadonlySet<string> = new Set(['requests']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingAddressToAddressRequestBundleRequest interface.
@@ -50,10 +59,20 @@ export function TgvalidatordCreateOutgoingAddressToAddressRequestBundleRequestFr
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingAddressToAddressRequestBundleRequest = {
         
         'requests': json['requests'] == null ? undefined : ((json['requests'] as Array<any>).map(TgvalidatordCreateAddressToAddressTransferOutgoingRequestRequestFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingAddressToAddressRequestBundleRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingAddressToAddressRequestBundleRequestToJSON(json: any): TgvalidatordCreateOutgoingAddressToAddressRequestBundleRequest {
@@ -68,6 +87,7 @@ export function TgvalidatordCreateOutgoingAddressToAddressRequestBundleRequestFr
     return {
         
         'requests': value['requests'] == null ? undefined : ((value['requests'] as Array<any>).map(TgvalidatordCreateAddressToAddressTransferOutgoingRequestRequestToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

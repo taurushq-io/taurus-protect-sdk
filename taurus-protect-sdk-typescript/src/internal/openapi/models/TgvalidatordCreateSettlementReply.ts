@@ -25,7 +25,16 @@ export interface TgvalidatordCreateSettlementReply {
      * @memberof TgvalidatordCreateSettlementReply
      */
     settlementID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateSettlementReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateSettlementReplyWireKeys: ReadonlySet<string> = new Set(['settlementID']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateSettlementReply interface.
@@ -42,10 +51,20 @@ export function TgvalidatordCreateSettlementReplyFromJSONTyped(json: any, ignore
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateSettlementReply = {
         
         'settlementID': json['settlementID'] == null ? undefined : json['settlementID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateSettlementReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateSettlementReplyToJSON(json: any): TgvalidatordCreateSettlementReply {
@@ -60,6 +79,7 @@ export function TgvalidatordCreateSettlementReplyFromJSONTyped(json: any, ignore
     return {
         
         'settlementID': value['settlementID'],
+        ...value['additionalProperties'],
     };
 }
 

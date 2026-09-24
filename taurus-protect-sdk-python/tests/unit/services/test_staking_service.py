@@ -2,92 +2,68 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
-
 import pytest
 
+from taurus_protect._internal.openapi import StakingApi
 from taurus_protect.services.staking_service import StakingService
+from tests.unit.transport_stub import StubTransport, api_client
 
 
 class TestListValidators:
-    """Tests for StakingService.list_validators()."""
+    """list_validators: the ETH endpoint does not page, so every validator comes back."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        staking_api = MagicMock()
-        service = StakingService(api_client=api_client, staking_api=staking_api)
-        return service, staking_api
+    def _service(self) -> StakingService:
+        ac = api_client()
+        return StakingService(ac, StakingApi(ac))
 
     def test_raises_on_empty_blockchain(self) -> None:
-        service, _ = self._make_service()
         with pytest.raises(ValueError, match="blockchain"):
-            service.list_validators(blockchain="")
-
-    def test_raises_on_invalid_limit(self) -> None:
-        service, _ = self._make_service()
-        with pytest.raises(ValueError, match="limit must be positive"):
-            service.list_validators(blockchain="ETH", limit=0)
-
-    def test_raises_on_negative_offset(self) -> None:
-        service, _ = self._make_service()
-        with pytest.raises(ValueError, match="offset cannot be negative"):
-            service.list_validators(blockchain="ETH", offset=-1)
+            self._service().list_validators(blockchain="")
 
     def test_returns_empty_for_unknown_blockchain(self) -> None:
-        service, _ = self._make_service()
-
-        validators, pagination = service.list_validators(blockchain="UNKNOWN")
+        with StubTransport() as transport:
+            validators = self._service().list_validators(blockchain="UNKNOWN")
 
         assert validators == []
+        assert transport.requests == []
 
-    def test_calls_eth_api_for_eth_blockchain(self) -> None:
-        service, api = self._make_service()
-        resp = MagicMock()
-        resp.result = []
-        resp.validators = None
-        api.staking_service_get_eth_validators_info.return_value = resp
+    def test_eth_returns_every_validator_from_the_validators_field(self) -> None:
+        reply = {"validators": [{"id": f"v{i}", "pubkey": f"0x{i}"} for i in range(25)]}
+        with StubTransport(reply) as transport:
+            validators = self._service().list_validators(blockchain="ETH")
 
-        validators, pagination = service.list_validators(blockchain="ETH")
+        assert [v.id for v in validators] == [f"v{i}" for i in range(25)]
+        assert transport.last.path == "/api/rest/v1/staking/eth/mainnet/validators"
+        assert transport.last.query == []
 
-        api.staking_service_get_eth_validators_info.assert_called_once_with(
-            network="mainnet",
-        )
+    def test_ids_reach_the_wire(self) -> None:
+        with StubTransport({}) as transport:
+            self._service().list_validators(blockchain="ETH", network="holesky", ids=["v1", "v2"])
+
+        assert transport.last.path == "/api/rest/v1/staking/eth/holesky/validators"
+        assert transport.last.query == [("ids", "v1"), ("ids", "v2")]
 
 
 class TestGetStakingInfo:
-    """Tests for StakingService.get_staking_info()."""
+    """get_staking_info reads the first stake account, asking for a page of one."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        staking_api = MagicMock()
-        service = StakingService(api_client=api_client, staking_api=staking_api)
-        return service, staking_api
+    def _service(self) -> StakingService:
+        ac = api_client()
+        return StakingService(ac, StakingApi(ac))
 
     def test_raises_on_invalid_address_id(self) -> None:
-        service, _ = self._make_service()
         with pytest.raises(ValueError, match="address_id must be positive"):
-            service.get_staking_info(address_id=0)
+            self._service().get_staking_info(address_id=0)
 
     def test_returns_empty_info_when_no_data(self) -> None:
-        service, api = self._make_service()
-        resp = MagicMock()
-        resp.result = None
-        resp.stake_accounts = None
-        api.staking_service_get_stake_accounts.return_value = resp
-
-        info = service.get_staking_info(address_id=123)
+        with StubTransport({}) as transport:
+            info = self._service().get_staking_info(address_id=123)
 
         assert info.address_id == "123"
+        assert transport.last.query == [("addressId", "123"), ("cursor.pageSize", "1")]
 
-    def test_calls_api_with_string_address_id(self) -> None:
-        service, api = self._make_service()
-        resp = MagicMock()
-        resp.result = None
-        resp.stake_accounts = None
-        api.staking_service_get_stake_accounts.return_value = resp
+    def test_reads_the_stake_accounts_field(self) -> None:
+        with StubTransport({"stakeAccounts": [{"id": "sa1", "addressId": "42"}]}):
+            info = self._service().get_staking_info(address_id=42)
 
-        service.get_staking_info(address_id=42)
-
-        api.staking_service_get_stake_accounts.assert_called_once_with(
-            address_id="42",
-        )
+        assert info.address_id == "42"

@@ -26,7 +26,10 @@ type TgvalidatordGetFTMValidatorInfoReply struct {
 	SelfStake *string `json:"selfStake,omitempty"`
 	DeactivatedAtDateUnix *string `json:"deactivatedAtDateUnix,omitempty"`
 	CreatedAtDateUnix *string `json:"createdAtDateUnix,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetFTMValidatorInfoReply TgvalidatordGetFTMValidatorInfoReply
 
 // NewTgvalidatordGetFTMValidatorInfoReply instantiates a new TgvalidatordGetFTMValidatorInfoReply object
 // This constructor will assign default values to properties that have it defined,
@@ -300,7 +303,39 @@ func (o TgvalidatordGetFTMValidatorInfoReply) ToMap() (map[string]interface{}, e
 	if !IsNil(o.CreatedAtDateUnix) {
 		toSerialize["createdAtDateUnix"] = o.CreatedAtDateUnix
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetFTMValidatorInfoReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetFTMValidatorInfoReply := _TgvalidatordGetFTMValidatorInfoReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetFTMValidatorInfoReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetFTMValidatorInfoReply(varTgvalidatordGetFTMValidatorInfoReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "validatorID")
+		delete(additionalProperties, "address")
+		delete(additionalProperties, "isActive")
+		delete(additionalProperties, "totalStake")
+		delete(additionalProperties, "selfStake")
+		delete(additionalProperties, "deactivatedAtDateUnix")
+		delete(additionalProperties, "createdAtDateUnix")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetFTMValidatorInfoReply struct {

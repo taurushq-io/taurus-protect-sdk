@@ -53,9 +53,9 @@ func TestGovernanceRulesHistoryOptions(t *testing.T) {
 			opts: nil,
 		},
 		{
-			name: "with limit",
+			name: "with page size",
 			opts: &model.ListRulesHistoryOptions{
-				Limit: 10,
+				PageSize: 10,
 			},
 		},
 		{
@@ -65,10 +65,10 @@ func TestGovernanceRulesHistoryOptions(t *testing.T) {
 			},
 		},
 		{
-			name: "with limit and cursor",
+			name: "with page size and cursor",
 			opts: &model.ListRulesHistoryOptions{
-				Limit:  20,
-				Cursor: "eyJwYWdlIjogM30=",
+				PageSize: 20,
+				Cursor:   "eyJwYWdlIjogM30=",
 			},
 		},
 	}
@@ -77,8 +77,8 @@ func TestGovernanceRulesHistoryOptions(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Verify options are properly constructed
 			if tt.opts != nil {
-				if tt.opts.Limit < 0 {
-					t.Error("Limit should not be negative")
+				if tt.opts.PageSize < 0 {
+					t.Error("PageSize should not be negative")
 				}
 			}
 		})

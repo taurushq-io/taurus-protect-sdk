@@ -58,7 +58,16 @@ export interface TgvalidatordGenericCreateContract {
      * @memberof TgvalidatordGenericCreateContract
      */
     evm?: GenericCreateContractEVMContract;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGenericCreateContract
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGenericCreateContractWireKeys: ReadonlySet<string> = new Set(['blockchain', 'eth', 'xtz', 'evm']);
 
 /**
  * Check if a given object implements the TgvalidatordGenericCreateContract interface.
@@ -76,13 +85,23 @@ export function TgvalidatordGenericCreateContractFromJSONTyped(json: any, ignore
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGenericCreateContract = {
         
         'blockchain': json['blockchain'],
         'eth': json['eth'] == null ? undefined : GenericCreateContractEVMContractFromJSON(json['eth']),
         'xtz': json['xtz'] == null ? undefined : GenericCreateContractXTZContractFromJSON(json['xtz']),
         'evm': json['evm'] == null ? undefined : GenericCreateContractEVMContractFromJSON(json['evm']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGenericCreateContractWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGenericCreateContractToJSON(json: any): TgvalidatordGenericCreateContract {
@@ -100,6 +119,7 @@ export function TgvalidatordGenericCreateContractFromJSONTyped(json: any, ignore
         'eth': GenericCreateContractEVMContractToJSON(value['eth']),
         'xtz': GenericCreateContractXTZContractToJSON(value['xtz']),
         'evm': GenericCreateContractEVMContractToJSON(value['evm']),
+        ...value['additionalProperties'],
     };
 }
 

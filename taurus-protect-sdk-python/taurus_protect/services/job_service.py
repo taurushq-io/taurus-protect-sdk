@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, List
 
 from taurus_protect.mappers.audit import job_from_dto, jobs_from_dto
 from taurus_protect.models.audit import Job
-from taurus_protect.models.pagination import Pagination
 from taurus_protect.services._base import BaseService
 
 if TYPE_CHECKING:
@@ -21,7 +20,7 @@ class JobService(BaseService):
 
     Example:
         >>> # List jobs
-        >>> jobs, pagination = client.jobs.list(limit=50, offset=0)
+        >>> jobs = client.jobs.list()
         >>> for job in jobs:
         ...     print(f"{job.id}: {job.description}")
         >>>
@@ -41,47 +40,20 @@ class JobService(BaseService):
         super().__init__(api_client)
         self._jobs_api = jobs_api
 
-    def list(
-        self,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> Tuple[List[Job], Optional[Pagination]]:
+    def list(self) -> List[Job]:
         """
-        List jobs with pagination.
-
-        Args:
-            limit: Maximum number of jobs to return (must be positive).
-            offset: Number of jobs to skip (must be non-negative).
+        List jobs: every job the endpoint returns, which does not page.
 
         Returns:
-            Tuple of (jobs list, pagination info).
+            Every job.
 
         Raises:
-            ValueError: If limit or offset are invalid.
             APIError: If API request fails.
         """
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
-
         try:
-            # The jobs API returns all jobs (no server-side pagination)
             resp = self._jobs_api.job_service_get_jobs()
 
-            result = getattr(resp, "result", None)
-            all_jobs = jobs_from_dto(result) if result else []
-
-            # Apply client-side pagination
-            paged_jobs = all_jobs[offset:offset + limit]
-
-            pagination = self._extract_pagination(
-                total_items=len(all_jobs),
-                offset=offset,
-                limit=limit,
-            )
-
-            return paged_jobs, pagination
+            return jobs_from_dto(resp.jobs or [])
         except Exception as e:
             from taurus_protect.errors import APIError
 
@@ -109,7 +81,7 @@ class JobService(BaseService):
         try:
             resp = self._jobs_api.job_service_get_job(job_id)
 
-            result = getattr(resp, "result", None)
+            result = resp.job
             if result is None:
                 from taurus_protect.errors import NotFoundError
 

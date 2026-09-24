@@ -3512,6 +3512,7 @@ type ApiWalletServiceGetAddressesRequest struct {
 	scoreFilterTrmlabsFiltersScoreGreater *string
 	attributeFiltersJson *string
 	attributeFiltersOperator *string
+	includeDisabledAddresses *string
 }
 
 // Filter on IDs or symbols of the currency
@@ -3705,6 +3706,12 @@ func (r ApiWalletServiceGetAddressesRequest) AttributeFiltersOperator(attributeF
 	return r
 }
 
+// One of [exclude, include, only] depending on whether you want to include disabled addresses (or you want only those). Filtering will be performed after pagination: &#x60;totalItems&#x60; won&#39;t represent the number of addresses with this filter but can be used in combination with &#x60;offset&#x60;.
+func (r ApiWalletServiceGetAddressesRequest) IncludeDisabledAddresses(includeDisabledAddresses string) ApiWalletServiceGetAddressesRequest {
+	r.includeDisabledAddresses = &includeDisabledAddresses
+	return r
+}
+
 func (r ApiWalletServiceGetAddressesRequest) Execute() (*TgvalidatordGetAddressesReply, *http.Response, error) {
 	return r.ApiService.WalletServiceGetAddressesExecute(r)
 }
@@ -3867,6 +3874,9 @@ func (a *AddressesAPIService) WalletServiceGetAddressesExecute(r ApiWalletServic
 	}
 	if r.attributeFiltersOperator != nil {
 		parameterAddToHeaderOrQuery(localVarQueryParams, "attributeFiltersOperator", r.attributeFiltersOperator, "", "")
+	}
+	if r.includeDisabledAddresses != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "includeDisabledAddresses", r.includeDisabledAddresses, "", "")
 	}
 	// to determine the Content-Type header
 	localVarHTTPContentTypes := []string{}

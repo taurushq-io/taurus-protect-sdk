@@ -24,7 +24,10 @@ type TgvalidatordParticipantAttributeData struct {
 	ContentType *string `json:"contentType,omitempty"`
 	Type *string `json:"type,omitempty"`
 	Subtype *string `json:"subtype,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordParticipantAttributeData TgvalidatordParticipantAttributeData
 
 // NewTgvalidatordParticipantAttributeData instantiates a new TgvalidatordParticipantAttributeData object
 // This constructor will assign default values to properties that have it defined,
@@ -228,7 +231,37 @@ func (o TgvalidatordParticipantAttributeData) ToMap() (map[string]interface{}, e
 	if !IsNil(o.Subtype) {
 		toSerialize["subtype"] = o.Subtype
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordParticipantAttributeData) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordParticipantAttributeData := _TgvalidatordParticipantAttributeData{}
+
+	err = json.Unmarshal(data, &varTgvalidatordParticipantAttributeData)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordParticipantAttributeData(varTgvalidatordParticipantAttributeData)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "key")
+		delete(additionalProperties, "value")
+		delete(additionalProperties, "contentType")
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "subtype")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordParticipantAttributeData struct {

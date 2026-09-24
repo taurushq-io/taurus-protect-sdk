@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordInitializeETHContractReply{}
 // TgvalidatordInitializeETHContractReply struct for TgvalidatordInitializeETHContractReply
 type TgvalidatordInitializeETHContractReply struct {
 	Result *string `json:"result,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordInitializeETHContractReply TgvalidatordInitializeETHContractReply
 
 // NewTgvalidatordInitializeETHContractReply instantiates a new TgvalidatordInitializeETHContractReply object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordInitializeETHContractReply) ToMap() (map[string]interface{},
 	if !IsNil(o.Result) {
 		toSerialize["result"] = o.Result
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordInitializeETHContractReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordInitializeETHContractReply := _TgvalidatordInitializeETHContractReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordInitializeETHContractReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordInitializeETHContractReply(varTgvalidatordInitializeETHContractReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "result")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordInitializeETHContractReply struct {

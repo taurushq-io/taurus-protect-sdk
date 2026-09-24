@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -32,6 +31,7 @@ type TgvalidatordCreateOutgoingXLMManageDataRequestRequest struct {
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
 	// If set, is the ID of the address who will sponsor the cost of the operation on the minimum balance of the source address
 	SponsoredByAddressId *string `json:"sponsoredByAddressId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingXLMManageDataRequestRequest TgvalidatordCreateOutgoingXLMManageDataRequestRequest
@@ -290,6 +290,11 @@ func (o TgvalidatordCreateOutgoingXLMManageDataRequestRequest) ToMap() (map[stri
 	if !IsNil(o.SponsoredByAddressId) {
 		toSerialize["sponsoredByAddressId"] = o.SponsoredByAddressId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -318,15 +323,26 @@ func (o *TgvalidatordCreateOutgoingXLMManageDataRequestRequest) UnmarshalJSON(da
 
 	varTgvalidatordCreateOutgoingXLMManageDataRequestRequest := _TgvalidatordCreateOutgoingXLMManageDataRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingXLMManageDataRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingXLMManageDataRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingXLMManageDataRequestRequest(varTgvalidatordCreateOutgoingXLMManageDataRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "dataName")
+		delete(additionalProperties, "dataValue")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "externalRequestId")
+		delete(additionalProperties, "sponsoredByAddressId")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

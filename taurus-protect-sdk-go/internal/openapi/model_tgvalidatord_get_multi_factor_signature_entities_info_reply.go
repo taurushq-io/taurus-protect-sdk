@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -25,6 +24,7 @@ type TgvalidatordGetMultiFactorSignatureEntitiesInfoReply struct {
 	Id string `json:"id"`
 	PayloadToSign []string `json:"payloadToSign"`
 	EntityType TgvalidatordMultiFactorSignaturesEntityType `json:"entityType"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordGetMultiFactorSignatureEntitiesInfoReply TgvalidatordGetMultiFactorSignatureEntitiesInfoReply
@@ -134,6 +134,11 @@ func (o TgvalidatordGetMultiFactorSignatureEntitiesInfoReply) ToMap() (map[strin
 	toSerialize["id"] = o.Id
 	toSerialize["payloadToSign"] = o.PayloadToSign
 	toSerialize["entityType"] = o.EntityType
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -163,15 +168,22 @@ func (o *TgvalidatordGetMultiFactorSignatureEntitiesInfoReply) UnmarshalJSON(dat
 
 	varTgvalidatordGetMultiFactorSignatureEntitiesInfoReply := _TgvalidatordGetMultiFactorSignatureEntitiesInfoReply{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordGetMultiFactorSignatureEntitiesInfoReply)
+	err = json.Unmarshal(data, &varTgvalidatordGetMultiFactorSignatureEntitiesInfoReply)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordGetMultiFactorSignatureEntitiesInfoReply(varTgvalidatordGetMultiFactorSignatureEntitiesInfoReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "payloadToSign")
+		delete(additionalProperties, "entityType")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

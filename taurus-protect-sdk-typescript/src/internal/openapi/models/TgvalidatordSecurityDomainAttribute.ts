@@ -49,7 +49,16 @@ export interface TgvalidatordSecurityDomainAttribute {
      * @memberof TgvalidatordSecurityDomainAttribute
      */
     updateDate?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordSecurityDomainAttribute
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordSecurityDomainAttributeWireKeys: ReadonlySet<string> = new Set(['id', 'key', 'value', 'creationDate', 'updateDate']);
 
 /**
  * Check if a given object implements the TgvalidatordSecurityDomainAttribute interface.
@@ -66,7 +75,7 @@ export function TgvalidatordSecurityDomainAttributeFromJSONTyped(json: any, igno
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordSecurityDomainAttribute = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'key': json['key'] == null ? undefined : json['key'],
@@ -74,6 +83,16 @@ export function TgvalidatordSecurityDomainAttributeFromJSONTyped(json: any, igno
         'creationDate': json['creationDate'] == null ? undefined : (new Date(json['creationDate'])),
         'updateDate': json['updateDate'] == null ? undefined : (new Date(json['updateDate'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordSecurityDomainAttributeWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordSecurityDomainAttributeToJSON(json: any): TgvalidatordSecurityDomainAttribute {
@@ -92,6 +111,7 @@ export function TgvalidatordSecurityDomainAttributeFromJSONTyped(json: any, igno
         'value': value['value'],
         'creationDate': value['creationDate'] == null ? undefined : ((value['creationDate']).toISOString()),
         'updateDate': value['updateDate'] == null ? undefined : ((value['updateDate']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

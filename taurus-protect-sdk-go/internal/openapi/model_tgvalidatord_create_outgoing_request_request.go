@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -58,6 +57,7 @@ type TgvalidatordCreateOutgoingRequestRequest struct {
 	TravelRuleDataInput *TgvalidatordTravelRuleDataInput `json:"travelRuleDataInput,omitempty"`
 	// Internal protect address designated to pay for the fees. Supported on SOL token transfers.
 	FeePayerAddressId *string `json:"feePayerAddressId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingRequestRequest TgvalidatordCreateOutgoingRequestRequest
@@ -780,6 +780,11 @@ func (o TgvalidatordCreateOutgoingRequestRequest) ToMap() (map[string]interface{
 	if !IsNil(o.FeePayerAddressId) {
 		toSerialize["feePayerAddressId"] = o.FeePayerAddressId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -807,15 +812,39 @@ func (o *TgvalidatordCreateOutgoingRequestRequest) UnmarshalJSON(data []byte) (e
 
 	varTgvalidatordCreateOutgoingRequestRequest := _TgvalidatordCreateOutgoingRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingRequestRequest(varTgvalidatordCreateOutgoingRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "fromWalletId")
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "toAddressId")
+		delete(additionalProperties, "toWhitelistedAddressId")
+		delete(additionalProperties, "gasLimit")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "useUnconfirmedFunds")
+		delete(additionalProperties, "feePaidByReceiver")
+		delete(additionalProperties, "transactionComment")
+		delete(additionalProperties, "useAllFunds")
+		delete(additionalProperties, "feePayerId")
+		delete(additionalProperties, "extendedAmount")
+		delete(additionalProperties, "transactionReference")
+		delete(additionalProperties, "externalRequestId")
+		delete(additionalProperties, "destinationAddressMemo")
+		delete(additionalProperties, "opts")
+		delete(additionalProperties, "travelRuleDataInput")
+		delete(additionalProperties, "feePayerAddressId")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

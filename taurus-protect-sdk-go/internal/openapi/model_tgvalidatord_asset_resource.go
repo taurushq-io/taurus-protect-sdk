@@ -32,7 +32,10 @@ type TgvalidatordAssetResource struct {
 	AssetAttributes []TgvalidatordAssetAttribute `json:"assetAttributes,omitempty"`
 	Status *string `json:"status,omitempty"`
 	BlockchainAsset *TgvalidatordBlockchainAsset `json:"blockchainAsset,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordAssetResource TgvalidatordAssetResource
 
 // NewTgvalidatordAssetResource instantiates a new TgvalidatordAssetResource object
 // This constructor will assign default values to properties that have it defined,
@@ -481,7 +484,44 @@ func (o TgvalidatordAssetResource) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.BlockchainAsset) {
 		toSerialize["blockchainAsset"] = o.BlockchainAsset
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordAssetResource) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordAssetResource := _TgvalidatordAssetResource{}
+
+	err = json.Unmarshal(data, &varTgvalidatordAssetResource)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordAssetResource(varTgvalidatordAssetResource)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "tenantID")
+		delete(additionalProperties, "version")
+		delete(additionalProperties, "createdAt")
+		delete(additionalProperties, "updatedAt")
+		delete(additionalProperties, "label")
+		delete(additionalProperties, "assetType")
+		delete(additionalProperties, "asset")
+		delete(additionalProperties, "currencyID")
+		delete(additionalProperties, "assetAttributes")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "blockchainAsset")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordAssetResource struct {

@@ -28,32 +28,23 @@ var AllowedTgvalidatordFeePayerForwarderKindEnumValues = []TgvalidatordFeePayerF
 	"OpenZeppelinForwarder",
 }
 
+// UnmarshalJSON keeps a value this client does not know instead of failing the whole reply;
+// IsValid reports whether it is one of the generated constants.
 func (v *TgvalidatordFeePayerForwarderKind) UnmarshalJSON(src []byte) error {
 	var value string
 	err := json.Unmarshal(src, &value)
 	if err != nil {
-		return err
+		return fmt.Errorf("decoding TgvalidatordFeePayerForwarderKind: %w", err)
 	}
-	enumTypeValue := TgvalidatordFeePayerForwarderKind(value)
-	for _, existing := range AllowedTgvalidatordFeePayerForwarderKindEnumValues {
-		if existing == enumTypeValue {
-			*v = enumTypeValue
-			return nil
-		}
-	}
-
-	return fmt.Errorf("%+v is not a valid TgvalidatordFeePayerForwarderKind", value)
+	*v = TgvalidatordFeePayerForwarderKind(value)
+	return nil
 }
 
-// NewTgvalidatordFeePayerForwarderKindFromValue returns a pointer to a valid TgvalidatordFeePayerForwarderKind
-// for the value passed as argument, or an error if the value passed is not allowed by the enum
+// NewTgvalidatordFeePayerForwarderKindFromValue returns a pointer to a TgvalidatordFeePayerForwarderKind holding v, known or not.
+// The error is always nil; use IsValid to tell a generated constant from a newer server value.
 func NewTgvalidatordFeePayerForwarderKindFromValue(v string) (*TgvalidatordFeePayerForwarderKind, error) {
 	ev := TgvalidatordFeePayerForwarderKind(v)
-	if ev.IsValid() {
-		return &ev, nil
-	} else {
-		return nil, fmt.Errorf("invalid value '%v' for TgvalidatordFeePayerForwarderKind: valid values are %v", v, AllowedTgvalidatordFeePayerForwarderKindEnumValues)
-	}
+	return &ev, nil
 }
 
 // IsValid return true if the value is valid for the enum, false otherwise

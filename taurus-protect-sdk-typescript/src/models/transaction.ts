@@ -2,6 +2,8 @@
  * Transaction domain models for Taurus-PROTECT SDK.
  */
 
+import type { OffsetPageOptions } from "./pagination";
+
 /**
  * Transaction status enum.
  */
@@ -152,13 +154,10 @@ export interface Transaction {
 }
 
 /**
- * Options for listing transactions.
+ * Options for listing transactions. An offset list: `limit` 1-100 (default 20) and
+ * `offset` (a previous page's `pagination.nextOffset`).
  */
-export interface ListTransactionsOptions {
-  /** Maximum number of transactions to return (default: 50, max: 100) */
-  readonly limit?: number;
-  /** Offset for pagination (default: 0) */
-  readonly offset?: number;
+export interface ListTransactionsOptions extends OffsetPageOptions {
   /** Filter by currency ID or symbol */
   readonly currency?: string;
   /** Filter by direction ("incoming" or "outgoing") */
@@ -195,4 +194,44 @@ export interface ListTransactionsOptions {
   readonly excludeUnknownSourceDestination?: boolean;
   /** Filter by customer ID */
   readonly customerId?: string;
+}
+
+/**
+ * Options for exporting transactions.
+ *
+ * The export cannot page: the server always exports from the first matching row, so there
+ * is no offset. `limit` (default 20, no SDK maximum) is the only way to reach more rows;
+ * compare the result's `totalItems` with the rows exported to spot a truncated export.
+ */
+export interface ExportTransactionsOptions {
+  /** How many transactions to export (default 20) */
+  readonly limit?: number;
+  /** Export format: "json" (the server default), "csv" or "csv_simple" */
+  readonly format?: string;
+  /** Filter transactions after this date */
+  readonly fromDate?: Date;
+  /** Filter transactions before this date */
+  readonly toDate?: Date;
+  /** Filter by currency ID or symbol */
+  readonly currency?: string;
+  /** Filter by direction ("incoming" or "outgoing") */
+  readonly direction?: TransactionDirection | string;
+  /** Filter by blockchain */
+  readonly blockchain?: string;
+  /** Filter by network */
+  readonly network?: string;
+  /** Search query string */
+  readonly query?: string;
+  /** Filter by address (either source or destination) */
+  readonly address?: string;
+}
+
+/**
+ * The result of a transaction export.
+ */
+export interface ExportTransactionsResult {
+  /** The export payload, in the requested format ("" when nothing matched) */
+  readonly data: string;
+  /** How many transactions match the filters (0 when omitted); more than exported means truncated */
+  readonly totalItems: number;
 }

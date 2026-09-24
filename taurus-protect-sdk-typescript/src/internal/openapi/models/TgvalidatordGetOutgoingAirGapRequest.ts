@@ -46,7 +46,16 @@ export interface TgvalidatordGetOutgoingAirGapRequest {
      * @memberof TgvalidatordGetOutgoingAirGapRequest
      */
     addresses?: GetOutgoingAirGapRequestAddresses;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetOutgoingAirGapRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetOutgoingAirGapRequestWireKeys: ReadonlySet<string> = new Set(['requests', 'addresses']);
 
 /**
  * Check if a given object implements the TgvalidatordGetOutgoingAirGapRequest interface.
@@ -63,11 +72,21 @@ export function TgvalidatordGetOutgoingAirGapRequestFromJSONTyped(json: any, ign
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetOutgoingAirGapRequest = {
         
         'requests': json['requests'] == null ? undefined : TgvalidatordGetOutgoingAirGapRequestRequestsFromJSON(json['requests']),
         'addresses': json['addresses'] == null ? undefined : GetOutgoingAirGapRequestAddressesFromJSON(json['addresses']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetOutgoingAirGapRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetOutgoingAirGapRequestToJSON(json: any): TgvalidatordGetOutgoingAirGapRequest {
@@ -83,6 +102,7 @@ export function TgvalidatordGetOutgoingAirGapRequestFromJSONTyped(json: any, ign
         
         'requests': TgvalidatordGetOutgoingAirGapRequestRequestsToJSON(value['requests']),
         'addresses': GetOutgoingAirGapRequestAddressesToJSON(value['addresses']),
+        ...value['additionalProperties'],
     };
 }
 

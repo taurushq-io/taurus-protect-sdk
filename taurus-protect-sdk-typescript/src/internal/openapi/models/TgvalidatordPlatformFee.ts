@@ -43,7 +43,16 @@ export interface TgvalidatordPlatformFee {
      * @memberof TgvalidatordPlatformFee
      */
     symbol?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordPlatformFee
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordPlatformFeeWireKeys: ReadonlySet<string> = new Set(['type', 'amount', 'amountMainUnit', 'symbol']);
 
 /**
  * Check if a given object implements the TgvalidatordPlatformFee interface.
@@ -60,13 +69,23 @@ export function TgvalidatordPlatformFeeFromJSONTyped(json: any, ignoreDiscrimina
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordPlatformFee = {
         
         'type': json['type'] == null ? undefined : json['type'],
         'amount': json['amount'] == null ? undefined : json['amount'],
         'amountMainUnit': json['amountMainUnit'] == null ? undefined : json['amountMainUnit'],
         'symbol': json['symbol'] == null ? undefined : json['symbol'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordPlatformFeeWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordPlatformFeeToJSON(json: any): TgvalidatordPlatformFee {
@@ -84,6 +103,7 @@ export function TgvalidatordPlatformFeeFromJSONTyped(json: any, ignoreDiscrimina
         'amount': value['amount'],
         'amountMainUnit': value['amountMainUnit'],
         'symbol': value['symbol'],
+        ...value['additionalProperties'],
     };
 }
 

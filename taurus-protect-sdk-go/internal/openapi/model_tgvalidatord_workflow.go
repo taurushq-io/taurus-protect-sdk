@@ -31,7 +31,10 @@ type TgvalidatordWorkflow struct {
 	WorkflowType *string `json:"workflowType,omitempty"`
 	WorkflowPayload *string `json:"workflowPayload,omitempty"`
 	State *string `json:"state,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordWorkflow TgvalidatordWorkflow
 
 // NewTgvalidatordWorkflow instantiates a new TgvalidatordWorkflow object
 // This constructor will assign default values to properties that have it defined,
@@ -445,7 +448,43 @@ func (o TgvalidatordWorkflow) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.State) {
 		toSerialize["state"] = o.State
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordWorkflow) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordWorkflow := _TgvalidatordWorkflow{}
+
+	err = json.Unmarshal(data, &varTgvalidatordWorkflow)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordWorkflow(varTgvalidatordWorkflow)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "tenantID")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "createdAt")
+		delete(additionalProperties, "updatedAt")
+		delete(additionalProperties, "scheduledFor")
+		delete(additionalProperties, "reservedBy")
+		delete(additionalProperties, "reservedUntil")
+		delete(additionalProperties, "workflowType")
+		delete(additionalProperties, "workflowPayload")
+		delete(additionalProperties, "state")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordWorkflow struct {

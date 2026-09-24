@@ -145,7 +145,16 @@ export interface TgvalidatordSignedWhitelistedContractAddressEnvelope {
      * @memberof TgvalidatordSignedWhitelistedContractAddressEnvelope
      */
     rulesSignatures?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordSignedWhitelistedContractAddressEnvelope
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordSignedWhitelistedContractAddressEnvelopeWireKeys: ReadonlySet<string> = new Set(['id', 'tenantId', 'signedContractAddress', 'metadata', 'action', 'trails', 'rulesContainer', 'rule', 'approvers', 'attributes', 'status', 'blockchain', 'network', 'businessRuleEnabled', 'rulesSignatures']);
 
 /**
  * Check if a given object implements the TgvalidatordSignedWhitelistedContractAddressEnvelope interface.
@@ -162,7 +171,7 @@ export function TgvalidatordSignedWhitelistedContractAddressEnvelopeFromJSONType
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordSignedWhitelistedContractAddressEnvelope = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'tenantId': json['tenantId'] == null ? undefined : json['tenantId'],
@@ -180,6 +189,16 @@ export function TgvalidatordSignedWhitelistedContractAddressEnvelopeFromJSONType
         'businessRuleEnabled': json['businessRuleEnabled'] == null ? undefined : json['businessRuleEnabled'],
         'rulesSignatures': json['rulesSignatures'] == null ? undefined : json['rulesSignatures'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordSignedWhitelistedContractAddressEnvelopeWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordSignedWhitelistedContractAddressEnvelopeToJSON(json: any): TgvalidatordSignedWhitelistedContractAddressEnvelope {
@@ -208,6 +227,7 @@ export function TgvalidatordSignedWhitelistedContractAddressEnvelopeFromJSONType
         'network': value['network'],
         'businessRuleEnabled': value['businessRuleEnabled'],
         'rulesSignatures': value['rulesSignatures'],
+        ...value['additionalProperties'],
     };
 }
 

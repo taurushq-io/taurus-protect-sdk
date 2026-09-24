@@ -25,7 +25,16 @@ export interface TgvalidatordValidateAuthenticationReply {
      * @memberof TgvalidatordValidateAuthenticationReply
      */
     jwt?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordValidateAuthenticationReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordValidateAuthenticationReplyWireKeys: ReadonlySet<string> = new Set(['jwt']);
 
 /**
  * Check if a given object implements the TgvalidatordValidateAuthenticationReply interface.
@@ -42,10 +51,20 @@ export function TgvalidatordValidateAuthenticationReplyFromJSONTyped(json: any, 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordValidateAuthenticationReply = {
         
         'jwt': json['jwt'] == null ? undefined : json['jwt'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordValidateAuthenticationReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordValidateAuthenticationReplyToJSON(json: any): TgvalidatordValidateAuthenticationReply {
@@ -60,6 +79,7 @@ export function TgvalidatordValidateAuthenticationReplyFromJSONTyped(json: any, 
     return {
         
         'jwt': value['jwt'],
+        ...value['additionalProperties'],
     };
 }
 

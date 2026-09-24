@@ -33,7 +33,16 @@ export interface TgvalidatordTERC721StandaloneContractTemplate {
      * @memberof TgvalidatordTERC721StandaloneContractTemplate
      */
     evm?: TgvalidatordEVMContractTemplateParams;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTERC721StandaloneContractTemplate
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTERC721StandaloneContractTemplateWireKeys: ReadonlySet<string> = new Set(['evm']);
 
 /**
  * Check if a given object implements the TgvalidatordTERC721StandaloneContractTemplate interface.
@@ -50,10 +59,20 @@ export function TgvalidatordTERC721StandaloneContractTemplateFromJSONTyped(json:
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTERC721StandaloneContractTemplate = {
         
         'evm': json['evm'] == null ? undefined : TgvalidatordEVMContractTemplateParamsFromJSON(json['evm']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTERC721StandaloneContractTemplateWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTERC721StandaloneContractTemplateToJSON(json: any): TgvalidatordTERC721StandaloneContractTemplate {
@@ -68,6 +87,7 @@ export function TgvalidatordTERC721StandaloneContractTemplateFromJSONTyped(json:
     return {
         
         'evm': TgvalidatordEVMContractTemplateParamsToJSON(value['evm']),
+        ...value['additionalProperties'],
     };
 }
 

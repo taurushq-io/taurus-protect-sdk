@@ -13,7 +13,6 @@ package openapi
 import (
 	"encoding/json"
 	"time"
-	"bytes"
 	"fmt"
 )
 
@@ -28,6 +27,7 @@ type TgvalidatordCreateSettlementRequest struct {
 	SecondLegAssets []TgvalidatordTnSettlementAssetTransfer `json:"secondLegAssets"`
 	Clips []CreateSettlementRequestClipRequest `json:"clips,omitempty"`
 	StartExecutionDate *time.Time `json:"startExecutionDate,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateSettlementRequest TgvalidatordCreateSettlementRequest
@@ -233,6 +233,11 @@ func (o TgvalidatordCreateSettlementRequest) ToMap() (map[string]interface{}, er
 	if !IsNil(o.StartExecutionDate) {
 		toSerialize["startExecutionDate"] = o.StartExecutionDate
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -263,15 +268,25 @@ func (o *TgvalidatordCreateSettlementRequest) UnmarshalJSON(data []byte) (err er
 
 	varTgvalidatordCreateSettlementRequest := _TgvalidatordCreateSettlementRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateSettlementRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateSettlementRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateSettlementRequest(varTgvalidatordCreateSettlementRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "targetParticipantID")
+		delete(additionalProperties, "firstLegParticipantID")
+		delete(additionalProperties, "firstLegAssets")
+		delete(additionalProperties, "secondLegAssets")
+		delete(additionalProperties, "clips")
+		delete(additionalProperties, "startExecutionDate")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

@@ -31,7 +31,16 @@ export interface TgvalidatordInternalAddressDetails {
      * @memberof TgvalidatordInternalAddressDetails
      */
     blockchainAddressID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordInternalAddressDetails
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordInternalAddressDetailsWireKeys: ReadonlySet<string> = new Set(['address', 'blockchainAddressID']);
 
 /**
  * Check if a given object implements the TgvalidatordInternalAddressDetails interface.
@@ -48,11 +57,21 @@ export function TgvalidatordInternalAddressDetailsFromJSONTyped(json: any, ignor
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordInternalAddressDetails = {
         
         'address': json['address'] == null ? undefined : json['address'],
         'blockchainAddressID': json['blockchainAddressID'] == null ? undefined : json['blockchainAddressID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordInternalAddressDetailsWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordInternalAddressDetailsToJSON(json: any): TgvalidatordInternalAddressDetails {
@@ -68,6 +87,7 @@ export function TgvalidatordInternalAddressDetailsFromJSONTyped(json: any, ignor
         
         'address': value['address'],
         'blockchainAddressID': value['blockchainAddressID'],
+        ...value['additionalProperties'],
     };
 }
 

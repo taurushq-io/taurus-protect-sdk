@@ -25,7 +25,10 @@ type TgvalidatordTransactionScore struct {
 	Type *string `json:"type,omitempty"`
 	Score *string `json:"score,omitempty"`
 	UpdateDate *time.Time `json:"updateDate,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTransactionScore TgvalidatordTransactionScore
 
 // NewTgvalidatordTransactionScore instantiates a new TgvalidatordTransactionScore object
 // This constructor will assign default values to properties that have it defined,
@@ -229,7 +232,37 @@ func (o TgvalidatordTransactionScore) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.UpdateDate) {
 		toSerialize["updateDate"] = o.UpdateDate
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTransactionScore) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTransactionScore := _TgvalidatordTransactionScore{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTransactionScore)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTransactionScore(varTgvalidatordTransactionScore)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "provider")
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "score")
+		delete(additionalProperties, "updateDate")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTransactionScore struct {

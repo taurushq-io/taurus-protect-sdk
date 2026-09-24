@@ -254,7 +254,16 @@ export interface TgvalidatordBlockchainContractTemplate {
      * @memberof TgvalidatordBlockchainContractTemplate
      */
     smartPyFA2NFT?: TgvalidatordSmartPyFA2NFTContractTemplate;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordBlockchainContractTemplate
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordBlockchainContractTemplateWireKeys: ReadonlySet<string> = new Set(['customEVM', 'cmta20Token', 'cmta20RuleEngine', 'cmta20KycRule', 'erc1400UniversalToken', 'erc2771ProxyAdmin', 'transparentUpgradeableProxy', 'cmtatToken', 'cmtatStandalone', 'cmtatUpgradeable', 'terc1155A', 'terc20Standalone', 'terc20Upgradeable', 'terc721Standalone', 'terc721Upgradeable', 'customXTZ', 'smartPyFA12Token', 'smartPyFA2NFT']);
 
 /**
  * Check if a given object implements the TgvalidatordBlockchainContractTemplate interface.
@@ -271,7 +280,7 @@ export function TgvalidatordBlockchainContractTemplateFromJSONTyped(json: any, i
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordBlockchainContractTemplate = {
         
         'customEVM': json['customEVM'] == null ? undefined : TgvalidatordCustomEVMContractTemplateFromJSON(json['customEVM']),
         'cmta20Token': json['cmta20Token'] == null ? undefined : TgvalidatordCMTA20TokenContractTemplateFromJSON(json['cmta20Token']),
@@ -292,6 +301,16 @@ export function TgvalidatordBlockchainContractTemplateFromJSONTyped(json: any, i
         'smartPyFA12Token': json['smartPyFA12Token'] == null ? undefined : TgvalidatordSmartPyFA12TokenContractTemplateFromJSON(json['smartPyFA12Token']),
         'smartPyFA2NFT': json['smartPyFA2NFT'] == null ? undefined : TgvalidatordSmartPyFA2NFTContractTemplateFromJSON(json['smartPyFA2NFT']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordBlockchainContractTemplateWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordBlockchainContractTemplateToJSON(json: any): TgvalidatordBlockchainContractTemplate {
@@ -323,6 +342,7 @@ export function TgvalidatordBlockchainContractTemplateFromJSONTyped(json: any, i
         'customXTZ': TgvalidatordCustomXTZContractTemplateToJSON(value['customXTZ']),
         'smartPyFA12Token': TgvalidatordSmartPyFA12TokenContractTemplateToJSON(value['smartPyFA12Token']),
         'smartPyFA2NFT': TgvalidatordSmartPyFA2NFTContractTemplateToJSON(value['smartPyFA2NFT']),
+        ...value['additionalProperties'],
     };
 }
 

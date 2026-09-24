@@ -25,15 +25,21 @@ import com.google.gson.stream.JsonWriter;
 
 /**
  * Gets or Sets ProofOfReserveReserveType
+ * <p>
+ * An open set of values: a value this client was not generated with is kept as-is, so
+ * {@link #fromValue} never throws and a new server value cannot fail a whole decode.
  */
 @JsonAdapter(ProofOfReserveReserveType.Adapter.class)
-public enum ProofOfReserveReserveType {
+public final class ProofOfReserveReserveType {
   
-  ADA("ADA");
+  public static final ProofOfReserveReserveType ADA = new ProofOfReserveReserveType("ADA");
+  
 
-  private String value;
+  private static final ProofOfReserveReserveType[] knownValues = { ADA };
 
-  ProofOfReserveReserveType(String value) {
+  private final String value;
+
+  private ProofOfReserveReserveType(String value) {
     this.value = value;
   }
 
@@ -41,18 +47,53 @@ public enum ProofOfReserveReserveType {
     return value;
   }
 
+  /**
+   * Returns the values this client was generated with.
+   *
+   * @return a new array of the known values
+   */
+  public static ProofOfReserveReserveType[] values() {
+    return knownValues.clone();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    return Objects.equals(value, ((ProofOfReserveReserveType) o).value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(value);
+  }
+
   @Override
   public String toString() {
     return String.valueOf(value);
   }
 
+  /**
+   * Returns the known constant for a value, or a new instance carrying a value this client
+   * does not know. Never throws.
+   *
+   * @param value the wire value
+   * @return the matching instance, or null for a null value
+   */
   public static ProofOfReserveReserveType fromValue(String value) {
-    for (ProofOfReserveReserveType b : ProofOfReserveReserveType.values()) {
+    if (value == null) {
+      return null;
+    }
+    for (ProofOfReserveReserveType b : knownValues) {
       if (b.value.equals(value)) {
         return b;
       }
     }
-    throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    return new ProofOfReserveReserveType(value);
   }
 
   public static class Adapter extends TypeAdapter<ProofOfReserveReserveType> {

@@ -136,7 +136,16 @@ export interface TgvalidatordCreateAddressToAddressTransferOutgoingRequestReques
      * @memberof TgvalidatordCreateAddressToAddressTransferOutgoingRequestRequest
      */
     opts?: TgvalidatordBlockchainOpts;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateAddressToAddressTransferOutgoingRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateAddressToAddressTransferOutgoingRequestRequestWireKeys: ReadonlySet<string> = new Set(['amount', 'currency', 'fromAddress', 'toAddress', 'feeLimit', 'gasLimit', 'comment', 'useUnconfirmedFunds', 'feePaidByReceiver', 'transactionComment', 'useAllFunds', 'feePayerId', 'extendedAmount', 'transactionReference', 'externalRequestId', 'destinationAddressMemo', 'opts']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateAddressToAddressTransferOutgoingRequestRequest interface.
@@ -155,7 +164,7 @@ export function TgvalidatordCreateAddressToAddressTransferOutgoingRequestRequest
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateAddressToAddressTransferOutgoingRequestRequest = {
         
         'amount': json['amount'] == null ? undefined : json['amount'],
         'currency': json['currency'] == null ? undefined : json['currency'],
@@ -175,6 +184,16 @@ export function TgvalidatordCreateAddressToAddressTransferOutgoingRequestRequest
         'destinationAddressMemo': json['destinationAddressMemo'] == null ? undefined : json['destinationAddressMemo'],
         'opts': json['opts'] == null ? undefined : TgvalidatordBlockchainOptsFromJSON(json['opts']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateAddressToAddressTransferOutgoingRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateAddressToAddressTransferOutgoingRequestRequestToJSON(json: any): TgvalidatordCreateAddressToAddressTransferOutgoingRequestRequest {
@@ -205,6 +224,7 @@ export function TgvalidatordCreateAddressToAddressTransferOutgoingRequestRequest
         'externalRequestId': value['externalRequestId'],
         'destinationAddressMemo': value['destinationAddressMemo'],
         'opts': TgvalidatordBlockchainOptsToJSON(value['opts']),
+        ...value['additionalProperties'],
     };
 }
 

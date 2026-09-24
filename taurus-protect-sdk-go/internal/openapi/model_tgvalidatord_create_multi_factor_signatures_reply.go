@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordCreateMultiFactorSignaturesReply{}
 // TgvalidatordCreateMultiFactorSignaturesReply struct for TgvalidatordCreateMultiFactorSignaturesReply
 type TgvalidatordCreateMultiFactorSignaturesReply struct {
 	Id *string `json:"id,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordCreateMultiFactorSignaturesReply TgvalidatordCreateMultiFactorSignaturesReply
 
 // NewTgvalidatordCreateMultiFactorSignaturesReply instantiates a new TgvalidatordCreateMultiFactorSignaturesReply object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordCreateMultiFactorSignaturesReply) ToMap() (map[string]interf
 	if !IsNil(o.Id) {
 		toSerialize["id"] = o.Id
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordCreateMultiFactorSignaturesReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordCreateMultiFactorSignaturesReply := _TgvalidatordCreateMultiFactorSignaturesReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordCreateMultiFactorSignaturesReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordCreateMultiFactorSignaturesReply(varTgvalidatordCreateMultiFactorSignaturesReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordCreateMultiFactorSignaturesReply struct {

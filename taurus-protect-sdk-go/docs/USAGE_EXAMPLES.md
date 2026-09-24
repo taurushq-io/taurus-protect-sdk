@@ -185,12 +185,9 @@ func createWalletExample(ctx context.Context, client *protect.Client) error {
 
 ```go
 func listWalletsExample(ctx context.Context, client *protect.Client) error {
-    // List all wallets with pagination
+    // List all wallets, one page at a time
     var allWallets []*model.Wallet
-    opts := &model.ListWalletsOptions{
-        Limit:  50,
-        Offset: 0,
-    }
+    opts := &model.ListWalletsOptions{Limit: 50}
 
     for {
         wallets, pagination, err := client.Wallets().ListWallets(ctx, opts)
@@ -203,7 +200,7 @@ func listWalletsExample(ctx context.Context, client *protect.Client) error {
         if !pagination.HasMore {
             break
         }
-        opts.Offset += opts.Limit
+        opts.Offset = pagination.NextOffset
     }
 
     fmt.Printf("Total wallets: %d\n", len(allWallets))
@@ -294,9 +291,10 @@ func getAddressExample(ctx context.Context, client *protect.Client, addressID st
 
 ```go
 func listAddressesExample(ctx context.Context, client *protect.Client, walletID string) error {
-    addresses, pagination, err := client.Addresses().ListAddresses(ctx, walletID, &model.ListAddressesOptions{
-        Limit:  100,
-        Offset: 0,
+    addresses, pagination, err := client.Addresses().ListAddresses(ctx, &model.ListAddressesOptions{
+        WalletID:        walletID,
+        Limit:           100,
+        ExcludeDisabled: true, // includeDisabledAddresses=exclude
     })
     if err != nil {
         return fmt.Errorf("list addresses: %w", err)
@@ -386,22 +384,27 @@ func completeApprovalFlow(ctx context.Context, client *protect.Client, userPriva
 
 ```go
 func listPendingRequestsExample(ctx context.Context, client *protect.Client) error {
-    requests, _, err := client.Requests().ListRequests(ctx, &model.ListRequestsOptions{
-        Limit:  100,
-        Status: "APPROVING",
-    })
-    if err != nil {
-        return fmt.Errorf("list requests: %w", err)
+    // The approval queue filters by IDs, Types and Currency only.
+    opts := &model.ListRequestsOptions{PageSize: 100}
+    for {
+        result, err := client.Requests().ListRequestsForApproval(ctx, opts)
+        if err != nil {
+            return fmt.Errorf("list requests: %w", err)
+        }
+
+        for _, req := range result.Requests {
+            fmt.Printf("  %s: %s %s (needs approval from: %v)\n",
+                req.ID, req.Currency, req.Type, req.NeedsApprovalFrom)
+        }
+        if len(result.ExcludedUnverified) > 0 {
+            fmt.Printf("  withheld (metadata did not verify): %v\n", result.ExcludedUnverified)
+        }
+
+        if !result.Page.HasMore {
+            return nil
+        }
+        opts.Cursor = result.Page.NextCursor
     }
-
-    fmt.Printf("Found %d pending requests\n", len(requests))
-
-    for _, req := range requests {
-        fmt.Printf("  %s: %s %s (needs approval from: %v)\n",
-            req.ID, req.Currency, req.Type, req.NeedsApprovalFrom)
-    }
-
-    return nil
 }
 ```
 
@@ -442,8 +445,8 @@ func queryTransactionsExample(ctx context.Context, client *protect.Client) error
 
     txs, pagination, err := client.Transactions().ListTransactions(ctx, &model.ListTransactionsOptions{
         Limit:     100,
-        From:      from,
-        To:        to,
+        FromDate:  &from,
+        ToDate:    &to,
         Currency:  "ETH",
         Direction: "outgoing",
     })
@@ -474,23 +477,29 @@ func queryTransactionsExample(ctx context.Context, client *protect.Client) error
 
 ```go
 func getBalancesExample(ctx context.Context, client *protect.Client) error {
-    // Get all asset balances for the tenant
-    result, err := client.Balances().GetBalances(ctx, &model.GetBalancesOptions{
-        Limit: 100,
-    })
-    if err != nil {
-        return fmt.Errorf("get balances: %w", err)
-    }
-
-    fmt.Printf("Total assets: %d\n", result.Total)
-    for _, assetBalance := range result.Balances {
-        if assetBalance.Asset != nil && assetBalance.Balance != nil {
-            fmt.Printf("  %s: Available=%s, Reserved=%s\n",
-                assetBalance.Asset.Currency,
-                assetBalance.Balance.AvailableConfirmed,
-                assetBalance.Balance.ReservedConfirmed,
-            )
+    // Walk every asset balance of the tenant
+    opts := &model.GetBalancesOptions{PageSize: 100}
+    for {
+        result, err := client.Balances().GetBalances(ctx, opts)
+        if err != nil {
+            return fmt.Errorf("get balances: %w", err)
         }
+        if result.Page.TotalItems != nil {
+            fmt.Printf("Total assets: %d\n", *result.Page.TotalItems)
+        }
+        for _, assetBalance := range result.Balances {
+            if assetBalance.Asset != nil && assetBalance.Balance != nil {
+                fmt.Printf("  %s: Available=%s, Reserved=%s\n",
+                    assetBalance.Asset.Currency,
+                    assetBalance.Balance.AvailableConfirmed,
+                    assetBalance.Balance.ReservedConfirmed,
+                )
+            }
+        }
+        if !result.Page.HasMore {
+            break
+        }
+        opts.Cursor = result.Page.NextCursor
     }
 
     // Filter by currency
@@ -503,17 +512,6 @@ func getBalancesExample(ctx context.Context, client *protect.Client) error {
 
     for _, balance := range ethResult.Balances {
         fmt.Printf("ETH Balance: %s\n", balance.Balance.TotalConfirmed)
-    }
-
-    // Cursor-based pagination
-    if result.NextCursor != "" {
-        nextPage, err := client.Balances().GetBalances(ctx, &model.GetBalancesOptions{
-            Cursor: result.NextCursor,
-        })
-        if err != nil {
-            return fmt.Errorf("get next page: %w", err)
-        }
-        fmt.Printf("Next page has %d balances\n", len(nextPage.Balances))
     }
 
     return nil
@@ -553,29 +551,29 @@ func getWhitelistedAddressExample(ctx context.Context, client *protect.Client, i
 
 ```go
 func listWhitelistedAddressesExample(ctx context.Context, client *protect.Client) error {
-    // List all
-    addresses, pagination, err := client.WhitelistedAddresses().ListWhitelistedAddresses(ctx, &model.ListWhitelistedAddressesOptions{
-        Limit:  100,
-        Offset: 0,
-    })
-    if err != nil {
-        return fmt.Errorf("list whitelisted addresses: %w", err)
-    }
-
-    fmt.Printf("Found %d whitelisted addresses\n", len(addresses))
-
-    // Filter by blockchain
-    ethAddresses, _, err := client.WhitelistedAddresses().ListWhitelistedAddresses(ctx, &model.ListWhitelistedAddressesOptions{
+    // Walk every verified ETH mainnet whitelisted address
+    opts := &model.ListWhitelistedAddressesOptions{
         Limit:      100,
         Blockchain: "ETH",
         Network:    "mainnet",
-    })
-    if err != nil {
-        return fmt.Errorf("list ETH whitelisted addresses: %w", err)
     }
-
-    for _, addr := range ethAddresses {
-        fmt.Printf("  %s: %s (%s)\n", addr.Blockchain, addr.Address, addr.Name)
+    for {
+        result, err := client.WhitelistedAddresses().ListWhitelistedAddresses(ctx, opts)
+        if err != nil {
+            return fmt.Errorf("list whitelisted addresses: %w", err)
+        }
+        for _, addr := range result.Addresses {
+            fmt.Printf("  %s: %s (%s)\n", addr.Blockchain, addr.Address, addr.Label)
+        }
+        // Rows that failed verification are named, never silently dropped. They reduce
+        // TotalItems but not NextOffset, so the walk neither skips nor repeats a row.
+        for _, excluded := range result.ExcludedUnverified {
+            fmt.Printf("  withheld %s: %s\n", excluded.ID, excluded.Reason)
+        }
+        if !result.Pagination.HasMore {
+            break
+        }
+        opts.Offset = result.Pagination.NextOffset
     }
 
     return nil
@@ -635,15 +633,19 @@ func webhookExample(ctx context.Context, client *protect.Client) error {
 
 ## Pagination Patterns
 
-### Standard Pagination Loop
+Every list method takes a page size (0 selects `model.DefaultPageSize`, 20; above
+`model.MaxPageSize`, 100, is an error) and returns a page value that is never nil. Continue with
+the value the SDK returns — `NextOffset` or `NextCursor` — until `HasMore` is false. See
+[CONCEPTS.md](CONCEPTS.md#pagination) for the rules behind it.
+
+### Offset Lists
+
+Wallets, addresses, transactions, users, groups, fee payers, actions and the whitelists:
 
 ```go
 func paginationExample(ctx context.Context, client *protect.Client) error {
     var allWallets []*model.Wallet
-    opts := &model.ListWalletsOptions{
-        Limit:  50,
-        Offset: 0,
-    }
+    opts := &model.ListWalletsOptions{Limit: 50}
 
     pageNum := 0
     for {
@@ -659,7 +661,8 @@ func paginationExample(ctx context.Context, client *protect.Client) error {
         if !pagination.HasMore {
             break
         }
-        opts.Offset += opts.Limit
+        // Not Offset + Limit: some endpoints start the next page elsewhere.
+        opts.Offset = pagination.NextOffset
     }
 
     fmt.Printf("Total items retrieved: %d\n", len(allWallets))
@@ -667,67 +670,57 @@ func paginationExample(ctx context.Context, client *protect.Client) error {
 }
 ```
 
-### Concurrent Pagination (Advanced)
+### Cursor Lists
+
+Requests, changes, audit trails, business rules, balances, prices and every other list:
 
 ```go
-import (
-    "context"
-    "sync"
-
-    "github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/model"
-)
-
-func concurrentPaginationExample(ctx context.Context, client *protect.Client) ([]*model.Wallet, error) {
-    // First, get total count
-    _, pagination, err := client.Wallets().ListWallets(ctx, &model.ListWalletsOptions{
-        Limit:  1,
-        Offset: 0,
-    })
-    if err != nil {
-        return nil, err
+func cursorPaginationExample(ctx context.Context, client *protect.Client) error {
+    opts := &model.ListAuditTrailsOptions{PageSize: 100}
+    for {
+        result, err := client.Audits().ListAuditTrails(ctx, opts)
+        if err != nil {
+            return err
+        }
+        for _, trail := range result.AuditTrails {
+            fmt.Printf("  %s %s\n", trail.Entity, trail.Action)
+        }
+        if !result.Page.HasMore {
+            return nil
+        }
+        // Opaque: never build or modify a cursor.
+        opts.Cursor = result.Page.NextCursor
     }
-
-    totalItems := pagination.TotalItems
-    pageSize := int64(100)
-    numPages := (totalItems + pageSize - 1) / pageSize
-
-    results := make([][]*model.Wallet, numPages)
-    var wg sync.WaitGroup
-    errChan := make(chan error, numPages)
-
-    for i := int64(0); i < numPages; i++ {
-        wg.Add(1)
-        go func(pageIdx int64) {
-            defer wg.Done()
-
-            wallets, _, err := client.Wallets().ListWallets(ctx, &model.ListWalletsOptions{
-                Limit:  pageSize,
-                Offset: pageIdx * pageSize,
-            })
-            if err != nil {
-                errChan <- err
-                return
-            }
-            results[pageIdx] = wallets
-        }(i)
-    }
-
-    wg.Wait()
-    close(errChan)
-
-    if err := <-errChan; err != nil {
-        return nil, err
-    }
-
-    // Flatten results
-    var allWallets []*model.Wallet
-    for _, page := range results {
-        allWallets = append(allWallets, page...)
-    }
-
-    return allWallets, nil
 }
 ```
+
+Wallet tokens and governance rules history are walked the same way; their `Page.TotalItems`
+carries the server's total:
+
+```go
+func walletTokensExample(ctx context.Context, client *protect.Client, walletID string) error {
+    opts := &model.GetWalletTokensOptions{PageSize: 100}
+    for {
+        result, err := client.Wallets().GetWalletTokens(ctx, walletID, opts)
+        if err != nil {
+            return err
+        }
+        for _, token := range result.Tokens {
+            fmt.Printf("  %s\n", token.Asset.Currency)
+        }
+        if !result.Page.HasMore {
+            return nil
+        }
+        opts.Cursor = result.Page.NextCursor
+    }
+}
+```
+
+### Walk Sequentially
+
+Fetch pages one after another. Precomputing offsets to fetch pages concurrently is not safe:
+several endpoints start the next page somewhere other than `Offset + Limit`, and cursors exist
+only once the previous page has been read.
 
 ---
 
@@ -917,7 +910,7 @@ func cancellationExample(client *protect.Client) error {
         if !pagination.HasMore {
             break
         }
-        opts.Offset += opts.Limit
+        opts.Offset = pagination.NextOffset
     }
 
     fmt.Printf("Retrieved %d wallets\n", len(allWallets))

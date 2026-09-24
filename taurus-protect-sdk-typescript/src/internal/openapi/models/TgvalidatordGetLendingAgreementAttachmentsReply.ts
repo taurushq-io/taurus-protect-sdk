@@ -33,7 +33,16 @@ export interface TgvalidatordGetLendingAgreementAttachmentsReply {
      * @memberof TgvalidatordGetLendingAgreementAttachmentsReply
      */
     result?: Array<TgvalidatordLendingAgreementAttachment>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetLendingAgreementAttachmentsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetLendingAgreementAttachmentsReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetLendingAgreementAttachmentsReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetLendingAgreementAttachmentsReplyFromJSONTyped(jso
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetLendingAgreementAttachmentsReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordLendingAgreementAttachmentFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetLendingAgreementAttachmentsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetLendingAgreementAttachmentsReplyToJSON(json: any): TgvalidatordGetLendingAgreementAttachmentsReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetLendingAgreementAttachmentsReplyFromJSONTyped(jso
     return {
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordLendingAgreementAttachmentToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

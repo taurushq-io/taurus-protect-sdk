@@ -25,7 +25,10 @@ type TgvalidatordGetNEARValidatorInfoReply struct {
 	RewardFeeFraction *float32 `json:"rewardFeeFraction,omitempty"`
 	StakingKey *string `json:"stakingKey,omitempty"`
 	IsStakingPaused *bool `json:"isStakingPaused,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetNEARValidatorInfoReply TgvalidatordGetNEARValidatorInfoReply
 
 // NewTgvalidatordGetNEARValidatorInfoReply instantiates a new TgvalidatordGetNEARValidatorInfoReply object
 // This constructor will assign default values to properties that have it defined,
@@ -264,7 +267,38 @@ func (o TgvalidatordGetNEARValidatorInfoReply) ToMap() (map[string]interface{}, 
 	if !IsNil(o.IsStakingPaused) {
 		toSerialize["isStakingPaused"] = o.IsStakingPaused
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetNEARValidatorInfoReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetNEARValidatorInfoReply := _TgvalidatordGetNEARValidatorInfoReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetNEARValidatorInfoReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetNEARValidatorInfoReply(varTgvalidatordGetNEARValidatorInfoReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "validatorAddress")
+		delete(additionalProperties, "ownerId")
+		delete(additionalProperties, "totalStakedBalance")
+		delete(additionalProperties, "rewardFeeFraction")
+		delete(additionalProperties, "stakingKey")
+		delete(additionalProperties, "isStakingPaused")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetNEARValidatorInfoReply struct {

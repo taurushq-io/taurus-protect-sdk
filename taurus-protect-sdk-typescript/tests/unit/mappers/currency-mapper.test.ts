@@ -3,6 +3,7 @@
  */
 
 import { currencyFromDto, currenciesFromDto } from '../../../src/mappers/currency';
+import { TgvalidatordCurrencyFromJSON } from '../../../src/internal/openapi/models/TgvalidatordCurrency';
 
 describe('currencyFromDto', () => {
   it('should map all fields from DTO', () => {
@@ -63,6 +64,11 @@ describe('currencyFromDto', () => {
     expect(result!.displayName).toBeDefined();
     expect(result!.isAccountBased).toBe(true);
     expect(result!.hasStaking).toBe(true);
+  });
+
+  it('should read the token id from the wire field tokenID', () => {
+    const dto = TgvalidatordCurrencyFromJSON({ id: 'NFT-1', symbol: 'NFT', tokenID: '7' });
+    expect(currencyFromDto(dto)?.tokenId).toBe('7');
   });
 
   it('should return undefined for null input', () => {

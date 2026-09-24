@@ -70,6 +70,7 @@ public interface TaurusNetworkMapper {
      */
     @Mapping(target = "pledges", source = "pledges")
     @Mapping(target = "cursor", source = "cursor")
+    @Mapping(target = "page", ignore = true)
     PledgeResult fromPledgesReply(TgvalidatordGetPledgesReply reply);
 
     /**
@@ -87,6 +88,7 @@ public interface TaurusNetworkMapper {
      */
     @Mapping(target = "withdrawals", source = "withdrawals")
     @Mapping(target = "cursor", source = "cursor")
+    @Mapping(target = "page", ignore = true)
     PledgeWithdrawalResult fromPledgeWithdrawalsReply(TgvalidatordGetPledgesWithdrawalsReply reply);
 
     /**
@@ -104,6 +106,7 @@ public interface TaurusNetworkMapper {
      */
     @Mapping(target = "sharedAddresses", source = "sharedAddresses")
     @Mapping(target = "cursor", source = "cursor")
+    @Mapping(target = "page", ignore = true)
     SharedAddressResult fromSharedAddressesReply(TgvalidatordGetSharedAddressesReply reply);
 
     /**
@@ -121,6 +124,7 @@ public interface TaurusNetworkMapper {
      */
     @Mapping(target = "settlements", source = "result")
     @Mapping(target = "cursor", source = "cursor")
+    @Mapping(target = "page", ignore = true)
     SettlementResult fromSettlementsReply(TgvalidatordGetSettlementsReply reply);
 
     /**
@@ -138,6 +142,7 @@ public interface TaurusNetworkMapper {
      */
     @Mapping(target = "offers", source = "lendingOffers")
     @Mapping(target = "cursor", source = "cursor")
+    @Mapping(target = "page", ignore = true)
     LendingOfferResult fromLendingOffersReply(TgvalidatordGetLendingOffersReply reply);
 
     /**
@@ -155,6 +160,7 @@ public interface TaurusNetworkMapper {
      */
     @Mapping(target = "agreements", source = "lendingAgreements")
     @Mapping(target = "cursor", source = "cursor")
+    @Mapping(target = "page", ignore = true)
     LendingAgreementResult fromLendingAgreementsReply(TgvalidatordGetLendingAgreementsReply reply);
 
     /**

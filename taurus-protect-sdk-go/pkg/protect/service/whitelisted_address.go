@@ -115,56 +115,55 @@ func (s *WhitelistedAddressService) GetWhitelistedAddress(ctx context.Context, i
 //   - rows came back but none survived — a filtered page must never read as an
 //     empty whitelist
 func (s *WhitelistedAddressService) ListWhitelistedAddresses(ctx context.Context, opts *model.ListWhitelistedAddressesOptions) (*model.WhitelistedAddressResult, error) {
-	req := s.api.WhitelistServiceGetWhitelistedAddresses(ctx)
+	if opts == nil {
+		opts = &model.ListWhitelistedAddressesOptions{}
+	}
+	window, err := resolveOffsetWindow(opts.Limit, opts.Offset)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if opts.Limit > 0 {
-			req = req.Limit(fmt.Sprintf("%d", opts.Limit))
-		}
-		if opts.Offset > 0 {
-			req = req.Offset(fmt.Sprintf("%d", opts.Offset))
-		}
-		if opts.Blockchain != "" {
-			req = req.Blockchain(opts.Blockchain)
-		}
-		if opts.Network != "" {
-			req = req.Network(opts.Network)
-		}
-		// Query matches customer id, address, blockchain, label, memo and address type.
-		if opts.Query != "" {
-			req = req.Query(opts.Query)
-		}
-		// Which destinations a given wallet or address may send to.
-		if opts.AllowedForWalletID != "" {
-			req = req.AllowedForWalletId(opts.AllowedForWalletID)
-		}
-		if opts.AllowedForAddressID != "" {
-			req = req.AllowedForAddressId(opts.AllowedForAddressID)
-		}
-		if opts.TNParticipantID != "" {
-			req = req.TnParticipantID(opts.TNParticipantID)
-		}
-		if len(opts.TagIDs) > 0 {
-			req = req.TagIDs(opts.TagIDs)
-		}
-		if len(opts.ContractTypes) > 0 {
-			req = req.ContractTypes(opts.ContractTypes)
-		}
-		if len(opts.ExchangeAccountIDs) > 0 {
-			req = req.ExchangeAccountIds(opts.ExchangeAccountIDs)
-		}
-		if opts.AddressType != "" {
-			req = req.AddressType(opts.AddressType)
-		}
-		if len(opts.IDs) > 0 {
-			req = req.Ids(opts.IDs)
-		}
-		if len(opts.Addresses) > 0 {
-			req = req.Addresses(opts.Addresses)
-		}
-		if opts.IncludeForApproval {
-			req = req.IncludeForApproval(true)
-		}
+	req := applyOffsetWindow(s.api.WhitelistServiceGetWhitelistedAddresses(ctx), window)
+	if opts.Blockchain != "" {
+		req = req.Blockchain(opts.Blockchain)
+	}
+	if opts.Network != "" {
+		req = req.Network(opts.Network)
+	}
+	// Query matches customer id, address, blockchain, label, memo and address type.
+	if opts.Query != "" {
+		req = req.Query(opts.Query)
+	}
+	// Which destinations a given wallet or address may send to.
+	if opts.AllowedForWalletID != "" {
+		req = req.AllowedForWalletId(opts.AllowedForWalletID)
+	}
+	if opts.AllowedForAddressID != "" {
+		req = req.AllowedForAddressId(opts.AllowedForAddressID)
+	}
+	if opts.TNParticipantID != "" {
+		req = req.TnParticipantID(opts.TNParticipantID)
+	}
+	if len(opts.TagIDs) > 0 {
+		req = req.TagIDs(opts.TagIDs)
+	}
+	if len(opts.ContractTypes) > 0 {
+		req = req.ContractTypes(opts.ContractTypes)
+	}
+	if len(opts.ExchangeAccountIDs) > 0 {
+		req = req.ExchangeAccountIds(opts.ExchangeAccountIDs)
+	}
+	if opts.AddressType != "" {
+		req = req.AddressType(opts.AddressType)
+	}
+	if len(opts.IDs) > 0 {
+		req = req.Ids(opts.IDs)
+	}
+	if len(opts.Addresses) > 0 {
+		req = req.Addresses(opts.Addresses)
+	}
+	if opts.IncludeForApproval {
+		req = req.IncludeForApproval(true)
 	}
 
 	// Request normalized rules containers for caching optimization
@@ -179,12 +178,23 @@ func (s *WhitelistedAddressService) ListWhitelistedAddresses(ctx context.Context
 	if err != nil {
 		return nil, err
 	}
+	pagination, err := serverRowsPagination(window, resp.Result, resp.TotalItems, len(excluded))
+	if err != nil {
+		return nil, err
+	}
 
 	return &model.WhitelistedAddressResult{
 		Addresses:          addresses,
-		Pagination:         adjustedPagination(resp.TotalItems, len(excluded), opts),
+		Pagination:         pagination,
 		ExcludedUnverified: excluded,
 	}, nil
+}
+
+// serverRowsPagination is the whitelisted-address page window: the next offset counts every row
+// the SERVER returned (rows it dropped for a bad signature are gone for good), while TotalItems
+// is reduced by the rows this SDK excluded.
+func serverRowsPagination(window offsetWindow, rows []openapi.TgvalidatordSignedWhitelistedAddressEnvelope, totalItems *string, excluded int) (*model.Pagination, error) {
+	return offsetPagination(rulePlusServerRows, window, len(rows), excluded, offsetReply{TotalItems: totalItems})
 }
 
 // ListWhitelistedAddressesForApproval retrieves whitelisted addresses awaiting approval,
@@ -200,33 +210,32 @@ func (s *WhitelistedAddressService) ListWhitelistedAddressesForApproval(
 	ctx context.Context,
 	opts *model.ListWhitelistedAddressesForApprovalOptions,
 ) (*model.WhitelistedAddressResult, error) {
-	req := s.api.WhitelistServiceGetWhitelistedAddressesForApproval(ctx)
+	if opts == nil {
+		opts = &model.ListWhitelistedAddressesForApprovalOptions{}
+	}
+	window, err := resolveOffsetWindow(opts.Limit, opts.Offset)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if opts.Limit > 0 {
-			req = req.Limit(fmt.Sprintf("%d", opts.Limit))
-		}
-		if opts.Offset > 0 {
-			req = req.Offset(fmt.Sprintf("%d", opts.Offset))
-		}
-		if len(opts.IDs) > 0 {
-			req = req.Ids(opts.IDs)
-		}
-		if opts.Blockchain != "" {
-			req = req.Blockchain(opts.Blockchain)
-		}
-		if opts.Network != "" {
-			req = req.Network(opts.Network)
-		}
-		if opts.AddressType != "" {
-			req = req.AddressType(opts.AddressType)
-		}
-		if opts.Query != "" {
-			req = req.Query(opts.Query)
-		}
-		if opts.IncludeAlreadySignedByUser {
-			req = req.IncludeAlreadySignedByUser(true)
-		}
+	req := applyOffsetWindow(s.api.WhitelistServiceGetWhitelistedAddressesForApproval(ctx), window)
+	if len(opts.IDs) > 0 {
+		req = req.Ids(opts.IDs)
+	}
+	if opts.Blockchain != "" {
+		req = req.Blockchain(opts.Blockchain)
+	}
+	if opts.Network != "" {
+		req = req.Network(opts.Network)
+	}
+	if opts.AddressType != "" {
+		req = req.AddressType(opts.AddressType)
+	}
+	if opts.Query != "" {
+		req = req.Query(opts.Query)
+	}
+	if opts.IncludeAlreadySignedByUser {
+		req = req.IncludeAlreadySignedByUser(true)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -239,15 +248,14 @@ func (s *WhitelistedAddressService) ListWhitelistedAddressesForApproval(
 	if err != nil {
 		return nil, err
 	}
-
-	var limit, offset int64
-	if opts != nil {
-		limit, offset = opts.Limit, opts.Offset
+	pagination, err := serverRowsPagination(window, resp.Result, resp.TotalItems, len(excluded))
+	if err != nil {
+		return nil, err
 	}
+
 	return &model.WhitelistedAddressResult{
-		Addresses: addresses,
-		Pagination: adjustedPagination(resp.TotalItems, len(excluded),
-			&model.ListWhitelistedAddressesOptions{Limit: limit, Offset: offset}),
+		Addresses:          addresses,
+		Pagination:         pagination,
 		ExcludedUnverified: excluded,
 	}, nil
 }
@@ -260,7 +268,7 @@ func (s *WhitelistedAddressService) ListWhitelistedAddressesForApproval(
 //
 //	verified read ─▶ Select(ids) ─▶ pinned hashes
 //	                                     │
-//	  sort ─▶ ONE filtered verified re-read ─▶ completeness ─▶ PIN MATCH ─┐
+//	  sort ─▶ id-filtered verified re-reads ─▶ completeness ─▶ PIN MATCH ─┐
 //	                                                                      ▼
 //	                                                  sign(JSON(hashes)) ─▶ POST once
 //
@@ -315,21 +323,10 @@ func (s *WhitelistedAddressService) ApproveWhitelistedAddresses(
 		return a < b
 	})
 
-	// ONE id-filtered page through the verifying list path, not one GET per id.
-	result, err := s.ListWhitelistedAddresses(ctx, &model.ListWhitelistedAddressesOptions{
-		IDs:                sortedIDs,
-		Limit:              int64(len(sortedIDs)),
-		IncludeForApproval: true,
-	})
+	// The rows being approved are pending, so the re-read includes rows awaiting approval.
+	byID, _, err := s.verifiedAddressesByID(ctx, sortedIDs, true)
 	if err != nil {
 		return fmt.Errorf("refusing to sign: the verified read failed: %w", err)
-	}
-
-	byID := make(map[string]*model.WhitelistedAddress, len(result.Addresses))
-	for _, addr := range result.Addresses {
-		if addr != nil {
-			byID[addr.ID] = addr
-		}
 	}
 
 	hashes := make([]string, 0, len(sortedIDs))
@@ -390,6 +387,41 @@ func (s *WhitelistedAddressService) ApproveWhitelistedAddresses(
 	}
 
 	return nil
+}
+
+// verifiedAddressesByID re-reads whitelisted addresses by id through the verifying list path —
+// one id-filtered page per model.MaxPageSize ids, not one GET per id — and returns the rows that
+// verified keyed by id, plus why each row the list excluded was dropped. The approval re-read and
+// the v2 asset-holders list share it. includeForApproval also returns rows awaiting approval.
+//
+// Call-level failures of the list (no verifier, an unusable container, every row of a batch
+// failing) are returned as errors; they are never turned into per-row exclusions.
+func (s *WhitelistedAddressService) verifiedAddressesByID(
+	ctx context.Context,
+	ids []string,
+	includeForApproval bool,
+) (map[string]*model.WhitelistedAddress, map[string]string, error) {
+	verified := make(map[string]*model.WhitelistedAddress, len(ids))
+	failed := make(map[string]string)
+	for _, batch := range chunkIDs(ids, model.MaxPageSize) {
+		result, err := s.ListWhitelistedAddresses(ctx, &model.ListWhitelistedAddressesOptions{
+			IDs:                batch,
+			Limit:              int64(len(batch)),
+			IncludeForApproval: includeForApproval,
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+		for _, addr := range result.Addresses {
+			if addr != nil {
+				verified[addr.ID] = addr
+			}
+		}
+		for _, excluded := range result.ExcludedUnverified {
+			failed[excluded.ID] = excluded.Reason
+		}
+	}
+	return verified, failed, nil
 }
 
 // verifiedAddresses verifies a page of address envelopes and returns the survivors plus
@@ -517,40 +549,6 @@ func (s *WhitelistedAddressService) verifiedAddresses(
 	}
 
 	return addresses, excluded, nil
-}
-
-// adjustedPagination builds the page window with TotalItems reduced by the number of
-// rows excluded for failing verification.
-//
-// The server counts rows it returned; the caller receives only the ones that verified.
-// Reporting the server's total would make TotalItems promise rows that can never be
-// read, and would let a filtered page pass for a complete one.
-//
-// HasMore is derived from the server's UNREDUCED total, because excludedCount covers
-// this page only: subtracting it from a global total ended pagination early, so a page
-// with many exclusions mid-result-set reported HasMore=false while whole further pages
-// existed (total 250, limit 100, offset 100, 60 excluded => 200 < 190 is false, yet 50
-// rows remain at offset 200).
-func adjustedPagination(totalItems *string, excludedCount int, opts *model.ListWhitelistedAddressesOptions) *model.Pagination {
-	if totalItems == nil {
-		return nil
-	}
-	pagination := &model.Pagination{}
-	var serverTotal int64
-	if total, parseErr := strconv.ParseInt(*totalItems, 10, 64); parseErr == nil {
-		serverTotal = total
-		pagination.TotalItems = total - int64(excludedCount)
-		if pagination.TotalItems < 0 {
-			pagination.TotalItems = 0
-		}
-	}
-	if opts != nil {
-		pagination.Limit = opts.Limit
-		pagination.Offset = opts.Offset
-		// Overflow-safe form; offset+limit can wrap on caller-supplied values.
-		pagination.HasMore = serverTotal > opts.Offset && serverTotal-opts.Offset > opts.Limit
-	}
-	return pagination
 }
 
 // containerVerifier is what the container caches need: steps 2-3 for one container.

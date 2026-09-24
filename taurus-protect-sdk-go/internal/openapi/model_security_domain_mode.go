@@ -32,32 +32,23 @@ var AllowedSecurityDomainModeEnumValues = []SecurityDomainMode{
 	"SAML",
 }
 
+// UnmarshalJSON keeps a value this client does not know instead of failing the whole reply;
+// IsValid reports whether it is one of the generated constants.
 func (v *SecurityDomainMode) UnmarshalJSON(src []byte) error {
 	var value string
 	err := json.Unmarshal(src, &value)
 	if err != nil {
-		return err
+		return fmt.Errorf("decoding SecurityDomainMode: %w", err)
 	}
-	enumTypeValue := SecurityDomainMode(value)
-	for _, existing := range AllowedSecurityDomainModeEnumValues {
-		if existing == enumTypeValue {
-			*v = enumTypeValue
-			return nil
-		}
-	}
-
-	return fmt.Errorf("%+v is not a valid SecurityDomainMode", value)
+	*v = SecurityDomainMode(value)
+	return nil
 }
 
-// NewSecurityDomainModeFromValue returns a pointer to a valid SecurityDomainMode
-// for the value passed as argument, or an error if the value passed is not allowed by the enum
+// NewSecurityDomainModeFromValue returns a pointer to a SecurityDomainMode holding v, known or not.
+// The error is always nil; use IsValid to tell a generated constant from a newer server value.
 func NewSecurityDomainModeFromValue(v string) (*SecurityDomainMode, error) {
 	ev := SecurityDomainMode(v)
-	if ev.IsValid() {
-		return &ev, nil
-	} else {
-		return nil, fmt.Errorf("invalid value '%v' for SecurityDomainMode: valid values are %v", v, AllowedSecurityDomainModeEnumValues)
-	}
+	return &ev, nil
 }
 
 // IsValid return true if the value is valid for the enum, false otherwise

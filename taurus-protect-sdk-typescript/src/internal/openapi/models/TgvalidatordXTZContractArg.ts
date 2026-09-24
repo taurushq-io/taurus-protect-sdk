@@ -88,7 +88,16 @@ export interface TgvalidatordXTZContractArg {
      * @memberof TgvalidatordXTZContractArg
      */
     annotations?: Array<string>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordXTZContractArg
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordXTZContractArgWireKeys: ReadonlySet<string> = new Set(['kind', 'prim', 'args', 'source', 'destination', 'string', 'int', 'bytes', 'annotations']);
 
 /**
  * Check if a given object implements the TgvalidatordXTZContractArg interface.
@@ -105,7 +114,7 @@ export function TgvalidatordXTZContractArgFromJSONTyped(json: any, ignoreDiscrim
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordXTZContractArg = {
         
         'kind': json['kind'] == null ? undefined : json['kind'],
         'prim': json['prim'] == null ? undefined : json['prim'],
@@ -117,6 +126,16 @@ export function TgvalidatordXTZContractArgFromJSONTyped(json: any, ignoreDiscrim
         'bytes': json['bytes'] == null ? undefined : json['bytes'],
         'annotations': json['annotations'] == null ? undefined : json['annotations'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordXTZContractArgWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordXTZContractArgToJSON(json: any): TgvalidatordXTZContractArg {
@@ -139,6 +158,7 @@ export function TgvalidatordXTZContractArgFromJSONTyped(json: any, ignoreDiscrim
         'int': value['_int'],
         'bytes': value['bytes'],
         'annotations': value['annotations'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -37,7 +37,16 @@ export interface TgvalidatordTransactionAttribute {
      * @memberof TgvalidatordTransactionAttribute
      */
     value?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTransactionAttribute
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTransactionAttributeWireKeys: ReadonlySet<string> = new Set(['id', 'key', 'value']);
 
 /**
  * Check if a given object implements the TgvalidatordTransactionAttribute interface.
@@ -54,12 +63,22 @@ export function TgvalidatordTransactionAttributeFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTransactionAttribute = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'key': json['key'] == null ? undefined : json['key'],
         'value': json['value'] == null ? undefined : json['value'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTransactionAttributeWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTransactionAttributeToJSON(json: any): TgvalidatordTransactionAttribute {
@@ -76,6 +95,7 @@ export function TgvalidatordTransactionAttributeFromJSONTyped(json: any, ignoreD
         'id': value['id'],
         'key': value['key'],
         'value': value['value'],
+        ...value['additionalProperties'],
     };
 }
 

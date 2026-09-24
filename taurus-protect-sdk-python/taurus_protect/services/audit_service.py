@@ -5,9 +5,9 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
-from taurus_protect.mappers.audit import audit_from_dto, audits_from_dto
+from taurus_protect.mappers.audit import audits_from_dto
 from taurus_protect.models.audit import Audit
-from taurus_protect.models.pagination import Pagination
+from taurus_protect.models.pagination import MAX_PAGE_SIZE, CursorPage, cursor_page, cursor_request
 from taurus_protect.services._base import BaseService
 
 if TYPE_CHECKING:
@@ -22,7 +22,7 @@ class AuditService(BaseService):
 
     Example:
         >>> # List audit events
-        >>> audits, pagination = client.audits.list(limit=50, offset=0)
+        >>> audits, page = client.audits.list(page_size=100)
         >>> for audit in audits:
         ...     print(f"{audit.id}: {audit.description}")
         >>>
@@ -44,46 +44,59 @@ class AuditService(BaseService):
 
     def list(
         self,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> Tuple[List[Audit], Optional[Pagination]]:
+        page_size: Optional[int] = None,
+        cursor: Optional[str] = None,
+        *,
+        external_user_id: Optional[str] = None,
+        entities: Optional[List[str]] = None,
+        actions: Optional[List[str]] = None,
+        from_date: Optional[datetime] = None,
+        to_date: Optional[datetime] = None,
+        sort_by: Optional[List[str]] = None,
+        sort_order: Optional[str] = None,
+        current_page: Optional[str] = None,
+        page_request: Optional[str] = None,
+    ) -> Tuple[List[Audit], CursorPage]:
         """
-        List audit events with pagination.
+        List audit trails, one page at a time.
 
         Args:
-            limit: Maximum number of audit events to return (must be positive).
-            offset: Number of audit events to skip (must be non-negative).
+            page_size: Page size (default 20, max 100).
+            cursor: ``page.next_cursor`` from the previous page, to continue.
+            external_user_id: Filter by external user ID.
+            entities: Filter by entity types.
+            actions: Filter by action types.
+            from_date: Only trails created at or after this date.
+            to_date: Only trails created before this date.
+            sort_by: Sort fields.
+            sort_order: ASC or DESC.
+            current_page: Low-level page token; not with ``cursor``.
+            page_request: Low-level page direction (FIRST, PREVIOUS, NEXT, LAST).
 
         Returns:
-            Tuple of (audits list, pagination info).
+            Tuple of (audits, page).
 
         Raises:
-            ValueError: If limit or offset are invalid.
+            ValueError: If the page size is invalid or cursor options conflict.
             APIError: If API request fails.
         """
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
+        req = cursor_request(
+            page_size, cursor, current_page=current_page, page_request=page_request
+        )
 
         try:
             resp = self._audit_api.audit_service_get_audit_trails(
-                cursor_page_size=str(limit),
+                external_user_id=external_user_id,
+                entities=entities,
+                actions=actions,
+                creation_date_from=from_date,
+                creation_date_to=to_date,
+                sorting_sort_by=sort_by,
+                sorting_sort_order=sort_order,
+                **req.query_params(),
             )
 
-            result = getattr(resp, "result", None)
-            audits = audits_from_dto(result) if result else []
-
-            # Extract pagination from cursor
-            cursor = getattr(resp, "cursor", None)
-            total = getattr(cursor, "total_items", None) if cursor else None
-            pagination = self._extract_pagination(
-                total_items=total,
-                offset=offset,
-                limit=limit,
-            )
-
-            return audits, pagination
+            return audits_from_dto(resp.result or []), cursor_page(req.page_size, resp.cursor)
         except Exception as e:
             from taurus_protect.errors import APIError
 
@@ -95,8 +108,8 @@ class AuditService(BaseService):
         """
         Get an audit event by ID.
 
-        Note: The underlying API does not have a direct get-by-ID endpoint.
-        This method fetches the audit list and filters by ID.
+        The API has no get-by-ID endpoint, so this walks the audit trail page by page
+        until the ID is found.
 
         Args:
             audit_id: The audit event ID to retrieve.
@@ -111,23 +124,17 @@ class AuditService(BaseService):
         """
         self._validate_required(audit_id, "audit_id")
 
-        try:
-            # The API doesn't have a direct get-by-ID endpoint
-            # Fetch from the list and find the matching audit
-            audits, _ = self.list(limit=1000)
+        from taurus_protect.errors import NotFoundError
+
+        cursor: Optional[str] = None
+        while True:
+            audits, page = self.list(page_size=MAX_PAGE_SIZE, cursor=cursor)
             for audit in audits:
                 if audit.id == audit_id:
                     return audit
-
-            from taurus_protect.errors import NotFoundError
-
-            raise NotFoundError(f"Audit {audit_id} not found")
-        except Exception as e:
-            from taurus_protect.errors import APIError, NotFoundError
-
-            if isinstance(e, (APIError, NotFoundError, ValueError)):
-                raise
-            raise self._handle_error(e) from e
+            if not page.has_more:
+                raise NotFoundError(f"Audit {audit_id} not found")
+            cursor = page.next_cursor
 
     def export_audit_trails(
         self,

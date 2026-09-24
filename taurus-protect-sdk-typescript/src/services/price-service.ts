@@ -14,11 +14,14 @@ import {
   priceHistoryPointsFromDto,
   pricesFromDto,
 } from '../mappers/price';
+import type { TgvalidatordQueryPricesV2Request } from '../internal/openapi/models/TgvalidatordQueryPricesV2Request';
+import { buildCursorPage, cursorRequest, resolvePageSize } from '../models/pagination';
 import type {
   ConversionResult,
   ConvertOptions,
   GetPriceHistoryOptions,
-  Price,
+  ListPricesOptions,
+  ListPricesResult,
   PriceHistoryPoint,
 } from '../models/price';
 import { BaseService } from './base';
@@ -32,11 +35,15 @@ import { BaseService } from './base';
  *
  * @example
  * ```typescript
- * // Get all current prices
- * const prices = await priceService.list();
- * for (const price of prices) {
- *   console.log(`${price.currencyFrom}/${price.currencyTo}: ${price.rate}`);
- * }
+ * // Get the current prices, page by page
+ * let cursor: string | undefined;
+ * do {
+ *   const page = await priceService.list({ onlyPrimary: true, cursor });
+ *   for (const price of page.items) {
+ *     console.log(`${price.currencyFrom}/${price.currencyTo}: ${price.rate}`);
+ *   }
+ *   cursor = page.pagination.hasMore ? page.pagination.nextCursor : undefined;
+ * } while (cursor);
  *
  * // Get price history for a currency pair
  * const history = await priceService.getHistory({
@@ -80,35 +87,60 @@ export class PriceService extends BaseService {
   }
 
   /**
-   * Lists all current prices.
+   * Lists a page of current prices, each verified against its signature.
    *
-   * Returns the current exchange rates for all supported currency pairs.
+   * Served by `QueryPricesV2`, a cursor list. `fromCurrencyId` alone filters on the source
+   * currency, `toCurrencyIds` alone on the target currencies, and both together on the
+   * pair; neither lists every price.
    *
-   * @returns Array of current prices
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
+   * @returns The page of verified prices and its cursor pagination
+   * @throws {@link ValidationError} If the page size is out of bounds
+   * @throws {@link IntegrityError} If a price signature does not verify
    * @throws {@link APIError} If API request fails
    *
    * @example
    * ```typescript
-   * const prices = await priceService.list();
-   * for (const price of prices) {
+   * const page = await priceService.list({
+   *   fromCurrencyId: 'ETH',
+   *   toCurrencyIds: ['USD', 'CHF'],
+   *   onlyPrimary: true,
+   * });
+   * for (const price of page.items) {
    *   console.log(`${price.currencyFrom}/${price.currencyTo}: ${price.rate}`);
    * }
    * ```
    */
-  async list(): Promise<Price[]> {
+  async list(options?: ListPricesOptions): Promise<ListPricesResult> {
+    const page = cursorRequest(options);
+    const body: TgvalidatordQueryPricesV2Request = {
+      onlyPrimary: options?.onlyPrimary,
+      sortOrder: options?.sortOrder,
+      cursor: page.cursor,
+    };
+    const from = options?.fromCurrencyId;
+    const to = options?.toCurrencyIds;
+    if (from !== undefined && to !== undefined) {
+      body.fromTo = { currencyFromId: from, currencyToIds: to };
+    } else if (from !== undefined) {
+      body.from = { currencyFromId: from };
+    } else if (to !== undefined) {
+      body.to = { currencyToIds: to };
+    }
+
     return this.execute(async () => {
-      const response = await this.pricesApi.priceServiceGetPrices();
+      const response = await this.pricesApi.priceServiceQueryPricesV2({ body });
 
-      const result =
-        (response as Record<string, unknown>).result ??
-        (response as Record<string, unknown>).prices;
-      const prices = pricesFromDto(result as unknown[]);
-
+      // Same signed CurrencyPrice rows as the v1 list, so the same verification.
+      const prices = pricesFromDto(response.result);
       if (prices.length > 0) {
         verifyPrices(prices, await this.rulesCache.get());
       }
 
-      return prices;
+      return {
+        items: prices,
+        pagination: buildCursorPage(page.pageSize, response.cursor),
+      };
     });
   }
 
@@ -118,9 +150,13 @@ export class PriceService extends BaseService {
    * Returns OHLCV (Open, High, Low, Close, Volume) candlestick data
    * for historical price analysis and charting.
    *
+   * The history cannot page: `limit` (1-365, default 20) is the number of daily points,
+   * newest first, and is always sent.
+   *
    * @param options - History options including base currency, quote currency, and limit
    * @returns Array of price history points
-   * @throws {@link ValidationError} If required parameters are missing
+   * @throws {@link ValidationError} If required parameters are missing or the limit is out
+   *   of bounds
    * @throws {@link APIError} If API request fails
    *
    * @example
@@ -142,21 +178,17 @@ export class PriceService extends BaseService {
     if (!options.quote || options.quote.trim() === '') {
       throw new ValidationError('quote is required');
     }
-    if (options.limit !== undefined && options.limit <= 0) {
-      throw new ValidationError('limit must be positive');
-    }
+    // Cannot page: the limit is the whole request, bounded by a year of daily points.
+    const limit = resolvePageSize(options.limit, 'limit', 'price_history');
 
     return this.execute(async () => {
       const response = await this.pricesApi.priceServiceGetPricesHistory({
         base: options.base,
         quote: options.quote,
-        limit: options.limit?.toString(),
+        limit: String(limit),
       });
 
-      const result =
-        (response as Record<string, unknown>).result ??
-        (response as Record<string, unknown>).points;
-      return priceHistoryPointsFromDto(result as unknown[]);
+      return priceHistoryPointsFromDto(response.result);
     });
   }
 
@@ -200,10 +232,7 @@ export class PriceService extends BaseService {
         targetCurrencyIds: options.targetCurrencyIds,
       });
 
-      const result =
-        (response as Record<string, unknown>).result ??
-        (response as Record<string, unknown>).values;
-      return conversionResultsFromDto(result as unknown[]);
+      return conversionResultsFromDto(response.result);
     });
   }
 }

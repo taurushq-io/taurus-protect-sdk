@@ -25,21 +25,27 @@ import com.google.gson.stream.JsonWriter;
 
 /**
  * Gets or Sets tgvalidatordChangeStatus
+ * <p>
+ * An open set of values: a value this client was not generated with is kept as-is, so
+ * {@link #fromValue} never throws and a new server value cannot fail a whole decode.
  */
 @JsonAdapter(TgvalidatordChangeStatus.Adapter.class)
-public enum TgvalidatordChangeStatus {
+public final class TgvalidatordChangeStatus {
   
-  CREATED("Created"),
+  public static final TgvalidatordChangeStatus CREATED = new TgvalidatordChangeStatus("Created");
   
-  APPROVED("Approved"),
+  public static final TgvalidatordChangeStatus APPROVED = new TgvalidatordChangeStatus("Approved");
   
-  REJECTED("Rejected"),
+  public static final TgvalidatordChangeStatus REJECTED = new TgvalidatordChangeStatus("Rejected");
   
-  CANCELED("Canceled");
+  public static final TgvalidatordChangeStatus CANCELED = new TgvalidatordChangeStatus("Canceled");
+  
 
-  private String value;
+  private static final TgvalidatordChangeStatus[] knownValues = { CREATED, APPROVED, REJECTED, CANCELED };
 
-  TgvalidatordChangeStatus(String value) {
+  private final String value;
+
+  private TgvalidatordChangeStatus(String value) {
     this.value = value;
   }
 
@@ -47,18 +53,53 @@ public enum TgvalidatordChangeStatus {
     return value;
   }
 
+  /**
+   * Returns the values this client was generated with.
+   *
+   * @return a new array of the known values
+   */
+  public static TgvalidatordChangeStatus[] values() {
+    return knownValues.clone();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    return Objects.equals(value, ((TgvalidatordChangeStatus) o).value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(value);
+  }
+
   @Override
   public String toString() {
     return String.valueOf(value);
   }
 
+  /**
+   * Returns the known constant for a value, or a new instance carrying a value this client
+   * does not know. Never throws.
+   *
+   * @param value the wire value
+   * @return the matching instance, or null for a null value
+   */
   public static TgvalidatordChangeStatus fromValue(String value) {
-    for (TgvalidatordChangeStatus b : TgvalidatordChangeStatus.values()) {
+    if (value == null) {
+      return null;
+    }
+    for (TgvalidatordChangeStatus b : knownValues) {
       if (b.value.equals(value)) {
         return b;
       }
     }
-    throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    return new TgvalidatordChangeStatus(value);
   }
 
   public static class Adapter extends TypeAdapter<TgvalidatordChangeStatus> {

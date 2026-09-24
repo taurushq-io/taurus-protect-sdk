@@ -73,7 +73,16 @@ export interface TgvalidatordWebhookCall {
      * @memberof TgvalidatordWebhookCall
      */
     createdAt?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordWebhookCall
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordWebhookCallWireKeys: ReadonlySet<string> = new Set(['id', 'eventId', 'webhookId', 'payload', 'status', 'statusMessage', 'attempts', 'updatedAt', 'createdAt']);
 
 /**
  * Check if a given object implements the TgvalidatordWebhookCall interface.
@@ -90,7 +99,7 @@ export function TgvalidatordWebhookCallFromJSONTyped(json: any, ignoreDiscrimina
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordWebhookCall = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'eventId': json['eventId'] == null ? undefined : json['eventId'],
@@ -102,6 +111,16 @@ export function TgvalidatordWebhookCallFromJSONTyped(json: any, ignoreDiscrimina
         'updatedAt': json['updatedAt'] == null ? undefined : (new Date(json['updatedAt'])),
         'createdAt': json['createdAt'] == null ? undefined : (new Date(json['createdAt'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordWebhookCallWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordWebhookCallToJSON(json: any): TgvalidatordWebhookCall {
@@ -124,6 +143,7 @@ export function TgvalidatordWebhookCallFromJSONTyped(json: any, ignoreDiscrimina
         'attempts': value['attempts'],
         'updatedAt': value['updatedAt'] == null ? undefined : ((value['updatedAt']).toISOString()),
         'createdAt': value['createdAt'] == null ? undefined : ((value['createdAt']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

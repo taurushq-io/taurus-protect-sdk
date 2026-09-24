@@ -82,9 +82,18 @@ export interface TgvalidatordStakeAccount {
      * @memberof TgvalidatordStakeAccount
      */
     solanaStakeAccount?: TgvalidatordSolanaStakeAccount;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordStakeAccount
+     */
+    additionalProperties?: { [key: string]: any };
 }
 
 
+
+const TgvalidatordStakeAccountWireKeys: ReadonlySet<string> = new Set(['id', 'addressId', 'accountAddress', 'createdAt', 'updatedAt', 'updatedAtBlock', 'accountType', 'solanaStakeAccount']);
 
 /**
  * Check if a given object implements the TgvalidatordStakeAccount interface.
@@ -101,7 +110,7 @@ export function TgvalidatordStakeAccountFromJSONTyped(json: any, ignoreDiscrimin
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordStakeAccount = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'addressId': json['addressId'] == null ? undefined : json['addressId'],
@@ -112,6 +121,16 @@ export function TgvalidatordStakeAccountFromJSONTyped(json: any, ignoreDiscrimin
         'accountType': json['accountType'] == null ? undefined : TgvalidatordStakeAccountTypeFromJSON(json['accountType']),
         'solanaStakeAccount': json['solanaStakeAccount'] == null ? undefined : TgvalidatordSolanaStakeAccountFromJSON(json['solanaStakeAccount']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordStakeAccountWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordStakeAccountToJSON(json: any): TgvalidatordStakeAccount {
@@ -133,6 +152,7 @@ export function TgvalidatordStakeAccountFromJSONTyped(json: any, ignoreDiscrimin
         'updatedAtBlock': value['updatedAtBlock'],
         'accountType': TgvalidatordStakeAccountTypeToJSON(value['accountType']),
         'solanaStakeAccount': TgvalidatordSolanaStakeAccountToJSON(value['solanaStakeAccount']),
+        ...value['additionalProperties'],
     };
 }
 

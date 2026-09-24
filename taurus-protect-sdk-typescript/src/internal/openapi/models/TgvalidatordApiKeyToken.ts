@@ -39,7 +39,16 @@ export interface TgvalidatordApiKeyToken {
      * @memberof TgvalidatordApiKeyToken
      */
     token?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordApiKeyToken
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordApiKeyTokenWireKeys: ReadonlySet<string> = new Set(['apiKey', 'token']);
 
 /**
  * Check if a given object implements the TgvalidatordApiKeyToken interface.
@@ -56,11 +65,21 @@ export function TgvalidatordApiKeyTokenFromJSONTyped(json: any, ignoreDiscrimina
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordApiKeyToken = {
         
         'apiKey': json['apiKey'] == null ? undefined : TgvalidatordApiKeyFromJSON(json['apiKey']),
         'token': json['token'] == null ? undefined : json['token'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordApiKeyTokenWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordApiKeyTokenToJSON(json: any): TgvalidatordApiKeyToken {
@@ -76,6 +95,7 @@ export function TgvalidatordApiKeyTokenFromJSONTyped(json: any, ignoreDiscrimina
         
         'apiKey': TgvalidatordApiKeyToJSON(value['apiKey']),
         'token': value['token'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -2,113 +2,88 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
-
-import pytest
-
+from taurus_protect._internal.openapi import BalancesApi
+from taurus_protect.models.pagination import CursorPage
 from taurus_protect.services.balance_service import BalanceService
+from tests.unit.transport_stub import StubTransport, api_client
 
 
 class TestList:
-    """Tests for BalanceService.list()."""
+    """BalanceService.list: request cursor only, with the server total."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        balances_api = MagicMock()
-        service = BalanceService(api_client=api_client, balances_api=balances_api)
-        return service, balances_api
+    def _service(self) -> BalanceService:
+        ac = api_client()
+        return BalanceService(ac, BalancesApi(ac))
 
-    def test_list_returns_balances_and_pagination(self) -> None:
-        service, api = self._make_service()
-
-        reply = MagicMock()
-        reply.balances = [MagicMock()]
-        reply.result = None
-        reply.total_items = "10"
-        api.wallet_service_get_balances.return_value = reply
-
-        with patch(
-            "taurus_protect.services.balance_service.asset_balances_from_dto",
-            return_value=[MagicMock()],
-        ):
-            balances, pagination = service.list()
+    def test_only_the_request_cursor_is_sent(self) -> None:
+        """The list sent both the legacy limit and the request cursor, and read no total."""
+        reply = {
+            "balances": [{"asset": {"currency": "ETH"}}],
+            "total": "7",
+            "cursor": {"currentPage": "n", "hasNext": True},
+        }
+        with StubTransport(reply) as transport:
+            balances, page = self._service().list(currency="ETH", page_size=1, token_id="t")
 
         assert len(balances) == 1
+        assert page == CursorPage(page_size=1, next_cursor="n", has_more=True, total_items=7)
+        assert transport.last.query == sorted(
+            [("currency", "ETH"), ("tokenId", "t"), ("requestCursor.pageSize", "1")]
+        )
 
-    def test_list_returns_empty_when_no_result(self) -> None:
-        service, api = self._make_service()
+    def test_page_two_is_reachable(self) -> None:
+        with StubTransport() as transport:
+            self._service().list(cursor="n")
 
-        reply = MagicMock()
-        reply.balances = None
-        reply.result = None
-        reply.total_items = None
-        api.wallet_service_get_balances.return_value = reply
+        assert transport.last.query == sorted(
+            [
+                ("requestCursor.currentPage", "n"),
+                ("requestCursor.pageRequest", "NEXT"),
+                ("requestCursor.pageSize", "20"),
+            ]
+        )
 
-        balances, pagination = service.list()
+    def test_empty_reply(self) -> None:
+        with StubTransport({}):
+            balances, page = self._service().list()
+
         assert balances == []
-
-    def test_list_raises_for_invalid_limit(self) -> None:
-        service, _ = self._make_service()
-
-        with pytest.raises(ValueError, match="limit must be positive"):
-            service.list(limit=0)
-
-    def test_list_raises_for_negative_offset(self) -> None:
-        service, _ = self._make_service()
-
-        with pytest.raises(ValueError, match="offset cannot be negative"):
-            service.list(offset=-1)
-
-    def test_list_passes_currency_filter(self) -> None:
-        service, api = self._make_service()
-
-        reply = MagicMock()
-        reply.balances = None
-        reply.result = None
-        reply.total_items = None
-        api.wallet_service_get_balances.return_value = reply
-
-        service.list(currency="ETH")
-
-        call_kwargs = api.wallet_service_get_balances.call_args
-        assert call_kwargs[1]["currency"] == "ETH" or call_kwargs.kwargs.get("currency") == "ETH"
+        assert page == CursorPage(page_size=20, total_items=0)
 
 
 class TestListNftCollections:
-    """Tests for BalanceService.list_nft_collections()."""
+    """list_nft_collections reads the reply's ``balances`` (it read fields that do not exist)."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        balances_api = MagicMock()
-        service = BalanceService(api_client=api_client, balances_api=balances_api)
-        return service, balances_api
+    def _service(self) -> BalanceService:
+        ac = api_client()
+        return BalanceService(ac, BalancesApi(ac))
 
-    def test_list_nft_collections_raises_for_empty_blockchain(self) -> None:
-        service, _ = self._make_service()
+    def test_rows_page_and_filters(self) -> None:
+        reply = {
+            "balances": [{"name": "c1"}, {"name": "c2"}],
+            "cursor": {"currentPage": "n", "hasNext": True},
+        }
+        with StubTransport(reply) as transport:
+            collections, page = self._service().list_nft_collections(
+                "ETH", "mainnet", page_size=2, query="apes", only_positive_balance=True
+            )
 
-        with pytest.raises(ValueError, match="blockchain"):
-            service.list_nft_collections(blockchain="", network="mainnet")
+        assert len(collections) == 2
+        assert page == CursorPage(page_size=2, next_cursor="n", has_more=True)
+        assert transport.last.query == sorted(
+            [
+                ("blockchain", "ETH"),
+                ("network", "mainnet"),
+                ("query", "apes"),
+                ("onlyPositiveBalance", "true"),
+                ("cursor.pageSize", "2"),
+            ]
+        )
 
-    def test_list_nft_collections_raises_for_empty_network(self) -> None:
-        service, _ = self._make_service()
+    def test_blockchain_and_network_are_optional(self) -> None:
+        with StubTransport() as transport:
+            self._service().list_nft_collections(cursor="n")
 
-        with pytest.raises(ValueError, match="network"):
-            service.list_nft_collections(blockchain="ETH", network="")
-
-    def test_list_nft_collections_raises_for_invalid_limit(self) -> None:
-        service, _ = self._make_service()
-
-        with pytest.raises(ValueError, match="limit must be positive"):
-            service.list_nft_collections(blockchain="ETH", network="mainnet", limit=0)
-
-    def test_list_nft_collections_returns_empty_when_no_result(self) -> None:
-        service, api = self._make_service()
-
-        reply = MagicMock()
-        reply.collections = None
-        reply.result = None
-        reply.total_items = None
-        api.wallet_service_get_nft_collection_balances.return_value = reply
-
-        balances, pagination = service.list_nft_collections("ETH", "mainnet")
-        assert balances == []
+        assert transport.last.query == sorted(
+            [("cursor.currentPage", "n"), ("cursor.pageRequest", "NEXT"), ("cursor.pageSize", "20")]
+        )

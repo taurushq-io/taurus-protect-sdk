@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, List, Optional
 
-from taurus_protect.models.pagination import Pagination
+from taurus_protect.models.pagination import cursor_request
 from taurus_protect.models.staking import StakingInfo, Validator
 from taurus_protect.services._base import BaseService
 
@@ -31,10 +31,7 @@ class StakingService(BaseService):
 
     Example:
         >>> # List ETH validators
-        >>> validators, pagination = client.staking.list_validators(
-        ...     blockchain="ETH",
-        ...     limit=50
-        ... )
+        >>> validators = client.staking.list_validators(blockchain="ETH")
         >>> for v in validators:
         ...     print(f"{v.name}: {v.commission}% commission")
         >>>
@@ -58,95 +55,44 @@ class StakingService(BaseService):
         self,
         blockchain: str,
         network: str = "mainnet",
-        limit: int = 50,
-        offset: int = 0,
-    ) -> Tuple[List[Validator], Optional[Pagination]]:
+        *,
+        ids: Optional[List[str]] = None,
+    ) -> List[Validator]:
         """
-        List validators for a blockchain.
+        List validators for a blockchain: every validator the endpoint returns.
 
-        Retrieves available validators that can be used for staking operations.
-        The specific information returned varies by blockchain.
+        Only ETH has a validators list, and it does not page; every other chain returns
+        an empty list.
 
         Args:
-            blockchain: Blockchain type (e.g., "ETH", "SOL", "ADA", "NEAR", "FTM").
+            blockchain: Blockchain type (e.g., "ETH").
             network: Network identifier (default: "mainnet").
-            limit: Maximum number of validators to return (default: 50).
-            offset: Number of validators to skip for pagination (default: 0).
+            ids: Keep only these ETH validator IDs.
 
         Returns:
-            Tuple of (validators list, pagination info).
+            Every matching validator.
 
         Raises:
-            ValueError: If blockchain is empty or limit/offset are invalid.
+            ValueError: If blockchain is empty.
             APIError: If the API request fails.
 
         Example:
-            >>> validators, pagination = client.staking.list_validators(
-            ...     blockchain="ETH",
-            ...     network="mainnet",
-            ...     limit=100
-            ... )
-            >>> print(f"Found {pagination.total_items} validators")
+            >>> validators = client.staking.list_validators(blockchain="ETH", network="mainnet")
+            >>> print(f"Found {len(validators)} validators")
         """
         self._validate_required(blockchain, "blockchain")
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
+
+        blockchain_upper = blockchain.upper()
+        if blockchain_upper != "ETH":
+            # ADA, NEAR, FTM and ICP are looked up one pool, validator or neuron at a
+            # time, and SOL has stake accounts; none has a list of validators.
+            return []
 
         try:
-            validators: List[Validator] = []
-            total_items = 0
-
-            # Different blockchains have different API methods
-            blockchain_upper = blockchain.upper()
-
-            if blockchain_upper == "ETH":
-                # Ethereum validators
-                resp = self._api.staking_service_get_eth_validators_info(
-                    network=network,
-                )
-                validators = self._map_eth_validators(resp, blockchain_upper, network)
-                total_items = len(validators)
-
-            elif blockchain_upper == "ADA":
-                # ADA stake pools - need a stake pool ID for specific info
-                # For listing, we return empty since the API requires a specific pool ID
-                validators = []
-                total_items = 0
-
-            elif blockchain_upper == "NEAR":
-                # NEAR validators - requires specific validator_id
-                validators = []
-                total_items = 0
-
-            elif blockchain_upper == "FTM":
-                # Fantom validators - requires specific validator_id
-                validators = []
-                total_items = 0
-
-            elif blockchain_upper in ("SOL", "SOLANA"):
-                # Solana stake accounts - use get_stake_accounts
-                # This returns stake account info, not validators
-                validators = []
-                total_items = 0
-
-            else:
-                # Unknown blockchain - return empty list
-                validators = []
-                total_items = 0
-
-            # Apply pagination manually since these APIs don't support it
-            paginated_validators = validators[offset : offset + limit]
-
-            pagination = self._extract_pagination(
-                total_items=total_items,
-                offset=offset,
-                limit=limit,
+            resp = self._api.staking_service_get_eth_validators_info(
+                network=network, ids=ids or None
             )
-
-            return paginated_validators, pagination
-
+            return self._map_eth_validators(resp, blockchain_upper, network)
         except Exception as e:
             from taurus_protect.errors import APIError
 
@@ -162,22 +108,10 @@ class StakingService(BaseService):
     ) -> List[Validator]:
         """Map ETH validators response to Validator models."""
         validators: List[Validator] = []
-
-        result = getattr(resp, "result", None) or getattr(resp, "validators", None)
-        if not result:
-            return validators
-
-        if isinstance(result, list):
-            for item in result:
-                validator = self._map_validator_from_dto(item, blockchain, network)
-                if validator:
-                    validators.append(validator)
-        else:
-            # Single validator response
-            validator = self._map_validator_from_dto(result, blockchain, network)
+        for item in resp.validators or []:
+            validator = self._map_validator_from_dto(item, blockchain, network)
             if validator:
                 validators.append(validator)
-
         return validators
 
     def _map_validator_from_dto(
@@ -262,24 +196,16 @@ class StakingService(BaseService):
             raise ValueError("address_id must be positive")
 
         try:
-            # Try to get stake accounts (works for SOL)
+            # Stake accounts (SOL); only the first one is read, so ask for one.
             resp = self._api.staking_service_get_stake_accounts(
                 address_id=str(address_id),
+                **cursor_request(1).query_params(),
             )
 
-            result = getattr(resp, "result", None) or getattr(resp, "stake_accounts", None)
-
-            if not result:
-                # Return empty staking info if no data
+            accounts = resp.stake_accounts or []
+            if not accounts:
                 return StakingInfo(address_id=str(address_id))
-
-            # Map the first stake account to StakingInfo
-            if isinstance(result, list) and len(result) > 0:
-                return self._map_staking_info_from_dto(result[0], address_id)
-            elif not isinstance(result, list):
-                return self._map_staking_info_from_dto(result, address_id)
-
-            return StakingInfo(address_id=str(address_id))
+            return self._map_staking_info_from_dto(accounts[0], address_id)
 
         except Exception as e:
             from taurus_protect.errors import APIError

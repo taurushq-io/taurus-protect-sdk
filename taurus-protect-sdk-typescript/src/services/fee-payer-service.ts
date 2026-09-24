@@ -11,7 +11,13 @@ import { NotFoundError, ValidationError } from '../errors';
 import type { FeePayersApi } from '../internal/openapi/apis/FeePayersApi';
 import { feePayerFromDto, feePayersFromDto } from '../mappers/fee-payer';
 import type { FeePayer, ListFeePayersOptions } from '../models/fee-payer';
+import {
+  buildOffsetPagination,
+  offsetRequest,
+  type PaginatedResult,
+} from '../models/pagination';
 import { BaseService } from './base';
+import { offsetQuery } from './paging';
 
 /**
  * Service for managing fee payers.
@@ -51,19 +57,22 @@ export class FeePayerService extends BaseService {
   }
 
   /**
-   * Lists fee payers with optional filtering.
+   * Lists a page of fee payers with optional filtering.
    *
-   * @param options - Optional filtering options
-   * @returns Array of fee payers
+   * @param options - Filters, `limit` (1-100, default 20) and `offset`
+   * @returns The page of fee payers and its pagination, including the server's total
+   * @throws {@link ValidationError} If limit or offset are out of bounds
    * @throws {@link APIError} If API request fails
    *
    * @example
    * ```typescript
-   * // List all fee payers
-   * const feePayers = await feePayerService.list();
+   * // First page
+   * const { items, pagination } = await feePayerService.list();
    *
-   * // List with pagination
-   * const page = await feePayerService.list({ limit: 10, offset: 0 });
+   * // Next page
+   * if (pagination.hasMore) {
+   *   await feePayerService.list({ offset: pagination.nextOffset });
+   * }
    *
    * // Filter by blockchain and network
    * const ethFeePayers = await feePayerService.list({
@@ -77,20 +86,22 @@ export class FeePayerService extends BaseService {
    * });
    * ```
    */
-  async list(options?: ListFeePayersOptions): Promise<FeePayer[]> {
+  async list(options?: ListFeePayersOptions): Promise<PaginatedResult<FeePayer>> {
+    const page = offsetRequest(options);
+
     return this.execute(async () => {
       const response = await this.feePayersApi.feePayerServiceGetFeePayers({
-        limit: options?.limit?.toString(),
-        offset: options?.offset?.toString(),
+        ...offsetQuery(page),
         ids: options?.ids,
         blockchain: options?.blockchain,
         network: options?.network,
       });
 
-      const result =
-        (response as Record<string, unknown>).result ??
-        (response as Record<string, unknown>).feePayers;
-      return feePayersFromDto(result as unknown[]);
+      const rows = response.result ?? [];
+      return {
+        items: feePayersFromDto(rows),
+        pagination: buildOffsetPagination('plus_rows', page, response, rows.length),
+      };
     });
   }
 
@@ -121,11 +132,7 @@ export class FeePayerService extends BaseService {
     return this.execute(async () => {
       const response = await this.feePayersApi.feePayerServiceGetFeePayer({ id });
 
-      const result =
-        (response as Record<string, unknown>).feepayer ??
-        (response as Record<string, unknown>).feePayer ??
-        (response as Record<string, unknown>).result;
-      const feePayer = feePayerFromDto(result);
+      const feePayer = feePayerFromDto(response.feepayer);
 
       if (!feePayer) {
         throw new NotFoundError(`Fee payer with id '${id}' not found`);

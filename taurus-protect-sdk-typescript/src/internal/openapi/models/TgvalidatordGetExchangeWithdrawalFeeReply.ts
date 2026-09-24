@@ -25,7 +25,16 @@ export interface TgvalidatordGetExchangeWithdrawalFeeReply {
      * @memberof TgvalidatordGetExchangeWithdrawalFeeReply
      */
     result?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetExchangeWithdrawalFeeReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetExchangeWithdrawalFeeReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetExchangeWithdrawalFeeReply interface.
@@ -42,10 +51,20 @@ export function TgvalidatordGetExchangeWithdrawalFeeReplyFromJSONTyped(json: any
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetExchangeWithdrawalFeeReply = {
         
         'result': json['result'] == null ? undefined : json['result'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetExchangeWithdrawalFeeReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetExchangeWithdrawalFeeReplyToJSON(json: any): TgvalidatordGetExchangeWithdrawalFeeReply {
@@ -60,6 +79,7 @@ export function TgvalidatordGetExchangeWithdrawalFeeReplyFromJSONTyped(json: any
     return {
         
         'result': value['result'],
+        ...value['additionalProperties'],
     };
 }
 

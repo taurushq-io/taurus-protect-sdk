@@ -33,7 +33,16 @@ export interface TgvalidatordGetTagsReply {
      * @memberof TgvalidatordGetTagsReply
      */
     result?: Array<TgvalidatordTag>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetTagsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetTagsReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetTagsReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetTagsReplyFromJSONTyped(json: any, ignoreDiscrimin
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetTagsReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordTagFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetTagsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetTagsReplyToJSON(json: any): TgvalidatordGetTagsReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetTagsReplyFromJSONTyped(json: any, ignoreDiscrimin
     return {
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordTagToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

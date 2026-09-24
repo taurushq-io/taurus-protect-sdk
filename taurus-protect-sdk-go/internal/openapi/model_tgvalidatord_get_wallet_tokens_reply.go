@@ -22,7 +22,10 @@ type TgvalidatordGetWalletTokensReply struct {
 	Balances []TgvalidatordAssetBalance `json:"balances,omitempty"`
 	Total *string `json:"total,omitempty"`
 	Next *string `json:"next,omitempty" validate:"regexp=^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=)?$"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetWalletTokensReply TgvalidatordGetWalletTokensReply
 
 // NewTgvalidatordGetWalletTokensReply instantiates a new TgvalidatordGetWalletTokensReply object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordGetWalletTokensReply) ToMap() (map[string]interface{}, error
 	if !IsNil(o.Next) {
 		toSerialize["next"] = o.Next
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetWalletTokensReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetWalletTokensReply := _TgvalidatordGetWalletTokensReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetWalletTokensReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetWalletTokensReply(varTgvalidatordGetWalletTokensReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "balances")
+		delete(additionalProperties, "total")
+		delete(additionalProperties, "next")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetWalletTokensReply struct {

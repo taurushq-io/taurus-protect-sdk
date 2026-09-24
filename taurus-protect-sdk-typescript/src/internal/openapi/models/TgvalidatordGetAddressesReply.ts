@@ -39,7 +39,22 @@ export interface TgvalidatordGetAddressesReply {
      * @memberof TgvalidatordGetAddressesReply
      */
     totalItems?: string;
+    /**
+     * The offset to get the next page. Note: the value is not always the same as the number of elements returned.
+     * @type {string}
+     * @memberof TgvalidatordGetAddressesReply
+     */
+    offset?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetAddressesReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetAddressesReplyWireKeys: ReadonlySet<string> = new Set(['result', 'totalItems', 'offset']);
 
 /**
  * Check if a given object implements the TgvalidatordGetAddressesReply interface.
@@ -56,11 +71,22 @@ export function TgvalidatordGetAddressesReplyFromJSONTyped(json: any, ignoreDisc
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetAddressesReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordAddressFromJSON)),
         'totalItems': json['totalItems'] == null ? undefined : json['totalItems'],
+        'offset': json['offset'] == null ? undefined : json['offset'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetAddressesReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetAddressesReplyToJSON(json: any): TgvalidatordGetAddressesReply {
@@ -76,6 +102,8 @@ export function TgvalidatordGetAddressesReplyFromJSONTyped(json: any, ignoreDisc
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordAddressToJSON)),
         'totalItems': value['totalItems'],
+        'offset': value['offset'],
+        ...value['additionalProperties'],
     };
 }
 

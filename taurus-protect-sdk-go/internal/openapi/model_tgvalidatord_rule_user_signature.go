@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordRuleUserSignature{}
 type TgvalidatordRuleUserSignature struct {
 	UserId *string `json:"userId,omitempty"`
 	Signature *string `json:"signature,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordRuleUserSignature TgvalidatordRuleUserSignature
 
 // NewTgvalidatordRuleUserSignature instantiates a new TgvalidatordRuleUserSignature object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordRuleUserSignature) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Signature) {
 		toSerialize["signature"] = o.Signature
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordRuleUserSignature) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordRuleUserSignature := _TgvalidatordRuleUserSignature{}
+
+	err = json.Unmarshal(data, &varTgvalidatordRuleUserSignature)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordRuleUserSignature(varTgvalidatordRuleUserSignature)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "userId")
+		delete(additionalProperties, "signature")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordRuleUserSignature struct {

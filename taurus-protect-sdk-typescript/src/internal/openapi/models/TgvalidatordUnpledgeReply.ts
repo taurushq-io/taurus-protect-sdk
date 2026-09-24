@@ -25,7 +25,16 @@ export interface TgvalidatordUnpledgeReply {
      * @memberof TgvalidatordUnpledgeReply
      */
     pledgeActionID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordUnpledgeReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordUnpledgeReplyWireKeys: ReadonlySet<string> = new Set(['pledgeActionID']);
 
 /**
  * Check if a given object implements the TgvalidatordUnpledgeReply interface.
@@ -42,10 +51,20 @@ export function TgvalidatordUnpledgeReplyFromJSONTyped(json: any, ignoreDiscrimi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordUnpledgeReply = {
         
         'pledgeActionID': json['pledgeActionID'] == null ? undefined : json['pledgeActionID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordUnpledgeReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordUnpledgeReplyToJSON(json: any): TgvalidatordUnpledgeReply {
@@ -60,6 +79,7 @@ export function TgvalidatordUnpledgeReplyFromJSONTyped(json: any, ignoreDiscrimi
     return {
         
         'pledgeActionID': value['pledgeActionID'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -37,7 +37,16 @@ export interface TgvalidatordRejectWhitelistedAddressRequest {
      * @memberof TgvalidatordRejectWhitelistedAddressRequest
      */
     ids: Array<string>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordRejectWhitelistedAddressRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordRejectWhitelistedAddressRequestWireKeys: ReadonlySet<string> = new Set(['id', 'comment', 'ids']);
 
 /**
  * Check if a given object implements the TgvalidatordRejectWhitelistedAddressRequest interface.
@@ -56,12 +65,22 @@ export function TgvalidatordRejectWhitelistedAddressRequestFromJSONTyped(json: a
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordRejectWhitelistedAddressRequest = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'comment': json['comment'],
         'ids': json['ids'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordRejectWhitelistedAddressRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordRejectWhitelistedAddressRequestToJSON(json: any): TgvalidatordRejectWhitelistedAddressRequest {
@@ -78,6 +97,7 @@ export function TgvalidatordRejectWhitelistedAddressRequestFromJSONTyped(json: a
         'id': value['id'],
         'comment': value['comment'],
         'ids': value['ids'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordInternalAddressDetails{}
 type TgvalidatordInternalAddressDetails struct {
 	Address *string `json:"address,omitempty"`
 	BlockchainAddressID *string `json:"blockchainAddressID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordInternalAddressDetails TgvalidatordInternalAddressDetails
 
 // NewTgvalidatordInternalAddressDetails instantiates a new TgvalidatordInternalAddressDetails object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordInternalAddressDetails) ToMap() (map[string]interface{}, err
 	if !IsNil(o.BlockchainAddressID) {
 		toSerialize["blockchainAddressID"] = o.BlockchainAddressID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordInternalAddressDetails) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordInternalAddressDetails := _TgvalidatordInternalAddressDetails{}
+
+	err = json.Unmarshal(data, &varTgvalidatordInternalAddressDetails)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordInternalAddressDetails(varTgvalidatordInternalAddressDetails)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "address")
+		delete(additionalProperties, "blockchainAddressID")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordInternalAddressDetails struct {

@@ -25,7 +25,16 @@ export interface TgvalidatordXLMOpts {
      * @memberof TgvalidatordXLMOpts
      */
     sponsoredByAddressID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordXLMOpts
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordXLMOptsWireKeys: ReadonlySet<string> = new Set(['SponsoredByAddressID']);
 
 /**
  * Check if a given object implements the TgvalidatordXLMOpts interface.
@@ -42,10 +51,20 @@ export function TgvalidatordXLMOptsFromJSONTyped(json: any, ignoreDiscriminator:
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordXLMOpts = {
         
         'sponsoredByAddressID': json['SponsoredByAddressID'] == null ? undefined : json['SponsoredByAddressID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordXLMOptsWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordXLMOptsToJSON(json: any): TgvalidatordXLMOpts {
@@ -60,6 +79,7 @@ export function TgvalidatordXLMOptsFromJSONTyped(json: any, ignoreDiscriminator:
     return {
         
         'SponsoredByAddressID': value['sponsoredByAddressID'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -31,7 +31,10 @@ type TgvalidatordRequestBundle struct {
 	Requests []TgvalidatordRequest `json:"requests,omitempty"`
 	Network *string `json:"network,omitempty"`
 	SignedRequestBundles []RequestBundleSignedRequestBundle `json:"signedRequestBundles,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordRequestBundle TgvalidatordRequestBundle
 
 // NewTgvalidatordRequestBundle instantiates a new TgvalidatordRequestBundle object
 // This constructor will assign default values to properties that have it defined,
@@ -410,7 +413,42 @@ func (o TgvalidatordRequestBundle) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.SignedRequestBundles) {
 		toSerialize["signedRequestBundles"] = o.SignedRequestBundles
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordRequestBundle) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordRequestBundle := _TgvalidatordRequestBundle{}
+
+	err = json.Unmarshal(data, &varTgvalidatordRequestBundle)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordRequestBundle(varTgvalidatordRequestBundle)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "tenantId")
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "details")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "creationDate")
+		delete(additionalProperties, "updateDate")
+		delete(additionalProperties, "requests")
+		delete(additionalProperties, "network")
+		delete(additionalProperties, "signedRequestBundles")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordRequestBundle struct {

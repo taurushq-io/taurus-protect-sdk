@@ -2,8 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
-	"strconv"
 
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/internal/openapi"
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/mapper"
@@ -24,24 +22,25 @@ func NewBalanceService(client *openapi.APIClient) *BalanceService {
 	}
 }
 
-// GetBalances retrieves the total balances for the tenant, for each asset.
-// An asset is identified by a full triplet of attributes: blockchain, contract number, and token ID.
+// GetBalances retrieves one page of the tenant's total balances, one per asset. An asset is
+// identified by a full triplet of attributes: blockchain, contract number, and token ID.
+// Continue with Page.NextCursor until Page.HasMore is false.
 func (s *BalanceService) GetBalances(ctx context.Context, opts *model.GetBalancesOptions) (*model.GetBalancesResult, error) {
-	req := s.api.WalletServiceGetBalances(ctx)
+	if opts == nil {
+		opts = &model.GetBalancesOptions{}
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, "", "")
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if opts.Currency != "" {
-			req = req.Currency(opts.Currency)
-		}
-		if opts.TokenID != "" {
-			req = req.TokenId(opts.TokenID)
-		}
-		if opts.Limit > 0 {
-			req = req.Limit(fmt.Sprintf("%d", opts.Limit))
-		}
-		if opts.Cursor != "" {
-			req = req.Cursor(opts.Cursor)
-		}
+	// requestCursor only: the legacy limit + bytes cursor pair is not sent.
+	req := applyRequestCursorQuery(s.api.WalletServiceGetBalances(ctx), window)
+	if opts.Currency != "" {
+		req = req.Currency(opts.Currency)
+	}
+	if opts.TokenID != "" {
+		req = req.TokenId(opts.TokenID)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -49,21 +48,12 @@ func (s *BalanceService) GetBalances(ctx context.Context, opts *model.GetBalance
 		return nil, s.errMapper.MapError(err, httpResp)
 	}
 
-	result := &model.GetBalancesResult{
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor, HasTotal: true, Total: resp.Total})
+	if err != nil {
+		return nil, err
+	}
+	return &model.GetBalancesResult{
 		Balances: mapper.AssetBalancesFromDTO(resp.Balances),
-	}
-
-	// Parse total count
-	if resp.Total != nil {
-		if total, parseErr := strconv.ParseInt(*resp.Total, 10, 64); parseErr == nil {
-			result.Total = total
-		}
-	}
-
-	// Set next cursor for pagination
-	if resp.Next != nil {
-		result.NextCursor = *resp.Next
-	}
-
-	return result, nil
+		Page:     page,
+	}, nil
 }

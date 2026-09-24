@@ -33,7 +33,16 @@ export interface TgvalidatordApprovers {
      * @memberof TgvalidatordApprovers
      */
     parallel?: Array<TgvalidatordParallelApproversGroups>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordApprovers
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordApproversWireKeys: ReadonlySet<string> = new Set(['parallel']);
 
 /**
  * Check if a given object implements the TgvalidatordApprovers interface.
@@ -50,10 +59,20 @@ export function TgvalidatordApproversFromJSONTyped(json: any, ignoreDiscriminato
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordApprovers = {
         
         'parallel': json['parallel'] == null ? undefined : ((json['parallel'] as Array<any>).map(TgvalidatordParallelApproversGroupsFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordApproversWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordApproversToJSON(json: any): TgvalidatordApprovers {
@@ -68,6 +87,7 @@ export function TgvalidatordApproversFromJSONTyped(json: any, ignoreDiscriminato
     return {
         
         'parallel': value['parallel'] == null ? undefined : ((value['parallel'] as Array<any>).map(TgvalidatordParallelApproversGroupsToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

@@ -5,6 +5,7 @@ import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
 import com.taurushq.sdk.protect.client.mapper.WebhookMapper;
 import com.taurushq.sdk.protect.client.model.ApiException;
 import com.taurushq.sdk.protect.client.model.ApiRequestCursor;
+import com.taurushq.sdk.protect.client.model.Pagination;
 import com.taurushq.sdk.protect.client.model.Webhook;
 import com.taurushq.sdk.protect.client.model.WebhookResult;
 import com.taurushq.sdk.protect.client.model.WebhookStatus;
@@ -35,8 +36,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *     "my-webhook-secret"
  * );
  *
- * // List all webhooks
- * WebhookResult result = client.getWebhookService().getWebhooks(null, null, null);
+ * // List webhooks, first page
+ * WebhookResult result = client.getWebhookService().getWebhooks(null, null, 20, null);
  * for (Webhook wh : result.getWebhooks()) {
  *     System.out.println(wh.getUrl() + " - " + wh.getStatus());
  * }
@@ -116,39 +117,45 @@ public class WebhookService {
     }
 
     /**
-     * Retrieves a paginated list of webhooks.
-     * <p>
-     * Results can be filtered by type and URL. Use the cursor for pagination.
+     * Retrieves a page of webhooks.
+     *
+     * @param type     filter by webhook type (optional)
+     * @param url      filter by webhook URL (optional)
+     * @param pageSize the page size, null or 0 for the default
+     * @param cursor   a previous page's {@code getPage().getNextCursor()}, null for the first page
+     * @return the webhooks and their page
+     * @throws ApiException             if the API call fails
+     * @throws IllegalArgumentException if the page size is out of range
+     */
+    public WebhookResult getWebhooks(final String type, final String url, final Integer pageSize,
+                                     final String cursor) throws ApiException {
+        return getWebhooks(type, url, Pagination.page(pageSize, cursor));
+    }
+
+    /**
+     * Retrieves a page of webhooks, with a low-level request cursor.
      *
      * @param type   filter by webhook type (optional)
      * @param url    filter by webhook URL (optional)
-     * @param cursor pagination cursor (optional, null for first page)
-     * @return a paginated result containing webhooks
+     * @param cursor the request cursor, null for the first page with the default size
+     * @return the webhooks and their page
      * @throws ApiException if the API call fails
      */
     public WebhookResult getWebhooks(final String type, final String url, final ApiRequestCursor cursor)
             throws ApiException {
 
-        String cursorCurrentPage = null;
-        String cursorPageRequest = null;
-        String cursorPageSize = null;
-
-        if (cursor != null) {
-            cursorCurrentPage = cursor.getCurrentPage();
-            cursorPageRequest = cursor.getPageRequest() != null ? cursor.getPageRequest().name() : null;
-            cursorPageSize = String.valueOf(cursor.getPageSize());
-        }
+        final CursorRequest page = CursorRequest.of(cursor);
 
         try {
             TgvalidatordGetWebhooksReply reply = webhooksApi.webhookServiceGetWebhooks(
                     type,
                     url,
-                    cursorCurrentPage,
-                    cursorPageRequest,
-                    cursorPageSize,
+                    page.currentPage(),
+                    page.pageRequest(),
+                    page.pageSizeParam(),
                     null  // sortOrder - use default
             );
-            return webhookMapper.fromReply(reply);
+            return page.complete(webhookMapper.fromReply(reply), PagedOperation.WEBHOOKS);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }

@@ -22,7 +22,10 @@ type TgvalidatordBTCSignMessageReply struct {
 	Address *string `json:"address,omitempty"`
 	Message *string `json:"message,omitempty"`
 	Signature *string `json:"signature,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordBTCSignMessageReply TgvalidatordBTCSignMessageReply
 
 // NewTgvalidatordBTCSignMessageReply instantiates a new TgvalidatordBTCSignMessageReply object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordBTCSignMessageReply) ToMap() (map[string]interface{}, error)
 	if !IsNil(o.Signature) {
 		toSerialize["signature"] = o.Signature
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordBTCSignMessageReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordBTCSignMessageReply := _TgvalidatordBTCSignMessageReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordBTCSignMessageReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordBTCSignMessageReply(varTgvalidatordBTCSignMessageReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "address")
+		delete(additionalProperties, "message")
+		delete(additionalProperties, "signature")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordBTCSignMessageReply struct {

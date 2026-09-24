@@ -24,7 +24,10 @@ type TgvalidatordTransactionFee struct {
 	Amount *string `json:"amount,omitempty"`
 	// Amount in the main currency unit (e.g. A BTC transaction will use the BTC value here instead of SAT)
 	AmountMainUnit *string `json:"amountMainUnit,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTransactionFee TgvalidatordTransactionFee
 
 // NewTgvalidatordTransactionFee instantiates a new TgvalidatordTransactionFee object
 // This constructor will assign default values to properties that have it defined,
@@ -158,7 +161,35 @@ func (o TgvalidatordTransactionFee) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.AmountMainUnit) {
 		toSerialize["amountMainUnit"] = o.AmountMainUnit
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTransactionFee) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTransactionFee := _TgvalidatordTransactionFee{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTransactionFee)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTransactionFee(varTgvalidatordTransactionFee)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "amountMainUnit")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTransactionFee struct {

@@ -13,12 +13,15 @@ import {
   reservationsFromDto,
   reservationUtxoFromDto,
 } from '../mappers/reservation';
+import { buildCursorPage, cursorRequest } from '../models/pagination';
 import type {
   ListReservationsOptions,
+  ListReservationsResult,
   Reservation,
   ReservationUtxo,
 } from '../models/reservation';
 import { BaseService } from './base';
+import { cursorQuery } from './paging';
 
 /**
  * Service for managing UTXO reservations.
@@ -64,19 +67,22 @@ export class ReservationService extends BaseService {
   }
 
   /**
-   * Lists all reservations with optional filtering.
+   * Lists a page of reservations with optional filtering.
    *
    * Results are sorted by the most recent reservations first.
-   * Default limit is 100 reservations.
    *
-   * @param options - Optional filtering and pagination options
-   * @returns Array of reservations
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
+   * @returns The page of reservations and its cursor pagination
+   * @throws {@link ValidationError} If the paging options are invalid
    * @throws {@link APIError} If API request fails
    *
    * @example
    * ```typescript
-   * // List all reservations
-   * const all = await reservationService.list();
+   * // First page, then the next one
+   * const first = await reservationService.list();
+   * if (first.pagination.hasMore) {
+   *   await reservationService.list({ cursor: first.pagination.nextCursor });
+   * }
    *
    * // Filter by address ID
    * const byAddress = await reservationService.list({ addressId: 'addr-123' });
@@ -87,19 +93,22 @@ export class ReservationService extends BaseService {
    * });
    * ```
    */
-  async list(options?: ListReservationsOptions): Promise<Reservation[]> {
+  async list(options?: ListReservationsOptions): Promise<ListReservationsResult> {
+    const page = cursorRequest(options);
+
     return this.execute(async () => {
       const response = await this.reservationsApi.walletServiceGetReservations({
         kind: options?.kind,
         address: options?.address,
         addressId: options?.addressId,
         kinds: options?.kinds,
-        cursorCurrentPage: options?.cursorCurrentPage,
-        cursorPageRequest: options?.cursorPageRequest,
-        cursorPageSize: options?.cursorPageSize,
+        ...cursorQuery(page),
       });
 
-      return reservationsFromDto(response.result);
+      return {
+        items: reservationsFromDto(response.result),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
+      };
     });
   }
 

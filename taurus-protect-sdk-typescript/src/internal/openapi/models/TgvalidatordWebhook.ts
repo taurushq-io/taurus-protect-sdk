@@ -61,7 +61,16 @@ export interface TgvalidatordWebhook {
      * @memberof TgvalidatordWebhook
      */
     createdAt?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordWebhook
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordWebhookWireKeys: ReadonlySet<string> = new Set(['id', 'type', 'url', 'status', 'timeoutUntil', 'updatedAt', 'createdAt']);
 
 /**
  * Check if a given object implements the TgvalidatordWebhook interface.
@@ -78,7 +87,7 @@ export function TgvalidatordWebhookFromJSONTyped(json: any, ignoreDiscriminator:
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordWebhook = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'type': json['type'] == null ? undefined : json['type'],
@@ -88,6 +97,16 @@ export function TgvalidatordWebhookFromJSONTyped(json: any, ignoreDiscriminator:
         'updatedAt': json['updatedAt'] == null ? undefined : (new Date(json['updatedAt'])),
         'createdAt': json['createdAt'] == null ? undefined : (new Date(json['createdAt'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordWebhookWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordWebhookToJSON(json: any): TgvalidatordWebhook {
@@ -108,6 +127,7 @@ export function TgvalidatordWebhookFromJSONTyped(json: any, ignoreDiscriminator:
         'timeoutUntil': value['timeoutUntil'] == null ? undefined : ((value['timeoutUntil']).toISOString()),
         'updatedAt': value['updatedAt'] == null ? undefined : ((value['updatedAt']).toISOString()),
         'createdAt': value['createdAt'] == null ? undefined : ((value['createdAt']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

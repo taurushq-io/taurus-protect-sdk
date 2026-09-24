@@ -29,7 +29,10 @@ type TgvalidatordGetICPNeuronInfoReply struct {
 	StakeE8S *string `json:"stakeE8S,omitempty"`
 	JoinedCommunityFundTimestampSeconds *string `json:"joinedCommunityFundTimestampSeconds,omitempty"`
 	KnownNeuronData *TgvalidatordICPKnownNeuronData `json:"knownNeuronData,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetICPNeuronInfoReply TgvalidatordGetICPNeuronInfoReply
 
 // NewTgvalidatordGetICPNeuronInfoReply instantiates a new TgvalidatordGetICPNeuronInfoReply object
 // This constructor will assign default values to properties that have it defined,
@@ -408,7 +411,42 @@ func (o TgvalidatordGetICPNeuronInfoReply) ToMap() (map[string]interface{}, erro
 	if !IsNil(o.KnownNeuronData) {
 		toSerialize["knownNeuronData"] = o.KnownNeuronData
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetICPNeuronInfoReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetICPNeuronInfoReply := _TgvalidatordGetICPNeuronInfoReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetICPNeuronInfoReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetICPNeuronInfoReply(varTgvalidatordGetICPNeuronInfoReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "neuronId")
+		delete(additionalProperties, "retrieveAtTimestampSeconds")
+		delete(additionalProperties, "neuronState")
+		delete(additionalProperties, "ageSeconds")
+		delete(additionalProperties, "dissolveDelaySeconds")
+		delete(additionalProperties, "votingPower")
+		delete(additionalProperties, "createdTimestampSeconds")
+		delete(additionalProperties, "stakeE8S")
+		delete(additionalProperties, "joinedCommunityFundTimestampSeconds")
+		delete(additionalProperties, "knownNeuronData")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetICPNeuronInfoReply struct {

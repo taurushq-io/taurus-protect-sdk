@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordCreateOutgoingAddressToAddressRequestBundleR
 // TgvalidatordCreateOutgoingAddressToAddressRequestBundleRequest struct for TgvalidatordCreateOutgoingAddressToAddressRequestBundleRequest
 type TgvalidatordCreateOutgoingAddressToAddressRequestBundleRequest struct {
 	Requests []TgvalidatordCreateAddressToAddressTransferOutgoingRequestRequest `json:"requests,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordCreateOutgoingAddressToAddressRequestBundleRequest TgvalidatordCreateOutgoingAddressToAddressRequestBundleRequest
 
 // NewTgvalidatordCreateOutgoingAddressToAddressRequestBundleRequest instantiates a new TgvalidatordCreateOutgoingAddressToAddressRequestBundleRequest object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordCreateOutgoingAddressToAddressRequestBundleRequest) ToMap() 
 	if !IsNil(o.Requests) {
 		toSerialize["requests"] = o.Requests
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordCreateOutgoingAddressToAddressRequestBundleRequest) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordCreateOutgoingAddressToAddressRequestBundleRequest := _TgvalidatordCreateOutgoingAddressToAddressRequestBundleRequest{}
+
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingAddressToAddressRequestBundleRequest)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordCreateOutgoingAddressToAddressRequestBundleRequest(varTgvalidatordCreateOutgoingAddressToAddressRequestBundleRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "requests")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordCreateOutgoingAddressToAddressRequestBundleRequest struct {

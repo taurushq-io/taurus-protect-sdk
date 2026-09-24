@@ -39,7 +39,16 @@ export interface TgvalidatordGetFiatProvidersReply {
      * @memberof TgvalidatordGetFiatProvidersReply
      */
     fiatProviders?: Array<TgvalidatordFiatProvider>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetFiatProvidersReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetFiatProvidersReplyWireKeys: ReadonlySet<string> = new Set(['fiatProvidersTotalValuation', 'fiatProviders']);
 
 /**
  * Check if a given object implements the TgvalidatordGetFiatProvidersReply interface.
@@ -56,11 +65,21 @@ export function TgvalidatordGetFiatProvidersReplyFromJSONTyped(json: any, ignore
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetFiatProvidersReply = {
         
         'fiatProvidersTotalValuation': json['fiatProvidersTotalValuation'] == null ? undefined : json['fiatProvidersTotalValuation'],
         'fiatProviders': json['fiatProviders'] == null ? undefined : ((json['fiatProviders'] as Array<any>).map(TgvalidatordFiatProviderFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetFiatProvidersReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetFiatProvidersReplyToJSON(json: any): TgvalidatordGetFiatProvidersReply {
@@ -76,6 +95,7 @@ export function TgvalidatordGetFiatProvidersReplyFromJSONTyped(json: any, ignore
         
         'fiatProvidersTotalValuation': value['fiatProvidersTotalValuation'],
         'fiatProviders': value['fiatProviders'] == null ? undefined : ((value['fiatProviders'] as Array<any>).map(TgvalidatordFiatProviderToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

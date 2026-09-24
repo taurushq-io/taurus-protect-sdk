@@ -31,7 +31,16 @@ export interface TgvalidatordApproveRulesProposalRequest {
      * @memberof TgvalidatordApproveRulesProposalRequest
      */
     comment: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordApproveRulesProposalRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordApproveRulesProposalRequestWireKeys: ReadonlySet<string> = new Set(['signature', 'comment']);
 
 /**
  * Check if a given object implements the TgvalidatordApproveRulesProposalRequest interface.
@@ -50,11 +59,21 @@ export function TgvalidatordApproveRulesProposalRequestFromJSONTyped(json: any, 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordApproveRulesProposalRequest = {
         
         'signature': json['signature'],
         'comment': json['comment'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordApproveRulesProposalRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordApproveRulesProposalRequestToJSON(json: any): TgvalidatordApproveRulesProposalRequest {
@@ -70,6 +89,7 @@ export function TgvalidatordApproveRulesProposalRequestFromJSONTyped(json: any, 
         
         'signature': value['signature'],
         'comment': value['comment'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -33,7 +33,16 @@ export interface WhitelistServiceCreateWhitelistedAddressAttributesBody {
      * @memberof WhitelistServiceCreateWhitelistedAddressAttributesBody
      */
     attributes: Array<TgvalidatordCreateWhitelistedAddressAttributeRequest>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof WhitelistServiceCreateWhitelistedAddressAttributesBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const WhitelistServiceCreateWhitelistedAddressAttributesBodyWireKeys: ReadonlySet<string> = new Set(['attributes']);
 
 /**
  * Check if a given object implements the WhitelistServiceCreateWhitelistedAddressAttributesBody interface.
@@ -51,10 +60,20 @@ export function WhitelistServiceCreateWhitelistedAddressAttributesBodyFromJSONTy
     if (json == null) {
         return json;
     }
-    return {
+    const result: WhitelistServiceCreateWhitelistedAddressAttributesBody = {
         
         'attributes': ((json['attributes'] as Array<any>).map(TgvalidatordCreateWhitelistedAddressAttributeRequestFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!WhitelistServiceCreateWhitelistedAddressAttributesBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function WhitelistServiceCreateWhitelistedAddressAttributesBodyToJSON(json: any): WhitelistServiceCreateWhitelistedAddressAttributesBody {
@@ -69,6 +88,7 @@ export function WhitelistServiceCreateWhitelistedAddressAttributesBodyFromJSONTy
     return {
         
         'attributes': ((value['attributes'] as Array<any>).map(TgvalidatordCreateWhitelistedAddressAttributeRequestToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

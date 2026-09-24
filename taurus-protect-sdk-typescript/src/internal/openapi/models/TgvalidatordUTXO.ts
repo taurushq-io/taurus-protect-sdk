@@ -73,7 +73,16 @@ export interface TgvalidatordUTXO {
      * @memberof TgvalidatordUTXO
      */
     valueString?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordUTXO
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordUTXOWireKeys: ReadonlySet<string> = new Set(['id', 'hash', 'outputIndex', 'script', 'value', 'blockHeight', 'reservedByRequestId', 'reservationId', 'valueString']);
 
 /**
  * Check if a given object implements the TgvalidatordUTXO interface.
@@ -90,7 +99,7 @@ export function TgvalidatordUTXOFromJSONTyped(json: any, ignoreDiscriminator: bo
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordUTXO = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'hash': json['hash'] == null ? undefined : json['hash'],
@@ -102,6 +111,16 @@ export function TgvalidatordUTXOFromJSONTyped(json: any, ignoreDiscriminator: bo
         'reservationId': json['reservationId'] == null ? undefined : json['reservationId'],
         'valueString': json['valueString'] == null ? undefined : json['valueString'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordUTXOWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordUTXOToJSON(json: any): TgvalidatordUTXO {
@@ -124,6 +143,7 @@ export function TgvalidatordUTXOFromJSONTyped(json: any, ignoreDiscriminator: bo
         'reservedByRequestId': value['reservedByRequestId'],
         'reservationId': value['reservationId'],
         'valueString': value['valueString'],
+        ...value['additionalProperties'],
     };
 }
 

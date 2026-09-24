@@ -63,7 +63,16 @@ export interface TgvalidatordGetCurrencyStatisticsHistoryRequest {
      * @memberof TgvalidatordGetCurrencyStatisticsHistoryRequest
      */
     sortOrder?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetCurrencyStatisticsHistoryRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetCurrencyStatisticsHistoryRequestWireKeys: ReadonlySet<string> = new Set(['currencies', 'intervalHours', 'from', 'to', 'limit', 'sortOrder']);
 
 /**
  * Check if a given object implements the TgvalidatordGetCurrencyStatisticsHistoryRequest interface.
@@ -82,7 +91,7 @@ export function TgvalidatordGetCurrencyStatisticsHistoryRequestFromJSONTyped(jso
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetCurrencyStatisticsHistoryRequest = {
         
         'currencies': json['currencies'] == null ? undefined : ((json['currencies'] as Array<any>).map(TgvalidatordCurrencyFilterFromJSON)),
         'intervalHours': json['intervalHours'],
@@ -91,6 +100,16 @@ export function TgvalidatordGetCurrencyStatisticsHistoryRequestFromJSONTyped(jso
         'limit': json['limit'],
         'sortOrder': json['sortOrder'] == null ? undefined : json['sortOrder'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetCurrencyStatisticsHistoryRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetCurrencyStatisticsHistoryRequestToJSON(json: any): TgvalidatordGetCurrencyStatisticsHistoryRequest {
@@ -110,6 +129,7 @@ export function TgvalidatordGetCurrencyStatisticsHistoryRequestFromJSONTyped(jso
         'to': value['to'] == null ? undefined : ((value['to']).toISOString()),
         'limit': value['limit'],
         'sortOrder': value['sortOrder'],
+        ...value['additionalProperties'],
     };
 }
 

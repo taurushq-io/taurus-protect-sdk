@@ -1,11 +1,12 @@
 package com.taurushq.sdk.protect.client.integration;
 
 import com.taurushq.sdk.protect.client.ProtectClient;
-import com.taurushq.sdk.protect.client.testutil.TestHelper;
 import com.taurushq.sdk.protect.client.model.ApiException;
 import com.taurushq.sdk.protect.client.model.SignedWhitelistedAddressEnvelope;
 import com.taurushq.sdk.protect.client.model.WhitelistException;
 import com.taurushq.sdk.protect.client.model.WhitelistedAddress;
+import com.taurushq.sdk.protect.client.model.WhitelistedAddressListResult;
+import com.taurushq.sdk.protect.client.testutil.TestHelper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -40,7 +41,7 @@ class WhitelistedAddressIntegrationTest {
     void getWhitelistedAddress() throws ApiException, WhitelistException {
         // First get a list to find a valid ID
         List<SignedWhitelistedAddressEnvelope> addresses = client.getWhitelistedAddressService()
-                .getWhitelistedAddresses(1, 0);
+                .getWhitelistedAddresses(1, 0).getEnvelopes();
 
         if (addresses.isEmpty()) {
             System.out.println("No whitelisted addresses available for testing");
@@ -61,7 +62,7 @@ class WhitelistedAddressIntegrationTest {
     @Test
     void listWhitelistedAddresses() throws ApiException, WhitelistException {
         List<SignedWhitelistedAddressEnvelope> addresses = client.getWhitelistedAddressService()
-                .getWhitelistedAddresses(10, 0);
+                .getWhitelistedAddresses(10, 0).getEnvelopes();
 
         System.out.println("Found " + addresses.size() + " whitelisted addresses");
         for (SignedWhitelistedAddressEnvelope envelope : addresses) {
@@ -75,7 +76,7 @@ class WhitelistedAddressIntegrationTest {
     @Test
     void listWhitelistedAddressesByBlockchain() throws ApiException, WhitelistException {
         List<SignedWhitelistedAddressEnvelope> ethAddresses = client.getWhitelistedAddressService()
-                .getWhitelistedAddresses(10, 0, "ETH");
+                .getWhitelistedAddresses(10, 0, "ETH").getEnvelopes();
 
         System.out.println("Found " + ethAddresses.size() + " ETH whitelisted addresses");
         for (SignedWhitelistedAddressEnvelope envelope : ethAddresses) {
@@ -90,7 +91,7 @@ class WhitelistedAddressIntegrationTest {
     @Test
     void listWhitelistedAddressesByBlockchainAndNetwork() throws ApiException, WhitelistException {
         List<SignedWhitelistedAddressEnvelope> mainnetAddresses = client.getWhitelistedAddressService()
-                .getWhitelistedAddresses(10, 0, "ETH", "mainnet");
+                .getWhitelistedAddresses(10, 0, "ETH", "mainnet").getEnvelopes();
 
         System.out.println("Found " + mainnetAddresses.size() + " ETH mainnet whitelisted addresses");
 
@@ -100,15 +101,15 @@ class WhitelistedAddressIntegrationTest {
     @Test
     void paginateAllWhitelistedAddresses() throws ApiException, WhitelistException {
         int limit = 50;
-        int offset = 0;
+        long offset = 0;
         int totalCount = 0;
 
-        List<SignedWhitelistedAddressEnvelope> addresses;
+        WhitelistedAddressListResult page;
         do {
-            addresses = client.getWhitelistedAddressService()
+            page = client.getWhitelistedAddressService()
                     .getWhitelistedAddresses(limit, offset);
 
-            for (SignedWhitelistedAddressEnvelope envelope : addresses) {
+            for (SignedWhitelistedAddressEnvelope envelope : page.getEnvelopes()) {
                 WhitelistedAddress wla = envelope.getWhitelistedAddress();
                 System.out.printf("Blockchain: %s, Network: %s, Address: %s%n",
                         wla.getBlockchain(),
@@ -117,14 +118,14 @@ class WhitelistedAddressIntegrationTest {
                 totalCount++;
             }
 
-            offset += addresses.size();
+            offset = page.getPagination().getNextOffset();
 
             // Safety limit for tests
             if (offset > 2000) {
                 System.out.println("Stopping pagination test at 2000 items");
                 break;
             }
-        } while (addresses.size() == limit);
+        } while (page.getPagination().hasMore());
 
         System.out.println("Total whitelisted addresses scanned: " + totalCount);
         assertTrue(totalCount >= 0);

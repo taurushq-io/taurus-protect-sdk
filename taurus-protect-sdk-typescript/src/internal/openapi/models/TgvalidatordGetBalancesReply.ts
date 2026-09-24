@@ -58,7 +58,16 @@ export interface TgvalidatordGetBalancesReply {
      * @memberof TgvalidatordGetBalancesReply
      */
     cursor?: TgvalidatordResponseCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetBalancesReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetBalancesReplyWireKeys: ReadonlySet<string> = new Set(['balances', 'total', 'next', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetBalancesReply interface.
@@ -75,13 +84,23 @@ export function TgvalidatordGetBalancesReplyFromJSONTyped(json: any, ignoreDiscr
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetBalancesReply = {
         
         'balances': json['balances'] == null ? undefined : ((json['balances'] as Array<any>).map(TgvalidatordAssetBalanceFromJSON)),
         'total': json['total'] == null ? undefined : json['total'],
         'next': json['next'] == null ? undefined : json['next'],
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetBalancesReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetBalancesReplyToJSON(json: any): TgvalidatordGetBalancesReply {
@@ -99,6 +118,7 @@ export function TgvalidatordGetBalancesReplyFromJSONTyped(json: any, ignoreDiscr
         'total': value['total'],
         'next': value['next'],
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
+        ...value['additionalProperties'],
     };
 }
 

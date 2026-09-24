@@ -22,7 +22,10 @@ type CreateSettlementRequestClipRequest struct {
 	Index *string `json:"index,omitempty"`
 	FirstLegAssets []TgvalidatordTnSettlementAssetTransfer `json:"firstLegAssets,omitempty"`
 	SecondLegAssets []TgvalidatordTnSettlementAssetTransfer `json:"secondLegAssets,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _CreateSettlementRequestClipRequest CreateSettlementRequestClipRequest
 
 // NewCreateSettlementRequestClipRequest instantiates a new CreateSettlementRequestClipRequest object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o CreateSettlementRequestClipRequest) ToMap() (map[string]interface{}, err
 	if !IsNil(o.SecondLegAssets) {
 		toSerialize["secondLegAssets"] = o.SecondLegAssets
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *CreateSettlementRequestClipRequest) UnmarshalJSON(data []byte) (err error) {
+	varCreateSettlementRequestClipRequest := _CreateSettlementRequestClipRequest{}
+
+	err = json.Unmarshal(data, &varCreateSettlementRequestClipRequest)
+
+	if err != nil {
+		return err
+	}
+
+	*o = CreateSettlementRequestClipRequest(varCreateSettlementRequestClipRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "index")
+		delete(additionalProperties, "firstLegAssets")
+		delete(additionalProperties, "secondLegAssets")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableCreateSettlementRequestClipRequest struct {

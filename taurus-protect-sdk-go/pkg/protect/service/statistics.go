@@ -25,27 +25,23 @@ func NewStatisticsService(client *openapi.APIClient) *StatisticsService {
 
 // ListTagStatistics retrieves a list of tag statistics with optional filtering and pagination.
 func (s *StatisticsService) ListTagStatistics(ctx context.Context, opts *model.ListTagStatisticsOptions) (*model.ListTagStatisticsResult, error) {
-	req := s.api.StatisticsServiceGetAggregatedTagStats(ctx)
+	if opts == nil {
+		opts = &model.ListTagStatisticsOptions{}
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, opts.CurrentPage, opts.PageRequest)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if opts.Query != "" {
-			req = req.Query(opts.Query)
-		}
-		if opts.SortBy != "" {
-			req = req.SortBy(opts.SortBy)
-		}
-		if opts.SortOrder != "" {
-			req = req.SortOrder(opts.SortOrder)
-		}
-		if opts.CurrentPage != "" {
-			req = req.CursorCurrentPage(opts.CurrentPage)
-		}
-		if opts.PageRequest != "" {
-			req = req.CursorPageRequest(opts.PageRequest)
-		}
-		if opts.PageSize > 0 {
-			req = req.CursorPageSize(fmt.Sprintf("%d", opts.PageSize))
-		}
+	req := applyCursorQuery(s.api.StatisticsServiceGetAggregatedTagStats(ctx), window)
+	if opts.Query != "" {
+		req = req.Query(opts.Query)
+	}
+	if opts.SortBy != "" {
+		req = req.SortBy(opts.SortBy)
+	}
+	if opts.SortOrder != "" {
+		req = req.SortOrder(opts.SortOrder)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -57,18 +53,11 @@ func (s *StatisticsService) ListTagStatistics(ctx context.Context, opts *model.L
 		TagStatistics: mapper.TagStatisticsSliceFromDTO(resp.Result),
 	}
 
-	// Parse cursor pagination info
-	if resp.Cursor != nil {
-		if resp.Cursor.CurrentPage != nil {
-			result.CurrentPage = *resp.Cursor.CurrentPage
-		}
-		if resp.Cursor.HasPrevious != nil {
-			result.HasPrevious = *resp.Cursor.HasPrevious
-		}
-		if resp.Cursor.HasNext != nil {
-			result.HasNext = *resp.Cursor.HasNext
-		}
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor})
+	if err != nil {
+		return nil, err
 	}
+	result.Page = page
 
 	return result, nil
 }
@@ -85,33 +74,26 @@ func (s *StatisticsService) GetPortfolioStatistics(ctx context.Context) (*model.
 
 // GetPortfolioStatisticsHistory retrieves the portfolio statistics history with optional filtering and pagination.
 func (s *StatisticsService) GetPortfolioStatisticsHistory(ctx context.Context, opts *model.GetPortfolioStatisticsHistoryOptions) (*model.GetPortfolioStatisticsHistoryResult, error) {
-	req := s.api.StatisticsServiceGetPortfolioStatisticsHistory(ctx)
+	if opts == nil {
+		opts = &model.GetPortfolioStatisticsHistoryOptions{}
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, opts.CurrentPage, opts.PageRequest)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if opts.IntervalHours > 0 {
-			req = req.IntervalHours(fmt.Sprintf("%d", opts.IntervalHours))
-		}
-		if opts.From != nil {
-			req = req.From(*opts.From)
-		}
-		if opts.To != nil {
-			req = req.To(*opts.To)
-		}
-		if opts.Limit > 0 {
-			req = req.Limit(fmt.Sprintf("%d", opts.Limit))
-		}
-		if opts.SortOrder != "" {
-			req = req.SortOrder(opts.SortOrder)
-		}
-		if opts.CurrentPage != "" {
-			req = req.CursorCurrentPage(opts.CurrentPage)
-		}
-		if opts.PageRequest != "" {
-			req = req.CursorPageRequest(opts.PageRequest)
-		}
-		if opts.PageSize > 0 {
-			req = req.CursorPageSize(fmt.Sprintf("%d", opts.PageSize))
-		}
+	req := applyCursorQuery(s.api.StatisticsServiceGetPortfolioStatisticsHistory(ctx), window)
+	if opts.IntervalHours > 0 {
+		req = req.IntervalHours(fmt.Sprintf("%d", opts.IntervalHours))
+	}
+	if opts.From != nil {
+		req = req.From(*opts.From)
+	}
+	if opts.To != nil {
+		req = req.To(*opts.To)
+	}
+	if opts.SortOrder != "" {
+		req = req.SortOrder(opts.SortOrder)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -123,18 +105,11 @@ func (s *StatisticsService) GetPortfolioStatisticsHistory(ctx context.Context, o
 		HistoryPoints: mapper.PortfolioStatisticsHistoryPointsFromDTO(resp.Result),
 	}
 
-	// Parse cursor pagination info
-	if resp.Cursor != nil {
-		if resp.Cursor.CurrentPage != nil {
-			result.CurrentPage = *resp.Cursor.CurrentPage
-		}
-		if resp.Cursor.HasPrevious != nil {
-			result.HasPrevious = *resp.Cursor.HasPrevious
-		}
-		if resp.Cursor.HasNext != nil {
-			result.HasNext = *resp.Cursor.HasNext
-		}
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor})
+	if err != nil {
+		return nil, err
 	}
+	result.Page = page
 
 	return result, nil
 }

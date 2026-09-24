@@ -33,7 +33,16 @@ export interface TgvalidatordGetAddressUTXOsReply {
      * @memberof TgvalidatordGetAddressUTXOsReply
      */
     result?: Array<TgvalidatordUTXO>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetAddressUTXOsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetAddressUTXOsReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetAddressUTXOsReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetAddressUTXOsReplyFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetAddressUTXOsReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordUTXOFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetAddressUTXOsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetAddressUTXOsReplyToJSON(json: any): TgvalidatordGetAddressUTXOsReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetAddressUTXOsReplyFromJSONTyped(json: any, ignoreD
     return {
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordUTXOToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

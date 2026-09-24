@@ -25,7 +25,10 @@ type TgvalidatordTnSharedAssetTrail struct {
 	AssetStatus *string `json:"assetStatus,omitempty"`
 	Comment *string `json:"comment,omitempty"`
 	CreatedAt *time.Time `json:"createdAt,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTnSharedAssetTrail TgvalidatordTnSharedAssetTrail
 
 // NewTgvalidatordTnSharedAssetTrail instantiates a new TgvalidatordTnSharedAssetTrail object
 // This constructor will assign default values to properties that have it defined,
@@ -229,7 +232,37 @@ func (o TgvalidatordTnSharedAssetTrail) ToMap() (map[string]interface{}, error) 
 	if !IsNil(o.CreatedAt) {
 		toSerialize["createdAt"] = o.CreatedAt
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTnSharedAssetTrail) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTnSharedAssetTrail := _TgvalidatordTnSharedAssetTrail{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTnSharedAssetTrail)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTnSharedAssetTrail(varTgvalidatordTnSharedAssetTrail)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "sharedAssetID")
+		delete(additionalProperties, "assetStatus")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "createdAt")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTnSharedAssetTrail struct {

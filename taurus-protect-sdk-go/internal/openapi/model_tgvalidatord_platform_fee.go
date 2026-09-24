@@ -27,7 +27,10 @@ type TgvalidatordPlatformFee struct {
 	AmountMainUnit *string `json:"amountMainUnit,omitempty"`
 	// The symbol returned with the fee amount if provided.
 	Symbol *string `json:"symbol,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordPlatformFee TgvalidatordPlatformFee
 
 // NewTgvalidatordPlatformFee instantiates a new TgvalidatordPlatformFee object
 // This constructor will assign default values to properties that have it defined,
@@ -196,7 +199,36 @@ func (o TgvalidatordPlatformFee) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Symbol) {
 		toSerialize["symbol"] = o.Symbol
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordPlatformFee) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordPlatformFee := _TgvalidatordPlatformFee{}
+
+	err = json.Unmarshal(data, &varTgvalidatordPlatformFee)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordPlatformFee(varTgvalidatordPlatformFee)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "amountMainUnit")
+		delete(additionalProperties, "symbol")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordPlatformFee struct {

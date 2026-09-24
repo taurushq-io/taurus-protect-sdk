@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -27,6 +26,7 @@ type TgvalidatordAsset struct {
 	Nft *TgvalidatordAssetNFT `json:"nft,omitempty"`
 	Unknown *AssetUnknown `json:"unknown,omitempty"`
 	CurrencyInfo *TgvalidatordCurrency `json:"currencyInfo,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordAsset TgvalidatordAsset
@@ -224,6 +224,11 @@ func (o TgvalidatordAsset) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.CurrencyInfo) {
 		toSerialize["currencyInfo"] = o.CurrencyInfo
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -251,15 +256,24 @@ func (o *TgvalidatordAsset) UnmarshalJSON(data []byte) (err error) {
 
 	varTgvalidatordAsset := _TgvalidatordAsset{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordAsset)
+	err = json.Unmarshal(data, &varTgvalidatordAsset)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordAsset(varTgvalidatordAsset)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "currency")
+		delete(additionalProperties, "kind")
+		delete(additionalProperties, "nft")
+		delete(additionalProperties, "unknown")
+		delete(additionalProperties, "currencyInfo")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

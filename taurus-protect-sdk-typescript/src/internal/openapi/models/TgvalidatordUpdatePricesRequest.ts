@@ -33,7 +33,16 @@ export interface TgvalidatordUpdatePricesRequest {
      * @memberof TgvalidatordUpdatePricesRequest
      */
     prices: Array<TgvalidatordCurrencyPrice>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordUpdatePricesRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordUpdatePricesRequestWireKeys: ReadonlySet<string> = new Set(['prices']);
 
 /**
  * Check if a given object implements the TgvalidatordUpdatePricesRequest interface.
@@ -51,10 +60,20 @@ export function TgvalidatordUpdatePricesRequestFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordUpdatePricesRequest = {
         
         'prices': ((json['prices'] as Array<any>).map(TgvalidatordCurrencyPriceFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordUpdatePricesRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordUpdatePricesRequestToJSON(json: any): TgvalidatordUpdatePricesRequest {
@@ -69,6 +88,7 @@ export function TgvalidatordUpdatePricesRequestFromJSONTyped(json: any, ignoreDi
     return {
         
         'prices': ((value['prices'] as Array<any>).map(TgvalidatordCurrencyPriceToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

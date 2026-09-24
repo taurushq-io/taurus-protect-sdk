@@ -13,6 +13,14 @@
  */
 
 import { mapValues } from '../runtime';
+import type { TgvalidatordTokenInfo } from './TgvalidatordTokenInfo';
+import {
+    TgvalidatordTokenInfoFromJSON,
+    TgvalidatordTokenInfoFromJSONTyped,
+    TgvalidatordTokenInfoToJSON,
+    TgvalidatordTokenInfoToJSONTyped,
+} from './TgvalidatordTokenInfo';
+
 /**
  * 
  * @export
@@ -50,7 +58,7 @@ export interface TgvalidatordCurrency {
      */
     isToken?: boolean;
     /**
-     * Indicates if the token is an ERC-20 token.
+     * DEPRECATED: use tokenInfo.tokenType == ERC20 instead.
      * @type {boolean}
      * @memberof TgvalidatordCurrency
      */
@@ -92,13 +100,13 @@ export interface TgvalidatordCurrency {
      */
     isFiat?: boolean;
     /**
-     * Indicates if the currency is based on FA12 standard (used in Tezos).
+     * DEPRECATED: use tokenInfo.tokenType == FA12 instead.
      * @type {boolean}
      * @memberof TgvalidatordCurrency
      */
     isFA12?: boolean;
     /**
-     * Indicates if the currency is based on FA20 standard (used in Tezos).
+     * DEPRECATED: use tokenInfo.tokenType == FA2 instead.
      * @type {boolean}
      * @memberof TgvalidatordCurrency
      */
@@ -157,7 +165,22 @@ export interface TgvalidatordCurrency {
      * @memberof TgvalidatordCurrency
      */
     logo?: string;
+    /**
+     * 
+     * @type {TgvalidatordTokenInfo}
+     * @memberof TgvalidatordCurrency
+     */
+    tokenInfo?: TgvalidatordTokenInfo;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCurrency
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCurrencyWireKeys: ReadonlySet<string> = new Set(['name', 'symbol', 'coinTypeIndex', 'blockchain', 'isToken', 'isERC20', 'decimals', 'contractAddress', 'hasStaking', 'isUTXOBased', 'isAccountBased', 'isFiat', 'isFA12', 'isFA20', 'isNFT', 'enabled', 'id', 'displayName', 'type', 'wlcaId', 'network', 'tokenID', 'logo', 'tokenInfo']);
 
 /**
  * Check if a given object implements the TgvalidatordCurrency interface.
@@ -174,7 +197,7 @@ export function TgvalidatordCurrencyFromJSONTyped(json: any, ignoreDiscriminator
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCurrency = {
         
         'name': json['name'] == null ? undefined : json['name'],
         'symbol': json['symbol'] == null ? undefined : json['symbol'],
@@ -199,7 +222,18 @@ export function TgvalidatordCurrencyFromJSONTyped(json: any, ignoreDiscriminator
         'network': json['network'] == null ? undefined : json['network'],
         'tokenID': json['tokenID'] == null ? undefined : json['tokenID'],
         'logo': json['logo'] == null ? undefined : json['logo'],
+        'tokenInfo': json['tokenInfo'] == null ? undefined : TgvalidatordTokenInfoFromJSON(json['tokenInfo']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCurrencyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCurrencyToJSON(json: any): TgvalidatordCurrency {
@@ -236,6 +270,8 @@ export function TgvalidatordCurrencyFromJSONTyped(json: any, ignoreDiscriminator
         'network': value['network'],
         'tokenID': value['tokenID'],
         'logo': value['logo'],
+        'tokenInfo': TgvalidatordTokenInfoToJSON(value['tokenInfo']),
+        ...value['additionalProperties'],
     };
 }
 

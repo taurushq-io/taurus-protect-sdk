@@ -21,7 +21,12 @@ var _ MappedNullable = &TgvalidatordGetAddressesReply{}
 type TgvalidatordGetAddressesReply struct {
 	Result []TgvalidatordAddress `json:"result,omitempty"`
 	TotalItems *string `json:"totalItems,omitempty"`
+	// The offset to get the next page. Note: the value is not always the same as the number of elements returned.
+	Offset *string `json:"offset,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetAddressesReply TgvalidatordGetAddressesReply
 
 // NewTgvalidatordGetAddressesReply instantiates a new TgvalidatordGetAddressesReply object
 // This constructor will assign default values to properties that have it defined,
@@ -104,6 +109,38 @@ func (o *TgvalidatordGetAddressesReply) SetTotalItems(v string) {
 	o.TotalItems = &v
 }
 
+// GetOffset returns the Offset field value if set, zero value otherwise.
+func (o *TgvalidatordGetAddressesReply) GetOffset() string {
+	if o == nil || IsNil(o.Offset) {
+		var ret string
+		return ret
+	}
+	return *o.Offset
+}
+
+// GetOffsetOk returns a tuple with the Offset field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *TgvalidatordGetAddressesReply) GetOffsetOk() (*string, bool) {
+	if o == nil || IsNil(o.Offset) {
+		return nil, false
+	}
+	return o.Offset, true
+}
+
+// HasOffset returns a boolean if a field has been set.
+func (o *TgvalidatordGetAddressesReply) HasOffset() bool {
+	if o != nil && !IsNil(o.Offset) {
+		return true
+	}
+
+	return false
+}
+
+// SetOffset gets a reference to the given string and assigns it to the Offset field.
+func (o *TgvalidatordGetAddressesReply) SetOffset(v string) {
+	o.Offset = &v
+}
+
 func (o TgvalidatordGetAddressesReply) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -120,7 +157,38 @@ func (o TgvalidatordGetAddressesReply) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.TotalItems) {
 		toSerialize["totalItems"] = o.TotalItems
 	}
+	if !IsNil(o.Offset) {
+		toSerialize["offset"] = o.Offset
+	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetAddressesReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetAddressesReply := _TgvalidatordGetAddressesReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetAddressesReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetAddressesReply(varTgvalidatordGetAddressesReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "result")
+		delete(additionalProperties, "totalItems")
+		delete(additionalProperties, "offset")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetAddressesReply struct {

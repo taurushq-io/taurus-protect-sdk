@@ -57,7 +57,16 @@ export interface TgvalidatordHederaNativeTokenTransaction {
      * @memberof TgvalidatordHederaNativeTokenTransaction
      */
     destinations?: Array<TgvalidatordHederaNativeTokenTransfer>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordHederaNativeTokenTransaction
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordHederaNativeTokenTransactionWireKeys: ReadonlySet<string> = new Set(['transactionID', 'transactionType', 'sender', 'sources', 'destinations']);
 
 /**
  * Check if a given object implements the TgvalidatordHederaNativeTokenTransaction interface.
@@ -74,7 +83,7 @@ export function TgvalidatordHederaNativeTokenTransactionFromJSONTyped(json: any,
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordHederaNativeTokenTransaction = {
         
         'transactionID': json['transactionID'] == null ? undefined : json['transactionID'],
         'transactionType': json['transactionType'] == null ? undefined : json['transactionType'],
@@ -82,6 +91,16 @@ export function TgvalidatordHederaNativeTokenTransactionFromJSONTyped(json: any,
         'sources': json['sources'] == null ? undefined : ((json['sources'] as Array<any>).map(TgvalidatordHederaNativeTokenTransferFromJSON)),
         'destinations': json['destinations'] == null ? undefined : ((json['destinations'] as Array<any>).map(TgvalidatordHederaNativeTokenTransferFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordHederaNativeTokenTransactionWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordHederaNativeTokenTransactionToJSON(json: any): TgvalidatordHederaNativeTokenTransaction {
@@ -100,6 +119,7 @@ export function TgvalidatordHederaNativeTokenTransactionFromJSONTyped(json: any,
         'sender': value['sender'],
         'sources': value['sources'] == null ? undefined : ((value['sources'] as Array<any>).map(TgvalidatordHederaNativeTokenTransferToJSON)),
         'destinations': value['destinations'] == null ? undefined : ((value['destinations'] as Array<any>).map(TgvalidatordHederaNativeTokenTransferToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

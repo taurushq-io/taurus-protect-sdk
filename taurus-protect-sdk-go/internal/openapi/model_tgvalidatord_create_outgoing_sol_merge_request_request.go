@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -35,6 +34,7 @@ type TgvalidatordCreateOutgoingSOLMergeRequestRequest struct {
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
 	// Allow use of unconfirmed funds for this transaction
 	UseUnconfirmedFunds *bool `json:"useUnconfirmedFunds,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingSOLMergeRequestRequest TgvalidatordCreateOutgoingSOLMergeRequestRequest
@@ -284,6 +284,11 @@ func (o TgvalidatordCreateOutgoingSOLMergeRequestRequest) ToMap() (map[string]in
 	if !IsNil(o.UseUnconfirmedFunds) {
 		toSerialize["useUnconfirmedFunds"] = o.UseUnconfirmedFunds
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -313,15 +318,26 @@ func (o *TgvalidatordCreateOutgoingSOLMergeRequestRequest) UnmarshalJSON(data []
 
 	varTgvalidatordCreateOutgoingSOLMergeRequestRequest := _TgvalidatordCreateOutgoingSOLMergeRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingSOLMergeRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingSOLMergeRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingSOLMergeRequestRequest(varTgvalidatordCreateOutgoingSOLMergeRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "addressId")
+		delete(additionalProperties, "fromStakeAccountDerivationIndex")
+		delete(additionalProperties, "toStakeAccountDerivationIndex")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "externalRequestId")
+		delete(additionalProperties, "useUnconfirmedFunds")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

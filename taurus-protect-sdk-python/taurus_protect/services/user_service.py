@@ -8,7 +8,15 @@ from taurus_protect._internal.openapi.models.user_service_create_attribute_body 
     UserServiceCreateAttributeBody,
 )
 from taurus_protect.mappers.user import user_from_dto, users_from_dto
-from taurus_protect.models.pagination import Pagination
+from taurus_protect.models.pagination import (
+    MAX_PAGE_SIZE,
+    PLUS_MIN_ROWS_LIMIT,
+    Pagination,
+    offset_pagination,
+    offset_query,
+    resolve_offset,
+    resolve_page_size,
+)
 from taurus_protect.models.user import User
 from taurus_protect.services._base import BaseService
 
@@ -24,7 +32,7 @@ class UserService(BaseService):
 
     Example:
         >>> # List users
-        >>> users, pagination = client.users.list(limit=50, offset=0)
+        >>> users, pagination = client.users.list(limit=100, offset=0)
         >>> for user in users:
         ...     print(f"{user.email}: {user.status}")
         >>>
@@ -123,64 +131,29 @@ class UserService(BaseService):
 
     def list(
         self,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> Tuple[List[User], Optional[Pagination]]:
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> Tuple[List[User], Pagination]:
         """
-        List users with pagination.
+        List users, one page at a time.
 
         Args:
-            limit: Maximum number of users to return (must be positive).
-            offset: Number of users to skip (must be non-negative).
+            limit: Page size (default 20, max 100).
+            offset: Number of users to skip; pass ``pagination.next_offset`` to continue.
 
         Returns:
-            Tuple of (users list, pagination info).
+            Tuple of (users, pagination). A synthetic daemon user can be appended
+            beyond ``limit``; ``next_offset`` accounts for it.
 
         Raises:
             ValueError: If limit or offset are invalid.
             APIError: If API request fails.
         """
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
-
-        try:
-            resp = self._users_api.user_service_get_users(
-                limit=str(limit),
-                offset=str(offset),
-                ids=None,
-                external_user_ids=None,
-                emails=None,
-                query=None,
-                public_key=None,
-                exclude_technical_users=None,
-                roles=None,
-                status=None,
-                totp_enabled=None,
-                group_ids=None,
-            )
-
-            result = getattr(resp, "result", None)
-            users = users_from_dto(result) if result else []
-
-            pagination = self._extract_pagination(
-                total_items=getattr(resp, "total_items", None),
-                offset=offset,
-                limit=limit,
-            )
-
-            return users, pagination
-        except Exception as e:
-            from taurus_protect.errors import APIError
-
-            if isinstance(e, (APIError, ValueError)):
-                raise
-            raise self._handle_error(e) from e
+        return self._list_page(resolve_page_size(limit, "limit"), resolve_offset(offset))
 
     def get_users_by_email(self, emails: List[str]) -> List[User]:
         """
-        Get users by their email addresses.
+        Get users by their email addresses, reading every page.
 
         Args:
             emails: List of email addresses to search for.
@@ -195,24 +168,34 @@ class UserService(BaseService):
         if not emails:
             raise ValueError("emails cannot be empty")
 
-        try:
-            resp = self._users_api.user_service_get_users(
-                limit=None,
-                offset=None,
-                ids=None,
-                external_user_ids=None,
-                emails=emails,
-                query=None,
-                public_key=None,
-                exclude_technical_users=None,
-                roles=None,
-                status=None,
-                totp_enabled=None,
-                group_ids=None,
-            )
+        users: List[User] = []
+        seen = set()
+        offset = 0
+        while True:
+            page, pagination = self._list_page(MAX_PAGE_SIZE, offset, emails=emails)
+            for user in page:
+                if user.id not in seen:
+                    seen.add(user.id)
+                    users.append(user)
+            if not pagination.has_more:
+                return users
+            offset = pagination.next_offset
 
-            result = getattr(resp, "result", None)
-            return users_from_dto(result) if result else []
+    def _list_page(self, limit: int, offset: int, **filters: Any) -> Tuple[List[User], Pagination]:
+        try:
+            resp = self._users_api.user_service_get_users(**offset_query(limit, offset), **filters)
+
+            rows = resp.result or []
+            users = users_from_dto(rows)
+            pagination = offset_pagination(
+                PLUS_MIN_ROWS_LIMIT,
+                limit=limit,
+                offset=offset,
+                served_rows=len(rows),
+                total_items=resp.total_items,
+                excluded=len(rows) - len(users),
+            )
+            return users, pagination
         except Exception as e:
             from taurus_protect.errors import APIError
 

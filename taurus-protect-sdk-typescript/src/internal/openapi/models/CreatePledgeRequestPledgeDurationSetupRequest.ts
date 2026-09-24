@@ -37,7 +37,16 @@ export interface CreatePledgeRequestPledgeDurationSetupRequest {
      * @memberof CreatePledgeRequestPledgeDurationSetupRequest
      */
     noticePeriodDuration?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof CreatePledgeRequestPledgeDurationSetupRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const CreatePledgeRequestPledgeDurationSetupRequestWireKeys: ReadonlySet<string> = new Set(['minimumDuration', 'endOfMinimumDurationDate', 'noticePeriodDuration']);
 
 /**
  * Check if a given object implements the CreatePledgeRequestPledgeDurationSetupRequest interface.
@@ -54,12 +63,22 @@ export function CreatePledgeRequestPledgeDurationSetupRequestFromJSONTyped(json:
     if (json == null) {
         return json;
     }
-    return {
+    const result: CreatePledgeRequestPledgeDurationSetupRequest = {
         
         'minimumDuration': json['minimumDuration'] == null ? undefined : json['minimumDuration'],
         'endOfMinimumDurationDate': json['endOfMinimumDurationDate'] == null ? undefined : (new Date(json['endOfMinimumDurationDate'])),
         'noticePeriodDuration': json['noticePeriodDuration'] == null ? undefined : json['noticePeriodDuration'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!CreatePledgeRequestPledgeDurationSetupRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function CreatePledgeRequestPledgeDurationSetupRequestToJSON(json: any): CreatePledgeRequestPledgeDurationSetupRequest {
@@ -76,6 +95,7 @@ export function CreatePledgeRequestPledgeDurationSetupRequestFromJSONTyped(json:
         'minimumDuration': value['minimumDuration'],
         'endOfMinimumDurationDate': value['endOfMinimumDurationDate'] == null ? undefined : ((value['endOfMinimumDurationDate']).toISOString()),
         'noticePeriodDuration': value['noticePeriodDuration'],
+        ...value['additionalProperties'],
     };
 }
 

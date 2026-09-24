@@ -55,7 +55,16 @@ export interface ScimServiceProviderConfigAuthenticationScheme {
      * @memberof ScimServiceProviderConfigAuthenticationScheme
      */
     primary?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof ScimServiceProviderConfigAuthenticationScheme
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const ScimServiceProviderConfigAuthenticationSchemeWireKeys: ReadonlySet<string> = new Set(['name', 'description', 'specUri', 'documentationUri', 'type', 'primary']);
 
 /**
  * Check if a given object implements the ScimServiceProviderConfigAuthenticationScheme interface.
@@ -72,7 +81,7 @@ export function ScimServiceProviderConfigAuthenticationSchemeFromJSONTyped(json:
     if (json == null) {
         return json;
     }
-    return {
+    const result: ScimServiceProviderConfigAuthenticationScheme = {
         
         'name': json['name'] == null ? undefined : json['name'],
         'description': json['description'] == null ? undefined : json['description'],
@@ -81,6 +90,16 @@ export function ScimServiceProviderConfigAuthenticationSchemeFromJSONTyped(json:
         'type': json['type'] == null ? undefined : json['type'],
         'primary': json['primary'] == null ? undefined : json['primary'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!ScimServiceProviderConfigAuthenticationSchemeWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function ScimServiceProviderConfigAuthenticationSchemeToJSON(json: any): ScimServiceProviderConfigAuthenticationScheme {
@@ -100,6 +119,7 @@ export function ScimServiceProviderConfigAuthenticationSchemeFromJSONTyped(json:
         'documentationUri': value['documentationUri'],
         'type': value['type'],
         'primary': value['primary'],
+        ...value['additionalProperties'],
     };
 }
 

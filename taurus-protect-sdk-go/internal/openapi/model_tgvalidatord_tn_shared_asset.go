@@ -41,7 +41,10 @@ type TgvalidatordTnSharedAsset struct {
 	TargetRejectedAt *time.Time `json:"targetRejectedAt,omitempty"`
 	Status *string `json:"status,omitempty"`
 	Trails []TgvalidatordTnSharedAssetTrail `json:"trails,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTnSharedAsset TgvalidatordTnSharedAsset
 
 // NewTgvalidatordTnSharedAsset instantiates a new TgvalidatordTnSharedAsset object
 // This constructor will assign default values to properties that have it defined,
@@ -770,7 +773,52 @@ func (o TgvalidatordTnSharedAsset) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Trails) {
 		toSerialize["trails"] = o.Trails
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTnSharedAsset) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTnSharedAsset := _TgvalidatordTnSharedAsset{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTnSharedAsset)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTnSharedAsset(varTgvalidatordTnSharedAsset)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "wlContractAddressID")
+		delete(additionalProperties, "ownerParticipantId")
+		delete(additionalProperties, "targetParticipantId")
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "network")
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "symbol")
+		delete(additionalProperties, "decimals")
+		delete(additionalProperties, "contractAddress")
+		delete(additionalProperties, "tokenId")
+		delete(additionalProperties, "kind")
+		delete(additionalProperties, "originCreationDate")
+		delete(additionalProperties, "originDeletionDate")
+		delete(additionalProperties, "createdAt")
+		delete(additionalProperties, "updatedAt")
+		delete(additionalProperties, "targetAcceptedAt")
+		delete(additionalProperties, "targetRejectedAt")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "trails")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTnSharedAsset struct {

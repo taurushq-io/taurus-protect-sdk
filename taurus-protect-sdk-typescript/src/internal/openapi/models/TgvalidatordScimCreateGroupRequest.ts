@@ -37,7 +37,16 @@ export interface TgvalidatordScimCreateGroupRequest {
      * @memberof TgvalidatordScimCreateGroupRequest
      */
     displayName?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordScimCreateGroupRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordScimCreateGroupRequestWireKeys: ReadonlySet<string> = new Set(['schemas', 'externalId', 'displayName']);
 
 /**
  * Check if a given object implements the TgvalidatordScimCreateGroupRequest interface.
@@ -54,12 +63,22 @@ export function TgvalidatordScimCreateGroupRequestFromJSONTyped(json: any, ignor
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordScimCreateGroupRequest = {
         
         'schemas': json['schemas'] == null ? undefined : json['schemas'],
         'externalId': json['externalId'] == null ? undefined : json['externalId'],
         'displayName': json['displayName'] == null ? undefined : json['displayName'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordScimCreateGroupRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordScimCreateGroupRequestToJSON(json: any): TgvalidatordScimCreateGroupRequest {
@@ -76,6 +95,7 @@ export function TgvalidatordScimCreateGroupRequestFromJSONTyped(json: any, ignor
         'schemas': value['schemas'],
         'externalId': value['externalId'],
         'displayName': value['displayName'],
+        ...value['additionalProperties'],
     };
 }
 

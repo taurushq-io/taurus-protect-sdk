@@ -25,7 +25,16 @@ export interface ScoreFilterChainalysisFilters {
      * @memberof ScoreFilterChainalysisFilters
      */
     scoreGreater?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof ScoreFilterChainalysisFilters
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const ScoreFilterChainalysisFiltersWireKeys: ReadonlySet<string> = new Set(['scoreGreater']);
 
 /**
  * Check if a given object implements the ScoreFilterChainalysisFilters interface.
@@ -42,10 +51,20 @@ export function ScoreFilterChainalysisFiltersFromJSONTyped(json: any, ignoreDisc
     if (json == null) {
         return json;
     }
-    return {
+    const result: ScoreFilterChainalysisFilters = {
         
         'scoreGreater': json['scoreGreater'] == null ? undefined : json['scoreGreater'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!ScoreFilterChainalysisFiltersWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function ScoreFilterChainalysisFiltersToJSON(json: any): ScoreFilterChainalysisFilters {
@@ -60,6 +79,7 @@ export function ScoreFilterChainalysisFiltersFromJSONTyped(json: any, ignoreDisc
     return {
         
         'scoreGreater': value['scoreGreater'],
+        ...value['additionalProperties'],
     };
 }
 

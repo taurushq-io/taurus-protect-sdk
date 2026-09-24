@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordTERC20UpgradeableContractTemplate{}
 // TgvalidatordTERC20UpgradeableContractTemplate struct for TgvalidatordTERC20UpgradeableContractTemplate
 type TgvalidatordTERC20UpgradeableContractTemplate struct {
 	Evm *TgvalidatordEVMContractTemplateParams `json:"evm,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTERC20UpgradeableContractTemplate TgvalidatordTERC20UpgradeableContractTemplate
 
 // NewTgvalidatordTERC20UpgradeableContractTemplate instantiates a new TgvalidatordTERC20UpgradeableContractTemplate object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordTERC20UpgradeableContractTemplate) ToMap() (map[string]inter
 	if !IsNil(o.Evm) {
 		toSerialize["evm"] = o.Evm
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTERC20UpgradeableContractTemplate) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTERC20UpgradeableContractTemplate := _TgvalidatordTERC20UpgradeableContractTemplate{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTERC20UpgradeableContractTemplate)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTERC20UpgradeableContractTemplate(varTgvalidatordTERC20UpgradeableContractTemplate)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "evm")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTERC20UpgradeableContractTemplate struct {

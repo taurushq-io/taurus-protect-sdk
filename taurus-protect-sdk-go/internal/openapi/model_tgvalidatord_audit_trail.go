@@ -27,7 +27,10 @@ type TgvalidatordAuditTrail struct {
 	SubAction *string `json:"subAction,omitempty"`
 	Details *string `json:"details,omitempty"`
 	CreationDate *time.Time `json:"creationDate,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordAuditTrail TgvalidatordAuditTrail
 
 // NewTgvalidatordAuditTrail instantiates a new TgvalidatordAuditTrail object
 // This constructor will assign default values to properties that have it defined,
@@ -301,7 +304,39 @@ func (o TgvalidatordAuditTrail) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.CreationDate) {
 		toSerialize["creationDate"] = o.CreationDate
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordAuditTrail) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordAuditTrail := _TgvalidatordAuditTrail{}
+
+	err = json.Unmarshal(data, &varTgvalidatordAuditTrail)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordAuditTrail(varTgvalidatordAuditTrail)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "user")
+		delete(additionalProperties, "entity")
+		delete(additionalProperties, "action")
+		delete(additionalProperties, "subAction")
+		delete(additionalProperties, "details")
+		delete(additionalProperties, "creationDate")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordAuditTrail struct {

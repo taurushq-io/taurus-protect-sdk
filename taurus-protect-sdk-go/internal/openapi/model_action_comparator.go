@@ -20,7 +20,10 @@ var _ MappedNullable = &ActionComparator{}
 // ActionComparator struct for ActionComparator
 type ActionComparator struct {
 	Kind *string `json:"kind,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _ActionComparator ActionComparator
 
 // NewActionComparator instantiates a new ActionComparator object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o ActionComparator) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Kind) {
 		toSerialize["kind"] = o.Kind
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *ActionComparator) UnmarshalJSON(data []byte) (err error) {
+	varActionComparator := _ActionComparator{}
+
+	err = json.Unmarshal(data, &varActionComparator)
+
+	if err != nil {
+		return err
+	}
+
+	*o = ActionComparator(varActionComparator)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "kind")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableActionComparator struct {

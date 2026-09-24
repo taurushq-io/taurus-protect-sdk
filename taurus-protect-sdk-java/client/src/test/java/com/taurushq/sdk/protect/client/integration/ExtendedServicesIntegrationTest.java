@@ -111,7 +111,7 @@ class ExtendedServicesIntegrationTest {
 
     @Test
     void listFeePayers() throws ApiException {
-        List<FeePayer> feePayers = client.getFeePayerService().getFeePayers();
+        List<FeePayer> feePayers = client.getFeePayerService().getFeePayers().getFeePayers();
 
         assertNotNull(feePayers);
         System.out.println("Found " + feePayers.size() + " fee payers");

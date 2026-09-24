@@ -51,7 +51,16 @@ export interface TgvalidatordTnParticipantSettings {
      * @memberof TgvalidatordTnParticipantSettings
      */
     termsAndConditionsAcceptedAt?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTnParticipantSettings
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTnParticipantSettingsWireKeys: ReadonlySet<string> = new Set(['interactingAllowedCountries', 'status', 'interactingAllowedParticipants', 'termsAndConditionsAcceptedAt']);
 
 /**
  * Check if a given object implements the TgvalidatordTnParticipantSettings interface.
@@ -68,13 +77,23 @@ export function TgvalidatordTnParticipantSettingsFromJSONTyped(json: any, ignore
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTnParticipantSettings = {
         
         'interactingAllowedCountries': json['interactingAllowedCountries'] == null ? undefined : json['interactingAllowedCountries'],
         'status': json['status'] == null ? undefined : json['status'],
         'interactingAllowedParticipants': json['interactingAllowedParticipants'] == null ? undefined : ((json['interactingAllowedParticipants'] as Array<any>).map(TgvalidatordTnAllowedParticipantFromJSON)),
         'termsAndConditionsAcceptedAt': json['termsAndConditionsAcceptedAt'] == null ? undefined : (new Date(json['termsAndConditionsAcceptedAt'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTnParticipantSettingsWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTnParticipantSettingsToJSON(json: any): TgvalidatordTnParticipantSettings {
@@ -92,6 +111,7 @@ export function TgvalidatordTnParticipantSettingsFromJSONTyped(json: any, ignore
         'status': value['status'],
         'interactingAllowedParticipants': value['interactingAllowedParticipants'] == null ? undefined : ((value['interactingAllowedParticipants'] as Array<any>).map(TgvalidatordTnAllowedParticipantToJSON)),
         'termsAndConditionsAcceptedAt': value['termsAndConditionsAcceptedAt'] == null ? undefined : ((value['termsAndConditionsAcceptedAt']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

@@ -39,7 +39,16 @@ export interface TgvalidatordBalanceHistoryPoint {
      * @memberof TgvalidatordBalanceHistoryPoint
      */
     balance?: TgvalidatordBalance;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordBalanceHistoryPoint
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordBalanceHistoryPointWireKeys: ReadonlySet<string> = new Set(['pointDate', 'balance']);
 
 /**
  * Check if a given object implements the TgvalidatordBalanceHistoryPoint interface.
@@ -56,11 +65,21 @@ export function TgvalidatordBalanceHistoryPointFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordBalanceHistoryPoint = {
         
         'pointDate': json['pointDate'] == null ? undefined : (new Date(json['pointDate'])),
         'balance': json['balance'] == null ? undefined : TgvalidatordBalanceFromJSON(json['balance']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordBalanceHistoryPointWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordBalanceHistoryPointToJSON(json: any): TgvalidatordBalanceHistoryPoint {
@@ -76,6 +95,7 @@ export function TgvalidatordBalanceHistoryPointFromJSONTyped(json: any, ignoreDi
         
         'pointDate': value['pointDate'] == null ? undefined : ((value['pointDate']).toISOString()),
         'balance': TgvalidatordBalanceToJSON(value['balance']),
+        ...value['additionalProperties'],
     };
 }
 

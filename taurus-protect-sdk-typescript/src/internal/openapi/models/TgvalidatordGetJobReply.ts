@@ -33,7 +33,16 @@ export interface TgvalidatordGetJobReply {
      * @memberof TgvalidatordGetJobReply
      */
     job?: TgvalidatordJob;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetJobReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetJobReplyWireKeys: ReadonlySet<string> = new Set(['job']);
 
 /**
  * Check if a given object implements the TgvalidatordGetJobReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetJobReplyFromJSONTyped(json: any, ignoreDiscrimina
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetJobReply = {
         
         'job': json['job'] == null ? undefined : TgvalidatordJobFromJSON(json['job']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetJobReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetJobReplyToJSON(json: any): TgvalidatordGetJobReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetJobReplyFromJSONTyped(json: any, ignoreDiscrimina
     return {
         
         'job': TgvalidatordJobToJSON(value['job']),
+        ...value['additionalProperties'],
     };
 }
 

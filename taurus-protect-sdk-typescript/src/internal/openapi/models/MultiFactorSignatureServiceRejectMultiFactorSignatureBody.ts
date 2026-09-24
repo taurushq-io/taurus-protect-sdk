@@ -25,7 +25,16 @@ export interface MultiFactorSignatureServiceRejectMultiFactorSignatureBody {
      * @memberof MultiFactorSignatureServiceRejectMultiFactorSignatureBody
      */
     comment: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof MultiFactorSignatureServiceRejectMultiFactorSignatureBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const MultiFactorSignatureServiceRejectMultiFactorSignatureBodyWireKeys: ReadonlySet<string> = new Set(['comment']);
 
 /**
  * Check if a given object implements the MultiFactorSignatureServiceRejectMultiFactorSignatureBody interface.
@@ -43,10 +52,20 @@ export function MultiFactorSignatureServiceRejectMultiFactorSignatureBodyFromJSO
     if (json == null) {
         return json;
     }
-    return {
+    const result: MultiFactorSignatureServiceRejectMultiFactorSignatureBody = {
         
         'comment': json['comment'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!MultiFactorSignatureServiceRejectMultiFactorSignatureBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function MultiFactorSignatureServiceRejectMultiFactorSignatureBodyToJSON(json: any): MultiFactorSignatureServiceRejectMultiFactorSignatureBody {
@@ -61,6 +80,7 @@ export function MultiFactorSignatureServiceRejectMultiFactorSignatureBodyFromJSO
     return {
         
         'comment': value['comment'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -34,7 +34,10 @@ type TgvalidatordHederaNativeTokenParams struct {
 	CustomFee *string `json:"customFee,omitempty" validate:"regexp=^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=)?$"`
 	Decimals *string `json:"decimals,omitempty"`
 	ForceKYC *bool `json:"forceKYC,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordHederaNativeTokenParams TgvalidatordHederaNativeTokenParams
 
 // NewTgvalidatordHederaNativeTokenParams instantiates a new TgvalidatordHederaNativeTokenParams object
 // This constructor will assign default values to properties that have it defined,
@@ -553,7 +556,46 @@ func (o TgvalidatordHederaNativeTokenParams) ToMap() (map[string]interface{}, er
 	if !IsNil(o.ForceKYC) {
 		toSerialize["forceKYC"] = o.ForceKYC
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordHederaNativeTokenParams) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordHederaNativeTokenParams := _TgvalidatordHederaNativeTokenParams{}
+
+	err = json.Unmarshal(data, &varTgvalidatordHederaNativeTokenParams)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordHederaNativeTokenParams(varTgvalidatordHederaNativeTokenParams)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "symbol")
+		delete(additionalProperties, "initialSupply")
+		delete(additionalProperties, "freezeDefault")
+		delete(additionalProperties, "expiry")
+		delete(additionalProperties, "autoRenewPeriod")
+		delete(additionalProperties, "memo")
+		delete(additionalProperties, "metadata")
+		delete(additionalProperties, "tokenType")
+		delete(additionalProperties, "supplyType")
+		delete(additionalProperties, "maxSupply")
+		delete(additionalProperties, "customFee")
+		delete(additionalProperties, "decimals")
+		delete(additionalProperties, "forceKYC")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordHederaNativeTokenParams struct {

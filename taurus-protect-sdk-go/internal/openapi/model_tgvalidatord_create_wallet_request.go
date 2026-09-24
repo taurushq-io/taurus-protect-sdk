@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -41,6 +40,7 @@ type TgvalidatordCreateWalletRequest struct {
 	VisibilityGroupID *string `json:"visibilityGroupID,omitempty"`
 	// An optional external identifier for the wallet.
 	ExternalWalletId *string `json:"externalWalletId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateWalletRequest TgvalidatordCreateWalletRequest
@@ -413,6 +413,11 @@ func (o TgvalidatordCreateWalletRequest) ToMap() (map[string]interface{}, error)
 	if !IsNil(o.ExternalWalletId) {
 		toSerialize["externalWalletId"] = o.ExternalWalletId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -440,15 +445,29 @@ func (o *TgvalidatordCreateWalletRequest) UnmarshalJSON(data []byte) (err error)
 
 	varTgvalidatordCreateWalletRequest := _TgvalidatordCreateWalletRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateWalletRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateWalletRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateWalletRequest(varTgvalidatordCreateWalletRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "currency")
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "container")
+		delete(additionalProperties, "isOmnibus")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "customerId")
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "network")
+		delete(additionalProperties, "visibilityGroupID")
+		delete(additionalProperties, "externalWalletId")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

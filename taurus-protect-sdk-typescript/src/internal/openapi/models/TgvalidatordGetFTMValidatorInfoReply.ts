@@ -61,7 +61,16 @@ export interface TgvalidatordGetFTMValidatorInfoReply {
      * @memberof TgvalidatordGetFTMValidatorInfoReply
      */
     createdAtDateUnix?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetFTMValidatorInfoReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetFTMValidatorInfoReplyWireKeys: ReadonlySet<string> = new Set(['validatorID', 'address', 'isActive', 'totalStake', 'selfStake', 'deactivatedAtDateUnix', 'createdAtDateUnix']);
 
 /**
  * Check if a given object implements the TgvalidatordGetFTMValidatorInfoReply interface.
@@ -78,7 +87,7 @@ export function TgvalidatordGetFTMValidatorInfoReplyFromJSONTyped(json: any, ign
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetFTMValidatorInfoReply = {
         
         'validatorID': json['validatorID'] == null ? undefined : json['validatorID'],
         'address': json['address'] == null ? undefined : json['address'],
@@ -88,6 +97,16 @@ export function TgvalidatordGetFTMValidatorInfoReplyFromJSONTyped(json: any, ign
         'deactivatedAtDateUnix': json['deactivatedAtDateUnix'] == null ? undefined : json['deactivatedAtDateUnix'],
         'createdAtDateUnix': json['createdAtDateUnix'] == null ? undefined : json['createdAtDateUnix'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetFTMValidatorInfoReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetFTMValidatorInfoReplyToJSON(json: any): TgvalidatordGetFTMValidatorInfoReply {
@@ -108,6 +127,7 @@ export function TgvalidatordGetFTMValidatorInfoReplyFromJSONTyped(json: any, ign
         'selfStake': value['selfStake'],
         'deactivatedAtDateUnix': value['deactivatedAtDateUnix'],
         'createdAtDateUnix': value['createdAtDateUnix'],
+        ...value['additionalProperties'],
     };
 }
 

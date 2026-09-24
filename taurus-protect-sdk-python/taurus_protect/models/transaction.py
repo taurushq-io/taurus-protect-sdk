@@ -51,12 +51,19 @@ class Transaction(BaseModel):
     model_config = {"frozen": True}
 
 
-class ListTransactionsOptions(BaseModel):
-    """Options for listing transactions."""
+class TransactionExport(BaseModel):
+    """
+    One transaction export.
 
-    limit: int = Field(default=50, ge=1, le=1000, description="Maximum items to return")
-    offset: int = Field(default=0, ge=0, description="Number of items to skip")
-    currency: Optional[str] = Field(default=None, description="Filter by currency")
-    wallet_id: Optional[str] = Field(default=None, description="Filter by wallet ID")
-    address_id: Optional[str] = Field(default=None, description="Filter by address ID")
-    direction: Optional[str] = Field(default=None, description="Filter by direction (in/out)")
+    The export cannot page: the server always starts at the first matching row. When
+    ``total_items`` exceeds the rows exported, raise the limit or narrow the filters.
+
+    Attributes:
+        content: The exported text, in the requested format.
+        total_items: The server's count of matching transactions.
+    """
+
+    content: str = Field(default="", description="Exported text")
+    total_items: int = Field(default=0, description="Matching transactions on the server")
+
+    model_config = {"frozen": True}

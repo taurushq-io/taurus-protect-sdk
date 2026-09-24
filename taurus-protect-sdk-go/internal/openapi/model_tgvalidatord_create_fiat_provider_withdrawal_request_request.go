@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -32,6 +31,7 @@ type TgvalidatordCreateFiatProviderWithdrawalRequestRequest struct {
 	Comment *string `json:"comment,omitempty"`
 	// Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestID will do nothing and return the originally created request. The excternalRequestID is passed to fiat providers as an idempotency key.
 	ExternalRequestID *string `json:"externalRequestID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateFiatProviderWithdrawalRequestRequest TgvalidatordCreateFiatProviderWithdrawalRequestRequest
@@ -255,6 +255,11 @@ func (o TgvalidatordCreateFiatProviderWithdrawalRequestRequest) ToMap() (map[str
 	if !IsNil(o.ExternalRequestID) {
 		toSerialize["externalRequestID"] = o.ExternalRequestID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -283,15 +288,25 @@ func (o *TgvalidatordCreateFiatProviderWithdrawalRequestRequest) UnmarshalJSON(d
 
 	varTgvalidatordCreateFiatProviderWithdrawalRequestRequest := _TgvalidatordCreateFiatProviderWithdrawalRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateFiatProviderWithdrawalRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateFiatProviderWithdrawalRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateFiatProviderWithdrawalRequestRequest(varTgvalidatordCreateFiatProviderWithdrawalRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "fromAccountID")
+		delete(additionalProperties, "toAddressID")
+		delete(additionalProperties, "toAccountID")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "externalRequestID")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

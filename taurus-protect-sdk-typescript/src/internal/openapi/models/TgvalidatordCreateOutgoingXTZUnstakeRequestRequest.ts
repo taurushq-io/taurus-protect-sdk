@@ -55,7 +55,16 @@ export interface TgvalidatordCreateOutgoingXTZUnstakeRequestRequest {
      * @memberof TgvalidatordCreateOutgoingXTZUnstakeRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingXTZUnstakeRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingXTZUnstakeRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'amount', 'gasLimit', 'feeLimit', 'comment', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingXTZUnstakeRequestRequest interface.
@@ -73,7 +82,7 @@ export function TgvalidatordCreateOutgoingXTZUnstakeRequestRequestFromJSONTyped(
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingXTZUnstakeRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'amount': json['amount'] == null ? undefined : json['amount'],
@@ -82,6 +91,16 @@ export function TgvalidatordCreateOutgoingXTZUnstakeRequestRequestFromJSONTyped(
         'comment': json['comment'] == null ? undefined : json['comment'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingXTZUnstakeRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingXTZUnstakeRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingXTZUnstakeRequestRequest {
@@ -101,6 +120,7 @@ export function TgvalidatordCreateOutgoingXTZUnstakeRequestRequestFromJSONTyped(
         'feeLimit': value['feeLimit'],
         'comment': value['comment'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -26,7 +26,10 @@ type ComputeAddressesSignatureReplyAddressSignature struct {
 	Signature *string `json:"signature,omitempty"`
 	Error *string `json:"error,omitempty"`
 	CurrencyInfo *TgvalidatordCurrency `json:"currencyInfo,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _ComputeAddressesSignatureReplyAddressSignature ComputeAddressesSignatureReplyAddressSignature
 
 // NewComputeAddressesSignatureReplyAddressSignature instantiates a new ComputeAddressesSignatureReplyAddressSignature object
 // This constructor will assign default values to properties that have it defined,
@@ -300,7 +303,39 @@ func (o ComputeAddressesSignatureReplyAddressSignature) ToMap() (map[string]inte
 	if !IsNil(o.CurrencyInfo) {
 		toSerialize["currencyInfo"] = o.CurrencyInfo
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *ComputeAddressesSignatureReplyAddressSignature) UnmarshalJSON(data []byte) (err error) {
+	varComputeAddressesSignatureReplyAddressSignature := _ComputeAddressesSignatureReplyAddressSignature{}
+
+	err = json.Unmarshal(data, &varComputeAddressesSignatureReplyAddressSignature)
+
+	if err != nil {
+		return err
+	}
+
+	*o = ComputeAddressesSignatureReplyAddressSignature(varComputeAddressesSignatureReplyAddressSignature)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "walletId")
+		delete(additionalProperties, "addressId")
+		delete(additionalProperties, "address")
+		delete(additionalProperties, "currency")
+		delete(additionalProperties, "signature")
+		delete(additionalProperties, "error")
+		delete(additionalProperties, "currencyInfo")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableComputeAddressesSignatureReplyAddressSignature struct {

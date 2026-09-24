@@ -21,7 +21,10 @@ var _ MappedNullable = &GetWorkflowsRequestIDsFilter{}
 type GetWorkflowsRequestIDsFilter struct {
 	// Filter for specific workflows, identified by their UUIDs
 	Values []string `json:"values,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _GetWorkflowsRequestIDsFilter GetWorkflowsRequestIDsFilter
 
 // NewGetWorkflowsRequestIDsFilter instantiates a new GetWorkflowsRequestIDsFilter object
 // This constructor will assign default values to properties that have it defined,
@@ -85,7 +88,33 @@ func (o GetWorkflowsRequestIDsFilter) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Values) {
 		toSerialize["values"] = o.Values
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *GetWorkflowsRequestIDsFilter) UnmarshalJSON(data []byte) (err error) {
+	varGetWorkflowsRequestIDsFilter := _GetWorkflowsRequestIDsFilter{}
+
+	err = json.Unmarshal(data, &varGetWorkflowsRequestIDsFilter)
+
+	if err != nil {
+		return err
+	}
+
+	*o = GetWorkflowsRequestIDsFilter(varGetWorkflowsRequestIDsFilter)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "values")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableGetWorkflowsRequestIDsFilter struct {

@@ -35,7 +35,10 @@ type TgvalidatordXTZBaker struct {
 	DelegationCapacity *string `json:"delegationCapacity,omitempty"`
 	AvailableDelegationCapacity *string `json:"availableDelegationCapacity,omitempty"`
 	EdgeOfBakingOverStaking *string `json:"edgeOfBakingOverStaking,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordXTZBaker TgvalidatordXTZBaker
 
 // NewTgvalidatordXTZBaker instantiates a new TgvalidatordXTZBaker object
 // This constructor will assign default values to properties that have it defined,
@@ -624,7 +627,48 @@ func (o TgvalidatordXTZBaker) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.EdgeOfBakingOverStaking) {
 		toSerialize["edgeOfBakingOverStaking"] = o.EdgeOfBakingOverStaking
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordXTZBaker) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordXTZBaker := _TgvalidatordXTZBaker{}
+
+	err = json.Unmarshal(data, &varTgvalidatordXTZBaker)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordXTZBaker(varTgvalidatordXTZBaker)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "address")
+		delete(additionalProperties, "stakingBond")
+		delete(additionalProperties, "stakingBalance")
+		delete(additionalProperties, "stakingCapacity")
+		delete(additionalProperties, "availableCapacity")
+		delete(additionalProperties, "active")
+		delete(additionalProperties, "isStakingAllowed")
+		delete(additionalProperties, "totalStaked")
+		delete(additionalProperties, "externalStaked")
+		delete(additionalProperties, "overStaked")
+		delete(additionalProperties, "externalStakingCapacity")
+		delete(additionalProperties, "totalDelegated")
+		delete(additionalProperties, "externalDelegated")
+		delete(additionalProperties, "delegationCapacity")
+		delete(additionalProperties, "availableDelegationCapacity")
+		delete(additionalProperties, "edgeOfBakingOverStaking")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordXTZBaker struct {

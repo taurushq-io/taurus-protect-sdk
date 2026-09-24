@@ -25,7 +25,16 @@ export interface TaurusNetworkServiceUpdateLendingAgreementBody {
      * @memberof TaurusNetworkServiceUpdateLendingAgreementBody
      */
     lenderSharedAddressID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TaurusNetworkServiceUpdateLendingAgreementBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TaurusNetworkServiceUpdateLendingAgreementBodyWireKeys: ReadonlySet<string> = new Set(['lenderSharedAddressID']);
 
 /**
  * Check if a given object implements the TaurusNetworkServiceUpdateLendingAgreementBody interface.
@@ -42,10 +51,20 @@ export function TaurusNetworkServiceUpdateLendingAgreementBodyFromJSONTyped(json
     if (json == null) {
         return json;
     }
-    return {
+    const result: TaurusNetworkServiceUpdateLendingAgreementBody = {
         
         'lenderSharedAddressID': json['lenderSharedAddressID'] == null ? undefined : json['lenderSharedAddressID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TaurusNetworkServiceUpdateLendingAgreementBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TaurusNetworkServiceUpdateLendingAgreementBodyToJSON(json: any): TaurusNetworkServiceUpdateLendingAgreementBody {
@@ -60,6 +79,7 @@ export function TaurusNetworkServiceUpdateLendingAgreementBodyFromJSONTyped(json
     return {
         
         'lenderSharedAddressID': value['lenderSharedAddressID'],
+        ...value['additionalProperties'],
     };
 }
 

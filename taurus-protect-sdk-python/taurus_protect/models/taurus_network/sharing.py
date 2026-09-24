@@ -8,6 +8,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+from taurus_protect.models.pagination import CursorListOptions
+
 
 class SharedAddressStatus(str, Enum):
     """Shared address status enum."""
@@ -235,27 +237,31 @@ class RejectSharedAssetRequest(BaseModel):
 # Filter options
 
 
-class ListSharedAddressesOptions(BaseModel):
-    """Options for listing shared addresses."""
+class ListSharedAddressesOptions(CursorListOptions):
+    """Options for listing shared addresses. Every field reaches the wire."""
 
-    limit: int = Field(default=50, ge=1, le=1000, description="Maximum items to return")
-    offset: int = Field(default=0, ge=0, description="Number of items to skip")
-    statuses: Optional[List[str]] = Field(default=None, description="Filter by statuses")
     participant_id: Optional[str] = Field(
         default=None, description="Filter by participant ID (owner or target)"
     )
+    owner_participant_id: Optional[str] = Field(default=None, description="Filter by owner")
+    target_participant_id: Optional[str] = Field(default=None, description="Filter by target")
     blockchain: Optional[str] = Field(default=None, description="Filter by blockchain")
     network: Optional[str] = Field(default=None, description="Filter by network")
-
-
-class ListSharedAssetsOptions(BaseModel):
-    """Options for listing shared assets."""
-
-    limit: int = Field(default=50, ge=1, le=1000, description="Maximum items to return")
-    offset: int = Field(default=0, ge=0, description="Number of items to skip")
+    ids: Optional[List[str]] = Field(default=None, description="Filter by shared address IDs")
     statuses: Optional[List[str]] = Field(default=None, description="Filter by statuses")
+    sort_order: Optional[str] = Field(default=None, description="ASC or DESC")
+
+
+class ListSharedAssetsOptions(CursorListOptions):
+    """Options for listing shared assets. Every field reaches the wire."""
+
     participant_id: Optional[str] = Field(
         default=None, description="Filter by participant ID (owner or target)"
     )
+    owner_participant_id: Optional[str] = Field(default=None, description="Filter by owner")
+    target_participant_id: Optional[str] = Field(default=None, description="Filter by target")
     blockchain: Optional[str] = Field(default=None, description="Filter by blockchain")
     network: Optional[str] = Field(default=None, description="Filter by network")
+    ids: Optional[List[str]] = Field(default=None, description="Filter by shared asset IDs")
+    statuses: Optional[List[str]] = Field(default=None, description="Filter by statuses")
+    sort_order: Optional[str] = Field(default=None, description="ASC or DESC")

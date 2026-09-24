@@ -69,10 +69,7 @@ export class VisibilityGroupService extends BaseService {
     return this.execute(async () => {
       const response = await this.visibilityGroupsApi.userServiceGetVisibilityGroups();
 
-      const result =
-        (response as Record<string, unknown>).result ??
-        (response as Record<string, unknown>).visibilityGroups;
-      return visibilityGroupsFromDto(result as unknown[]);
+      return visibilityGroupsFromDto(response.result);
     });
   }
 
@@ -103,10 +100,7 @@ export class VisibilityGroupService extends BaseService {
           visibilityGroupID: visibilityGroupId,
         });
 
-      const result =
-        (response as Record<string, unknown>).result ??
-        (response as Record<string, unknown>).users;
-      return usersFromDto(result as unknown[]);
+      return usersFromDto(response.result);
     });
   }
 }

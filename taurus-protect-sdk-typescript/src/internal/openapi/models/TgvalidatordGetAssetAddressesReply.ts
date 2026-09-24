@@ -58,7 +58,16 @@ export interface TgvalidatordGetAssetAddressesReply {
      * @memberof TgvalidatordGetAssetAddressesReply
      */
     cursor?: TgvalidatordResponseCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetAssetAddressesReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetAssetAddressesReplyWireKeys: ReadonlySet<string> = new Set(['addresses', 'totalItems', 'next', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetAssetAddressesReply interface.
@@ -75,13 +84,23 @@ export function TgvalidatordGetAssetAddressesReplyFromJSONTyped(json: any, ignor
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetAssetAddressesReply = {
         
         'addresses': json['addresses'] == null ? undefined : ((json['addresses'] as Array<any>).map(TgvalidatordAddressFromJSON)),
         'totalItems': json['totalItems'] == null ? undefined : json['totalItems'],
         'next': json['next'] == null ? undefined : json['next'],
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetAssetAddressesReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetAssetAddressesReplyToJSON(json: any): TgvalidatordGetAssetAddressesReply {
@@ -99,6 +118,7 @@ export function TgvalidatordGetAssetAddressesReplyFromJSONTyped(json: any, ignor
         'totalItems': value['totalItems'],
         'next': value['next'],
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
+        ...value['additionalProperties'],
     };
 }
 

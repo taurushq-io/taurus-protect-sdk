@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordScimDeleteGroupReply{}
 // TgvalidatordScimDeleteGroupReply struct for TgvalidatordScimDeleteGroupReply
 type TgvalidatordScimDeleteGroupReply struct {
 	Result map[string]interface{} `json:"result,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordScimDeleteGroupReply TgvalidatordScimDeleteGroupReply
 
 // NewTgvalidatordScimDeleteGroupReply instantiates a new TgvalidatordScimDeleteGroupReply object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordScimDeleteGroupReply) ToMap() (map[string]interface{}, error
 	if !IsNil(o.Result) {
 		toSerialize["result"] = o.Result
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordScimDeleteGroupReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordScimDeleteGroupReply := _TgvalidatordScimDeleteGroupReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordScimDeleteGroupReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordScimDeleteGroupReply(varTgvalidatordScimDeleteGroupReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "result")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordScimDeleteGroupReply struct {

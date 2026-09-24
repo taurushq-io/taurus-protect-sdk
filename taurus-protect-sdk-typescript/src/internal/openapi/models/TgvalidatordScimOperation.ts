@@ -37,7 +37,16 @@ export interface TgvalidatordScimOperation {
      * @memberof TgvalidatordScimOperation
      */
     value?: object;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordScimOperation
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordScimOperationWireKeys: ReadonlySet<string> = new Set(['op', 'path', 'value']);
 
 /**
  * Check if a given object implements the TgvalidatordScimOperation interface.
@@ -54,12 +63,22 @@ export function TgvalidatordScimOperationFromJSONTyped(json: any, ignoreDiscrimi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordScimOperation = {
         
         'op': json['op'] == null ? undefined : json['op'],
         'path': json['path'] == null ? undefined : json['path'],
         'value': json['value'] == null ? undefined : json['value'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordScimOperationWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordScimOperationToJSON(json: any): TgvalidatordScimOperation {
@@ -76,6 +95,7 @@ export function TgvalidatordScimOperationFromJSONTyped(json: any, ignoreDiscrimi
         'op': value['op'],
         'path': value['path'],
         'value': value['value'],
+        ...value['additionalProperties'],
     };
 }
 

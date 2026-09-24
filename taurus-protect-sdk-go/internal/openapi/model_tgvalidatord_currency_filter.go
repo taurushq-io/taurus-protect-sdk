@@ -22,7 +22,10 @@ type TgvalidatordCurrencyFilter struct {
 	Symbol *string `json:"symbol,omitempty"`
 	Blockchain *string `json:"blockchain,omitempty"`
 	Id *string `json:"id,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordCurrencyFilter TgvalidatordCurrencyFilter
 
 // NewTgvalidatordCurrencyFilter instantiates a new TgvalidatordCurrencyFilter object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordCurrencyFilter) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Id) {
 		toSerialize["id"] = o.Id
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordCurrencyFilter) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordCurrencyFilter := _TgvalidatordCurrencyFilter{}
+
+	err = json.Unmarshal(data, &varTgvalidatordCurrencyFilter)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordCurrencyFilter(varTgvalidatordCurrencyFilter)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "symbol")
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "id")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordCurrencyFilter struct {

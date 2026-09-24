@@ -28,7 +28,10 @@ type TgvalidatordTagAssetStatistics struct {
 	TotalBalanceValuation *string `json:"totalBalanceValuation,omitempty"`
 	CreationDate *time.Time `json:"creationDate,omitempty"`
 	CurrencyInfo *TgvalidatordCurrency `json:"currencyInfo,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTagAssetStatistics TgvalidatordTagAssetStatistics
 
 // NewTgvalidatordTagAssetStatistics instantiates a new TgvalidatordTagAssetStatistics object
 // This constructor will assign default values to properties that have it defined,
@@ -267,7 +270,38 @@ func (o TgvalidatordTagAssetStatistics) ToMap() (map[string]interface{}, error) 
 	if !IsNil(o.CurrencyInfo) {
 		toSerialize["currencyInfo"] = o.CurrencyInfo
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTagAssetStatistics) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTagAssetStatistics := _TgvalidatordTagAssetStatistics{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTagAssetStatistics)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTagAssetStatistics(varTgvalidatordTagAssetStatistics)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "tagID")
+		delete(additionalProperties, "currencyID")
+		delete(additionalProperties, "totalBalance")
+		delete(additionalProperties, "totalBalanceValuation")
+		delete(additionalProperties, "creationDate")
+		delete(additionalProperties, "currencyInfo")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTagAssetStatistics struct {

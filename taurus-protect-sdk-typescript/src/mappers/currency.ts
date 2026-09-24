@@ -25,7 +25,8 @@ export function currencyFromDto(dto: unknown): Currency | undefined {
     decimals: safeInt(d.decimals ?? d.decimal),
     coinTypeIndex: safeString(d.coinTypeIndex ?? d.coin_type_index),
     contractAddress: safeString(d.contractAddress ?? d.contract_address ?? d.tokenContractAddress),
-    tokenId: safeString(d.tokenId ?? d.token_id),
+    // The wire field is `tokenID`.
+    tokenId: safeString(d.tokenID ?? d.tokenId ?? d.token_id),
     wlcaId: safeInt(d.wlcaId ?? d.wlca_id),
     logo: safeString(d.logo),
     isToken: safeBoolDefault(d.isToken ?? d.is_token, false),

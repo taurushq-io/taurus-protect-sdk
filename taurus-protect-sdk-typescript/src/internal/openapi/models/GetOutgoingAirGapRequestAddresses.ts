@@ -25,7 +25,16 @@ export interface GetOutgoingAirGapRequestAddresses {
      * @memberof GetOutgoingAirGapRequestAddresses
      */
     ids?: Array<string>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof GetOutgoingAirGapRequestAddresses
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const GetOutgoingAirGapRequestAddressesWireKeys: ReadonlySet<string> = new Set(['ids']);
 
 /**
  * Check if a given object implements the GetOutgoingAirGapRequestAddresses interface.
@@ -42,10 +51,20 @@ export function GetOutgoingAirGapRequestAddressesFromJSONTyped(json: any, ignore
     if (json == null) {
         return json;
     }
-    return {
+    const result: GetOutgoingAirGapRequestAddresses = {
         
         'ids': json['ids'] == null ? undefined : json['ids'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!GetOutgoingAirGapRequestAddressesWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function GetOutgoingAirGapRequestAddressesToJSON(json: any): GetOutgoingAirGapRequestAddresses {
@@ -60,6 +79,7 @@ export function GetOutgoingAirGapRequestAddressesFromJSONTyped(json: any, ignore
     return {
         
         'ids': value['ids'],
+        ...value['additionalProperties'],
     };
 }
 

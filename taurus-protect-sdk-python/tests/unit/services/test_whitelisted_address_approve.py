@@ -73,9 +73,7 @@ class TestApproveWhitelistedAddresses:
             "_verified_addresses",
             return_value=([_envelope("3", "hash-3"), _envelope("7", "hash-7")], []),
         ):
-            service.approve(
-                _reviewed(**{"7": "hash-7", "3": "hash-3"}), _key(), "batch approval"
-            )
+            service.approve(_reviewed(**{"7": "hash-7", "3": "hash-3"}), _key(), "batch approval")
 
         # ONE list call filtered by ids, not one GET per id.
         api.whitelist_service_get_whitelisted_addresses.assert_called_once()
@@ -87,6 +85,41 @@ class TestApproveWhitelistedAddresses:
         assert body.ids == ["3", "7"], "the endpoint requires ascending order"
         assert body.comment == "batch approval"
         assert body.signature
+
+    def test_rereads_a_large_batch_in_pages_of_one_hundred(self) -> None:
+        """The re-read asked for every id in one page; a page holds at most 100, and the
+        batch is still signed once over every hash."""
+        from taurus_protect._internal.openapi import AddressWhitelistingApi
+        from tests.unit.transport_stub import StubTransport, api_client
+
+        ac = api_client()
+        service = WhitelistedAddressService(
+            ac,
+            AddressWhitelistingApi(ac),
+            [ec.generate_private_key(ec.SECP256R1()).public_key()],
+            1,
+        )
+        ids = [str(i) for i in range(1, 151)]
+
+        def verified(rows, _cache):
+            return [_envelope(str(r.id), f"hash-{r.id}") for r in rows], []
+
+        pages = [
+            {"result": [{"id": i} for i in ids[:100]]},
+            {"result": [{"id": i} for i in ids[100:]]},
+        ]
+        with StubTransport(*pages, {}) as transport:
+            with patch.object(service, "_verified_addresses", side_effect=verified):
+                service.approve(
+                    _reviewed(**{i: f"hash-{i}" for i in ids}), _key(), "batch approval"
+                )
+
+        reads, submit = transport.requests[:2], transport.requests[2]
+        assert [len([k for k, _ in r.query if k == "ids"]) for r in reads] == [100, 50]
+        assert [r.param("limit") for r in reads] == ["100", "50"]
+        assert submit.method == "POST"
+        assert submit.body["ids"] == sorted(ids, key=int)
+        assert submit.body["signature"]
 
     def test_aborts_when_the_verified_read_omits_a_row(self) -> None:
         service = _service()
@@ -113,9 +146,7 @@ class TestApproveWhitelistedAddresses:
             result=[MagicMock()], total_items="1"
         )
 
-        with patch.object(
-            service, "_verified_addresses", return_value=([_envelope("3", "")], [])
-        ):
+        with patch.object(service, "_verified_addresses", return_value=([_envelope("3", "")], [])):
             with pytest.raises(IntegrityError, match="has no metadata hash"):
                 service.approve(_reviewed(**{"3": "hash-3"}), _key(), "batch approval")
 

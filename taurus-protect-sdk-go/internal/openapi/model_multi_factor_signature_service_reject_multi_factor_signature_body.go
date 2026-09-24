@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -22,6 +21,7 @@ var _ MappedNullable = &MultiFactorSignatureServiceRejectMultiFactorSignatureBod
 // MultiFactorSignatureServiceRejectMultiFactorSignatureBody struct for MultiFactorSignatureServiceRejectMultiFactorSignatureBody
 type MultiFactorSignatureServiceRejectMultiFactorSignatureBody struct {
 	Comment string `json:"comment"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _MultiFactorSignatureServiceRejectMultiFactorSignatureBody MultiFactorSignatureServiceRejectMultiFactorSignatureBody
@@ -79,6 +79,11 @@ func (o MultiFactorSignatureServiceRejectMultiFactorSignatureBody) MarshalJSON()
 func (o MultiFactorSignatureServiceRejectMultiFactorSignatureBody) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["comment"] = o.Comment
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -106,15 +111,20 @@ func (o *MultiFactorSignatureServiceRejectMultiFactorSignatureBody) UnmarshalJSO
 
 	varMultiFactorSignatureServiceRejectMultiFactorSignatureBody := _MultiFactorSignatureServiceRejectMultiFactorSignatureBody{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varMultiFactorSignatureServiceRejectMultiFactorSignatureBody)
+	err = json.Unmarshal(data, &varMultiFactorSignatureServiceRejectMultiFactorSignatureBody)
 
 	if err != nil {
 		return err
 	}
 
 	*o = MultiFactorSignatureServiceRejectMultiFactorSignatureBody(varMultiFactorSignatureServiceRejectMultiFactorSignatureBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "comment")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

@@ -33,7 +33,16 @@ export interface TgvalidatordCMTATStandaloneContractTemplate {
      * @memberof TgvalidatordCMTATStandaloneContractTemplate
      */
     evm?: TgvalidatordEVMContractTemplateParams;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCMTATStandaloneContractTemplate
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCMTATStandaloneContractTemplateWireKeys: ReadonlySet<string> = new Set(['evm']);
 
 /**
  * Check if a given object implements the TgvalidatordCMTATStandaloneContractTemplate interface.
@@ -50,10 +59,20 @@ export function TgvalidatordCMTATStandaloneContractTemplateFromJSONTyped(json: a
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCMTATStandaloneContractTemplate = {
         
         'evm': json['evm'] == null ? undefined : TgvalidatordEVMContractTemplateParamsFromJSON(json['evm']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCMTATStandaloneContractTemplateWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCMTATStandaloneContractTemplateToJSON(json: any): TgvalidatordCMTATStandaloneContractTemplate {
@@ -68,6 +87,7 @@ export function TgvalidatordCMTATStandaloneContractTemplateFromJSONTyped(json: a
     return {
         
         'evm': TgvalidatordEVMContractTemplateParamsToJSON(value['evm']),
+        ...value['additionalProperties'],
     };
 }
 

@@ -27,7 +27,10 @@ type TgvalidatordTnPledgeActionTrail struct {
 	Action *string `json:"action,omitempty"`
 	Comment *string `json:"comment,omitempty"`
 	CreatedAt *time.Time `json:"createdAt,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTnPledgeActionTrail TgvalidatordTnPledgeActionTrail
 
 // NewTgvalidatordTnPledgeActionTrail instantiates a new TgvalidatordTnPledgeActionTrail object
 // This constructor will assign default values to properties that have it defined,
@@ -301,7 +304,39 @@ func (o TgvalidatordTnPledgeActionTrail) ToMap() (map[string]interface{}, error)
 	if !IsNil(o.CreatedAt) {
 		toSerialize["createdAt"] = o.CreatedAt
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTnPledgeActionTrail) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTnPledgeActionTrail := _TgvalidatordTnPledgeActionTrail{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTnPledgeActionTrail)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTnPledgeActionTrail(varTgvalidatordTnPledgeActionTrail)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "pledgeActionID")
+		delete(additionalProperties, "userID")
+		delete(additionalProperties, "externalUserID")
+		delete(additionalProperties, "action")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "createdAt")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTnPledgeActionTrail struct {

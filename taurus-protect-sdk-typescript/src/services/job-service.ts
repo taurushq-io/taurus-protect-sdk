@@ -66,10 +66,7 @@ export class JobService extends BaseService {
     return this.execute(async () => {
       const response = await this.jobsApi.jobServiceGetJobs();
 
-      const result =
-        (response as Record<string, unknown>).jobs ??
-        (response as Record<string, unknown>).result;
-      return jobsFromDto(result as unknown[]);
+      return jobsFromDto(response.jobs);
     });
   }
 
@@ -96,10 +93,7 @@ export class JobService extends BaseService {
     return this.execute(async () => {
       const response = await this.jobsApi.jobServiceGetJob({ name });
 
-      const result =
-        (response as Record<string, unknown>).job ??
-        (response as Record<string, unknown>).result;
-      const job = jobFromDto(result);
+      const job = jobFromDto(response.job);
 
       if (!job) {
         throw new NotFoundError(`Job with name '${name}' not found`);
@@ -138,10 +132,7 @@ export class JobService extends BaseService {
     return this.execute(async () => {
       const response = await this.jobsApi.jobServiceGetJobStatus({ name, id });
 
-      const result =
-        (response as Record<string, unknown>).status ??
-        (response as Record<string, unknown>).result;
-      const status = jobStatusFromDto(result);
+      const status = jobStatusFromDto(response.status);
 
       if (!status) {
         throw new NotFoundError(`Job status for '${name}' execution '${id}' not found`);

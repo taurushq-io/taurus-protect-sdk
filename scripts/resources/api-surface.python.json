@@ -12,8 +12,8 @@
         },
         {
           "name": "list",
-          "signature": "list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Action], Optional[Pagination]]'",
-          "doc": "List actions with pagination."
+          "signature": "list(limit: 'Optional[int]' = None, offset: 'Optional[int]' = None) -> 'Tuple[List[Action], Pagination]'",
+          "doc": "List actions, one page at a time."
         }
       ]
     },
@@ -52,13 +52,13 @@
         },
         {
           "name": "list",
-          "signature": "list(wallet_id: 'int', limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Address], Optional[Pagination]]'",
-          "doc": "List addresses for a wallet with mandatory signature verification."
+          "signature": "list(wallet_id: 'int', limit: 'Optional[int]' = None, offset: 'Optional[int]' = None, exclude_disabled: 'Optional[bool]' = None) -> 'Tuple[List[Address], Pagination]'",
+          "doc": "List a wallet's addresses, one page at a time, with mandatory signature verification."
         },
         {
           "name": "list_with_options",
-          "signature": "list_with_options(options: 'Optional[ListAddressesOptions]' = None) -> 'Tuple[List[Address], Optional[Pagination]]'",
-          "doc": "List addresses with full filtering options."
+          "signature": "list_with_options(options: 'Optional[ListAddressesOptions]' = None) -> 'Tuple[List[Address], Pagination]'",
+          "doc": "List addresses with filters, one page at a time, with mandatory signature verification."
         }
       ]
     },
@@ -83,22 +83,37 @@
         {
           "name": "get",
           "signature": "get(asset_id: 'str') -> 'Asset'",
-          "doc": "Get an asset by ID."
+          "doc": "Get an asset by its currency ID or symbol."
         },
         {
           "name": "get_addresses",
-          "signature": "get_addresses(currency: 'str', limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Address], Optional[Pagination]]'",
-          "doc": "Get address balances for a specific asset."
+          "signature": "get_addresses(currency: 'str', page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, *, wallet_id: 'Optional[str]' = None, address_id: 'Optional[str]' = None, addresses: 'Optional[List[str]]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[Address], CursorPage]'",
+          "doc": "List the addresses holding an asset, one page at a time, each signature verified."
         },
         {
           "name": "get_wallets",
-          "signature": "get_wallets(currency: 'str', limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Any], Optional[Pagination]]'",
-          "doc": "Get wallet balances for a specific asset."
+          "signature": "get_wallets(currency: 'str', page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, *, wallet_id: 'Optional[str]' = None, wallet_name: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[Wallet], CursorPage]'",
+          "doc": "List the wallets holding an asset, one page at a time."
         },
         {
           "name": "list",
-          "signature": "list(currency: 'str' = 'ETH', limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Asset], Optional[Pagination]]'",
-          "doc": "List asset wallets for a given currency."
+          "signature": "list(currency: 'str', page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None) -> 'Tuple[List[Wallet], CursorPage]'",
+          "doc": "List the wallets holding an asset, one page at a time; same as :meth:`get_wallets`."
+        },
+        {
+          "name": "list_asset_operations",
+          "signature": "list_asset_operations(asset_id: 'str', *, type: 'Optional[str]' = None, status: 'Optional[str]' = None, page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[AssetOperationV2], CursorPage]'",
+          "doc": "List the operations of a v2 asset, one page at a time."
+        },
+        {
+          "name": "query_asset_addresses",
+          "signature": "query_asset_addresses(asset_id: 'str', *, address_type: 'Optional[str]' = None, kyc_status: 'Optional[str]' = None, page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'QueryAssetAddressesResult'",
+          "doc": "List the addresses holding a v2 asset, one page at a time."
+        },
+        {
+          "name": "query_assets",
+          "signature": "query_assets(*, blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None, symbol: 'Optional[str]' = None, contract_address: 'Optional[str]' = None, label: 'Optional[str]' = None, currency_name: 'Optional[str]' = None, page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[AssetV2], CursorPage]'",
+          "doc": "List asset definitions (v2 API), one page at a time."
         }
       ]
     },
@@ -117,8 +132,8 @@
         },
         {
           "name": "list",
-          "signature": "list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Audit], Optional[Pagination]]'",
-          "doc": "List audit events with pagination."
+          "signature": "list(page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, *, external_user_id: 'Optional[str]' = None, entities: 'Optional[List[str]]' = None, actions: 'Optional[List[str]]' = None, from_date: 'Optional[datetime]' = None, to_date: 'Optional[datetime]' = None, sort_by: 'Optional[List[str]]' = None, sort_order: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[Audit], CursorPage]'",
+          "doc": "List audit trails, one page at a time."
         }
       ]
     },
@@ -127,13 +142,13 @@
       "methods": [
         {
           "name": "list",
-          "signature": "list(currency: 'Optional[str]' = None, limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[AssetBalance], Optional[Pagination]]'",
-          "doc": "Get all balances for the tenant, optionally filtered by currency."
+          "signature": "list(currency: 'Optional[str]' = None, page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, *, token_id: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[AssetBalance], CursorPage]'",
+          "doc": "List the tenant's balances, one page at a time, optionally by currency."
         },
         {
           "name": "list_nft_collections",
-          "signature": "list_nft_collections(blockchain: 'str', network: 'str', limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[NFTCollectionBalance], Optional[Pagination]]'",
-          "doc": "Get NFT collection balances for the tenant."
+          "signature": "list_nft_collections(blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None, page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, *, query: 'Optional[str]' = None, only_positive_balance: 'Optional[bool]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[NFTCollectionBalance], CursorPage]'",
+          "doc": "List the tenant's NFT collection balances, one page at a time."
         }
       ]
     },
@@ -162,18 +177,18 @@
       "methods": [
         {
           "name": "list",
-          "signature": "list(page_size: 'Optional[int]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None, rule_keys: 'Optional[List[str]]' = None, wallet_ids: 'Optional[List[str]]' = None, currency_ids: 'Optional[List[str]]' = None, entity_type: 'Optional[str]' = None, entity_ids: 'Optional[List[str]]' = None) -> 'BusinessRuleResult'",
-          "doc": "List business rules with cursor-based pagination (v2 API)."
+          "signature": "list(page_size: 'Optional[int]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None, rule_keys: 'Optional[List[str]]' = None, wallet_ids: 'Optional[List[str]]' = None, currency_ids: 'Optional[List[str]]' = None, entity_type: 'Optional[str]' = None, entity_ids: 'Optional[List[str]]' = None, *, cursor: 'Optional[str]' = None, ids: 'Optional[List[str]]' = None, rule_groups: 'Optional[List[str]]' = None, address_ids: 'Optional[List[str]]' = None, level: 'Optional[str]' = None) -> 'BusinessRuleResult'",
+          "doc": "List business rules, one page at a time (v2 API)."
         },
         {
           "name": "list_by_currency",
-          "signature": "list_by_currency(currency_id: 'str', page_size: 'Optional[int]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'BusinessRuleResult'",
-          "doc": "List business rules for a specific currency."
+          "signature": "list_by_currency(currency_id: 'str', page_size: 'Optional[int]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None, *, cursor: 'Optional[str]' = None) -> 'BusinessRuleResult'",
+          "doc": "List business rules for a specific currency, one page at a time."
         },
         {
           "name": "list_by_wallet",
-          "signature": "list_by_wallet(wallet_id: 'int', page_size: 'Optional[int]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'BusinessRuleResult'",
-          "doc": "List business rules for a specific wallet."
+          "signature": "list_by_wallet(wallet_id: 'int', page_size: 'Optional[int]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None, *, cursor: 'Optional[str]' = None) -> 'BusinessRuleResult'",
+          "doc": "List business rules for a specific wallet, one page at a time."
         },
         {
           "name": "update_transactions_enabled",
@@ -208,12 +223,12 @@
         {
           "name": "list",
           "signature": "list(options: 'Optional[ListChangesOptions]' = None) -> 'ChangeResult'",
-          "doc": "List changes with cursor-based pagination."
+          "doc": "List changes, one page at a time."
         },
         {
           "name": "list_for_approval",
           "signature": "list_for_approval(options: 'Optional[ListChangesOptions]' = None) -> 'ChangeResult'",
-          "doc": "List changes pending approval with cursor-based pagination."
+          "doc": "List changes pending approval, one page at a time."
         },
         {
           "name": "reject_change",
@@ -261,11 +276,6 @@
           "doc": "Create an attribute on a whitelisted contract."
         },
         {
-          "name": "delete",
-          "signature": "delete(contract_id: 'int') -> 'None'",
-          "doc": "Delete a whitelisted contract."
-        },
-        {
           "name": "get_attribute",
           "signature": "get_attribute(contract_id: 'str', key: 'str') -> 'Optional[str]'",
           "doc": "Get an attribute value from a whitelisted contract."
@@ -298,6 +308,16 @@
       ]
     },
     {
+      "name": "EarnService",
+      "methods": [
+        {
+          "name": "list_rewards",
+          "signature": "list_rewards(recipient_address_id: 'Optional[str]' = None, page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, *, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[EarnReward], CursorPage]'",
+          "doc": "List earn rewards, one page at a time."
+        }
+      ]
+    },
+    {
       "name": "ExchangeService",
       "methods": [
         {
@@ -312,8 +332,8 @@
         },
         {
           "name": "list",
-          "signature": "list(limit: 'int' = 50, offset: 'int' = 0, currency_id: 'Optional[str]' = None, exchange_label: 'Optional[str]' = None, status: 'Optional[str]' = None, only_positive_balance: 'bool' = False) -> 'Tuple[List[Exchange], Optional[Pagination]]'",
-          "doc": "List exchange accounts with pagination."
+          "signature": "list(page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, currency_id: 'Optional[str]' = None, exchange_label: 'Optional[str]' = None, status: 'Optional[str]' = None, only_positive_balance: 'Optional[bool]' = None, *, sort_order: 'Optional[str]' = None, include_base_currency_valuation: 'Optional[bool]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[Exchange], CursorPage]'",
+          "doc": "List exchange accounts, one page at a time."
         },
         {
           "name": "list_counterparties",
@@ -332,8 +352,8 @@
         },
         {
           "name": "list",
-          "signature": "list(limit: 'int' = 50, offset: 'int' = 0, blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None) -> 'Tuple[List[FeePayer], Optional[Pagination]]'",
-          "doc": "List fee payers with pagination."
+          "signature": "list(limit: 'Optional[int]' = None, offset: 'Optional[int]' = None, blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None) -> 'Tuple[List[FeePayer], Pagination]'",
+          "doc": "List fee payers, one page at a time."
         }
       ]
     },
@@ -371,9 +391,14 @@
           "doc": "Get the exchange rate between two currencies."
         },
         {
-          "name": "list",
-          "signature": "list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[FiatProviderAccount], Optional[Pagination]]'",
-          "doc": "List fiat provider accounts with pagination."
+          "name": "list_fiat_provider_accounts",
+          "signature": "list_fiat_provider_accounts(provider: 'str', label: 'str', page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, *, account_type: 'Optional[str]' = None, sort_order: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[FiatProviderAccount], CursorPage]'",
+          "doc": "List a fiat provider's accounts, one page at a time."
+        },
+        {
+          "name": "list_fiat_provider_entities",
+          "signature": "list_fiat_provider_entities(provider: 'Optional[str]' = None, label: 'Optional[str]' = None, page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, *, sort_order: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[FiatProviderEntity], CursorPage]'",
+          "doc": "List the entities registered with fiat providers, one page at a time."
         },
         {
           "name": "list_providers",
@@ -417,8 +442,8 @@
         },
         {
           "name": "get_rules_history",
-          "signature": "get_rules_history(page_size: 'int' = 50, cursor: 'Optional[str]' = None) -> 'GovernanceRulesHistoryResult'",
-          "doc": "Get the history of governance rules with cursor-based pagination."
+          "signature": "get_rules_history(page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None) -> 'GovernanceRulesHistoryResult'",
+          "doc": "Get the history of governance rules, one page at a time."
         },
         {
           "name": "get_rules_proposal",
@@ -457,8 +482,8 @@
         },
         {
           "name": "list",
-          "signature": "list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Group], Optional[Pagination]]'",
-          "doc": "List groups with pagination."
+          "signature": "list(limit: 'Optional[int]' = None, offset: 'Optional[int]' = None) -> 'Tuple[List[Group], Pagination]'",
+          "doc": "List groups, one page at a time."
         }
       ]
     },
@@ -487,8 +512,8 @@
         },
         {
           "name": "list",
-          "signature": "list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Job], Optional[Pagination]]'",
-          "doc": "List jobs with pagination."
+          "signature": "list() -> 'List[Job]'",
+          "doc": "List jobs: every job the endpoint returns, which does not page."
         }
       ]
     },
@@ -552,18 +577,18 @@
         },
         {
           "name": "list_lending_agreements",
-          "signature": "list_lending_agreements(options: 'Optional[ListLendingAgreementsOptions]' = None) -> 'Tuple[List[LendingAgreement], Optional[CursorPagination]]'",
-          "doc": "List lending agreements."
+          "signature": "list_lending_agreements(options: 'Optional[ListLendingAgreementsOptions]' = None) -> 'Tuple[List[LendingAgreement], CursorPage]'",
+          "doc": "List lending agreements, one page at a time."
         },
         {
           "name": "list_lending_agreements_for_approval",
-          "signature": "list_lending_agreements_for_approval(options: 'Optional[ListLendingAgreementsOptions]' = None) -> 'Tuple[List[LendingAgreement], Optional[CursorPagination]]'",
-          "doc": "List lending agreements pending approval."
+          "signature": "list_lending_agreements_for_approval(options: 'Optional[ListLendingAgreementsOptions]' = None) -> 'Tuple[List[LendingAgreement], CursorPage]'",
+          "doc": "List lending agreements pending approval, one page at a time."
         },
         {
           "name": "list_lending_offers",
-          "signature": "list_lending_offers(options: 'Optional[ListLendingOffersOptions]' = None) -> 'Tuple[List[LendingOffer], Optional[CursorPagination]]'",
-          "doc": "List lending offers."
+          "signature": "list_lending_offers(options: 'Optional[ListLendingOffersOptions]' = None) -> 'Tuple[List[LendingOffer], CursorPage]'",
+          "doc": "List lending offers, one page at a time."
         },
         {
           "name": "repay_lending_agreement",
@@ -662,23 +687,23 @@
         },
         {
           "name": "list_pledge_actions",
-          "signature": "list_pledge_actions(opts: 'Optional[ListPledgeActionsOptions]' = None) -> 'Tuple[List[PledgeAction], Optional[Pagination]]'",
-          "doc": "List all pledge actions with optional filtering."
+          "signature": "list_pledge_actions(opts: 'Optional[ListPledgeActionsOptions]' = None) -> 'Tuple[List[PledgeAction], CursorPage]'",
+          "doc": "List pledge actions, one page at a time, each hash verified against its payload."
         },
         {
           "name": "list_pledge_actions_for_approval",
-          "signature": "list_pledge_actions_for_approval(opts: 'Optional[ListPledgeActionsOptions]' = None) -> 'Tuple[List[PledgeAction], Optional[Pagination]]'",
-          "doc": "List pledge actions pending approval."
+          "signature": "list_pledge_actions_for_approval(opts: 'Optional[ListPledgeActionsOptions]' = None) -> 'Tuple[List[PledgeAction], CursorPage]'",
+          "doc": "List pledge actions pending approval, one page at a time."
         },
         {
           "name": "list_pledge_withdrawals",
-          "signature": "list_pledge_withdrawals(opts: 'Optional[ListPledgeWithdrawalsOptions]' = None) -> 'Tuple[List[PledgeWithdrawal], Optional[Pagination]]'",
-          "doc": "List pledge withdrawals with optional filtering."
+          "signature": "list_pledge_withdrawals(opts: 'Optional[ListPledgeWithdrawalsOptions]' = None) -> 'Tuple[List[PledgeWithdrawal], CursorPage]'",
+          "doc": "List pledge withdrawals, one page at a time."
         },
         {
           "name": "list_pledges",
-          "signature": "list_pledges(opts: 'Optional[ListPledgesOptions]' = None) -> 'Tuple[List[Pledge], Optional[Pagination]]'",
-          "doc": "List pledges with optional filtering."
+          "signature": "list_pledges(opts: 'Optional[ListPledgesOptions]' = None) -> 'Tuple[List[Pledge], CursorPage]'",
+          "doc": "List pledges, one page at a time."
         },
         {
           "name": "reject_pledge",
@@ -712,8 +737,8 @@
       "methods": [
         {
           "name": "get_current",
-          "signature": "get_current(currency: 'Optional[str]' = None) -> 'List[Price]'",
-          "doc": "Get current prices for all currencies or a specific currency."
+          "signature": "get_current(*, from_currency_id: 'Optional[str]' = None, to_currency_ids: 'Optional[List[str]]' = None, only_primary: 'Optional[bool]' = None, sort_order: 'Optional[str]' = None, page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[Price], CursorPage]'",
+          "doc": "List current prices, one page at a time, each signature verified."
         },
         {
           "name": "get_historical",
@@ -772,13 +797,13 @@
         },
         {
           "name": "get_for_approval",
-          "signature": "get_for_approval(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Request], Optional[Pagination]]'",
-          "doc": "Get requests pending approval."
+          "signature": "get_for_approval(page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, *, currency_id: 'Optional[str]' = None, types: 'Optional[List[str]]' = None, exclude_types: 'Optional[List[str]]' = None, ids: 'Optional[List[str]]' = None, sort_order: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[Request], CursorPage]'",
+          "doc": "List requests pending the caller's approval, one page at a time."
         },
         {
           "name": "list",
-          "signature": "list(limit: 'int' = 50, offset: 'int' = 0, from_date: 'Optional[datetime]' = None, to_date: 'Optional[datetime]' = None, currency_id: 'Optional[str]' = None, statuses: 'Optional[List[RequestStatus]]' = None) -> 'Tuple[List[Request], Optional[Pagination]]'",
-          "doc": "List requests with filtering and pagination."
+          "signature": "list(page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, from_date: 'Optional[datetime]' = None, to_date: 'Optional[datetime]' = None, currency_id: 'Optional[str]' = None, statuses: 'Optional[List[RequestStatus]]' = None, *, types: 'Optional[List[str]]' = None, ids: 'Optional[List[str]]' = None, external_request_ids: 'Optional[List[str]]' = None, sort_order: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[Request], CursorPage]'",
+          "doc": "List requests with filtering, one page at a time."
         },
         {
           "name": "reject_request",
@@ -796,19 +821,14 @@
       "name": "ReservationService",
       "methods": [
         {
-          "name": "cancel",
-          "signature": "cancel(reservation_id: 'int') -> 'None'",
-          "doc": "Cancel a reservation."
-        },
-        {
           "name": "get",
           "signature": "get(reservation_id: 'int') -> 'Reservation'",
           "doc": "Get a reservation by ID."
         },
         {
           "name": "list",
-          "signature": "list(wallet_id: 'Optional[int]' = None, limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Reservation], Optional[Pagination]]'",
-          "doc": "List reservations."
+          "signature": "list(page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, *, kind: 'Optional[str]' = None, kinds: 'Optional[List[str]]' = None, address: 'Optional[str]' = None, address_id: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[Reservation], CursorPage]'",
+          "doc": "List reservations, one page at a time."
         }
       ]
     },
@@ -852,13 +872,13 @@
         },
         {
           "name": "list_settlements",
-          "signature": "list_settlements(options: 'Optional[ListSettlementsOptions]' = None) -> 'Tuple[List[Settlement], Optional[CursorPagination]]'",
-          "doc": "List settlements."
+          "signature": "list_settlements(options: 'Optional[ListSettlementsOptions]' = None) -> 'Tuple[List[Settlement], CursorPage]'",
+          "doc": "List settlements, one page at a time."
         },
         {
           "name": "list_settlements_for_approval",
-          "signature": "list_settlements_for_approval(options: 'Optional[ListSettlementsForApprovalOptions]' = None) -> 'Tuple[List[Settlement], Optional[CursorPagination]]'",
-          "doc": "List settlements pending approval."
+          "signature": "list_settlements_for_approval(options: 'Optional[ListSettlementsForApprovalOptions]' = None) -> 'Tuple[List[Settlement], CursorPage]'",
+          "doc": "List settlements pending approval, one page at a time."
         },
         {
           "name": "replace_settlement",
@@ -872,13 +892,13 @@
       "methods": [
         {
           "name": "list_shared_addresses",
-          "signature": "list_shared_addresses(options: 'Optional[ListSharedAddressesOptions]' = None) -> 'Tuple[List[SharedAddress], Optional[CursorPagination]]'",
-          "doc": "List shared addresses."
+          "signature": "list_shared_addresses(options: 'Optional[ListSharedAddressesOptions]' = None) -> 'Tuple[List[SharedAddress], CursorPage]'",
+          "doc": "List shared addresses, one page at a time."
         },
         {
           "name": "list_shared_assets",
-          "signature": "list_shared_assets(options: 'Optional[ListSharedAssetsOptions]' = None) -> 'Tuple[List[SharedAsset], Optional[CursorPagination]]'",
-          "doc": "List shared whitelisted assets."
+          "signature": "list_shared_assets(options: 'Optional[ListSharedAssetsOptions]' = None) -> 'Tuple[List[SharedAsset], CursorPage]'",
+          "doc": "List shared whitelisted assets, one page at a time."
         },
         {
           "name": "share_address",
@@ -912,8 +932,8 @@
         },
         {
           "name": "list_validators",
-          "signature": "list_validators(blockchain: 'str', network: 'str' = 'mainnet', limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Validator], Optional[Pagination]]'",
-          "doc": "List validators for a blockchain."
+          "signature": "list_validators(blockchain: 'str', network: 'str' = 'mainnet', *, ids: 'Optional[List[str]]' = None) -> 'List[Validator]'",
+          "doc": "List validators for a blockchain: every validator the endpoint returns."
         }
       ]
     },
@@ -952,8 +972,8 @@
         },
         {
           "name": "list",
-          "signature": "list(limit: 'int' = 50, offset: 'int' = 0) -> 'List[Tag]'",
-          "doc": "List tags."
+          "signature": "list(*, query: 'Optional[str]' = None, ids: 'Optional[List[str]]' = None) -> 'List[Tag]'",
+          "doc": "List tags: every tag the endpoint returns, which does not page."
         }
       ]
     },
@@ -986,9 +1006,14 @@
       "name": "TransactionService",
       "methods": [
         {
+          "name": "export",
+          "signature": "export(from_date: 'Optional[datetime]' = None, to_date: 'Optional[datetime]' = None, currency: 'Optional[str]' = None, direction: 'Optional[str]' = None, limit: 'Optional[int]' = None, blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None, format: 'Optional[str]' = None) -> 'TransactionExport'",
+          "doc": "Export transactions in one reply."
+        },
+        {
           "name": "export_csv",
-          "signature": "export_csv(from_date: 'Optional[datetime]' = None, to_date: 'Optional[datetime]' = None, currency: 'Optional[str]' = None, direction: 'Optional[str]' = None, limit: 'int' = 1000, offset: 'int' = 0, blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None) -> 'str'",
-          "doc": "Export transactions to CSV format."
+          "signature": "export_csv(from_date: 'Optional[datetime]' = None, to_date: 'Optional[datetime]' = None, currency: 'Optional[str]' = None, direction: 'Optional[str]' = None, limit: 'Optional[int]' = None, blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None) -> 'TransactionExport'",
+          "doc": "Export transactions as CSV: :meth:`export` with ``format=\"csv\"``."
         },
         {
           "name": "get",
@@ -1002,13 +1027,13 @@
         },
         {
           "name": "list",
-          "signature": "list(from_date: 'Optional[datetime]' = None, to_date: 'Optional[datetime]' = None, currency: 'Optional[str]' = None, direction: 'Optional[str]' = None, limit: 'int' = 50, offset: 'int' = 0, blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None) -> 'Tuple[List[Transaction], Optional[Pagination]]'",
-          "doc": "List transactions with filtering."
+          "signature": "list(from_date: 'Optional[datetime]' = None, to_date: 'Optional[datetime]' = None, currency: 'Optional[str]' = None, direction: 'Optional[str]' = None, limit: 'Optional[int]' = None, offset: 'Optional[int]' = None, blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None) -> 'Tuple[List[Transaction], Pagination]'",
+          "doc": "List transactions with filtering, one page at a time."
         },
         {
           "name": "list_by_address",
-          "signature": "list_by_address(address: 'str', limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Transaction], Optional[Pagination]]'",
-          "doc": "List transactions for a specific blockchain address."
+          "signature": "list_by_address(address: 'str', limit: 'Optional[int]' = None, offset: 'Optional[int]' = None) -> 'Tuple[List[Transaction], Pagination]'",
+          "doc": "List transactions for a specific blockchain address, one page at a time."
         }
       ]
     },
@@ -1037,7 +1062,7 @@
         },
         {
           "name": "list",
-          "signature": "list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[UserDevicePairing], Optional[Pagination]]'",
+          "signature": "list(limit: 'Optional[int]' = None, offset: 'Optional[int]' = None) -> 'Tuple[List[UserDevicePairing], Pagination]'",
           "doc": "List user device pairings."
         },
         {
@@ -1068,12 +1093,12 @@
         {
           "name": "get_users_by_email",
           "signature": "get_users_by_email(emails: 'List[str]') -> 'List[User]'",
-          "doc": "Get users by their email addresses."
+          "doc": "Get users by their email addresses, reading every page."
         },
         {
           "name": "list",
-          "signature": "list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[User], Optional[Pagination]]'",
-          "doc": "List users with pagination."
+          "signature": "list(limit: 'Optional[int]' = None, offset: 'Optional[int]' = None) -> 'Tuple[List[User], Pagination]'",
+          "doc": "List users, one page at a time."
         }
       ]
     },
@@ -1092,8 +1117,8 @@
         },
         {
           "name": "list",
-          "signature": "list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[VisibilityGroup], Optional[Pagination]]'",
-          "doc": "List visibility groups with pagination."
+          "signature": "list() -> 'List[VisibilityGroup]'",
+          "doc": "List visibility groups: every group the endpoint returns, which does not page."
         }
       ]
     },
@@ -1127,23 +1152,23 @@
         },
         {
           "name": "get_by_name",
-          "signature": "get_by_name(name: 'str', limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Wallet], Optional[Pagination]]'",
-          "doc": "Get wallets by name with pagination."
+          "signature": "get_by_name(name: 'str', limit: 'Optional[int]' = None, offset: 'Optional[int]' = None, exclude_disabled: 'Optional[bool]' = None) -> 'Tuple[List[Wallet], Pagination]'",
+          "doc": "List wallets whose name matches (case-insensitive, partial), one page at a time."
         },
         {
           "name": "get_tokens",
-          "signature": "get_tokens(wallet_id: 'int', limit: 'int' = 50) -> 'List[AssetBalance]'",
-          "doc": "Get wallet tokens (asset balances)."
+          "signature": "get_tokens(wallet_id: 'int', page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None) -> 'Tuple[List[AssetBalance], CursorPage]'",
+          "doc": "List a wallet's token balances, one page at a time."
         },
         {
           "name": "list",
-          "signature": "list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Wallet], Optional[Pagination]]'",
-          "doc": "List wallets with pagination."
+          "signature": "list(limit: 'Optional[int]' = None, offset: 'Optional[int]' = None, exclude_disabled: 'Optional[bool]' = None) -> 'Tuple[List[Wallet], Pagination]'",
+          "doc": "List wallets, one page at a time."
         },
         {
           "name": "list_with_options",
-          "signature": "list_with_options(options: 'Optional[ListWalletsOptions]' = None) -> 'Tuple[List[Wallet], Optional[Pagination]]'",
-          "doc": "List wallets with full filtering options."
+          "signature": "list_with_options(options: 'Optional[ListWalletsOptions]' = None) -> 'Tuple[List[Wallet], Pagination]'",
+          "doc": "List wallets with every filter the endpoint supports."
         }
       ]
     },
@@ -1157,13 +1182,13 @@
         },
         {
           "name": "get_webhook_calls",
-          "signature": "get_webhook_calls(event_id: 'Optional[str]' = None, webhook_id: 'Optional[str]' = None, status: 'Optional[str]' = None, sort_order: 'Optional[str]' = None, cursor: 'Optional[ApiRequestCursor]' = None) -> 'WebhookCallResult'",
-          "doc": "Retrieve webhook call history with optional filtering."
+          "signature": "get_webhook_calls(event_id: 'Optional[str]' = None, webhook_id: 'Optional[str]' = None, status: 'Optional[str]' = None, sort_order: 'Optional[str]' = None, cursor: 'Optional[Union[str, ApiRequestCursor]]' = None, *, page_size: 'Optional[int]' = None) -> 'WebhookCallResult'",
+          "doc": "Retrieve webhook call history, one page at a time."
         },
         {
           "name": "list",
-          "signature": "list(webhook_id: 'Optional[str]' = None, event_id: 'Optional[str]' = None, status: 'Optional[str]' = None, sort_order: 'Optional[str]' = None, limit: 'int' = 50, cursor: 'Optional[str]' = None) -> 'Tuple[List[WebhookCall], Optional[Pagination]]'",
-          "doc": "List webhook calls with optional filtering."
+          "signature": "list(webhook_id: 'Optional[str]' = None, event_id: 'Optional[str]' = None, status: 'Optional[str]' = None, sort_order: 'Optional[str]' = None, page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None) -> 'Tuple[List[WebhookCall], CursorPage]'",
+          "doc": "List webhook calls, one page at a time."
         }
       ]
     },
@@ -1187,8 +1212,8 @@
         },
         {
           "name": "list",
-          "signature": "list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Webhook], Optional[Pagination]]'",
-          "doc": "List webhooks with pagination."
+          "signature": "list(page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, *, type: 'Optional[str]' = None, url: 'Optional[str]' = None, sort_order: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[Webhook], CursorPage]'",
+          "doc": "List webhooks, one page at a time."
         }
       ]
     },
@@ -1212,12 +1237,12 @@
         },
         {
           "name": "list",
-          "signature": "list(currency: 'Optional[str]' = None, limit: 'int' = 50, offset: 'int' = 0, *, ids: 'Optional[List[str]]' = None, include_for_approval: 'bool' = False) -> 'WhitelistedAddressListResult'",
+          "signature": "list(currency: 'Optional[str]' = None, limit: 'Optional[int]' = None, offset: 'Optional[int]' = None, *, ids: 'Optional[List[str]]' = None, include_for_approval: 'bool' = False) -> 'WhitelistedAddressListResult'",
           "doc": "List whitelisted addresses with cryptographic verification."
         },
         {
           "name": "list_for_approval",
-          "signature": "list_for_approval(limit: 'int' = 50, offset: 'int' = 0, *, ids: 'Optional[List[str]]' = None, include_already_signed_by_user: 'bool' = False) -> 'WhitelistedAddressListResult'",
+          "signature": "list_for_approval(limit: 'Optional[int]' = None, offset: 'Optional[int]' = None, *, ids: 'Optional[List[str]]' = None, include_already_signed_by_user: 'bool' = False) -> 'WhitelistedAddressListResult'",
           "doc": "List whitelisted addresses awaiting approval, verified exactly as ``list`` is."
         }
       ]
@@ -1237,12 +1262,12 @@
         },
         {
           "name": "list",
-          "signature": "list(blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None, limit: 'int' = 50, offset: 'int' = 0, *, ids: 'Optional[List[str]]' = None, include_for_approval: 'bool' = False) -> 'Tuple[List[WhitelistedAsset], Optional[Pagination]]'",
-          "doc": "List whitelisted assets."
+          "signature": "list(blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None, limit: 'Optional[int]' = None, offset: 'Optional[int]' = None, *, ids: 'Optional[List[str]]' = None, include_for_approval: 'bool' = False) -> 'Tuple[List[WhitelistedAsset], Pagination]'",
+          "doc": "List whitelisted assets, one page at a time."
         },
         {
           "name": "list_for_approval",
-          "signature": "list_for_approval(ids: 'Optional[List[str]]' = None, limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[WhitelistedAsset], Optional[Pagination]]'",
+          "signature": "list_for_approval(ids: 'Optional[List[str]]' = None, limit: 'Optional[int]' = None, offset: 'Optional[int]' = None) -> 'Tuple[List[WhitelistedAsset], Pagination]'",
           "doc": "List whitelisted assets awaiting approval, verified as in list()."
         }
       ]

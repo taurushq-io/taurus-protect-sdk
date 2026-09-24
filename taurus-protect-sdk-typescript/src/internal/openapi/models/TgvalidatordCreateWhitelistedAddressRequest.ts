@@ -97,7 +97,16 @@ export interface TgvalidatordCreateWhitelistedAddressRequest {
      * @memberof TgvalidatordCreateWhitelistedAddressRequest
      */
     currency?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateWhitelistedAddressRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateWhitelistedAddressRequestWireKeys: ReadonlySet<string> = new Set(['address', 'memo', 'label', 'exchangeAccountId', 'customerId', 'linkedInternalAddressIds', 'addressType', 'contractType', 'linkedWalletIds', 'blockchain', 'network', 'visibilityGroupID', 'currency']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateWhitelistedAddressRequest interface.
@@ -117,7 +126,7 @@ export function TgvalidatordCreateWhitelistedAddressRequestFromJSONTyped(json: a
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateWhitelistedAddressRequest = {
         
         'address': json['address'],
         'memo': json['memo'] == null ? undefined : json['memo'],
@@ -133,6 +142,16 @@ export function TgvalidatordCreateWhitelistedAddressRequestFromJSONTyped(json: a
         'visibilityGroupID': json['visibilityGroupID'] == null ? undefined : json['visibilityGroupID'],
         'currency': json['currency'] == null ? undefined : json['currency'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateWhitelistedAddressRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateWhitelistedAddressRequestToJSON(json: any): TgvalidatordCreateWhitelistedAddressRequest {
@@ -159,6 +178,7 @@ export function TgvalidatordCreateWhitelistedAddressRequestFromJSONTyped(json: a
         'network': value['network'],
         'visibilityGroupID': value['visibilityGroupID'],
         'currency': value['currency'],
+        ...value['additionalProperties'],
     };
 }
 

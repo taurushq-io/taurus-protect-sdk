@@ -9,7 +9,7 @@
 
 import * as crypto from "crypto";
 import { RequestService } from "../../../src/services/request-service";
-import { IntegrityError, NotFoundError } from "../../../src/errors";
+import { IntegrityError, NotFoundError, ValidationError } from "../../../src/errors";
 import type { Request, RequestMetadata } from "../../../src/models/request";
 import type { RequestsApi } from "../../../src/internal/openapi/apis/RequestsApi";
 import type { TgvalidatordGetRequestReply } from "../../../src/internal/openapi/models/TgvalidatordGetRequestReply";
@@ -179,18 +179,33 @@ describe("RequestService", () => {
       };
       mockApi.requestServiceGetRequestsV2.mockResolvedValue(dto);
 
-      const result = await service.list({ limit: 50 });
+      const result = await service.list({ pageSize: 50 });
 
       expect(result.requests).toHaveLength(2);
       expect(result.requests[0].id).toBe(1);
       expect(result.requests[1].id).toBe(2);
-      expect(result.cursor.nextCursor).toBe("abc123");
+      // A v2 last page still carries currentPage; only hasNext says there is more.
+      // Reading currentPage as "more" was the bug: the walk re-requested past the end.
+      expect(result.pagination).toEqual({ pageSize: 50, nextCursor: "", hasMore: false });
     });
 
-    it("should throw Error when limit is not positive", async () => {
-      await expect(service.list({ limit: 0 })).rejects.toThrow(
-        "limit must be positive"
+    it("continues with the reply's currentPage when hasNext is set", async () => {
+      mockApi.requestServiceGetRequestsV2.mockResolvedValue({
+        result: [],
+        cursor: { currentPage: "abc123", hasNext: true },
+      });
+
+      const result = await service.list({ pageSize: 50 });
+
+      expect(result.pagination).toEqual({ pageSize: 50, nextCursor: "abc123", hasMore: true });
+    });
+
+    it("should throw ValidationError when the page size is out of bounds", async () => {
+      await expect(service.list({ pageSize: 101 })).rejects.toThrow(ValidationError);
+      await expect(service.list({ pageSize: -1 })).rejects.toThrow(
+        "pageSize must not be negative, got -1"
       );
+      expect(mockApi.requestServiceGetRequestsV2).not.toHaveBeenCalled();
     });
   });
 
@@ -210,11 +225,20 @@ describe("RequestService", () => {
       };
       mockApi.requestServiceGetRequestsForApprovalV2.mockResolvedValue(dto);
 
-      const result = await service.listForApproval({ limit: 50 });
+      const result = await service.listForApproval({ pageSize: 50 });
 
       expect(result.requests).toHaveLength(1);
       expect(result.requests[0].id).toBe(1);
-      expect(result.cursor.nextCursor).toBe("xyz789");
+      expect(result.pagination).toEqual({ pageSize: 50, nextCursor: "", hasMore: false });
+    });
+
+    it("rejects a status filter by name: the approval queue has none", async () => {
+      await expect(
+        service.listForApproval({ statuses: ["PENDING"] } as unknown as Parameters<
+          typeof service.listForApproval
+        >[0])
+      ).rejects.toThrow("statuses cannot be applied to the approval queue");
+      expect(mockApi.requestServiceGetRequestsForApprovalV2).not.toHaveBeenCalled();
     });
   });
 
@@ -564,7 +588,7 @@ describe("RequestService", () => {
     it("drops the tampered row from list()", async () => {
       mockApi.requestServiceGetRequestsV2.mockResolvedValue(listReply());
 
-      const result = await service.list({ limit: 50 });
+      const result = await service.list({ pageSize: 50 });
 
       expect(result.requests.map((r) => r.id)).toEqual([1, 3]);
       expect(result.requests[0].metadata?.hashVerified).toBe(true);
@@ -576,7 +600,7 @@ describe("RequestService", () => {
     it("drops the tampered row from listForApproval()", async () => {
       mockApi.requestServiceGetRequestsForApprovalV2.mockResolvedValue(listReply());
 
-      const result = await service.listForApproval({ limit: 50 });
+      const result = await service.listForApproval({ pageSize: 50 });
 
       expect(result.requests.map((r) => r.id)).toEqual([1, 3]);
     });
@@ -584,7 +608,7 @@ describe("RequestService", () => {
     it("does not leak the payload into the warning", async () => {
       mockApi.requestServiceGetRequestsV2.mockResolvedValue(listReply());
 
-      await service.list({ limit: 50 });
+      await service.list({ pageSize: 50 });
 
       const warned = (console.warn as jest.Mock).mock.calls.flat().join(" ");
       expect(warned).not.toContain("999999");

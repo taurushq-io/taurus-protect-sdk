@@ -22,7 +22,10 @@ type TgvalidatordTnParticipantAttributeSpecification struct {
 	AttributeKey *string `json:"attributeKey,omitempty"`
 	AttributeType *string `json:"attributeType,omitempty"`
 	AttributeDescription *string `json:"attributeDescription,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTnParticipantAttributeSpecification TgvalidatordTnParticipantAttributeSpecification
 
 // NewTgvalidatordTnParticipantAttributeSpecification instantiates a new TgvalidatordTnParticipantAttributeSpecification object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordTnParticipantAttributeSpecification) ToMap() (map[string]int
 	if !IsNil(o.AttributeDescription) {
 		toSerialize["attributeDescription"] = o.AttributeDescription
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTnParticipantAttributeSpecification) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTnParticipantAttributeSpecification := _TgvalidatordTnParticipantAttributeSpecification{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTnParticipantAttributeSpecification)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTnParticipantAttributeSpecification(varTgvalidatordTnParticipantAttributeSpecification)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "attributeKey")
+		delete(additionalProperties, "attributeType")
+		delete(additionalProperties, "attributeDescription")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTnParticipantAttributeSpecification struct {

@@ -165,12 +165,6 @@ func TestStatisticsService_GetPortfolioStatisticsHistory_WithOptions(t *testing.
 			},
 		},
 		{
-			name: "limit",
-			options: &model.GetPortfolioStatisticsHistoryOptions{
-				Limit: 100,
-			},
-		},
-		{
 			name: "sort order ASC",
 			options: &model.GetPortfolioStatisticsHistoryOptions{
 				SortOrder: "ASC",
@@ -196,7 +190,6 @@ func TestStatisticsService_GetPortfolioStatisticsHistory_WithOptions(t *testing.
 				IntervalHours: 12,
 				From:          &yesterday,
 				To:            &now,
-				Limit:         200,
 				SortOrder:     "ASC",
 				CurrentPage:   "xyz789",
 				PageRequest:   "LAST",

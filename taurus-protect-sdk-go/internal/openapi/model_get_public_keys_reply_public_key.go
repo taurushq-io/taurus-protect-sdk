@@ -21,7 +21,10 @@ var _ MappedNullable = &GetPublicKeysReplyPublicKey{}
 type GetPublicKeysReplyPublicKey struct {
 	UserID *string `json:"userID,omitempty"`
 	PublicKey *string `json:"publicKey,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _GetPublicKeysReplyPublicKey GetPublicKeysReplyPublicKey
 
 // NewGetPublicKeysReplyPublicKey instantiates a new GetPublicKeysReplyPublicKey object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o GetPublicKeysReplyPublicKey) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.PublicKey) {
 		toSerialize["publicKey"] = o.PublicKey
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *GetPublicKeysReplyPublicKey) UnmarshalJSON(data []byte) (err error) {
+	varGetPublicKeysReplyPublicKey := _GetPublicKeysReplyPublicKey{}
+
+	err = json.Unmarshal(data, &varGetPublicKeysReplyPublicKey)
+
+	if err != nil {
+		return err
+	}
+
+	*o = GetPublicKeysReplyPublicKey(varGetPublicKeysReplyPublicKey)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "userID")
+		delete(additionalProperties, "publicKey")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableGetPublicKeysReplyPublicKey struct {

@@ -48,43 +48,39 @@ func (s *TaurusNetworkPledgeService) GetPledge(ctx context.Context, pledgeID str
 }
 
 // ListPledges retrieves a list of pledges with optional filters.
-func (s *TaurusNetworkPledgeService) ListPledges(ctx context.Context, opts *taurusnetwork.ListPledgesOptions) ([]*taurusnetwork.Pledge, *model.CursorPagination, error) {
-	req := s.api.TaurusNetworkServiceGetPledges(ctx)
+func (s *TaurusNetworkPledgeService) ListPledges(ctx context.Context, opts *taurusnetwork.ListPledgesOptions) ([]*taurusnetwork.Pledge, *model.CursorPage, error) {
+	if opts == nil {
+		opts = &taurusnetwork.ListPledgesOptions{}
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, opts.CurrentPage, opts.PageRequest)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	if opts != nil {
-		if opts.OwnerParticipantID != "" {
-			req = req.OwnerParticipantID(opts.OwnerParticipantID)
-		}
-		if opts.TargetParticipantID != "" {
-			req = req.TargetParticipantID(opts.TargetParticipantID)
-		}
-		if len(opts.SharedAddressIDs) > 0 {
-			req = req.SharedAddressIDs(opts.SharedAddressIDs)
-		}
-		if opts.CurrencyID != "" {
-			req = req.CurrencyID(opts.CurrencyID)
-		}
-		if len(opts.Statuses) > 0 {
-			req = req.Statuses(opts.Statuses)
-		}
-		if opts.SortOrder != "" {
-			req = req.SortOrder(opts.SortOrder)
-		}
-		if opts.CurrentPage != "" {
-			req = req.CursorCurrentPage(opts.CurrentPage)
-		}
-		if opts.PageRequest != "" {
-			req = req.CursorPageRequest(opts.PageRequest)
-		}
-		if opts.PageSize > 0 {
-			req = req.CursorPageSize(fmt.Sprintf("%d", opts.PageSize))
-		}
-		if opts.AttributeFiltersJSON != "" {
-			req = req.AttributeFiltersJson(opts.AttributeFiltersJSON)
-		}
-		if opts.AttributeFiltersOperator != "" {
-			req = req.AttributeFiltersOperator(opts.AttributeFiltersOperator)
-		}
+	req := applyCursorQuery(s.api.TaurusNetworkServiceGetPledges(ctx), window)
+	if opts.OwnerParticipantID != "" {
+		req = req.OwnerParticipantID(opts.OwnerParticipantID)
+	}
+	if opts.TargetParticipantID != "" {
+		req = req.TargetParticipantID(opts.TargetParticipantID)
+	}
+	if len(opts.SharedAddressIDs) > 0 {
+		req = req.SharedAddressIDs(opts.SharedAddressIDs)
+	}
+	if opts.CurrencyID != "" {
+		req = req.CurrencyID(opts.CurrencyID)
+	}
+	if len(opts.Statuses) > 0 {
+		req = req.Statuses(opts.Statuses)
+	}
+	if opts.SortOrder != "" {
+		req = req.SortOrder(opts.SortOrder)
+	}
+	if opts.AttributeFiltersJSON != "" {
+		req = req.AttributeFiltersJson(opts.AttributeFiltersJSON)
+	}
+	if opts.AttributeFiltersOperator != "" {
+		req = req.AttributeFiltersOperator(opts.AttributeFiltersOperator)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -93,9 +89,12 @@ func (s *TaurusNetworkPledgeService) ListPledges(ctx context.Context, opts *taur
 	}
 
 	pledges := mapper.PledgesFromDTO(resp.Pledges)
-	cursor := mapper.CursorPaginationFromDTO(resp.Cursor)
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor})
+	if err != nil {
+		return nil, nil, err
+	}
 
-	return pledges, cursor, nil
+	return pledges, &page, nil
 }
 
 // CreatePledge creates a new pledge.
@@ -320,28 +319,24 @@ func (s *TaurusNetworkPledgeService) RejectPledge(ctx context.Context, pledgeID 
 }
 
 // ListPledgeActions retrieves a list of pledge actions.
-func (s *TaurusNetworkPledgeService) ListPledgeActions(ctx context.Context, opts *taurusnetwork.ListPledgeActionsOptions) ([]taurusnetwork.PledgeAction, *model.CursorPagination, error) {
-	req := s.api.TaurusNetworkServiceGetPledgeActions(ctx)
+func (s *TaurusNetworkPledgeService) ListPledgeActions(ctx context.Context, opts *taurusnetwork.ListPledgeActionsOptions) ([]taurusnetwork.PledgeAction, *model.CursorPage, error) {
+	if opts == nil {
+		opts = &taurusnetwork.ListPledgeActionsOptions{}
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, opts.CurrentPage, opts.PageRequest)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	if opts != nil {
-		if opts.PledgeID != "" {
-			req = req.PledgeID(opts.PledgeID)
-		}
-		if len(opts.ActionIDs) > 0 {
-			req = req.Ids(opts.ActionIDs)
-		}
-		if opts.SortOrder != "" {
-			req = req.SortOrder(opts.SortOrder)
-		}
-		if opts.CurrentPage != "" {
-			req = req.CursorCurrentPage(opts.CurrentPage)
-		}
-		if opts.PageRequest != "" {
-			req = req.CursorPageRequest(opts.PageRequest)
-		}
-		if opts.PageSize > 0 {
-			req = req.CursorPageSize(fmt.Sprintf("%d", opts.PageSize))
-		}
+	req := applyCursorQuery(s.api.TaurusNetworkServiceGetPledgeActions(ctx), window)
+	if opts.PledgeID != "" {
+		req = req.PledgeID(opts.PledgeID)
+	}
+	if len(opts.ActionIDs) > 0 {
+		req = req.Ids(opts.ActionIDs)
+	}
+	if opts.SortOrder != "" {
+		req = req.SortOrder(opts.SortOrder)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -353,34 +348,33 @@ func (s *TaurusNetworkPledgeService) ListPledgeActions(ctx context.Context, opts
 	if err := verifyPledgeActionMetadata(actions); err != nil {
 		return nil, nil, err
 	}
-	cursor := mapper.CursorPaginationFromDTO(resp.Cursor)
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor})
+	if err != nil {
+		return nil, nil, err
+	}
 
-	return actions, cursor, nil
+	return actions, &page, nil
 }
 
 // ListPledgeActionsForApproval retrieves a list of pledge actions pending approval.
-func (s *TaurusNetworkPledgeService) ListPledgeActionsForApproval(ctx context.Context, opts *taurusnetwork.ListPledgeActionsForApprovalOptions) ([]taurusnetwork.PledgeAction, *model.CursorPagination, error) {
-	req := s.api.TaurusNetworkServiceGetPledgeActionsForApproval(ctx)
+func (s *TaurusNetworkPledgeService) ListPledgeActionsForApproval(ctx context.Context, opts *taurusnetwork.ListPledgeActionsForApprovalOptions) ([]taurusnetwork.PledgeAction, *model.CursorPage, error) {
+	if opts == nil {
+		opts = &taurusnetwork.ListPledgeActionsForApprovalOptions{}
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, opts.CurrentPage, opts.PageRequest)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	if opts != nil {
-		if len(opts.ActionIDs) > 0 {
-			req = req.Ids(opts.ActionIDs)
-		}
-		if len(opts.Types) > 0 {
-			req = req.Types(opts.Types)
-		}
-		if opts.SortOrder != "" {
-			req = req.SortOrder(opts.SortOrder)
-		}
-		if opts.CurrentPage != "" {
-			req = req.CursorCurrentPage(opts.CurrentPage)
-		}
-		if opts.PageRequest != "" {
-			req = req.CursorPageRequest(opts.PageRequest)
-		}
-		if opts.PageSize > 0 {
-			req = req.CursorPageSize(fmt.Sprintf("%d", opts.PageSize))
-		}
+	req := applyCursorQuery(s.api.TaurusNetworkServiceGetPledgeActionsForApproval(ctx), window)
+	if len(opts.ActionIDs) > 0 {
+		req = req.Ids(opts.ActionIDs)
+	}
+	if len(opts.Types) > 0 {
+		req = req.Types(opts.Types)
+	}
+	if opts.SortOrder != "" {
+		req = req.SortOrder(opts.SortOrder)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -392,9 +386,12 @@ func (s *TaurusNetworkPledgeService) ListPledgeActionsForApproval(ctx context.Co
 	if err := verifyPledgeActionMetadata(actions); err != nil {
 		return nil, nil, err
 	}
-	cursor := mapper.CursorPaginationFromDTO(resp.Cursor)
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor})
+	if err != nil {
+		return nil, nil, err
+	}
 
-	return actions, cursor, nil
+	return actions, &page, nil
 }
 
 // verifyPledgeActionMetadata verifies every action's hash against its payload on the read
@@ -534,28 +531,24 @@ func (s *TaurusNetworkPledgeService) RejectPledgeActions(ctx context.Context, re
 }
 
 // ListPledgeWithdrawals retrieves a list of pledge withdrawals.
-func (s *TaurusNetworkPledgeService) ListPledgeWithdrawals(ctx context.Context, opts *taurusnetwork.ListPledgeWithdrawalsOptions) ([]taurusnetwork.PledgeWithdrawal, *model.CursorPagination, error) {
-	req := s.api.TaurusNetworkServiceGetPledgesWithdrawals(ctx)
+func (s *TaurusNetworkPledgeService) ListPledgeWithdrawals(ctx context.Context, opts *taurusnetwork.ListPledgeWithdrawalsOptions) ([]taurusnetwork.PledgeWithdrawal, *model.CursorPage, error) {
+	if opts == nil {
+		opts = &taurusnetwork.ListPledgeWithdrawalsOptions{}
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, opts.CurrentPage, opts.PageRequest)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	if opts != nil {
-		if opts.PledgeID != "" {
-			req = req.PledgeID(opts.PledgeID)
-		}
-		if opts.WithdrawalStatus != "" {
-			req = req.WithdrawalStatus(opts.WithdrawalStatus)
-		}
-		if opts.SortOrder != "" {
-			req = req.SortOrder(opts.SortOrder)
-		}
-		if opts.CurrentPage != "" {
-			req = req.CursorCurrentPage(opts.CurrentPage)
-		}
-		if opts.PageRequest != "" {
-			req = req.CursorPageRequest(opts.PageRequest)
-		}
-		if opts.PageSize > 0 {
-			req = req.CursorPageSize(fmt.Sprintf("%d", opts.PageSize))
-		}
+	req := applyCursorQuery(s.api.TaurusNetworkServiceGetPledgesWithdrawals(ctx), window)
+	if opts.PledgeID != "" {
+		req = req.PledgeID(opts.PledgeID)
+	}
+	if opts.WithdrawalStatus != "" {
+		req = req.WithdrawalStatus(opts.WithdrawalStatus)
+	}
+	if opts.SortOrder != "" {
+		req = req.SortOrder(opts.SortOrder)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -564,9 +557,12 @@ func (s *TaurusNetworkPledgeService) ListPledgeWithdrawals(ctx context.Context, 
 	}
 
 	withdrawals := mapper.PledgeWithdrawalsFromDTO(resp.Withdrawals)
-	cursor := mapper.CursorPaginationFromDTO(resp.Cursor)
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor})
+	if err != nil {
+		return nil, nil, err
+	}
 
-	return withdrawals, cursor, nil
+	return withdrawals, &page, nil
 }
 
 // safeStringPtr safely dereferences a string pointer.

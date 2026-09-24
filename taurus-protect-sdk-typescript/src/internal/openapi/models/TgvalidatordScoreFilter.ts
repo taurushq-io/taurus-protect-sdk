@@ -91,7 +91,16 @@ export interface TgvalidatordScoreFilter {
      * @memberof TgvalidatordScoreFilter
      */
     trmlabsFilters?: ScoreFilterTRMLabsFilters;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordScoreFilter
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordScoreFilterWireKeys: ReadonlySet<string> = new Set(['scoreProvider', 'scorechainFilters', 'coinfirmFilters', 'chainalysisFilters', 'ellipticFilters', 'trmlabsFilters']);
 
 /**
  * Check if a given object implements the TgvalidatordScoreFilter interface.
@@ -108,7 +117,7 @@ export function TgvalidatordScoreFilterFromJSONTyped(json: any, ignoreDiscrimina
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordScoreFilter = {
         
         'scoreProvider': json['scoreProvider'] == null ? undefined : json['scoreProvider'],
         'scorechainFilters': json['scorechainFilters'] == null ? undefined : ScoreFilterScorechainFiltersFromJSON(json['scorechainFilters']),
@@ -117,6 +126,16 @@ export function TgvalidatordScoreFilterFromJSONTyped(json: any, ignoreDiscrimina
         'ellipticFilters': json['ellipticFilters'] == null ? undefined : ScoreFilterEllipticFiltersFromJSON(json['ellipticFilters']),
         'trmlabsFilters': json['trmlabsFilters'] == null ? undefined : ScoreFilterTRMLabsFiltersFromJSON(json['trmlabsFilters']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordScoreFilterWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordScoreFilterToJSON(json: any): TgvalidatordScoreFilter {
@@ -136,6 +155,7 @@ export function TgvalidatordScoreFilterFromJSONTyped(json: any, ignoreDiscrimina
         'chainalysisFilters': ScoreFilterChainalysisFiltersToJSON(value['chainalysisFilters']),
         'ellipticFilters': ScoreFilterEllipticFiltersToJSON(value['ellipticFilters']),
         'trmlabsFilters': ScoreFilterTRMLabsFiltersToJSON(value['trmlabsFilters']),
+        ...value['additionalProperties'],
     };
 }
 

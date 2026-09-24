@@ -25,7 +25,16 @@ export interface TgvalidatordInitializeXTZContractReply {
      * @memberof TgvalidatordInitializeXTZContractReply
      */
     result?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordInitializeXTZContractReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordInitializeXTZContractReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordInitializeXTZContractReply interface.
@@ -42,10 +51,20 @@ export function TgvalidatordInitializeXTZContractReplyFromJSONTyped(json: any, i
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordInitializeXTZContractReply = {
         
         'result': json['result'] == null ? undefined : json['result'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordInitializeXTZContractReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordInitializeXTZContractReplyToJSON(json: any): TgvalidatordInitializeXTZContractReply {
@@ -60,6 +79,7 @@ export function TgvalidatordInitializeXTZContractReplyFromJSONTyped(json: any, i
     return {
         
         'result': value['result'],
+        ...value['additionalProperties'],
     };
 }
 

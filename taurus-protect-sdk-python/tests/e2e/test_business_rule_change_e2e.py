@@ -19,7 +19,6 @@ import pytest
 from taurus_protect.client import ProtectClient
 from taurus_protect.models.audit import CreateChangeRequest
 from taurus_protect.models.business_rule import BusinessRule
-
 from tests.testutil import (
     get_test_client,
     skip_if_insufficient_identities,
@@ -53,41 +52,29 @@ class TestBusinessRuleChangeE2E:
     def _list_all_rules(self) -> list:
         """List all business rules using cursor pagination."""
         all_rules = []
-        page_request = "FIRST"
-        current_page = None
+        cursor = None
 
         while True:
-            result = self.client.business_rules.list(
-                page_size=50,
-                page_request=page_request,
-                current_page=current_page,
-            )
+            result = self.client.business_rules.list(page_size=50, cursor=cursor)
             all_rules.extend(result.rules)
-            if not result.has_next:
+            if not result.page.has_more:
                 break
-            current_page = result.current_page
-            page_request = "NEXT"
+            cursor = result.page.next_cursor
 
         return all_rules
 
     def _find_rule_by_id(self, rule_id: str) -> BusinessRule:
         """Find a business rule by ID through paginated listing."""
-        page_request = "FIRST"
-        current_page = None
+        cursor = None
 
         while True:
-            result = self.client.business_rules.list(
-                page_size=50,
-                page_request=page_request,
-                current_page=current_page,
-            )
+            result = self.client.business_rules.list(page_size=50, cursor=cursor)
             for rule in result.rules:
                 if rule.id == rule_id:
                     return rule
-            if not result.has_next:
+            if not result.page.has_more:
                 break
-            current_page = result.current_page
-            page_request = "NEXT"
+            cursor = result.page.next_cursor
 
         return None
 
@@ -145,10 +132,7 @@ class TestBusinessRuleChangeE2E:
             is_xlm = rule.currency and rule.currency.upper() == "XLM"
             if is_transaction and is_xlm:
                 target_rule = rule
-                print(
-                    f"Found target rule: id={rule.id}"
-                    f" key={rule_key} value={rule.rule_value}"
-                )
+                print(f"Found target rule: id={rule.id}" f" key={rule_key} value={rule.rule_value}")
                 break
 
         if target_rule is None:
@@ -197,10 +181,7 @@ class TestBusinessRuleChangeE2E:
         )
         change_id = self.admin1.changes.create_change(request)
         assert change_id, "createChange should return a change ID"
-        print(
-            f"Created change: id={change_id}"
-            f" (value {original_value} -> {new_value})"
-        )
+        print(f"Created change: id={change_id}" f" (value {original_value} -> {new_value})")
 
         # Step 4: Admin2 approves the change
         print("\n=== Step 4: Admin2 approving change ===")
@@ -211,9 +192,7 @@ class TestBusinessRuleChangeE2E:
         print("\n=== Step 5: Verifying change ===")
         updated_rule = self._wait_for_rule_value(target_rule_id, new_value)
         assert updated_rule is not None, "Should find the updated rule by ID"
-        assert updated_rule.rule_value == new_value, (
-            f"Rule value should be updated to {new_value}"
-        )
+        assert updated_rule.rule_value == new_value, f"Rule value should be updated to {new_value}"
         print(f"BEFORE: {original_value}")
         print(f"AFTER:  {updated_rule.rule_value}")
         print(f"Verified: rule {target_rule_id} value changed successfully")
@@ -236,9 +215,9 @@ class TestBusinessRuleChangeE2E:
 
         restored_rule = self._wait_for_rule_value(target_rule_id, original_value)
         assert restored_rule is not None, "Should find the restored rule by ID"
-        assert restored_rule.rule_value == original_value, (
-            f"Rule value should be restored to {original_value}"
-        )
+        assert (
+            restored_rule.rule_value == original_value
+        ), f"Rule value should be restored to {original_value}"
         print(f"BEFORE: {new_value}")
         print(f"AFTER:  {restored_rule.rule_value}")
         print(f"Verified: rule {target_rule_id} value restored successfully")

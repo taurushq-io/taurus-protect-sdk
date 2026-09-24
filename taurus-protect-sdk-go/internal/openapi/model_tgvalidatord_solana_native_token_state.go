@@ -28,7 +28,10 @@ type TgvalidatordSolanaNativeTokenState struct {
 	MintAuthority *string `json:"mintAuthority,omitempty"`
 	// Not set when freeze is not enabled.
 	FreezeAuthority *string `json:"freezeAuthority,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordSolanaNativeTokenState TgvalidatordSolanaNativeTokenState
 
 // NewTgvalidatordSolanaNativeTokenState instantiates a new TgvalidatordSolanaNativeTokenState object
 // This constructor will assign default values to properties that have it defined,
@@ -337,7 +340,40 @@ func (o TgvalidatordSolanaNativeTokenState) ToMap() (map[string]interface{}, err
 	if !IsNil(o.FreezeAuthority) {
 		toSerialize["freezeAuthority"] = o.FreezeAuthority
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordSolanaNativeTokenState) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordSolanaNativeTokenState := _TgvalidatordSolanaNativeTokenState{}
+
+	err = json.Unmarshal(data, &varTgvalidatordSolanaNativeTokenState)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordSolanaNativeTokenState(varTgvalidatordSolanaNativeTokenState)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "symbol")
+		delete(additionalProperties, "decimals")
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "uri")
+		delete(additionalProperties, "owner")
+		delete(additionalProperties, "mintAuthority")
+		delete(additionalProperties, "freezeAuthority")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordSolanaNativeTokenState struct {

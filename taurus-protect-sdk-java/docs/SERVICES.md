@@ -1,10 +1,10 @@
 # Services Reference
 
-This document provides comprehensive documentation for all 43 services in the Taurus-PROTECT Java SDK.
+This document provides comprehensive documentation for all 44 services in the Taurus-PROTECT Java SDK.
 
 ## Service Overview
 
-The SDK provides services organized into two categories: core services (38) and TaurusNetwork services (5).
+The SDK provides services organized into two categories: core services (39) and TaurusNetwork services (5).
 
 ### Core Services
 
@@ -39,6 +39,7 @@ The SDK provides services organized into two categories: core services (38) and 
 | [AssetService](#assetservice) | Asset information |
 | [ActionService](#actionservice) | Action management |
 | [BlockchainService](#blockchainservice) | Blockchain information |
+| [EarnService](#earnservice) | Earn rewards credited to addresses |
 | [ExchangeService](#exchangeservice) | Exchange integration |
 | [FiatService](#fiatservice) | Fiat currency operations |
 | [FeePayerService](#feepayerservice) | Fee payer management |
@@ -58,6 +59,25 @@ The SDK provides services organized into two categories: core services (38) and 
 | [TaurusNetworkLendingService](#taurusnetworklendingservice) | `client.taurusNetwork().lending()` | Lending offers and agreements |
 | [TaurusNetworkSettlementService](#taurusnetworksettlementservice) | `client.taurusNetwork().settlements()` | Settlement operations |
 | [TaurusNetworkSharingService](#taurusnetworksharingservice) | `client.taurusNetwork().sharing()` | Address and asset sharing |
+
+---
+
+## Pagination
+
+Every list method follows the cross-SDK pagination contract (`CONCEPTS.md` → "Pagination"):
+
+- **Page size** — always sent. `0`/`null` is the default, `Pagination.DEFAULT_PAGE_SIZE` (20);
+  a negative size, one above `Pagination.MAX_PAGE_SIZE` (100), or a negative offset throws
+  `IllegalArgumentException` naming the option before any request.
+- **Offset lists** (wallets, addresses, transactions, users, groups, fee payers, actions, the
+  whitelists) take `int limit, long offset` and return a result with `getPagination()`
+  (`OffsetPagination`): continue from `getNextOffset()` while `hasMore()`.
+- **Cursor lists** take `Integer pageSize, String cursor` — `cursor` is a previous page's
+  `getPage().getNextCursor()`, `null` for the first page — and return a result with `getPage()`
+  (`CursorPage`). The `ApiRequestCursor` overloads are the low-level form (`PREVIOUS`/`LAST`);
+  `null` means the first page with the default size.
+- **Exempt:** `PriceService.getPriceHistory` (limit ≤ 365) and
+  `TransactionService.exportTransactions` (limit only; the server ignores an export offset).
 
 ---
 
@@ -111,24 +131,26 @@ Wallet getWallet(long walletId) throws ApiException
 
 #### getWallets
 
-Lists wallets with pagination.
+Lists a page of wallets (offset list; see [Pagination](#pagination)).
 
 ```java
-List<Wallet> getWallets(int limit, int offset) throws ApiException
+WalletResult getWallets(int limit, long offset) throws ApiException
+WalletResult getWallets(int limit, long offset, Boolean excludeDisabled) throws ApiException
 ```
 
 **Parameters:**
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| limit | int | Maximum results per page |
-| offset | int | Pagination offset |
+| limit | int | Page size, 0 for the default (20), at most 100 |
+| offset | long | 0 for the first page, then `getPagination().getNextOffset()` |
+| excludeDisabled | Boolean | `true` hides every disabled wallet; by default only currency-disabled ones are hidden |
 
 #### getWalletsByName
 
 Searches wallets by name.
 
 ```java
-List<Wallet> getWalletsByName(String name, int limit, int offset) throws ApiException
+WalletResult getWalletsByName(String name, int limit, long offset) throws ApiException
 ```
 
 #### createWalletAttribute
@@ -149,14 +171,17 @@ List<BalanceHistoryPoint> getWalletBalanceHistory(long walletId, int intervalHou
 
 #### getWalletTokens
 
-Lists token balances for a wallet.
+Lists a page of a wallet's token balances (token-paged; the page carries the server total).
 
 ```java
-List<AssetBalance> getWalletTokens(long walletId, int limit) throws ApiException
+WalletTokensResult getWalletTokens(long walletId, Integer pageSize) throws ApiException
+WalletTokensResult getWalletTokens(long walletId, Integer pageSize, String cursor) throws ApiException
 ```
 
 ### Key Models
 
+- `WalletResult` - `getWallets()` + `getPagination()` (`OffsetPagination`)
+- `WalletTokensResult` - `getBalances()` + `getPage()` (`CursorPage`)
 - `Wallet` - id, name, blockchain, network, balance, isOmnibus, customerId, attributes
 - `BalanceHistoryPoint` - timestamp, balance values
 - `AssetBalance` - asset info with balance
@@ -214,11 +239,15 @@ Address getAddress(long id) throws ApiException
 
 #### getAddresses
 
-Lists addresses for a wallet with **signature verification**.
+Lists a page of addresses with **signature verification** (offset list).
 
 ```java
-List<Address> getAddresses(long walletId, int limit, int offset) throws ApiException
+AddressResult getAddresses(long walletId, int limit, long offset) throws ApiException
+AddressResult getAddresses(Long walletId, int limit, long offset, Boolean excludeDisabled) throws ApiException
 ```
+
+`walletId` null lists every wallet's addresses; `excludeDisabled` true hides disabled addresses
+(sent as `includeDisabledAddresses=exclude`).
 
 #### createAddressAttribute
 
@@ -292,18 +321,21 @@ Request getRequest(long id) throws ApiException
 
 #### getRequests
 
-Lists requests with filtering and pagination.
+Lists a page of requests with filtering (cursor list; see [Pagination](#pagination)).
 
 ```java
+RequestResult getRequests(OffsetDateTime from, OffsetDateTime to, String currencyId,
+                          List<RequestStatus> statuses, Integer pageSize, String cursor) throws ApiException
 RequestResult getRequests(OffsetDateTime from, OffsetDateTime to, String currencyId,
                           List<RequestStatus> statuses, ApiRequestCursor cursor) throws ApiException
 ```
 
 #### getRequestsForApproval
 
-Gets requests pending approval for the current user.
+Gets a page of requests pending approval for the current user.
 
 ```java
+RequestResult getRequestsForApproval(Integer pageSize, String cursor) throws ApiException
 RequestResult getRequestsForApproval(ApiRequestCursor cursor) throws ApiException
 ```
 
@@ -385,11 +417,14 @@ Transaction getTransactionByHash(String hash) throws ApiException
 
 #### getTransactions
 
-Lists transactions with filtering.
+Lists a page of transactions with filtering (offset list).
 
 ```java
-List<Transaction> getTransactions(OffsetDateTime from, OffsetDateTime to, String currency,
-                                   String direction, int limit, int offset) throws ApiException
+TransactionResult getTransactions(OffsetDateTime from, OffsetDateTime to, String currency,
+                                  String direction, int limit, long offset) throws ApiException
+TransactionResult getTransactions(OffsetDateTime from, OffsetDateTime to, String currency,
+                                  String direction, String blockchain, String network,
+                                  int limit, long offset) throws ApiException
 ```
 
 **Parameters:**
@@ -399,20 +434,30 @@ List<Transaction> getTransactions(OffsetDateTime from, OffsetDateTime to, String
 | to | OffsetDateTime | End date (optional) |
 | currency | String | Currency filter (optional) |
 | direction | String | "incoming" or "outgoing" (optional) |
+| limit | int | Page size, 0 for the default (20), at most 100 |
+| offset | long | 0 for the first page, then `getPagination().getNextOffset()` |
 
 #### getTransactionsByAddress
 
 ```java
-List<Transaction> getTransactionsByAddress(String address, int limit, int offset) throws ApiException
+TransactionResult getTransactionsByAddress(String address, int limit, long offset) throws ApiException
 ```
 
 #### exportTransactions
 
-Exports transactions as CSV.
+Exports transactions. The export cannot page — the server ignores any offset — so it takes a limit
+only (default 20, no SDK maximum); the result carries the text and the server's total, so a
+truncated export can be detected. No format is sent unless given (the server default is JSON).
 
 ```java
-String exportTransactions(OffsetDateTime from, OffsetDateTime to, String currency,
-                          String direction, int limit, int offset) throws ApiException
+TransactionExportResult exportTransactions(OffsetDateTime from, OffsetDateTime to, String currency,
+                                           String direction, int limit) throws ApiException
+TransactionExportResult exportTransactions(OffsetDateTime from, OffsetDateTime to, String currency,
+                                           String direction, String blockchain, String network,
+                                           int limit) throws ApiException
+TransactionExportResult exportTransactions(OffsetDateTime from, OffsetDateTime to, String currency,
+                                           String direction, String blockchain, String network,
+                                           String format, int limit) throws ApiException
 ```
 
 ### Key Models
@@ -432,33 +477,36 @@ String exportTransactions(OffsetDateTime from, OffsetDateTime to, String currenc
 #### getBalances
 
 ```java
+BalanceResult getBalances(String currency, Integer pageSize, String cursor) throws ApiException
 BalanceResult getBalances(ApiRequestCursor cursor) throws ApiException
 BalanceResult getBalances(String currency, ApiRequestCursor cursor) throws ApiException
 ```
 
 **Example:**
 ```java
-ApiRequestCursor cursor = new ApiRequestCursor(PageRequest.FIRST, 100);
+String cursor = null;
 BalanceResult result;
 do {
-    result = client.getBalanceService().getBalances(cursor);
+    result = client.getBalanceService().getBalances(null, 100, cursor);
     for (AssetBalance balance : result.getBalances()) {
         System.out.println(balance.getAsset() + ": " + balance.getBalance());
     }
-    cursor = result.nextCursor(100);
-} while (result.hasNext());
+    cursor = result.getPage().getNextCursor();
+} while (result.getPage().hasMore());
 ```
 
 #### getNFTCollectionBalances
 
 ```java
 NFTCollectionBalanceResult getNFTCollectionBalances(String blockchain, String network,
+                                                     Integer pageSize, String cursor) throws ApiException
+NFTCollectionBalanceResult getNFTCollectionBalances(String blockchain, String network,
                                                      ApiRequestCursor cursor) throws ApiException
 ```
 
 ### Key Models
 
-- `BalanceResult` - balances list with pagination
+- `BalanceResult` - balances list + `getPage()` (`CursorPage`, with the server total)
 - `AssetBalance` - asset info with available/pending balances
 - `NFTCollectionBalance` - NFT collection balances
 
@@ -518,7 +566,7 @@ List<Score> refreshWhitelistedAddressScore(long addressId, String scoreProvider)
 **Location:** `client/src/main/java/com/taurushq/sdk/protect/client/service/PriceService.java`
 
 `rate` and `decimals` feed amount conversion, so an unverified price is a wrong number a
-caller acts on. `getPrices` verifies each price against the `PRICEUPDATER` keys in the
+caller acts on. `getPrices` (the cursor-paged `QueryPricesV2` endpoint) verifies each price against the `PRICEUPDATER` keys in the
 SuperAdmin-verified rules container, which is why the service takes the
 `RulesContainerCache` as a mandatory constructor argument. Whether prices must be signed is
 the **container's** call: no `PRICEUPDATER` configured means this tenant does not sign prices
@@ -528,13 +576,21 @@ throws `IntegrityException`.
 ### Methods
 
 ```java
-List<Price> getPrices() throws ApiException
+PriceResult getPrices() throws ApiException
+PriceResult getPrices(String fromCurrencyId, List<String> toCurrencyIds, Boolean onlyPrimary,
+                      String sortOrder, Integer pageSize, String cursor) throws ApiException
 List<PriceHistoryPoint> getPriceHistory(String base, String quote, int limit) throws ApiException
-List<ConversionResult> convert(String currency, BigDecimal amount, List<String> targetCurrencyIds) throws ApiException
+List<ConversionResult> convert(String currency, String amount, List<String> targetCurrencyIds) throws ApiException
 ```
+
+The currency filter of `getPrices`: `fromCurrencyId` alone lists that currency's prices,
+`toCurrencyIds` alone the prices into those currencies, both together the prices of one into the
+others, neither every price. `getPriceHistory` cannot page: `limit` is 0 for the default (20) and
+at most 365 daily points, newest first.
 
 ### Key Models
 
+- `PriceResult` - prices, `getBaseCurrency()`, `getPage()` (`CursorPage`)
 - `Price` - blockchain, currencyFrom, currencyTo, decimals, rate, signatures
 - `PriceSignature` - userId, signature
 - `PriceHistoryPoint` - timestamp, price
@@ -552,8 +608,8 @@ List<ConversionResult> convert(String currency, BigDecimal amount, List<String> 
 
 ```java
 User getMe() throws ApiException
-List<User> getUsers(int limit, int offset) throws ApiException
-List<User> getUsersByEmail(List<String> emails) throws ApiException
+UserResult getUsers(int limit, long offset) throws ApiException
+List<User> getUsersByEmail(List<String> emails) throws ApiException      // walks every page
 void createUserAttribute(String userId, String key, String value) throws ApiException
 ```
 
@@ -573,7 +629,9 @@ void createUserAttribute(String userId, String key, String value) throws ApiExce
 
 ```java
 Change getChange(long id) throws ApiException
+ChangeResult getChanges(String entity, String status, Integer pageSize, String cursor) throws ApiException
 ChangeResult getChanges(String entity, String status, ApiRequestCursor cursor) throws ApiException
+ChangeResult getChangesForApproval(Integer pageSize, String cursor) throws ApiException
 ChangeResult getChangesForApproval(ApiRequestCursor cursor) throws ApiException
 void approveChange(long id) throws ApiException
 void approveChanges(List<Long> ids) throws ApiException
@@ -584,7 +642,7 @@ void rejectChanges(List<Long> ids) throws ApiException
 ### Key Models
 
 - `Change` - id, entity, operation, status, payload, trails
-- `ChangeResult` - changes list with pagination
+- `ChangeResult` - changes list + `getPage()` (`CursorPage`)
 
 ---
 
@@ -597,15 +655,18 @@ void rejectChanges(List<Long> ids) throws ApiException
 ### Methods
 
 ```java
+BusinessRuleResult getBusinessRules(Integer pageSize, String cursor) throws ApiException
 BusinessRuleResult getBusinessRules(ApiRequestCursor cursor) throws ApiException
+BusinessRuleResult getBusinessRulesByWallet(long walletId, Integer pageSize, String cursor) throws ApiException
 BusinessRuleResult getBusinessRulesByWallet(long walletId, ApiRequestCursor cursor) throws ApiException
+BusinessRuleResult getBusinessRulesByCurrency(String currencyId, Integer pageSize, String cursor) throws ApiException
 BusinessRuleResult getBusinessRulesByCurrency(String currencyId, ApiRequestCursor cursor) throws ApiException
 ```
 
 ### Key Models
 
 - `BusinessRule` - rule definition with conditions and actions
-- `BusinessRuleResult` - rules list with pagination
+- `BusinessRuleResult` - rules list + `getPage()` (`CursorPage`)
 
 ---
 
@@ -628,9 +689,13 @@ GovernanceRules getRulesById(String id) throws ApiException
 
 #### getRulesHistory
 
+Token-paged: pass `getPage().getNextCursor()` back as `cursor`. Entries whose SuperAdmin
+signatures do not verify are withheld (`getExcludedUnverified()`) and the page total is reduced
+by them.
+
 ```java
-GovernanceRulesHistoryResult getRulesHistory(int pageSize) throws ApiException
-GovernanceRulesHistoryResult getRulesHistory(int pageSize, byte[] cursor) throws ApiException
+GovernanceRulesHistoryResult getRulesHistory(Integer pageSize) throws ApiException
+GovernanceRulesHistoryResult getRulesHistory(Integer pageSize, String cursor) throws ApiException
 ```
 
 #### getRulesProposal
@@ -746,12 +811,18 @@ SignedWhitelistedAddressEnvelope getWhitelistedAddressEnvelope(long id) throws A
 
 #### getWhitelistedAddresses
 
-Lists whitelisted addresses with filtering.
+Lists a page of whitelisted addresses, verified (offset list). Rows that fail verification are
+withheld and listed in `getExcludedUnverified()`; the page total is reduced by them while the
+next offset stays in the server's row space.
 
 ```java
-List<SignedWhitelistedAddressEnvelope> getWhitelistedAddresses(int limit, int offset)
-List<SignedWhitelistedAddressEnvelope> getWhitelistedAddresses(int limit, int offset, String blockchain)
-List<SignedWhitelistedAddressEnvelope> getWhitelistedAddresses(int limit, int offset, String blockchain, String network)
+WhitelistedAddressListResult getWhitelistedAddresses(int limit, long offset)
+WhitelistedAddressListResult getWhitelistedAddresses(int limit, long offset, String blockchain)
+WhitelistedAddressListResult getWhitelistedAddresses(int limit, long offset, String blockchain, String network)
+WhitelistedAddressListResult getWhitelistedAddresses(int limit, long offset, String blockchain, String network,
+                                                     boolean rulesContainerNormalized)
+WhitelistedAddressListResult getWhitelistedAddressesForApproval(int limit, long offset, List<String> ids,
+                                                                Boolean includeAlreadySignedByUser)
 ```
 
 ### Key Models
@@ -806,6 +877,7 @@ System.out.println("Created webhook: " + webhook.getId());
 Lists webhooks with optional filtering.
 
 ```java
+WebhookResult getWebhooks(String type, String url, Integer pageSize, String cursor) throws ApiException
 WebhookResult getWebhooks(String type, String url, ApiRequestCursor cursor) throws ApiException
 ```
 
@@ -814,7 +886,8 @@ WebhookResult getWebhooks(String type, String url, ApiRequestCursor cursor) thro
 |-----------|------|-------------|
 | type | String | Filter by webhook type (optional) |
 | url | String | Filter by URL (optional) |
-| cursor | ApiRequestCursor | Pagination cursor (optional) |
+| pageSize | Integer | Page size, null or 0 for the default (20), at most 100 |
+| cursor | String | A previous page's `getPage().getNextCursor()`, null for the first page |
 
 #### deleteWebhook
 
@@ -924,6 +997,8 @@ NEARValidatorInfo getNEARValidatorInfo(String network, String validatorAddress) 
 Lists stake accounts with pagination.
 
 ```java
+StakeAccountResult getStakeAccounts(String addressId, String accountType,
+                                     String accountAddress, Integer pageSize, String cursor) throws ApiException
 StakeAccountResult getStakeAccounts(String addressId, String accountType,
                                      String accountAddress, ApiRequestCursor cursor) throws ApiException
 ```
@@ -1040,14 +1115,6 @@ Updates an existing whitelisted contract.
 void updateWhitelistedContract(String id, String symbol, String name, int decimals) throws ApiException
 ```
 
-#### deleteWhitelistedContract
-
-Deletes a whitelisted contract.
-
-```java
-String deleteWhitelistedContract(String id, String comment) throws ApiException
-```
-
 #### createAttribute
 
 Creates an attribute on a whitelisted contract.
@@ -1091,12 +1158,15 @@ WhitelistedAsset getWhitelistedAsset(long id) throws ApiException, WhitelistExce
 
 #### getWhitelistedAssets
 
-Lists whitelisted assets with filtering. The eight-argument overload returns a
-`WhitelistedAssetResult` carrying the page total; the `List`-returning overloads are kept so
-existing callers keep compiling.
+Lists a page of whitelisted assets, verified (offset list). Every overload returns a
+`WhitelistedAssetResult` with `getPagination()`. Skipped rows keep their SQL slot on this
+endpoint, so a short page is not the end: continue while `getPagination().hasMore()`.
 
 ```java
-WhitelistedAssetResult getWhitelistedAssets(int limit, int offset,
+WhitelistedAssetResult getWhitelistedAssets(int limit, long offset)
+WhitelistedAssetResult getWhitelistedAssets(int limit, long offset, String blockchain)
+WhitelistedAssetResult getWhitelistedAssets(int limit, long offset, String blockchain, String network)
+WhitelistedAssetResult getWhitelistedAssets(int limit, long offset,
                                             String blockchain, String network,
                                             String query, Boolean includeForApproval,
                                             List<String> kindTypes, List<String> ids)
@@ -1110,7 +1180,7 @@ this the only reader of the for-approval endpoint was the unverified contract se
 rows an approver inspects were never checked against governance.
 
 ```java
-WhitelistedAssetResult getWhitelistedAssetsForApproval(int limit, int offset, List<String> ids)
+WhitelistedAssetResult getWhitelistedAssetsForApproval(int limit, long offset, List<String> ids)
         throws ApiException, WhitelistException
 ```
 
@@ -1175,12 +1245,18 @@ label-verified, rather than the per-row in-band containers it used before.
 Lists audit events with filtering.
 
 ```java
-AuditResult getAuditTrails(String entity, String action, OffsetDateTime from, OffsetDateTime to, ApiRequestCursor cursor) throws ApiException
+AuditTrailResult getAuditTrails(String externalUserId, List<String> entities, List<String> actions,
+                                OffsetDateTime from, OffsetDateTime to, Integer pageSize, String cursor)
+        throws ApiException
+AuditTrailResult getAuditTrails(String externalUserId, List<String> entities, List<String> actions,
+                                OffsetDateTime from, OffsetDateTime to, ApiRequestCursor cursor)
+        throws ApiException
 ```
 
 ### Key Models
 
-- `Audit` - id, entity, action, user, timestamp, details
+- `AuditTrailResult` - audit trails + `getPage()` (`CursorPage`)
+- `AuditTrail` - entity, action, details, creationDate
 
 ---
 
@@ -1194,15 +1270,15 @@ AuditResult getAuditTrails(String entity, String action, OffsetDateTime from, Of
 
 #### getFees
 
-Gets fee information for a currency.
+Gets the current network fee of every currency (the V2 endpoint).
 
 ```java
-List<Fee> getFees(String currency) throws ApiException
+List<Fee> getFees() throws ApiException
 ```
 
 ### Key Models
 
-- `Fee` - currency, feeType, amount, unit
+- `Fee` - currencyId, value, denom, currencyInfo (`Currency`), updateDate
 
 ---
 
@@ -1245,11 +1321,19 @@ void submitIncomingAirGap(long requestId, String signature) throws ApiException
 Lists reservations.
 
 ```java
-ReservationResult getReservations(long addressId, ApiRequestCursor cursor) throws ApiException
+ReservationResult getReservations() throws ApiException
+ReservationResult getReservations(String kind, String address, String addressId, List<String> kinds,
+                                  Integer pageSize, String cursor) throws ApiException
+ReservationResult getReservations(String kind, String address, String addressId, List<String> kinds,
+                                  ApiRequestCursor cursor) throws ApiException
 ```
+
+A continuation sends `pageRequest=NEXT` with the cursor and the page size (it used to send the
+cursor alone, which the server cannot page on).
 
 ### Key Models
 
+- `ReservationResult` - reservations + `getPage()` (`CursorPage`)
 - `Reservation` - id, addressId, amount, status, expiresAt
 
 ---
@@ -1330,11 +1414,14 @@ void rejectMultiFactorSignature(String id, String comment) throws ApiException
 Lists user groups.
 
 ```java
-List<Group> getGroups(int limit, int offset) throws ApiException
+GroupResult getGroups() throws ApiException
+GroupResult getGroups(int limit, long offset, List<String> ids, List<String> externalGroupIds,
+                      String query) throws ApiException
 ```
 
 ### Key Models
 
+- `GroupResult` - groups + `getPagination()` (`OffsetPagination`)
 - `Group` - id, name, members, threshold
 
 ---
@@ -1396,7 +1483,10 @@ TenantConfig getTenantConfig() throws ApiException
 Lists webhook calls with filtering.
 
 ```java
-WebhookCallResult getWebhookCalls(String webhookId, String status, ApiRequestCursor cursor) throws ApiException
+WebhookCallResult getWebhookCalls(String eventId, String webhookId, String status, String sortOrder,
+                                  Integer pageSize, String cursor) throws ApiException
+WebhookCallResult getWebhookCalls(String eventId, String webhookId, String status, String sortOrder,
+                                  ApiRequestCursor cursor) throws ApiException
 ```
 
 ### Key Models
@@ -1446,10 +1536,56 @@ runs — and **fails fast** on the first that does not verify. It returns the sa
 returning it unverified made `AddressService`'s mandatory verification avoidable. The service
 therefore takes the `RulesContainerCache` as a mandatory constructor argument.
 
+`queryAssetAddresses` rows carry no signature, so the service also takes the `AddressService`
+and `WhitelistedAddressService` it confirms them through (`ProtectClient` passes its own):
+
+| Row type | Confirmed by | Kept row |
+|---|---|---|
+| `ADDRESS_TYPE_V2_INTERNAL` | its `addressID`, re-read through the HSM-verified managed-address list (≤ 50 ids per request) | `isVerified() == true`, address from the verified address |
+| `ADDRESS_TYPE_V2_WHITELISTED` | its `whitelistedAddressID`, re-read through the six-step verified whitelist (≤ 100 ids per request) | `isVerified() == true`, address from the verified envelope |
+| anything else (EXTERNAL, no type) | nothing, no extra request | `isVerified() == false` |
+
+An INTERNAL/WHITELISTED row with no id, one the verified read does not return or rejects, or
+one whose address differs from the verified one is withheld and named in
+`getExcludedUnverified()` (id = the addressID / whitelistedAddressID, else the address); rows
+came back but none survived throws `IntegrityException`. Failures of the readers themselves
+propagate: a request error, a rules container without an HSMSLOT key
+(`ContainerIntegrityException`), a whitelist container that fails verification
+(`WhitelistException`). Exclusions never move the cursor. The generated client rejects an
+`addressType` value it does not know while parsing the reply, so an unknown type fails the call.
+
 ### Methods
+
+```java
+AssetAddressesResult getAssetAddresses(String currency) throws ApiException
+AssetAddressesResult getAssetAddresses(String currency, String walletId, String addressId,
+                                       Integer pageSize, String cursor) throws ApiException
+AssetAddressesResult getAssetAddresses(String currency, String walletId, String addressId,
+                                       ApiRequestCursor cursor) throws ApiException
+AssetWalletsResult getAssetWallets(String currency) throws ApiException
+AssetWalletsResult getAssetWallets(String currency, Integer pageSize, String cursor) throws ApiException
+AssetWalletsResult getAssetWallets(String currency, ApiRequestCursor cursor) throws ApiException
+AssetV2Result queryAssets(String blockchain, String network, String symbol, String contractAddress,
+                          String label, String currencyName, Integer pageSize, String cursor) throws ApiException
+AssetAddressV2Result queryAssetAddresses(String assetId, String addressType, String kycStatus,
+                                         Integer pageSize, String cursor)
+        throws ApiException, WhitelistException
+AssetOperationV2Result listAssetOperations(String assetId, String type, String status,
+                                           Integer pageSize, String cursor) throws ApiException
+```
+
+`getAssetAddresses`/`getAssetWallets` page through the body `requestCursor` only, and their
+pages carry the server total. `queryAssets`, `queryAssetAddresses` and `listAssetOperations` are
+the v2 asset service; filter values are the wire enum names (e.g. `ADDRESS_TYPE_V2_INTERNAL`,
+`KYC_STATUS_V2_APPROVED`, `ASSET_OPERATION_TYPE_V2_MINT`), and an unknown one is rejected by name.
 
 ### Key Models
 
+- `AssetAddressesResult` / `AssetWalletsResult` - verified addresses / wallets + `getPage()`
+- `AssetV2` - id, label, assetType, status, blockchain, network, currencyId, name, symbol, decimals, contractAddress, attributes, cantonNativeToken
+- `AssetAddressV2` - address, kycStatus, balance, addressType, addressId, whitelistedAddressId, `isVerified()`
+- `AssetAddressV2Result` - addresses, `getExcludedUnverified()` + `getPage()`
+- `AssetOperationV2` - id, assetId, type, status, dates, failure/blocking reason, and the type's details (flattened)
 - `Asset` - id, symbol, name, blockchain, network, contractAddress, decimals
 
 ---
@@ -1464,10 +1600,11 @@ therefore takes the `RulesContainerCache` as a mandatory constructor argument.
 
 #### getActions
 
-Lists actions.
+Lists a page of actions (offset list).
 
 ```java
-List<Action> getActions(ApiRequestCursor cursor) throws ApiException
+ActionResult getActions() throws ApiException
+ActionResult getActions(int limit, long offset, List<String> ids) throws ApiException
 ```
 
 ---
@@ -1491,6 +1628,29 @@ List<Blockchain> getBlockchains() throws ApiException
 ### Key Models
 
 - `Blockchain` - id, name, networks, features
+
+---
+
+## EarnService
+
+**Purpose:** Lists the earn rewards credited to addresses (for example Merkl token rewards).
+
+**Access:** `client.getEarnService()`
+
+### Methods
+
+#### listRewards
+
+Lists a page of rewards (cursor list).
+
+```java
+EarnRewardResult listRewards(String recipientAddressId, Integer pageSize, String cursor) throws ApiException
+```
+
+### Key Models
+
+- `EarnRewardResult` - rewards + `getPage()` (`CursorPage`)
+- `EarnReward` - id, recipientAddressId, recipientAddress, rewardType, amount, claimed, pending, token address/symbol/assetId
 
 ---
 
@@ -1524,13 +1684,22 @@ List<Exchange> getExchange() throws ApiException
 
 ### Methods
 
-#### getFiatProviderAccounts
+#### getFiatProviderAccounts / getFiatProviderCounterpartyAccounts / getFiatProviderOperations / listFiatProviderEntities
 
-Lists supported fiat currencies.
+Cursor lists. `provider` and `label` are required for the two account lists.
 
 ```java
-List<FiatCurrency> getFiatProviderAccounts() throws ApiException
+FiatProviderAccountResult getFiatProviderAccounts(String provider, String label, String accountType,
+                                                  String sortOrder, Integer pageSize, String cursor) throws ApiException
+FiatProviderCounterpartyAccountResult getFiatProviderCounterpartyAccounts(String provider, String label,
+        String counterpartyId, String sortOrder, Integer pageSize, String cursor) throws ApiException
+FiatProviderOperationResult getFiatProviderOperations(String provider, String label, String sortOrder,
+                                                      Integer pageSize, String cursor) throws ApiException
+FiatProviderEntityResult listFiatProviderEntities(String provider, String label, String sortOrder,
+                                                  Integer pageSize, String cursor) throws ApiException
 ```
+
+The first three also keep an `ApiRequestCursor` overload.
 
 ---
 
@@ -1547,7 +1716,9 @@ List<FiatCurrency> getFiatProviderAccounts() throws ApiException
 Lists fee payers.
 
 ```java
-List<FeePayer> getFeePayers(String blockchain, String network) throws ApiException
+FeePayerResult getFeePayers() throws ApiException
+FeePayerResult getFeePayers(int limit, long offset, List<String> ids, String blockchain,
+                            String network) throws ApiException
 ```
 
 ---
@@ -1626,12 +1797,14 @@ PortfolioStatistics getPortfolioStatistics() throws ApiException
 
 ### Methods
 
-#### getERCTokenMetadata
+#### getEVMERCTokenMetadata
 
-Gets metadata for a token.
+Gets ERC token metadata (ERC-20/721/1155) on an EVM chain. The deprecated `GetERCTokenMetadata`
+endpoint is not wrapped.
 
 ```java
-TokenMetadata getERCTokenMetadata(String blockchain, String network, String contractAddress) throws ApiException
+TokenMetadata getEVMERCTokenMetadata(String network, String contract, String tokenId, Boolean withData,
+                                     String blockchain) throws ApiException
 ```
 
 ### Key Models
@@ -1736,6 +1909,9 @@ Retrieves pledges with optional filtering.
 ```java
 PledgeResult list(String ownerParticipantId, String targetParticipantId,
                         List<String> sharedAddressIds, String currencyId,
+                        String sortOrder, Integer pageSize, String cursor) throws ApiException
+PledgeResult list(String ownerParticipantId, String targetParticipantId,
+                        List<String> sharedAddressIds, String currencyId,
                         String sortOrder, ApiRequestCursor cursor) throws ApiException
 ```
 
@@ -1747,13 +1923,16 @@ PledgeResult list(String ownerParticipantId, String targetParticipantId,
 | sharedAddressIds | List<String> | Filter by shared address IDs (optional) |
 | currencyId | String | Filter by currency ID (optional) |
 | sortOrder | String | Sort order: "ASC" or "DESC" (optional) |
-| cursor | ApiRequestCursor | Pagination cursor (optional) |
+| pageSize | Integer | Page size, null or 0 for the default (20), at most 100 |
+| cursor | String | A previous page's `getPage().getNextCursor()`, null for the first page |
 
 #### listWithdrawals
 
-Retrieves pledge withdrawals for a specific pledge.
+Retrieves pledge withdrawals, optionally for one pledge.
 
 ```java
+PledgeWithdrawalResult listWithdrawals(String pledgeId, String withdrawalStatus,
+                                             String sortOrder, Integer pageSize, String cursor) throws ApiException
 PledgeWithdrawalResult listWithdrawals(String pledgeId, String withdrawalStatus,
                                              String sortOrder, ApiRequestCursor cursor) throws ApiException
 ```
@@ -1797,6 +1976,9 @@ Retrieves lending offers with optional filtering.
 ```java
 LendingOfferResult getLendingOffers(List<String> currencyIds, String participantId,
                                      String duration, String sortOrder,
+                                     Integer pageSize, String cursor) throws ApiException
+LendingOfferResult getLendingOffers(List<String> currencyIds, String participantId,
+                                     String duration, String sortOrder,
                                      ApiRequestCursor cursor) throws ApiException
 ```
 
@@ -1807,12 +1989,13 @@ LendingOfferResult getLendingOffers(List<String> currencyIds, String participant
 | participantId | String | Filter by participant ID (optional) |
 | duration | String | Filter by duration (optional) |
 | sortOrder | String | Sort order: "ASC" or "DESC" (optional) |
-| cursor | ApiRequestCursor | Pagination cursor (optional) |
+| pageSize | Integer | Page size, null or 0 for the default (20), at most 100 |
+| cursor | String | A previous page's `getPage().getNextCursor()`, null for the first page |
 
 **Example:**
 ```java
 LendingOfferResult result = client.taurusNetwork().lending()
-    .getLendingOffers(Arrays.asList("ETH"), null, null, "DESC", null);
+    .getLendingOffers(Arrays.asList("ETH"), null, null, "DESC", 20, null);
 for (LendingOffer offer : result.getOffers()) {
     System.out.println("Offer: " + offer.getId());
 }
@@ -1831,6 +2014,7 @@ LendingAgreement getLendingAgreement(String agreementId) throws ApiException
 Retrieves lending agreements with optional filtering.
 
 ```java
+LendingAgreementResult getLendingAgreements(String sortOrder, Integer pageSize, String cursor) throws ApiException
 LendingAgreementResult getLendingAgreements(String sortOrder, ApiRequestCursor cursor) throws ApiException
 ```
 
@@ -1872,6 +2056,8 @@ Retrieves settlements with optional filtering.
 
 ```java
 SettlementResult getSettlements(String counterParticipantId, List<String> statuses,
+                                 String sortOrder, Integer pageSize, String cursor) throws ApiException
+SettlementResult getSettlements(String counterParticipantId, List<String> statuses,
                                  String sortOrder, ApiRequestCursor cursor) throws ApiException
 ```
 
@@ -1881,12 +2067,13 @@ SettlementResult getSettlements(String counterParticipantId, List<String> status
 | counterParticipantId | String | Filter by counter participant ID (optional) |
 | statuses | List<String> | Filter by statuses (optional) |
 | sortOrder | String | Sort order: "ASC" or "DESC" (optional) |
-| cursor | ApiRequestCursor | Pagination cursor (optional) |
+| pageSize | Integer | Page size, null or 0 for the default (20), at most 100 |
+| cursor | String | A previous page's `getPage().getNextCursor()`, null for the first page |
 
 **Example:**
 ```java
 SettlementResult result = client.taurusNetwork().settlements()
-    .getSettlements(null, Arrays.asList("PENDING", "COMPLETED"), "DESC", null);
+    .getSettlements(null, Arrays.asList("PENDING", "COMPLETED"), "DESC", 20, null);
 for (Settlement settlement : result.getSettlements()) {
     System.out.println("Settlement: " + settlement.getId() + ", Status: " + settlement.getStatus());
 }
@@ -1917,6 +2104,9 @@ SharedAddressResult listSharedAddresses(String participantId, String ownerPartic
                                         String network, List<String> ids,
                                         String sortOrder, ApiRequestCursor cursor) throws ApiException
 ```
+
+Seven filters leave no room for separate page arguments (Checkstyle caps a method at eight), so
+the page is passed as `Pagination.page(pageSize, cursor)`.
 
 ### Key Models
 
@@ -2007,13 +2197,13 @@ Generated from the java source by `scripts/api-surface/docs.py`; regenerate with
 `./build.sh docs`. Every method below exists in the SDK, and `./build.sh docs --check`
 fails if this list drifts or if the prose above documents a method that does not.
 
-43 services, 190 public methods.
+44 services, 221 public methods.
 
 ### ActionService
 
 - `getAction(String): ActionEnvelope`
-- `getActions(): List<ActionEnvelope>`
-- `getActions(String, String, List<String>): List<ActionEnvelope>`
+- `getActions(): ActionResult`
+- `getActions(int, long, List<String>): ActionResult`
 
 ### AddressService
 
@@ -2023,7 +2213,8 @@ fails if this list drifts or if the prose above documents a method that does not
 - `deleteAddressAttribute(long, long): void`
 - `getAddress(long): Address`
 - `getAddressProofOfReserve(long, String): TgvalidatordProofOfReserve`
-- `getAddresses(long, int, int): List<Address>`
+- `getAddresses(Long, int, long, Boolean): AddressResult`
+- `getAddresses(long, int, long): AddressResult`
 
 ### AirGapService
 
@@ -2032,21 +2223,29 @@ fails if this list drifts or if the prose above documents a method that does not
 
 ### AssetService
 
-- `getAssetAddresses(String): List<Address>`
-- `getAssetAddresses(String, String, String, String): List<Address>`
-- `getAssetWallets(String): List<Wallet>`
-- `getAssetWallets(String, String): List<Wallet>`
+- `getAssetAddresses(String): AssetAddressesResult`
+- `getAssetAddresses(String, String, String, ApiRequestCursor): AssetAddressesResult`
+- `getAssetAddresses(String, String, String, Integer, String): AssetAddressesResult`
+- `getAssetWallets(String): AssetWalletsResult`
+- `getAssetWallets(String, ApiRequestCursor): AssetWalletsResult`
+- `getAssetWallets(String, Integer, String): AssetWalletsResult`
+- `listAssetOperations(String, String, String, Integer, String): AssetOperationV2Result`
+- `queryAssetAddresses(String, String, String, Integer, String): AssetAddressV2Result`
+- `queryAssets(String, String, String, String, String, String, Integer, String): AssetV2Result`
 
 ### AuditService
 
 - `exportAuditTrails(String, List<String>, List<String>, OffsetDateTime, OffsetDateTime, String): String`
 - `getAuditTrails(String, List<String>, List<String>, OffsetDateTime, OffsetDateTime, ApiRequestCursor): AuditTrailResult`
+- `getAuditTrails(String, List<String>, List<String>, OffsetDateTime, OffsetDateTime, Integer, String): AuditTrailResult`
 
 ### BalanceService
 
 - `getBalances(ApiRequestCursor): BalanceResult`
 - `getBalances(String, ApiRequestCursor): BalanceResult`
+- `getBalances(String, Integer, String): BalanceResult`
 - `getNFTCollectionBalances(String, String, ApiRequestCursor): NFTCollectionBalanceResult`
+- `getNFTCollectionBalances(String, String, Integer, String): NFTCollectionBalanceResult`
 
 ### BlockchainService
 
@@ -2056,8 +2255,11 @@ fails if this list drifts or if the prose above documents a method that does not
 ### BusinessRuleService
 
 - `getBusinessRules(ApiRequestCursor): BusinessRuleResult`
+- `getBusinessRules(Integer, String): BusinessRuleResult`
 - `getBusinessRulesByCurrency(String, ApiRequestCursor): BusinessRuleResult`
+- `getBusinessRulesByCurrency(String, Integer, String): BusinessRuleResult`
 - `getBusinessRulesByWallet(long, ApiRequestCursor): BusinessRuleResult`
+- `getBusinessRulesByWallet(long, Integer, String): BusinessRuleResult`
 - `updateTransactionsEnabled(boolean): void`
 
 ### ChangeService
@@ -2067,7 +2269,9 @@ fails if this list drifts or if the prose above documents a method that does not
 - `createChange(CreateChangeRequest): String`
 - `getChange(String): Change`
 - `getChanges(String, String, ApiRequestCursor): ChangeResult`
+- `getChanges(String, String, Integer, String): ChangeResult`
 - `getChangesForApproval(ApiRequestCursor): ChangeResult`
+- `getChangesForApproval(Integer, String): ChangeResult`
 - `rejectChange(String): void`
 - `rejectChanges(List<String>): void`
 
@@ -2080,7 +2284,6 @@ fails if this list drifts or if the prose above documents a method that does not
 - `approveWhitelistedContracts(List<String>, String, String): void`
 - `createAttribute(String, String, String, String, String, String): List<Attribute>`
 - `createWhitelistedContract(String, String, String, String, String, int, String, String): String`
-- `deleteWhitelistedContract(String, String): String`
 - `getAttribute(String, String): Attribute`
 - `updateWhitelistedContract(String, String, String, int): void`
 
@@ -2092,6 +2295,10 @@ fails if this list drifts or if the prose above documents a method that does not
 - `getCurrency(String): Currency`
 - `getCurrencyByBlockchain(String, String): Currency`
 
+### EarnService
+
+- `listRewards(String, Integer, String): EarnRewardResult`
+
 ### ExchangeService
 
 - `exportExchanges(String): String`
@@ -2102,8 +2309,8 @@ fails if this list drifts or if the prose above documents a method that does not
 ### FeePayerService
 
 - `getFeePayer(String): FeePayer`
-- `getFeePayers(): List<FeePayer>`
-- `getFeePayers(Integer, Integer, List<String>, String, String): List<FeePayer>`
+- `getFeePayers(): FeePayerResult`
+- `getFeePayers(int, long, List<String>, String, String): FeePayerResult`
 
 ### FeeService
 
@@ -2113,11 +2320,15 @@ fails if this list drifts or if the prose above documents a method that does not
 
 - `getFiatProviderAccount(String): FiatProviderAccount`
 - `getFiatProviderAccounts(String, String, String, String, ApiRequestCursor): FiatProviderAccountResult`
+- `getFiatProviderAccounts(String, String, String, String, Integer, String): FiatProviderAccountResult`
 - `getFiatProviderCounterpartyAccount(String): FiatProviderCounterpartyAccount`
 - `getFiatProviderCounterpartyAccounts(String, String, String, String, ApiRequestCursor): FiatProviderCounterpartyAccountResult`
+- `getFiatProviderCounterpartyAccounts(String, String, String, String, Integer, String): FiatProviderCounterpartyAccountResult`
 - `getFiatProviderOperation(String): FiatProviderOperation`
 - `getFiatProviderOperations(String, String, String, ApiRequestCursor): FiatProviderOperationResult`
+- `getFiatProviderOperations(String, String, String, Integer, String): FiatProviderOperationResult`
 - `getFiatProviders(): List<FiatProvider>`
+- `listFiatProviderEntities(String, String, String, Integer, String): FiatProviderEntityResult`
 
 ### GovernanceRuleService
 
@@ -2128,8 +2339,8 @@ fails if this list drifts or if the prose above documents a method that does not
 - `getPublicKeys(): List<SuperAdminPublicKey>`
 - `getRules(): GovernanceRules`
 - `getRulesById(String): GovernanceRules`
-- `getRulesHistory(int): GovernanceRulesHistoryResult`
-- `getRulesHistory(int, byte[]): GovernanceRulesHistoryResult`
+- `getRulesHistory(Integer): GovernanceRulesHistoryResult`
+- `getRulesHistory(Integer, String): GovernanceRulesHistoryResult`
 - `getRulesProposal(): GovernanceRules`
 - `getSuperAdminPublicKeys(): List<PublicKey>`
 - `proposalContainerHash(GovernanceRules): String`
@@ -2140,8 +2351,8 @@ fails if this list drifts or if the prose above documents a method that does not
 
 ### GroupService
 
-- `getGroups(): List<Group>`
-- `getGroups(String, String, List<String>, List<String>, String): List<Group>`
+- `getGroups(): GroupResult`
+- `getGroups(int, long, List<String>, List<String>, String): GroupResult`
 
 ### HealthService
 
@@ -2165,7 +2376,8 @@ fails if this list drifts or if the prose above documents a method that does not
 
 - `convert(String, String, List<String>): List<ConversionResult>`
 - `getPriceHistory(String, String, int): List<PriceHistoryPoint>`
-- `getPrices(): List<Price>`
+- `getPrices(): PriceResult`
+- `getPrices(String, List<String>, Boolean, String, Integer, String): PriceResult`
 
 ### RequestService
 
@@ -2181,7 +2393,9 @@ fails if this list drifts or if the prose above documents a method that does not
 - `createInternalTransferRequest(long, long, BigInteger): Request`
 - `getRequest(long): Request`
 - `getRequests(OffsetDateTime, OffsetDateTime, String, List<RequestStatus>, ApiRequestCursor): RequestResult`
+- `getRequests(OffsetDateTime, OffsetDateTime, String, List<RequestStatus>, Integer, String): RequestResult`
 - `getRequestsForApproval(ApiRequestCursor): RequestResult`
+- `getRequestsForApproval(Integer, String): RequestResult`
 - `rejectRequest(long, String): void`
 - `rejectRequests(List<Long>, String): void`
 
@@ -2189,8 +2403,9 @@ fails if this list drifts or if the prose above documents a method that does not
 
 - `getReservation(String): Reservation`
 - `getReservationUtxo(String): ReservationUtxo`
-- `getReservations(): List<Reservation>`
-- `getReservations(String, String, String, List<String>, String): List<Reservation>`
+- `getReservations(): ReservationResult`
+- `getReservations(String, String, String, List<String>, ApiRequestCursor): ReservationResult`
+- `getReservations(String, String, String, List<String>, Integer, String): ReservationResult`
 
 ### ScoreService
 
@@ -2205,6 +2420,7 @@ fails if this list drifts or if the prose above documents a method that does not
 - `getICPNeuronInfo(String, String): ICPNeuronInfo`
 - `getNEARValidatorInfo(String, String): NEARValidatorInfo`
 - `getStakeAccounts(String, String, String, ApiRequestCursor): StakeAccountResult`
+- `getStakeAccounts(String, String, String, Integer, String): StakeAccountResult`
 - `getXTZStakingRewards(String, String, OffsetDateTime, OffsetDateTime): XTZStakingRewards`
 
 ### StatisticsService
@@ -2222,8 +2438,10 @@ fails if this list drifts or if the prose above documents a method that does not
 
 - `getLendingAgreement(String): LendingAgreement`
 - `getLendingAgreements(String, ApiRequestCursor): LendingAgreementResult`
+- `getLendingAgreements(String, Integer, String): LendingAgreementResult`
 - `getLendingOffer(String): LendingOffer`
 - `getLendingOffers(List<String>, String, String, String, ApiRequestCursor): LendingOfferResult`
+- `getLendingOffers(List<String>, String, String, String, Integer, String): LendingOfferResult`
 
 ### TaurusNetworkParticipantService
 
@@ -2235,12 +2453,15 @@ fails if this list drifts or if the prose above documents a method that does not
 
 - `get(String): Pledge`
 - `list(String, String, List<String>, String, String, ApiRequestCursor): PledgeResult`
+- `list(String, String, List<String>, String, String, Integer, String): PledgeResult`
 - `listWithdrawals(String, String, String, ApiRequestCursor): PledgeWithdrawalResult`
+- `listWithdrawals(String, String, String, Integer, String): PledgeWithdrawalResult`
 
 ### TaurusNetworkSettlementService
 
 - `getSettlement(String): Settlement`
 - `getSettlements(String, List<String>, String, ApiRequestCursor): SettlementResult`
+- `getSettlements(String, List<String>, String, Integer, String): SettlementResult`
 
 ### TaurusNetworkSharingService
 
@@ -2248,19 +2469,19 @@ fails if this list drifts or if the prose above documents a method that does not
 
 ### TokenMetadataService
 
-- `getERCTokenMetadata(String, String, String, Boolean, String): TokenMetadata`
 - `getEVMERCTokenMetadata(String, String, String, Boolean, String): TokenMetadata`
 - `getFATokenMetadata(String, String, String, Boolean): TokenMetadata`
 
 ### TransactionService
 
-- `exportTransactions(OffsetDateTime, OffsetDateTime, String, String, String, String, int, int): String`
-- `exportTransactions(OffsetDateTime, OffsetDateTime, String, String, int, int): String`
+- `exportTransactions(OffsetDateTime, OffsetDateTime, String, String, String, String, String, int): TransactionExportResult`
+- `exportTransactions(OffsetDateTime, OffsetDateTime, String, String, String, String, int): TransactionExportResult`
+- `exportTransactions(OffsetDateTime, OffsetDateTime, String, String, int): TransactionExportResult`
 - `getTransactionByHash(String): Transaction`
 - `getTransactionById(long): Transaction`
-- `getTransactions(OffsetDateTime, OffsetDateTime, String, String, String, String, int, int): List<Transaction>`
-- `getTransactions(OffsetDateTime, OffsetDateTime, String, String, int, int): List<Transaction>`
-- `getTransactionsByAddress(String, int, int): List<Transaction>`
+- `getTransactions(OffsetDateTime, OffsetDateTime, String, String, String, String, int, long): TransactionResult`
+- `getTransactions(OffsetDateTime, OffsetDateTime, String, String, int, long): TransactionResult`
+- `getTransactionsByAddress(String, int, long): TransactionResult`
 
 ### UserDeviceService
 
@@ -2273,7 +2494,7 @@ fails if this list drifts or if the prose above documents a method that does not
 
 - `createUserAttribute(long, String, String): void`
 - `getMe(): User`
-- `getUsers(int, int): List<User>`
+- `getUsers(int, long): UserResult`
 - `getUsersByEmail(List<String>): List<User>`
 
 ### VisibilityGroupService
@@ -2290,19 +2511,23 @@ fails if this list drifts or if the prose above documents a method that does not
 - `createWalletAttribute(long, String, String): void`
 - `getWallet(long): Wallet`
 - `getWalletBalanceHistory(long, int): List<BalanceHistoryPoint>`
-- `getWalletTokens(long, int): List<AssetBalance>`
-- `getWallets(int, int): List<Wallet>`
-- `getWalletsByName(String, int, int): List<Wallet>`
+- `getWalletTokens(long, Integer): WalletTokensResult`
+- `getWalletTokens(long, Integer, String): WalletTokensResult`
+- `getWallets(int, long): WalletResult`
+- `getWallets(int, long, Boolean): WalletResult`
+- `getWalletsByName(String, int, long): WalletResult`
 
 ### WebhookCallsService
 
 - `getWebhookCalls(String, String, String, String, ApiRequestCursor): WebhookCallResult`
+- `getWebhookCalls(String, String, String, String, Integer, String): WebhookCallResult`
 
 ### WebhookService
 
 - `createWebhook(String, String, String): Webhook`
 - `deleteWebhook(String): void`
 - `getWebhooks(String, String, ApiRequestCursor): WebhookResult`
+- `getWebhooks(String, String, Integer, String): WebhookResult`
 - `updateWebhookStatus(String, WebhookStatus): Webhook`
 
 ### WhitelistedAddressService
@@ -2310,22 +2535,21 @@ fails if this list drifts or if the prose above documents a method that does not
 - `approveWhitelistedAddresses(WhitelistedAddressApproval, PrivateKey, String): void`
 - `getWhitelistedAddress(long): WhitelistedAddress`
 - `getWhitelistedAddressEnvelope(long): SignedWhitelistedAddressEnvelope`
-- `getWhitelistedAddresses(int, int): List<SignedWhitelistedAddressEnvelope>`
-- `getWhitelistedAddresses(int, int, String): List<SignedWhitelistedAddressEnvelope>`
-- `getWhitelistedAddresses(int, int, String, String): List<SignedWhitelistedAddressEnvelope>`
-- `getWhitelistedAddresses(int, int, String, String, boolean): List<SignedWhitelistedAddressEnvelope>`
-- `getWhitelistedAddressesForApproval(int, int, List<String>, Boolean): WhitelistedAddressListResult`
-- `getWhitelistedAddressesWithExclusions(int, int, String, String, boolean): WhitelistedAddressListResult`
+- `getWhitelistedAddresses(int, long): WhitelistedAddressListResult`
+- `getWhitelistedAddresses(int, long, String): WhitelistedAddressListResult`
+- `getWhitelistedAddresses(int, long, String, String): WhitelistedAddressListResult`
+- `getWhitelistedAddresses(int, long, String, String, boolean): WhitelistedAddressListResult`
+- `getWhitelistedAddressesForApproval(int, long, List<String>, Boolean): WhitelistedAddressListResult`
 
 ### WhitelistedAssetService
 
 - `approveWhitelistedAssets(WhitelistedAssetApproval, PrivateKey, String): void`
 - `getWhitelistedAsset(long): WhitelistedAsset`
 - `getWhitelistedAssetEnvelope(long): SignedWhitelistedAssetEnvelope`
-- `getWhitelistedAssets(int, int): List<SignedWhitelistedAssetEnvelope>`
-- `getWhitelistedAssets(int, int, String): List<SignedWhitelistedAssetEnvelope>`
-- `getWhitelistedAssets(int, int, String, String): List<SignedWhitelistedAssetEnvelope>`
-- `getWhitelistedAssets(int, int, String, String, String, Boolean, List<String>, List<String>): WhitelistedAssetResult`
-- `getWhitelistedAssetsForApproval(int, int, List<String>): WhitelistedAssetResult`
+- `getWhitelistedAssets(int, long): WhitelistedAssetResult`
+- `getWhitelistedAssets(int, long, String): WhitelistedAssetResult`
+- `getWhitelistedAssets(int, long, String, String): WhitelistedAssetResult`
+- `getWhitelistedAssets(int, long, String, String, String, Boolean, List<String>, List<String>): WhitelistedAssetResult`
+- `getWhitelistedAssetsForApproval(int, long, List<String>): WhitelistedAssetResult`
 
 <!-- END GENERATED METHOD INDEX -->

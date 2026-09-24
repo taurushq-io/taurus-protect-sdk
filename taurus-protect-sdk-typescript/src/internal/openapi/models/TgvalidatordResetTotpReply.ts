@@ -31,7 +31,16 @@ export interface TgvalidatordResetTotpReply {
      * @memberof TgvalidatordResetTotpReply
      */
     totpRecoveryCodes?: Array<string>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordResetTotpReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordResetTotpReplyWireKeys: ReadonlySet<string> = new Set(['totpSecret', 'totpRecoveryCodes']);
 
 /**
  * Check if a given object implements the TgvalidatordResetTotpReply interface.
@@ -48,11 +57,21 @@ export function TgvalidatordResetTotpReplyFromJSONTyped(json: any, ignoreDiscrim
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordResetTotpReply = {
         
         'totpSecret': json['totpSecret'] == null ? undefined : json['totpSecret'],
         'totpRecoveryCodes': json['totpRecoveryCodes'] == null ? undefined : json['totpRecoveryCodes'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordResetTotpReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordResetTotpReplyToJSON(json: any): TgvalidatordResetTotpReply {
@@ -68,6 +87,7 @@ export function TgvalidatordResetTotpReplyFromJSONTyped(json: any, ignoreDiscrim
         
         'totpSecret': value['totpSecret'],
         'totpRecoveryCodes': value['totpRecoveryCodes'],
+        ...value['additionalProperties'],
     };
 }
 

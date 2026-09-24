@@ -6,6 +6,7 @@
  */
 
 import type { Currency } from './currency';
+import type { CursorPage, CursorPageOptions } from './pagination';
 
 /**
  * Represents a currency price/exchange rate.
@@ -110,8 +111,37 @@ export interface GetPriceHistoryOptions {
   base: string;
   /** The quote currency (e.g., "USD", "EUR") */
   quote: string;
-  /** Maximum number of history points to return */
+  /** Number of daily points to return, newest first: 1-365 (default 20) */
   limit?: number;
+}
+
+/**
+ * Options for listing prices. A cursor list: `pageSize` 1-100 (default 20) and the
+ * `cursor` of a previous page.
+ *
+ * `fromCurrencyId` alone keeps the prices from that currency, `toCurrencyIds` alone the
+ * prices into those currencies, and both together the prices from the one into the
+ * others.
+ */
+export interface ListPricesOptions extends CursorPageOptions {
+  /** Keep only the primary price of each currency pair */
+  readonly onlyPrimary?: boolean;
+  /** Sort order ("ASC" or "DESC") */
+  readonly sortOrder?: string;
+  /** Keep prices whose source currency is this currency ID */
+  readonly fromCurrencyId?: string;
+  /** Keep prices whose target currency is one of these currency IDs */
+  readonly toCurrencyIds?: string[];
+}
+
+/**
+ * A page of verified prices.
+ */
+export interface ListPricesResult {
+  /** The prices of this page, each verified against its signature */
+  readonly items: Price[];
+  /** Cursor pagination: continue with `cursor: pagination.nextCursor` while `hasMore` */
+  readonly pagination: CursorPage;
 }
 
 /**

@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordFeePayer{}
 type TgvalidatordFeePayer struct {
 	Blockchain *string `json:"blockchain,omitempty"`
 	Eth *FeePayerETH `json:"eth,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordFeePayer TgvalidatordFeePayer
 
 // NewTgvalidatordFeePayer instantiates a new TgvalidatordFeePayer object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordFeePayer) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Eth) {
 		toSerialize["eth"] = o.Eth
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordFeePayer) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordFeePayer := _TgvalidatordFeePayer{}
+
+	err = json.Unmarshal(data, &varTgvalidatordFeePayer)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordFeePayer(varTgvalidatordFeePayer)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "eth")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordFeePayer struct {

@@ -39,7 +39,16 @@ export interface TgvalidatordCreateWebhookReply {
      * @memberof TgvalidatordCreateWebhookReply
      */
     secret?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateWebhookReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateWebhookReplyWireKeys: ReadonlySet<string> = new Set(['webhook', 'secret']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateWebhookReply interface.
@@ -56,11 +65,21 @@ export function TgvalidatordCreateWebhookReplyFromJSONTyped(json: any, ignoreDis
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateWebhookReply = {
         
         'webhook': json['webhook'] == null ? undefined : TgvalidatordWebhookFromJSON(json['webhook']),
         'secret': json['secret'] == null ? undefined : json['secret'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateWebhookReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateWebhookReplyToJSON(json: any): TgvalidatordCreateWebhookReply {
@@ -76,6 +95,7 @@ export function TgvalidatordCreateWebhookReplyFromJSONTyped(json: any, ignoreDis
         
         'webhook': TgvalidatordWebhookToJSON(value['webhook']),
         'secret': value['secret'],
+        ...value['additionalProperties'],
     };
 }
 

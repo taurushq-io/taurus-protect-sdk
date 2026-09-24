@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -23,6 +22,7 @@ var _ MappedNullable = &TgvalidatordOIDCInitiateRequest{}
 type TgvalidatordOIDCInitiateRequest struct {
 	Email string `json:"email"`
 	RedirectUri string `json:"redirectUri"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordOIDCInitiateRequest TgvalidatordOIDCInitiateRequest
@@ -106,6 +106,11 @@ func (o TgvalidatordOIDCInitiateRequest) ToMap() (map[string]interface{}, error)
 	toSerialize := map[string]interface{}{}
 	toSerialize["email"] = o.Email
 	toSerialize["redirectUri"] = o.RedirectUri
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -134,15 +139,21 @@ func (o *TgvalidatordOIDCInitiateRequest) UnmarshalJSON(data []byte) (err error)
 
 	varTgvalidatordOIDCInitiateRequest := _TgvalidatordOIDCInitiateRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordOIDCInitiateRequest)
+	err = json.Unmarshal(data, &varTgvalidatordOIDCInitiateRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordOIDCInitiateRequest(varTgvalidatordOIDCInitiateRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "email")
+		delete(additionalProperties, "redirectUri")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

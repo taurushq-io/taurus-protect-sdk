@@ -25,7 +25,16 @@ export interface TgvalidatordXTZContractArgSource {
      * @memberof TgvalidatordXTZContractArgSource
      */
     fromAddressId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordXTZContractArgSource
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordXTZContractArgSourceWireKeys: ReadonlySet<string> = new Set(['fromAddressId']);
 
 /**
  * Check if a given object implements the TgvalidatordXTZContractArgSource interface.
@@ -42,10 +51,20 @@ export function TgvalidatordXTZContractArgSourceFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordXTZContractArgSource = {
         
         'fromAddressId': json['fromAddressId'] == null ? undefined : json['fromAddressId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordXTZContractArgSourceWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordXTZContractArgSourceToJSON(json: any): TgvalidatordXTZContractArgSource {
@@ -60,6 +79,7 @@ export function TgvalidatordXTZContractArgSourceFromJSONTyped(json: any, ignoreD
     return {
         
         'fromAddressId': value['fromAddressId'],
+        ...value['additionalProperties'],
     };
 }
 

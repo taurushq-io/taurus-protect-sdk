@@ -31,7 +31,16 @@ export interface MultiFactorSignatureServiceApproveMultiFactorSignatureBody {
      * @memberof MultiFactorSignatureServiceApproveMultiFactorSignatureBody
      */
     comment: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof MultiFactorSignatureServiceApproveMultiFactorSignatureBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const MultiFactorSignatureServiceApproveMultiFactorSignatureBodyWireKeys: ReadonlySet<string> = new Set(['signature', 'comment']);
 
 /**
  * Check if a given object implements the MultiFactorSignatureServiceApproveMultiFactorSignatureBody interface.
@@ -50,11 +59,21 @@ export function MultiFactorSignatureServiceApproveMultiFactorSignatureBodyFromJS
     if (json == null) {
         return json;
     }
-    return {
+    const result: MultiFactorSignatureServiceApproveMultiFactorSignatureBody = {
         
         'signature': json['signature'],
         'comment': json['comment'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!MultiFactorSignatureServiceApproveMultiFactorSignatureBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function MultiFactorSignatureServiceApproveMultiFactorSignatureBodyToJSON(json: any): MultiFactorSignatureServiceApproveMultiFactorSignatureBody {
@@ -70,6 +89,7 @@ export function MultiFactorSignatureServiceApproveMultiFactorSignatureBodyFromJS
         
         'signature': value['signature'],
         'comment': value['comment'],
+        ...value['additionalProperties'],
     };
 }
 

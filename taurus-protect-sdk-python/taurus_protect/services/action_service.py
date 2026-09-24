@@ -6,7 +6,14 @@ from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
 from taurus_protect.mappers.action import action_from_dto, actions_from_dto
 from taurus_protect.models.action import Action
-from taurus_protect.models.pagination import Pagination
+from taurus_protect.models.pagination import (
+    PLUS_ROWS,
+    Pagination,
+    offset_pagination,
+    offset_query,
+    resolve_offset,
+    resolve_page_size,
+)
 from taurus_protect.services._base import BaseService
 
 if TYPE_CHECKING:
@@ -22,7 +29,7 @@ class ActionService(BaseService):
 
     Example:
         >>> # List actions
-        >>> actions, pagination = client.actions.list(limit=50, offset=0)
+        >>> actions, pagination = client.actions.list(limit=100, offset=0)
         >>> for action in actions:
         ...     print(f"{action.label}: {action.status}")
         >>>
@@ -84,44 +91,39 @@ class ActionService(BaseService):
 
     def list(
         self,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> Tuple[List[Action], Optional[Pagination]]:
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> Tuple[List[Action], Pagination]:
         """
-        List actions with pagination.
+        List actions, one page at a time.
 
         Args:
-            limit: Maximum number of actions to return (must be positive).
-            offset: Number of actions to skip (must be non-negative).
+            limit: Page size (default 20, max 100).
+            offset: Number of actions to skip; pass ``pagination.next_offset`` to continue.
 
         Returns:
-            Tuple of (actions list, pagination info).
+            Tuple of (actions, pagination).
 
         Raises:
             ValueError: If limit or offset are invalid.
             APIError: If API request fails.
         """
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
+        page_size = resolve_page_size(limit, "limit")
+        start = resolve_offset(offset)
 
         try:
-            resp = self._actions_api.action_service_get_actions(
-                limit=str(limit),
-                offset=str(offset),
-                ids=None,
+            resp = self._actions_api.action_service_get_actions(**offset_query(page_size, start))
+
+            rows = resp.result or []
+            actions = actions_from_dto(rows)
+            pagination = offset_pagination(
+                PLUS_ROWS,
+                limit=page_size,
+                offset=start,
+                served_rows=len(rows),
+                total_items=resp.total_items,
+                excluded=len(rows) - len(actions),
             )
-
-            result = getattr(resp, "result", None)
-            actions = actions_from_dto(result) if result else []
-
-            pagination = self._extract_pagination(
-                total_items=getattr(resp, "total_items", None),
-                offset=offset,
-                limit=limit,
-            )
-
             return actions, pagination
         except Exception as e:
             from taurus_protect.errors import APIError

@@ -6,6 +6,8 @@
  * requirements, or allowed transaction types.
  */
 
+import type { CursorNavigationOptions, CursorPage } from './pagination';
+
 /**
  * Currency information associated with a business rule.
  */
@@ -54,9 +56,10 @@ export interface BusinessRule {
 }
 
 /**
- * Options for listing business rules.
+ * Options for listing business rules. A cursor list: `pageSize` 1-100 (default 20) and
+ * the `cursor` of a previous page.
  */
-export interface ListBusinessRulesOptions {
+export interface ListBusinessRulesOptions extends CursorNavigationOptions {
   /** Filter by rule IDs */
   ids?: string[];
   /** Filter by rule keys */
@@ -75,22 +78,14 @@ export interface ListBusinessRulesOptions {
   entityType?: string;
   /** Filter by entity IDs */
   entityIds?: string[];
-  /** Page size for pagination */
-  pageSize?: number;
-  /** Current page cursor for pagination */
-  currentPage?: string;
-  /** Page request direction: FIRST, PREVIOUS, NEXT, LAST */
-  pageRequest?: 'FIRST' | 'PREVIOUS' | 'NEXT' | 'LAST';
 }
 
 /**
- * Result of listing business rules with pagination cursor.
+ * A page of business rules.
  */
 export interface ListBusinessRulesResult {
   /** List of business rules */
   readonly rules: BusinessRule[];
-  /** Cursor for next page (base64-encoded) */
-  readonly nextCursor?: string;
-  /** Whether there are more pages */
-  readonly hasMore: boolean;
+  /** Cursor pagination: continue with `cursor: pagination.nextCursor` while `hasMore` */
+  readonly pagination: CursorPage;
 }

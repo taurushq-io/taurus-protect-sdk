@@ -8,19 +8,21 @@ returned it unverified and nothing tested that.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
 import pytest
 from cryptography.hazmat.primitives.asymmetric import ec
 
+from taurus_protect._internal.openapi import GovernanceRulesApi
 from taurus_protect.errors import IntegrityError
 from taurus_protect.mappers import rules_container_to_base64
 from taurus_protect.models.governance_rules import DecodedRulesContainer
+from taurus_protect.models.pagination import CursorPage
 from taurus_protect.services.governance_rule_service import (
     GovernanceRuleService,
     _ruleset_verification_key,
 )
+from tests.unit.transport_stub import StubTransport, api_client
 
 
 def wire_valid_unsigned_container() -> str:
@@ -76,24 +78,30 @@ def test_history_excludes_and_names_unverified_entries() -> None:
     rotation makes every pre-rotation ruleset unverifiable, so a strict page would deny
     the whole audit trail from the rotation onwards. It must still NAME what it dropped.
     """
-    service, api = _service()
-    container = wire_valid_unsigned_container()
+    ac = api_client()
+    service = GovernanceRuleService(
+        api_client=ac,
+        governance_rules_api=GovernanceRulesApi(ac),
+        super_admin_keys=[ec.generate_private_key(ec.SECP256R1()).public_key()],
+        min_valid_signatures=1,
+    )
+    row = {
+        "rulesContainer": wire_valid_unsigned_container(),
+        "creationDate": "2026-01-01T00:00:00Z",
+    }
+    reply = {"result": [row, row], "totalItems": "2", "cursor": "bmV4dA=="}
 
-    dto = _rules_dto(container)
-    dto.creation_date = datetime(2026, 1, 1, tzinfo=timezone.utc)
-    reply = MagicMock()
-    reply.result = [dto, dto]
-    reply.cursor = None
-    reply.total_items = "2"
-    api.rule_service_get_rules_history.return_value = reply
-
-    result = service.get_rules_history(page_size=10)
+    with StubTransport(reply) as transport:
+        result = service.get_rules_history(page_size=10)
 
     assert result.rules == [], "no entry verified, so none may be returned"
     assert len(result.excluded_unverified) == 2, "both entries must be named as excluded"
     assert all(ex.reason for ex in result.excluded_unverified)
-    # The server counted 2; the caller can read 0.
-    assert result.total_items == "0"
+    # The server counted 2; the caller can read 0. The walk continues on the token.
+    assert result.page == CursorPage(
+        page_size=10, next_cursor="bmV4dA==", has_more=True, total_items=0
+    )
+    assert transport.last.query == [("limit", "10")]
 
 
 def test_memo_keys_on_the_signature_set() -> None:

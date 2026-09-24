@@ -37,7 +37,16 @@ export interface TgvalidatordMetadata {
      * @memberof TgvalidatordMetadata
      */
     payloadAsString?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordMetadata
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordMetadataWireKeys: ReadonlySet<string> = new Set(['hash', 'payload', 'payloadAsString']);
 
 /**
  * Check if a given object implements the TgvalidatordMetadata interface.
@@ -54,12 +63,22 @@ export function TgvalidatordMetadataFromJSONTyped(json: any, ignoreDiscriminator
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordMetadata = {
         
         'hash': json['hash'] == null ? undefined : json['hash'],
         'payload': json['payload'] == null ? undefined : json['payload'],
         'payloadAsString': json['payloadAsString'] == null ? undefined : json['payloadAsString'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordMetadataWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordMetadataToJSON(json: any): TgvalidatordMetadata {
@@ -76,6 +95,7 @@ export function TgvalidatordMetadataFromJSONTyped(json: any, ignoreDiscriminator
         'hash': value['hash'],
         'payload': value['payload'],
         'payloadAsString': value['payloadAsString'],
+        ...value['additionalProperties'],
     };
 }
 

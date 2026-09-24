@@ -182,8 +182,9 @@ def pledge_action_metadata_from_dto(dto: Any) -> Optional[PledgeActionMetadata]:
         return None
 
     return PledgeActionMetadata(
-        hash=safe_string(getattr(dto, "hash", None)),
-        payload=getattr(dto, "payload", None),
+        hash=safe_string(dto.hash),
+        # The hash commits to payloadAsString; ``payload`` is only its parsed JSON.
+        payload=dto.payload_as_string,
     )
 
 

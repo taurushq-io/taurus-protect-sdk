@@ -14,8 +14,8 @@ import pytest
 
 from taurus_protect.crypto.hashing import calculate_hex_hash
 from taurus_protect.errors import IntegrityError
-from taurus_protect.helpers.whitelisted_address_verifier import AddressVerificationResult
 from taurus_protect.helpers.whitelist_hash_helper import parse_whitelisted_address_from_json
+from taurus_protect.helpers.whitelisted_address_verifier import AddressVerificationResult
 from taurus_protect.models.governance_rules import DecodedRulesContainer
 from taurus_protect.models.whitelisted_address import WhitelistedAddress
 from taurus_protect.services.whitelisted_address_service import WhitelistedAddressService
@@ -152,7 +152,9 @@ class TestWhitelistedAddressServiceSecurity:
         assert result.excluded_unverified == []
         assert result.pagination is not None
         assert result.pagination.total_items == 2
-        assert all(addr.address == "0xf631ce893edb440e49188a991250051d07968186" for addr in addresses)
+        assert all(
+            addr.address == "0xf631ce893edb440e49188a991250051d07968186" for addr in addresses
+        )
 
     def test_list_excludes_bad_row_and_reports_it(self) -> None:
         """A bad row is excluded, named on the result, and removed from the total.
@@ -352,3 +354,91 @@ class TestMapEnvelopeFromDto:
         assert len(envelope.signatures) == 1
         assert envelope.signatures[0].user_id == "user-1"
         assert envelope.signatures[0].signature == "sig123"
+
+
+class TestWhitelistedAddressPagination:
+    """Next offset = offset + rows the SERVER returned; exclusions only reduce the total."""
+
+    @staticmethod
+    def _service():
+        from cryptography.hazmat.primitives.asymmetric import ec
+
+        from taurus_protect._internal.openapi import AddressWhitelistingApi
+        from tests.unit.transport_stub import api_client
+
+        ac = api_client()
+        return WhitelistedAddressService(
+            ac,
+            AddressWhitelistingApi(ac),
+            [ec.generate_private_key(ec.SECP256R1()).public_key()],
+            1,
+        )
+
+    @staticmethod
+    def _verify_all_but(excluded_ids):
+        from taurus_protect.models.whitelisted_address import (
+            ExcludedWhitelistedAddress,
+            SignedWhitelistedAddressEnvelope,
+        )
+
+        def verified(self, rows, _cache):
+            kept = [
+                SignedWhitelistedAddressEnvelope(
+                    id=str(r.id), verified_whitelisted_address=WhitelistedAddress(id=str(r.id))
+                )
+                for r in rows
+                if str(r.id) not in excluded_ids
+            ]
+            dropped = [
+                ExcludedWhitelistedAddress(id=str(r.id), reason="bad signature")
+                for r in rows
+                if str(r.id) in excluded_ids
+            ]
+            return kept, dropped
+
+        return verified
+
+    def test_exclusions_never_shift_the_walk(self) -> None:
+        from taurus_protect.models.pagination import Pagination
+        from tests.unit.transport_stub import StubTransport
+
+        rows = [{"id": str(i)} for i in range(20)]
+        with (
+            patch.object(
+                WhitelistedAddressService, "_verified_addresses", self._verify_all_but({"3", "4"})
+            ),
+            StubTransport({"result": rows, "totalItems": "30"}) as transport,
+        ):
+            result = self._service().list()
+
+        assert len(result.addresses) == 18
+        assert len(result.excluded_unverified) == 2
+        assert result.pagination == Pagination(
+            limit=20, offset=0, total_items=28, next_offset=20, has_more=True
+        )
+        assert transport.last.query == [("limit", "20"), ("rulesContainerNormalized", "true")]
+
+    def test_a_row_the_server_dropped_does_not_cause_a_skip(self) -> None:
+        from tests.unit.transport_stub import StubTransport
+
+        rows = [{"id": str(i)} for i in range(19)]
+        with (
+            patch.object(
+                WhitelistedAddressService, "_verified_addresses", self._verify_all_but(set())
+            ),
+            StubTransport({"result": rows, "totalItems": "30"}),
+        ):
+            result = self._service().list_for_approval()
+
+        assert result.pagination.next_offset == 19
+        assert result.pagination.has_more is True
+
+    def test_empty_page_still_carries_pagination(self) -> None:
+        from taurus_protect.models.pagination import Pagination
+        from tests.unit.transport_stub import StubTransport
+
+        with StubTransport({}):
+            result = self._service().list()
+
+        assert result.addresses == []
+        assert result.pagination == Pagination(limit=20, offset=0)

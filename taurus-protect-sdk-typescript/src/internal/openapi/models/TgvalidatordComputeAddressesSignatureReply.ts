@@ -39,7 +39,16 @@ export interface TgvalidatordComputeAddressesSignatureReply {
      * @memberof TgvalidatordComputeAddressesSignatureReply
      */
     totalItems?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordComputeAddressesSignatureReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordComputeAddressesSignatureReplyWireKeys: ReadonlySet<string> = new Set(['result', 'totalItems']);
 
 /**
  * Check if a given object implements the TgvalidatordComputeAddressesSignatureReply interface.
@@ -56,11 +65,21 @@ export function TgvalidatordComputeAddressesSignatureReplyFromJSONTyped(json: an
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordComputeAddressesSignatureReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(ComputeAddressesSignatureReplyAddressSignatureFromJSON)),
         'totalItems': json['totalItems'] == null ? undefined : json['totalItems'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordComputeAddressesSignatureReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordComputeAddressesSignatureReplyToJSON(json: any): TgvalidatordComputeAddressesSignatureReply {
@@ -76,6 +95,7 @@ export function TgvalidatordComputeAddressesSignatureReplyFromJSONTyped(json: an
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(ComputeAddressesSignatureReplyAddressSignatureToJSON)),
         'totalItems': value['totalItems'],
+        ...value['additionalProperties'],
     };
 }
 

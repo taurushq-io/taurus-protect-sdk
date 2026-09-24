@@ -21,27 +21,8 @@ describe('FeeService', () => {
     service = new FeeService(mockApi);
   });
 
-  describe('getFees', () => {
-    it('should return fees', async () => {
-      mockApi.feeServiceGetFees.mockResolvedValue({
-        result: [
-          { key: 'ETH', value: '0.001' },
-          { key: 'BTC', value: '0.0001' },
-        ],
-      } as never);
-
-      const fees = await service.getFees();
-      expect(fees).toHaveLength(2);
-    });
-
-    it('should handle empty results', async () => {
-      mockApi.feeServiceGetFees.mockResolvedValue({
-        result: [],
-      } as never);
-
-      const fees = await service.getFees();
-      expect(fees).toHaveLength(0);
-    });
+  it('does not wrap the deprecated v1 fees endpoint', () => {
+    expect('getFees' in service).toBe(false);
   });
 
   describe('getFeesV2', () => {
@@ -54,6 +35,7 @@ describe('FeeService', () => {
 
       const fees = await service.getFeesV2();
       expect(fees).toHaveLength(1);
+      expect(mockApi.feeServiceGetFees).not.toHaveBeenCalled();
     });
 
     it('should handle empty results', async () => {

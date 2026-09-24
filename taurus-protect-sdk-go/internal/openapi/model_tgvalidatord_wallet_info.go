@@ -25,6 +25,7 @@ type TgvalidatordWalletInfo struct {
 	Currency *string `json:"currency,omitempty"`
 	Coin *string `json:"coin,omitempty"`
 	Name *string `json:"name,omitempty"`
+	// Deprecated: Do not use
 	Container *string `json:"container,omitempty"`
 	Seed *string `json:"seed,omitempty"`
 	AccountPath *string `json:"accountPath,omitempty"`
@@ -42,7 +43,10 @@ type TgvalidatordWalletInfo struct {
 	VisibilityGroupID *string `json:"visibilityGroupID,omitempty"`
 	// An optional external identifier for the wallet.
 	ExternalWalletId *string `json:"externalWalletId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordWalletInfo TgvalidatordWalletInfo
 
 // NewTgvalidatordWalletInfo instantiates a new TgvalidatordWalletInfo object
 // This constructor will assign default values to properties that have it defined,
@@ -806,7 +810,53 @@ func (o TgvalidatordWalletInfo) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.ExternalWalletId) {
 		toSerialize["externalWalletId"] = o.ExternalWalletId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordWalletInfo) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordWalletInfo := _TgvalidatordWalletInfo{}
+
+	err = json.Unmarshal(data, &varTgvalidatordWalletInfo)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordWalletInfo(varTgvalidatordWalletInfo)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "balance")
+		delete(additionalProperties, "currency")
+		delete(additionalProperties, "coin")
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "container")
+		delete(additionalProperties, "seed")
+		delete(additionalProperties, "accountPath")
+		delete(additionalProperties, "isOmnibus")
+		delete(additionalProperties, "creationDate")
+		delete(additionalProperties, "updateDate")
+		delete(additionalProperties, "customerId")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "disabled")
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "addressesCount")
+		delete(additionalProperties, "currencyInfo")
+		delete(additionalProperties, "attributes")
+		delete(additionalProperties, "network")
+		delete(additionalProperties, "visibilityGroupID")
+		delete(additionalProperties, "externalWalletId")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordWalletInfo struct {

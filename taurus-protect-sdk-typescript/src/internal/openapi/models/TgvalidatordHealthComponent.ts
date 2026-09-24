@@ -33,7 +33,16 @@ export interface TgvalidatordHealthComponent {
      * @memberof TgvalidatordHealthComponent
      */
     groups?: { [key: string]: TgvalidatordHealthGroup; };
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordHealthComponent
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordHealthComponentWireKeys: ReadonlySet<string> = new Set(['groups']);
 
 /**
  * Check if a given object implements the TgvalidatordHealthComponent interface.
@@ -50,10 +59,20 @@ export function TgvalidatordHealthComponentFromJSONTyped(json: any, ignoreDiscri
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordHealthComponent = {
         
         'groups': json['groups'] == null ? undefined : (mapValues(json['groups'], TgvalidatordHealthGroupFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordHealthComponentWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordHealthComponentToJSON(json: any): TgvalidatordHealthComponent {
@@ -68,6 +87,7 @@ export function TgvalidatordHealthComponentFromJSONTyped(json: any, ignoreDiscri
     return {
         
         'groups': value['groups'] == null ? undefined : (mapValues(value['groups'], TgvalidatordHealthGroupToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

@@ -79,7 +79,16 @@ export interface TgvalidatordCompanyTravelRuleData {
      * @memberof TgvalidatordCompanyTravelRuleData
      */
     accountNumber?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCompanyTravelRuleData
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCompanyTravelRuleDataWireKeys: ReadonlySet<string> = new Set(['department', 'buildingNumber', 'street', 'city', 'province', 'postalCode', 'country', 'legalEntityIdentifier', 'businessName', 'accountNumber']);
 
 /**
  * Check if a given object implements the TgvalidatordCompanyTravelRuleData interface.
@@ -96,7 +105,7 @@ export function TgvalidatordCompanyTravelRuleDataFromJSONTyped(json: any, ignore
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCompanyTravelRuleData = {
         
         'department': json['department'] == null ? undefined : json['department'],
         'buildingNumber': json['buildingNumber'] == null ? undefined : json['buildingNumber'],
@@ -109,6 +118,16 @@ export function TgvalidatordCompanyTravelRuleDataFromJSONTyped(json: any, ignore
         'businessName': json['businessName'] == null ? undefined : json['businessName'],
         'accountNumber': json['accountNumber'] == null ? undefined : json['accountNumber'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCompanyTravelRuleDataWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCompanyTravelRuleDataToJSON(json: any): TgvalidatordCompanyTravelRuleData {
@@ -132,6 +151,7 @@ export function TgvalidatordCompanyTravelRuleDataFromJSONTyped(json: any, ignore
         'legalEntityIdentifier': value['legalEntityIdentifier'],
         'businessName': value['businessName'],
         'accountNumber': value['accountNumber'],
+        ...value['additionalProperties'],
     };
 }
 

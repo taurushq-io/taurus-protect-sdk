@@ -33,7 +33,16 @@ export interface TgvalidatordGetContractTemplatesFilter {
      * @memberof TgvalidatordGetContractTemplatesFilter
      */
     genericFilter?: GetContractTemplatesFilterGenericFilter;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetContractTemplatesFilter
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetContractTemplatesFilterWireKeys: ReadonlySet<string> = new Set(['genericFilter']);
 
 /**
  * Check if a given object implements the TgvalidatordGetContractTemplatesFilter interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetContractTemplatesFilterFromJSONTyped(json: any, i
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetContractTemplatesFilter = {
         
         'genericFilter': json['genericFilter'] == null ? undefined : GetContractTemplatesFilterGenericFilterFromJSON(json['genericFilter']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetContractTemplatesFilterWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetContractTemplatesFilterToJSON(json: any): TgvalidatordGetContractTemplatesFilter {
@@ -68,6 +87,7 @@ export function TgvalidatordGetContractTemplatesFilterFromJSONTyped(json: any, i
     return {
         
         'genericFilter': GetContractTemplatesFilterGenericFilterToJSON(value['genericFilter']),
+        ...value['additionalProperties'],
     };
 }
 

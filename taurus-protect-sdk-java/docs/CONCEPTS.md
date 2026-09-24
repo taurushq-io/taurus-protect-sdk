@@ -183,69 +183,108 @@ try {
 
 ## Pagination
 
-The Java SDK uses cursor-based pagination with a factory pattern.
+Every list method follows the cross-SDK pagination contract (repo-root `CLAUDE.md` →
+"Pagination (cross-SDK)"): a page size is always sent, `0`/`null` means
+`Pagination.DEFAULT_PAGE_SIZE` (**20**), and a negative size or one above
+`Pagination.MAX_PAGE_SIZE` (**100**) throws `IllegalArgumentException` naming the option before
+any request is made. A negative offset is rejected the same way.
 
-### Core Types
+Every paged result carries a pagination value that is never null on a successful call; an empty
+reply (`{}`) is a valid last page.
+
+### Offset lists — `OffsetPagination`
+
+Wallets, addresses, transactions, users, groups, fee payers, actions and the two whitelists page
+by offset (validatord has no cursor for them). Their result types (`WalletResult`,
+`AddressResult`, `TransactionResult`, `UserResult`, `GroupResult`, `FeePayerResult`,
+`ActionResult`, `WhitelistedAddressListResult`, `WhitelistedAssetResult`) expose
+`getPagination()`:
+
+```java
+public final class OffsetPagination {
+    int getLimit();          // the page size sent
+    long getOffset();        // the offset sent (never the reply's)
+    long getTotalItems();    // server total, reduced by rows the SDK withheld
+    long getNextOffset();    // pass this back as the next offset
+    boolean hasMore();       // offset < nextOffset < server total
+}
+```
+
+```java
+long offset = 0;
+WalletResult page;
+do {
+    page = client.getWalletService().getWallets(20, offset);
+    for (Wallet w : page.getWallets()) {
+        // process
+    }
+    offset = page.getPagination().getNextOffset();
+} while (page.getPagination().hasMore());
+```
+
+Always continue from `getNextOffset()`, never from `offset + rows`: each endpoint has its own
+rule (the wallet and address replies return the next offset; users and groups can append a
+synthetic row beyond the limit; the contract whitelist keeps skipped rows' slots), and
+`OffsetPagination.of` applies it.
+
+### Cursor lists — `CursorPage`
+
+Every other list pages by cursor. Each cursor method takes a page size and a cursor — the
+previous page's `getPage().getNextCursor()`, or `null` for the first page — and its result
+(`RequestResult`, `ChangeResult`, `BalanceResult`, `PriceResult`, ...) extends
+`CursorPagedResult`:
+
+```java
+public final class CursorPage {
+    int getPageSize();       // the page size sent
+    String getNextCursor();  // "" when there is no next page
+    boolean hasMore();       // the reply cursor's hasNext
+    Long getTotalItems();    // the server total where the endpoint reports one, else null
+}
+```
+
+```java
+String cursor = null;
+ChangeResult page;
+do {
+    page = client.getChangeService().getChanges(null, null, 20, cursor);
+    // process page.getChanges()
+    cursor = page.getPage().getNextCursor();
+} while (page.getPage().hasMore());
+```
+
+With a cursor the SDK sends `currentPage=<cursor>`, `pageRequest=NEXT` and the page size, in
+whatever form the endpoint takes (`cursor.*` or `requestCursor.*` query parameters, or a body
+cursor). A cursor is opaque base64 text and may contain `+ / =`; it is URL-encoded on the wire.
+Wallet tokens and the governance rules history page by a bare token instead; the result's
+`getPage()` is the same `CursorPage`, and their `getTotalItems()` is set.
+
+### Low-level request cursors
+
+Each cursor method that existed before the contract also keeps an `ApiRequestCursor` overload,
+which can express every `PageRequest` (`FIRST`, `PREVIOUS`, `NEXT`, `LAST`). A `null` cursor is the
+first page with the default size; an explicit size must be between 1 and 100.
 
 ```java
 // Enum for page navigation direction
 public enum PageRequest { FIRST, PREVIOUS, NEXT, LAST }
 
-// Request cursor (sent to API)
-public class ApiRequestCursor {
-    private String currentPage;    // Page token (null for initial request)
-    private PageRequest pageRequest; // Navigation direction
-    private long pageSize;          // Items per page
-}
-
-// Response cursor (returned from API)
-public class ApiResponseCursor {
-    private String currentPage;    // Current page token
-    private Boolean hasPrevious;   // Has previous page
-    private Boolean hasNext;       // Has next page
-
-    public ApiRequestCursor nextPage(int pageSize);
-    public ApiRequestCursor previousPage(int pageSize);
-}
+ApiRequestCursor first = Pagination.first(20);                    // pageRequest=FIRST
+ApiRequestCursor contract = Pagination.page(20, nextCursor);      // the contract form
+ApiRequestCursor back = Pagination.previous(result.getCursor(), 20);
 ```
 
-### Pagination Factory
+`TaurusNetworkSharingService.listSharedAddresses` has seven filters, which leaves no room for
+separate page-size and cursor parameters, so it takes the page only as
+`Pagination.page(pageSize, cursor)`.
 
-The `Pagination` class provides static factory methods for creating cursors:
+### Exempt: price history and the transaction export
 
-```java
-import com.taurushq.sdk.protect.client.model.Pagination;
-
-// First page (default size: 50, max: 1000)
-ApiRequestCursor cursor = Pagination.first();
-ApiRequestCursor cursor = Pagination.first(100);
-
-// Navigate from response cursor
-ApiRequestCursor next = Pagination.next(responseCursor, 50);
-ApiRequestCursor prev = Pagination.previous(responseCursor, 50);
-
-// Last page
-ApiRequestCursor last = Pagination.last(50);
-```
-
-### Result Wrapper Pattern
-
-All paginated operations return `*Result` classes wrapping the data with cursor info:
-
-```java
-// Fetch first page
-ApiRequestCursor cursor = Pagination.first(50);
-BalanceResult result = client.getBalanceService().getBalances("ETH", cursor);
-
-// Iterate through pages
-while (result.hasNext()) {
-    cursor = result.nextCursor(50);
-    result = client.getBalanceService().getBalances("ETH", cursor);
-    for (AssetBalance balance : result.getBalances()) {
-        // process each balance
-    }
-}
-```
+`PriceService.getPriceHistory` returns at most `Pagination.MAX_PRICE_HISTORY_LIMIT` (365) daily
+points (default 20). `TransactionService.exportTransactions` cannot page at all: the server ignores
+any offset and always exports from the first matching transaction, so it takes only a limit
+(default 20, no SDK maximum) and returns a `TransactionExportResult` with the exported text and the
+server's `getTotalItems()`.
 
 ---
 

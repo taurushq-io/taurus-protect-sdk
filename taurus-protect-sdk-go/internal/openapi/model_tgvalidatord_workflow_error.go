@@ -22,7 +22,10 @@ type TgvalidatordWorkflowError struct {
 	Message *string `json:"message,omitempty"`
 	ErrorCode *string `json:"errorCode,omitempty"`
 	ErrorID *string `json:"errorID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordWorkflowError TgvalidatordWorkflowError
 
 // NewTgvalidatordWorkflowError instantiates a new TgvalidatordWorkflowError object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordWorkflowError) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.ErrorID) {
 		toSerialize["errorID"] = o.ErrorID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordWorkflowError) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordWorkflowError := _TgvalidatordWorkflowError{}
+
+	err = json.Unmarshal(data, &varTgvalidatordWorkflowError)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordWorkflowError(varTgvalidatordWorkflowError)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "message")
+		delete(additionalProperties, "errorCode")
+		delete(additionalProperties, "errorID")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordWorkflowError struct {

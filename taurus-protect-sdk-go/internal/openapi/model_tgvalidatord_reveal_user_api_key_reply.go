@@ -20,12 +20,15 @@ var _ MappedNullable = &TgvalidatordRevealUserApiKeyReply{}
 
 // TgvalidatordRevealUserApiKeyReply struct for TgvalidatordRevealUserApiKeyReply
 type TgvalidatordRevealUserApiKeyReply struct {
-	ApiKeyId     *string    `json:"apiKeyId,omitempty"`
-	Secret       *string    `json:"secret,omitempty"`
+	ApiKeyId *string `json:"apiKeyId,omitempty"`
+	Secret *string `json:"secret,omitempty"`
 	CreationDate *time.Time `json:"creationDate,omitempty"`
-	RevealDate   *time.Time `json:"revealDate,omitempty"`
-	Revealable   *bool      `json:"revealable,omitempty"`
+	RevealDate *time.Time `json:"revealDate,omitempty"`
+	Revealable *bool `json:"revealable,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordRevealUserApiKeyReply TgvalidatordRevealUserApiKeyReply
 
 // NewTgvalidatordRevealUserApiKeyReply instantiates a new TgvalidatordRevealUserApiKeyReply object
 // This constructor will assign default values to properties that have it defined,
@@ -205,7 +208,7 @@ func (o *TgvalidatordRevealUserApiKeyReply) SetRevealable(v bool) {
 }
 
 func (o TgvalidatordRevealUserApiKeyReply) MarshalJSON() ([]byte, error) {
-	toSerialize, err := o.ToMap()
+	toSerialize,err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -229,7 +232,37 @@ func (o TgvalidatordRevealUserApiKeyReply) ToMap() (map[string]interface{}, erro
 	if !IsNil(o.Revealable) {
 		toSerialize["revealable"] = o.Revealable
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordRevealUserApiKeyReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordRevealUserApiKeyReply := _TgvalidatordRevealUserApiKeyReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordRevealUserApiKeyReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordRevealUserApiKeyReply(varTgvalidatordRevealUserApiKeyReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "apiKeyId")
+		delete(additionalProperties, "secret")
+		delete(additionalProperties, "creationDate")
+		delete(additionalProperties, "revealDate")
+		delete(additionalProperties, "revealable")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordRevealUserApiKeyReply struct {
@@ -267,3 +300,5 @@ func (v *NullableTgvalidatordRevealUserApiKeyReply) UnmarshalJSON(src []byte) er
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
+
+

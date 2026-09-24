@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -25,6 +24,7 @@ type TgvalidatordRejectPledgeActionsRequest struct {
 	Comment string `json:"comment"`
 	// The IDs of the pledge actions to reject.
 	Ids []string `json:"ids"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordRejectPledgeActionsRequest TgvalidatordRejectPledgeActionsRequest
@@ -108,6 +108,11 @@ func (o TgvalidatordRejectPledgeActionsRequest) ToMap() (map[string]interface{},
 	toSerialize := map[string]interface{}{}
 	toSerialize["comment"] = o.Comment
 	toSerialize["ids"] = o.Ids
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -136,15 +141,21 @@ func (o *TgvalidatordRejectPledgeActionsRequest) UnmarshalJSON(data []byte) (err
 
 	varTgvalidatordRejectPledgeActionsRequest := _TgvalidatordRejectPledgeActionsRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordRejectPledgeActionsRequest)
+	err = json.Unmarshal(data, &varTgvalidatordRejectPledgeActionsRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordRejectPledgeActionsRequest(varTgvalidatordRejectPledgeActionsRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "ids")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

@@ -40,7 +40,7 @@ class AdminIntegrationTest {
 
     @Test
     void listGroups() throws ApiException {
-        List<Group> groups = client.getGroupService().getGroups("10", "0", null, null, null);
+        List<Group> groups = client.getGroupService().getGroups(10, 0, null, null, null).getGroups();
 
         System.out.println("Found " + groups.size() + " groups");
         for (Group g : groups) {

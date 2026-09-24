@@ -94,7 +94,16 @@ export interface TgvalidatordTnSettlementClipTransaction {
      * @memberof TgvalidatordTnSettlementClipTransaction
      */
     workflowID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTnSettlementClipTransaction
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTnSettlementClipTransactionWireKeys: ReadonlySet<string> = new Set(['id', 'assetTransfer', 'requestID', 'requestMetadata', 'txHash', 'txID', 'txBlockNumber', 'status', 'createdAt', 'workflowID']);
 
 /**
  * Check if a given object implements the TgvalidatordTnSettlementClipTransaction interface.
@@ -111,7 +120,7 @@ export function TgvalidatordTnSettlementClipTransactionFromJSONTyped(json: any, 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTnSettlementClipTransaction = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'assetTransfer': json['assetTransfer'] == null ? undefined : TgvalidatordTnSettlementAssetTransferFromJSON(json['assetTransfer']),
@@ -124,6 +133,16 @@ export function TgvalidatordTnSettlementClipTransactionFromJSONTyped(json: any, 
         'createdAt': json['createdAt'] == null ? undefined : (new Date(json['createdAt'])),
         'workflowID': json['workflowID'] == null ? undefined : json['workflowID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTnSettlementClipTransactionWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTnSettlementClipTransactionToJSON(json: any): TgvalidatordTnSettlementClipTransaction {
@@ -147,6 +166,7 @@ export function TgvalidatordTnSettlementClipTransactionFromJSONTyped(json: any, 
         'status': value['status'],
         'createdAt': value['createdAt'] == null ? undefined : ((value['createdAt']).toISOString()),
         'workflowID': value['workflowID'],
+        ...value['additionalProperties'],
     };
 }
 

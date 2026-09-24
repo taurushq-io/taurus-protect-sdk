@@ -25,7 +25,16 @@ export interface TgvalidatordGetXTZAddressStakingRewardsReply {
      * @memberof TgvalidatordGetXTZAddressStakingRewardsReply
      */
     receivedRewardsAmount?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetXTZAddressStakingRewardsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetXTZAddressStakingRewardsReplyWireKeys: ReadonlySet<string> = new Set(['receivedRewardsAmount']);
 
 /**
  * Check if a given object implements the TgvalidatordGetXTZAddressStakingRewardsReply interface.
@@ -42,10 +51,20 @@ export function TgvalidatordGetXTZAddressStakingRewardsReplyFromJSONTyped(json: 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetXTZAddressStakingRewardsReply = {
         
         'receivedRewardsAmount': json['receivedRewardsAmount'] == null ? undefined : json['receivedRewardsAmount'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetXTZAddressStakingRewardsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetXTZAddressStakingRewardsReplyToJSON(json: any): TgvalidatordGetXTZAddressStakingRewardsReply {
@@ -60,6 +79,7 @@ export function TgvalidatordGetXTZAddressStakingRewardsReplyFromJSONTyped(json: 
     return {
         
         'receivedRewardsAmount': value['receivedRewardsAmount'],
+        ...value['additionalProperties'],
     };
 }
 

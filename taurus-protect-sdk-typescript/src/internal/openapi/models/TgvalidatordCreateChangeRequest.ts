@@ -55,7 +55,16 @@ export interface TgvalidatordCreateChangeRequest {
      * @memberof TgvalidatordCreateChangeRequest
      */
     entityUUID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateChangeRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateChangeRequestWireKeys: ReadonlySet<string> = new Set(['action', 'entityId', 'entity', 'changes', 'changeComment', 'entityUUID']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateChangeRequest interface.
@@ -74,7 +83,7 @@ export function TgvalidatordCreateChangeRequestFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateChangeRequest = {
         
         'action': json['action'],
         'entityId': json['entityId'] == null ? undefined : json['entityId'],
@@ -83,6 +92,16 @@ export function TgvalidatordCreateChangeRequestFromJSONTyped(json: any, ignoreDi
         'changeComment': json['changeComment'] == null ? undefined : json['changeComment'],
         'entityUUID': json['entityUUID'] == null ? undefined : json['entityUUID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateChangeRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateChangeRequestToJSON(json: any): TgvalidatordCreateChangeRequest {
@@ -102,6 +121,7 @@ export function TgvalidatordCreateChangeRequestFromJSONTyped(json: any, ignoreDi
         'changes': value['changes'],
         'changeComment': value['changeComment'],
         'entityUUID': value['entityUUID'],
+        ...value['additionalProperties'],
     };
 }
 

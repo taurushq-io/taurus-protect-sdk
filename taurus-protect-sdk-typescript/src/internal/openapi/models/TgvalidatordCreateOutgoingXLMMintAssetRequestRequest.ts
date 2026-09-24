@@ -67,7 +67,16 @@ export interface TgvalidatordCreateOutgoingXLMMintAssetRequestRequest {
      * @memberof TgvalidatordCreateOutgoingXLMMintAssetRequestRequest
      */
     destinationAddressMemo?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingXLMMintAssetRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingXLMMintAssetRequestRequestWireKeys: ReadonlySet<string> = new Set(['amount', 'feeLimit', 'fromAddressId', 'toAddressId', 'toWhitelistedAddressId', 'comment', 'externalRequestId', 'destinationAddressMemo']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingXLMMintAssetRequestRequest interface.
@@ -86,7 +95,7 @@ export function TgvalidatordCreateOutgoingXLMMintAssetRequestRequestFromJSONType
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingXLMMintAssetRequestRequest = {
         
         'amount': json['amount'],
         'feeLimit': json['feeLimit'] == null ? undefined : json['feeLimit'],
@@ -97,6 +106,16 @@ export function TgvalidatordCreateOutgoingXLMMintAssetRequestRequestFromJSONType
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
         'destinationAddressMemo': json['destinationAddressMemo'] == null ? undefined : json['destinationAddressMemo'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingXLMMintAssetRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingXLMMintAssetRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingXLMMintAssetRequestRequest {
@@ -118,6 +137,7 @@ export function TgvalidatordCreateOutgoingXLMMintAssetRequestRequestFromJSONType
         'comment': value['comment'],
         'externalRequestId': value['externalRequestId'],
         'destinationAddressMemo': value['destinationAddressMemo'],
+        ...value['additionalProperties'],
     };
 }
 

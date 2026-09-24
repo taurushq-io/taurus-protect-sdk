@@ -128,26 +128,29 @@ public void createWalletExample(ProtectClient client) throws Exception {
 
 ```java
 import com.taurushq.sdk.protect.client.model.Wallet;
+import com.taurushq.sdk.protect.client.model.WalletResult;
 import java.util.ArrayList;
 import java.util.List;
 
 public void listWalletsExample(ProtectClient client) throws Exception {
-    // List all wallets with pagination
-    int limit = 50;
-    int offset = 0;
+    // List all wallets, one page at a time: continue from the returned next offset
+    long offset = 0;
     List<Wallet> allWallets = new ArrayList<>();
 
-    List<Wallet> page;
+    WalletResult page;
     do {
-        page = client.getWalletService().getWallets(limit, offset);
-        allWallets.addAll(page);
-        offset += limit;
-    } while (page.size() == limit);
+        page = client.getWalletService().getWallets(100, offset);
+        allWallets.addAll(page.getWallets());
+        offset = page.getPagination().getNextOffset();
+    } while (page.getPagination().hasMore());
 
     System.out.println("Total wallets: " + allWallets.size());
 
+    // Hide every disabled wallet (by default only currency-disabled ones are hidden)
+    WalletResult enabled = client.getWalletService().getWallets(20, 0, true);
+
     // Search by name
-    List<Wallet> treasuryWallets = client.getWalletService()
+    WalletResult treasuryWallets = client.getWalletService()
         .getWalletsByName("Treasury", 10, 0);
 }
 ```
@@ -296,15 +299,12 @@ public class RequestApprovalExample {
 ```java
 import com.taurushq.sdk.protect.client.model.Request;
 import com.taurushq.sdk.protect.client.model.RequestResult;
-import com.taurushq.sdk.protect.client.model.ApiRequestCursor;
-import com.taurushq.sdk.protect.client.model.PageRequest;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public void batchApprovalExample(ProtectClient client, PrivateKey privateKey) throws Exception {
     // Get all requests pending my approval
-    ApiRequestCursor cursor = new ApiRequestCursor(PageRequest.FIRST, 100);
-    RequestResult result = client.getRequestService().getRequestsForApproval(cursor);
+    RequestResult result = client.getRequestService().getRequestsForApproval(100, null);
 
     List<Request> toApprove = result.getRequests().stream()
         .filter(r -> r.getCurrency().equals("ETH"))  // Filter by currency
@@ -361,16 +361,16 @@ public void queryTransactionsExample(ProtectClient client) throws Exception {
     OffsetDateTime from = OffsetDateTime.now().minusDays(7);
     OffsetDateTime to = OffsetDateTime.now();
 
-    List<Transaction> recentOutgoing = client.getTransactionService().getTransactions(
+    TransactionResult recentOutgoing = client.getTransactionService().getTransactions(
         from,
         to,
         "ETH",       // currency
         "outgoing",  // direction
-        100,         // limit
-        0            // offset
+        100,         // limit (max 100)
+        0            // offset; next page: recentOutgoing.getPagination().getNextOffset()
     );
 
-    for (Transaction t : recentOutgoing) {
+    for (Transaction t : recentOutgoing.getTransactions()) {
         System.out.printf("%s: %s -> %s (%s)%n",
             t.getHash().substring(0, 10),
             t.getFrom(),
@@ -383,19 +383,27 @@ public void queryTransactionsExample(ProtectClient client) throws Exception {
 
 ### Export to CSV
 
+The export cannot page (the server ignores any offset), so it takes a limit only, with no SDK
+maximum. Compare the total with the limit to tell whether it was cut short.
+
 ```java
+import com.taurushq.sdk.protect.client.model.TransactionExportResult;
+
 public void exportTransactionsExample(ProtectClient client) throws Exception {
     OffsetDateTime from = OffsetDateTime.now().minusMonths(1);
     OffsetDateTime to = OffsetDateTime.now();
 
-    String csv = client.getTransactionService().exportTransactions(
-        from, to, null, null, 1000, 0
+    TransactionExportResult export = client.getTransactionService().exportTransactions(
+        from, to, null, null, null, null, "csv", 1000   // format null = the server default (JSON)
     );
+    if (export.getTotalItems() > 1000) {
+        System.out.println("Export truncated: raise the limit or narrow the filters");
+    }
 
     // Save to file
-    java.nio.file.Files.writeString(
-        java.nio.file.Path.of("transactions.csv"),
-        csv
+    java.nio.file.Files.write(
+        java.nio.file.Paths.get("transactions.csv"),
+        export.getContent().getBytes(java.nio.charset.StandardCharsets.UTF_8)
     );
 }
 ```
@@ -409,21 +417,20 @@ public void exportTransactionsExample(ProtectClient client) throws Exception {
 ```java
 import com.taurushq.sdk.protect.client.model.BalanceResult;
 import com.taurushq.sdk.protect.client.model.AssetBalance;
-import com.taurushq.sdk.protect.client.model.ApiRequestCursor;
-import com.taurushq.sdk.protect.client.model.PageRequest;
 import java.util.ArrayList;
 import java.util.List;
 
 public void getAllBalancesExample(ProtectClient client) throws Exception {
     List<AssetBalance> allBalances = new ArrayList<>();
-    ApiRequestCursor cursor = new ApiRequestCursor(PageRequest.FIRST, 100);
+    String cursor = null;   // first page
 
     BalanceResult result;
     do {
-        result = client.getBalanceService().getBalances(cursor);
+        result = client.getBalanceService().getBalances(null, 100, cursor);
         allBalances.addAll(result.getBalances());
-        cursor = result.nextCursor(100);
-    } while (result.hasNext());
+        cursor = result.getPage().getNextCursor();
+    } while (result.getPage().hasMore());
+    System.out.println("Total balances: " + result.getPage().getTotalItems());
 
     // Summarize by currency
     for (AssetBalance balance : allBalances) {
@@ -442,10 +449,8 @@ public void getAllBalancesExample(ProtectClient client) throws Exception {
 import com.taurushq.sdk.protect.client.model.NFTCollectionBalanceResult;
 
 public void getNFTBalancesExample(ProtectClient client) throws Exception {
-    ApiRequestCursor cursor = new ApiRequestCursor(PageRequest.FIRST, 50);
-
     NFTCollectionBalanceResult result = client.getBalanceService()
-        .getNFTCollectionBalances("ETH", "mainnet", cursor);
+        .getNFTCollectionBalances("ETH", "mainnet", 20, null);
 
     result.getBalances().forEach(nft -> {
         System.out.printf("Collection: %s, Count: %d%n",
@@ -453,6 +458,29 @@ public void getNFTBalancesExample(ProtectClient client) throws Exception {
             nft.getCount()
         );
     });
+}
+```
+
+### Asset Holders (v2)
+
+The holder rows carry no signature. INTERNAL and WHITELISTED rows are confirmed against
+the verified managed or whitelisted address before they are returned; other rows come back
+with `isVerified() == false`, and rows that could not be confirmed are withheld.
+
+```java
+import com.taurushq.sdk.protect.client.model.AssetAddressV2Result;
+
+public void assetHoldersExample(ProtectClient client, String assetId) throws Exception {
+    String cursor = null;   // first page
+    AssetAddressV2Result page;
+    do {
+        page = client.getAssetService().queryAssetAddresses(assetId, null, null, 50, cursor);
+        page.getAddresses().forEach(holder -> System.out.printf("%s %s verified=%b%n",
+            holder.getAddress(), holder.getBalance(), holder.isVerified()));
+        page.getExcludedUnverified().forEach(excluded ->
+            System.err.println("withheld " + excluded.getId() + ": " + excluded.getReason()));
+        cursor = page.getPage().getNextCursor();
+    } while (page.getPage().hasMore());
 }
 ```
 
@@ -489,22 +517,24 @@ public void getWhitelistedAddressExample(ProtectClient client) throws Exception 
 
 ```java
 import com.taurushq.sdk.protect.client.model.SignedWhitelistedAddressEnvelope;
-import java.util.List;
+import com.taurushq.sdk.protect.client.model.WhitelistedAddressListResult;
 
 public void listWhitelistedAddressesExample(ProtectClient client) throws Exception {
-    // List all
-    List<SignedWhitelistedAddressEnvelope> addresses =
+    // First page; rows that fail verification are withheld and listed, and the total is
+    // reduced by them
+    WhitelistedAddressListResult addresses =
         client.getWhitelistedAddressService().getWhitelistedAddresses(100, 0);
+    System.out.println("Withheld: " + addresses.getExcludedUnverified().size());
 
     // Filter by blockchain
-    List<SignedWhitelistedAddressEnvelope> ethAddresses =
+    WhitelistedAddressListResult ethAddresses =
         client.getWhitelistedAddressService().getWhitelistedAddresses(100, 0, "ETH");
 
     // Filter by blockchain and network
-    List<SignedWhitelistedAddressEnvelope> mainnetAddresses =
+    WhitelistedAddressListResult mainnetAddresses =
         client.getWhitelistedAddressService().getWhitelistedAddresses(100, 0, "ETH", "mainnet");
 
-    for (SignedWhitelistedAddressEnvelope env : mainnetAddresses) {
+    for (SignedWhitelistedAddressEnvelope env : mainnetAddresses.getEnvelopes()) {
         WhitelistedAddress wla = env.getWhitelistedAddress();
         System.out.printf("%s: %s (%s)%n",
             wla.getBlockchain(),
@@ -536,7 +566,7 @@ public void webhookExample(ProtectClient client) throws Exception {
     System.out.println("Created webhook: " + webhook.getId());
 
     // List all webhooks
-    WebhookResult result = client.getWebhookService().getWebhooks(null, null, null);
+    WebhookResult result = client.getWebhookService().getWebhooks(null, null, 20, null);
     for (Webhook wh : result.getWebhooks()) {
         System.out.printf("Webhook: %s (%s) - Status: %s%n",
             wh.getId(), wh.getType(), wh.getStatus());
@@ -596,9 +626,9 @@ public void stakingExample(ProtectClient client) throws Exception {
         );
     System.out.println("Total rewards: " + rewards.getTotalRewards());
 
-    // List stake accounts with pagination
+    // List stake accounts, first page
     StakeAccountResult stakeAccounts = client.getStakingService()
-        .getStakeAccounts(null, null, null, null);
+        .getStakeAccounts(null, null, null, 20, null);
     stakeAccounts.getStakeAccounts().forEach(account -> {
         System.out.printf("Account: %s, Type: %s%n",
             account.getAccountAddress(), account.getAccountType());
@@ -612,10 +642,13 @@ public void stakingExample(ProtectClient client) throws Exception {
 
 ### Manage Whitelisted Contracts
 
+Writes only: reads go through the verified reader, `WhitelistedAssetService`, which is the same
+server entity. There is no delete — the server's delete is deprecated with no replacement.
+
 ```java
-import com.taurushq.sdk.protect.client.model.SignedWhitelistedContractAddressEnvelope;
-import com.taurushq.sdk.protect.client.model.WhitelistedContractAddressResult;
 import com.taurushq.sdk.protect.client.model.Attribute;
+import com.taurushq.sdk.protect.client.model.SignedWhitelistedAssetEnvelope;
+import com.taurushq.sdk.protect.client.model.WhitelistedAssetResult;
 import java.util.List;
 
 public void contractWhitelistingExample(ProtectClient client) throws Exception {
@@ -632,31 +665,12 @@ public void contractWhitelistingExample(ProtectClient client) throws Exception {
     );
     System.out.println("Created whitelist entry: " + id);
 
-    // Create a whitelisted NFT collection (ERC721)
-    String nftId = client.getContractWhitelistingService().createWhitelistedContract(
-        "ETH",
-        "mainnet",
-        "0xbc4ca0eda7647a8ab7c2061c2e118a18a936f13d",
-        "BAYC",
-        "Bored Ape Yacht Club",
-        0,           // 0 decimals for NFTs
-        "erc721",
-        null
-    );
-
-    // Get a whitelisted contract
-    SignedWhitelistedContractAddressEnvelope contract =
-        client.getContractWhitelistingService().getWhitelistedContract(id);
-    System.out.println("Blockchain: " + contract.getBlockchain());
-    System.out.println("Status: " + contract.getStatus());
-
-    // List whitelisted contracts with filtering
-    WhitelistedContractAddressResult result = client.getContractWhitelistingService()
-        .getWhitelistedContracts("ETH", "mainnet", null, false, 50, 0);
-
-    System.out.println("Total contracts: " + result.getTotalItems());
-    for (SignedWhitelistedContractAddressEnvelope c : result.getContracts()) {
-        System.out.printf("  %s: %s%n", c.getBlockchain(), c.getId());
+    // Read them back, verified, one page at a time
+    WhitelistedAssetResult result = client.getWhitelistedAssetService()
+        .getWhitelistedAssets(20, 0, "ETH", "mainnet", null, null, null, null);
+    System.out.println("Total contracts: " + result.getPagination().getTotalItems());
+    for (SignedWhitelistedAssetEnvelope c : result.getAssets()) {
+        System.out.printf("  %s: %s%n", c.getWhitelistedAsset().getBlockchain(), c.getId());
     }
 
     // Add an attribute to a contract
@@ -670,19 +684,15 @@ public void contractWhitelistingExample(ProtectClient client) throws Exception {
     );
     System.out.println("Added attribute: " + attrs.get(0).getKey());
 
-    // List contracts pending approval
-    WhitelistedContractAddressResult pending = client.getContractWhitelistingService()
-        .getWhitelistedContractsForApproval(null, 50, 0);
-    System.out.println("Contracts pending approval: " + pending.getTotalItems());
+    // Contracts pending approval, verified
+    WhitelistedAssetResult pending = client.getWhitelistedAssetService()
+        .getWhitelistedAssetsForApproval(20, 0, null);
+    System.out.println("Contracts pending approval: " + pending.getPagination().getTotalItems());
 
     // Update contract metadata
     client.getContractWhitelistingService().updateWhitelistedContract(
         id, "USDC.e", "USD Coin (Bridged)", 6
     );
-
-    // Delete a whitelisted contract
-    String deleteId = client.getContractWhitelistingService()
-        .deleteWhitelistedContract(id, "No longer supported");
 }
 ```
 
@@ -690,31 +700,32 @@ public void contractWhitelistingExample(ProtectClient client) throws Exception {
 
 ## Pagination Patterns
 
+Page sizes default to 20 and cannot exceed 100 (`Pagination.DEFAULT_PAGE_SIZE` /
+`Pagination.MAX_PAGE_SIZE`); 0 or `null` means the default, and anything negative or above the
+maximum throws `IllegalArgumentException` before a request is sent. See `CONCEPTS.md` →
+"Pagination".
+
 ### Cursor-Based Pagination
 
 ```java
-import com.taurushq.sdk.protect.client.model.ApiRequestCursor;
-import com.taurushq.sdk.protect.client.model.PageRequest;
+import com.taurushq.sdk.protect.client.model.RequestResult;
 
 public void cursorPaginationExample(ProtectClient client) throws Exception {
-    // Initialize cursor for first page
-    ApiRequestCursor cursor = new ApiRequestCursor(PageRequest.FIRST, 100);
-
+    String cursor = null;   // first page
     int totalItems = 0;
     int pageNumber = 0;
 
-    BalanceResult result;
+    RequestResult result;
     do {
-        result = client.getBalanceService().getBalances(cursor);
+        result = client.getRequestService().getRequestsForApproval(100, cursor);
 
         pageNumber++;
-        totalItems += result.getBalances().size();
-        System.out.printf("Page %d: %d items%n", pageNumber, result.getBalances().size());
+        totalItems += result.getRequests().size();
+        System.out.printf("Page %d: %d items%n", pageNumber, result.getRequests().size());
 
-        // Get cursor for next page
-        cursor = result.nextCursor(100);
-
-    } while (result.hasNext());
+        // The next page's cursor; empty on the last page
+        cursor = result.getPage().getNextCursor();
+    } while (result.getPage().hasMore());
 
     System.out.println("Total items: " + totalItems);
 }
@@ -723,23 +734,25 @@ public void cursorPaginationExample(ProtectClient client) throws Exception {
 ### Offset-Based Pagination
 
 ```java
+import com.taurushq.sdk.protect.client.model.WalletResult;
+
 public void offsetPaginationExample(ProtectClient client) throws Exception {
-    int pageSize = 50;
-    int offset = 0;
+    long offset = 0;
     int totalWallets = 0;
 
-    List<Wallet> page;
+    WalletResult page;
     do {
-        page = client.getWalletService().getWallets(pageSize, offset);
-        totalWallets += page.size();
+        page = client.getWalletService().getWallets(50, offset);
+        totalWallets += page.getWallets().size();
 
         // Process page
-        for (Wallet wallet : page) {
+        for (Wallet wallet : page.getWallets()) {
             processWallet(wallet);
         }
 
-        offset += pageSize;
-    } while (page.size() == pageSize);
+        // Continue from the returned next offset, never from offset + rows
+        offset = page.getPagination().getNextOffset();
+    } while (page.getPagination().hasMore());
 
     System.out.println("Processed " + totalWallets + " wallets");
 }

@@ -69,7 +69,16 @@ export interface TgvalidatordAuditTrail {
      * @memberof TgvalidatordAuditTrail
      */
     creationDate?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordAuditTrail
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordAuditTrailWireKeys: ReadonlySet<string> = new Set(['id', 'user', 'entity', 'action', 'subAction', 'details', 'creationDate']);
 
 /**
  * Check if a given object implements the TgvalidatordAuditTrail interface.
@@ -86,7 +95,7 @@ export function TgvalidatordAuditTrailFromJSONTyped(json: any, ignoreDiscriminat
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordAuditTrail = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'user': json['user'] == null ? undefined : TgvalidatordUserInfoFromJSON(json['user']),
@@ -96,6 +105,16 @@ export function TgvalidatordAuditTrailFromJSONTyped(json: any, ignoreDiscriminat
         'details': json['details'] == null ? undefined : json['details'],
         'creationDate': json['creationDate'] == null ? undefined : (new Date(json['creationDate'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordAuditTrailWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordAuditTrailToJSON(json: any): TgvalidatordAuditTrail {
@@ -116,6 +135,7 @@ export function TgvalidatordAuditTrailFromJSONTyped(json: any, ignoreDiscriminat
         'subAction': value['subAction'],
         'details': value['details'],
         'creationDate': value['creationDate'] == null ? undefined : ((value['creationDate']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

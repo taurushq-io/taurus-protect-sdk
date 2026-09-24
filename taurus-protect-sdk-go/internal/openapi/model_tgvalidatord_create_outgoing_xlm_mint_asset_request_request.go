@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -35,6 +34,7 @@ type TgvalidatordCreateOutgoingXLMMintAssetRequestRequest struct {
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
 	// A memo can be specified if the destination is a whitelisted address on a blockchain supporting memos.
 	DestinationAddressMemo *string `json:"destinationAddressMemo,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingXLMMintAssetRequestRequest TgvalidatordCreateOutgoingXLMMintAssetRequestRequest
@@ -328,6 +328,11 @@ func (o TgvalidatordCreateOutgoingXLMMintAssetRequestRequest) ToMap() (map[strin
 	if !IsNil(o.DestinationAddressMemo) {
 		toSerialize["destinationAddressMemo"] = o.DestinationAddressMemo
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -356,15 +361,27 @@ func (o *TgvalidatordCreateOutgoingXLMMintAssetRequestRequest) UnmarshalJSON(dat
 
 	varTgvalidatordCreateOutgoingXLMMintAssetRequestRequest := _TgvalidatordCreateOutgoingXLMMintAssetRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingXLMMintAssetRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingXLMMintAssetRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingXLMMintAssetRequestRequest(varTgvalidatordCreateOutgoingXLMMintAssetRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "toAddressId")
+		delete(additionalProperties, "toWhitelistedAddressId")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "externalRequestId")
+		delete(additionalProperties, "destinationAddressMemo")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

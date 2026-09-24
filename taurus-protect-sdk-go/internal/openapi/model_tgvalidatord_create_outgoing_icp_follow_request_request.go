@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -29,6 +28,7 @@ type TgvalidatordCreateOutgoingICPFollowRequestRequest struct {
 	Comment *string `json:"comment,omitempty"`
 	// Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingICPFollowRequestRequest TgvalidatordCreateOutgoingICPFollowRequestRequest
@@ -226,6 +226,11 @@ func (o TgvalidatordCreateOutgoingICPFollowRequestRequest) ToMap() (map[string]i
 	if !IsNil(o.ExternalRequestId) {
 		toSerialize["externalRequestId"] = o.ExternalRequestId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -253,15 +258,24 @@ func (o *TgvalidatordCreateOutgoingICPFollowRequestRequest) UnmarshalJSON(data [
 
 	varTgvalidatordCreateOutgoingICPFollowRequestRequest := _TgvalidatordCreateOutgoingICPFollowRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingICPFollowRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingICPFollowRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingICPFollowRequestRequest(varTgvalidatordCreateOutgoingICPFollowRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "neuronWhitelistedAddressIds")
+		delete(additionalProperties, "topic")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "externalRequestId")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

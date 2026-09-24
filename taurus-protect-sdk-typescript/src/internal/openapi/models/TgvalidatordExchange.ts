@@ -117,7 +117,16 @@ export interface TgvalidatordExchange {
      * @memberof TgvalidatordExchange
      */
     baseCurrencyValuation?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordExchange
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordExchangeWireKeys: ReadonlySet<string> = new Set(['id', 'exchange', 'account', 'currency', 'type', 'totalBalance', 'status', 'container', 'label', 'creationDate', 'updateDate', 'currencyInfo', 'hasWLA', 'displayLabel', 'baseCurrencyValuation']);
 
 /**
  * Check if a given object implements the TgvalidatordExchange interface.
@@ -134,7 +143,7 @@ export function TgvalidatordExchangeFromJSONTyped(json: any, ignoreDiscriminator
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordExchange = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'exchange': json['exchange'] == null ? undefined : json['exchange'],
@@ -152,6 +161,16 @@ export function TgvalidatordExchangeFromJSONTyped(json: any, ignoreDiscriminator
         'displayLabel': json['displayLabel'] == null ? undefined : json['displayLabel'],
         'baseCurrencyValuation': json['baseCurrencyValuation'] == null ? undefined : json['baseCurrencyValuation'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordExchangeWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordExchangeToJSON(json: any): TgvalidatordExchange {
@@ -180,6 +199,7 @@ export function TgvalidatordExchangeFromJSONTyped(json: any, ignoreDiscriminator
         'hasWLA': value['hasWLA'],
         'displayLabel': value['displayLabel'],
         'baseCurrencyValuation': value['baseCurrencyValuation'],
+        ...value['additionalProperties'],
     };
 }
 

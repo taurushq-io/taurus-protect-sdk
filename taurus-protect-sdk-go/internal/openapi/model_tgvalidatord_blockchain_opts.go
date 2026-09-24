@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordBlockchainOpts{}
 // TgvalidatordBlockchainOpts struct for TgvalidatordBlockchainOpts
 type TgvalidatordBlockchainOpts struct {
 	Xlm *TgvalidatordXLMOpts `json:"xlm,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordBlockchainOpts TgvalidatordBlockchainOpts
 
 // NewTgvalidatordBlockchainOpts instantiates a new TgvalidatordBlockchainOpts object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordBlockchainOpts) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Xlm) {
 		toSerialize["xlm"] = o.Xlm
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordBlockchainOpts) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordBlockchainOpts := _TgvalidatordBlockchainOpts{}
+
+	err = json.Unmarshal(data, &varTgvalidatordBlockchainOpts)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordBlockchainOpts(varTgvalidatordBlockchainOpts)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "xlm")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordBlockchainOpts struct {

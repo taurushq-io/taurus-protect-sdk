@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -41,6 +40,7 @@ type TgvalidatordCreateOutgoingXLMCreateClaimableBalanceRequestRequest struct {
 	RelativeTimeBefore *string `json:"relativeTimeBefore,omitempty"`
 	// If set, is the ID of the address who will sponsor the cost of the operation on the minimum balance of the source address
 	SponsoredByAddressId *string `json:"sponsoredByAddressId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingXLMCreateClaimableBalanceRequestRequest TgvalidatordCreateOutgoingXLMCreateClaimableBalanceRequestRequest
@@ -483,6 +483,11 @@ func (o TgvalidatordCreateOutgoingXLMCreateClaimableBalanceRequestRequest) ToMap
 	if !IsNil(o.SponsoredByAddressId) {
 		toSerialize["sponsoredByAddressId"] = o.SponsoredByAddressId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -510,15 +515,31 @@ func (o *TgvalidatordCreateOutgoingXLMCreateClaimableBalanceRequestRequest) Unma
 
 	varTgvalidatordCreateOutgoingXLMCreateClaimableBalanceRequestRequest := _TgvalidatordCreateOutgoingXLMCreateClaimableBalanceRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingXLMCreateClaimableBalanceRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingXLMCreateClaimableBalanceRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingXLMCreateClaimableBalanceRequestRequest(varTgvalidatordCreateOutgoingXLMCreateClaimableBalanceRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "fromWalletId")
+		delete(additionalProperties, "toAddressId")
+		delete(additionalProperties, "toWhitelistedAddressId")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "externalRequestId")
+		delete(additionalProperties, "destinationAddressMemo")
+		delete(additionalProperties, "absoluteTimeBefore")
+		delete(additionalProperties, "relativeTimeBefore")
+		delete(additionalProperties, "sponsoredByAddressId")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

@@ -99,7 +99,16 @@ export interface TgvalidatordFiatProviderAccount {
      * @memberof TgvalidatordFiatProviderAccount
      */
     baseCurrencyValuation?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordFiatProviderAccount
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordFiatProviderAccountWireKeys: ReadonlySet<string> = new Set(['id', 'provider', 'label', 'accountType', 'accountIdentifier', 'accountName', 'totalBalance', 'creationDate', 'updateDate', 'currencyID', 'currencyInfo', 'baseCurrencyValuation']);
 
 /**
  * Check if a given object implements the TgvalidatordFiatProviderAccount interface.
@@ -116,7 +125,7 @@ export function TgvalidatordFiatProviderAccountFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordFiatProviderAccount = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'provider': json['provider'] == null ? undefined : json['provider'],
@@ -131,6 +140,16 @@ export function TgvalidatordFiatProviderAccountFromJSONTyped(json: any, ignoreDi
         'currencyInfo': json['currencyInfo'] == null ? undefined : TgvalidatordCurrencyFromJSON(json['currencyInfo']),
         'baseCurrencyValuation': json['baseCurrencyValuation'] == null ? undefined : json['baseCurrencyValuation'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordFiatProviderAccountWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordFiatProviderAccountToJSON(json: any): TgvalidatordFiatProviderAccount {
@@ -156,6 +175,7 @@ export function TgvalidatordFiatProviderAccountFromJSONTyped(json: any, ignoreDi
         'currencyID': value['currencyID'],
         'currencyInfo': TgvalidatordCurrencyToJSON(value['currencyInfo']),
         'baseCurrencyValuation': value['baseCurrencyValuation'],
+        ...value['additionalProperties'],
     };
 }
 

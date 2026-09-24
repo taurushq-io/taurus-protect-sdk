@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -38,6 +37,7 @@ type TgvalidatordCreateOutgoingXLMRevokeSponsorshipRequestRequest struct {
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
 	// If set, is the ID of the address who will sponsor the cost of the operation on the minimum balance of the source address
 	SponsoredByAddressId *string `json:"sponsoredByAddressId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingXLMRevokeSponsorshipRequestRequest TgvalidatordCreateOutgoingXLMRevokeSponsorshipRequestRequest
@@ -445,6 +445,11 @@ func (o TgvalidatordCreateOutgoingXLMRevokeSponsorshipRequestRequest) ToMap() (m
 	if !IsNil(o.SponsoredByAddressId) {
 		toSerialize["sponsoredByAddressId"] = o.SponsoredByAddressId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -472,15 +477,30 @@ func (o *TgvalidatordCreateOutgoingXLMRevokeSponsorshipRequestRequest) Unmarshal
 
 	varTgvalidatordCreateOutgoingXLMRevokeSponsorshipRequestRequest := _TgvalidatordCreateOutgoingXLMRevokeSponsorshipRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingXLMRevokeSponsorshipRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingXLMRevokeSponsorshipRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingXLMRevokeSponsorshipRequestRequest(varTgvalidatordCreateOutgoingXLMRevokeSponsorshipRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "toAddressId")
+		delete(additionalProperties, "toWhitelistedAddressId")
+		delete(additionalProperties, "destinationAddressMemo")
+		delete(additionalProperties, "claimableBalanceID")
+		delete(additionalProperties, "dataName")
+		delete(additionalProperties, "currencyID")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "externalRequestId")
+		delete(additionalProperties, "sponsoredByAddressId")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

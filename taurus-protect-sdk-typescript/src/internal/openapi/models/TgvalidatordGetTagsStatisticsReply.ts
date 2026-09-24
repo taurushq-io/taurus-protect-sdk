@@ -46,7 +46,16 @@ export interface TgvalidatordGetTagsStatisticsReply {
      * @memberof TgvalidatordGetTagsStatisticsReply
      */
     cursor?: TgvalidatordResponseCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetTagsStatisticsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetTagsStatisticsReplyWireKeys: ReadonlySet<string> = new Set(['result', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetTagsStatisticsReply interface.
@@ -63,11 +72,21 @@ export function TgvalidatordGetTagsStatisticsReplyFromJSONTyped(json: any, ignor
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetTagsStatisticsReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordTagStatisticsFromJSON)),
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetTagsStatisticsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetTagsStatisticsReplyToJSON(json: any): TgvalidatordGetTagsStatisticsReply {
@@ -83,6 +102,7 @@ export function TgvalidatordGetTagsStatisticsReplyFromJSONTyped(json: any, ignor
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordTagStatisticsToJSON)),
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
+        ...value['additionalProperties'],
     };
 }
 

@@ -46,9 +46,18 @@ export interface TgvalidatordWorkflowActionResult {
      * @memberof TgvalidatordWorkflowActionResult
      */
     errorResult?: TgvalidatordWorkflowError;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordWorkflowActionResult
+     */
+    additionalProperties?: { [key: string]: any };
 }
 
 
+
+const TgvalidatordWorkflowActionResultWireKeys: ReadonlySet<string> = new Set(['type', 'errorResult']);
 
 /**
  * Check if a given object implements the TgvalidatordWorkflowActionResult interface.
@@ -65,11 +74,21 @@ export function TgvalidatordWorkflowActionResultFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordWorkflowActionResult = {
         
         'type': json['type'] == null ? undefined : WorkflowActionResultResultTypeFromJSON(json['type']),
         'errorResult': json['errorResult'] == null ? undefined : TgvalidatordWorkflowErrorFromJSON(json['errorResult']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordWorkflowActionResultWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordWorkflowActionResultToJSON(json: any): TgvalidatordWorkflowActionResult {
@@ -85,6 +104,7 @@ export function TgvalidatordWorkflowActionResultFromJSONTyped(json: any, ignoreD
         
         'type': WorkflowActionResultResultTypeToJSON(value['type']),
         'errorResult': TgvalidatordWorkflowErrorToJSON(value['errorResult']),
+        ...value['additionalProperties'],
     };
 }
 

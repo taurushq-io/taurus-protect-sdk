@@ -87,7 +87,16 @@ export interface TgvalidatordInternalGroup {
      * @memberof TgvalidatordInternalGroup
      */
     enforcedInRules?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordInternalGroup
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordInternalGroupWireKeys: ReadonlySet<string> = new Set(['id', 'tenantId', 'externalGroupId', 'name', 'email', 'users', 'creationDate', 'updateDate', 'description', 'enforcedInRules']);
 
 /**
  * Check if a given object implements the TgvalidatordInternalGroup interface.
@@ -104,7 +113,7 @@ export function TgvalidatordInternalGroupFromJSONTyped(json: any, ignoreDiscrimi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordInternalGroup = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'tenantId': json['tenantId'] == null ? undefined : json['tenantId'],
@@ -117,6 +126,16 @@ export function TgvalidatordInternalGroupFromJSONTyped(json: any, ignoreDiscrimi
         'description': json['description'] == null ? undefined : json['description'],
         'enforcedInRules': json['enforcedInRules'] == null ? undefined : json['enforcedInRules'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordInternalGroupWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordInternalGroupToJSON(json: any): TgvalidatordInternalGroup {
@@ -140,6 +159,7 @@ export function TgvalidatordInternalGroupFromJSONTyped(json: any, ignoreDiscrimi
         'updateDate': value['updateDate'] == null ? undefined : ((value['updateDate']).toISOString()),
         'description': value['description'],
         'enforcedInRules': value['enforcedInRules'],
+        ...value['additionalProperties'],
     };
 }
 

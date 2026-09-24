@@ -29,7 +29,10 @@ type TgvalidatordProofOfReserve struct {
 	Type *ProofOfReserveReserveType `json:"type,omitempty"`
 	StakePublicKey *string `json:"stakePublicKey,omitempty" validate:"regexp=^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=)?$"`
 	StakeChallengeResponse *string `json:"stakeChallengeResponse,omitempty" validate:"regexp=^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=)?$"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordProofOfReserve TgvalidatordProofOfReserve
 
 // NewTgvalidatordProofOfReserve instantiates a new TgvalidatordProofOfReserve object
 // This constructor will assign default values to properties that have it defined,
@@ -408,7 +411,42 @@ func (o TgvalidatordProofOfReserve) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.StakeChallengeResponse) {
 		toSerialize["stakeChallengeResponse"] = o.StakeChallengeResponse
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordProofOfReserve) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordProofOfReserve := _TgvalidatordProofOfReserve{}
+
+	err = json.Unmarshal(data, &varTgvalidatordProofOfReserve)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordProofOfReserve(varTgvalidatordProofOfReserve)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "curve")
+		delete(additionalProperties, "cipher")
+		delete(additionalProperties, "path")
+		delete(additionalProperties, "address")
+		delete(additionalProperties, "publicKey")
+		delete(additionalProperties, "challenge")
+		delete(additionalProperties, "challengeResponse")
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "stakePublicKey")
+		delete(additionalProperties, "stakeChallengeResponse")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordProofOfReserve struct {

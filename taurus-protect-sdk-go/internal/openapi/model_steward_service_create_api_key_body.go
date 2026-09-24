@@ -21,8 +21,11 @@ var _ MappedNullable = &StewardServiceCreateApiKeyBody{}
 // StewardServiceCreateApiKeyBody struct for StewardServiceCreateApiKeyBody
 type StewardServiceCreateApiKeyBody struct {
 	Expiration *time.Time `json:"expiration,omitempty"`
-	Roles      []string   `json:"roles,omitempty"`
+	Roles []string `json:"roles,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _StewardServiceCreateApiKeyBody StewardServiceCreateApiKeyBody
 
 // NewStewardServiceCreateApiKeyBody instantiates a new StewardServiceCreateApiKeyBody object
 // This constructor will assign default values to properties that have it defined,
@@ -106,7 +109,7 @@ func (o *StewardServiceCreateApiKeyBody) SetRoles(v []string) {
 }
 
 func (o StewardServiceCreateApiKeyBody) MarshalJSON() ([]byte, error) {
-	toSerialize, err := o.ToMap()
+	toSerialize,err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -121,7 +124,34 @@ func (o StewardServiceCreateApiKeyBody) ToMap() (map[string]interface{}, error) 
 	if !IsNil(o.Roles) {
 		toSerialize["roles"] = o.Roles
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *StewardServiceCreateApiKeyBody) UnmarshalJSON(data []byte) (err error) {
+	varStewardServiceCreateApiKeyBody := _StewardServiceCreateApiKeyBody{}
+
+	err = json.Unmarshal(data, &varStewardServiceCreateApiKeyBody)
+
+	if err != nil {
+		return err
+	}
+
+	*o = StewardServiceCreateApiKeyBody(varStewardServiceCreateApiKeyBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "expiration")
+		delete(additionalProperties, "roles")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableStewardServiceCreateApiKeyBody struct {
@@ -159,3 +189,5 @@ func (v *NullableStewardServiceCreateApiKeyBody) UnmarshalJSON(src []byte) error
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
+
+

@@ -37,7 +37,16 @@ export interface ScoreFilterScorechainFilters {
      * @memberof ScoreFilterScorechainFilters
      */
     scoreExclusive?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof ScoreFilterScorechainFilters
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const ScoreFilterScorechainFiltersWireKeys: ReadonlySet<string> = new Set(['scoreInBelow', 'scoreOutBelow', 'scoreExclusive']);
 
 /**
  * Check if a given object implements the ScoreFilterScorechainFilters interface.
@@ -54,12 +63,22 @@ export function ScoreFilterScorechainFiltersFromJSONTyped(json: any, ignoreDiscr
     if (json == null) {
         return json;
     }
-    return {
+    const result: ScoreFilterScorechainFilters = {
         
         'scoreInBelow': json['scoreInBelow'] == null ? undefined : json['scoreInBelow'],
         'scoreOutBelow': json['scoreOutBelow'] == null ? undefined : json['scoreOutBelow'],
         'scoreExclusive': json['scoreExclusive'] == null ? undefined : json['scoreExclusive'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!ScoreFilterScorechainFiltersWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function ScoreFilterScorechainFiltersToJSON(json: any): ScoreFilterScorechainFilters {
@@ -76,6 +95,7 @@ export function ScoreFilterScorechainFiltersFromJSONTyped(json: any, ignoreDiscr
         'scoreInBelow': value['scoreInBelow'],
         'scoreOutBelow': value['scoreOutBelow'],
         'scoreExclusive': value['scoreExclusive'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -33,7 +33,16 @@ export interface TgvalidatordSmartPyFA12TokenContractTemplate {
      * @memberof TgvalidatordSmartPyFA12TokenContractTemplate
      */
     xtz?: TgvalidatordXTZContractTemplatePrams;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordSmartPyFA12TokenContractTemplate
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordSmartPyFA12TokenContractTemplateWireKeys: ReadonlySet<string> = new Set(['xtz']);
 
 /**
  * Check if a given object implements the TgvalidatordSmartPyFA12TokenContractTemplate interface.
@@ -50,10 +59,20 @@ export function TgvalidatordSmartPyFA12TokenContractTemplateFromJSONTyped(json: 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordSmartPyFA12TokenContractTemplate = {
         
         'xtz': json['xtz'] == null ? undefined : TgvalidatordXTZContractTemplatePramsFromJSON(json['xtz']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordSmartPyFA12TokenContractTemplateWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordSmartPyFA12TokenContractTemplateToJSON(json: any): TgvalidatordSmartPyFA12TokenContractTemplate {
@@ -68,6 +87,7 @@ export function TgvalidatordSmartPyFA12TokenContractTemplateFromJSONTyped(json: 
     return {
         
         'xtz': TgvalidatordXTZContractTemplatePramsToJSON(value['xtz']),
+        ...value['additionalProperties'],
     };
 }
 

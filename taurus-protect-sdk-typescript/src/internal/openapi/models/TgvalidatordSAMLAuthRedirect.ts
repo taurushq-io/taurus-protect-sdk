@@ -31,7 +31,16 @@ export interface TgvalidatordSAMLAuthRedirect {
      * @memberof TgvalidatordSAMLAuthRedirect
      */
     location?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordSAMLAuthRedirect
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordSAMLAuthRedirectWireKeys: ReadonlySet<string> = new Set(['token', 'location']);
 
 /**
  * Check if a given object implements the TgvalidatordSAMLAuthRedirect interface.
@@ -48,11 +57,21 @@ export function TgvalidatordSAMLAuthRedirectFromJSONTyped(json: any, ignoreDiscr
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordSAMLAuthRedirect = {
         
         'token': json['token'] == null ? undefined : json['token'],
         'location': json['location'] == null ? undefined : json['location'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordSAMLAuthRedirectWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordSAMLAuthRedirectToJSON(json: any): TgvalidatordSAMLAuthRedirect {
@@ -68,6 +87,7 @@ export function TgvalidatordSAMLAuthRedirectFromJSONTyped(json: any, ignoreDiscr
         
         'token': value['token'],
         'location': value['location'],
+        ...value['additionalProperties'],
     };
 }
 

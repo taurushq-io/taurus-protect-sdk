@@ -70,7 +70,16 @@ export interface TgvalidatordScimGroup {
      * @memberof TgvalidatordScimGroup
      */
     members?: Array<TgvalidatordScimResource>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordScimGroup
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordScimGroupWireKeys: ReadonlySet<string> = new Set(['schemas', 'id', 'externalId', 'displayName', 'meta', 'members']);
 
 /**
  * Check if a given object implements the TgvalidatordScimGroup interface.
@@ -87,7 +96,7 @@ export function TgvalidatordScimGroupFromJSONTyped(json: any, ignoreDiscriminato
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordScimGroup = {
         
         'schemas': json['schemas'] == null ? undefined : json['schemas'],
         'id': json['id'] == null ? undefined : json['id'],
@@ -96,6 +105,16 @@ export function TgvalidatordScimGroupFromJSONTyped(json: any, ignoreDiscriminato
         'meta': json['meta'] == null ? undefined : TgvalidatordScimMetaFromJSON(json['meta']),
         'members': json['members'] == null ? undefined : ((json['members'] as Array<any>).map(TgvalidatordScimResourceFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordScimGroupWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordScimGroupToJSON(json: any): TgvalidatordScimGroup {
@@ -115,6 +134,7 @@ export function TgvalidatordScimGroupFromJSONTyped(json: any, ignoreDiscriminato
         'displayName': value['displayName'],
         'meta': TgvalidatordScimMetaToJSON(value['meta']),
         'members': value['members'] == null ? undefined : ((value['members'] as Array<any>).map(TgvalidatordScimResourceToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

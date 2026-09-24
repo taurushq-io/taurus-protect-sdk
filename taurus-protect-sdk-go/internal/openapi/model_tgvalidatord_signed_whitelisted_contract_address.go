@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordSignedWhitelistedContractAddress{}
 type TgvalidatordSignedWhitelistedContractAddress struct {
 	Signatures []TgvalidatordWhitelistSignature `json:"signatures,omitempty"`
 	Payload *string `json:"payload,omitempty" validate:"regexp=^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=)?$"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordSignedWhitelistedContractAddress TgvalidatordSignedWhitelistedContractAddress
 
 // NewTgvalidatordSignedWhitelistedContractAddress instantiates a new TgvalidatordSignedWhitelistedContractAddress object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordSignedWhitelistedContractAddress) ToMap() (map[string]interf
 	if !IsNil(o.Payload) {
 		toSerialize["payload"] = o.Payload
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordSignedWhitelistedContractAddress) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordSignedWhitelistedContractAddress := _TgvalidatordSignedWhitelistedContractAddress{}
+
+	err = json.Unmarshal(data, &varTgvalidatordSignedWhitelistedContractAddress)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordSignedWhitelistedContractAddress(varTgvalidatordSignedWhitelistedContractAddress)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "signatures")
+		delete(additionalProperties, "payload")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordSignedWhitelistedContractAddress struct {

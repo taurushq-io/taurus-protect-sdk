@@ -33,7 +33,10 @@ type TgvalidatordTnPledgeWithdrawal struct {
 	CreatedAt *time.Time `json:"createdAt,omitempty"`
 	InitiatorParticipantID *string `json:"initiatorParticipantID,omitempty"`
 	ExternalReferenceID *string `json:"externalReferenceID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTnPledgeWithdrawal TgvalidatordTnPledgeWithdrawal
 
 // NewTgvalidatordTnPledgeWithdrawal instantiates a new TgvalidatordTnPledgeWithdrawal object
 // This constructor will assign default values to properties that have it defined,
@@ -517,7 +520,45 @@ func (o TgvalidatordTnPledgeWithdrawal) ToMap() (map[string]interface{}, error) 
 	if !IsNil(o.ExternalReferenceID) {
 		toSerialize["externalReferenceID"] = o.ExternalReferenceID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTnPledgeWithdrawal) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTnPledgeWithdrawal := _TgvalidatordTnPledgeWithdrawal{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTnPledgeWithdrawal)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTnPledgeWithdrawal(varTgvalidatordTnPledgeWithdrawal)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "pledgeID")
+		delete(additionalProperties, "destinationSharedAddressID")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "txHash")
+		delete(additionalProperties, "txID")
+		delete(additionalProperties, "requestID")
+		delete(additionalProperties, "txBlockNumber")
+		delete(additionalProperties, "trails")
+		delete(additionalProperties, "createdAt")
+		delete(additionalProperties, "initiatorParticipantID")
+		delete(additionalProperties, "externalReferenceID")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTnPledgeWithdrawal struct {

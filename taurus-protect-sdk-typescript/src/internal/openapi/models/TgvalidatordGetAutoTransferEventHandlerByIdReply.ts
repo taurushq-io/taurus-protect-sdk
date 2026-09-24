@@ -33,7 +33,16 @@ export interface TgvalidatordGetAutoTransferEventHandlerByIdReply {
      * @memberof TgvalidatordGetAutoTransferEventHandlerByIdReply
      */
     handler?: TgvalidatordAutoTransferEventHandler;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetAutoTransferEventHandlerByIdReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetAutoTransferEventHandlerByIdReplyWireKeys: ReadonlySet<string> = new Set(['handler']);
 
 /**
  * Check if a given object implements the TgvalidatordGetAutoTransferEventHandlerByIdReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetAutoTransferEventHandlerByIdReplyFromJSONTyped(js
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetAutoTransferEventHandlerByIdReply = {
         
         'handler': json['handler'] == null ? undefined : TgvalidatordAutoTransferEventHandlerFromJSON(json['handler']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetAutoTransferEventHandlerByIdReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetAutoTransferEventHandlerByIdReplyToJSON(json: any): TgvalidatordGetAutoTransferEventHandlerByIdReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetAutoTransferEventHandlerByIdReplyFromJSONTyped(js
     return {
         
         'handler': TgvalidatordAutoTransferEventHandlerToJSON(value['handler']),
+        ...value['additionalProperties'],
     };
 }
 

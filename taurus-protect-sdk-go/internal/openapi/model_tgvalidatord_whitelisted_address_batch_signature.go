@@ -29,7 +29,10 @@ type TgvalidatordWhitelistedAddressBatchSignature struct {
 	CreationDate *time.Time `json:"CreationDate,omitempty"`
 	UpdateDate *time.Time `json:"UpdateDate,omitempty"`
 	Signatures []WhitelistedAddressBatchSignatureWhitelistedAddressSignature `json:"signatures,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordWhitelistedAddressBatchSignature TgvalidatordWhitelistedAddressBatchSignature
 
 // NewTgvalidatordWhitelistedAddressBatchSignature instantiates a new TgvalidatordWhitelistedAddressBatchSignature object
 // This constructor will assign default values to properties that have it defined,
@@ -373,7 +376,41 @@ func (o TgvalidatordWhitelistedAddressBatchSignature) ToMap() (map[string]interf
 	if !IsNil(o.Signatures) {
 		toSerialize["signatures"] = o.Signatures
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordWhitelistedAddressBatchSignature) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordWhitelistedAddressBatchSignature := _TgvalidatordWhitelistedAddressBatchSignature{}
+
+	err = json.Unmarshal(data, &varTgvalidatordWhitelistedAddressBatchSignature)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordWhitelistedAddressBatchSignature(varTgvalidatordWhitelistedAddressBatchSignature)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "ID")
+		delete(additionalProperties, "TenantID")
+		delete(additionalProperties, "UserID")
+		delete(additionalProperties, "Signature")
+		delete(additionalProperties, "Comment")
+		delete(additionalProperties, "Status")
+		delete(additionalProperties, "CreationDate")
+		delete(additionalProperties, "UpdateDate")
+		delete(additionalProperties, "signatures")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordWhitelistedAddressBatchSignature struct {

@@ -33,7 +33,16 @@ export interface TgvalidatordCMTA20RuleEngineContractTemplate {
      * @memberof TgvalidatordCMTA20RuleEngineContractTemplate
      */
     evm?: TgvalidatordEVMContractTemplateParams;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCMTA20RuleEngineContractTemplate
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCMTA20RuleEngineContractTemplateWireKeys: ReadonlySet<string> = new Set(['evm']);
 
 /**
  * Check if a given object implements the TgvalidatordCMTA20RuleEngineContractTemplate interface.
@@ -50,10 +59,20 @@ export function TgvalidatordCMTA20RuleEngineContractTemplateFromJSONTyped(json: 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCMTA20RuleEngineContractTemplate = {
         
         'evm': json['evm'] == null ? undefined : TgvalidatordEVMContractTemplateParamsFromJSON(json['evm']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCMTA20RuleEngineContractTemplateWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCMTA20RuleEngineContractTemplateToJSON(json: any): TgvalidatordCMTA20RuleEngineContractTemplate {
@@ -68,6 +87,7 @@ export function TgvalidatordCMTA20RuleEngineContractTemplateFromJSONTyped(json: 
     return {
         
         'evm': TgvalidatordEVMContractTemplateParamsToJSON(value['evm']),
+        ...value['additionalProperties'],
     };
 }
 

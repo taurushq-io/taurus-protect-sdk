@@ -31,7 +31,16 @@ export interface TgvalidatordSubmitIncomingAirGapRequest {
      * @memberof TgvalidatordSubmitIncomingAirGapRequest
      */
     signature?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordSubmitIncomingAirGapRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordSubmitIncomingAirGapRequestWireKeys: ReadonlySet<string> = new Set(['payload', 'signature']);
 
 /**
  * Check if a given object implements the TgvalidatordSubmitIncomingAirGapRequest interface.
@@ -48,11 +57,21 @@ export function TgvalidatordSubmitIncomingAirGapRequestFromJSONTyped(json: any, 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordSubmitIncomingAirGapRequest = {
         
         'payload': json['payload'] == null ? undefined : json['payload'],
         'signature': json['signature'] == null ? undefined : json['signature'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordSubmitIncomingAirGapRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordSubmitIncomingAirGapRequestToJSON(json: any): TgvalidatordSubmitIncomingAirGapRequest {
@@ -68,6 +87,7 @@ export function TgvalidatordSubmitIncomingAirGapRequestFromJSONTyped(json: any, 
         
         'payload': value['payload'],
         'signature': value['signature'],
+        ...value['additionalProperties'],
     };
 }
 

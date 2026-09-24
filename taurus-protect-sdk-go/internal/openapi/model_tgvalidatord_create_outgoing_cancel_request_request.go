@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -28,6 +27,7 @@ type TgvalidatordCreateOutgoingCancelRequestRequest struct {
 	Nonces []string `json:"nonces,omitempty"`
 	// Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingCancelRequestRequest TgvalidatordCreateOutgoingCancelRequestRequest
@@ -260,6 +260,11 @@ func (o TgvalidatordCreateOutgoingCancelRequestRequest) ToMap() (map[string]inte
 	if !IsNil(o.ExternalRequestId) {
 		toSerialize["externalRequestId"] = o.ExternalRequestId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -287,15 +292,25 @@ func (o *TgvalidatordCreateOutgoingCancelRequestRequest) UnmarshalJSON(data []by
 
 	varTgvalidatordCreateOutgoingCancelRequestRequest := _TgvalidatordCreateOutgoingCancelRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingCancelRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingCancelRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingCancelRequestRequest(varTgvalidatordCreateOutgoingCancelRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "addressId")
+		delete(additionalProperties, "nonce")
+		delete(additionalProperties, "feePayerId")
+		delete(additionalProperties, "addressIds")
+		delete(additionalProperties, "nonces")
+		delete(additionalProperties, "externalRequestId")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

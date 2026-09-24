@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordCosmosMessageValueDestination{}
 type TgvalidatordCosmosMessageValueDestination struct {
 	AddressId *string `json:"addressId,omitempty"`
 	WhitelistedAddressId *string `json:"whitelistedAddressId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordCosmosMessageValueDestination TgvalidatordCosmosMessageValueDestination
 
 // NewTgvalidatordCosmosMessageValueDestination instantiates a new TgvalidatordCosmosMessageValueDestination object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordCosmosMessageValueDestination) ToMap() (map[string]interface
 	if !IsNil(o.WhitelistedAddressId) {
 		toSerialize["whitelistedAddressId"] = o.WhitelistedAddressId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordCosmosMessageValueDestination) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordCosmosMessageValueDestination := _TgvalidatordCosmosMessageValueDestination{}
+
+	err = json.Unmarshal(data, &varTgvalidatordCosmosMessageValueDestination)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordCosmosMessageValueDestination(varTgvalidatordCosmosMessageValueDestination)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "addressId")
+		delete(additionalProperties, "whitelistedAddressId")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordCosmosMessageValueDestination struct {

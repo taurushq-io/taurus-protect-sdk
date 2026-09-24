@@ -33,7 +33,10 @@ type TgvalidatordLendingAgreementTransaction struct {
 	CurrencyInfo *TgvalidatordCurrency `json:"currencyInfo,omitempty"`
 	CreatedAt *time.Time `json:"createdAt,omitempty"`
 	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordLendingAgreementTransaction TgvalidatordLendingAgreementTransaction
 
 // NewTgvalidatordLendingAgreementTransaction instantiates a new TgvalidatordLendingAgreementTransaction object
 // This constructor will assign default values to properties that have it defined,
@@ -517,7 +520,45 @@ func (o TgvalidatordLendingAgreementTransaction) ToMap() (map[string]interface{}
 	if !IsNil(o.UpdatedAt) {
 		toSerialize["updatedAt"] = o.UpdatedAt
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordLendingAgreementTransaction) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordLendingAgreementTransaction := _TgvalidatordLendingAgreementTransaction{}
+
+	err = json.Unmarshal(data, &varTgvalidatordLendingAgreementTransaction)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordLendingAgreementTransaction(varTgvalidatordLendingAgreementTransaction)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "lendingAgreementID")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "currencyID")
+		delete(additionalProperties, "requestID")
+		delete(additionalProperties, "transactionID")
+		delete(additionalProperties, "transactionHash")
+		delete(additionalProperties, "transactionBlockNumber")
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "amountMainUnit")
+		delete(additionalProperties, "currencyInfo")
+		delete(additionalProperties, "createdAt")
+		delete(additionalProperties, "updatedAt")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordLendingAgreementTransaction struct {

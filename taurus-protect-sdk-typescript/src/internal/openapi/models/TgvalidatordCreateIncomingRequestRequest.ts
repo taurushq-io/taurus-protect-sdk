@@ -61,7 +61,16 @@ export interface TgvalidatordCreateIncomingRequestRequest {
      * @memberof TgvalidatordCreateIncomingRequestRequest
      */
     feePaidByReceiver?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateIncomingRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateIncomingRequestRequestWireKeys: ReadonlySet<string> = new Set(['amount', 'fromExchangeId', 'toAddressId', 'comment', 'transactionReference', 'externalRequestId', 'feePaidByReceiver']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateIncomingRequestRequest interface.
@@ -81,7 +90,7 @@ export function TgvalidatordCreateIncomingRequestRequestFromJSONTyped(json: any,
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateIncomingRequestRequest = {
         
         'amount': json['amount'],
         'fromExchangeId': json['fromExchangeId'],
@@ -91,6 +100,16 @@ export function TgvalidatordCreateIncomingRequestRequestFromJSONTyped(json: any,
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
         'feePaidByReceiver': json['feePaidByReceiver'] == null ? undefined : json['feePaidByReceiver'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateIncomingRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateIncomingRequestRequestToJSON(json: any): TgvalidatordCreateIncomingRequestRequest {
@@ -111,6 +130,7 @@ export function TgvalidatordCreateIncomingRequestRequestFromJSONTyped(json: any,
         'transactionReference': value['transactionReference'],
         'externalRequestId': value['externalRequestId'],
         'feePaidByReceiver': value['feePaidByReceiver'],
+        ...value['additionalProperties'],
     };
 }
 

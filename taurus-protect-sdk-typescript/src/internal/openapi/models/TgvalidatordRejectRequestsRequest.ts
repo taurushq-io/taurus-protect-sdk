@@ -37,7 +37,16 @@ export interface TgvalidatordRejectRequestsRequest {
      * @memberof TgvalidatordRejectRequestsRequest
      */
     ids: Array<string>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordRejectRequestsRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordRejectRequestsRequestWireKeys: ReadonlySet<string> = new Set(['comment', 'requestIds', 'ids']);
 
 /**
  * Check if a given object implements the TgvalidatordRejectRequestsRequest interface.
@@ -56,12 +65,22 @@ export function TgvalidatordRejectRequestsRequestFromJSONTyped(json: any, ignore
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordRejectRequestsRequest = {
         
         'comment': json['comment'],
         'requestIds': json['requestIds'] == null ? undefined : json['requestIds'],
         'ids': json['ids'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordRejectRequestsRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordRejectRequestsRequestToJSON(json: any): TgvalidatordRejectRequestsRequest {
@@ -78,6 +97,7 @@ export function TgvalidatordRejectRequestsRequestFromJSONTyped(json: any, ignore
         'comment': value['comment'],
         'requestIds': value['requestIds'],
         'ids': value['ids'],
+        ...value['additionalProperties'],
     };
 }
 

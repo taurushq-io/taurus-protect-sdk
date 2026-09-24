@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -29,6 +28,7 @@ type TgvalidatordCreateOutgoingMinaUndelegationRequestRequest struct {
 	Comment *string `json:"comment,omitempty"`
 	// Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingMinaUndelegationRequestRequest TgvalidatordCreateOutgoingMinaUndelegationRequestRequest
@@ -191,6 +191,11 @@ func (o TgvalidatordCreateOutgoingMinaUndelegationRequestRequest) ToMap() (map[s
 	if !IsNil(o.ExternalRequestId) {
 		toSerialize["externalRequestId"] = o.ExternalRequestId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -218,15 +223,23 @@ func (o *TgvalidatordCreateOutgoingMinaUndelegationRequestRequest) UnmarshalJSON
 
 	varTgvalidatordCreateOutgoingMinaUndelegationRequestRequest := _TgvalidatordCreateOutgoingMinaUndelegationRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingMinaUndelegationRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingMinaUndelegationRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingMinaUndelegationRequestRequest(varTgvalidatordCreateOutgoingMinaUndelegationRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "externalRequestId")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

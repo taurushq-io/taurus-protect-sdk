@@ -6,13 +6,16 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from taurus_protect._internal.openapi import ChangesApi
 from taurus_protect.errors import NotFoundError
 from taurus_protect.models.audit import (
     ChangeResult,
     CreateChangeRequest,
     ListChangesOptions,
 )
+from taurus_protect.models.pagination import CursorPage
 from taurus_protect.services.change_service import ChangeService
+from tests.unit.transport_stub import StubTransport, api_client
 
 
 class TestCreateChange:
@@ -63,104 +66,80 @@ class TestCreateChange:
 
 
 class TestList:
-    """Tests for ChangeService.list()."""
+    """ChangeService.list over the real generated client."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        changes_api = MagicMock()
-        service = ChangeService(api_client=api_client, changes_api=changes_api)
-        return service, changes_api
+    def _service(self) -> ChangeService:
+        ac = api_client()
+        return ChangeService(ac, ChangesApi(ac))
 
-    def test_list_returns_change_result(self) -> None:
-        from taurus_protect.models.audit import Change
-
-        service, api = self._make_service()
-
-        cursor_obj = MagicMock()
-        cursor_obj.current_page = "page1"
-        cursor_obj.has_next = True
-        reply = MagicMock()
-        reply.result = [MagicMock()]
-        reply.cursor = cursor_obj
-        api.change_service_get_changes.return_value = reply
-
-        mock_change = Change(id="1")
-        with patch(
-            "taurus_protect.services.change_service.changes_from_dto",
-            return_value=[mock_change],
-        ):
-            result = service.list()
+    def test_rows_page_and_filters(self) -> None:
+        reply = {"result": [{"id": "c1"}], "cursor": {"currentPage": "p2", "hasNext": True}}
+        options = ListChangesOptions(
+            entity="businessrule",
+            entity_id="7",
+            status="Created",
+            creator_id="u1",
+            sort_order="ASC",
+            entity_ids=["1"],
+            entity_uuids=["u"],
+            page_size=25,
+        )
+        with StubTransport(reply) as transport:
+            result = self._service().list(options)
 
         assert isinstance(result, ChangeResult)
-        assert len(result.changes) == 1
-        assert result.has_next is True
-        assert result.current_page == "page1"
+        assert [c.id for c in result.changes] == ["c1"]
+        assert result.page == CursorPage(page_size=25, next_cursor="p2", has_more=True)
+        assert dict(transport.last.query) == {
+            "entity": "businessrule",
+            "entityId": "7",
+            "status": "Created",
+            "creatorId": "u1",
+            "sortOrder": "ASC",
+            "entityIDs": "1",
+            "entityUUIDs": "u",
+            "cursor.pageSize": "25",
+        }
 
-    def test_list_passes_options(self) -> None:
-        service, api = self._make_service()
+    def test_continuation_sends_next(self) -> None:
+        with StubTransport() as transport:
+            self._service().list(ListChangesOptions(cursor="p2"))
 
-        cursor_obj = MagicMock(spec=["current_page", "has_next"])
-        cursor_obj.current_page = None
-        cursor_obj.has_next = False
-        reply = MagicMock()
-        reply.result = None
-        reply.cursor = cursor_obj
-        api.change_service_get_changes.return_value = reply
+        assert transport.last.param("cursor.currentPage") == "p2"
+        assert transport.last.param("cursor.pageRequest") == "NEXT"
+        assert transport.last.param("cursor.pageSize") == "20"
 
-        opts = ListChangesOptions(entity="businessrule", status="pending", page_size=25)
-        result = service.list(options=opts)
+    def test_empty_reply(self) -> None:
+        with StubTransport({}):
+            result = self._service().list()
 
-        api.change_service_get_changes.assert_called_once_with(
-            entity="businessrule",
-            entity_id=None,
-            status="pending",
-            creator_id=None,
-            sort_order=None,
-            cursor_current_page=None,
-            cursor_page_request="FIRST",
-            cursor_page_size="25",
-            entity_ids=None,
-            entity_uuids=None,
-        )
         assert result.changes == []
-
-    def test_list_returns_empty_when_no_result(self) -> None:
-        service, api = self._make_service()
-
-        reply = MagicMock()
-        reply.result = None
-        reply.cursor = None
-        api.change_service_get_changes.return_value = reply
-
-        result = service.list()
-        assert result.changes == []
-        assert result.has_next is False
+        assert result.page == CursorPage(page_size=20)
 
 
 class TestListForApproval:
-    """Tests for ChangeService.list_for_approval()."""
+    """ChangeService.list_for_approval: the queue's own filters, the rest refused by name."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        changes_api = MagicMock()
-        service = ChangeService(api_client=api_client, changes_api=changes_api)
-        return service, changes_api
+    def _service(self) -> ChangeService:
+        ac = api_client()
+        return ChangeService(ac, ChangesApi(ac))
 
-    def test_list_for_approval_calls_api(self) -> None:
-        service, api = self._make_service()
+    def test_entity_filters_the_queue(self) -> None:
+        with StubTransport() as transport:
+            self._service().list_for_approval(ListChangesOptions(entity="user", sort_order="DESC"))
 
-        cursor_obj = MagicMock()
-        cursor_obj.current_page = "abc"
-        cursor_obj.has_next = False
-        reply = MagicMock()
-        reply.result = []
-        reply.cursor = cursor_obj
-        api.change_service_get_changes_for_approval.return_value = reply
+        assert transport.last.path == "/api/rest/v1/changes/for-approval"
+        assert transport.last.query == sorted(
+            [("entities", "user"), ("sortOrder", "DESC"), ("cursor.pageSize", "20")]
+        )
 
-        result = service.list_for_approval()
+    @pytest.mark.parametrize("field", ["status", "creator_id", "entity_id"])
+    def test_options_the_queue_cannot_apply_are_refused(self, field: str) -> None:
+        with StubTransport() as transport:
+            with pytest.raises(ValueError, match=field):
+                self._service().list_for_approval(ListChangesOptions(**{field: "x"}))
 
-        api.change_service_get_changes_for_approval.assert_called_once()
-        assert isinstance(result, ChangeResult)
+        assert transport.requests == []
 
 
 class TestGet:

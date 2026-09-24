@@ -11,7 +11,7 @@ A TypeScript SDK for interacting with the Taurus-PROTECT API, providing secure c
 | [Key Concepts](docs/CONCEPTS.md) | TypeScript models, exceptions, and domain concepts |
 | [SDK Overview](docs/SDK_OVERVIEW.md) | Architecture, packages, and design patterns |
 | [Authentication](docs/AUTHENTICATION.md) | TPV1 authentication and cryptographic operations |
-| [Services Reference](docs/SERVICES.md) | Complete API documentation for all 43 services |
+| [Services Reference](docs/SERVICES.md) | Complete API documentation for all 44 services |
 | [Usage Examples](docs/USAGE_EXAMPLES.md) | TypeScript code examples and common patterns |
 | [Whitelisted Address Verification](docs/WHITELISTED_ADDRESS_VERIFICATION.md) | 6-step verification flow |
 
@@ -71,9 +71,9 @@ See [Authentication](docs/AUTHENTICATION.md) for more initialization options.
 
 ## Services
 
-The SDK provides 43 services (38 core + 5 TaurusNetwork), all available as high-level wrappers — 38 via `ProtectClient` getters and 5 via the `taurusNetwork` namespace. Low-level OpenAPI APIs remain available alongside them.
+The SDK provides 44 services (39 core + 5 TaurusNetwork), all available as high-level wrappers — 39 via `ProtectClient` getters and 5 via the `taurusNetwork` namespace. Low-level OpenAPI APIs remain available alongside them.
 
-### High-Level Services (38 via ProtectClient getters, plus 5 on the TaurusNetwork namespace)
+### High-Level Services (39 via ProtectClient getters, plus 5 on the TaurusNetwork namespace)
 
 These services provide domain models, validation, and simplified interfaces.
 
@@ -105,6 +105,7 @@ These services provide domain models, validation, and simplified interfaces.
 | `JobService` | `client.jobs` | Background job management |
 | `StatisticsService` | `client.statistics` | Platform statistics |
 | `TokenMetadataService` | `client.tokenMetadata` | Token metadata information |
+| `EarnService` | `client.earn` | Rewards earned by addresses |
 
 ### Low-Level API Access
 
@@ -133,6 +134,15 @@ TaurusNetwork provides low-level API access for Taurus Network operations. Use t
 
 See [Services Reference](docs/SERVICES.md) for complete API documentation.
 
+### Pagination
+
+Every list returns a `pagination` value, the empty page included. Offset lists (wallets,
+addresses, transactions, users, groups, fee payers, actions, whitelists) take `limit` +
+`offset` and return `{limit, offset, totalItems, nextOffset, hasMore}`; every other list takes
+`pageSize` + `cursor` and returns `{pageSize, nextCursor, hasMore, totalItems?}`. Page sizes
+default to 20 and are capped at 100 (`ValidationError` above that). Continue with
+`nextOffset` / `nextCursor` while `hasMore` is true — see [Concepts](docs/CONCEPTS.md#pagination).
+
 ## Basic Usage
 
 ### List Wallets
@@ -146,15 +156,15 @@ const client = ProtectClient.create({
   superAdminKeysPem: ['-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----'],
 });
 
-// List wallets with pagination
-const { items: wallets, pagination } = await client.wallets.list({ limit: 50 });
-
-for (const wallet of wallets) {
-  console.log(`${wallet.name}: ${wallet.currency} (${wallet.blockchain}/${wallet.network})`);
-}
-
-if (pagination) {
-  console.log(`Total wallets: ${pagination.totalItems}`);
+// List wallets, page by page (limit 1-100, default 20)
+let offset = 0;
+for (;;) {
+  const { items: wallets, pagination } = await client.wallets.list({ limit: 50, offset });
+  for (const wallet of wallets) {
+    console.log(`${wallet.name}: ${wallet.currency} (${wallet.blockchain}/${wallet.network})`);
+  }
+  if (!pagination.hasMore) break;
+  offset = pagination.nextOffset;
 }
 
 client.close();
@@ -184,7 +194,7 @@ const privateKey = createPrivateKey({
 });
 
 // Get requests pending approval
-const { items: requests } = await client.requests.listForApproval({ limit: 10 });
+const { requests } = await client.requests.listForApproval({ pageSize: 10 });
 
 if (requests.length > 0) {
   // Approve with ECDSA signature

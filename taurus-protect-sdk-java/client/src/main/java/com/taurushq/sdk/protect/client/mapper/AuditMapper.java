@@ -44,5 +44,6 @@ public interface AuditMapper {
      * @return the domain model result
      */
     @Mapping(target = "auditTrails", source = "result")
+    @Mapping(target = "page", ignore = true)
     AuditTrailResult fromReply(TgvalidatordGetAuditTrailsReply reply);
 }

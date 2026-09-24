@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordGetETHValidatorsInfoReply{}
 // TgvalidatordGetETHValidatorsInfoReply struct for TgvalidatordGetETHValidatorsInfoReply
 type TgvalidatordGetETHValidatorsInfoReply struct {
 	Validators []TgvalidatordETHValidatorInfo `json:"validators,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetETHValidatorsInfoReply TgvalidatordGetETHValidatorsInfoReply
 
 // NewTgvalidatordGetETHValidatorsInfoReply instantiates a new TgvalidatordGetETHValidatorsInfoReply object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordGetETHValidatorsInfoReply) ToMap() (map[string]interface{}, 
 	if !IsNil(o.Validators) {
 		toSerialize["validators"] = o.Validators
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetETHValidatorsInfoReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetETHValidatorsInfoReply := _TgvalidatordGetETHValidatorsInfoReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetETHValidatorsInfoReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetETHValidatorsInfoReply(varTgvalidatordGetETHValidatorsInfoReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "validators")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetETHValidatorsInfoReply struct {

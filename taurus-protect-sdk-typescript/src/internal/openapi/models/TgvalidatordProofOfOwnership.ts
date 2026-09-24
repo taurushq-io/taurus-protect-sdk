@@ -58,7 +58,16 @@ export interface TgvalidatordProofOfOwnership {
      * @memberof TgvalidatordProofOfOwnership
      */
     signedPayloadAsString?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordProofOfOwnership
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordProofOfOwnershipWireKeys: ReadonlySet<string> = new Set(['signedPayload', 'signedPayloadHash', 'proofOfReserve', 'signedPayloadAsString']);
 
 /**
  * Check if a given object implements the TgvalidatordProofOfOwnership interface.
@@ -75,13 +84,23 @@ export function TgvalidatordProofOfOwnershipFromJSONTyped(json: any, ignoreDiscr
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordProofOfOwnership = {
         
         'signedPayload': json['signedPayload'] == null ? undefined : TgvalidatordSignedProofOfOwnershipPayloadFromJSON(json['signedPayload']),
         'signedPayloadHash': json['signedPayloadHash'] == null ? undefined : json['signedPayloadHash'],
         'proofOfReserve': json['proofOfReserve'] == null ? undefined : TgvalidatordProofOfReserveFromJSON(json['proofOfReserve']),
         'signedPayloadAsString': json['signedPayloadAsString'] == null ? undefined : json['signedPayloadAsString'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordProofOfOwnershipWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordProofOfOwnershipToJSON(json: any): TgvalidatordProofOfOwnership {
@@ -99,6 +118,7 @@ export function TgvalidatordProofOfOwnershipFromJSONTyped(json: any, ignoreDiscr
         'signedPayloadHash': value['signedPayloadHash'],
         'proofOfReserve': TgvalidatordProofOfReserveToJSON(value['proofOfReserve']),
         'signedPayloadAsString': value['signedPayloadAsString'],
+        ...value['additionalProperties'],
     };
 }
 

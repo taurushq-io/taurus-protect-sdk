@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordSmartPyFA2NFTContractTemplate{}
 // TgvalidatordSmartPyFA2NFTContractTemplate struct for TgvalidatordSmartPyFA2NFTContractTemplate
 type TgvalidatordSmartPyFA2NFTContractTemplate struct {
 	Xtz *TgvalidatordXTZContractTemplatePrams `json:"xtz,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordSmartPyFA2NFTContractTemplate TgvalidatordSmartPyFA2NFTContractTemplate
 
 // NewTgvalidatordSmartPyFA2NFTContractTemplate instantiates a new TgvalidatordSmartPyFA2NFTContractTemplate object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordSmartPyFA2NFTContractTemplate) ToMap() (map[string]interface
 	if !IsNil(o.Xtz) {
 		toSerialize["xtz"] = o.Xtz
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordSmartPyFA2NFTContractTemplate) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordSmartPyFA2NFTContractTemplate := _TgvalidatordSmartPyFA2NFTContractTemplate{}
+
+	err = json.Unmarshal(data, &varTgvalidatordSmartPyFA2NFTContractTemplate)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordSmartPyFA2NFTContractTemplate(varTgvalidatordSmartPyFA2NFTContractTemplate)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "xtz")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordSmartPyFA2NFTContractTemplate struct {

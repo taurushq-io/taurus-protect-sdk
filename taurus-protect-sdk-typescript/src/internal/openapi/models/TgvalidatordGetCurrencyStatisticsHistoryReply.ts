@@ -33,7 +33,16 @@ export interface TgvalidatordGetCurrencyStatisticsHistoryReply {
      * @memberof TgvalidatordGetCurrencyStatisticsHistoryReply
      */
     result?: Array<TgvalidatordCurrencyStatisticsHistory>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetCurrencyStatisticsHistoryReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetCurrencyStatisticsHistoryReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetCurrencyStatisticsHistoryReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetCurrencyStatisticsHistoryReplyFromJSONTyped(json:
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetCurrencyStatisticsHistoryReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordCurrencyStatisticsHistoryFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetCurrencyStatisticsHistoryReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetCurrencyStatisticsHistoryReplyToJSON(json: any): TgvalidatordGetCurrencyStatisticsHistoryReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetCurrencyStatisticsHistoryReplyFromJSONTyped(json:
     return {
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordCurrencyStatisticsHistoryToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

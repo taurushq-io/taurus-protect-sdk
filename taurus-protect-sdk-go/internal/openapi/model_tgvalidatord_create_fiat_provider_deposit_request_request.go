@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -32,6 +31,7 @@ type TgvalidatordCreateFiatProviderDepositRequestRequest struct {
 	Comment *string `json:"comment,omitempty"`
 	// Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestID will do nothing and return the originally created request. The excternalRequestID is passed to fiat providers as an idempotency key.
 	ExternalRequestID *string `json:"externalRequestID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateFiatProviderDepositRequestRequest TgvalidatordCreateFiatProviderDepositRequestRequest
@@ -255,6 +255,11 @@ func (o TgvalidatordCreateFiatProviderDepositRequestRequest) ToMap() (map[string
 	if !IsNil(o.ExternalRequestID) {
 		toSerialize["externalRequestID"] = o.ExternalRequestID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -283,15 +288,25 @@ func (o *TgvalidatordCreateFiatProviderDepositRequestRequest) UnmarshalJSON(data
 
 	varTgvalidatordCreateFiatProviderDepositRequestRequest := _TgvalidatordCreateFiatProviderDepositRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateFiatProviderDepositRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateFiatProviderDepositRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateFiatProviderDepositRequestRequest(varTgvalidatordCreateFiatProviderDepositRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "fromAccountID")
+		delete(additionalProperties, "fromAddressID")
+		delete(additionalProperties, "toAccountID")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "externalRequestID")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

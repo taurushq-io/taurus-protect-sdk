@@ -6,6 +6,8 @@
  * to another (pledgee) on a shared address.
  */
 
+import type { CursorNavigationOptions } from '../pagination';
+
 /**
  * Pledge status enum.
  */
@@ -362,49 +364,59 @@ export interface RejectPledgeActionsRequest {
 // Filter options
 
 /**
- * Options for listing pledges.
+ * Options for listing pledges. A cursor list: `pageSize` 1-100 (default 20) and the
+ * `cursor` of a previous page.
  */
-export interface ListPledgesOptions {
-  /** Maximum items to return (default: 50, max: 1000). */
-  readonly limit?: number;
-  /** Number of items to skip. */
-  readonly offset?: number;
-  /** Filter by statuses. */
-  readonly statuses?: string[];
-  /** Filter by currency. */
+export interface ListPledgesOptions extends CursorNavigationOptions {
+  /** Filter by owner participant ID */
+  readonly ownerParticipantId?: string;
+  /** Filter by target participant ID */
+  readonly targetParticipantId?: string;
+  /** Filter by shared address IDs */
+  readonly sharedAddressIds?: string[];
+  /** Filter by currency ID */
   readonly currencyId?: string;
-  /** Filter by direction (incoming/outgoing). */
-  readonly direction?: string;
-  /** Filter by participant ID. */
-  readonly participantId?: string;
+  /** Filter by statuses */
+  readonly statuses?: string[];
+  /** Sort order ("ASC" or "DESC") */
+  readonly sortOrder?: string;
 }
 
 /**
- * Options for listing pledge actions.
+ * Options for listing pledge actions. A cursor list: `pageSize` 1-100 (default 20) and the
+ * `cursor` of a previous page.
  */
-export interface ListPledgeActionsOptions {
-  /** Maximum items to return (default: 50, max: 1000). */
-  readonly limit?: number;
-  /** Number of items to skip. */
-  readonly offset?: number;
-  /** Filter by statuses. */
-  readonly statuses?: string[];
-  /** Filter by action types. */
-  readonly actionTypes?: string[];
-  /** Filter by pledge ID. */
+export interface ListPledgeActionsOptions extends CursorNavigationOptions {
+  /** Filter by pledge action IDs */
+  readonly ids?: string[];
+  /** Filter by pledge ID */
   readonly pledgeId?: string;
+  /** Sort order ("ASC" or "DESC") */
+  readonly sortOrder?: string;
 }
 
 /**
- * Options for listing pledge withdrawals.
+ * Options for listing the pledge actions awaiting approval. A cursor list: `pageSize` 1-100
+ * (default 20) and the `cursor` of a previous page.
  */
-export interface ListPledgeWithdrawalsOptions {
-  /** Maximum items to return (default: 50, max: 1000). */
-  readonly limit?: number;
-  /** Number of items to skip. */
-  readonly offset?: number;
-  /** Filter by statuses. */
-  readonly statuses?: string[];
-  /** Filter by pledge ID. */
+export interface ListPledgeActionsForApprovalOptions extends CursorNavigationOptions {
+  /** Filter by pledge action IDs */
+  readonly ids?: string[];
+  /** Filter by action types */
+  readonly types?: string[];
+  /** Sort order ("ASC" or "DESC") */
+  readonly sortOrder?: string;
+}
+
+/**
+ * Options for listing pledge withdrawals. A cursor list: `pageSize` 1-100 (default 20) and the
+ * `cursor` of a previous page.
+ */
+export interface ListPledgeWithdrawalsOptions extends CursorNavigationOptions {
+  /** Filter by pledge ID */
   readonly pledgeId?: string;
+  /** Filter by withdrawal status */
+  readonly withdrawalStatus?: string;
+  /** Sort order ("ASC" or "DESC") */
+  readonly sortOrder?: string;
 }

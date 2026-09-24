@@ -22,7 +22,10 @@ type TgvalidatordScimCreateGroupRequest struct {
 	Schemas []string `json:"schemas,omitempty"`
 	ExternalId *string `json:"externalId,omitempty"`
 	DisplayName *string `json:"displayName,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordScimCreateGroupRequest TgvalidatordScimCreateGroupRequest
 
 // NewTgvalidatordScimCreateGroupRequest instantiates a new TgvalidatordScimCreateGroupRequest object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordScimCreateGroupRequest) ToMap() (map[string]interface{}, err
 	if !IsNil(o.DisplayName) {
 		toSerialize["displayName"] = o.DisplayName
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordScimCreateGroupRequest) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordScimCreateGroupRequest := _TgvalidatordScimCreateGroupRequest{}
+
+	err = json.Unmarshal(data, &varTgvalidatordScimCreateGroupRequest)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordScimCreateGroupRequest(varTgvalidatordScimCreateGroupRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "schemas")
+		delete(additionalProperties, "externalId")
+		delete(additionalProperties, "displayName")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordScimCreateGroupRequest struct {

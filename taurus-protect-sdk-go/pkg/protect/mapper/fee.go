@@ -5,31 +5,6 @@ import (
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/model"
 )
 
-// FeeFromDTO converts an OpenAPI KeyValue to a domain Fee.
-// This is used for the deprecated v1 GetFees endpoint.
-func FeeFromDTO(dto *openapi.TgvalidatordKeyValue) *model.Fee {
-	if dto == nil {
-		return nil
-	}
-
-	return &model.Fee{
-		Key:   safeString(dto.Key),
-		Value: safeString(dto.Value),
-	}
-}
-
-// FeesFromDTO converts a slice of OpenAPI KeyValue to domain Fees.
-func FeesFromDTO(dtos []openapi.TgvalidatordKeyValue) []*model.Fee {
-	if dtos == nil {
-		return nil
-	}
-	fees := make([]*model.Fee, len(dtos))
-	for i := range dtos {
-		fees[i] = FeeFromDTO(&dtos[i])
-	}
-	return fees
-}
-
 // FeeV2FromDTO converts an OpenAPI Fee to a domain FeeV2.
 // This is used for the v2 GetFees endpoint.
 func FeeV2FromDTO(dto *openapi.TgvalidatordFee) *model.FeeV2 {

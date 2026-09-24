@@ -22,7 +22,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * Example usage:
  * <pre>{@code
  * // Get ERC-20 token metadata
- * TokenMetadata usdc = client.getTokenMetadataService().getERCTokenMetadata(
+ * TokenMetadata usdc = client.getTokenMetadataService().getEVMERCTokenMetadata(
  *     "mainnet",
  *     "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",  // USDC contract
  *     null,  // token ID (for ERC-721/1155)
@@ -64,36 +64,7 @@ public class TokenMetadataService {
     }
 
     /**
-     * Retrieves ERC token metadata (ERC-20, ERC-721, ERC-1155).
-     *
-     * @param network    the network (e.g., "mainnet", "goerli")
-     * @param contract   the contract address
-     * @param tokenId    the token ID (required for ERC-721/1155, null for ERC-20)
-     * @param withData   whether to include base64 data (for NFTs)
-     * @param blockchain the blockchain symbol (e.g., "ETH")
-     * @return the token metadata
-     * @throws ApiException             if the API call fails
-     * @throws IllegalArgumentException if network or contract is null/empty
-     */
-    public TokenMetadata getERCTokenMetadata(final String network,
-                                              final String contract,
-                                              final String tokenId,
-                                              final Boolean withData,
-                                              final String blockchain) throws ApiException {
-        checkArgument(!Strings.isNullOrEmpty(network), "network cannot be null or empty");
-        checkArgument(!Strings.isNullOrEmpty(contract), "contract cannot be null or empty");
-
-        try {
-            TgvalidatordGetERCTokenMetadataReply reply = tokenMetadataApi.tokenMetadataServiceGetERCTokenMetadata(
-                    network, contract, tokenId, withData, blockchain);
-            return tokenMetadataMapper.fromERCDTO(reply.getResult());
-        } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
-            throw apiExceptionMapper.toApiException(e);
-        }
-    }
-
-    /**
-     * Retrieves ERC token metadata for EVM-compatible chains.
+     * Retrieves ERC token metadata (ERC-20, ERC-721, ERC-1155) on an EVM chain.
      *
      * @param network    the network (e.g., "mainnet")
      * @param contract   the contract address

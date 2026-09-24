@@ -33,7 +33,16 @@ export interface TgvalidatordERC1400UniversalTokenContractTemplate {
      * @memberof TgvalidatordERC1400UniversalTokenContractTemplate
      */
     evm?: TgvalidatordEVMContractTemplateParams;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordERC1400UniversalTokenContractTemplate
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordERC1400UniversalTokenContractTemplateWireKeys: ReadonlySet<string> = new Set(['evm']);
 
 /**
  * Check if a given object implements the TgvalidatordERC1400UniversalTokenContractTemplate interface.
@@ -50,10 +59,20 @@ export function TgvalidatordERC1400UniversalTokenContractTemplateFromJSONTyped(j
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordERC1400UniversalTokenContractTemplate = {
         
         'evm': json['evm'] == null ? undefined : TgvalidatordEVMContractTemplateParamsFromJSON(json['evm']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordERC1400UniversalTokenContractTemplateWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordERC1400UniversalTokenContractTemplateToJSON(json: any): TgvalidatordERC1400UniversalTokenContractTemplate {
@@ -68,6 +87,7 @@ export function TgvalidatordERC1400UniversalTokenContractTemplateFromJSONTyped(j
     return {
         
         'evm': TgvalidatordEVMContractTemplateParamsToJSON(value['evm']),
+        ...value['additionalProperties'],
     };
 }
 

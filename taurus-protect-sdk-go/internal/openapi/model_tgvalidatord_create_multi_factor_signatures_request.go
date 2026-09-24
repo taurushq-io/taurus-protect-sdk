@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -24,6 +23,7 @@ type TgvalidatordCreateMultiFactorSignaturesRequest struct {
 	EntityType TgvalidatordMultiFactorSignaturesEntityType `json:"entityType"`
 	// list of entity ids which need to undergo a multifactor approval process
 	EntityIDs []string `json:"entityIDs"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateMultiFactorSignaturesRequest TgvalidatordCreateMultiFactorSignaturesRequest
@@ -107,6 +107,11 @@ func (o TgvalidatordCreateMultiFactorSignaturesRequest) ToMap() (map[string]inte
 	toSerialize := map[string]interface{}{}
 	toSerialize["entityType"] = o.EntityType
 	toSerialize["entityIDs"] = o.EntityIDs
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -135,15 +140,21 @@ func (o *TgvalidatordCreateMultiFactorSignaturesRequest) UnmarshalJSON(data []by
 
 	varTgvalidatordCreateMultiFactorSignaturesRequest := _TgvalidatordCreateMultiFactorSignaturesRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateMultiFactorSignaturesRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateMultiFactorSignaturesRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateMultiFactorSignaturesRequest(varTgvalidatordCreateMultiFactorSignaturesRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "entityType")
+		delete(additionalProperties, "entityIDs")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

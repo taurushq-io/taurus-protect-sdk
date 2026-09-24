@@ -39,7 +39,16 @@ export interface TgvalidatordGetPortfolioStatisticsHistoryExportReply {
      * @memberof TgvalidatordGetPortfolioStatisticsHistoryExportReply
      */
     cursor?: TgvalidatordResponseCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetPortfolioStatisticsHistoryExportReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetPortfolioStatisticsHistoryExportReplyWireKeys: ReadonlySet<string> = new Set(['result', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetPortfolioStatisticsHistoryExportReply interface.
@@ -56,11 +65,21 @@ export function TgvalidatordGetPortfolioStatisticsHistoryExportReplyFromJSONType
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetPortfolioStatisticsHistoryExportReply = {
         
         'result': json['result'] == null ? undefined : json['result'],
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetPortfolioStatisticsHistoryExportReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetPortfolioStatisticsHistoryExportReplyToJSON(json: any): TgvalidatordGetPortfolioStatisticsHistoryExportReply {
@@ -76,6 +95,7 @@ export function TgvalidatordGetPortfolioStatisticsHistoryExportReplyFromJSONType
         
         'result': value['result'],
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
+        ...value['additionalProperties'],
     };
 }
 

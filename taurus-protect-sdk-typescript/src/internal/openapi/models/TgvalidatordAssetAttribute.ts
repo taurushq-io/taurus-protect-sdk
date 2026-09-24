@@ -31,7 +31,16 @@ export interface TgvalidatordAssetAttribute {
      * @memberof TgvalidatordAssetAttribute
      */
     value?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordAssetAttribute
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordAssetAttributeWireKeys: ReadonlySet<string> = new Set(['key', 'value']);
 
 /**
  * Check if a given object implements the TgvalidatordAssetAttribute interface.
@@ -48,11 +57,21 @@ export function TgvalidatordAssetAttributeFromJSONTyped(json: any, ignoreDiscrim
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordAssetAttribute = {
         
         'key': json['key'] == null ? undefined : json['key'],
         'value': json['value'] == null ? undefined : json['value'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordAssetAttributeWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordAssetAttributeToJSON(json: any): TgvalidatordAssetAttribute {
@@ -68,6 +87,7 @@ export function TgvalidatordAssetAttributeFromJSONTyped(json: any, ignoreDiscrim
         
         'key': value['key'],
         'value': value['value'],
+        ...value['additionalProperties'],
     };
 }
 

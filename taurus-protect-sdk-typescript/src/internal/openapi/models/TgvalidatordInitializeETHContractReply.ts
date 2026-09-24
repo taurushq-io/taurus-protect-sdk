@@ -25,7 +25,16 @@ export interface TgvalidatordInitializeETHContractReply {
      * @memberof TgvalidatordInitializeETHContractReply
      */
     result?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordInitializeETHContractReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordInitializeETHContractReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordInitializeETHContractReply interface.
@@ -42,10 +51,20 @@ export function TgvalidatordInitializeETHContractReplyFromJSONTyped(json: any, i
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordInitializeETHContractReply = {
         
         'result': json['result'] == null ? undefined : json['result'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordInitializeETHContractReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordInitializeETHContractReplyToJSON(json: any): TgvalidatordInitializeETHContractReply {
@@ -60,6 +79,7 @@ export function TgvalidatordInitializeETHContractReplyFromJSONTyped(json: any, i
     return {
         
         'result': value['result'],
+        ...value['additionalProperties'],
     };
 }
 

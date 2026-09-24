@@ -85,15 +85,15 @@ describe("Integration: Governance Rules", () => {
 
     const client = getTestClient();
     try {
-      const result = await client.governanceRules.getRulesHistory({ limit: 10 });
+      const result = await client.governanceRules.getRulesHistory({ pageSize: 10 });
 
       console.log("Governance rules history response received");
 
       const history = result.items;
       console.log(`  History entries: ${history.length}`);
 
-      if (result.nextCursor) {
-        console.log(`  Has more pages: yes (cursor: ${result.nextCursor})`);
+      if (result.pagination.hasMore) {
+        console.log(`  Has more pages: yes (cursor: ${result.pagination.nextCursor})`);
       }
 
       for (const entry of history) {

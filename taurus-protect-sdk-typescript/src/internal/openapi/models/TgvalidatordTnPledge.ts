@@ -179,7 +179,16 @@ export interface TgvalidatordTnPledge {
      * @memberof TgvalidatordTnPledge
      */
     wladdressID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTnPledge
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTnPledgeWireKeys: ReadonlySet<string> = new Set(['id', 'sharedAddressID', 'ownerParticipantID', 'targetParticipantID', 'currencyID', 'blockchain', 'network', 'arg1', 'arg2', 'amount', 'status', 'pledgeType', 'trails', 'originCreationDate', 'durationSetup', 'unpledgeDate', 'attributes', 'createdAt', 'updatedAt', 'externalReferenceId', 'reconciliationNote', 'direction', 'wladdressID']);
 
 /**
  * Check if a given object implements the TgvalidatordTnPledge interface.
@@ -196,7 +205,7 @@ export function TgvalidatordTnPledgeFromJSONTyped(json: any, ignoreDiscriminator
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTnPledge = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'sharedAddressID': json['sharedAddressID'] == null ? undefined : json['sharedAddressID'],
@@ -222,6 +231,16 @@ export function TgvalidatordTnPledgeFromJSONTyped(json: any, ignoreDiscriminator
         'direction': json['direction'] == null ? undefined : json['direction'],
         'wladdressID': json['wladdressID'] == null ? undefined : json['wladdressID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTnPledgeWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTnPledgeToJSON(json: any): TgvalidatordTnPledge {
@@ -258,6 +277,7 @@ export function TgvalidatordTnPledgeFromJSONTyped(json: any, ignoreDiscriminator
         'reconciliationNote': value['reconciliationNote'],
         'direction': value['direction'],
         'wladdressID': value['wladdressID'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -76,7 +76,16 @@ export interface ScimServiceScimPutUserBody {
      * @memberof ScimServiceScimPutUserBody
      */
     userName?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof ScimServiceScimPutUserBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const ScimServiceScimPutUserBodyWireKeys: ReadonlySet<string> = new Set(['schemas', 'externalId', 'name', 'emails', 'active', 'roles', 'userName']);
 
 /**
  * Check if a given object implements the ScimServiceScimPutUserBody interface.
@@ -93,7 +102,7 @@ export function ScimServiceScimPutUserBodyFromJSONTyped(json: any, ignoreDiscrim
     if (json == null) {
         return json;
     }
-    return {
+    const result: ScimServiceScimPutUserBody = {
         
         'schemas': json['schemas'] == null ? undefined : json['schemas'],
         'externalId': json['externalId'] == null ? undefined : json['externalId'],
@@ -103,6 +112,16 @@ export function ScimServiceScimPutUserBodyFromJSONTyped(json: any, ignoreDiscrim
         'roles': json['roles'] == null ? undefined : json['roles'],
         'userName': json['userName'] == null ? undefined : json['userName'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!ScimServiceScimPutUserBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function ScimServiceScimPutUserBodyToJSON(json: any): ScimServiceScimPutUserBody {
@@ -123,6 +142,7 @@ export function ScimServiceScimPutUserBodyFromJSONTyped(json: any, ignoreDiscrim
         'active': value['active'],
         'roles': value['roles'],
         'userName': value['userName'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -67,7 +67,16 @@ export interface TgvalidatordCreateOutgoingDOTBondRequestRequest {
      * @memberof TgvalidatordCreateOutgoingDOTBondRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingDOTBondRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingDOTBondRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'amount', 'restakeRewards', 'feeLimit', 'comment', 'useAllFunds', 'transactionReference', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingDOTBondRequestRequest interface.
@@ -85,7 +94,7 @@ export function TgvalidatordCreateOutgoingDOTBondRequestRequestFromJSONTyped(jso
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingDOTBondRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'amount': json['amount'] == null ? undefined : json['amount'],
@@ -96,6 +105,16 @@ export function TgvalidatordCreateOutgoingDOTBondRequestRequestFromJSONTyped(jso
         'transactionReference': json['transactionReference'] == null ? undefined : json['transactionReference'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingDOTBondRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingDOTBondRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingDOTBondRequestRequest {
@@ -117,6 +136,7 @@ export function TgvalidatordCreateOutgoingDOTBondRequestRequestFromJSONTyped(jso
         'useAllFunds': value['useAllFunds'],
         'transactionReference': value['transactionReference'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

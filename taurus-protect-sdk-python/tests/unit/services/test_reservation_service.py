@@ -2,130 +2,92 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
-
 import pytest
 
-from taurus_protect.services.reservation_service import ReservationService
+from taurus_protect._internal.openapi import ReservationsApi
+from taurus_protect.errors import NotFoundError
+from taurus_protect.models.pagination import CursorPage
+from taurus_protect.services.reservation_service import Reservation, ReservationService
+from tests.unit.transport_stub import StubTransport, api_client
+
+
+def _service() -> ReservationService:
+    ac = api_client()
+    return ReservationService(ac, ReservationsApi(ac))
 
 
 class TestReservationServiceGet:
-    """Tests for ReservationService.get()."""
-
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        reservations_api = MagicMock()
-        service = ReservationService(
-            api_client=api_client, reservations_api=reservations_api
-        )
-        return service, reservations_api
+    """ReservationService.get calls the real generated operation."""
 
     def test_raises_on_invalid_id(self) -> None:
-        service, _ = self._make_service()
         with pytest.raises(ValueError, match="reservation_id must be positive"):
-            service.get(reservation_id=0)
+            _service().get(0)
 
     def test_returns_reservation(self) -> None:
-        service, api = self._make_service()
-        dto = MagicMock()
-        dto.id = "10"
-        dto.wallet_id = "5"
-        dto.address_id = None
-        dto.currency = "ETH"
-        dto.amount = "1.5"
-        dto.status = "ACTIVE"
-        dto.expires_at = None
-        dto.expiresAt = None
-        reply = MagicMock()
-        reply.result = dto
-        api.reservation_service_get_reservation.return_value = reply
+        reply = {"result": {"id": "42", "amount": "0.5", "addressid": "a-1", "kind": "UTXO"}}
+        with StubTransport(reply) as transport:
+            result = _service().get(42)
 
-        res = service.get(reservation_id=10)
+        assert isinstance(result, Reservation)
+        assert (result.id, result.amount, result.address_id, result.kind) == (
+            "42",
+            "0.5",
+            "a-1",
+            "UTXO",
+        )
+        assert transport.last.path == "/api/rest/v1/reservations/42"
 
-        assert res.id == "10"
-        assert res.currency == "ETH"
-        assert res.amount == "1.5"
-
-    def test_raises_not_found_when_none(self) -> None:
-        service, api = self._make_service()
-        reply = MagicMock()
-        reply.result = None
-        api.reservation_service_get_reservation.return_value = reply
-
-        from taurus_protect.errors import NotFoundError
-
-        with pytest.raises(NotFoundError):
-            service.get(reservation_id=1)
+    def test_raises_not_found_when_absent(self) -> None:
+        with StubTransport({}):
+            with pytest.raises(NotFoundError):
+                _service().get(42)
 
 
 class TestReservationServiceList:
-    """Tests for ReservationService.list()."""
+    """ReservationService.list: a cursor list (it called an operation that does not exist)."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        reservations_api = MagicMock()
-        service = ReservationService(
-            api_client=api_client, reservations_api=reservations_api
-        )
-        return service, reservations_api
+    def test_rows_page_and_filters(self) -> None:
+        reply = {
+            "result": [{"id": "1"}, {"id": "2"}],
+            "cursor": {"currentPage": "n", "hasNext": True},
+        }
+        with StubTransport(reply) as transport:
+            reservations, page = _service().list(
+                page_size=2, kind="UTXO", kinds=["A", "B"], address="bc1q", address_id="7"
+            )
 
-    def test_raises_on_invalid_limit(self) -> None:
-        service, _ = self._make_service()
-        with pytest.raises(ValueError, match="limit must be positive"):
-            service.list(limit=0)
-
-    def test_raises_on_negative_offset(self) -> None:
-        service, _ = self._make_service()
-        with pytest.raises(ValueError, match="offset cannot be negative"):
-            service.list(offset=-1)
-
-    def test_returns_empty_when_no_results(self) -> None:
-        service, api = self._make_service()
-        reply = MagicMock()
-        reply.result = None
-        reply.total_items = None
-        api.reservation_service_get_reservations.return_value = reply
-
-        reservations, pagination = service.list()
-
-        assert reservations == []
-
-    def test_passes_wallet_id_filter(self) -> None:
-        service, api = self._make_service()
-        reply = MagicMock()
-        reply.result = None
-        reply.total_items = None
-        api.reservation_service_get_reservations.return_value = reply
-
-        service.list(wallet_id=5)
-
-        api.reservation_service_get_reservations.assert_called_once_with(
-            wallet_id="5",
-            limit="50",
-            offset="0",
+        assert [r.id for r in reservations] == ["1", "2"]
+        assert page == CursorPage(page_size=2, next_cursor="n", has_more=True)
+        assert transport.last.path == "/api/rest/v1/reservations"
+        assert transport.last.query == sorted(
+            [
+                ("kind", "UTXO"),
+                ("kinds", "A"),
+                ("kinds", "B"),
+                ("address", "bc1q"),
+                ("addressId", "7"),
+                ("cursor.pageSize", "2"),
+            ]
         )
 
+    def test_page_two_is_reachable(self) -> None:
+        with StubTransport() as transport:
+            _service().list(cursor="n")
 
-class TestReservationServiceCancel:
-    """Tests for ReservationService.cancel()."""
+        assert transport.last.param("cursor.currentPage") == "n"
+        assert transport.last.param("cursor.pageRequest") == "NEXT"
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        reservations_api = MagicMock()
-        service = ReservationService(
-            api_client=api_client, reservations_api=reservations_api
-        )
-        return service, reservations_api
+    def test_the_wallet_filter_does_not_exist(self) -> None:
+        with pytest.raises(TypeError, match="wallet_id"):
+            _service().list(wallet_id=1)  # type: ignore[call-arg]
 
-    def test_raises_on_invalid_id(self) -> None:
-        service, _ = self._make_service()
-        with pytest.raises(ValueError, match="reservation_id must be positive"):
-            service.cancel(reservation_id=0)
+    def test_invalid_page_size_sends_nothing(self) -> None:
+        with StubTransport() as transport:
+            with pytest.raises(ValueError, match="page_size"):
+                _service().list(page_size=101)
 
-    def test_calls_api(self) -> None:
-        service, api = self._make_service()
-        api.reservation_service_cancel_reservation.return_value = None
+        assert transport.requests == []
 
-        service.cancel(reservation_id=42)
-
-        api.reservation_service_cancel_reservation.assert_called_once_with("42")
+    def test_there_is_no_cancel(self) -> None:
+        """No endpoint cancels a reservation; the method called an operation that does not exist."""
+        assert not hasattr(ReservationService, "cancel")

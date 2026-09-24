@@ -43,7 +43,16 @@ export interface TgvalidatordDOTBlockchainInfo {
      * @memberof TgvalidatordDOTBlockchainInfo
      */
     forkMigratedAt?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordDOTBlockchainInfo
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordDOTBlockchainInfoWireKeys: ReadonlySet<string> = new Set(['currentEra', 'maxNominations', 'forkNumber', 'forkMigratedAt']);
 
 /**
  * Check if a given object implements the TgvalidatordDOTBlockchainInfo interface.
@@ -60,13 +69,23 @@ export function TgvalidatordDOTBlockchainInfoFromJSONTyped(json: any, ignoreDisc
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordDOTBlockchainInfo = {
         
         'currentEra': json['currentEra'] == null ? undefined : json['currentEra'],
         'maxNominations': json['maxNominations'] == null ? undefined : json['maxNominations'],
         'forkNumber': json['forkNumber'] == null ? undefined : json['forkNumber'],
         'forkMigratedAt': json['forkMigratedAt'] == null ? undefined : (new Date(json['forkMigratedAt'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordDOTBlockchainInfoWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordDOTBlockchainInfoToJSON(json: any): TgvalidatordDOTBlockchainInfo {
@@ -84,6 +103,7 @@ export function TgvalidatordDOTBlockchainInfoFromJSONTyped(json: any, ignoreDisc
         'maxNominations': value['maxNominations'],
         'forkNumber': value['forkNumber'],
         'forkMigratedAt': value['forkMigratedAt'] == null ? undefined : ((value['forkMigratedAt']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

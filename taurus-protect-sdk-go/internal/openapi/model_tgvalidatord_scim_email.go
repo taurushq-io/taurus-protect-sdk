@@ -22,7 +22,10 @@ type TgvalidatordScimEmail struct {
 	Type *string `json:"type,omitempty"`
 	Value *string `json:"value,omitempty"`
 	Primary *bool `json:"primary,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordScimEmail TgvalidatordScimEmail
 
 // NewTgvalidatordScimEmail instantiates a new TgvalidatordScimEmail object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordScimEmail) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Primary) {
 		toSerialize["primary"] = o.Primary
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordScimEmail) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordScimEmail := _TgvalidatordScimEmail{}
+
+	err = json.Unmarshal(data, &varTgvalidatordScimEmail)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordScimEmail(varTgvalidatordScimEmail)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "value")
+		delete(additionalProperties, "primary")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordScimEmail struct {

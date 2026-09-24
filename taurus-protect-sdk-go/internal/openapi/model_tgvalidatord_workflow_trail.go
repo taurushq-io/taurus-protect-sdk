@@ -31,7 +31,10 @@ type TgvalidatordWorkflowTrail struct {
 	WorkflowStateLabelBefore *string `json:"workflowStateLabelBefore,omitempty"`
 	WorkflowStateLabelAfter *string `json:"workflowStateLabelAfter,omitempty"`
 	CreatedAt *time.Time `json:"createdAt,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordWorkflowTrail TgvalidatordWorkflowTrail
 
 // NewTgvalidatordWorkflowTrail instantiates a new TgvalidatordWorkflowTrail object
 // This constructor will assign default values to properties that have it defined,
@@ -445,7 +448,43 @@ func (o TgvalidatordWorkflowTrail) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.CreatedAt) {
 		toSerialize["createdAt"] = o.CreatedAt
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordWorkflowTrail) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordWorkflowTrail := _TgvalidatordWorkflowTrail{}
+
+	err = json.Unmarshal(data, &varTgvalidatordWorkflowTrail)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordWorkflowTrail(varTgvalidatordWorkflowTrail)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "tenantID")
+		delete(additionalProperties, "workflowID")
+		delete(additionalProperties, "eventID")
+		delete(additionalProperties, "workflowAction")
+		delete(additionalProperties, "emittedEventsIDs")
+		delete(additionalProperties, "createdWorkflowsIDs")
+		delete(additionalProperties, "workflowActionResult")
+		delete(additionalProperties, "workflowStateLabelBefore")
+		delete(additionalProperties, "workflowStateLabelAfter")
+		delete(additionalProperties, "createdAt")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordWorkflowTrail struct {

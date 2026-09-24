@@ -28,6 +28,12 @@ type Price struct {
 	CurrencyFromInfo *CurrencyInfo `json:"currency_from_info,omitempty"`
 	// CurrencyToInfo contains detailed information about the quote currency.
 	CurrencyToInfo *CurrencyInfo `json:"currency_to_info,omitempty"`
+	// ID is the price's identifier.
+	ID string `json:"id,omitempty"`
+	// IsPrimary marks the primary price of its currency pair.
+	IsPrimary bool `json:"is_primary,omitempty"`
+	// Status is the deviation status of a primary price.
+	Status string `json:"status,omitempty"`
 }
 
 // PriceSignature represents a signature for price verification.
@@ -94,12 +100,34 @@ type ConversionResult struct {
 	FullBaseCurrency *CurrencyInfo `json:"full_base_currency,omitempty"`
 }
 
-// GetPricesResult contains the result of a GetPrices call.
-type GetPricesResult struct {
-	// BaseCurrency is the base currency used for prices.
+// ListPricesOptions filters and pages PriceService.ListPrices.
+//
+// The currency filter is one of three shapes, chosen by which fields are set: FromCurrencyID
+// alone (prices from that currency), FromCurrencyID with ToCurrencyIDs (from it to those), or
+// ToCurrencyIDs alone (prices to those currencies). Neither sets no currency filter.
+type ListPricesOptions struct {
+	// OnlyPrimary keeps only the primary price of each currency pair.
+	OnlyPrimary bool
+	// SortOrder is ASC or DESC (the server's default).
+	SortOrder string
+	// FromCurrencyID is the currency the prices convert from.
+	FromCurrencyID string
+	// ToCurrencyIDs are the currencies the prices convert to.
+	ToCurrencyIDs []string
+	// PageSize is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
+	PageSize int64
+	// Cursor is a previous page's Page.NextCursor; the SDK then requests the NEXT page.
+	Cursor string
+}
+
+// ListPricesResult is one page of verified prices.
+type ListPricesResult struct {
+	// BaseCurrency is the tenant's base currency.
 	BaseCurrency string `json:"base_currency,omitempty"`
-	// Prices is the list of currency prices.
+	// Prices is the list of currency prices, each signature-verified.
 	Prices []*Price `json:"prices"`
+	// Page continues the list: pass Page.NextCursor as the next Cursor until HasMore is false.
+	Page CursorPage `json:"page"`
 }
 
 // ConvertOptions contains options for the Convert method.
@@ -120,7 +148,8 @@ type GetPriceHistoryOptions struct {
 	Base string
 	// Quote is the quote currency symbol (required).
 	Quote string
-	// Limit is the maximum number of history points to return.
+	// Limit is the number of newest daily points to return: 0 selects DefaultPageSize, above
+	// MaxPriceHistoryLimit is an error. Price history cannot page.
 	Limit int64
 }
 
@@ -136,7 +165,8 @@ type GetPriceHistoryResult struct {
 type ExportPriceHistoryOptions struct {
 	// CurrencyPairs is the list of currency pairs to export (e.g., ["BTC/USD", "ETH/USD"]).
 	CurrencyPairs []string
-	// Limit is the maximum number of history points to return.
+	// Limit is the number of newest points to export: 0 selects DefaultPageSize; there is no SDK
+	// maximum (the server bounds it). The export cannot page.
 	Limit int64
 	// Format is the export format ("csv" or "json").
 	Format string

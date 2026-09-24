@@ -221,9 +221,9 @@ describe('WhitelistedAssetService', () => {
       );
     });
 
-    it('should throw ValidationError when limit is 0', async () => {
-      await expect(service.list({ limit: 0 })).rejects.toThrow(ValidationError);
-      await expect(service.list({ limit: 0 })).rejects.toThrow('limit must be positive');
+    it('should throw ValidationError when limit is above the maximum', async () => {
+      await expect(service.list({ limit: 101 })).rejects.toThrow(ValidationError);
+      await expect(service.list({ limit: 101 })).rejects.toThrow('limit must be at most 100, got 101');
     });
 
     it('should throw ValidationError when limit is negative', async () => {
@@ -232,7 +232,7 @@ describe('WhitelistedAssetService', () => {
 
     it('should throw ValidationError when offset is negative', async () => {
       await expect(service.list({ offset: -1 })).rejects.toThrow(ValidationError);
-      await expect(service.list({ offset: -1 })).rejects.toThrow('offset cannot be negative');
+      await expect(service.list({ offset: -1 })).rejects.toThrow('offset must not be negative, got -1');
     });
 
     it('should handle empty results', async () => {
@@ -337,8 +337,8 @@ describe('WhitelistedAssetService', () => {
       await expect(svc.listForApproval()).rejects.toThrow(IntegrityError);
     });
 
-    it('should throw ValidationError when limit is 0', async () => {
-      await expect(service.listForApproval({ limit: 0 })).rejects.toThrow(ValidationError);
+    it('should throw ValidationError when limit is above the maximum', async () => {
+      await expect(service.listForApproval({ limit: 101 })).rejects.toThrow(ValidationError);
     });
 
     it('should throw ValidationError when offset is negative', async () => {

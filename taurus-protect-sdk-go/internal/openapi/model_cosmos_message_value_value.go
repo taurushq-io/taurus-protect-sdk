@@ -26,7 +26,10 @@ type CosmosMessageValueValue struct {
 	Bytes *string `json:"bytes,omitempty" validate:"regexp=^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=)?$"`
 	Message []TgvalidatordCosmosMessageValue `json:"message,omitempty"`
 	Array *CosmosMessageValueArray `json:"array,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _CosmosMessageValueValue CosmosMessageValueValue
 
 // NewCosmosMessageValueValue instantiates a new CosmosMessageValueValue object
 // This constructor will assign default values to properties that have it defined,
@@ -300,7 +303,39 @@ func (o CosmosMessageValueValue) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Array) {
 		toSerialize["array"] = o.Array
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *CosmosMessageValueValue) UnmarshalJSON(data []byte) (err error) {
+	varCosmosMessageValueValue := _CosmosMessageValueValue{}
+
+	err = json.Unmarshal(data, &varCosmosMessageValueValue)
+
+	if err != nil {
+		return err
+	}
+
+	*o = CosmosMessageValueValue(varCosmosMessageValueValue)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "source")
+		delete(additionalProperties, "destination")
+		delete(additionalProperties, "string")
+		delete(additionalProperties, "int")
+		delete(additionalProperties, "bytes")
+		delete(additionalProperties, "message")
+		delete(additionalProperties, "array")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableCosmosMessageValueValue struct {

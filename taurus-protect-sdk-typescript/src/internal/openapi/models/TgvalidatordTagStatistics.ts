@@ -45,7 +45,16 @@ export interface TgvalidatordTagStatistics {
      * @memberof TgvalidatordTagStatistics
      */
     tag?: TgvalidatordTag;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTagStatistics
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTagStatisticsWireKeys: ReadonlySet<string> = new Set(['tagID', 'totalValuation', 'tag']);
 
 /**
  * Check if a given object implements the TgvalidatordTagStatistics interface.
@@ -62,12 +71,22 @@ export function TgvalidatordTagStatisticsFromJSONTyped(json: any, ignoreDiscrimi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTagStatistics = {
         
         'tagID': json['tagID'] == null ? undefined : json['tagID'],
         'totalValuation': json['totalValuation'] == null ? undefined : json['totalValuation'],
         'tag': json['tag'] == null ? undefined : TgvalidatordTagFromJSON(json['tag']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTagStatisticsWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTagStatisticsToJSON(json: any): TgvalidatordTagStatistics {
@@ -84,6 +103,7 @@ export function TgvalidatordTagStatisticsFromJSONTyped(json: any, ignoreDiscrimi
         'tagID': value['tagID'],
         'totalValuation': value['totalValuation'],
         'tag': TgvalidatordTagToJSON(value['tag']),
+        ...value['additionalProperties'],
     };
 }
 

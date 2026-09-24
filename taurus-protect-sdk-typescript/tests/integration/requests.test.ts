@@ -35,7 +35,7 @@ describe("Integration: Requests", () => {
 
     const client = getTestClient();
     try {
-      const result = await client.requests.list({ limit: 10 });
+      const result = await client.requests.list({ pageSize: 10 });
 
       const requests = result.requests;
       console.log(`Found ${requests.length} requests`);
@@ -97,7 +97,7 @@ describe("Integration: Requests", () => {
     const client = getTestClient();
     try {
       // First, get a list to find a valid request ID
-      const listResult = await client.requests.list({ limit: 1 });
+      const listResult = await client.requests.list({ pageSize: 1 });
 
       const requests = listResult.requests;
       if (requests.length === 0) {
@@ -192,7 +192,7 @@ describe("Integration: Requests", () => {
     try {
       // Query for confirmed requests (CONFIRMED is a valid API status)
       const result = await client.requests.list({
-        limit: 10,
+        pageSize: 10,
         statuses: [RequestStatus.CONFIRMED],
       });
 

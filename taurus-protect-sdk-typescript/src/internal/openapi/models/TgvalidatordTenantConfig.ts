@@ -99,7 +99,16 @@ export interface TgvalidatordTenantConfig {
      * @memberof TgvalidatordTenantConfig
      */
     isPhysicalAirGapEnabled?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTenantConfig
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTenantConfigWireKeys: ReadonlySet<string> = new Set(['superAdminMinimumSignatures', 'baseCurrency', 'isMFAMandatory', 'excludeContainer', 'tenantId', 'feeLimitFactor', 'protectEngineVersion', 'restrictSourcesForWhitelistedAddresses', 'nftMinting', 'isProtectEngineCold', 'isColdProtectEngineOffline', 'isPhysicalAirGapEnabled']);
 
 /**
  * Check if a given object implements the TgvalidatordTenantConfig interface.
@@ -116,7 +125,7 @@ export function TgvalidatordTenantConfigFromJSONTyped(json: any, ignoreDiscrimin
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTenantConfig = {
         
         'superAdminMinimumSignatures': json['superAdminMinimumSignatures'] == null ? undefined : json['superAdminMinimumSignatures'],
         'baseCurrency': json['baseCurrency'] == null ? undefined : json['baseCurrency'],
@@ -131,6 +140,16 @@ export function TgvalidatordTenantConfigFromJSONTyped(json: any, ignoreDiscrimin
         'isColdProtectEngineOffline': json['isColdProtectEngineOffline'] == null ? undefined : json['isColdProtectEngineOffline'],
         'isPhysicalAirGapEnabled': json['isPhysicalAirGapEnabled'] == null ? undefined : json['isPhysicalAirGapEnabled'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTenantConfigWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTenantConfigToJSON(json: any): TgvalidatordTenantConfig {
@@ -156,6 +175,7 @@ export function TgvalidatordTenantConfigFromJSONTyped(json: any, ignoreDiscrimin
         'isProtectEngineCold': value['isProtectEngineCold'],
         'isColdProtectEngineOffline': value['isColdProtectEngineOffline'],
         'isPhysicalAirGapEnabled': value['isPhysicalAirGapEnabled'],
+        ...value['additionalProperties'],
     };
 }
 

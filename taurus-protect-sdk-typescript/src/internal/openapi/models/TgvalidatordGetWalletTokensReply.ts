@@ -45,7 +45,16 @@ export interface TgvalidatordGetWalletTokensReply {
      * @memberof TgvalidatordGetWalletTokensReply
      */
     next?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetWalletTokensReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetWalletTokensReplyWireKeys: ReadonlySet<string> = new Set(['balances', 'total', 'next']);
 
 /**
  * Check if a given object implements the TgvalidatordGetWalletTokensReply interface.
@@ -62,12 +71,22 @@ export function TgvalidatordGetWalletTokensReplyFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetWalletTokensReply = {
         
         'balances': json['balances'] == null ? undefined : ((json['balances'] as Array<any>).map(TgvalidatordAssetBalanceFromJSON)),
         'total': json['total'] == null ? undefined : json['total'],
         'next': json['next'] == null ? undefined : json['next'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetWalletTokensReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetWalletTokensReplyToJSON(json: any): TgvalidatordGetWalletTokensReply {
@@ -84,6 +103,7 @@ export function TgvalidatordGetWalletTokensReplyFromJSONTyped(json: any, ignoreD
         'balances': value['balances'] == null ? undefined : ((value['balances'] as Array<any>).map(TgvalidatordAssetBalanceToJSON)),
         'total': value['total'],
         'next': value['next'],
+        ...value['additionalProperties'],
     };
 }
 

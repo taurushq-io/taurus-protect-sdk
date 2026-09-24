@@ -13,7 +13,15 @@ from taurus_protect.errors import APIError, IntegrityError, WhitelistError
 from taurus_protect.helpers.whitelist_hash_helper import (
     parse_whitelisted_asset_identity_from_json,
 )
-from taurus_protect.models.pagination import Pagination
+from taurus_protect.models.pagination import (
+    MAX_PAGE_SIZE,
+    PLUS_LIMIT,
+    Pagination,
+    offset_pagination,
+    offset_query,
+    resolve_offset,
+    resolve_page_size,
+)
 from taurus_protect.models.whitelisted_address import (
     SignedContractAddress,
     WhitelistedAsset,
@@ -130,58 +138,47 @@ class WhitelistedAssetService(BaseService):
         self,
         blockchain: Optional[str] = None,
         network: Optional[str] = None,
-        limit: int = 50,
-        offset: int = 0,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
         *,
         ids: Optional[List[str]] = None,
         include_for_approval: bool = False,
-    ) -> Tuple[List[WhitelistedAsset], Optional[Pagination]]:
+    ) -> Tuple[List[WhitelistedAsset], Pagination]:
         """
-        List whitelisted assets.
+        List whitelisted assets, one page at a time.
 
         Each asset's integrity is cryptographically verified.
 
         Args:
             blockchain: Filter by blockchain.
             network: Filter by network.
-            limit: Maximum number of assets to return.
-            offset: Offset for pagination.
+            limit: Page size (default 20, max 100).
+            offset: Number of rows to skip; pass ``pagination.next_offset`` to continue.
+            ids: Filter by whitelisted asset IDs.
+            include_for_approval: Also return rows still pending approval.
 
         Returns:
-            Tuple of (assets list, pagination info).
+            Tuple of (assets, pagination). A page can be short and still not be the
+            last: rows the server skips keep their slot, so follow ``has_more``.
 
         Raises:
+            ValueError: If limit or offset are invalid.
             IntegrityError: If verification fails for any asset.
             WhitelistError: If signature thresholds are not met.
             APIError: If the API call fails.
         """
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
+        page_size = resolve_page_size(limit, "limit")
+        start = resolve_offset(offset)
 
         try:
             reply = self._api.whitelist_service_get_whitelisted_contracts(
                 blockchain=blockchain,
                 network=network,
-                limit=str(limit),
-                offset=str(offset),
                 whitelisted_contract_address_ids=ids or None,
                 include_for_approval=include_for_approval or None,
+                **offset_query(page_size, start),
             )
-
-            assets: List[WhitelistedAsset] = []
-            if reply.result:
-                for dto in reply.result:
-                    asset = self._map_asset_from_dto(dto)
-                    assets.append(self._verified_asset(asset, dto=dto))
-
-            pagination = self._extract_pagination(
-                getattr(reply, "total_items", None),
-                offset,
-                limit,
-            )
-            return assets, pagination
+            return self._verified_page(reply, page_size, start)
         except Exception as e:
             # See above: funnel on the SDK taxonomy, and never let IntegrityError or
             # WhitelistError be remapped to a retryable ServerError(500).
@@ -192,9 +189,9 @@ class WhitelistedAssetService(BaseService):
     def list_for_approval(
         self,
         ids: Optional[List[str]] = None,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> Tuple[List[WhitelistedAsset], Optional[Pagination]]:
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> Tuple[List[WhitelistedAsset], Pagination]:
         """
         List whitelisted assets awaiting approval, verified as in list().
 
@@ -204,41 +201,27 @@ class WhitelistedAssetService(BaseService):
 
         Args:
             ids: Filter by specific whitelisted asset IDs.
-            limit: Maximum number of assets to return.
-            offset: Offset for pagination.
+            limit: Page size (default 20, max 100).
+            offset: Number of rows to skip; pass ``pagination.next_offset`` to continue.
 
         Returns:
-            Tuple of (assets list, pagination info).
+            Tuple of (assets, pagination), paged as ``list`` is.
 
         Raises:
+            ValueError: If limit or offset are invalid.
             IntegrityError: If verification fails for any asset.
             WhitelistError: If signature thresholds are not met.
             APIError: If the API call fails.
         """
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
+        page_size = resolve_page_size(limit, "limit")
+        start = resolve_offset(offset)
 
         try:
             reply = self._api.whitelist_service_get_whitelisted_contracts_for_approval(
-                ids=ids,
-                limit=str(limit),
-                offset=str(offset),
+                ids=ids or None,
+                **offset_query(page_size, start),
             )
-
-            assets: List[WhitelistedAsset] = []
-            if reply.result:
-                for dto in reply.result:
-                    asset = self._map_asset_from_dto(dto)
-                    assets.append(self._verified_asset(asset, dto=dto))
-
-            pagination = self._extract_pagination(
-                getattr(reply, "total_items", None),
-                offset,
-                limit,
-            )
-            return assets, pagination
+            return self._verified_page(reply, page_size, start)
         except Exception as e:
             # See above: funnel on the SDK taxonomy, and never let IntegrityError or
             # WhitelistError be remapped to a retryable ServerError(500).
@@ -305,27 +288,23 @@ class WhitelistedAssetService(BaseService):
                     f"whitelisted asset ID {raw_id!r} is not a valid numeric ID"
                 ) from exc
             if parsed <= 0:
-                raise ValueError(
-                    f"whitelisted asset ID {raw_id!r} must be a positive integer"
-                )
+                raise ValueError(f"whitelisted asset ID {raw_id!r} must be a positive integer")
             ids.append(parsed)
 
         # Sorted numerically, as the request-approval path does, so the signed order is
         # independent of the order the caller passed.
         sorted_ids = sorted(ids)
 
-        # ONE id-filtered page through the verifying list path, not one GET per id. The
-        # list path verifies every row and fetches the rules container once per call, so
-        # a 50-id approval costs one round trip and one container fetch instead of fifty
-        # of each. include_for_approval is required: the rows being approved are pending,
-        # so the default list does not return them.
+        # Id-filtered pages through the verifying list path, not one GET per id: a page
+        # holds at most MAX_PAGE_SIZE ids. include_for_approval is required: the rows
+        # being approved are pending, so the default list does not return them.
         id_strings = [str(i) for i in sorted_ids]
+        verified: List[WhitelistedAsset] = []
         try:
-            verified, _ = self.list(
-                limit=len(id_strings),
-                ids=id_strings,
-                include_for_approval=True,
-            )
+            for start in range(0, len(id_strings), MAX_PAGE_SIZE):
+                chunk = id_strings[start : start + MAX_PAGE_SIZE]
+                page, _ = self.list(limit=len(chunk), ids=chunk, include_for_approval=True)
+                verified.extend(page)
         except (APIError, IntegrityError, WhitelistError):
             # The SDK taxonomy propagates unchanged, so a transport failure is not
             # reported as an integrity failure (and stays retryable). Go wraps with %w
@@ -343,13 +322,10 @@ class WhitelistedAssetService(BaseService):
                 # A page that silently omits a row must not become an approval of fewer
                 # rows than the caller asked for.
                 raise IntegrityError(
-                    f"refusing to sign: asset {asset_id} was not returned by the "
-                    "verified read"
+                    f"refusing to sign: asset {asset_id} was not returned by the " "verified read"
                 )
             if asset.metadata is None or not asset.metadata.hash:
-                raise IntegrityError(
-                    f"refusing to sign: asset {asset_id} has no metadata hash"
-                )
+                raise IntegrityError(f"refusing to sign: asset {asset_id} has no metadata hash")
 
             # The pin. Constant-time because this compares hash material, matching
             # approve_rules_proposal's use of hmac.compare_digest on its container pin.
@@ -387,6 +363,21 @@ class WhitelistedAssetService(BaseService):
             if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
                 raise
             raise self._handle_error(e) from e
+
+    def _verified_page(
+        self, reply: Any, page_size: int, start: int
+    ) -> Tuple[List[WhitelistedAsset], Pagination]:
+        """Verify every row of one page (strict: any failure raises) and build its window."""
+        rows = reply.result or []
+        assets = [self._verified_asset(self._map_asset_from_dto(dto), dto=dto) for dto in rows]
+        pagination = offset_pagination(
+            PLUS_LIMIT,
+            limit=page_size,
+            offset=start,
+            served_rows=len(rows),
+            total_items=reply.total_items,
+        )
+        return assets, pagination
 
     def _verified_asset(
         self,
@@ -436,12 +427,8 @@ class WhitelistedAssetService(BaseService):
         # Pass DTO blockchain/network for rules lookup.
         # This matches Java SDK behavior where the envelope's DTO fields
         # (not the verified payload fields) are used to locate governance rules.
-        dto_blockchain = (
-            getattr(dto, "blockchain", None) if dto else None
-        )
-        dto_network = (
-            getattr(dto, "network", None) if dto else None
-        )
+        dto_blockchain = getattr(dto, "blockchain", None) if dto else None
+        dto_network = getattr(dto, "network", None) if dto else None
 
         result = self._verifier.verify_whitelisted_asset(
             asset,

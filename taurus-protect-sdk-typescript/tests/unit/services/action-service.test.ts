@@ -32,8 +32,8 @@ describe('ActionService', () => {
       } as never);
 
       const actions = await service.list();
-      expect(actions).toBeDefined();
-      expect(actions.length).toBeGreaterThanOrEqual(0);
+      expect(actions.items).toHaveLength(2);
+      expect(actions.items[0].id).toBe('action-1');
     });
 
     it('should pass options to API', async () => {
@@ -41,12 +41,28 @@ describe('ActionService', () => {
         result: [],
       } as never);
 
-      await service.list({ limit: '10', offset: '5', ids: ['action-1'] });
+      await service.list({ limit: 10, offset: 5, ids: ['action-1'] });
 
       expect(mockApi.actionServiceGetActions).toHaveBeenCalledWith({
         limit: '10',
         offset: '5',
         ids: ['action-1'],
+      });
+    });
+
+    it('should carry the server total in the pagination', async () => {
+      mockApi.actionServiceGetActions.mockResolvedValue({
+        result: [{ id: 'action-1' }],
+        totalItems: '3',
+      } as never);
+
+      const actions = await service.list({ limit: 1 });
+      expect(actions.pagination).toEqual({
+        limit: 1,
+        offset: 0,
+        totalItems: 3,
+        nextOffset: 1,
+        hasMore: true,
       });
     });
 
@@ -56,7 +72,8 @@ describe('ActionService', () => {
       } as never);
 
       const actions = await service.list();
-      expect(actions).toHaveLength(0);
+      expect(actions.items).toHaveLength(0);
+      expect(actions.pagination.hasMore).toBe(false);
     });
 
     it('should work without options', async () => {
@@ -66,8 +83,9 @@ describe('ActionService', () => {
 
       const actions = await service.list();
       expect(actions).toBeDefined();
+      // The default page size is always sent; an offset of 0 is not.
       expect(mockApi.actionServiceGetActions).toHaveBeenCalledWith({
-        limit: undefined,
+        limit: '20',
         offset: undefined,
         ids: undefined,
       });

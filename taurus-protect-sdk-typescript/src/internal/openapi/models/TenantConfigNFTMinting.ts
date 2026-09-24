@@ -31,7 +31,16 @@ export interface TenantConfigNFTMinting {
      * @memberof TenantConfigNFTMinting
      */
     publicBaseURL?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TenantConfigNFTMinting
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TenantConfigNFTMintingWireKeys: ReadonlySet<string> = new Set(['enabled', 'publicBaseURL']);
 
 /**
  * Check if a given object implements the TenantConfigNFTMinting interface.
@@ -48,11 +57,21 @@ export function TenantConfigNFTMintingFromJSONTyped(json: any, ignoreDiscriminat
     if (json == null) {
         return json;
     }
-    return {
+    const result: TenantConfigNFTMinting = {
         
         'enabled': json['enabled'] == null ? undefined : json['enabled'],
         'publicBaseURL': json['publicBaseURL'] == null ? undefined : json['publicBaseURL'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TenantConfigNFTMintingWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TenantConfigNFTMintingToJSON(json: any): TenantConfigNFTMinting {
@@ -68,6 +87,7 @@ export function TenantConfigNFTMintingFromJSONTyped(json: any, ignoreDiscriminat
         
         'enabled': value['enabled'],
         'publicBaseURL': value['publicBaseURL'],
+        ...value['additionalProperties'],
     };
 }
 

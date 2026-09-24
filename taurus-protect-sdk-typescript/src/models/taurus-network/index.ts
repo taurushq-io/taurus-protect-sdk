@@ -22,6 +22,7 @@ export {
   ApprovePledgeActionsRequest,
   CreatePledgeRequest,
   InitiateWithdrawPledgeRequest,
+  ListPledgeActionsForApprovalOptions,
   ListPledgeActionsOptions,
   ListPledgesOptions,
   ListPledgeWithdrawalsOptions,
@@ -58,6 +59,7 @@ export {
   LendingCollateralRequirement,
   LendingCurrencyInfo,
   LendingOffer,
+  ListLendingAgreementsForApprovalOptions,
   ListLendingAgreementsOptions,
   ListLendingOffersOptions,
   UpdateLendingOfferRequest,
@@ -67,6 +69,7 @@ export {
 export {
   AcceptSettlementRequest,
   CreateSettlementRequest,
+  ListSettlementsForApprovalOptions,
   ListSettlementsOptions,
   RejectSettlementRequest,
   Settlement,

@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -25,6 +24,7 @@ type TaurusNetworkServiceInitiateWithdrawPledgeBody struct {
 	DestinationSharedAddressID *string `json:"destinationSharedAddressID,omitempty"`
 	// numeric; Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)
 	Amount string `json:"amount"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TaurusNetworkServiceInitiateWithdrawPledgeBody TaurusNetworkServiceInitiateWithdrawPledgeBody
@@ -117,6 +117,11 @@ func (o TaurusNetworkServiceInitiateWithdrawPledgeBody) ToMap() (map[string]inte
 		toSerialize["destinationSharedAddressID"] = o.DestinationSharedAddressID
 	}
 	toSerialize["amount"] = o.Amount
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -144,15 +149,21 @@ func (o *TaurusNetworkServiceInitiateWithdrawPledgeBody) UnmarshalJSON(data []by
 
 	varTaurusNetworkServiceInitiateWithdrawPledgeBody := _TaurusNetworkServiceInitiateWithdrawPledgeBody{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTaurusNetworkServiceInitiateWithdrawPledgeBody)
+	err = json.Unmarshal(data, &varTaurusNetworkServiceInitiateWithdrawPledgeBody)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TaurusNetworkServiceInitiateWithdrawPledgeBody(varTaurusNetworkServiceInitiateWithdrawPledgeBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "destinationSharedAddressID")
+		delete(additionalProperties, "amount")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

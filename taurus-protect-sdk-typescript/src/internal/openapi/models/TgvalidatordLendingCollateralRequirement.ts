@@ -33,7 +33,16 @@ export interface TgvalidatordLendingCollateralRequirement {
      * @memberof TgvalidatordLendingCollateralRequirement
      */
     acceptedCurrencies?: Array<TgvalidatordCurrencyCollateralRequirement>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordLendingCollateralRequirement
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordLendingCollateralRequirementWireKeys: ReadonlySet<string> = new Set(['acceptedCurrencies']);
 
 /**
  * Check if a given object implements the TgvalidatordLendingCollateralRequirement interface.
@@ -50,10 +59,20 @@ export function TgvalidatordLendingCollateralRequirementFromJSONTyped(json: any,
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordLendingCollateralRequirement = {
         
         'acceptedCurrencies': json['acceptedCurrencies'] == null ? undefined : ((json['acceptedCurrencies'] as Array<any>).map(TgvalidatordCurrencyCollateralRequirementFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordLendingCollateralRequirementWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordLendingCollateralRequirementToJSON(json: any): TgvalidatordLendingCollateralRequirement {
@@ -68,6 +87,7 @@ export function TgvalidatordLendingCollateralRequirementFromJSONTyped(json: any,
     return {
         
         'acceptedCurrencies': value['acceptedCurrencies'] == null ? undefined : ((value['acceptedCurrencies'] as Array<any>).map(TgvalidatordCurrencyCollateralRequirementToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

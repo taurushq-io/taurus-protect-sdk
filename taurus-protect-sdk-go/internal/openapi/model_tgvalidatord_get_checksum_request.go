@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordGetChecksumRequest{}
 // TgvalidatordGetChecksumRequest struct for TgvalidatordGetChecksumRequest
 type TgvalidatordGetChecksumRequest struct {
 	Data *string `json:"data,omitempty" validate:"regexp=^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=)?$"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetChecksumRequest TgvalidatordGetChecksumRequest
 
 // NewTgvalidatordGetChecksumRequest instantiates a new TgvalidatordGetChecksumRequest object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordGetChecksumRequest) ToMap() (map[string]interface{}, error) 
 	if !IsNil(o.Data) {
 		toSerialize["data"] = o.Data
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetChecksumRequest) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetChecksumRequest := _TgvalidatordGetChecksumRequest{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetChecksumRequest)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetChecksumRequest(varTgvalidatordGetChecksumRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "data")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetChecksumRequest struct {

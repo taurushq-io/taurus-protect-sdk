@@ -89,7 +89,16 @@ export interface TgvalidatordGetAssetAddressesRequest {
      * @memberof TgvalidatordGetAssetAddressesRequest
      */
     addresses?: Array<string>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetAssetAddressesRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetAssetAddressesRequestWireKeys: ReadonlySet<string> = new Set(['asset', 'limit', 'cursor', 'sorting', 'requestCursor', 'walletId', 'addressId', 'addresses']);
 
 /**
  * Check if a given object implements the TgvalidatordGetAssetAddressesRequest interface.
@@ -107,7 +116,7 @@ export function TgvalidatordGetAssetAddressesRequestFromJSONTyped(json: any, ign
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetAssetAddressesRequest = {
         
         'asset': TgvalidatordAssetFromJSON(json['asset']),
         'limit': json['limit'] == null ? undefined : json['limit'],
@@ -118,6 +127,16 @@ export function TgvalidatordGetAssetAddressesRequestFromJSONTyped(json: any, ign
         'addressId': json['addressId'] == null ? undefined : json['addressId'],
         'addresses': json['addresses'] == null ? undefined : json['addresses'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetAssetAddressesRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetAssetAddressesRequestToJSON(json: any): TgvalidatordGetAssetAddressesRequest {
@@ -139,6 +158,7 @@ export function TgvalidatordGetAssetAddressesRequestFromJSONTyped(json: any, ign
         'walletId': value['walletId'],
         'addressId': value['addressId'],
         'addresses': value['addresses'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -23,7 +23,10 @@ type TgvalidatordInitiateWithdrawPledgeReply struct {
 	PledgeWithdrawalID *string `json:"pledgeWithdrawalID,omitempty"`
 	// The ID of the pledge action to be approved to finalize the withdrawal creation.
 	PledgeActionID *string `json:"pledgeActionID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordInitiateWithdrawPledgeReply TgvalidatordInitiateWithdrawPledgeReply
 
 // NewTgvalidatordInitiateWithdrawPledgeReply instantiates a new TgvalidatordInitiateWithdrawPledgeReply object
 // This constructor will assign default values to properties that have it defined,
@@ -122,7 +125,34 @@ func (o TgvalidatordInitiateWithdrawPledgeReply) ToMap() (map[string]interface{}
 	if !IsNil(o.PledgeActionID) {
 		toSerialize["pledgeActionID"] = o.PledgeActionID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordInitiateWithdrawPledgeReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordInitiateWithdrawPledgeReply := _TgvalidatordInitiateWithdrawPledgeReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordInitiateWithdrawPledgeReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordInitiateWithdrawPledgeReply(varTgvalidatordInitiateWithdrawPledgeReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "pledgeWithdrawalID")
+		delete(additionalProperties, "pledgeActionID")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordInitiateWithdrawPledgeReply struct {

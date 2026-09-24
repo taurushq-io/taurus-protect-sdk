@@ -25,17 +25,23 @@ import com.google.gson.stream.JsonWriter;
 
 /**
  * Gets or Sets WorkflowActionResultResultType
+ * <p>
+ * An open set of values: a value this client was not generated with is kept as-is, so
+ * {@link #fromValue} never throws and a new server value cannot fail a whole decode.
  */
 @JsonAdapter(WorkflowActionResultResultType.Adapter.class)
-public enum WorkflowActionResultResultType {
+public final class WorkflowActionResultResultType {
   
-  SUCCESS("success"),
+  public static final WorkflowActionResultResultType SUCCESS = new WorkflowActionResultResultType("success");
   
-  ERROR("error");
+  public static final WorkflowActionResultResultType ERROR = new WorkflowActionResultResultType("error");
+  
 
-  private String value;
+  private static final WorkflowActionResultResultType[] knownValues = { SUCCESS, ERROR };
 
-  WorkflowActionResultResultType(String value) {
+  private final String value;
+
+  private WorkflowActionResultResultType(String value) {
     this.value = value;
   }
 
@@ -43,18 +49,53 @@ public enum WorkflowActionResultResultType {
     return value;
   }
 
+  /**
+   * Returns the values this client was generated with.
+   *
+   * @return a new array of the known values
+   */
+  public static WorkflowActionResultResultType[] values() {
+    return knownValues.clone();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    return Objects.equals(value, ((WorkflowActionResultResultType) o).value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(value);
+  }
+
   @Override
   public String toString() {
     return String.valueOf(value);
   }
 
+  /**
+   * Returns the known constant for a value, or a new instance carrying a value this client
+   * does not know. Never throws.
+   *
+   * @param value the wire value
+   * @return the matching instance, or null for a null value
+   */
   public static WorkflowActionResultResultType fromValue(String value) {
-    for (WorkflowActionResultResultType b : WorkflowActionResultResultType.values()) {
+    if (value == null) {
+      return null;
+    }
+    for (WorkflowActionResultResultType b : knownValues) {
       if (b.value.equals(value)) {
         return b;
       }
     }
-    throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    return new WorkflowActionResultResultType(value);
   }
 
   public static class Adapter extends TypeAdapter<WorkflowActionResultResultType> {

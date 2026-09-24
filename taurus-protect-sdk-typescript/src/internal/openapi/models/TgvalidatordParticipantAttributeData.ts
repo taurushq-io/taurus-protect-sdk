@@ -49,7 +49,16 @@ export interface TgvalidatordParticipantAttributeData {
      * @memberof TgvalidatordParticipantAttributeData
      */
     subtype?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordParticipantAttributeData
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordParticipantAttributeDataWireKeys: ReadonlySet<string> = new Set(['key', 'value', 'contentType', 'type', 'subtype']);
 
 /**
  * Check if a given object implements the TgvalidatordParticipantAttributeData interface.
@@ -66,7 +75,7 @@ export function TgvalidatordParticipantAttributeDataFromJSONTyped(json: any, ign
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordParticipantAttributeData = {
         
         'key': json['key'] == null ? undefined : json['key'],
         'value': json['value'] == null ? undefined : json['value'],
@@ -74,6 +83,16 @@ export function TgvalidatordParticipantAttributeDataFromJSONTyped(json: any, ign
         'type': json['type'] == null ? undefined : json['type'],
         'subtype': json['subtype'] == null ? undefined : json['subtype'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordParticipantAttributeDataWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordParticipantAttributeDataToJSON(json: any): TgvalidatordParticipantAttributeData {
@@ -92,6 +111,7 @@ export function TgvalidatordParticipantAttributeDataFromJSONTyped(json: any, ign
         'contentType': value['contentType'],
         'type': value['type'],
         'subtype': value['subtype'],
+        ...value['additionalProperties'],
     };
 }
 

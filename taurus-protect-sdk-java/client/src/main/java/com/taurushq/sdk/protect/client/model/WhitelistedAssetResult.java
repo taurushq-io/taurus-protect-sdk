@@ -9,8 +9,7 @@ import java.util.Map;
 /**
  * Represents a paginated result of verified whitelisted asset envelopes.
  * <p>
- * The list-returning overloads on the service carry no page total, so a caller could not
- * tell a full page from the last one.
+ * Every list method on the service returns this, with the page's {@link OffsetPagination}.
  *
  * @see SignedWhitelistedAssetEnvelope
  */
@@ -22,9 +21,9 @@ public class WhitelistedAssetResult {
     private List<SignedWhitelistedAssetEnvelope> assets;
 
     /**
-     * Total number of items matching the query.
+     * The page's pagination.
      */
-    private long totalItems;
+    private OffsetPagination pagination;
 
     /**
      * Gets the verified asset envelopes.
@@ -45,34 +44,23 @@ public class WhitelistedAssetResult {
     }
 
     /**
-     * Gets the total number of items.
+     * Gets the page's pagination: limit and offset sent, total, next offset, has-more.
+     * Skipped rows keep their SQL slot on this endpoint, so a short page is not the end:
+     * continue while {@code hasMore()}.
      *
-     * @return the total items count
+     * @return the pagination, never null on a result returned by the service
      */
-    public long getTotalItems() {
-        return totalItems;
+    public OffsetPagination getPagination() {
+        return pagination;
     }
 
     /**
-     * Sets the total number of items.
+     * Sets the page's pagination.
      *
-     * @param totalItems the total items count to set
+     * @param pagination the pagination
      */
-    public void setTotalItems(long totalItems) {
-        this.totalItems = totalItems;
-    }
-
-    /**
-     * Checks whether more results exist beyond this page.
-     * <p>
-     * Overflow-safe: currentOffset + pageSize can wrap on caller-supplied values.
-     *
-     * @param currentOffset the current offset
-     * @param pageSize      the page size
-     * @return true if more results are available
-     */
-    public boolean hasMore(int currentOffset, int pageSize) {
-        return totalItems > currentOffset && totalItems - currentOffset > pageSize;
+    public void setPagination(final OffsetPagination pagination) {
+        this.pagination = pagination;
     }
 
     /**

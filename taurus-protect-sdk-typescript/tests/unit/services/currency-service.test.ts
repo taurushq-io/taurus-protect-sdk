@@ -26,20 +26,19 @@ describe('CurrencyService', () => {
   describe('list', () => {
     it('should return currencies', async () => {
       mockApi.walletServiceGetCurrencies.mockResolvedValue({
-        currencies: [
+        result: [
           { id: 'eth', symbol: 'ETH', name: 'Ethereum', decimals: '18', blockchain: 'ETH', network: 'mainnet' },
           { id: 'btc', symbol: 'BTC', name: 'Bitcoin', decimals: '8', blockchain: 'BTC', network: 'mainnet' },
         ],
       } as never);
 
       const currencies = await service.list();
-      expect(currencies).toBeDefined();
-      expect(currencies.length).toBeGreaterThanOrEqual(0);
+      expect(currencies.map((c) => c.symbol)).toEqual(['ETH', 'BTC']);
     });
 
     it('should pass filter options to API', async () => {
       mockApi.walletServiceGetCurrencies.mockResolvedValue({
-        currencies: [],
+        result: [],
       } as never);
 
       await service.list({ showDisabled: true, includeLogo: true });
@@ -52,7 +51,7 @@ describe('CurrencyService', () => {
 
     it('should handle empty response', async () => {
       mockApi.walletServiceGetCurrencies.mockResolvedValue({
-        currencies: [],
+        result: [],
       } as never);
 
       const currencies = await service.list();
@@ -72,7 +71,7 @@ describe('CurrencyService', () => {
 
     it('should throw NotFoundError when currency is not found', async () => {
       mockApi.walletServiceGetCurrencies.mockResolvedValue({
-        currencies: [
+        result: [
           { id: 'eth', symbol: 'ETH', name: 'Ethereum' },
         ],
       } as never);
@@ -82,7 +81,7 @@ describe('CurrencyService', () => {
 
     it('should return currency when found', async () => {
       mockApi.walletServiceGetCurrencies.mockResolvedValue({
-        currencies: [
+        result: [
           { id: 'eth', symbol: 'ETH', name: 'Ethereum', decimals: '18' },
           { id: 'btc', symbol: 'BTC', name: 'Bitcoin', decimals: '8' },
         ],
@@ -116,7 +115,7 @@ describe('CurrencyService', () => {
 
     it('should throw NotFoundError when currency is not found', async () => {
       mockApi.walletServiceGetCurrency.mockResolvedValue({
-        currency: undefined,
+        result: undefined,
       } as never);
 
       await expect(
@@ -126,7 +125,7 @@ describe('CurrencyService', () => {
 
     it('should return currency for valid blockchain and network', async () => {
       mockApi.walletServiceGetCurrency.mockResolvedValue({
-        currency: {
+        result: {
           id: 'eth-mainnet',
           symbol: 'ETH',
           name: 'Ethereum',
@@ -153,7 +152,7 @@ describe('CurrencyService', () => {
 
     it('should pass contractAddress and tokenId options', async () => {
       mockApi.walletServiceGetCurrency.mockResolvedValue({
-        currency: {
+        result: {
           id: 'usdc',
           symbol: 'USDC',
           name: 'USD Coin',
@@ -177,27 +176,44 @@ describe('CurrencyService', () => {
   });
 
   describe('getBaseCurrency', () => {
-    it('should return base currency', async () => {
-      mockApi.walletServiceGetBaseCurrency.mockResolvedValue({
-        currency: {
-          id: 'usd',
-          symbol: 'USD',
-          name: 'US Dollar',
-        },
+    it('should resolve the currency the reply names', async () => {
+      // The reply carries the base currency's id, not the currency itself.
+      mockApi.walletServiceGetBaseCurrency.mockResolvedValue({ result: 'usd' } as never);
+      mockApi.walletServiceGetCurrencies.mockResolvedValue({
+        result: [
+          { id: 'eth', symbol: 'ETH', name: 'Ethereum' },
+          { id: 'usd', symbol: 'USD', name: 'US Dollar' },
+        ],
       } as never);
 
       const currency = await service.getBaseCurrency();
-      expect(currency).toBeDefined();
       expect(currency.symbol).toBe('USD');
+      expect(mockApi.walletServiceGetCurrencies).toHaveBeenCalledWith(
+        expect.objectContaining({ showDisabled: true })
+      );
+    });
+
+    it('should resolve a base currency named by its symbol', async () => {
+      mockApi.walletServiceGetBaseCurrency.mockResolvedValue({ result: 'CHF' } as never);
+      mockApi.walletServiceGetCurrencies.mockResolvedValue({
+        result: [{ id: 'chf-id', symbol: 'CHF', name: 'Swiss Franc' }],
+      } as never);
+
+      await expect(service.getBaseCurrency()).resolves.toMatchObject({ id: 'chf-id' });
     });
 
     it('should throw NotFoundError when no base currency is configured', async () => {
-      mockApi.walletServiceGetBaseCurrency.mockResolvedValue({
-        currency: undefined,
-      } as never);
+      mockApi.walletServiceGetBaseCurrency.mockResolvedValue({} as never);
 
       await expect(service.getBaseCurrency()).rejects.toThrow(NotFoundError);
       await expect(service.getBaseCurrency()).rejects.toThrow('Base currency not configured');
+    });
+
+    it('should throw NotFoundError when the named currency is unknown', async () => {
+      mockApi.walletServiceGetBaseCurrency.mockResolvedValue({ result: 'XYZ' } as never);
+      mockApi.walletServiceGetCurrencies.mockResolvedValue({ result: [] } as never);
+
+      await expect(service.getBaseCurrency()).rejects.toThrow("Base currency 'XYZ' not found");
     });
   });
 });

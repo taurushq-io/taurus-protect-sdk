@@ -33,7 +33,16 @@ export interface WalletServiceCreateAddressAttributesBody {
      * @memberof WalletServiceCreateAddressAttributesBody
      */
     attributes?: Array<TgvalidatordCreateAddressAttributeRequest>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof WalletServiceCreateAddressAttributesBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const WalletServiceCreateAddressAttributesBodyWireKeys: ReadonlySet<string> = new Set(['attributes']);
 
 /**
  * Check if a given object implements the WalletServiceCreateAddressAttributesBody interface.
@@ -50,10 +59,20 @@ export function WalletServiceCreateAddressAttributesBodyFromJSONTyped(json: any,
     if (json == null) {
         return json;
     }
-    return {
+    const result: WalletServiceCreateAddressAttributesBody = {
         
         'attributes': json['attributes'] == null ? undefined : ((json['attributes'] as Array<any>).map(TgvalidatordCreateAddressAttributeRequestFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!WalletServiceCreateAddressAttributesBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function WalletServiceCreateAddressAttributesBodyToJSON(json: any): WalletServiceCreateAddressAttributesBody {
@@ -68,6 +87,7 @@ export function WalletServiceCreateAddressAttributesBodyFromJSONTyped(json: any,
     return {
         
         'attributes': value['attributes'] == null ? undefined : ((value['attributes'] as Array<any>).map(TgvalidatordCreateAddressAttributeRequestToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

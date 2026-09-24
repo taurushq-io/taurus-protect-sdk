@@ -112,7 +112,16 @@ export interface TgvalidatordCreateOutgoingDeployContractRequestRequest {
      * @memberof TgvalidatordCreateOutgoingDeployContractRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingDeployContractRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingDeployContractRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'bytecode', 'constructor', 'generateWhitelistedAddress', 'gasLimit', 'gasPriceLimit', 'comment', 'contractType', 'feePayerId', 'feeLimit', 'contract', 'transactionReference', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingDeployContractRequestRequest interface.
@@ -131,7 +140,7 @@ export function TgvalidatordCreateOutgoingDeployContractRequestRequestFromJSONTy
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingDeployContractRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'bytecode': json['bytecode'] == null ? undefined : json['bytecode'],
@@ -147,6 +156,16 @@ export function TgvalidatordCreateOutgoingDeployContractRequestRequestFromJSONTy
         'transactionReference': json['transactionReference'] == null ? undefined : json['transactionReference'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingDeployContractRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingDeployContractRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingDeployContractRequestRequest {
@@ -173,6 +192,7 @@ export function TgvalidatordCreateOutgoingDeployContractRequestRequestFromJSONTy
         'contract': TgvalidatordGenericCreateContractToJSON(value['contract']),
         'transactionReference': value['transactionReference'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

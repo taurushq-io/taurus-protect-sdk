@@ -5,6 +5,7 @@ from taurus_protect._internal.openapi.api.actions_api import ActionsApi
 from taurus_protect._internal.openapi.api.address_whitelisting_api import AddressWhitelistingApi
 from taurus_protect._internal.openapi.api.addresses_api import AddressesApi
 from taurus_protect._internal.openapi.api.air_gap_api import AirGapApi
+from taurus_protect._internal.openapi.api.asset_v2_api import AssetV2Api
 from taurus_protect._internal.openapi.api.assets_api import AssetsApi
 from taurus_protect._internal.openapi.api.audit_api import AuditApi
 from taurus_protect._internal.openapi.api.authentication_api import AuthenticationApi
@@ -18,6 +19,7 @@ from taurus_protect._internal.openapi.api.changes_api import ChangesApi
 from taurus_protect._internal.openapi.api.config_api import ConfigApi
 from taurus_protect._internal.openapi.api.contract_whitelisting_api import ContractWhitelistingApi
 from taurus_protect._internal.openapi.api.currencies_api import CurrenciesApi
+from taurus_protect._internal.openapi.api.earn_api import EarnApi
 from taurus_protect._internal.openapi.api.exchange_api import ExchangeApi
 from taurus_protect._internal.openapi.api.fee_api import FeeApi
 from taurus_protect._internal.openapi.api.fee_payers_api import FeePayersApi

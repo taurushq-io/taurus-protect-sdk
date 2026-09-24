@@ -22,7 +22,10 @@ type ActionTask struct {
 	Kind *string `json:"kind,omitempty"`
 	Transfer *TaskTransfer `json:"transfer,omitempty"`
 	Notification *TaskNotification `json:"notification,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _ActionTask ActionTask
 
 // NewActionTask instantiates a new ActionTask object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o ActionTask) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Notification) {
 		toSerialize["notification"] = o.Notification
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *ActionTask) UnmarshalJSON(data []byte) (err error) {
+	varActionTask := _ActionTask{}
+
+	err = json.Unmarshal(data, &varActionTask)
+
+	if err != nil {
+		return err
+	}
+
+	*o = ActionTask(varActionTask)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "kind")
+		delete(additionalProperties, "transfer")
+		delete(additionalProperties, "notification")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableActionTask struct {

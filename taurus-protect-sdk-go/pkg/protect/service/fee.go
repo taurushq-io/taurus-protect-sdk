@@ -22,24 +22,8 @@ func NewFeeService(client *openapi.APIClient) *FeeService {
 	}
 }
 
-// GetFees retrieves a list of fee estimates.
-//
-// Deprecated: Use GetFeesV2 instead. This endpoint is deprecated and may be removed in a future version.
-func (s *FeeService) GetFees(ctx context.Context) (*model.GetFeesResult, error) {
-	req := s.api.FeeServiceGetFees(ctx)
-
-	resp, httpResp, err := req.Execute()
-	if err != nil {
-		return nil, s.errMapper.MapError(err, httpResp)
-	}
-
-	return &model.GetFeesResult{
-		Fees: mapper.FeesFromDTO(resp.Result),
-	}, nil
-}
-
-// GetFeesV2 retrieves a list of native currency fee estimates.
-// This is the recommended method for getting fee information.
+// GetFeesV2 retrieves the native currency fee estimates (FeeService_GetFeesV2). The deprecated
+// v1 GetFees is not wrapped.
 func (s *FeeService) GetFeesV2(ctx context.Context) (*model.GetFeesV2Result, error) {
 	req := s.api.FeeServiceGetFeesV2(ctx)
 

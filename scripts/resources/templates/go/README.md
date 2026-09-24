@@ -4,7 +4,7 @@ Only the files in this directory override the generator's built-ins. Everything 
 from `../../jars/openapi-generator-cli-7.9.0.jar`, so this directory is deliberately tiny — it is
 not a fork of the template set.
 
-## Why it exists
+## `client.mustache`
 
 `client.mustache` is overridden for one reason: the generated `decode` must reject a 2xx response
 whose typed reply could not be populated.
@@ -24,6 +24,23 @@ The guard is `assertReplyDecoded`. Only the "asked to populate a typed reply and
 an error: `*string`, `*os.File`, `[]byte`, value types and `google.protobuf.Empty` endpoints all
 legitimately accept an empty body.
 
+## `model_enum.mustache`
+
+The generated enum `UnmarshalJSON` rejected any value outside the spec (`"%+v is not a valid X"`),
+so one enum value added on the server failed the whole reply before any SDK code ran. The override
+keeps the raw string instead, and `NewXFromValue` accepts any value; `IsValid` still reports whether
+a value is one of the generated constants.
+
+Unknown *fields* are handled by a flag rather than a template:
+`disallowAdditionalPropertiesIfNotPresent=false` in `scripts/generate-openapi.sh` keeps them in each
+model's `AdditionalProperties`. Without it, every model with a required property decoded with
+`DisallowUnknownFields`, which also applies to the structs nested under it — how a new
+`currency.tokenInfo` field failed every balances read.
+
+Both behaviours are one contract shared by the four SDKs and gated by
+`scripts/resources/decode-tolerance-vectors.json`. `generate-openapi.sh` aborts if a generated
+model still contains `DisallowUnknownFields()` or `is not a valid`.
+
 ## Two places, kept in step
 
 The same change lives in **both**:
@@ -38,13 +55,13 @@ the template means the shipped code is unfixed until someone regenerates. Change
 
 ## On upgrading the generator
 
-This file was extracted from openapi-generator-cli **7.9.0**. If that JAR is upgraded, re-extract
+Both files were extracted from openapi-generator-cli **7.9.0**. If that JAR is upgraded, re-extract
 `go/client.mustache` from the new one and re-apply the `assertReplyDecoded` change, rather than
 keeping this copy — otherwise every unrelated upstream template improvement is silently pinned to
 the 7.9.0 version.
 
 ```bash
 cd scripts/resources/templates/go
-unzip -o -j ../../jars/openapi-generator-cli-<version>.jar "go/client.mustache"
-# then re-apply the decode guard, and diff against internal/openapi/client.go
+unzip -o -j ../../jars/openapi-generator-cli-<version>.jar "go/client.mustache" "go/model_enum.mustache"
+# then re-apply the decode guard and the lenient enum decoder, and diff against internal/openapi/
 ```

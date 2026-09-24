@@ -181,9 +181,9 @@ type ActionTrail struct {
 
 // ListActionsOptions contains options for listing actions.
 type ListActionsOptions struct {
-	// Limit is the maximum number of actions to return.
+	// Limit is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
 	Limit int64
-	// Offset is the number of actions to skip.
+	// Offset is the number of actions to skip; continue with Pagination.NextOffset.
 	Offset int64
 	// IDs filters by specific action IDs.
 	IDs []string
@@ -193,6 +193,6 @@ type ListActionsOptions struct {
 type ListActionsResult struct {
 	// Actions is the list of actions.
 	Actions []*Action `json:"actions"`
-	// TotalItems is the total number of actions available.
-	TotalItems int64 `json:"total_items"`
+	// Pagination is never nil; continue with its NextOffset until HasMore is false.
+	Pagination *Pagination `json:"pagination"`
 }

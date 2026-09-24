@@ -6,24 +6,15 @@
 
 import { NotFoundError, ValidationError } from '../errors';
 import type { WebhookCallsApi } from '../internal/openapi/apis/WebhookCallsApi';
-import { webhookCallFromDto, webhookCallResultFromDto } from '../mappers/webhook-call';
+import { webhookCallFromDto, webhookCallsFromDto } from '../mappers/webhook-call';
+import { buildCursorPage, cursorRequest } from '../models/pagination';
 import type {
   ListWebhookCallsOptions,
   WebhookCall,
-  WebhookCallResponseCursor,
   WebhookCallResult,
-  WebhookCallStatus,
 } from '../models/webhook-call';
 import { BaseService } from './base';
-
-// Re-export types from models for convenience
-export type {
-  ListWebhookCallsOptions,
-  WebhookCall,
-  WebhookCallResponseCursor,
-  WebhookCallResult,
-  WebhookCallStatus,
-};
+import { cursorQuery, scanPages } from './paging';
 
 /**
  * Service for retrieving webhook call history.
@@ -74,15 +65,15 @@ export class WebhookCallService extends BaseService {
    * Returns a paginated list of webhook calls that can be filtered by
    * event ID, webhook ID, or status.
    *
-   * @param options - Optional filtering options
-   * @returns Paginated result containing webhook calls and cursor
-   * @throws {@link ValidationError} If limit is invalid
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
+   * @returns The page of webhook calls and its cursor pagination
+   * @throws {@link ValidationError} If the paging options are invalid
    * @throws {@link APIError} If API request fails
    *
    * @example
    * ```typescript
    * // List recent webhook calls
-   * const result = await webhookCallService.list({ limit: 100 });
+   * const result = await webhookCallService.list({ pageSize: 100 });
    * console.log(`Found ${result.calls.length} calls`);
    *
    * // Filter by webhook
@@ -101,43 +92,39 @@ export class WebhookCallService extends BaseService {
    * });
    *
    * // Paginate through results
-   * let result = await webhookCallService.list({ limit: 50 });
-   * while (result.cursor?.hasNextPage) {
+   * let result = await webhookCallService.list({ pageSize: 50 });
+   * while (result.pagination.hasMore) {
    *   result = await webhookCallService.list({
-   *     limit: 50,
-   *     cursorCurrentPage: result.cursor.nextPage,
-   *     cursorPageRequest: 'NEXT',
+   *     pageSize: 50,
+   *     cursor: result.pagination.nextCursor,
    *   });
    * }
    * ```
    */
   async list(options?: ListWebhookCallsOptions): Promise<WebhookCallResult> {
-    const limit = options?.limit ?? 50;
-
-    if (limit <= 0) {
-      throw new ValidationError('limit must be positive');
-    }
+    const page = cursorRequest(options);
 
     return this.execute(async () => {
       const response = await this.webhookCallsApi.webhookServiceGetWebhookCalls({
         eventID: options?.eventId,
         webhookID: options?.webhookId,
         status: options?.status,
-        cursorPageSize: String(limit),
-        cursorCurrentPage: options?.cursorCurrentPage,
-        cursorPageRequest: options?.cursorPageRequest,
+        ...cursorQuery(page),
         sortOrder: options?.sortOrder,
       });
 
-      return webhookCallResultFromDto(response);
+      return {
+        calls: webhookCallsFromDto(response.calls),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
+      };
     });
   }
 
   /**
    * Gets a webhook call by ID.
    *
-   * Note: This method fetches webhook calls and filters by ID since the API
-   * does not provide a direct get-by-ID endpoint.
+   * The API has no get-by-ID endpoint, so this walks the call list page by page
+   * (100 per page) until the ID shows up.
    *
    * @param callId - The unique webhook call identifier
    * @returns The webhook call
@@ -158,23 +145,22 @@ export class WebhookCallService extends BaseService {
     }
 
     return this.execute(async () => {
-      // Fetch webhook calls - there's no direct get-by-id endpoint,
-      // so we fetch a page and search for the matching ID
-      const response = await this.webhookCallsApi.webhookServiceGetWebhookCalls({
-        cursorPageSize: '100',
-      });
+      // No single-call read exists: walk the list page by page until the id shows up.
+      const dto = await scanPages(
+        async (page) => {
+          const response = await this.webhookCallsApi.webhookServiceGetWebhookCalls(
+            cursorQuery(page)
+          );
+          return { rows: response.calls, cursor: response.cursor };
+        },
+        (row) => row.id === callId
+      );
 
-      const calls = response.calls ?? [];
-      for (const dto of calls) {
-        if (dto.id === callId) {
-          const call = webhookCallFromDto(dto);
-          if (call) {
-            return call;
-          }
-        }
+      const call = webhookCallFromDto(dto);
+      if (!call) {
+        throw new NotFoundError(`Webhook call with id '${callId}' not found`);
       }
-
-      throw new NotFoundError(`Webhook call with id '${callId}' not found`);
+      return call;
     });
   }
 }

@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordInternalVisibilityGroupUser{}
 type TgvalidatordInternalVisibilityGroupUser struct {
 	Id *string `json:"id,omitempty"`
 	ExternalUserId *string `json:"externalUserId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordInternalVisibilityGroupUser TgvalidatordInternalVisibilityGroupUser
 
 // NewTgvalidatordInternalVisibilityGroupUser instantiates a new TgvalidatordInternalVisibilityGroupUser object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordInternalVisibilityGroupUser) ToMap() (map[string]interface{}
 	if !IsNil(o.ExternalUserId) {
 		toSerialize["externalUserId"] = o.ExternalUserId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordInternalVisibilityGroupUser) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordInternalVisibilityGroupUser := _TgvalidatordInternalVisibilityGroupUser{}
+
+	err = json.Unmarshal(data, &varTgvalidatordInternalVisibilityGroupUser)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordInternalVisibilityGroupUser(varTgvalidatordInternalVisibilityGroupUser)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "externalUserId")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordInternalVisibilityGroupUser struct {

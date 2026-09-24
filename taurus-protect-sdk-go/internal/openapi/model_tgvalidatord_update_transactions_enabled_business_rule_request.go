@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordUpdateTransactionsEnabledBusinessRuleRequest
 // TgvalidatordUpdateTransactionsEnabledBusinessRuleRequest struct for TgvalidatordUpdateTransactionsEnabledBusinessRuleRequest
 type TgvalidatordUpdateTransactionsEnabledBusinessRuleRequest struct {
 	Enabled *bool `json:"enabled,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordUpdateTransactionsEnabledBusinessRuleRequest TgvalidatordUpdateTransactionsEnabledBusinessRuleRequest
 
 // NewTgvalidatordUpdateTransactionsEnabledBusinessRuleRequest instantiates a new TgvalidatordUpdateTransactionsEnabledBusinessRuleRequest object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordUpdateTransactionsEnabledBusinessRuleRequest) ToMap() (map[s
 	if !IsNil(o.Enabled) {
 		toSerialize["enabled"] = o.Enabled
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordUpdateTransactionsEnabledBusinessRuleRequest) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordUpdateTransactionsEnabledBusinessRuleRequest := _TgvalidatordUpdateTransactionsEnabledBusinessRuleRequest{}
+
+	err = json.Unmarshal(data, &varTgvalidatordUpdateTransactionsEnabledBusinessRuleRequest)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordUpdateTransactionsEnabledBusinessRuleRequest(varTgvalidatordUpdateTransactionsEnabledBusinessRuleRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "enabled")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordUpdateTransactionsEnabledBusinessRuleRequest struct {

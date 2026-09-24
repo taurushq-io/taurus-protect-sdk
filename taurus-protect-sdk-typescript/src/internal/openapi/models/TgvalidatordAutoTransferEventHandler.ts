@@ -99,7 +99,16 @@ export interface TgvalidatordAutoTransferEventHandler {
      * @memberof TgvalidatordAutoTransferEventHandler
      */
     updatedAt?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordAutoTransferEventHandler
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordAutoTransferEventHandlerWireKeys: ReadonlySet<string> = new Set(['id', 'monitoredWalletId', 'payerAddressId', 'triggerType', 'lastTriggeredAtBlock', 'lastProccessedAtBlock', 'attributes', 'status', 'blockchain', 'network', 'createdAt', 'updatedAt']);
 
 /**
  * Check if a given object implements the TgvalidatordAutoTransferEventHandler interface.
@@ -116,7 +125,7 @@ export function TgvalidatordAutoTransferEventHandlerFromJSONTyped(json: any, ign
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordAutoTransferEventHandler = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'monitoredWalletId': json['monitoredWalletId'] == null ? undefined : json['monitoredWalletId'],
@@ -131,6 +140,16 @@ export function TgvalidatordAutoTransferEventHandlerFromJSONTyped(json: any, ign
         'createdAt': json['createdAt'] == null ? undefined : (new Date(json['createdAt'])),
         'updatedAt': json['updatedAt'] == null ? undefined : (new Date(json['updatedAt'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordAutoTransferEventHandlerWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordAutoTransferEventHandlerToJSON(json: any): TgvalidatordAutoTransferEventHandler {
@@ -156,6 +175,7 @@ export function TgvalidatordAutoTransferEventHandlerFromJSONTyped(json: any, ign
         'network': value['network'],
         'createdAt': value['createdAt'] == null ? undefined : ((value['createdAt']).toISOString()),
         'updatedAt': value['updatedAt'] == null ? undefined : ((value['updatedAt']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

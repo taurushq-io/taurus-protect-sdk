@@ -31,7 +31,16 @@ export interface TgvalidatordApproversGroup {
      * @memberof TgvalidatordApproversGroup
      */
     minimumSignatures?: number;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordApproversGroup
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordApproversGroupWireKeys: ReadonlySet<string> = new Set(['externalGroupID', 'minimumSignatures']);
 
 /**
  * Check if a given object implements the TgvalidatordApproversGroup interface.
@@ -48,11 +57,21 @@ export function TgvalidatordApproversGroupFromJSONTyped(json: any, ignoreDiscrim
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordApproversGroup = {
         
         'externalGroupID': json['externalGroupID'] == null ? undefined : json['externalGroupID'],
         'minimumSignatures': json['minimumSignatures'] == null ? undefined : json['minimumSignatures'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordApproversGroupWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordApproversGroupToJSON(json: any): TgvalidatordApproversGroup {
@@ -68,6 +87,7 @@ export function TgvalidatordApproversGroupFromJSONTyped(json: any, ignoreDiscrim
         
         'externalGroupID': value['externalGroupID'],
         'minimumSignatures': value['minimumSignatures'],
+        ...value['additionalProperties'],
     };
 }
 

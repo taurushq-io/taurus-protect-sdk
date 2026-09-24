@@ -71,7 +71,16 @@ export interface TgvalidatordAsset {
      * @memberof TgvalidatordAsset
      */
     currencyInfo?: TgvalidatordCurrency;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordAsset
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordAssetWireKeys: ReadonlySet<string> = new Set(['currency', 'kind', 'nft', 'unknown', 'currencyInfo']);
 
 /**
  * Check if a given object implements the TgvalidatordAsset interface.
@@ -89,7 +98,7 @@ export function TgvalidatordAssetFromJSONTyped(json: any, ignoreDiscriminator: b
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordAsset = {
         
         'currency': json['currency'],
         'kind': json['kind'] == null ? undefined : json['kind'],
@@ -97,6 +106,16 @@ export function TgvalidatordAssetFromJSONTyped(json: any, ignoreDiscriminator: b
         'unknown': json['unknown'] == null ? undefined : AssetUnknownFromJSON(json['unknown']),
         'currencyInfo': json['currencyInfo'] == null ? undefined : TgvalidatordCurrencyFromJSON(json['currencyInfo']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordAssetWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordAssetToJSON(json: any): TgvalidatordAsset {
@@ -115,6 +134,7 @@ export function TgvalidatordAssetFromJSONTyped(json: any, ignoreDiscriminator: b
         'nft': TgvalidatordAssetNFTToJSON(value['nft']),
         'unknown': AssetUnknownToJSON(value['unknown']),
         'currencyInfo': TgvalidatordCurrencyToJSON(value['currencyInfo']),
+        ...value['additionalProperties'],
     };
 }
 

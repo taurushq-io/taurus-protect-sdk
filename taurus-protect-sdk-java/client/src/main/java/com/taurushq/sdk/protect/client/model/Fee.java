@@ -1,38 +1,40 @@
 package com.taurushq.sdk.protect.client.model;
 
+import java.time.OffsetDateTime;
+
 /**
- * Represents a network fee entry for a blockchain.
- * <p>
- * Fees are represented as key-value pairs where the key is typically
- * the blockchain/currency identifier and the value is the fee amount.
+ * The current network fee of a currency.
  *
- * @see FeeService
+ * @see com.taurushq.sdk.protect.client.service.FeeService
  */
 public class Fee {
 
-    private String key;
+    private String currencyId;
     private String value;
+    private String denom;
+    private Currency currencyInfo;
+    private OffsetDateTime updateDate;
 
     /**
-     * Gets the fee key (blockchain/currency identifier).
+     * Gets the id of the currency the fee applies to.
      *
-     * @return the key
+     * @return the currency id
      */
-    public String getKey() {
-        return key;
+    public String getCurrencyId() {
+        return currencyId;
     }
 
     /**
-     * Sets the fee key.
+     * Sets the currency id.
      *
-     * @param key the key to set
+     * @param currencyId the currency id
      */
-    public void setKey(String key) {
-        this.key = key;
+    public void setCurrencyId(final String currencyId) {
+        this.currencyId = currencyId;
     }
 
     /**
-     * Gets the fee value (amount).
+     * Gets the fee amount.
      *
      * @return the value
      */
@@ -41,11 +43,65 @@ public class Fee {
     }
 
     /**
-     * Sets the fee value.
+     * Sets the fee amount.
      *
-     * @param value the value to set
+     * @param value the value
      */
-    public void setValue(String value) {
+    public void setValue(final String value) {
         this.value = value;
+    }
+
+    /**
+     * Gets the denomination the value is expressed in.
+     *
+     * @return the denomination
+     */
+    public String getDenom() {
+        return denom;
+    }
+
+    /**
+     * Sets the denomination.
+     *
+     * @param denom the denomination
+     */
+    public void setDenom(final String denom) {
+        this.denom = denom;
+    }
+
+    /**
+     * Gets the currency the fee applies to.
+     *
+     * @return the currency, may be null
+     */
+    public Currency getCurrencyInfo() {
+        return currencyInfo;
+    }
+
+    /**
+     * Sets the currency.
+     *
+     * @param currencyInfo the currency
+     */
+    public void setCurrencyInfo(final Currency currencyInfo) {
+        this.currencyInfo = currencyInfo;
+    }
+
+    /**
+     * Gets when the fee was last updated.
+     *
+     * @return the update date
+     */
+    public OffsetDateTime getUpdateDate() {
+        return updateDate;
+    }
+
+    /**
+     * Sets the update date.
+     *
+     * @param updateDate the update date
+     */
+    public void setUpdateDate(final OffsetDateTime updateDate) {
+        this.updateDate = updateDate;
     }
 }

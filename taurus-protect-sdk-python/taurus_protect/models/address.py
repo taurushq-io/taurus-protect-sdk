@@ -92,10 +92,18 @@ class CreateAddressRequest(BaseModel):
 
 
 class ListAddressesOptions(BaseModel):
-    """Options for listing addresses."""
+    """
+    Options for listing addresses. Every field reaches the wire.
+
+    ``limit`` defaults to 20 and may not exceed 100; continue with
+    ``offset=pagination.next_offset``.
+    """
 
     wallet_id: Optional[str] = Field(default=None, description="Filter by wallet ID")
-    limit: int = Field(default=50, ge=1, le=1000, description="Maximum items to return")
-    offset: int = Field(default=0, ge=0, description="Number of items to skip")
+    limit: Optional[int] = Field(default=None, description="Page size (default 20, max 100)")
+    offset: Optional[int] = Field(default=None, description="Number of items to skip")
     query: Optional[str] = Field(default=None, description="Search query")
-    exclude_disabled: bool = Field(default=False, description="Exclude disabled addresses")
+    exclude_disabled: Optional[bool] = Field(
+        default=None,
+        description="True sends includeDisabledAddresses=exclude, False sends include",
+    )

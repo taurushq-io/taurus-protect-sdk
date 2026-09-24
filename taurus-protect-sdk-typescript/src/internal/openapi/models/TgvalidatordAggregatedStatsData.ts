@@ -49,7 +49,16 @@ export interface TgvalidatordAggregatedStatsData {
      * @memberof TgvalidatordAggregatedStatsData
      */
     totalBalanceBaseCurrency?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordAggregatedStatsData
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordAggregatedStatsDataWireKeys: ReadonlySet<string> = new Set(['avgBalancePerAddress', 'addressesCount', 'walletsCount', 'totalBalance', 'totalBalanceBaseCurrency']);
 
 /**
  * Check if a given object implements the TgvalidatordAggregatedStatsData interface.
@@ -66,7 +75,7 @@ export function TgvalidatordAggregatedStatsDataFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordAggregatedStatsData = {
         
         'avgBalancePerAddress': json['avgBalancePerAddress'] == null ? undefined : json['avgBalancePerAddress'],
         'addressesCount': json['addressesCount'] == null ? undefined : json['addressesCount'],
@@ -74,6 +83,16 @@ export function TgvalidatordAggregatedStatsDataFromJSONTyped(json: any, ignoreDi
         'totalBalance': json['totalBalance'] == null ? undefined : json['totalBalance'],
         'totalBalanceBaseCurrency': json['totalBalanceBaseCurrency'] == null ? undefined : json['totalBalanceBaseCurrency'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordAggregatedStatsDataWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordAggregatedStatsDataToJSON(json: any): TgvalidatordAggregatedStatsData {
@@ -92,6 +111,7 @@ export function TgvalidatordAggregatedStatsDataFromJSONTyped(json: any, ignoreDi
         'walletsCount': value['walletsCount'],
         'totalBalance': value['totalBalance'],
         'totalBalanceBaseCurrency': value['totalBalanceBaseCurrency'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -46,7 +46,16 @@ export interface TgvalidatordGetLendingOffersReply {
      * @memberof TgvalidatordGetLendingOffersReply
      */
     cursor?: TgvalidatordResponseCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetLendingOffersReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetLendingOffersReplyWireKeys: ReadonlySet<string> = new Set(['lendingOffers', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetLendingOffersReply interface.
@@ -63,11 +72,21 @@ export function TgvalidatordGetLendingOffersReplyFromJSONTyped(json: any, ignore
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetLendingOffersReply = {
         
         'lendingOffers': json['lendingOffers'] == null ? undefined : ((json['lendingOffers'] as Array<any>).map(TgvalidatordTnLendingOfferFromJSON)),
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetLendingOffersReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetLendingOffersReplyToJSON(json: any): TgvalidatordGetLendingOffersReply {
@@ -83,6 +102,7 @@ export function TgvalidatordGetLendingOffersReplyFromJSONTyped(json: any, ignore
         
         'lendingOffers': value['lendingOffers'] == null ? undefined : ((value['lendingOffers'] as Array<any>).map(TgvalidatordTnLendingOfferToJSON)),
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
+        ...value['additionalProperties'],
     };
 }
 

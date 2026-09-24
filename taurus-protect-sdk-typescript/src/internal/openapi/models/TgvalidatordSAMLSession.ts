@@ -25,7 +25,16 @@ export interface TgvalidatordSAMLSession {
      * @memberof TgvalidatordSAMLSession
      */
     token?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordSAMLSession
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordSAMLSessionWireKeys: ReadonlySet<string> = new Set(['token']);
 
 /**
  * Check if a given object implements the TgvalidatordSAMLSession interface.
@@ -42,10 +51,20 @@ export function TgvalidatordSAMLSessionFromJSONTyped(json: any, ignoreDiscrimina
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordSAMLSession = {
         
         'token': json['token'] == null ? undefined : json['token'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordSAMLSessionWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordSAMLSessionToJSON(json: any): TgvalidatordSAMLSession {
@@ -60,6 +79,7 @@ export function TgvalidatordSAMLSessionFromJSONTyped(json: any, ignoreDiscrimina
     return {
         
         'token': value['token'],
+        ...value['additionalProperties'],
     };
 }
 

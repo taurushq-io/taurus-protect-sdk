@@ -923,6 +923,253 @@ func (a *FiatAPIService) FiatProviderServiceGetFiatProviderCounterpartyAccountsE
 	return localVarReturnValue, localVarHTTPResponse, nil
 }
 
+type ApiFiatProviderServiceGetFiatProviderEntitiesRequest struct {
+	ctx context.Context
+	ApiService *FiatAPIService
+	provider *string
+	label *string
+	sortOrder *string
+	cursorCurrentPage *string
+	cursorPageRequest *string
+	cursorPageSize *string
+}
+
+// Optional. Filter entities by fiat provider. Example: &#39;circle&#39;
+func (r ApiFiatProviderServiceGetFiatProviderEntitiesRequest) Provider(provider string) ApiFiatProviderServiceGetFiatProviderEntitiesRequest {
+	r.provider = &provider
+	return r
+}
+
+// Optional. Filter entities by the label of the fiat provider set in the config
+func (r ApiFiatProviderServiceGetFiatProviderEntitiesRequest) Label(label string) ApiFiatProviderServiceGetFiatProviderEntitiesRequest {
+	r.label = &label
+	return r
+}
+
+// Set this parameter to ASC to get the id sorted in ASC order or DESC to get them in descending order. By default, the order is DESC.
+func (r ApiFiatProviderServiceGetFiatProviderEntitiesRequest) SortOrder(sortOrder string) ApiFiatProviderServiceGetFiatProviderEntitiesRequest {
+	r.sortOrder = &sortOrder
+	return r
+}
+
+// Base64-encoded string representing the current window of data
+func (r ApiFiatProviderServiceGetFiatProviderEntitiesRequest) CursorCurrentPage(cursorCurrentPage string) ApiFiatProviderServiceGetFiatProviderEntitiesRequest {
+	r.cursorCurrentPage = &cursorCurrentPage
+	return r
+}
+
+// The page to request, w.r.t the current page. Can be one of &#x60;FIRST&#x60;, &#x60;PREVIOUS&#x60;, &#x60;NEXT&#x60;, &#x60;LAST&#x60;
+func (r ApiFiatProviderServiceGetFiatProviderEntitiesRequest) CursorPageRequest(cursorPageRequest string) ApiFiatProviderServiceGetFiatProviderEntitiesRequest {
+	r.cursorPageRequest = &cursorPageRequest
+	return r
+}
+
+// The size of the page requested. The handling service should impose a hard limit on this
+func (r ApiFiatProviderServiceGetFiatProviderEntitiesRequest) CursorPageSize(cursorPageSize string) ApiFiatProviderServiceGetFiatProviderEntitiesRequest {
+	r.cursorPageSize = &cursorPageSize
+	return r
+}
+
+func (r ApiFiatProviderServiceGetFiatProviderEntitiesRequest) Execute() (*TgvalidatordGetFiatProviderEntitiesReply, *http.Response, error) {
+	return r.ApiService.FiatProviderServiceGetFiatProviderEntitiesExecute(r)
+}
+
+/*
+FiatProviderServiceGetFiatProviderEntities List fiat provider entities
+
+This endpoint returns a list of fiat provider account entities (Circle wallets / Paxos profiles), optionally filtered by provider and label
+
+ @param ctx context.Context - for authentication, logging, cancellation, deadlines, tracing, etc. Passed from http.Request or context.Background().
+ @return ApiFiatProviderServiceGetFiatProviderEntitiesRequest
+*/
+func (a *FiatAPIService) FiatProviderServiceGetFiatProviderEntities(ctx context.Context) ApiFiatProviderServiceGetFiatProviderEntitiesRequest {
+	return ApiFiatProviderServiceGetFiatProviderEntitiesRequest{
+		ApiService: a,
+		ctx: ctx,
+	}
+}
+
+// Execute executes the request
+//  @return TgvalidatordGetFiatProviderEntitiesReply
+func (a *FiatAPIService) FiatProviderServiceGetFiatProviderEntitiesExecute(r ApiFiatProviderServiceGetFiatProviderEntitiesRequest) (*TgvalidatordGetFiatProviderEntitiesReply, *http.Response, error) {
+	var (
+		localVarHTTPMethod   = http.MethodGet
+		localVarPostBody     interface{}
+		formFiles            []formFile
+		localVarReturnValue  *TgvalidatordGetFiatProviderEntitiesReply
+	)
+
+	localBasePath, err := a.client.cfg.ServerURLWithContext(r.ctx, "FiatAPIService.FiatProviderServiceGetFiatProviderEntities")
+	if err != nil {
+		return localVarReturnValue, nil, &GenericOpenAPIError{error: err.Error()}
+	}
+
+	localVarPath := localBasePath + "/api/rest/v1/fiat_providers/entities"
+
+	localVarHeaderParams := make(map[string]string)
+	localVarQueryParams := url.Values{}
+	localVarFormParams := url.Values{}
+
+	if r.provider != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "provider", r.provider, "", "")
+	}
+	if r.label != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "label", r.label, "", "")
+	}
+	if r.sortOrder != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "sortOrder", r.sortOrder, "", "")
+	}
+	if r.cursorCurrentPage != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "cursor.currentPage", r.cursorCurrentPage, "", "")
+	}
+	if r.cursorPageRequest != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "cursor.pageRequest", r.cursorPageRequest, "", "")
+	}
+	if r.cursorPageSize != nil {
+		parameterAddToHeaderOrQuery(localVarQueryParams, "cursor.pageSize", r.cursorPageSize, "", "")
+	}
+	// to determine the Content-Type header
+	localVarHTTPContentTypes := []string{}
+
+	// set Content-Type header
+	localVarHTTPContentType := selectHeaderContentType(localVarHTTPContentTypes)
+	if localVarHTTPContentType != "" {
+		localVarHeaderParams["Content-Type"] = localVarHTTPContentType
+	}
+
+	// to determine the Accept header
+	localVarHTTPHeaderAccepts := []string{"application/json"}
+
+	// set Accept header
+	localVarHTTPHeaderAccept := selectHeaderAccept(localVarHTTPHeaderAccepts)
+	if localVarHTTPHeaderAccept != "" {
+		localVarHeaderParams["Accept"] = localVarHTTPHeaderAccept
+	}
+	if r.ctx != nil {
+		// API Key Authentication
+		if auth, ok := r.ctx.Value(ContextAPIKeys).(map[string]APIKey); ok {
+			if apiKey, ok := auth["ApiKeyTPV1"]; ok {
+				var key string
+				if apiKey.Prefix != "" {
+					key = apiKey.Prefix + " " + apiKey.Key
+				} else {
+					key = apiKey.Key
+				}
+				localVarHeaderParams["Authorization"] = key
+			}
+		}
+	}
+	req, err := a.client.prepareRequest(r.ctx, localVarPath, localVarHTTPMethod, localVarPostBody, localVarHeaderParams, localVarQueryParams, localVarFormParams, formFiles)
+	if err != nil {
+		return localVarReturnValue, nil, err
+	}
+
+	localVarHTTPResponse, err := a.client.callAPI(req)
+	if err != nil || localVarHTTPResponse == nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	localVarBody, err := io.ReadAll(localVarHTTPResponse.Body)
+	localVarHTTPResponse.Body.Close()
+	localVarHTTPResponse.Body = io.NopCloser(bytes.NewBuffer(localVarBody))
+	if err != nil {
+		return localVarReturnValue, localVarHTTPResponse, err
+	}
+
+	if localVarHTTPResponse.StatusCode >= 300 {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: localVarHTTPResponse.Status,
+		}
+		if localVarHTTPResponse.StatusCode == 400 {
+			var v map[string]interface{}
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarReturnValue, localVarHTTPResponse, newErr
+			}
+					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+					newErr.model = v
+			return localVarReturnValue, localVarHTTPResponse, newErr
+		}
+		if localVarHTTPResponse.StatusCode == 401 {
+			var v map[string]interface{}
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarReturnValue, localVarHTTPResponse, newErr
+			}
+					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+					newErr.model = v
+			return localVarReturnValue, localVarHTTPResponse, newErr
+		}
+		if localVarHTTPResponse.StatusCode == 403 {
+			var v map[string]interface{}
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarReturnValue, localVarHTTPResponse, newErr
+			}
+					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+					newErr.model = v
+			return localVarReturnValue, localVarHTTPResponse, newErr
+		}
+		if localVarHTTPResponse.StatusCode == 404 {
+			var v map[string]interface{}
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarReturnValue, localVarHTTPResponse, newErr
+			}
+					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+					newErr.model = v
+			return localVarReturnValue, localVarHTTPResponse, newErr
+		}
+		if localVarHTTPResponse.StatusCode == 500 {
+			var v map[string]interface{}
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarReturnValue, localVarHTTPResponse, newErr
+			}
+					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+					newErr.model = v
+			return localVarReturnValue, localVarHTTPResponse, newErr
+		}
+		if localVarHTTPResponse.StatusCode == 503 {
+			var v map[string]interface{}
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarReturnValue, localVarHTTPResponse, newErr
+			}
+					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+					newErr.model = v
+			return localVarReturnValue, localVarHTTPResponse, newErr
+		}
+			var v GooglerpcStatus
+			err = a.client.decode(&v, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+			if err != nil {
+				newErr.error = err.Error()
+				return localVarReturnValue, localVarHTTPResponse, newErr
+			}
+					newErr.error = formatErrorMessage(localVarHTTPResponse.Status, &v)
+					newErr.model = v
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	err = a.client.decode(&localVarReturnValue, localVarBody, localVarHTTPResponse.Header.Get("Content-Type"))
+	if err != nil {
+		newErr := &GenericOpenAPIError{
+			body:  localVarBody,
+			error: err.Error(),
+		}
+		return localVarReturnValue, localVarHTTPResponse, newErr
+	}
+
+	return localVarReturnValue, localVarHTTPResponse, nil
+}
+
 type ApiFiatProviderServiceGetFiatProviderOperationRequest struct {
 	ctx context.Context
 	ApiService *FiatAPIService

@@ -70,7 +70,9 @@ class Wallet(BaseModel):
     created_at: Optional[datetime] = Field(default=None, description="Creation timestamp")
     updated_at: Optional[datetime] = Field(default=None, description="Last update timestamp")
     attributes: List[WalletAttribute] = Field(default_factory=list, description="Custom attributes")
-    currency_info: Optional[Currency] = Field(default=None, description="Detailed currency information")
+    currency_info: Optional[Currency] = Field(
+        default=None, description="Detailed currency information"
+    )
 
     model_config = {"frozen": True}
 
@@ -98,10 +100,27 @@ class CreateWalletRequest(BaseModel):
 
 
 class ListWalletsOptions(BaseModel):
-    """Options for listing wallets."""
+    """
+    Options for listing wallets. Every field reaches the wire.
 
-    limit: int = Field(default=50, ge=1, le=1000, description="Maximum items to return")
-    offset: int = Field(default=0, ge=0, description="Number of items to skip")
-    currency: Optional[str] = Field(default=None, description="Filter by currency")
+    ``limit`` defaults to 20 and may not exceed 100; continue with
+    ``offset=pagination.next_offset``.
+    """
+
+    limit: Optional[int] = Field(default=None, description="Page size (default 20, max 100)")
+    offset: Optional[int] = Field(default=None, description="Number of items to skip")
+    currency: Optional[str] = Field(default=None, description="Filter by currency ID or symbol")
     query: Optional[str] = Field(default=None, description="Search query")
-    exclude_disabled: bool = Field(default=False, description="Exclude disabled wallets")
+    name: Optional[str] = Field(default=None, description="Case-insensitive partial name match")
+    sort_order: Optional[str] = Field(default=None, description="ASC or DESC")
+    exclude_disabled: Optional[bool] = Field(
+        default=None,
+        description="True hides every disabled wallet; unset hides currency-disabled ones",
+    )
+    tag_ids: Optional[List[str]] = Field(default=None, description="Filter by any of these tags")
+    only_positive_balance: Optional[bool] = Field(
+        default=None, description="Only wallets with a non-zero balance"
+    )
+    blockchain: Optional[str] = Field(default=None, description="Filter by blockchain")
+    network: Optional[str] = Field(default=None, description="Filter by network")
+    ids: Optional[List[str]] = Field(default=None, description="Filter by wallet IDs")

@@ -42,7 +42,7 @@
 - Lazy initialization via double-checked locking with `sync.RWMutex`
 - TPV1-HMAC-SHA256 authentication handled by HTTP transport middleware
 
-### Available Services (38 + TaurusNetwork)
+### Available Services (39 + TaurusNetwork)
 
 **Core**: `Wallets()`, `Addresses()`, `Requests()`, `Transactions()`, `GovernanceRules()`, `Balances()`, `Currencies()`, `WhitelistedAddresses()`, `WhitelistedAssets()`
 
@@ -52,7 +52,7 @@
 
 **Administrative**: `Users()`, `Groups()`, `VisibilityGroups()`, `Config()`, `Webhooks()`, `WebhookCalls()`, `Tags()`
 
-**Specialized**: `Assets()`, `Actions()`, `Blockchains()`, `Exchanges()`, `Fiat()`, `FeePayers()`, `Health()`, `Jobs()`, `Scores()`, `Statistics()`, `TokenMetadata()`, `UserDevices()`
+**Specialized**: `Assets()`, `Actions()`, `Blockchains()`, `Earn()`, `Exchanges()`, `Fiat()`, `FeePayers()`, `Health()`, `Jobs()`, `Scores()`, `Statistics()`, `TokenMetadata()`, `UserDevices()`
 
 **Taurus Network** (namespace): `client.TaurusNetwork().Participants()`, `.Pledges()`, `.Lending()`, `.Settlements()`, `.Sharing()`
 
@@ -63,6 +63,13 @@ SDK alignment: see `docs/SDK_ALIGNMENT_REPORT.md` (repository root). Java SDK is
 ### OpenAPI Generator
 Uses `openapi-generator-cli` JAR with `-g go`:
 - `enumClassPrefix=true` -- avoids enum constant redeclaration conflicts
+- `disallowAdditionalPropertiesIfNotPresent=false` -- unknown fields land in each model's `AdditionalProperties` instead of failing the reply; with `templates/go/model_enum.mustache`, unknown enum values keep their raw string. Same contract in all four SDKs, gated by `scripts/resources/decode-tolerance-vectors.json`
+  - A decoded DTO always carries a non-nil `AdditionalProperties` (empty when nothing was unknown): compare
+    domain models, not generated DTOs, in tests. Enum `NewXFromValue` never errors; `IsValid()` is the
+    known-value check. Hand-written code casts caller values (`openapi.X(v)`) and sends them verbatim.
+  - `generate-openapi.sh` aborts if any model still contains `DisallowUnknownFields()` or `is not a valid`,
+    and `patch_metadata_payload` requires exactly one `delete(additionalProperties, "payload")` — that
+    line keeps the raw payload out of `AdditionalProperties` now that the field is removed.
 - Types prefixed with `Tgvalidatord` (e.g., `TgvalidatordWallet`, `TgvalidatordAddress`)
 - Response types use `.Result` field; create operations often return only an ID
 - Pagination: `TotalItems`/`Offset` strings; cursor: `Cursor.CurrentPage`/`HasPrevious`/`HasNext`
@@ -83,7 +90,8 @@ Uses `protoc` with `protoc-gen-go`. Requires M mappings for go_package. Proto fi
 1. Wrap OpenAPI API service (e.g., `openapi.WalletsAPIService`)
 2. Use `ErrorMapper` for converting OpenAPI errors to domain errors
 3. Use mapper functions to convert DTOs to domain models
-4. Return pagination info when available
+4. Page through the helpers in `service/pagination.go` — see "Pagination" below. Never parse a
+   reply count or cursor inline.
 
 ### The service layer is where filters get LOST — check the generated client first
 
@@ -122,7 +130,7 @@ absent from the generated Go client 2026-09-03:
 
 | Missing | Live in validatord | Consequence |
 |---|---|---|
-| `PriceService_QueryPricesV2`, `GetPriceByID` | `api/swagger/v1/price-service.swagger.json` | `ListPrices` is stuck on `GetPrices`, which takes `google.protobuf.Empty` — no filters, no pagination at all |
+| `GetPriceByID` | `api/swagger/v1/price-service.swagger.json` | no single-price read (`PriceService_QueryPricesV2` was patched in 2026-09-24 and backs `ListPrices`) |
 | `Entities` (plural), `FieldKey`, `FieldValue` on `ChangeServiceGetChanges` | endpoint has 11 fields | `ListChangesOptions` can only reach 8 |
 
 **Always grep `internal/openapi/` before writing a builder call.** A plausible-looking `.Actions(...)` on the
@@ -141,9 +149,10 @@ The generated client exposes both generations of a deprecated field, so "wire up
 adds six dead parameters. Known cases:
 
 - **Endpoints.** `ListWallets` called `WalletServiceGetWalletsInfo` (deprecated, with a `//nolint:staticcheck`
-  admitting it) → now `GetWalletsV2`, a drop-in: same request message, same reply. `Fees().GetFees` calls the
-  deprecated `FeeServiceGetFees`; `GetFeesV2` is the drop-in. `DeleteWhitelistedContract` is deprecated with
-  **no replacement** — it can no longer delete anything.
+  admitting it) → now `GetWalletsV2`, a drop-in: same request message, same reply. The v1 `Fees().GetFees`
+  (deprecated `FeeServiceGetFees`) and the v1 unpaged `Prices().GetPrices` are removed — `GetFeesV2` and
+  `ListPrices` (`QueryPricesV2`) replace them. `DeleteWhitelistedContract` was deprecated with **no
+  replacement** and could no longer delete anything, so it is not wrapped.
 - **Fields.** On `GetAddresses`, the flat score params (`scoreProvider`, `scoreInBelow`, `scoreOutBelow`,
   `scoreExclusive`, `coinfirmScoreGreater`, `chainalysisScoreGreater`) are all `deprecated = true` in
   `wallet-service.proto` — use the nested `scoreFilter` generation. `ListWhitelistedAddressesOptions.Currency`
@@ -159,6 +168,86 @@ All safe pointer helpers in `pkg/protect/mapper/helpers.go`: `safeString`, `safe
 **Important:**
 - **service package**: `stringPtr()` defined separately (packages can't share unexported functions)
 - In tests, define `testStringPtr()` to avoid conflicts with production helpers
+
+## Pagination — `service/pagination.go` is the only place it happens
+
+The cross-SDK contract is in the repo-root `CLAUDE.md` ("Pagination (cross-SDK)"). In this SDK:
+
+```
+options ─▶ resolveOffsetWindow / resolveCursorWindow / resolveSize ─▶ apply*(req, window) ─▶ request
+reply ───▶ offsetPagination(rule, window, served, excluded, offsetReply) ─▶ *model.Pagination (never nil)
+       └─▶ cursorPage(pageSize, cursorReply{Cursor | TokenOnly+Token, HasTotal+Total, Excluded}) ─▶ model.CursorPage
+```
+
+- **Every list always sends a page size.** 0 → `model.DefaultPageSize` (20); above
+  `model.MaxPageSize` (100) or negative → an error naming the option, before any request. Limit-only
+  endpoints use `resolveSize` with their own maximum: price history 365, the prices-history export
+  and the transaction export none (`max 0`).
+- **One offset rule per endpoint** (`offsetRule`): wallets/addresses read the reply `offset` —
+  validatord returns the NEXT page's offset there, which the old code read as the current one and
+  so dropped the last page; users/groups `offset + min(rows, limit)` (a synthetic row can be
+  appended); whitelisted addresses `offset + rows the server returned` (SDK exclusions reduce only
+  `TotalItems`); whitelisted contracts `offset + limit`; everything else `offset + rows`.
+  `HasMore = next > offset && next < serverTotal`.
+- **Cursor lists** take `PageSize` + `Cursor`; `Cursor` is sent as `currentPage` with
+  `pageRequest=NEXT` and cannot be combined with the low-level `CurrentPage`/`PageRequest`.
+  `NextCursor` is set only when the reply has `hasNext` — never derive a cursor any other way.
+  The body-cursor endpoints (`QueryPricesV2`, the v2 asset queries, asset addresses/wallets) take
+  `window.body()`.
+- **The transaction export ignores `offset` server-side** (validatord always exports from row 0),
+  so `ExportTransactions` is limit-only and reports `TotalItems`.
+- **Counts** are canonical decimals in `[0, 2^53-1]` or an error wrapping
+  `model.ErrMalformedPagination` (`parseCount`): a count silently read as 0 ends a walk early, and
+  2^53-1 keeps TypeScript reading the same number.
+- **Internal id-filtered reads batch by `chunkIDs(ids, size)`**: ≤ 100 ids for the whitelist
+  re-reads and `GetUsersByEmail`, ≤ 50 (`maxAddressIDsPerRequest`, validatord's cap) for managed
+  addresses.
+
+Tests, all through the real generated client against `httptest`:
+
+| File | Pins |
+|---|---|
+| `pagination_test.go` | the helpers: every rule, `{}`, overflow, malformed counts, windows, chunking |
+| `pagination_vectors_test.go` | `scripts/resources/pagination-vectors.json`, plus each wrapped operation's rule probed through its real method |
+| `list_request_vectors_test.go` | `scripts/resources/list-request-vectors.json` — the explicit `listAdapters` table maps operationId → Go method and canonical option → field; `notWrappedOperations` lists the three paged ops Go does not wrap, with reasons |
+| `pagination_walk_test.go` | walks per family visit every row once and stop (reply offset, synthetic row, trailing empty page, v2 cursor with `+ / =` on the wire, body cursor, token, requestCursor) |
+| `whitelisted_address_pagination_test.go` | a signed whitelist fixture, and exclusions never shifting the walk |
+| `list_endpoints_test.go` | endpoint policy: QueryPricesV2 verification, the approval-queue rejections, chunked re-reads, the new v2 asset / Earn / fiat-entity lists |
+
+Adding a list method: wire it through the helpers, add an adapter row (the loader fails on an
+unmapped operation or option), and bump the loaders' count constants when the coordinator
+regenerates the vector files.
+
+Fixture traps that cost time:
+
+- A `walkClient`/`httptest` handler must set `Content-Type: application/json`, or the generated
+  client fails every call with "undefined response type".
+- `mapper.RulesContainerToBase64` encodes `RuleUser.PublicKeyPEM`, not the parsed `PublicKey`, and
+  rejects role names the proto does not know (`USER` is not one; `WHITELISTEDADDRESSAPPROVER` is).
+  A container built with only `PublicKey` verifies at step 2 and then fails step 5 with "user has
+  no public key".
+- A test that panics stops the whole test binary, so a mutation run must re-run the tests that
+  never reported.
+
+## `QueryAssetAddresses` rows are confirmed through the verified readers
+
+`AssetServiceV2_QueryAssetAddressesV2` rows carry no signature (repo-root `CLAUDE.md`, Cross-SDK
+Security Rules). `AssetService` therefore takes the client's `AddressService` and
+`WhitelistedAddressService` (`NewAssetService` panics on nil; `Client.Assets()` resolves both
+before taking the client lock, which is not reentrant) and completes each page in
+`verifiedAssetAddresses`:
+
+- INTERNAL → `AddressService.verifiedAddressesByID`: GetAddresses + addressIds, every row through
+  the existing `verifiedAddress` seam. An `IntegrityError` on a row is an exclusion; anything
+  else, or a container without an HSMSLOT key, aborts — `helper.VerifyAddressSignature` reports a
+  missing HSM key as a per-row `IntegrityError`, so the container is checked once up front.
+- WHITELISTED → `WhitelistedAddressService.verifiedAddressesByID(ids, includeForApproval)`, the
+  seam the approval re-read also uses (with `true`; the holders read passes `false`).
+- Anything else is `Verified = false`. The generated enum rejects an unknown `addressType` at
+  decode, so only EXTERNAL and untyped rows reach this branch in Go.
+
+Tests: `asset_holders_verification_test.go` (HSM-signed managed addresses and 6-step-signed
+whitelist rows through one `httptest` fixture).
 
 ## Testing
 
@@ -404,9 +493,8 @@ deciding). Go-specific mechanics:
   `helper.keyFingerprint` delegates and `RuleUser.KeyFingerprint()` caches per user.
 - `MaxPayloadBytes` is enforced **inside** `ParseWhitelistedAddressFromJSON` /
   `ParseWhitelistedAssetFromJSON`, not at the call sites — a new caller cannot forget it.
-- `assetPagination` uses the overflow-safe form; `ApproveWhitelistedAssets` sorts IDs
-  numerically and rejects a non-numeric one (it would have no defined position in the signed
-  array).
+- `ApproveWhitelistedAssets` sorts IDs numerically and rejects a non-numeric one (it would have
+  no defined position in the signed array).
 
 ## Lessons Learned (Non-Security)
 
@@ -486,7 +574,8 @@ embeds `*APIError` needs the same, or it silently breaks every caller matching t
 `TestAuthorizationErrorAsBothTargets` guards this.
 
 ### Pagination Overflow Prevention
-Use overflow-safe comparison: `totalItems > offset && totalItems - offset > limit` (not `offset + limit < totalItems`).
+`offsetPagination` adds with `addSaturated` (stops at `math.MaxInt64`), so no rule wraps a next
+offset into a negative on caller-supplied values; `TestOffsetPaginationNeverOverflows` pins it.
 
 ### Helper Function Consolidation
 All safe pointer helpers consolidated in `pkg/protect/mapper/helpers.go`.

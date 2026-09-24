@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -23,6 +22,7 @@ var _ MappedNullable = &TgvalidatordSAMLCheckAssertionRequest{}
 type TgvalidatordSAMLCheckAssertionRequest struct {
 	SAMLResponse string `json:"SAMLResponse"`
 	RelayState string `json:"RelayState"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordSAMLCheckAssertionRequest TgvalidatordSAMLCheckAssertionRequest
@@ -106,6 +106,11 @@ func (o TgvalidatordSAMLCheckAssertionRequest) ToMap() (map[string]interface{}, 
 	toSerialize := map[string]interface{}{}
 	toSerialize["SAMLResponse"] = o.SAMLResponse
 	toSerialize["RelayState"] = o.RelayState
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -134,15 +139,21 @@ func (o *TgvalidatordSAMLCheckAssertionRequest) UnmarshalJSON(data []byte) (err 
 
 	varTgvalidatordSAMLCheckAssertionRequest := _TgvalidatordSAMLCheckAssertionRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordSAMLCheckAssertionRequest)
+	err = json.Unmarshal(data, &varTgvalidatordSAMLCheckAssertionRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordSAMLCheckAssertionRequest(varTgvalidatordSAMLCheckAssertionRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "SAMLResponse")
+		delete(additionalProperties, "RelayState")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

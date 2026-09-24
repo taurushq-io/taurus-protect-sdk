@@ -45,9 +45,18 @@ export interface TgvalidatordGetMultiFactorSignatureEntitiesInfoReply {
      * @memberof TgvalidatordGetMultiFactorSignatureEntitiesInfoReply
      */
     entityType: TgvalidatordMultiFactorSignaturesEntityType;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetMultiFactorSignatureEntitiesInfoReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
 
 
+
+const TgvalidatordGetMultiFactorSignatureEntitiesInfoReplyWireKeys: ReadonlySet<string> = new Set(['id', 'payloadToSign', 'entityType']);
 
 /**
  * Check if a given object implements the TgvalidatordGetMultiFactorSignatureEntitiesInfoReply interface.
@@ -67,12 +76,22 @@ export function TgvalidatordGetMultiFactorSignatureEntitiesInfoReplyFromJSONType
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetMultiFactorSignatureEntitiesInfoReply = {
         
         'id': json['id'],
         'payloadToSign': json['payloadToSign'],
         'entityType': TgvalidatordMultiFactorSignaturesEntityTypeFromJSON(json['entityType']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetMultiFactorSignatureEntitiesInfoReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetMultiFactorSignatureEntitiesInfoReplyToJSON(json: any): TgvalidatordGetMultiFactorSignatureEntitiesInfoReply {
@@ -89,6 +108,7 @@ export function TgvalidatordGetMultiFactorSignatureEntitiesInfoReplyFromJSONType
         'id': value['id'],
         'payloadToSign': value['payloadToSign'],
         'entityType': TgvalidatordMultiFactorSignaturesEntityTypeToJSON(value['entityType']),
+        ...value['additionalProperties'],
     };
 }
 

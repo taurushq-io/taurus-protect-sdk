@@ -51,7 +51,16 @@ export interface TgvalidatordConversionValue {
      * @memberof TgvalidatordConversionValue
      */
     currencyInfo?: TgvalidatordCurrency;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordConversionValue
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordConversionValueWireKeys: ReadonlySet<string> = new Set(['symbol', 'value', 'mainUnitValue', 'currencyInfo']);
 
 /**
  * Check if a given object implements the TgvalidatordConversionValue interface.
@@ -68,13 +77,23 @@ export function TgvalidatordConversionValueFromJSONTyped(json: any, ignoreDiscri
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordConversionValue = {
         
         'symbol': json['symbol'] == null ? undefined : json['symbol'],
         'value': json['value'] == null ? undefined : json['value'],
         'mainUnitValue': json['mainUnitValue'] == null ? undefined : json['mainUnitValue'],
         'currencyInfo': json['currencyInfo'] == null ? undefined : TgvalidatordCurrencyFromJSON(json['currencyInfo']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordConversionValueWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordConversionValueToJSON(json: any): TgvalidatordConversionValue {
@@ -92,6 +111,7 @@ export function TgvalidatordConversionValueFromJSONTyped(json: any, ignoreDiscri
         'value': value['value'],
         'mainUnitValue': value['mainUnitValue'],
         'currencyInfo': TgvalidatordCurrencyToJSON(value['currencyInfo']),
+        ...value['additionalProperties'],
     };
 }
 

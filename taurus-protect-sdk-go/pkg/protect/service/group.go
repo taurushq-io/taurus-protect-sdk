@@ -2,8 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
-	"strconv"
 
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/internal/openapi"
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/mapper"
@@ -24,26 +22,26 @@ func NewGroupService(client *openapi.APIClient) *GroupService {
 	}
 }
 
-// ListGroups retrieves a list of groups with optional filtering and pagination.
+// ListGroups retrieves one page of groups. Result.Pagination is never nil; continue with its
+// NextOffset until HasMore is false.
 func (s *GroupService) ListGroups(ctx context.Context, opts *model.ListGroupsOptions) (*model.ListGroupsResult, error) {
-	req := s.api.UserServiceGetGroups(ctx)
+	if opts == nil {
+		opts = &model.ListGroupsOptions{}
+	}
+	window, err := resolveOffsetWindow(opts.Limit, opts.Offset)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if opts.Limit > 0 {
-			req = req.Limit(fmt.Sprintf("%d", opts.Limit))
-		}
-		if opts.Offset > 0 {
-			req = req.Offset(fmt.Sprintf("%d", opts.Offset))
-		}
-		if len(opts.IDs) > 0 {
-			req = req.Ids(opts.IDs)
-		}
-		if len(opts.ExternalGroupIDs) > 0 {
-			req = req.ExternalGroupIds(opts.ExternalGroupIDs)
-		}
-		if opts.Query != "" {
-			req = req.Query(opts.Query)
-		}
+	req := applyOffsetWindow(s.api.UserServiceGetGroups(ctx), window)
+	if len(opts.IDs) > 0 {
+		req = req.Ids(opts.IDs)
+	}
+	if len(opts.ExternalGroupIDs) > 0 {
+		req = req.ExternalGroupIds(opts.ExternalGroupIDs)
+	}
+	if opts.Query != "" {
+		req = req.Query(opts.Query)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -51,21 +49,15 @@ func (s *GroupService) ListGroups(ctx context.Context, opts *model.ListGroupsOpt
 		return nil, s.errMapper.MapError(err, httpResp)
 	}
 
-	result := &model.ListGroupsResult{
-		Groups: mapper.GroupsFromDTO(resp.Result),
+	// A technical group can be appended beyond the limit, so the next page starts at
+	// offset + min(rows, limit).
+	pagination, err := offsetPagination(rulePlusMinRowsLimit, window, len(resp.Result), 0,
+		offsetReply{TotalItems: resp.TotalItems})
+	if err != nil {
+		return nil, err
 	}
-
-	// Parse total items
-	if resp.TotalItems != nil {
-		if total, parseErr := strconv.ParseInt(*resp.TotalItems, 10, 64); parseErr == nil {
-			result.TotalItems = total
-		}
-	}
-
-	// Set offset from options if provided
-	if opts != nil {
-		result.Offset = opts.Offset
-	}
-
-	return result, nil
+	return &model.ListGroupsResult{
+		Groups:     mapper.GroupsFromDTO(resp.Result),
+		Pagination: pagination,
+	}, nil
 }

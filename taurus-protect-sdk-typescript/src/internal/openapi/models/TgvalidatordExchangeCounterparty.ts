@@ -31,7 +31,16 @@ export interface TgvalidatordExchangeCounterparty {
      * @memberof TgvalidatordExchangeCounterparty
      */
     baseCurrencyValuation?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordExchangeCounterparty
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordExchangeCounterpartyWireKeys: ReadonlySet<string> = new Set(['name', 'baseCurrencyValuation']);
 
 /**
  * Check if a given object implements the TgvalidatordExchangeCounterparty interface.
@@ -48,11 +57,21 @@ export function TgvalidatordExchangeCounterpartyFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordExchangeCounterparty = {
         
         'name': json['name'] == null ? undefined : json['name'],
         'baseCurrencyValuation': json['baseCurrencyValuation'] == null ? undefined : json['baseCurrencyValuation'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordExchangeCounterpartyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordExchangeCounterpartyToJSON(json: any): TgvalidatordExchangeCounterparty {
@@ -68,6 +87,7 @@ export function TgvalidatordExchangeCounterpartyFromJSONTyped(json: any, ignoreD
         
         'name': value['name'],
         'baseCurrencyValuation': value['baseCurrencyValuation'],
+        ...value['additionalProperties'],
     };
 }
 

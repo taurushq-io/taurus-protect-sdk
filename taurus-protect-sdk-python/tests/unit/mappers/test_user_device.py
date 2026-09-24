@@ -4,6 +4,9 @@ from types import SimpleNamespace
 
 import pytest
 
+from taurus_protect._internal.openapi.models.tgvalidatord_user_device_pairing_info_status import (  # noqa: E501
+    TgvalidatordUserDevicePairingInfoStatus,
+)
 from taurus_protect.mappers.user_device import (
     user_device_pairing_from_dto,
     user_device_pairing_info_from_dto,
@@ -52,6 +55,15 @@ class TestUserDevicePairingInfoFromDto:
         assert result.device_name == "iPhone 15"
         assert result.device_type == "IOS"
         assert result.encryption_key == "enc-key-base64"
+
+    @pytest.mark.parametrize("wire", ["APPROVED", "FUTURE_STATUS"], ids=["known", "unknown"])
+    def test_status_is_the_wire_string_not_the_enum_member(self, wire: str) -> None:
+        dto = SimpleNamespace(status=TgvalidatordUserDevicePairingInfoStatus(wire))
+
+        result = user_device_pairing_info_from_dto(dto)
+
+        assert type(result.status) is str
+        assert result.status == wire
 
     def test_returns_none_for_none(self) -> None:
         assert user_device_pairing_info_from_dto(None) is None

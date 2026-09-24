@@ -63,7 +63,16 @@ export interface TgvalidatordGetGlobalComponentStatusReply {
      * @memberof TgvalidatordGetGlobalComponentStatusReply
      */
     componentsStatus?: { [key: string]: TgvalidatordComponentStatus; };
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetGlobalComponentStatusReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetGlobalComponentStatusReplyWireKeys: ReadonlySet<string> = new Set(['total', 'working', 'degraded', 'failed', 'clusterStatus', 'componentsStatus']);
 
 /**
  * Check if a given object implements the TgvalidatordGetGlobalComponentStatusReply interface.
@@ -80,7 +89,7 @@ export function TgvalidatordGetGlobalComponentStatusReplyFromJSONTyped(json: any
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetGlobalComponentStatusReply = {
         
         'total': json['total'] == null ? undefined : json['total'],
         'working': json['working'] == null ? undefined : json['working'],
@@ -89,6 +98,16 @@ export function TgvalidatordGetGlobalComponentStatusReplyFromJSONTyped(json: any
         'clusterStatus': json['clusterStatus'] == null ? undefined : json['clusterStatus'],
         'componentsStatus': json['componentsStatus'] == null ? undefined : (mapValues(json['componentsStatus'], TgvalidatordComponentStatusFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetGlobalComponentStatusReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetGlobalComponentStatusReplyToJSON(json: any): TgvalidatordGetGlobalComponentStatusReply {
@@ -108,6 +127,7 @@ export function TgvalidatordGetGlobalComponentStatusReplyFromJSONTyped(json: any
         'failed': value['failed'],
         'clusterStatus': value['clusterStatus'],
         'componentsStatus': value['componentsStatus'] == null ? undefined : (mapValues(value['componentsStatus'], TgvalidatordComponentStatusToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

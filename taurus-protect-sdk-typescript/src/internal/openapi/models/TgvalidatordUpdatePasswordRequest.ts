@@ -31,7 +31,16 @@ export interface TgvalidatordUpdatePasswordRequest {
      * @memberof TgvalidatordUpdatePasswordRequest
      */
     newPassword: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordUpdatePasswordRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordUpdatePasswordRequestWireKeys: ReadonlySet<string> = new Set(['currentPassword', 'newPassword']);
 
 /**
  * Check if a given object implements the TgvalidatordUpdatePasswordRequest interface.
@@ -50,11 +59,21 @@ export function TgvalidatordUpdatePasswordRequestFromJSONTyped(json: any, ignore
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordUpdatePasswordRequest = {
         
         'currentPassword': json['currentPassword'],
         'newPassword': json['newPassword'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordUpdatePasswordRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordUpdatePasswordRequestToJSON(json: any): TgvalidatordUpdatePasswordRequest {
@@ -70,6 +89,7 @@ export function TgvalidatordUpdatePasswordRequestFromJSONTyped(json: any, ignore
         
         'currentPassword': value['currentPassword'],
         'newPassword': value['newPassword'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -67,7 +67,16 @@ export interface TgvalidatordCreateOutgoingCosmosUndelegateRequestRequest {
      * @memberof TgvalidatordCreateOutgoingCosmosUndelegateRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingCosmosUndelegateRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingCosmosUndelegateRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'toValidatorAddressId', 'amount', 'feeLimit', 'gasLimit', 'comment', 'transactionReference', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingCosmosUndelegateRequestRequest interface.
@@ -87,7 +96,7 @@ export function TgvalidatordCreateOutgoingCosmosUndelegateRequestRequestFromJSON
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingCosmosUndelegateRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'toValidatorAddressId': json['toValidatorAddressId'],
@@ -98,6 +107,16 @@ export function TgvalidatordCreateOutgoingCosmosUndelegateRequestRequestFromJSON
         'transactionReference': json['transactionReference'] == null ? undefined : json['transactionReference'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingCosmosUndelegateRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingCosmosUndelegateRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingCosmosUndelegateRequestRequest {
@@ -119,6 +138,7 @@ export function TgvalidatordCreateOutgoingCosmosUndelegateRequestRequestFromJSON
         'comment': value['comment'],
         'transactionReference': value['transactionReference'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -11,7 +11,7 @@ A Python SDK for interacting with the Taurus-PROTECT API, providing secure crypt
 | [Key Concepts](docs/CONCEPTS.md) | Python models, exceptions, and domain concepts |
 | [SDK Overview](docs/SDK_OVERVIEW.md) | Architecture, packages, and design patterns |
 | [Authentication](docs/AUTHENTICATION.md) | TPV1 authentication and cryptographic operations |
-| [Services Reference](docs/SERVICES.md) | Complete API documentation for all 43 services |
+| [Services Reference](docs/SERVICES.md) | Complete API documentation for all 44 services |
 | [Usage Examples](docs/USAGE_EXAMPLES.md) | Python code examples and common patterns |
 | [Whitelisted Address Verification](docs/WHITELISTED_ADDRESS_VERIFICATION.md) | 6-step verification flow |
 
@@ -77,7 +77,7 @@ See [Authentication](docs/AUTHENTICATION.md) for more initialization options.
 
 ## Services
 
-The SDK provides 43 services organized into core services and the TaurusNetwork namespace.
+The SDK provides 44 services organized into core services and the TaurusNetwork namespace.
 
 ### Core Services (38 services)
 
@@ -145,15 +145,21 @@ SuperAdmin public key.
 
 ```python
 with ProtectClient.create(host, credentials, super_admin_keys_pem=super_admin_keys) as client:
-    # List wallets with pagination
-    wallets, pagination = client.wallets.list(limit=50, offset=0)
-
-    for wallet in wallets:
-        print(f"{wallet.name}: {wallet.currency} ({wallet.blockchain}/{wallet.network})")
-
-    if pagination:
-        print(f"Total wallets: {pagination.total_items}")
+    # Walk every wallet: page size defaults to 20 (max 100); follow next_offset
+    offset = 0
+    while True:
+        wallets, pagination = client.wallets.list(limit=100, offset=offset)
+        for wallet in wallets:
+            print(f"{wallet.name}: {wallet.currency} ({wallet.blockchain}/{wallet.network})")
+        if not pagination.has_more:
+            break
+        offset = pagination.next_offset
 ```
+
+Offset lists (wallets, addresses, transactions, users, groups, fee payers, actions, the
+whitelists) return a `Pagination` and continue with `next_offset`; every other list returns a
+`CursorPage` and continues with `cursor=page.next_cursor`. See
+[Key Concepts](docs/CONCEPTS.md#pagination-model).
 
 ### Create a Wallet
 
@@ -181,7 +187,7 @@ with open("private_key.pem", "rb") as f:
 
 with ProtectClient.create(host, credentials, super_admin_keys_pem=super_admin_keys) as client:
     # Get requests pending approval
-    requests, _ = client.requests.get_for_approval(limit=10)
+    requests, _ = client.requests.get_for_approval(page_size=10)
 
     if requests:
         # Approve with ECDSA signature
@@ -192,13 +198,15 @@ with ProtectClient.create(host, credentials, super_admin_keys_pem=super_admin_ke
 ### TaurusNetwork Operations
 
 ```python
+from taurus_protect.models import ListPledgesOptions
+
 with ProtectClient.create(host, credentials, super_admin_keys_pem=super_admin_keys) as client:
     # Get my participant info
     me = client.taurus_network.participants.get_my_participant()
     print(f"Participant: {me.name}")
 
     # List pledges
-    pledges, cursor = client.taurus_network.pledges.list_pledges(limit=10)
+    pledges, page = client.taurus_network.pledges.list_pledges(ListPledgesOptions(page_size=10))
     for pledge in pledges:
         print(f"Pledge {pledge.id}: {pledge.status}")
 

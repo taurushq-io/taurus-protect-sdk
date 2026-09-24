@@ -4,27 +4,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, List, Optional
 
-from taurus_protect.mappers.business_rule import business_rule_from_dto, business_rules_from_dto
+from taurus_protect.mappers.business_rule import business_rules_from_dto
 from taurus_protect.models.business_rule import BusinessRule, BusinessRuleResult
+from taurus_protect.models.pagination import cursor_page, cursor_request
 from taurus_protect.services._base import BaseService
 
 if TYPE_CHECKING:
     from taurus_protect._internal.openapi.api.business_rules_api import BusinessRulesApi
-
-
-def _extract_cursor(cursor: Any) -> tuple:
-    """Extract current_page and has_next from a response cursor."""
-    if cursor is None:
-        return None, False
-    cp = getattr(cursor, "current_page", None)
-    if cp is None:
-        cp = getattr(cursor, "currentPage", None)
-    if cp is not None and not isinstance(cp, str):
-        cp = None
-    hn = getattr(cursor, "has_next", None)
-    if hn is None:
-        hn = getattr(cursor, "hasNext", None)
-    return cp, bool(hn) if hn is not None else False
 
 
 class BusinessRuleService(BaseService):
@@ -52,51 +38,58 @@ class BusinessRuleService(BaseService):
         currency_ids: Optional[List[str]] = None,
         entity_type: Optional[str] = None,
         entity_ids: Optional[List[str]] = None,
+        *,
+        cursor: Optional[str] = None,
+        ids: Optional[List[str]] = None,
+        rule_groups: Optional[List[str]] = None,
+        address_ids: Optional[List[str]] = None,
+        level: Optional[str] = None,
     ) -> BusinessRuleResult:
-        """List business rules with cursor-based pagination (v2 API).
+        """List business rules, one page at a time (v2 API).
 
         Args:
-            page_size: Number of rules per page.
-            current_page: Cursor for current page.
-            page_request: Page request type (FIRST, NEXT, PREVIOUS, LAST).
+            page_size: Page size (default 20, max 100).
+            current_page: Low-level page token; not with ``cursor``.
+            page_request: Low-level page direction (FIRST, NEXT, PREVIOUS, LAST).
             rule_keys: Filter by rule keys.
             wallet_ids: Filter by wallet IDs.
             currency_ids: Filter by currency IDs.
             entity_type: Filter by entity type.
             entity_ids: Filter by entity IDs.
+            cursor: ``result.page.next_cursor`` from the previous page, to continue.
+            ids: Filter by rule IDs.
+            rule_groups: Filter by rule groups.
+            address_ids: Filter by address IDs.
+            level: Filter by rule level.
 
         Returns:
-            BusinessRuleResult with rules list and cursor info.
+            BusinessRuleResult with the rules and the page.
 
         Raises:
+            ValueError: If the page size is invalid or cursor options conflict.
             APIError: If API request fails.
         """
+        req = cursor_request(
+            page_size, cursor, current_page=current_page, page_request=page_request
+        )
+
         try:
             reply = self._api.rule_service_get_business_rules_v2(
-                ids=None,
+                ids=ids,
                 rule_keys=rule_keys,
-                rule_groups=None,
+                rule_groups=rule_groups,
                 wallet_ids=wallet_ids,
                 currency_ids=currency_ids,
-                address_ids=None,
-                level=None,
-                cursor_current_page=current_page,
-                cursor_page_request=page_request or "FIRST",
-                cursor_page_size=str(page_size) if page_size else None,
+                address_ids=address_ids,
+                level=level,
                 entity_type=entity_type,
                 entity_ids=entity_ids,
+                **req.query_params(),
             )
 
-            rules_list = getattr(reply, "result", None)
-            rules = business_rules_from_dto(rules_list) if rules_list else []
-
-            cursor = getattr(reply, "cursor", None)
-            result_current_page, has_next = _extract_cursor(cursor)
-
             return BusinessRuleResult(
-                rules=rules,
-                current_page=result_current_page,
-                has_next=has_next,
+                rules=business_rules_from_dto(reply.result or []),
+                page=cursor_page(req.page_size, reply.cursor),
             )
         except Exception as e:
             from taurus_protect.errors import APIError
@@ -111,20 +104,23 @@ class BusinessRuleService(BaseService):
         page_size: Optional[int] = None,
         current_page: Optional[str] = None,
         page_request: Optional[str] = None,
+        *,
+        cursor: Optional[str] = None,
     ) -> BusinessRuleResult:
-        """List business rules for a specific wallet.
+        """List business rules for a specific wallet, one page at a time.
 
         Args:
             wallet_id: The wallet ID (must be positive).
-            page_size: Number of rules per page.
-            current_page: Cursor for current page.
-            page_request: Page request type.
+            page_size: Page size (default 20, max 100).
+            current_page: Low-level page token; not with ``cursor``.
+            page_request: Low-level page direction.
+            cursor: ``result.page.next_cursor`` from the previous page, to continue.
 
         Returns:
-            BusinessRuleResult with rules list and cursor info.
+            BusinessRuleResult with the rules and the page.
 
         Raises:
-            ValueError: If wallet_id is not positive.
+            ValueError: If wallet_id is not positive or paging options are invalid.
             APIError: If API request fails.
         """
         if wallet_id <= 0:
@@ -134,6 +130,7 @@ class BusinessRuleService(BaseService):
             page_size=page_size,
             current_page=current_page,
             page_request=page_request,
+            cursor=cursor,
         )
 
     def list_by_currency(
@@ -142,20 +139,23 @@ class BusinessRuleService(BaseService):
         page_size: Optional[int] = None,
         current_page: Optional[str] = None,
         page_request: Optional[str] = None,
+        *,
+        cursor: Optional[str] = None,
     ) -> BusinessRuleResult:
-        """List business rules for a specific currency.
+        """List business rules for a specific currency, one page at a time.
 
         Args:
             currency_id: The currency ID (must not be empty).
-            page_size: Number of rules per page.
-            current_page: Cursor for current page.
-            page_request: Page request type.
+            page_size: Page size (default 20, max 100).
+            current_page: Low-level page token; not with ``cursor``.
+            page_request: Low-level page direction.
+            cursor: ``result.page.next_cursor`` from the previous page, to continue.
 
         Returns:
-            BusinessRuleResult with rules list and cursor info.
+            BusinessRuleResult with the rules and the page.
 
         Raises:
-            ValueError: If currency_id is empty.
+            ValueError: If currency_id is empty or paging options are invalid.
             APIError: If API request fails.
         """
         self._validate_required(currency_id, "currency_id")
@@ -164,6 +164,7 @@ class BusinessRuleService(BaseService):
             page_size=page_size,
             current_page=current_page,
             page_request=page_request,
+            cursor=cursor,
         )
 
     def update_transactions_enabled(self, enabled: bool) -> None:

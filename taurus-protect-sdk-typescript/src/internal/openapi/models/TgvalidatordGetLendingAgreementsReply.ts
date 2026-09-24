@@ -46,7 +46,16 @@ export interface TgvalidatordGetLendingAgreementsReply {
      * @memberof TgvalidatordGetLendingAgreementsReply
      */
     cursor?: TgvalidatordResponseCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetLendingAgreementsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetLendingAgreementsReplyWireKeys: ReadonlySet<string> = new Set(['lendingAgreements', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetLendingAgreementsReply interface.
@@ -63,11 +72,21 @@ export function TgvalidatordGetLendingAgreementsReplyFromJSONTyped(json: any, ig
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetLendingAgreementsReply = {
         
         'lendingAgreements': json['lendingAgreements'] == null ? undefined : ((json['lendingAgreements'] as Array<any>).map(TgvalidatordLendingAgreementFromJSON)),
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetLendingAgreementsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetLendingAgreementsReplyToJSON(json: any): TgvalidatordGetLendingAgreementsReply {
@@ -83,6 +102,7 @@ export function TgvalidatordGetLendingAgreementsReplyFromJSONTyped(json: any, ig
         
         'lendingAgreements': value['lendingAgreements'] == null ? undefined : ((value['lendingAgreements'] as Array<any>).map(TgvalidatordLendingAgreementToJSON)),
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
+        ...value['additionalProperties'],
     };
 }
 

@@ -38,8 +38,11 @@ export interface MultiFactorSignatureInfo {
    * `MultiFactorSignatureService.get` for why and how.
    */
   readonly payloadToSign: string[];
-  /** The type of entity associated with this signature request */
-  readonly entityType: MultiFactorSignatureEntityType;
+  /**
+   * The type of entity associated with this signature request: the wire value verbatim, so it
+   * may be a kind this client does not know. Absent when the server sent none.
+   */
+  readonly entityType?: MultiFactorSignatureEntityType;
 }
 
 /**

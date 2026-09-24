@@ -26,7 +26,10 @@ type TgvalidatordHealthReport struct {
 	Error *string `json:"error,omitempty"`
 	Results *map[string]string `json:"results,omitempty"`
 	VaultdClients []TgvalidatordClientStatus `json:"vaultdClients,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordHealthReport TgvalidatordHealthReport
 
 // NewTgvalidatordHealthReport instantiates a new TgvalidatordHealthReport object
 // This constructor will assign default values to properties that have it defined,
@@ -300,7 +303,39 @@ func (o TgvalidatordHealthReport) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.VaultdClients) {
 		toSerialize["vaultdClients"] = o.VaultdClients
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordHealthReport) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordHealthReport := _TgvalidatordHealthReport{}
+
+	err = json.Unmarshal(data, &varTgvalidatordHealthReport)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordHealthReport(varTgvalidatordHealthReport)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "message")
+		delete(additionalProperties, "duration")
+		delete(additionalProperties, "error")
+		delete(additionalProperties, "results")
+		delete(additionalProperties, "vaultdClients")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordHealthReport struct {

@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -22,6 +21,7 @@ var _ MappedNullable = &TgvalidatordCreateOutgoingRequestBundleRequest{}
 // TgvalidatordCreateOutgoingRequestBundleRequest struct for TgvalidatordCreateOutgoingRequestBundleRequest
 type TgvalidatordCreateOutgoingRequestBundleRequest struct {
 	Requests []TgvalidatordCreateOutgoingRequestRequest `json:"requests"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingRequestBundleRequest TgvalidatordCreateOutgoingRequestBundleRequest
@@ -79,6 +79,11 @@ func (o TgvalidatordCreateOutgoingRequestBundleRequest) MarshalJSON() ([]byte, e
 func (o TgvalidatordCreateOutgoingRequestBundleRequest) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["requests"] = o.Requests
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -106,15 +111,20 @@ func (o *TgvalidatordCreateOutgoingRequestBundleRequest) UnmarshalJSON(data []by
 
 	varTgvalidatordCreateOutgoingRequestBundleRequest := _TgvalidatordCreateOutgoingRequestBundleRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingRequestBundleRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingRequestBundleRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingRequestBundleRequest(varTgvalidatordCreateOutgoingRequestBundleRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "requests")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

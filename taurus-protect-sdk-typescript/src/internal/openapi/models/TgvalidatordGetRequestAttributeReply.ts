@@ -33,7 +33,16 @@ export interface TgvalidatordGetRequestAttributeReply {
      * @memberof TgvalidatordGetRequestAttributeReply
      */
     result?: TgvalidatordRequestAttribute;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetRequestAttributeReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetRequestAttributeReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetRequestAttributeReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetRequestAttributeReplyFromJSONTyped(json: any, ign
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetRequestAttributeReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordRequestAttributeFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetRequestAttributeReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetRequestAttributeReplyToJSON(json: any): TgvalidatordGetRequestAttributeReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetRequestAttributeReplyFromJSONTyped(json: any, ign
     return {
         
         'result': TgvalidatordRequestAttributeToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

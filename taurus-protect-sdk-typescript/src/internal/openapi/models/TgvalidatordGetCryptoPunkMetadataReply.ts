@@ -33,7 +33,16 @@ export interface TgvalidatordGetCryptoPunkMetadataReply {
      * @memberof TgvalidatordGetCryptoPunkMetadataReply
      */
     result?: TgvalidatordCryptoPunkMetadata;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetCryptoPunkMetadataReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetCryptoPunkMetadataReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetCryptoPunkMetadataReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetCryptoPunkMetadataReplyFromJSONTyped(json: any, i
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetCryptoPunkMetadataReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordCryptoPunkMetadataFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetCryptoPunkMetadataReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetCryptoPunkMetadataReplyToJSON(json: any): TgvalidatordGetCryptoPunkMetadataReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetCryptoPunkMetadataReplyFromJSONTyped(json: any, i
     return {
         
         'result': TgvalidatordCryptoPunkMetadataToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from datetime import timedelta
-from typing import TYPE_CHECKING, Any, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any
 
 from taurus_protect.errors import APIError, map_http_error
-from taurus_protect.models.pagination import Pagination
+from taurus_protect.models.pagination import CursorRequest
 
 if TYPE_CHECKING:
     pass  # Import types for type checking only
@@ -16,7 +16,8 @@ class BaseService:
     """
     Base class for all service implementations.
 
-    Provides common error handling and pagination utilities.
+    Provides common error handling. Pagination is built by the helpers in
+    ``taurus_protect.models.pagination``, never here.
     """
 
     def __init__(self, api_client: Any) -> None:
@@ -68,27 +69,18 @@ class BaseService:
             original_error=error,
         )
 
-    def _extract_pagination(
-        self,
-        total_items: Optional[Union[str, int]],
-        offset: Optional[Union[str, int]],
-        limit: int,
-    ) -> Optional[Pagination]:
-        """
-        Extract pagination info from API response.
+    @staticmethod
+    def _request_cursor_body(request: CursorRequest) -> Any:
+        """The generated ``RequestCursor`` for operations that take the cursor in the body."""
+        from taurus_protect._internal.openapi.models.tgvalidatord_request_cursor import (
+            TgvalidatordRequestCursor,
+        )
 
-        Args:
-            total_items: Total items from response (string or int).
-            offset: Current offset from response (string or int).
-            limit: Requested limit.
-
-        Returns:
-            Pagination info or None if not available.
-        """
-        if total_items is None and offset is None:
-            return None
-
-        return Pagination.from_response(total_items, offset, limit)
+        return TgvalidatordRequestCursor(
+            current_page=request.current_page,
+            page_request=request.page_request,
+            page_size=str(request.page_size),
+        )
 
     @staticmethod
     def _validate_required(value: Any, name: str) -> None:

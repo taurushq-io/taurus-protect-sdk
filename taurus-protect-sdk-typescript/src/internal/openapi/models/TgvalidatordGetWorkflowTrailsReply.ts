@@ -46,7 +46,16 @@ export interface TgvalidatordGetWorkflowTrailsReply {
      * @memberof TgvalidatordGetWorkflowTrailsReply
      */
     cursor?: TgvalidatordResponseCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetWorkflowTrailsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetWorkflowTrailsReplyWireKeys: ReadonlySet<string> = new Set(['result', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetWorkflowTrailsReply interface.
@@ -63,11 +72,21 @@ export function TgvalidatordGetWorkflowTrailsReplyFromJSONTyped(json: any, ignor
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetWorkflowTrailsReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordWorkflowTrailFromJSON)),
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetWorkflowTrailsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetWorkflowTrailsReplyToJSON(json: any): TgvalidatordGetWorkflowTrailsReply {
@@ -83,6 +102,7 @@ export function TgvalidatordGetWorkflowTrailsReplyFromJSONTyped(json: any, ignor
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordWorkflowTrailToJSON)),
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
+        ...value['additionalProperties'],
     };
 }
 

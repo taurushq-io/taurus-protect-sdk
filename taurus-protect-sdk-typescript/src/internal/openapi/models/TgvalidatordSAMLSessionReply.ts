@@ -33,7 +33,16 @@ export interface TgvalidatordSAMLSessionReply {
      * @memberof TgvalidatordSAMLSessionReply
      */
     result?: TgvalidatordSAMLSession;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordSAMLSessionReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordSAMLSessionReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordSAMLSessionReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordSAMLSessionReplyFromJSONTyped(json: any, ignoreDiscr
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordSAMLSessionReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordSAMLSessionFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordSAMLSessionReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordSAMLSessionReplyToJSON(json: any): TgvalidatordSAMLSessionReply {
@@ -68,6 +87,7 @@ export function TgvalidatordSAMLSessionReplyFromJSONTyped(json: any, ignoreDiscr
     return {
         
         'result': TgvalidatordSAMLSessionToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

@@ -155,15 +155,6 @@ describe('exchangeWithdrawalFeeFromDto', () => {
     expect(result!.fee).toBe('0.001');
   });
 
-  it('should map fee from fee field', () => {
-    const dto = { fee: '0.002' };
-
-    const result = exchangeWithdrawalFeeFromDto(dto);
-
-    expect(result).toBeDefined();
-    expect(result!.fee).toBe('0.002');
-  });
-
   it('should return undefined when no fee present', () => {
     const dto = {};
 

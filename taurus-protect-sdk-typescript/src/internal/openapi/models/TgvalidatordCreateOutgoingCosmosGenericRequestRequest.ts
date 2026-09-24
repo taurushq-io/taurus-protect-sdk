@@ -118,7 +118,16 @@ export interface TgvalidatordCreateOutgoingCosmosGenericRequestRequest {
      * @memberof TgvalidatordCreateOutgoingCosmosGenericRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingCosmosGenericRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingCosmosGenericRequestRequestWireKeys: ReadonlySet<string> = new Set(['chainId', 'signers', 'feeDenom', 'fee', 'feePayer', 'gasLimit', 'messages', 'comment', 'useUnconfirmedFunds', 'transactionReference', 'broadcastKind', 'accountsInfo', 'memo', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingCosmosGenericRequestRequest interface.
@@ -138,7 +147,7 @@ export function TgvalidatordCreateOutgoingCosmosGenericRequestRequestFromJSONTyp
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingCosmosGenericRequestRequest = {
         
         'chainId': json['chainId'],
         'signers': json['signers'],
@@ -155,6 +164,16 @@ export function TgvalidatordCreateOutgoingCosmosGenericRequestRequestFromJSONTyp
         'memo': json['memo'] == null ? undefined : json['memo'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingCosmosGenericRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingCosmosGenericRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingCosmosGenericRequestRequest {
@@ -182,6 +201,7 @@ export function TgvalidatordCreateOutgoingCosmosGenericRequestRequestFromJSONTyp
         'accountsInfo': value['accountsInfo'] == null ? undefined : ((value['accountsInfo'] as Array<any>).map(CreateOutgoingCosmosGenericRequestRequestAccountInfoToJSON)),
         'memo': value['memo'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

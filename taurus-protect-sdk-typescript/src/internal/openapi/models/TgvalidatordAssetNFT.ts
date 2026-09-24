@@ -25,7 +25,16 @@ export interface TgvalidatordAssetNFT {
      * @memberof TgvalidatordAssetNFT
      */
     tokenid?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordAssetNFT
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordAssetNFTWireKeys: ReadonlySet<string> = new Set(['tokenid']);
 
 /**
  * Check if a given object implements the TgvalidatordAssetNFT interface.
@@ -42,10 +51,20 @@ export function TgvalidatordAssetNFTFromJSONTyped(json: any, ignoreDiscriminator
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordAssetNFT = {
         
         'tokenid': json['tokenid'] == null ? undefined : json['tokenid'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordAssetNFTWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordAssetNFTToJSON(json: any): TgvalidatordAssetNFT {
@@ -60,6 +79,7 @@ export function TgvalidatordAssetNFTFromJSONTyped(json: any, ignoreDiscriminator
     return {
         
         'tokenid': value['tokenid'],
+        ...value['additionalProperties'],
     };
 }
 

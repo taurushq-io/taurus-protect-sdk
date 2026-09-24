@@ -55,7 +55,16 @@ export interface TgvalidatordFATokenMetadata {
      * @memberof TgvalidatordFATokenMetadata
      */
     uri?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordFATokenMetadata
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordFATokenMetadataWireKeys: ReadonlySet<string> = new Set(['name', 'symbol', 'decimals', 'dataType', 'base64Data', 'uri']);
 
 /**
  * Check if a given object implements the TgvalidatordFATokenMetadata interface.
@@ -72,7 +81,7 @@ export function TgvalidatordFATokenMetadataFromJSONTyped(json: any, ignoreDiscri
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordFATokenMetadata = {
         
         'name': json['name'] == null ? undefined : json['name'],
         'symbol': json['symbol'] == null ? undefined : json['symbol'],
@@ -81,6 +90,16 @@ export function TgvalidatordFATokenMetadataFromJSONTyped(json: any, ignoreDiscri
         'base64Data': json['base64Data'] == null ? undefined : json['base64Data'],
         'uri': json['uri'] == null ? undefined : json['uri'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordFATokenMetadataWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordFATokenMetadataToJSON(json: any): TgvalidatordFATokenMetadata {
@@ -100,6 +119,7 @@ export function TgvalidatordFATokenMetadataFromJSONTyped(json: any, ignoreDiscri
         'dataType': value['dataType'],
         'base64Data': value['base64Data'],
         'uri': value['uri'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -25,7 +25,16 @@ export interface TgvalidatordScimDeleteUserReply {
      * @memberof TgvalidatordScimDeleteUserReply
      */
     result?: object;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordScimDeleteUserReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordScimDeleteUserReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordScimDeleteUserReply interface.
@@ -42,10 +51,20 @@ export function TgvalidatordScimDeleteUserReplyFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordScimDeleteUserReply = {
         
         'result': json['result'] == null ? undefined : json['result'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordScimDeleteUserReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordScimDeleteUserReplyToJSON(json: any): TgvalidatordScimDeleteUserReply {
@@ -60,6 +79,7 @@ export function TgvalidatordScimDeleteUserReplyFromJSONTyped(json: any, ignoreDi
     return {
         
         'result': value['result'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -22,7 +22,10 @@ type TgvalidatordEVMContractTemplateParams struct {
 	Abi *string `json:"abi,omitempty"`
 	Upgradeable *bool `json:"upgradeable,omitempty"`
 	FeepayerSupport *bool `json:"feepayerSupport,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordEVMContractTemplateParams TgvalidatordEVMContractTemplateParams
 
 // NewTgvalidatordEVMContractTemplateParams instantiates a new TgvalidatordEVMContractTemplateParams object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordEVMContractTemplateParams) ToMap() (map[string]interface{}, 
 	if !IsNil(o.FeepayerSupport) {
 		toSerialize["feepayerSupport"] = o.FeepayerSupport
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordEVMContractTemplateParams) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordEVMContractTemplateParams := _TgvalidatordEVMContractTemplateParams{}
+
+	err = json.Unmarshal(data, &varTgvalidatordEVMContractTemplateParams)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordEVMContractTemplateParams(varTgvalidatordEVMContractTemplateParams)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "abi")
+		delete(additionalProperties, "upgradeable")
+		delete(additionalProperties, "feepayerSupport")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordEVMContractTemplateParams struct {

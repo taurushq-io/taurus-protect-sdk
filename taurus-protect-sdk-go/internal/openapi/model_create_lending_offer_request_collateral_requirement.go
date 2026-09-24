@@ -21,7 +21,10 @@ var _ MappedNullable = &CreateLendingOfferRequestCollateralRequirement{}
 type CreateLendingOfferRequestCollateralRequirement struct {
 	Ratio *string `json:"ratio,omitempty"`
 	CurrencyID *string `json:"currencyID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _CreateLendingOfferRequestCollateralRequirement CreateLendingOfferRequestCollateralRequirement
 
 // NewCreateLendingOfferRequestCollateralRequirement instantiates a new CreateLendingOfferRequestCollateralRequirement object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o CreateLendingOfferRequestCollateralRequirement) ToMap() (map[string]inte
 	if !IsNil(o.CurrencyID) {
 		toSerialize["currencyID"] = o.CurrencyID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *CreateLendingOfferRequestCollateralRequirement) UnmarshalJSON(data []byte) (err error) {
+	varCreateLendingOfferRequestCollateralRequirement := _CreateLendingOfferRequestCollateralRequirement{}
+
+	err = json.Unmarshal(data, &varCreateLendingOfferRequestCollateralRequirement)
+
+	if err != nil {
+		return err
+	}
+
+	*o = CreateLendingOfferRequestCollateralRequirement(varCreateLendingOfferRequestCollateralRequirement)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "ratio")
+		delete(additionalProperties, "currencyID")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableCreateLendingOfferRequestCollateralRequirement struct {

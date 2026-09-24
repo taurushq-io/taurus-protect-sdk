@@ -46,7 +46,16 @@ export interface TgvalidatordGetPledgesWithdrawalsReply {
      * @memberof TgvalidatordGetPledgesWithdrawalsReply
      */
     cursor?: TgvalidatordResponseCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetPledgesWithdrawalsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetPledgesWithdrawalsReplyWireKeys: ReadonlySet<string> = new Set(['withdrawals', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetPledgesWithdrawalsReply interface.
@@ -63,11 +72,21 @@ export function TgvalidatordGetPledgesWithdrawalsReplyFromJSONTyped(json: any, i
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetPledgesWithdrawalsReply = {
         
         'withdrawals': json['withdrawals'] == null ? undefined : ((json['withdrawals'] as Array<any>).map(TgvalidatordTnPledgeWithdrawalFromJSON)),
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetPledgesWithdrawalsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetPledgesWithdrawalsReplyToJSON(json: any): TgvalidatordGetPledgesWithdrawalsReply {
@@ -83,6 +102,7 @@ export function TgvalidatordGetPledgesWithdrawalsReplyFromJSONTyped(json: any, i
         
         'withdrawals': value['withdrawals'] == null ? undefined : ((value['withdrawals'] as Array<any>).map(TgvalidatordTnPledgeWithdrawalToJSON)),
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
+        ...value['additionalProperties'],
     };
 }
 

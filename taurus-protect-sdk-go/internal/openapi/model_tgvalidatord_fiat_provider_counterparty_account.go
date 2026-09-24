@@ -32,7 +32,10 @@ type TgvalidatordFiatProviderCounterpartyAccount struct {
 	UpdateDate *time.Time `json:"updateDate,omitempty"`
 	CurrencyID *string `json:"currencyID,omitempty"`
 	CurrencyInfo *TgvalidatordCurrency `json:"currencyInfo,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordFiatProviderCounterpartyAccount TgvalidatordFiatProviderCounterpartyAccount
 
 // NewTgvalidatordFiatProviderCounterpartyAccount instantiates a new TgvalidatordFiatProviderCounterpartyAccount object
 // This constructor will assign default values to properties that have it defined,
@@ -481,7 +484,44 @@ func (o TgvalidatordFiatProviderCounterpartyAccount) ToMap() (map[string]interfa
 	if !IsNil(o.CurrencyInfo) {
 		toSerialize["currencyInfo"] = o.CurrencyInfo
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordFiatProviderCounterpartyAccount) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordFiatProviderCounterpartyAccount := _TgvalidatordFiatProviderCounterpartyAccount{}
+
+	err = json.Unmarshal(data, &varTgvalidatordFiatProviderCounterpartyAccount)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordFiatProviderCounterpartyAccount(varTgvalidatordFiatProviderCounterpartyAccount)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "provider")
+		delete(additionalProperties, "label")
+		delete(additionalProperties, "accountType")
+		delete(additionalProperties, "accountIdentifier")
+		delete(additionalProperties, "accountName")
+		delete(additionalProperties, "counterpartyID")
+		delete(additionalProperties, "counterpartyName")
+		delete(additionalProperties, "creationDate")
+		delete(additionalProperties, "updateDate")
+		delete(additionalProperties, "currencyID")
+		delete(additionalProperties, "currencyInfo")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordFiatProviderCounterpartyAccount struct {

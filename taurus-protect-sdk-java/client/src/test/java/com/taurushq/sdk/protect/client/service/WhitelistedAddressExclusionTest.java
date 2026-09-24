@@ -19,9 +19,10 @@ import java.security.spec.ECGenParameterSpec;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -63,6 +64,14 @@ class WhitelistedAddressExclusionTest {
                 Collections.singletonList(superAdminKey), 1);
     }
 
+    /** Drives the seam as the list call does, for a first page of 20. */
+    private static WhitelistedAddressListResult verified(
+            final List<TgvalidatordSignedWhitelistedAddressEnvelope> rows, final String total)
+            throws Exception {
+        return service().verifiedAddresses(rows, new HashMap<>(),
+                PagedOperation.WHITELISTED_ADDRESSES, 20, 0, total);
+    }
+
     /**
      * A row whose payload does not hash to its stated hash. Step 1 rejects it with the
      * UNCHECKED IntegrityException, which is the class that used to escape the loop.
@@ -99,8 +108,7 @@ class WhitelistedAddressExclusionTest {
         // excluded; the page then fails only because NOTHING survived, which is the
         // aggregate guard and a different, weaker statement.
         IntegrityException e = assertThrows(IntegrityException.class,
-                () -> service().verifiedAddresses(
-                        Collections.singletonList(hashMismatchRow("1")), new HashMap<>(), null));
+                () -> verified(Collections.singletonList(hashMismatchRow("1")), null));
 
         assertTrue(e.getMessage().startsWith("all 1 whitelisted address(es) failed verification"),
                 "expected the aggregate none-survived message, got: " + e.getMessage());
@@ -114,9 +122,7 @@ class WhitelistedAddressExclusionTest {
         // Two bad rows must report "all 2", not "all 1": if the unchecked exception
         // still escaped, the count would never be reached at all.
         IntegrityException e = assertThrows(IntegrityException.class,
-                () -> service().verifiedAddresses(
-                        Arrays.asList(hashMismatchRow("1"), hashMismatchRow("2")),
-                        new HashMap<>(), null));
+                () -> verified(Arrays.asList(hashMismatchRow("1"), hashMismatchRow("2")), null));
 
         assertTrue(e.getMessage().startsWith("all 2 whitelisted address(es) failed verification"),
                 e.getMessage());
@@ -131,10 +137,9 @@ class WhitelistedAddressExclusionTest {
         // this SDK's own WhitelistedAssetResult carried one.
         //
         // An empty page keeps the server's total untouched: nothing was withheld.
-        WhitelistedAddressListResult result =
-                service().verifiedAddresses(Collections.emptyList(), new HashMap<>(), "10");
+        WhitelistedAddressListResult result = verified(Collections.emptyList(), "10");
 
-        assertEquals("10", result.getTotalItems());
+        assertEquals(10L, result.getPagination().getTotalItems());
     }
 
     @Test
@@ -152,16 +157,20 @@ class WhitelistedAddressExclusionTest {
     }
 
     @Test
-    @DisplayName("an absent or unparseable total stays absent rather than becoming a guess")
-    void unusableTotalStaysNull() throws Exception {
-        assertNull(service()
-                .verifiedAddresses(Collections.emptyList(), new HashMap<>(), null)
-                .getTotalItems());
-        assertNull(service()
-                .verifiedAddresses(Collections.emptyList(), new HashMap<>(), "")
-                .getTotalItems());
-        assertNull(service()
-                .verifiedAddresses(Collections.emptyList(), new HashMap<>(), "not-a-number")
-                .getTotalItems());
+    @DisplayName("an absent total is 0: validatord omits zero values")
+    void absentTotalIsZero() throws Exception {
+        // It used to stay null, which is how an empty page {} came back with no pagination
+        // at all. The server omits zero values, so absent means 0.
+        WhitelistedAddressListResult result = verified(Collections.emptyList(), null);
+        assertEquals(0L, result.getPagination().getTotalItems());
+        assertEquals(0L, result.getPagination().getNextOffset());
+        assertFalse(result.getPagination().hasMore());
+    }
+
+    @Test
+    @DisplayName("an unparseable total is refused rather than guessed")
+    void unparseableTotalIsRefused() {
+        assertThrows(IntegrityException.class, () -> verified(Collections.emptyList(), ""));
+        assertThrows(IntegrityException.class, () -> verified(Collections.emptyList(), "not-a-number"));
     }
 }

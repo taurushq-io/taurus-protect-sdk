@@ -37,7 +37,16 @@ export interface TgvalidatordRequestBundleDetailsDestination {
      * @memberof TgvalidatordRequestBundleDetailsDestination
      */
     toWhitelistedAddressId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordRequestBundleDetailsDestination
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordRequestBundleDetailsDestinationWireKeys: ReadonlySet<string> = new Set(['totalDestinations', 'toAddressId', 'toWhitelistedAddressId']);
 
 /**
  * Check if a given object implements the TgvalidatordRequestBundleDetailsDestination interface.
@@ -54,12 +63,22 @@ export function TgvalidatordRequestBundleDetailsDestinationFromJSONTyped(json: a
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordRequestBundleDetailsDestination = {
         
         'totalDestinations': json['totalDestinations'] == null ? undefined : json['totalDestinations'],
         'toAddressId': json['toAddressId'] == null ? undefined : json['toAddressId'],
         'toWhitelistedAddressId': json['toWhitelistedAddressId'] == null ? undefined : json['toWhitelistedAddressId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordRequestBundleDetailsDestinationWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordRequestBundleDetailsDestinationToJSON(json: any): TgvalidatordRequestBundleDetailsDestination {
@@ -76,6 +95,7 @@ export function TgvalidatordRequestBundleDetailsDestinationFromJSONTyped(json: a
         'totalDestinations': value['totalDestinations'],
         'toAddressId': value['toAddressId'],
         'toWhitelistedAddressId': value['toWhitelistedAddressId'],
+        ...value['additionalProperties'],
     };
 }
 

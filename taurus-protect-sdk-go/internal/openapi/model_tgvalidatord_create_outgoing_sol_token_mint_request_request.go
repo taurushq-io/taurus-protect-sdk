@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -35,6 +34,7 @@ type TgvalidatordCreateOutgoingSOLTokenMintRequestRequest struct {
 	Comment *string `json:"comment,omitempty"`
 	// Unique identifer for the request to be added in the database. If it already exists, it will return the existing request.
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingSOLTokenMintRequestRequest TgvalidatordCreateOutgoingSOLTokenMintRequestRequest
@@ -293,6 +293,11 @@ func (o TgvalidatordCreateOutgoingSOLTokenMintRequestRequest) ToMap() (map[strin
 	if !IsNil(o.ExternalRequestId) {
 		toSerialize["externalRequestId"] = o.ExternalRequestId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -321,15 +326,26 @@ func (o *TgvalidatordCreateOutgoingSOLTokenMintRequestRequest) UnmarshalJSON(dat
 
 	varTgvalidatordCreateOutgoingSOLTokenMintRequestRequest := _TgvalidatordCreateOutgoingSOLTokenMintRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingSOLTokenMintRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingSOLTokenMintRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingSOLTokenMintRequestRequest(varTgvalidatordCreateOutgoingSOLTokenMintRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "toAddressId")
+		delete(additionalProperties, "toWhitelistedAddressId")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "externalRequestId")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

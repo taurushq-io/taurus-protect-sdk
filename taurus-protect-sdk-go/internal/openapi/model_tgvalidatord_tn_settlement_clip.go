@@ -25,7 +25,10 @@ type TgvalidatordTnSettlementClip struct {
 	SecondLegTransactions []TgvalidatordTnSettlementClipTransaction `json:"secondLegTransactions,omitempty"`
 	Status *string `json:"status,omitempty"`
 	WorkflowID *string `json:"workflowID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTnSettlementClip TgvalidatordTnSettlementClip
 
 // NewTgvalidatordTnSettlementClip instantiates a new TgvalidatordTnSettlementClip object
 // This constructor will assign default values to properties that have it defined,
@@ -264,7 +267,38 @@ func (o TgvalidatordTnSettlementClip) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.WorkflowID) {
 		toSerialize["workflowID"] = o.WorkflowID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTnSettlementClip) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTnSettlementClip := _TgvalidatordTnSettlementClip{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTnSettlementClip)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTnSettlementClip(varTgvalidatordTnSettlementClip)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "index")
+		delete(additionalProperties, "firstLegTransactions")
+		delete(additionalProperties, "secondLegTransactions")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "workflowID")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTnSettlementClip struct {

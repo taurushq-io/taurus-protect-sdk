@@ -5,12 +5,16 @@ import com.google.common.base.Strings;
 import com.taurushq.sdk.protect.client.mapper.ActionMapper;
 import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
 import com.taurushq.sdk.protect.client.model.ActionEnvelope;
+import com.taurushq.sdk.protect.client.model.ActionResult;
 import com.taurushq.sdk.protect.client.model.ApiException;
+import com.taurushq.sdk.protect.client.model.Pagination;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import com.taurushq.sdk.protect.openapi.api.ActionsApi;
+import com.taurushq.sdk.protect.openapi.model.TgvalidatordActionEnvelope;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetActionReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetActionsReply;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -22,8 +26,8 @@ import java.util.List;
  * <p>
  * Example usage:
  * <pre>{@code
- * // Get all actions
- * List<ActionEnvelope> actions = client.getActionService().getActions();
+ * // First page of actions (default page size)
+ * ActionResult actions = client.getActionService().getActions();
  *
  * // Get a specific action
  * ActionEnvelope action = client.getActionService().getAction("action-123");
@@ -51,29 +55,37 @@ public class ActionService {
     }
 
     /**
-     * Retrieves all actions.
+     * Retrieves the first page of actions, with the default page size.
      *
-     * @return a list of all action envelopes
+     * @return the actions and their pagination
      * @throws ApiException if the API call fails
      */
-    public List<ActionEnvelope> getActions() throws ApiException {
-        return getActions(null, null, null);
+    public ActionResult getActions() throws ApiException {
+        return getActions(0, 0, null);
     }
 
     /**
-     * Retrieves actions with optional filters.
+     * Retrieves a page of actions with optional filters.
      *
-     * @param limit  the maximum number of actions to return (optional)
-     * @param offset the offset for pagination (optional)
+     * @param limit  the page size, 0 for the default ({@link Pagination#DEFAULT_PAGE_SIZE})
+     * @param offset the offset, 0 for the first page
      * @param ids    optional list of action IDs to filter by
-     * @return a list of action envelopes
-     * @throws ApiException if the API call fails
+     * @return the actions and their pagination
+     * @throws ApiException             if the API call fails
+     * @throws IllegalArgumentException if limit or offset is out of range
      */
-    public List<ActionEnvelope> getActions(final String limit, final String offset,
-                                           final List<String> ids) throws ApiException {
+    public ActionResult getActions(final int limit, final long offset,
+                                   final List<String> ids) throws ApiException {
+        final int size = PagedOperation.ACTIONS.resolveSize("limit", limit);
+        final long from = Pagination.resolveOffset("offset", offset);
         try {
-            TgvalidatordGetActionsReply reply = actionsApi.actionServiceGetActions(limit, offset, ids);
-            return ActionMapper.INSTANCE.fromDTOList(reply.getResult());
+            TgvalidatordGetActionsReply reply = actionsApi.actionServiceGetActions(
+                    String.valueOf(size), from == 0 ? null : String.valueOf(from), ids);
+            List<TgvalidatordActionEnvelope> rows = reply.getResult() == null
+                    ? Collections.emptyList() : reply.getResult();
+            return new ActionResult(ActionMapper.INSTANCE.fromDTOList(rows),
+                    PagedOperation.ACTIONS.offsetPage(size, from, rows.size(), 0,
+                            reply.getTotalItems(), null));
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }

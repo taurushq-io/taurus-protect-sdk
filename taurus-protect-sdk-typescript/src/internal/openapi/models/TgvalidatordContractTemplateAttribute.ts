@@ -31,7 +31,16 @@ export interface TgvalidatordContractTemplateAttribute {
      * @memberof TgvalidatordContractTemplateAttribute
      */
     value?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordContractTemplateAttribute
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordContractTemplateAttributeWireKeys: ReadonlySet<string> = new Set(['key', 'value']);
 
 /**
  * Check if a given object implements the TgvalidatordContractTemplateAttribute interface.
@@ -48,11 +57,21 @@ export function TgvalidatordContractTemplateAttributeFromJSONTyped(json: any, ig
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordContractTemplateAttribute = {
         
         'key': json['key'] == null ? undefined : json['key'],
         'value': json['value'] == null ? undefined : json['value'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordContractTemplateAttributeWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordContractTemplateAttributeToJSON(json: any): TgvalidatordContractTemplateAttribute {
@@ -68,6 +87,7 @@ export function TgvalidatordContractTemplateAttributeFromJSONTyped(json: any, ig
         
         'key': value['key'],
         'value': value['value'],
+        ...value['additionalProperties'],
     };
 }
 

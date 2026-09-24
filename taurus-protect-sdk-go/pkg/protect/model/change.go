@@ -104,11 +104,13 @@ type ListChangesOptions struct {
 	CreatorID string
 	// SortOrder specifies the sort order (ASC or DESC).
 	SortOrder string
-	// PageSize is the number of items per page.
+	// PageSize is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
 	PageSize int64
-	// CurrentPage is the current page cursor for pagination.
+	// Cursor is a previous page's Page.NextCursor; the SDK then requests the NEXT page.
+	Cursor string
+	// CurrentPage and PageRequest (FIRST, PREVIOUS, NEXT, LAST) page by hand; neither can be
+	// combined with Cursor.
 	CurrentPage string
-	// PageRequest specifies which page to fetch (FIRST, PREVIOUS, NEXT, LAST).
 	PageRequest string
 }
 
@@ -116,18 +118,8 @@ type ListChangesOptions struct {
 type ListChangesResult struct {
 	// Changes is the list of changes.
 	Changes []*Change `json:"changes"`
-	// Cursor contains pagination information.
-	Cursor *CursorPagination `json:"cursor,omitempty"`
-}
-
-// CursorPagination represents cursor-based pagination information.
-type CursorPagination struct {
-	// CurrentPage is the current page token.
-	CurrentPage string `json:"current_page,omitempty"`
-	// HasPrevious indicates if there is a previous page.
-	HasPrevious bool `json:"has_previous"`
-	// HasNext indicates if there is a next page.
-	HasNext bool `json:"has_next"`
+	// Page continues the list: pass Page.NextCursor as the next Cursor until HasMore is false.
+	Page CursorPage `json:"page"`
 }
 
 // ListChangesForApprovalOptions contains options for listing changes pending approval.
@@ -140,11 +132,13 @@ type ListChangesForApprovalOptions struct {
 	EntityUUIDs []string
 	// SortOrder specifies the sort order (ASC or DESC).
 	SortOrder string
-	// PageSize is the number of items per page.
+	// PageSize is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
 	PageSize int64
-	// CurrentPage is the current page cursor for pagination.
+	// Cursor is a previous page's Page.NextCursor; the SDK then requests the NEXT page.
+	Cursor string
+	// CurrentPage and PageRequest (FIRST, PREVIOUS, NEXT, LAST) page by hand; neither can be
+	// combined with Cursor.
 	CurrentPage string
-	// PageRequest specifies which page to fetch (FIRST, PREVIOUS, NEXT, LAST).
 	PageRequest string
 }
 

@@ -58,7 +58,16 @@ export interface TgvalidatordGetAssetWalletsReply {
      * @memberof TgvalidatordGetAssetWalletsReply
      */
     cursor?: TgvalidatordResponseCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetAssetWalletsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetAssetWalletsReplyWireKeys: ReadonlySet<string> = new Set(['wallets', 'totalItems', 'next', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetAssetWalletsReply interface.
@@ -75,13 +84,23 @@ export function TgvalidatordGetAssetWalletsReplyFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetAssetWalletsReply = {
         
         'wallets': json['wallets'] == null ? undefined : ((json['wallets'] as Array<any>).map(TgvalidatordWalletInfoFromJSON)),
         'totalItems': json['totalItems'] == null ? undefined : json['totalItems'],
         'next': json['next'] == null ? undefined : json['next'],
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetAssetWalletsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetAssetWalletsReplyToJSON(json: any): TgvalidatordGetAssetWalletsReply {
@@ -99,6 +118,7 @@ export function TgvalidatordGetAssetWalletsReplyFromJSONTyped(json: any, ignoreD
         'totalItems': value['totalItems'],
         'next': value['next'],
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
+        ...value['additionalProperties'],
     };
 }
 

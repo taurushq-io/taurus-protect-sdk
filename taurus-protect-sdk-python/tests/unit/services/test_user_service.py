@@ -6,8 +6,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from taurus_protect._internal.openapi import UsersApi
 from taurus_protect.errors import APIError, NotFoundError
+from taurus_protect.models.pagination import Pagination
 from taurus_protect.services.user_service import UserService
+from tests.unit.transport_stub import StubTransport, api_client
 
 
 class TestGet:
@@ -90,83 +93,61 @@ class TestGetCurrent:
 
 
 class TestList:
-    """Tests for UserService.list()."""
+    """UserService.list: next offset = offset + min(rows, limit)."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        users_api = MagicMock()
-        service = UserService(api_client=api_client, users_api=users_api)
-        return service, users_api
+    def _service(self) -> UserService:
+        ac = api_client()
+        return UserService(ac, UsersApi(ac))
 
-    def test_list_returns_users_and_pagination(self) -> None:
-        service, api = self._make_service()
+    def test_a_synthetic_daemon_user_beyond_the_limit_does_not_skip_a_row(self) -> None:
+        rows = [{"id": str(i)} for i in range(3)]
+        with StubTransport({"result": rows, "totalItems": "30"}):
+            users, pagination = self._service().list(limit=2)
 
-        reply = MagicMock()
-        reply.result = [MagicMock()]
-        reply.total_items = "10"
-        api.user_service_get_users.return_value = reply
+        assert len(users) == 3
+        assert pagination == Pagination(
+            limit=2, offset=0, total_items=30, next_offset=2, has_more=True
+        )
 
-        with patch(
-            "taurus_protect.services.user_service.users_from_dto",
-            return_value=[MagicMock()],
-        ):
-            users, pagination = service.list()
+    def test_empty_reply(self) -> None:
+        with StubTransport({}) as transport:
+            users, pagination = self._service().list()
 
-        assert len(users) == 1
-
-    def test_list_raises_for_invalid_limit(self) -> None:
-        service, _ = self._make_service()
-
-        with pytest.raises(ValueError, match="limit must be positive"):
-            service.list(limit=0)
-
-    def test_list_raises_for_negative_offset(self) -> None:
-        service, _ = self._make_service()
-
-        with pytest.raises(ValueError, match="offset cannot be negative"):
-            service.list(offset=-1)
-
-    def test_list_returns_empty_when_no_result(self) -> None:
-        service, api = self._make_service()
-
-        reply = MagicMock()
-        reply.result = None
-        reply.total_items = None
-        api.user_service_get_users.return_value = reply
-
-        users, pagination = service.list()
         assert users == []
+        assert pagination == Pagination(limit=20, offset=0)
+        assert transport.last.query == [("limit", "20")]
+
+    @pytest.mark.parametrize("kwargs,name", [({"limit": 101}, "limit"), ({"offset": -1}, "offset")])
+    def test_invalid_page_window_sends_nothing(self, kwargs: dict, name: str) -> None:
+        with StubTransport() as transport:
+            with pytest.raises(ValueError, match=name):
+                self._service().list(**kwargs)
+
+        assert transport.requests == []
 
 
 class TestGetUsersByEmail:
-    """Tests for UserService.get_users_by_email()."""
+    """get_users_by_email reads every page, 100 at a time, instead of one unbounded page."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        users_api = MagicMock()
-        service = UserService(api_client=api_client, users_api=users_api)
-        return service, users_api
+    def _service(self) -> UserService:
+        ac = api_client()
+        return UserService(ac, UsersApi(ac))
 
     def test_get_users_by_email_raises_for_empty_list(self) -> None:
-        service, _ = self._make_service()
-
         with pytest.raises(ValueError, match="emails cannot be empty"):
-            service.get_users_by_email([])
+            self._service().get_users_by_email([])
 
-    def test_get_users_by_email_returns_users(self) -> None:
-        service, api = self._make_service()
+    def test_walks_every_page_and_dedupes(self) -> None:
+        page1 = {"result": [{"id": str(i)} for i in range(100)], "totalItems": "101"}
+        page2 = {"result": [{"id": "99"}, {"id": "100"}], "totalItems": "101"}
+        with StubTransport(page1, page2) as transport:
+            users = self._service().get_users_by_email(["a@example.test", "b@example.test"])
 
-        reply = MagicMock()
-        reply.result = [MagicMock()]
-        api.user_service_get_users.return_value = reply
-
-        with patch(
-            "taurus_protect.services.user_service.users_from_dto",
-            return_value=[MagicMock()],
-        ):
-            result = service.get_users_by_email(["user@example.com"])
-
-        assert len(result) == 1
+        assert [u.id for u in users] == [str(i) for i in range(101)]
+        assert transport.requests[0].query == sorted(
+            [("emails", "a@example.test"), ("emails", "b@example.test"), ("limit", "100")]
+        )
+        assert transport.requests[1].param("offset") == "100"
 
 
 class TestCreateUserAttribute:

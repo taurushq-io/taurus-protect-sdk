@@ -25,7 +25,16 @@ export interface GetLendingOffersRequestCurrencyIDs {
      * @memberof GetLendingOffersRequestCurrencyIDs
      */
     currencyIDs?: Array<string>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof GetLendingOffersRequestCurrencyIDs
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const GetLendingOffersRequestCurrencyIDsWireKeys: ReadonlySet<string> = new Set(['currencyIDs']);
 
 /**
  * Check if a given object implements the GetLendingOffersRequestCurrencyIDs interface.
@@ -42,10 +51,20 @@ export function GetLendingOffersRequestCurrencyIDsFromJSONTyped(json: any, ignor
     if (json == null) {
         return json;
     }
-    return {
+    const result: GetLendingOffersRequestCurrencyIDs = {
         
         'currencyIDs': json['currencyIDs'] == null ? undefined : json['currencyIDs'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!GetLendingOffersRequestCurrencyIDsWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function GetLendingOffersRequestCurrencyIDsToJSON(json: any): GetLendingOffersRequestCurrencyIDs {
@@ -60,6 +79,7 @@ export function GetLendingOffersRequestCurrencyIDsFromJSONTyped(json: any, ignor
     return {
         
         'currencyIDs': value['currencyIDs'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -31,7 +31,16 @@ export interface TgvalidatordExportAddressesReply {
      * @memberof TgvalidatordExportAddressesReply
      */
     totalItems?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordExportAddressesReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordExportAddressesReplyWireKeys: ReadonlySet<string> = new Set(['result', 'totalItems']);
 
 /**
  * Check if a given object implements the TgvalidatordExportAddressesReply interface.
@@ -48,11 +57,21 @@ export function TgvalidatordExportAddressesReplyFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordExportAddressesReply = {
         
         'result': json['result'] == null ? undefined : json['result'],
         'totalItems': json['totalItems'] == null ? undefined : json['totalItems'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordExportAddressesReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordExportAddressesReplyToJSON(json: any): TgvalidatordExportAddressesReply {
@@ -68,6 +87,7 @@ export function TgvalidatordExportAddressesReplyFromJSONTyped(json: any, ignoreD
         
         'result': value['result'],
         'totalItems': value['totalItems'],
+        ...value['additionalProperties'],
     };
 }
 

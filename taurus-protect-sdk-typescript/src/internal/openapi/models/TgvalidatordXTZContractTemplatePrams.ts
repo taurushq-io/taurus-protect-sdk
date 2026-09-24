@@ -46,7 +46,16 @@ export interface TgvalidatordXTZContractTemplatePrams {
      * @memberof TgvalidatordXTZContractTemplatePrams
      */
     views?: Array<TgvalidatordXTZView>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordXTZContractTemplatePrams
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordXTZContractTemplatePramsWireKeys: ReadonlySet<string> = new Set(['entryPoints', 'views']);
 
 /**
  * Check if a given object implements the TgvalidatordXTZContractTemplatePrams interface.
@@ -63,11 +72,21 @@ export function TgvalidatordXTZContractTemplatePramsFromJSONTyped(json: any, ign
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordXTZContractTemplatePrams = {
         
         'entryPoints': json['entryPoints'] == null ? undefined : ((json['entryPoints'] as Array<any>).map(TgvalidatordXTZEntrypointFromJSON)),
         'views': json['views'] == null ? undefined : ((json['views'] as Array<any>).map(TgvalidatordXTZViewFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordXTZContractTemplatePramsWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordXTZContractTemplatePramsToJSON(json: any): TgvalidatordXTZContractTemplatePrams {
@@ -83,6 +102,7 @@ export function TgvalidatordXTZContractTemplatePramsFromJSONTyped(json: any, ign
         
         'entryPoints': value['entryPoints'] == null ? undefined : ((value['entryPoints'] as Array<any>).map(TgvalidatordXTZEntrypointToJSON)),
         'views': value['views'] == null ? undefined : ((value['views'] as Array<any>).map(TgvalidatordXTZViewToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

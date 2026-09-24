@@ -262,7 +262,7 @@ describe("Integration: Admin - Audit", () => {
 
     const client = getTestClient();
     try {
-      const auditTrails = await client.audits.list({ limit: 10 });
+      const auditTrails = (await client.audits.list({ pageSize: 10 })).items;
 
       console.log(`Found ${auditTrails.length} audit trails`);
 
@@ -294,11 +294,13 @@ describe("Integration: Admin - Audit", () => {
       const now = new Date();
       const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-      const auditTrails = await client.audits.list({
-        creationDateFrom: sevenDaysAgo,
-        creationDateTo: now,
-        limit: 10,
-      });
+      const auditTrails = (
+        await client.audits.list({
+          creationDateFrom: sevenDaysAgo,
+          creationDateTo: now,
+          pageSize: 10,
+        })
+      ).items;
 
       console.log(`Found ${auditTrails.length} audit trails in last 7 days`);
 
@@ -326,10 +328,12 @@ describe("Integration: Admin - Audit", () => {
 
     const client = getTestClient();
     try {
-      const auditTrails = await client.audits.list({
-        entities: ["USER"],
-        limit: 10,
-      });
+      const auditTrails = (
+        await client.audits.list({
+          entities: ["USER"],
+          pageSize: 10,
+        })
+      ).items;
 
       console.log(`Found ${auditTrails.length} USER audit trails`);
 

@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordTriggerExistentialRecomputeReply{}
 // TgvalidatordTriggerExistentialRecomputeReply struct for TgvalidatordTriggerExistentialRecomputeReply
 type TgvalidatordTriggerExistentialRecomputeReply struct {
 	Message *string `json:"message,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTriggerExistentialRecomputeReply TgvalidatordTriggerExistentialRecomputeReply
 
 // NewTgvalidatordTriggerExistentialRecomputeReply instantiates a new TgvalidatordTriggerExistentialRecomputeReply object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordTriggerExistentialRecomputeReply) ToMap() (map[string]interf
 	if !IsNil(o.Message) {
 		toSerialize["message"] = o.Message
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTriggerExistentialRecomputeReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTriggerExistentialRecomputeReply := _TgvalidatordTriggerExistentialRecomputeReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTriggerExistentialRecomputeReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTriggerExistentialRecomputeReply(varTgvalidatordTriggerExistentialRecomputeReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "message")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTriggerExistentialRecomputeReply struct {

@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordApprovers{}
 // TgvalidatordApprovers struct for TgvalidatordApprovers
 type TgvalidatordApprovers struct {
 	Parallel []TgvalidatordParallelApproversGroups `json:"parallel,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordApprovers TgvalidatordApprovers
 
 // NewTgvalidatordApprovers instantiates a new TgvalidatordApprovers object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordApprovers) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Parallel) {
 		toSerialize["parallel"] = o.Parallel
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordApprovers) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordApprovers := _TgvalidatordApprovers{}
+
+	err = json.Unmarshal(data, &varTgvalidatordApprovers)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordApprovers(varTgvalidatordApprovers)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "parallel")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordApprovers struct {

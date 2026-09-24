@@ -31,7 +31,16 @@ export interface TgvalidatordExtendedAmountNFT {
      * @memberof TgvalidatordExtendedAmountNFT
      */
     quantity?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordExtendedAmountNFT
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordExtendedAmountNFTWireKeys: ReadonlySet<string> = new Set(['id', 'quantity']);
 
 /**
  * Check if a given object implements the TgvalidatordExtendedAmountNFT interface.
@@ -48,11 +57,21 @@ export function TgvalidatordExtendedAmountNFTFromJSONTyped(json: any, ignoreDisc
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordExtendedAmountNFT = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'quantity': json['quantity'] == null ? undefined : json['quantity'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordExtendedAmountNFTWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordExtendedAmountNFTToJSON(json: any): TgvalidatordExtendedAmountNFT {
@@ -68,6 +87,7 @@ export function TgvalidatordExtendedAmountNFTFromJSONTyped(json: any, ignoreDisc
         
         'id': value['id'],
         'quantity': value['quantity'],
+        ...value['additionalProperties'],
     };
 }
 

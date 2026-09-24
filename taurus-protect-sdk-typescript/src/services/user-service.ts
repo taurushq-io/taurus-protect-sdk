@@ -7,9 +7,14 @@
 import { NotFoundError, ValidationError } from '../errors';
 import type { UsersApi } from '../internal/openapi/apis/UsersApi';
 import { userFromDto, usersFromDto } from '../mappers/user';
-import type { Pagination, PaginatedResult } from '../models/pagination';
+import {
+  buildOffsetPagination,
+  offsetRequest,
+  type PaginatedResult,
+} from '../models/pagination';
 import type { ListUsersOptions, User } from '../models/user';
 import { BaseService } from './base';
+import { offsetQuery } from './paging';
 
 /**
  * Service for user management operations.
@@ -69,7 +74,7 @@ export class UserService extends BaseService {
     return this.execute(async () => {
       const response = await this.usersApi.userServiceGetUser({ id: userId });
 
-      const result = (response as Record<string, unknown>).result;
+      const result = response.result;
       const user = userFromDto(result);
 
       if (!user) {
@@ -97,7 +102,7 @@ export class UserService extends BaseService {
     return this.execute(async () => {
       const response = await this.usersApi.userServiceGetMe({});
 
-      const result = (response as Record<string, unknown>).result;
+      const result = response.result;
       const user = userFromDto(result);
 
       if (!user) {
@@ -113,14 +118,17 @@ export class UserService extends BaseService {
    *
    * @param options - Optional filtering and pagination options
    * @returns Paginated result containing users and pagination info
-   * @throws {@link ValidationError} If limit or offset are invalid
+   * @throws {@link ValidationError} If limit or offset are out of bounds
    * @throws {@link APIError} If API request fails
    *
    * @example
    * ```typescript
-   * // List first 50 users
-   * const result = await userService.list({ limit: 50, offset: 0 });
+   * // List the first page of users, then the next one
+   * const result = await userService.list({ limit: 50 });
    * console.log(`Found ${result.pagination.totalItems} users`);
+   * if (result.pagination.hasMore) {
+   *   await userService.list({ limit: 50, offset: result.pagination.nextOffset });
+   * }
    *
    * // List with filters
    * const admins = await userService.list({
@@ -130,21 +138,13 @@ export class UserService extends BaseService {
    * ```
    */
   async list(options?: ListUsersOptions): Promise<PaginatedResult<User>> {
-    const limit = options?.limit ?? 50;
-    const offset = options?.offset ?? 0;
-
-    if (limit <= 0) {
-      throw new ValidationError('limit must be positive');
-    }
-    if (offset < 0) {
-      throw new ValidationError('offset cannot be negative');
-    }
+    const page = offsetRequest(options);
 
     return this.execute(async () => {
       const response = await this.usersApi.userServiceGetUsers({
-        limit: String(limit),
-        offset: String(offset),
+        ...offsetQuery(page),
         ids: options?.ids,
+        externalUserIds: options?.externalUserIds,
         emails: options?.emails,
         query: options?.query,
         excludeTechnicalUsers: options?.excludeTechnicalUsers,
@@ -154,19 +154,11 @@ export class UserService extends BaseService {
         groupIds: options?.groupIds,
       });
 
-      const resp = response as Record<string, unknown>;
-      const result = resp.result;
-      const users = usersFromDto(result as unknown[]);
-
-      const pagination: Pagination = {
-        totalItems: parseInt((resp.totalItems ?? resp.total_items ?? '0') as string, 10),
-        offset,
-        limit,
-      };
-
+      const rows = response.result ?? [];
       return {
-        items: users,
-        pagination,
+        items: usersFromDto(rows),
+        // The server may append a synthetic daemon user beyond `limit`.
+        pagination: buildOffsetPagination('plus_min_rows_limit', page, response, rows.length),
       };
     });
   }

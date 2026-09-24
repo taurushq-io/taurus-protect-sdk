@@ -31,7 +31,16 @@ export interface TgvalidatordContractArgValue {
      * @memberof TgvalidatordContractArgValue
      */
     composite?: Array<TgvalidatordContractArgValue>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordContractArgValue
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordContractArgValueWireKeys: ReadonlySet<string> = new Set(['primitive', 'composite']);
 
 /**
  * Check if a given object implements the TgvalidatordContractArgValue interface.
@@ -48,11 +57,21 @@ export function TgvalidatordContractArgValueFromJSONTyped(json: any, ignoreDiscr
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordContractArgValue = {
         
         'primitive': json['primitive'] == null ? undefined : json['primitive'],
         'composite': json['composite'] == null ? undefined : ((json['composite'] as Array<any>).map(TgvalidatordContractArgValueFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordContractArgValueWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordContractArgValueToJSON(json: any): TgvalidatordContractArgValue {
@@ -68,6 +87,7 @@ export function TgvalidatordContractArgValueFromJSONTyped(json: any, ignoreDiscr
         
         'primitive': value['primitive'],
         'composite': value['composite'] == null ? undefined : ((value['composite'] as Array<any>).map(TgvalidatordContractArgValueToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

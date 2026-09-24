@@ -22,7 +22,10 @@ type TgvalidatordTnAllowedParticipant struct {
 	Id *string `json:"id,omitempty"`
 	Name *string `json:"name,omitempty"`
 	Status *string `json:"status,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTnAllowedParticipant TgvalidatordTnAllowedParticipant
 
 // NewTgvalidatordTnAllowedParticipant instantiates a new TgvalidatordTnAllowedParticipant object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordTnAllowedParticipant) ToMap() (map[string]interface{}, error
 	if !IsNil(o.Status) {
 		toSerialize["status"] = o.Status
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTnAllowedParticipant) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTnAllowedParticipant := _TgvalidatordTnAllowedParticipant{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTnAllowedParticipant)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTnAllowedParticipant(varTgvalidatordTnAllowedParticipant)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "status")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTnAllowedParticipant struct {

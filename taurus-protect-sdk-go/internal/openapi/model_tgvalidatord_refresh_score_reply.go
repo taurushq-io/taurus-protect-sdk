@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordRefreshScoreReply{}
 // TgvalidatordRefreshScoreReply struct for TgvalidatordRefreshScoreReply
 type TgvalidatordRefreshScoreReply struct {
 	Scores []TgvalidatordScore `json:"scores,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordRefreshScoreReply TgvalidatordRefreshScoreReply
 
 // NewTgvalidatordRefreshScoreReply instantiates a new TgvalidatordRefreshScoreReply object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordRefreshScoreReply) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Scores) {
 		toSerialize["scores"] = o.Scores
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordRefreshScoreReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordRefreshScoreReply := _TgvalidatordRefreshScoreReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordRefreshScoreReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordRefreshScoreReply(varTgvalidatordRefreshScoreReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "scores")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordRefreshScoreReply struct {

@@ -25,7 +25,16 @@ export interface TgvalidatordUpdateTransactionsEnabledBusinessRuleRequest {
      * @memberof TgvalidatordUpdateTransactionsEnabledBusinessRuleRequest
      */
     enabled?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordUpdateTransactionsEnabledBusinessRuleRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordUpdateTransactionsEnabledBusinessRuleRequestWireKeys: ReadonlySet<string> = new Set(['enabled']);
 
 /**
  * Check if a given object implements the TgvalidatordUpdateTransactionsEnabledBusinessRuleRequest interface.
@@ -42,10 +51,20 @@ export function TgvalidatordUpdateTransactionsEnabledBusinessRuleRequestFromJSON
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordUpdateTransactionsEnabledBusinessRuleRequest = {
         
         'enabled': json['enabled'] == null ? undefined : json['enabled'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordUpdateTransactionsEnabledBusinessRuleRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordUpdateTransactionsEnabledBusinessRuleRequestToJSON(json: any): TgvalidatordUpdateTransactionsEnabledBusinessRuleRequest {
@@ -60,6 +79,7 @@ export function TgvalidatordUpdateTransactionsEnabledBusinessRuleRequestFromJSON
     return {
         
         'enabled': value['enabled'],
+        ...value['additionalProperties'],
     };
 }
 

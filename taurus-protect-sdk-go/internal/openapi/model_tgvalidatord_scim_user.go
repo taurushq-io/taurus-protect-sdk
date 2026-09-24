@@ -29,7 +29,10 @@ type TgvalidatordScimUser struct {
 	Roles []TgvalidatordScimRole `json:"roles,omitempty"`
 	Groups []TgvalidatordScimResource `json:"groups,omitempty"`
 	UserName *string `json:"userName,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordScimUser TgvalidatordScimUser
 
 // NewTgvalidatordScimUser instantiates a new TgvalidatordScimUser object
 // This constructor will assign default values to properties that have it defined,
@@ -408,7 +411,42 @@ func (o TgvalidatordScimUser) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.UserName) {
 		toSerialize["userName"] = o.UserName
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordScimUser) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordScimUser := _TgvalidatordScimUser{}
+
+	err = json.Unmarshal(data, &varTgvalidatordScimUser)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordScimUser(varTgvalidatordScimUser)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "schemas")
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "externalId")
+		delete(additionalProperties, "meta")
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "emails")
+		delete(additionalProperties, "active")
+		delete(additionalProperties, "roles")
+		delete(additionalProperties, "groups")
+		delete(additionalProperties, "userName")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordScimUser struct {

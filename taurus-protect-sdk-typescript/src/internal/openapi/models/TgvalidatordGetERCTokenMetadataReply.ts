@@ -33,7 +33,16 @@ export interface TgvalidatordGetERCTokenMetadataReply {
      * @memberof TgvalidatordGetERCTokenMetadataReply
      */
     result?: TgvalidatordERCTokenMetadata;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetERCTokenMetadataReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetERCTokenMetadataReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetERCTokenMetadataReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetERCTokenMetadataReplyFromJSONTyped(json: any, ign
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetERCTokenMetadataReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordERCTokenMetadataFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetERCTokenMetadataReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetERCTokenMetadataReplyToJSON(json: any): TgvalidatordGetERCTokenMetadataReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetERCTokenMetadataReplyFromJSONTyped(json: any, ign
     return {
         
         'result': TgvalidatordERCTokenMetadataToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

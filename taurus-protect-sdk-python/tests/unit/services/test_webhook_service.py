@@ -6,82 +6,82 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from taurus_protect._internal.openapi import WebhooksApi
+from taurus_protect.errors import NotFoundError
+from taurus_protect.models.pagination import CursorPage
 from taurus_protect.services.webhook_service import WebhookService
+from tests.unit.transport_stub import StubTransport, api_client
 
 
 class TestWebhookServiceList:
-    """Tests for WebhookService.list()."""
+    """WebhookService.list: a cursor list (the offset it took was never sent)."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        webhooks_api = MagicMock()
-        service = WebhookService(api_client=api_client, webhooks_api=webhooks_api)
-        return service, webhooks_api
+    def _service(self) -> WebhookService:
+        ac = api_client()
+        return WebhookService(ac, WebhooksApi(ac))
 
-    def test_list_returns_webhooks(self) -> None:
-        service, api = self._make_service()
-        webhook_dto = MagicMock()
-        webhook_dto.id = "wh-1"
-        webhook_dto.url = "https://example.com/hook"
-        webhook_dto.status = "ACTIVE"
-        webhook_dto.type = "REQUEST_CREATED"
-        webhook_dto.created_at = None
-        resp = MagicMock()
-        resp.webhooks = [webhook_dto]
-        resp.cursor = None
-        api.webhook_service_get_webhooks.return_value = resp
+    def test_rows_page_and_filters(self) -> None:
+        reply = {
+            "webhooks": [{"id": "w1", "url": "https://hook.example"}],
+            "cursor": {"currentPage": "n", "hasNext": True},
+        }
+        with StubTransport(reply) as transport:
+            webhooks, page = self._service().list(
+                page_size=5, type="TRANSACTION", url="https://hook.example", sort_order="ASC"
+            )
 
-        webhooks, pagination = service.list(limit=50)
+        assert [w.id for w in webhooks] == ["w1"]
+        assert page == CursorPage(page_size=5, next_cursor="n", has_more=True)
+        assert transport.last.query == sorted(
+            [
+                ("type", "TRANSACTION"),
+                ("url", "https://hook.example"),
+                ("sortOrder", "ASC"),
+                ("cursor.pageSize", "5"),
+            ]
+        )
 
-        assert len(webhooks) >= 0  # depends on mapper
-        api.webhook_service_get_webhooks.assert_called_once()
+    def test_page_two_is_reachable(self) -> None:
+        with StubTransport() as transport:
+            self._service().list(cursor="n")
 
-    def test_list_raises_on_invalid_limit(self) -> None:
-        service, _ = self._make_service()
-        with pytest.raises(ValueError, match="limit must be positive"):
-            service.list(limit=0)
+        assert transport.last.param("cursor.currentPage") == "n"
+        assert transport.last.param("cursor.pageRequest") == "NEXT"
 
-    def test_list_raises_on_negative_offset(self) -> None:
-        service, _ = self._make_service()
-        with pytest.raises(ValueError, match="offset cannot be negative"):
-            service.list(offset=-1)
-
-    def test_list_returns_empty_when_no_webhooks(self) -> None:
-        service, api = self._make_service()
-        resp = MagicMock()
-        resp.webhooks = None
-        resp.cursor = None
-        api.webhook_service_get_webhooks.return_value = resp
-
-        webhooks, pagination = service.list()
+    def test_empty_reply(self) -> None:
+        with StubTransport({}):
+            webhooks, page = self._service().list()
 
         assert webhooks == []
+        assert page == CursorPage(page_size=20)
 
 
 class TestWebhookServiceGet:
-    """Tests for WebhookService.get()."""
+    """WebhookService.get walks the pages instead of reading one page of 100."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        webhooks_api = MagicMock()
-        service = WebhookService(api_client=api_client, webhooks_api=webhooks_api)
-        return service, webhooks_api
+    def _service(self) -> WebhookService:
+        ac = api_client()
+        return WebhookService(ac, WebhooksApi(ac))
 
     def test_get_raises_on_empty_id(self) -> None:
-        service, _ = self._make_service()
         with pytest.raises(ValueError, match="webhook_id"):
-            service.get("")
+            self._service().get("")
 
-    def test_get_raises_not_found_when_missing(self) -> None:
-        service, api = self._make_service()
-        resp = MagicMock()
-        resp.webhooks = []
-        api.webhook_service_get_webhooks.return_value = resp
+    def test_found_on_page_two(self) -> None:
+        with StubTransport(
+            {"webhooks": [{"id": "w1"}], "cursor": {"currentPage": "n", "hasNext": True}},
+            {"webhooks": [{"id": "w2"}]},
+        ) as transport:
+            webhook = self._service().get("w2")
 
-        from taurus_protect.errors import NotFoundError
+        assert webhook.id == "w2"
+        assert transport.requests[1].param("cursor.currentPage") == "n"
+        assert [r.param("cursor.pageSize") for r in transport.requests] == ["100", "100"]
 
-        with pytest.raises(NotFoundError):
-            service.get("wh-missing")
+    def test_not_found_after_the_last_page(self) -> None:
+        with StubTransport({"webhooks": [{"id": "w1"}]}):
+            with pytest.raises(NotFoundError):
+                self._service().get("w2")
 
 
 class TestWebhookServiceCreate:

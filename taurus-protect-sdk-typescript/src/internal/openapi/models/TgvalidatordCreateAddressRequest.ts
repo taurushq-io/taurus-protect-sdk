@@ -74,7 +74,16 @@ export interface TgvalidatordCreateAddressRequest {
      * @memberof TgvalidatordCreateAddressRequest
      */
     externalAddressId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateAddressRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateAddressRequestWireKeys: ReadonlySet<string> = new Set(['walletId', 'label', 'comment', 'customerId', 'nonHardenedDerivation', 'workchainId', 'type', 'externalAddressId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateAddressRequest interface.
@@ -93,7 +102,7 @@ export function TgvalidatordCreateAddressRequestFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateAddressRequest = {
         
         'walletId': json['walletId'],
         'label': json['label'],
@@ -104,6 +113,16 @@ export function TgvalidatordCreateAddressRequestFromJSONTyped(json: any, ignoreD
         'type': json['type'] == null ? undefined : json['type'],
         'externalAddressId': json['externalAddressId'] == null ? undefined : json['externalAddressId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateAddressRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateAddressRequestToJSON(json: any): TgvalidatordCreateAddressRequest {
@@ -125,6 +144,7 @@ export function TgvalidatordCreateAddressRequestFromJSONTyped(json: any, ignoreD
         'workchainId': value['workchainId'],
         'type': value['type'],
         'externalAddressId': value['externalAddressId'],
+        ...value['additionalProperties'],
     };
 }
 

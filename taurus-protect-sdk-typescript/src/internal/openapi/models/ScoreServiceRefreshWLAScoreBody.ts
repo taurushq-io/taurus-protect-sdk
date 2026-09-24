@@ -25,7 +25,16 @@ export interface ScoreServiceRefreshWLAScoreBody {
      * @memberof ScoreServiceRefreshWLAScoreBody
      */
     scoreProvider?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof ScoreServiceRefreshWLAScoreBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const ScoreServiceRefreshWLAScoreBodyWireKeys: ReadonlySet<string> = new Set(['scoreProvider']);
 
 /**
  * Check if a given object implements the ScoreServiceRefreshWLAScoreBody interface.
@@ -42,10 +51,20 @@ export function ScoreServiceRefreshWLAScoreBodyFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: ScoreServiceRefreshWLAScoreBody = {
         
         'scoreProvider': json['scoreProvider'] == null ? undefined : json['scoreProvider'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!ScoreServiceRefreshWLAScoreBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function ScoreServiceRefreshWLAScoreBodyToJSON(json: any): ScoreServiceRefreshWLAScoreBody {
@@ -60,6 +79,7 @@ export function ScoreServiceRefreshWLAScoreBodyFromJSONTyped(json: any, ignoreDi
     return {
         
         'scoreProvider': value['scoreProvider'],
+        ...value['additionalProperties'],
     };
 }
 

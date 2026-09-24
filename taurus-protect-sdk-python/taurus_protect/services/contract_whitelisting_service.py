@@ -62,18 +62,6 @@ class ContractWhitelistingService(BaseService):
                 raise self._handle_error(e)
             raise
 
-    def delete(self, contract_id: int) -> None:
-        """Delete a whitelisted contract."""
-        if contract_id <= 0:
-            raise ValueError("contract_id must be positive")
-
-        try:
-            self._api.whitelist_service_delete_whitelisted_contract(str(contract_id))
-        except Exception as e:
-            if isinstance(e, ApiException):
-                raise self._handle_error(e)
-            raise
-
     def approve_whitelisted_contracts(
         self,
         contract_ids: List[str],

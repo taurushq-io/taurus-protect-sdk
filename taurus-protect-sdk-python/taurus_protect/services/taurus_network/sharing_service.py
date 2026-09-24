@@ -6,8 +6,12 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
+from taurus_protect.models.pagination import CursorPage, cursor_page
+from taurus_protect.models.taurus_network.sharing import (
+    ListSharedAddressesOptions,
+    ListSharedAssetsOptions,
+)
 from taurus_protect.services._base import BaseService
-from taurus_protect.services.taurus_network.settlement_service import CursorPagination
 
 if TYPE_CHECKING:
     pass  # For OpenAPI types when available
@@ -94,70 +98,6 @@ class SharedAsset:
     status: str = ""
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-
-
-@dataclass
-class ListSharedAddressesOptions:
-    """
-    Options for listing shared addresses.
-
-    Attributes:
-        participant_id: Filter by participant (owner or target).
-        owner_participant_id: Filter by owner participant.
-        target_participant_id: Filter by target participant.
-        blockchain: Filter by blockchain.
-        network: Filter by network (requires blockchain).
-        ids: Filter by specific shared address IDs.
-        statuses: Filter by statuses (new, pending, rejected, accepted, unshared).
-        sort_order: Sort order (ASC or DESC).
-        page_size: Number of items per page.
-        current_page: Current page cursor (base64).
-        page_request: Page request direction (FIRST, PREVIOUS, NEXT, LAST).
-    """
-
-    participant_id: Optional[str] = None
-    owner_participant_id: Optional[str] = None
-    target_participant_id: Optional[str] = None
-    blockchain: Optional[str] = None
-    network: Optional[str] = None
-    ids: Optional[List[str]] = None
-    statuses: Optional[List[str]] = None
-    sort_order: Optional[str] = None
-    page_size: int = 50
-    current_page: Optional[str] = None
-    page_request: Optional[str] = None
-
-
-@dataclass
-class ListSharedAssetsOptions:
-    """
-    Options for listing shared assets.
-
-    Attributes:
-        participant_id: Filter by participant (owner or target).
-        owner_participant_id: Filter by owner participant.
-        target_participant_id: Filter by target participant.
-        blockchain: Filter by blockchain.
-        network: Filter by network (requires blockchain).
-        ids: Filter by specific shared asset IDs.
-        statuses: Filter by statuses.
-        sort_order: Sort order (ASC or DESC).
-        page_size: Number of items per page.
-        current_page: Current page cursor (base64).
-        page_request: Page request direction (FIRST, PREVIOUS, NEXT, LAST).
-    """
-
-    participant_id: Optional[str] = None
-    owner_participant_id: Optional[str] = None
-    target_participant_id: Optional[str] = None
-    blockchain: Optional[str] = None
-    network: Optional[str] = None
-    ids: Optional[List[str]] = None
-    statuses: Optional[List[str]] = None
-    sort_order: Optional[str] = None
-    page_size: int = 50
-    current_page: Optional[str] = None
-    page_request: Optional[str] = None
 
 
 @dataclass
@@ -287,20 +227,22 @@ class SharingService(BaseService):
     def list_shared_addresses(
         self,
         options: Optional[ListSharedAddressesOptions] = None,
-    ) -> Tuple[List[SharedAddress], Optional[CursorPagination]]:
+    ) -> Tuple[List[SharedAddress], CursorPage]:
         """
-        List shared addresses.
+        List shared addresses, one page at a time.
 
         Args:
-            options: Optional filtering and pagination options.
+            options: Filters and page window.
 
         Returns:
-            Tuple of (shared addresses list, cursor pagination info).
+            Tuple of (shared addresses, page).
 
         Raises:
+            ValueError: If paging options are invalid.
             APIError: If API request fails.
         """
         opts = options or ListSharedAddressesOptions()
+        req = opts.to_cursor_request()
 
         try:
             resp = self._shared_api.taurus_network_service_get_shared_addresses(
@@ -312,36 +254,21 @@ class SharingService(BaseService):
                 ids=opts.ids,
                 statuses=opts.statuses,
                 sort_order=opts.sort_order,
-                cursor_current_page=opts.current_page,
-                cursor_page_request=opts.page_request,
-                cursor_page_size=str(opts.page_size) if opts.page_size > 0 else None,
+                **req.query_params(),
             )
 
-            result = getattr(resp, "result", None)
-            addresses = []
-            if result:
-                for dto in result:
-                    addr = _shared_address_from_dto(dto)
-                    if addr:
-                        addresses.append(addr)
-
-            # Extract cursor pagination
-            cursor = getattr(resp, "cursor", None)
-            pagination = None
-            if cursor:
-                pagination = CursorPagination(
-                    current_page=getattr(cursor, "current_page", None),
-                    has_next=getattr(cursor, "has_next", False) or False,
-                    has_previous=getattr(cursor, "has_previous", False) or False,
-                )
-
-            return addresses, pagination
+            addresses = [
+                x
+                for dto in resp.shared_addresses or []
+                if (x := _shared_address_from_dto(dto)) is not None
+            ]
+            return addresses, cursor_page(req.page_size, resp.cursor)
         except Exception as e:
             from taurus_protect.errors import APIError
 
             if type(e).__name__ == "ApiException":
                 raise self._handle_error(e) from e
-            if isinstance(e, APIError):
+            if isinstance(e, (APIError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -420,20 +347,22 @@ class SharingService(BaseService):
     def list_shared_assets(
         self,
         options: Optional[ListSharedAssetsOptions] = None,
-    ) -> Tuple[List[SharedAsset], Optional[CursorPagination]]:
+    ) -> Tuple[List[SharedAsset], CursorPage]:
         """
-        List shared whitelisted assets.
+        List shared whitelisted assets, one page at a time.
 
         Args:
-            options: Optional filtering and pagination options.
+            options: Filters and page window.
 
         Returns:
-            Tuple of (shared assets list, cursor pagination info).
+            Tuple of (shared assets, page).
 
         Raises:
+            ValueError: If paging options are invalid.
             APIError: If API request fails.
         """
         opts = options or ListSharedAssetsOptions()
+        req = opts.to_cursor_request()
 
         try:
             resp = self._shared_api.taurus_network_service_get_shared_assets(
@@ -445,36 +374,21 @@ class SharingService(BaseService):
                 ids=opts.ids,
                 statuses=opts.statuses,
                 sort_order=opts.sort_order,
-                cursor_current_page=opts.current_page,
-                cursor_page_request=opts.page_request,
-                cursor_page_size=str(opts.page_size) if opts.page_size > 0 else None,
+                **req.query_params(),
             )
 
-            result = getattr(resp, "result", None)
-            assets = []
-            if result:
-                for dto in result:
-                    asset = _shared_asset_from_dto(dto)
-                    if asset:
-                        assets.append(asset)
-
-            # Extract cursor pagination
-            cursor = getattr(resp, "cursor", None)
-            pagination = None
-            if cursor:
-                pagination = CursorPagination(
-                    current_page=getattr(cursor, "current_page", None),
-                    has_next=getattr(cursor, "has_next", False) or False,
-                    has_previous=getattr(cursor, "has_previous", False) or False,
-                )
-
-            return assets, pagination
+            assets = [
+                x
+                for dto in resp.shared_assets or []
+                if (x := _shared_asset_from_dto(dto)) is not None
+            ]
+            return assets, cursor_page(req.page_size, resp.cursor)
         except Exception as e:
             from taurus_protect.errors import APIError
 
             if type(e).__name__ == "ApiException":
                 raise self._handle_error(e) from e
-            if isinstance(e, APIError):
+            if isinstance(e, (APIError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 

@@ -6,12 +6,14 @@ import com.taurushq.sdk.protect.client.model.FiatProviderAccount;
 import com.taurushq.sdk.protect.client.model.FiatProviderAccountResult;
 import com.taurushq.sdk.protect.client.model.FiatProviderCounterpartyAccount;
 import com.taurushq.sdk.protect.client.model.FiatProviderCounterpartyAccountResult;
+import com.taurushq.sdk.protect.client.model.FiatProviderEntity;
 import com.taurushq.sdk.protect.client.model.FiatProviderOperation;
 import com.taurushq.sdk.protect.client.model.FiatProviderOperationResult;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordFiatProvider;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordFiatProviderAccount;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordFiatProviderCounterpartyAccount;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordFiatProviderOperation;
+import com.taurushq.sdk.protect.openapi.model.TgvalidatordFiatProviderEntity;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProviderAccountsReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProviderCounterpartyAccountsReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProviderOperationsReply;
@@ -76,6 +78,7 @@ public interface FiatMapper {
      */
     @Mapping(target = "accounts", source = "result")
     @Mapping(target = "cursor", source = "cursor")
+    @Mapping(target = "page", ignore = true)
     FiatProviderAccountResult fromAccountsReply(TgvalidatordGetFiatProviderAccountsReply reply);
 
     /**
@@ -104,6 +107,7 @@ public interface FiatMapper {
      */
     @Mapping(target = "accounts", source = "result")
     @Mapping(target = "cursor", source = "cursor")
+    @Mapping(target = "page", ignore = true)
     FiatProviderCounterpartyAccountResult fromCounterpartyAccountsReply(
             TgvalidatordGetFiatProviderCounterpartyAccountsReply reply);
 
@@ -131,6 +135,7 @@ public interface FiatMapper {
      */
     @Mapping(target = "operations", source = "result")
     @Mapping(target = "cursor", source = "cursor")
+    @Mapping(target = "page", ignore = true)
     FiatProviderOperationResult fromOperationsReply(TgvalidatordGetFiatProviderOperationsReply reply);
 
     /**
@@ -140,4 +145,20 @@ public interface FiatMapper {
      * @return the domain model cursor
      */
     ApiResponseCursor fromCursor(TgvalidatordResponseCursor cursor);
+
+    /**
+     * Converts a fiat provider entity DTO to a domain model.
+     *
+     * @param dto the OpenAPI entity DTO
+     * @return the domain model entity
+     */
+    FiatProviderEntity fromEntityDTO(TgvalidatordFiatProviderEntity dto);
+
+    /**
+     * Converts a list of fiat provider entity DTOs to domain models.
+     *
+     * @param dtos the list of OpenAPI entity DTOs
+     * @return the list of domain model entities
+     */
+    List<FiatProviderEntity> fromEntityDTOList(List<TgvalidatordFiatProviderEntity> dtos);
 }

@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -32,6 +31,7 @@ type GetContractTemplatesFilterGenericFilter struct {
 	NameSearch *string `json:"nameSearch,omitempty"`
 	// Optional filter on specified Contract Template types.
 	ContractTemplateTypes []TgvalidatordContractTemplateType `json:"contractTemplateTypes,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _GetContractTemplatesFilterGenericFilter GetContractTemplatesFilterGenericFilter
@@ -264,6 +264,11 @@ func (o GetContractTemplatesFilterGenericFilter) ToMap() (map[string]interface{}
 	if !IsNil(o.ContractTemplateTypes) {
 		toSerialize["contractTemplateTypes"] = o.ContractTemplateTypes
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -291,15 +296,25 @@ func (o *GetContractTemplatesFilterGenericFilter) UnmarshalJSON(data []byte) (er
 
 	varGetContractTemplatesFilterGenericFilter := _GetContractTemplatesFilterGenericFilter{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varGetContractTemplatesFilterGenericFilter)
+	err = json.Unmarshal(data, &varGetContractTemplatesFilterGenericFilter)
 
 	if err != nil {
 		return err
 	}
 
 	*o = GetContractTemplatesFilterGenericFilter(varGetContractTemplatesFilterGenericFilter)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "tag")
+		delete(additionalProperties, "providedOnly")
+		delete(additionalProperties, "auditedOnly")
+		delete(additionalProperties, "nameSearch")
+		delete(additionalProperties, "contractTemplateTypes")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

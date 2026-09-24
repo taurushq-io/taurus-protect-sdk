@@ -33,7 +33,16 @@ export interface TgvalidatordParallelApproversGroups {
      * @memberof TgvalidatordParallelApproversGroups
      */
     sequential?: Array<TgvalidatordApproversGroup>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordParallelApproversGroups
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordParallelApproversGroupsWireKeys: ReadonlySet<string> = new Set(['sequential']);
 
 /**
  * Check if a given object implements the TgvalidatordParallelApproversGroups interface.
@@ -50,10 +59,20 @@ export function TgvalidatordParallelApproversGroupsFromJSONTyped(json: any, igno
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordParallelApproversGroups = {
         
         'sequential': json['sequential'] == null ? undefined : ((json['sequential'] as Array<any>).map(TgvalidatordApproversGroupFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordParallelApproversGroupsWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordParallelApproversGroupsToJSON(json: any): TgvalidatordParallelApproversGroups {
@@ -68,6 +87,7 @@ export function TgvalidatordParallelApproversGroupsFromJSONTyped(json: any, igno
     return {
         
         'sequential': value['sequential'] == null ? undefined : ((value['sequential'] as Array<any>).map(TgvalidatordApproversGroupToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

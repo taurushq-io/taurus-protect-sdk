@@ -142,7 +142,16 @@ export interface TgvalidatordTnSharedAddress {
      * @memberof TgvalidatordTnSharedAddress
      */
     trails?: Array<TgvalidatordTnSharedAddressTrail>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTnSharedAddress
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTnSharedAddressWireKeys: ReadonlySet<string> = new Set(['id', 'internalAddressID', 'wladdressID', 'ownerParticipantId', 'targetParticipantId', 'blockchain', 'network', 'address', 'originLabel', 'originCreationDate', 'originDeletionDate', 'createdAt', 'updatedAt', 'targetAcceptedAt', 'status', 'proofOfOwnership', 'pledgesCount', 'trails']);
 
 /**
  * Check if a given object implements the TgvalidatordTnSharedAddress interface.
@@ -159,7 +168,7 @@ export function TgvalidatordTnSharedAddressFromJSONTyped(json: any, ignoreDiscri
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTnSharedAddress = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'internalAddressID': json['internalAddressID'] == null ? undefined : json['internalAddressID'],
@@ -180,6 +189,16 @@ export function TgvalidatordTnSharedAddressFromJSONTyped(json: any, ignoreDiscri
         'pledgesCount': json['pledgesCount'] == null ? undefined : json['pledgesCount'],
         'trails': json['trails'] == null ? undefined : ((json['trails'] as Array<any>).map(TgvalidatordTnSharedAddressTrailFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTnSharedAddressWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTnSharedAddressToJSON(json: any): TgvalidatordTnSharedAddress {
@@ -211,6 +230,7 @@ export function TgvalidatordTnSharedAddressFromJSONTyped(json: any, ignoreDiscri
         'proofOfOwnership': TgvalidatordProofOfOwnershipToJSON(value['proofOfOwnership']),
         'pledgesCount': value['pledgesCount'],
         'trails': value['trails'] == null ? undefined : ((value['trails'] as Array<any>).map(TgvalidatordTnSharedAddressTrailToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

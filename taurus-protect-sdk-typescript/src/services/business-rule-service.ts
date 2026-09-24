@@ -10,14 +10,12 @@ import type { BusinessRulesApi } from '../internal/openapi/apis/BusinessRulesApi
 import { businessRulesFromDto } from '../mappers/business-rule';
 import type {
   BusinessRule,
-  BusinessRuleCurrency,
   ListBusinessRulesOptions,
   ListBusinessRulesResult,
 } from '../models/business-rule';
+import { buildCursorPage, cursorRequest } from '../models/pagination';
 import { BaseService } from './base';
-
-// Re-export types for convenience
-export type { BusinessRule, BusinessRuleCurrency, ListBusinessRulesOptions, ListBusinessRulesResult };
+import { cursorQuery } from './paging';
 
 /**
  * Service for managing business rules in Taurus-PROTECT.
@@ -65,8 +63,9 @@ export class BusinessRuleService extends BaseService {
   /**
    * Lists business rules with optional filtering and pagination.
    *
-   * @param options - Optional filtering and pagination options
-   * @returns A result containing business rules and pagination cursor
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
+   * @returns The page of business rules and its cursor pagination
+   * @throws {@link ValidationError} If the page size or cursor options are invalid
    * @throws {@link APIError} If API request fails
    *
    * @example
@@ -91,16 +90,17 @@ export class BusinessRuleService extends BaseService {
    *
    * // Paginate through results
    * let result = await businessRuleService.list({ pageSize: 50 });
-   * while (result.hasMore) {
+   * while (result.pagination.hasMore) {
    *   result = await businessRuleService.list({
    *     pageSize: 50,
-   *     currentPage: result.nextCursor,
-   *     pageRequest: 'NEXT',
+   *     cursor: result.pagination.nextCursor,
    *   });
    * }
    * ```
    */
   async list(options?: ListBusinessRulesOptions): Promise<ListBusinessRulesResult> {
+    const page = cursorRequest(options);
+
     return this.execute(async () => {
       const response = await this.businessRulesApi.ruleServiceGetBusinessRulesV2({
         ids: options?.ids,
@@ -112,23 +112,12 @@ export class BusinessRuleService extends BaseService {
         level: options?.level,
         entityType: options?.entityType,
         entityIDs: options?.entityIds,
-        cursorPageSize: options?.pageSize != null ? String(options.pageSize) : undefined,
-        cursorCurrentPage: options?.currentPage,
-        cursorPageRequest: options?.pageRequest,
+        ...cursorQuery(page),
       });
 
-      const resp = response as Record<string, unknown>;
-      const rules = businessRulesFromDto(resp.result as unknown[]);
-
-      // Extract cursor information
-      const cursor = resp.cursor as Record<string, unknown> | undefined;
-      const nextCursor = cursor?.currentPage != null ? String(cursor.currentPage) : undefined;
-      const hasMore = cursor?.hasNextPage === true || cursor?.hasMore === true;
-
       return {
-        rules,
-        nextCursor,
-        hasMore,
+        rules: businessRulesFromDto(response.result),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
       };
     });
   }
@@ -157,10 +146,10 @@ export class BusinessRuleService extends BaseService {
     return this.execute(async () => {
       const response = await this.businessRulesApi.ruleServiceGetBusinessRulesV2({
         ids: [ruleId],
+        cursorPageSize: '1',
       });
 
-      const resp = response as Record<string, unknown>;
-      const rules = businessRulesFromDto(resp.result as unknown[]);
+      const rules = businessRulesFromDto(response.result);
 
       if (rules.length === 0) {
         throw new NotFoundError(`Business rule with id '${ruleId}' not found`);

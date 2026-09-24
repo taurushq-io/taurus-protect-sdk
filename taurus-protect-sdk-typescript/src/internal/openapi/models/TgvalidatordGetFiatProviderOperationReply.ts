@@ -33,7 +33,16 @@ export interface TgvalidatordGetFiatProviderOperationReply {
      * @memberof TgvalidatordGetFiatProviderOperationReply
      */
     result?: TgvalidatordFiatProviderOperation;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetFiatProviderOperationReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetFiatProviderOperationReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetFiatProviderOperationReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetFiatProviderOperationReplyFromJSONTyped(json: any
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetFiatProviderOperationReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordFiatProviderOperationFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetFiatProviderOperationReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetFiatProviderOperationReplyToJSON(json: any): TgvalidatordGetFiatProviderOperationReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetFiatProviderOperationReplyFromJSONTyped(json: any
     return {
         
         'result': TgvalidatordFiatProviderOperationToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

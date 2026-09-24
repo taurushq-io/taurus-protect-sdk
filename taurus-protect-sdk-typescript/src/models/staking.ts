@@ -4,6 +4,8 @@
  * These models represent staking information across multiple blockchain networks.
  */
 
+import type { CursorNavigationOptions, CursorPage } from './pagination';
+
 /**
  * Cardano (ADA) stake pool information.
  */
@@ -160,43 +162,26 @@ export interface StakeAccount {
 }
 
 /**
- * Cursor for pagination.
- */
-export interface StakeCursor {
-  /** The current page token */
-  currentPage?: string;
-  /** Whether there is a next page */
-  hasNext?: boolean;
-  /** Whether there is a previous page */
-  hasPrevious?: boolean;
-}
-
-/**
- * Result of listing stake accounts.
+ * A page of stake accounts.
  */
 export interface StakeAccountResult {
   /** The list of stake accounts */
   stakeAccounts: StakeAccount[];
-  /** Pagination cursor */
-  cursor?: StakeCursor;
+  /** Cursor pagination: continue with `cursor: pagination.nextCursor` while `hasMore` */
+  pagination: CursorPage;
 }
 
 /**
- * Options for listing stake accounts.
+ * Options for listing stake accounts. A cursor list: `pageSize` 1-100 (default 20) and
+ * the `cursor` of a previous page.
  */
-export interface ListStakeAccountsOptions {
+export interface ListStakeAccountsOptions extends CursorNavigationOptions {
   /** Filter by associated address ID */
   addressId?: string;
   /** Filter by account type */
   accountType?: StakeAccountType;
   /** Filter by on-chain account address */
   accountAddress?: string;
-  /** Pagination cursor (current page token) */
-  cursorCurrentPage?: string;
-  /** Page request direction (FIRST, PREVIOUS, NEXT, LAST) */
-  cursorPageRequest?: 'FIRST' | 'PREVIOUS' | 'NEXT' | 'LAST';
-  /** Page size */
-  cursorPageSize?: number;
 }
 
 /**

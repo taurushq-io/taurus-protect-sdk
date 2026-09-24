@@ -4,11 +4,15 @@ import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
 import com.taurushq.sdk.protect.client.mapper.FeePayerMapper;
 import com.taurushq.sdk.protect.client.model.ApiException;
 import com.taurushq.sdk.protect.client.model.FeePayer;
+import com.taurushq.sdk.protect.client.model.FeePayerResult;
+import com.taurushq.sdk.protect.client.model.Pagination;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import com.taurushq.sdk.protect.openapi.api.FeePayersApi;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFeePayerReply;
+import com.taurushq.sdk.protect.openapi.model.TgvalidatordFeePayerEnvelope;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFeePayersReply;
 
+import java.util.Collections;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -23,12 +27,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * <p>
  * Example usage:
  * <pre>{@code
- * // Get all fee payers
- * List<FeePayer> feePayers = client.getFeePayerService().getFeePayers();
+ * // First page of fee payers (default page size)
+ * FeePayerResult feePayers = client.getFeePayerService().getFeePayers();
  *
- * // Get fee payers for a specific blockchain
- * List<FeePayer> ethFeePayers = client.getFeePayerService()
- *     .getFeePayers(null, null, null, "ETH", "mainnet");
+ * // Fee payers for a specific blockchain
+ * FeePayerResult ethFeePayers = client.getFeePayerService()
+ *     .getFeePayers(0, 0, null, "ETH", "mainnet");
  *
  * // Get a specific fee payer
  * FeePayer feePayer = client.getFeePayerService().getFeePayer("fp-123");
@@ -58,42 +62,49 @@ public class FeePayerService {
     }
 
     /**
-     * Retrieves all fee payers.
+     * Retrieves the first page of fee payers, with the default page size.
      *
-     * @return the list of fee payers
+     * @return the fee payers and their pagination
      * @throws ApiException if the API call fails
      */
-    public List<FeePayer> getFeePayers() throws ApiException {
-        return getFeePayers(null, null, null, null, null);
+    public FeePayerResult getFeePayers() throws ApiException {
+        return getFeePayers(0, 0, null, null, null);
     }
 
     /**
-     * Retrieves fee payers with optional filters.
+     * Retrieves a page of fee payers with optional filters.
      *
-     * @param limit      maximum number of results to return (optional)
-     * @param offset     number of results to skip for pagination (optional)
+     * @param limit      the page size, 0 for the default ({@link Pagination#DEFAULT_PAGE_SIZE})
+     * @param offset     the offset, 0 for the first page
      * @param ids        list of specific IDs to filter by (optional)
      * @param blockchain blockchain to filter by (optional)
      * @param network    network to filter by (optional)
-     * @return the list of fee payers matching the filters
-     * @throws ApiException if the API call fails
+     * @return the fee payers and their pagination
+     * @throws ApiException             if the API call fails
+     * @throws IllegalArgumentException if limit or offset is out of range
      */
-    public List<FeePayer> getFeePayers(
-            final Integer limit,
-            final Integer offset,
+    public FeePayerResult getFeePayers(
+            final int limit,
+            final long offset,
             final List<String> ids,
             final String blockchain,
             final String network
     ) throws ApiException {
+        final int size = PagedOperation.FEE_PAYERS.resolveSize("limit", limit);
+        final long from = Pagination.resolveOffset("offset", offset);
         try {
             TgvalidatordGetFeePayersReply reply = feePayersApi.feePayerServiceGetFeePayers(
-                    limit != null ? limit.toString() : null,
-                    offset != null ? offset.toString() : null,
+                    String.valueOf(size),
+                    from == 0 ? null : String.valueOf(from),
                     ids,
                     blockchain,
                     network
             );
-            return feePayerMapper.fromDTOList(reply.getResult());
+            List<TgvalidatordFeePayerEnvelope> rows = reply.getResult() == null
+                    ? Collections.emptyList() : reply.getResult();
+            return new FeePayerResult(feePayerMapper.fromDTOList(rows),
+                    PagedOperation.FEE_PAYERS.offsetPage(size, from, rows.size(), 0,
+                            reply.getTotalItems(), null));
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }

@@ -33,7 +33,10 @@ type TgvalidatordPricesHistoryPoint struct {
 	ChangePercent *string `json:"changePercent,omitempty"`
 	CurrencyFromInfo *TgvalidatordCurrency `json:"currencyFromInfo,omitempty"`
 	CurrencyToInfo *TgvalidatordCurrency `json:"currencyToInfo,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordPricesHistoryPoint TgvalidatordPricesHistoryPoint
 
 // NewTgvalidatordPricesHistoryPoint instantiates a new TgvalidatordPricesHistoryPoint object
 // This constructor will assign default values to properties that have it defined,
@@ -517,7 +520,45 @@ func (o TgvalidatordPricesHistoryPoint) ToMap() (map[string]interface{}, error) 
 	if !IsNil(o.CurrencyToInfo) {
 		toSerialize["currencyToInfo"] = o.CurrencyToInfo
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordPricesHistoryPoint) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordPricesHistoryPoint := _TgvalidatordPricesHistoryPoint{}
+
+	err = json.Unmarshal(data, &varTgvalidatordPricesHistoryPoint)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordPricesHistoryPoint(varTgvalidatordPricesHistoryPoint)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "periodStartDate")
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "currencyFrom")
+		delete(additionalProperties, "currencyTo")
+		delete(additionalProperties, "high")
+		delete(additionalProperties, "low")
+		delete(additionalProperties, "open")
+		delete(additionalProperties, "close")
+		delete(additionalProperties, "volumeFrom")
+		delete(additionalProperties, "volumeTo")
+		delete(additionalProperties, "changePercent")
+		delete(additionalProperties, "currencyFromInfo")
+		delete(additionalProperties, "currencyToInfo")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordPricesHistoryPoint struct {

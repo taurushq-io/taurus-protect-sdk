@@ -63,9 +63,18 @@ export interface ETHLocal {
      * @memberof ETHLocal
      */
     domainSeparator?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof ETHLocal
+     */
+    additionalProperties?: { [key: string]: any };
 }
 
 
+
+const ETHLocalWireKeys: ReadonlySet<string> = new Set(['addressId', 'forwarderAddressId', 'autoApprove', 'creatorAddressId', 'forwarderKind', 'domainSeparator']);
 
 /**
  * Check if a given object implements the ETHLocal interface.
@@ -82,7 +91,7 @@ export function ETHLocalFromJSONTyped(json: any, ignoreDiscriminator: boolean): 
     if (json == null) {
         return json;
     }
-    return {
+    const result: ETHLocal = {
         
         'addressId': json['addressId'] == null ? undefined : json['addressId'],
         'forwarderAddressId': json['forwarderAddressId'] == null ? undefined : json['forwarderAddressId'],
@@ -91,6 +100,16 @@ export function ETHLocalFromJSONTyped(json: any, ignoreDiscriminator: boolean): 
         'forwarderKind': json['forwarderKind'] == null ? undefined : TgvalidatordFeePayerForwarderKindFromJSON(json['forwarderKind']),
         'domainSeparator': json['domainSeparator'] == null ? undefined : json['domainSeparator'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!ETHLocalWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function ETHLocalToJSON(json: any): ETHLocal {
@@ -110,6 +129,7 @@ export function ETHLocalFromJSONTyped(json: any, ignoreDiscriminator: boolean): 
         'creatorAddressId': value['creatorAddressId'],
         'forwarderKind': TgvalidatordFeePayerForwarderKindToJSON(value['forwarderKind']),
         'domainSeparator': value['domainSeparator'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -409,6 +409,7 @@ describe("ProtectClient", () => {
       "actionsApi",
       "addressesApi",
       "airGapApi",
+      "assetV2Api",
       "assetsApi",
       "auditApi",
       "authenticationApi",
@@ -422,6 +423,7 @@ describe("ProtectClient", () => {
       "configApi",
       "contractWhitelistingApi",
       "currenciesApi",
+      "earnApi",
       "exchangeApi",
       "feeApi",
       "feePayersApi",
@@ -485,10 +487,10 @@ describe("ProtectClient", () => {
       );
     });
 
-    // 54, not 56: governanceRulesApi and addressWhitelistingApi were both removed from
+    // 56, not 58: governanceRulesApi and addressWhitelistingApi were both removed from
     // the public surface, so each entity is reachable only through its verified service.
-    it("should have 54 API getters available", () => {
-      expect(apiGetters.length).toBe(54);
+    it("should have 56 API getters available", () => {
+      expect(apiGetters.length).toBe(56);
     });
   });
 
@@ -523,6 +525,7 @@ describe("ProtectClient", () => {
       "exchanges",
       "airGap",
       "tokenMetadata",
+      "earn",
     ];
 
     beforeEach(() => {
@@ -551,7 +554,7 @@ describe("ProtectClient", () => {
 
     it("should have the expected number of service getters", () => {
       // Note: staking is only exposed as stakingApi, not as high-level service
-      expect(serviceGetters.length).toBe(26);
+      expect(serviceGetters.length).toBe(27);
     });
   });
 

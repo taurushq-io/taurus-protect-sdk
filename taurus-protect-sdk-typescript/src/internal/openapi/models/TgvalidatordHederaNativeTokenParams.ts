@@ -103,7 +103,16 @@ export interface TgvalidatordHederaNativeTokenParams {
      * @memberof TgvalidatordHederaNativeTokenParams
      */
     forceKYC?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordHederaNativeTokenParams
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordHederaNativeTokenParamsWireKeys: ReadonlySet<string> = new Set(['name', 'symbol', 'initialSupply', 'freezeDefault', 'expiry', 'autoRenewPeriod', 'memo', 'metadata', 'tokenType', 'supplyType', 'maxSupply', 'customFee', 'decimals', 'forceKYC']);
 
 /**
  * Check if a given object implements the TgvalidatordHederaNativeTokenParams interface.
@@ -120,7 +129,7 @@ export function TgvalidatordHederaNativeTokenParamsFromJSONTyped(json: any, igno
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordHederaNativeTokenParams = {
         
         'name': json['name'] == null ? undefined : json['name'],
         'symbol': json['symbol'] == null ? undefined : json['symbol'],
@@ -137,6 +146,16 @@ export function TgvalidatordHederaNativeTokenParamsFromJSONTyped(json: any, igno
         'decimals': json['decimals'] == null ? undefined : json['decimals'],
         'forceKYC': json['forceKYC'] == null ? undefined : json['forceKYC'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordHederaNativeTokenParamsWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordHederaNativeTokenParamsToJSON(json: any): TgvalidatordHederaNativeTokenParams {
@@ -164,6 +183,7 @@ export function TgvalidatordHederaNativeTokenParamsFromJSONTyped(json: any, igno
         'customFee': value['customFee'],
         'decimals': value['decimals'],
         'forceKYC': value['forceKYC'],
+        ...value['additionalProperties'],
     };
 }
 

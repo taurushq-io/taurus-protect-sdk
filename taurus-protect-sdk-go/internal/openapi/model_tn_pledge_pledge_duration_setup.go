@@ -28,7 +28,10 @@ type TnPledgePledgeDurationSetup struct {
 	NoticePeriodDuration *string `json:"noticePeriodDuration,omitempty"`
 	// The end date of the notice period. The notice period is the time that the target participant can perform withdrawals after the unpledge is done by the owner participant.After the end of the notice period, the target participant can't perform withdrawals anymore and the pledge is considered 'UNPLEDGED'. This field is set once an unpledge action is performed.
 	EndOfNoticePeriodDate *time.Time `json:"endOfNoticePeriodDate,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TnPledgePledgeDurationSetup TnPledgePledgeDurationSetup
 
 // NewTnPledgePledgeDurationSetup instantiates a new TnPledgePledgeDurationSetup object
 // This constructor will assign default values to properties that have it defined,
@@ -197,7 +200,36 @@ func (o TnPledgePledgeDurationSetup) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.EndOfNoticePeriodDate) {
 		toSerialize["endOfNoticePeriodDate"] = o.EndOfNoticePeriodDate
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TnPledgePledgeDurationSetup) UnmarshalJSON(data []byte) (err error) {
+	varTnPledgePledgeDurationSetup := _TnPledgePledgeDurationSetup{}
+
+	err = json.Unmarshal(data, &varTnPledgePledgeDurationSetup)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TnPledgePledgeDurationSetup(varTnPledgePledgeDurationSetup)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "minimumDuration")
+		delete(additionalProperties, "endOfMinimumDurationDate")
+		delete(additionalProperties, "noticePeriodDuration")
+		delete(additionalProperties, "endOfNoticePeriodDate")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTnPledgePledgeDurationSetup struct {

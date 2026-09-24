@@ -30,7 +30,10 @@ type InternalUserAttribute struct {
 	IsFile *bool `json:"isFile,omitempty"`
 	CreationDate *time.Time `json:"creationDate,omitempty"`
 	UpdateDate *time.Time `json:"updateDate,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _InternalUserAttribute InternalUserAttribute
 
 // NewInternalUserAttribute instantiates a new InternalUserAttribute object
 // This constructor will assign default values to properties that have it defined,
@@ -409,7 +412,42 @@ func (o InternalUserAttribute) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.UpdateDate) {
 		toSerialize["updateDate"] = o.UpdateDate
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *InternalUserAttribute) UnmarshalJSON(data []byte) (err error) {
+	varInternalUserAttribute := _InternalUserAttribute{}
+
+	err = json.Unmarshal(data, &varInternalUserAttribute)
+
+	if err != nil {
+		return err
+	}
+
+	*o = InternalUserAttribute(varInternalUserAttribute)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "key")
+		delete(additionalProperties, "value")
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "contentType")
+		delete(additionalProperties, "owner")
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "subType")
+		delete(additionalProperties, "isFile")
+		delete(additionalProperties, "creationDate")
+		delete(additionalProperties, "updateDate")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableInternalUserAttribute struct {

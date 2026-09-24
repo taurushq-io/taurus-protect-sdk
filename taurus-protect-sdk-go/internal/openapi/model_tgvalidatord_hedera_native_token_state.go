@@ -44,7 +44,10 @@ type TgvalidatordHederaNativeTokenState struct {
 	SupplyKey *string `json:"supplyKey,omitempty"`
 	WipeKey *string `json:"wipeKey,omitempty"`
 	PauseKey *string `json:"pauseKey,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordHederaNativeTokenState TgvalidatordHederaNativeTokenState
 
 // NewTgvalidatordHederaNativeTokenState instantiates a new TgvalidatordHederaNativeTokenState object
 // This constructor will assign default values to properties that have it defined,
@@ -913,7 +916,56 @@ func (o TgvalidatordHederaNativeTokenState) ToMap() (map[string]interface{}, err
 	if !IsNil(o.PauseKey) {
 		toSerialize["pauseKey"] = o.PauseKey
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordHederaNativeTokenState) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordHederaNativeTokenState := _TgvalidatordHederaNativeTokenState{}
+
+	err = json.Unmarshal(data, &varTgvalidatordHederaNativeTokenState)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordHederaNativeTokenState(varTgvalidatordHederaNativeTokenState)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "symbol")
+		delete(additionalProperties, "memo")
+		delete(additionalProperties, "totalSupply")
+		delete(additionalProperties, "autoRenewPeriod")
+		delete(additionalProperties, "decimals")
+		delete(additionalProperties, "freezeDefault")
+		delete(additionalProperties, "initialSupply")
+		delete(additionalProperties, "treasuryAccountID")
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "pauseStatus")
+		delete(additionalProperties, "deleted")
+		delete(additionalProperties, "createdTimestamp")
+		delete(additionalProperties, "expiryTimestamp")
+		delete(additionalProperties, "modificationTimestamp")
+		delete(additionalProperties, "autoRenewAccount")
+		delete(additionalProperties, "customFees")
+		delete(additionalProperties, "adminKey")
+		delete(additionalProperties, "feeScheduleKey")
+		delete(additionalProperties, "freezeKey")
+		delete(additionalProperties, "kycKey")
+		delete(additionalProperties, "supplyKey")
+		delete(additionalProperties, "wipeKey")
+		delete(additionalProperties, "pauseKey")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordHederaNativeTokenState struct {

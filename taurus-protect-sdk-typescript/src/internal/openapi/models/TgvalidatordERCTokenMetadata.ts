@@ -55,7 +55,16 @@ export interface TgvalidatordERCTokenMetadata {
      * @memberof TgvalidatordERCTokenMetadata
      */
     uri?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordERCTokenMetadata
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordERCTokenMetadataWireKeys: ReadonlySet<string> = new Set(['name', 'description', 'decimals', 'dataType', 'base64Data', 'uri']);
 
 /**
  * Check if a given object implements the TgvalidatordERCTokenMetadata interface.
@@ -72,7 +81,7 @@ export function TgvalidatordERCTokenMetadataFromJSONTyped(json: any, ignoreDiscr
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordERCTokenMetadata = {
         
         'name': json['name'] == null ? undefined : json['name'],
         'description': json['description'] == null ? undefined : json['description'],
@@ -81,6 +90,16 @@ export function TgvalidatordERCTokenMetadataFromJSONTyped(json: any, ignoreDiscr
         'base64Data': json['base64Data'] == null ? undefined : json['base64Data'],
         'uri': json['uri'] == null ? undefined : json['uri'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordERCTokenMetadataWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordERCTokenMetadataToJSON(json: any): TgvalidatordERCTokenMetadata {
@@ -100,6 +119,7 @@ export function TgvalidatordERCTokenMetadataFromJSONTyped(json: any, ignoreDiscr
         'dataType': value['dataType'],
         'base64Data': value['base64Data'],
         'uri': value['uri'],
+        ...value['additionalProperties'],
     };
 }
 

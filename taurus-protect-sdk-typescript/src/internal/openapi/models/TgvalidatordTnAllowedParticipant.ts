@@ -37,7 +37,16 @@ export interface TgvalidatordTnAllowedParticipant {
      * @memberof TgvalidatordTnAllowedParticipant
      */
     status?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTnAllowedParticipant
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTnAllowedParticipantWireKeys: ReadonlySet<string> = new Set(['id', 'name', 'status']);
 
 /**
  * Check if a given object implements the TgvalidatordTnAllowedParticipant interface.
@@ -54,12 +63,22 @@ export function TgvalidatordTnAllowedParticipantFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTnAllowedParticipant = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'name': json['name'] == null ? undefined : json['name'],
         'status': json['status'] == null ? undefined : json['status'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTnAllowedParticipantWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTnAllowedParticipantToJSON(json: any): TgvalidatordTnAllowedParticipant {
@@ -76,6 +95,7 @@ export function TgvalidatordTnAllowedParticipantFromJSONTyped(json: any, ignoreD
         'id': value['id'],
         'name': value['name'],
         'status': value['status'],
+        ...value['additionalProperties'],
     };
 }
 

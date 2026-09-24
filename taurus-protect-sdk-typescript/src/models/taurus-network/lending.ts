@@ -5,6 +5,8 @@
  * including lending offers and lending agreements between participants.
  */
 
+import type { CursorNavigationOptions } from '../pagination';
+
 /**
  * Lending agreement status enum.
  */
@@ -247,31 +249,36 @@ export interface CreateLendingAgreementAttachmentRequest {
 // Filter options
 
 /**
- * Options for listing lending offers.
+ * Options for listing lending offers. A cursor list: `pageSize` 1-100 (default 20) and the
+ * `cursor` of a previous page.
  */
-export interface ListLendingOffersOptions {
-  /** Maximum items to return (default: 50, max: 1000). */
-  readonly limit?: number;
-  /** Number of items to skip. */
-  readonly offset?: number;
-  /** Filter by participant ID. */
+export interface ListLendingOffersOptions extends CursorNavigationOptions {
+  /** Filter by currency IDs */
+  readonly currencyIds?: string[];
+  /** Filter by participant ID */
   readonly participantId?: string;
-  /** Filter by currency. */
-  readonly currencyId?: string;
+  /** Filter by duration */
+  readonly duration?: string;
+  /** Sort order ("ASC" or "DESC") */
+  readonly sortOrder?: string;
 }
 
 /**
- * Options for listing lending agreements.
+ * Options for listing lending agreements. A cursor list: `pageSize` 1-100 (default 20) and the
+ * `cursor` of a previous page.
  */
-export interface ListLendingAgreementsOptions {
-  /** Maximum items to return (default: 50, max: 1000). */
-  readonly limit?: number;
-  /** Number of items to skip. */
-  readonly offset?: number;
-  /** Filter by statuses. */
-  readonly statuses?: string[];
-  /** Filter by lender. */
-  readonly lenderParticipantId?: string;
-  /** Filter by borrower. */
-  readonly borrowerParticipantId?: string;
+export interface ListLendingAgreementsOptions extends CursorNavigationOptions {
+  /** Sort order ("ASC" or "DESC") */
+  readonly sortOrder?: string;
+}
+
+/**
+ * Options for listing the lending agreements awaiting approval. A cursor list: `pageSize` 1-100
+ * (default 20) and the `cursor` of a previous page.
+ */
+export interface ListLendingAgreementsForApprovalOptions extends CursorNavigationOptions {
+  /** Filter by lending agreement IDs */
+  readonly ids?: string[];
+  /** Sort order ("ASC" or "DESC") */
+  readonly sortOrder?: string;
 }

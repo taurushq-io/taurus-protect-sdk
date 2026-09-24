@@ -25,15 +25,21 @@ import com.google.gson.stream.JsonWriter;
 
 /**
  * Gets or Sets tgvalidatordStakeAccountType
+ * <p>
+ * An open set of values: a value this client was not generated with is kept as-is, so
+ * {@link #fromValue} never throws and a new server value cannot fail a whole decode.
  */
 @JsonAdapter(TgvalidatordStakeAccountType.Adapter.class)
-public enum TgvalidatordStakeAccountType {
+public final class TgvalidatordStakeAccountType {
   
-  STAKE_ACCOUNT_TYPE_SOLANA("StakeAccountTypeSolana");
+  public static final TgvalidatordStakeAccountType STAKE_ACCOUNT_TYPE_SOLANA = new TgvalidatordStakeAccountType("StakeAccountTypeSolana");
+  
 
-  private String value;
+  private static final TgvalidatordStakeAccountType[] knownValues = { STAKE_ACCOUNT_TYPE_SOLANA };
 
-  TgvalidatordStakeAccountType(String value) {
+  private final String value;
+
+  private TgvalidatordStakeAccountType(String value) {
     this.value = value;
   }
 
@@ -41,18 +47,53 @@ public enum TgvalidatordStakeAccountType {
     return value;
   }
 
+  /**
+   * Returns the values this client was generated with.
+   *
+   * @return a new array of the known values
+   */
+  public static TgvalidatordStakeAccountType[] values() {
+    return knownValues.clone();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    return Objects.equals(value, ((TgvalidatordStakeAccountType) o).value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(value);
+  }
+
   @Override
   public String toString() {
     return String.valueOf(value);
   }
 
+  /**
+   * Returns the known constant for a value, or a new instance carrying a value this client
+   * does not know. Never throws.
+   *
+   * @param value the wire value
+   * @return the matching instance, or null for a null value
+   */
   public static TgvalidatordStakeAccountType fromValue(String value) {
-    for (TgvalidatordStakeAccountType b : TgvalidatordStakeAccountType.values()) {
+    if (value == null) {
+      return null;
+    }
+    for (TgvalidatordStakeAccountType b : knownValues) {
       if (b.value.equals(value)) {
         return b;
       }
     }
-    throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    return new TgvalidatordStakeAccountType(value);
   }
 
   public static class Adapter extends TypeAdapter<TgvalidatordStakeAccountType> {

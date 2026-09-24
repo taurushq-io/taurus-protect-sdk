@@ -19,6 +19,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from taurus_protect._internal.openapi.models.tgvalidatord_token_info import TgvalidatordTokenInfo
 from typing import Optional, Set
 from typing_extensions import Self
 
@@ -31,15 +32,15 @@ class TgvalidatordCurrency(BaseModel):
     coin_type_index: Optional[StrictStr] = Field(default=None, description="Index used to identify the coin type in BIP44. (e.g. Bitcoin is 0, Ethereum is 60).", alias="coinTypeIndex")
     blockchain: Optional[StrictStr] = Field(default=None, description="The Blockchain the currency is associated with, (e.g. ETH, BTC).")
     is_token: Optional[StrictBool] = Field(default=None, description="Indicates if the currency is a token (e.g., ERC-20).", alias="isToken")
-    is_erc20: Optional[StrictBool] = Field(default=None, description="Indicates if the token is an ERC-20 token.", alias="isERC20")
+    is_erc20: Optional[StrictBool] = Field(default=None, description="DEPRECATED: use tokenInfo.tokenType == ERC20 instead.", alias="isERC20")
     decimals: Optional[StrictStr] = Field(default=None, description="Number of decimal places the currency uses (e.g. 18 for ETH).")
     contract_address: Optional[StrictStr] = Field(default=None, description="Smart contract address if currency is a smart contract (e.g. ERC-20.).", alias="contractAddress")
     has_staking: Optional[StrictBool] = Field(default=None, description="Indicates if the currency supports staking.", alias="hasStaking")
     is_utxo_based: Optional[StrictBool] = Field(default=None, description="Indicates if the currency is UTXO-based (e.g. Bitcoin).", alias="isUTXOBased")
     is_account_based: Optional[StrictBool] = Field(default=None, description="Indicates if the currency is account-based (e.g. Ethereum).", alias="isAccountBased")
     is_fiat: Optional[StrictBool] = Field(default=None, description="Indicates if the currency is a fiat currency (e.g. CHF, EUR, USD).", alias="isFiat")
-    is_fa12: Optional[StrictBool] = Field(default=None, description="Indicates if the currency is based on FA12 standard (used in Tezos).", alias="isFA12")
-    is_fa20: Optional[StrictBool] = Field(default=None, description="Indicates if the currency is based on FA20 standard (used in Tezos).", alias="isFA20")
+    is_fa12: Optional[StrictBool] = Field(default=None, description="DEPRECATED: use tokenInfo.tokenType == FA12 instead.", alias="isFA12")
+    is_fa20: Optional[StrictBool] = Field(default=None, description="DEPRECATED: use tokenInfo.tokenType == FA2 instead.", alias="isFA20")
     is_nft: Optional[StrictBool] = Field(default=None, description="Indicates if the currency represents a Non-Fungible Token (NFT).", alias="isNFT")
     enabled: Optional[StrictBool] = Field(default=None, description="Indicates if the currency is enabled in the current tenant.")
     id: Optional[StrictStr] = Field(default=None, description="Unique identifier of the currency.")
@@ -49,8 +50,9 @@ class TgvalidatordCurrency(BaseModel):
     network: Optional[StrictStr] = Field(default=None, description="Network or environment the currency is used on (e.g. 'mainnet', 'testnet').")
     token_id: Optional[StrictStr] = Field(default=None, description="Unique id for the token, if applicable (e.g. for NFTs).", alias="tokenID")
     logo: Optional[StrictStr] = Field(default=None, description="Currency logo in Data URI scheme. Base 64 encoded. (e.g. data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==).")
+    token_info: Optional[TgvalidatordTokenInfo] = Field(default=None, alias="tokenInfo")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["name", "symbol", "coinTypeIndex", "blockchain", "isToken", "isERC20", "decimals", "contractAddress", "hasStaking", "isUTXOBased", "isAccountBased", "isFiat", "isFA12", "isFA20", "isNFT", "enabled", "id", "displayName", "type", "wlcaId", "network", "tokenID", "logo"]
+    __properties: ClassVar[List[str]] = ["name", "symbol", "coinTypeIndex", "blockchain", "isToken", "isERC20", "decimals", "contractAddress", "hasStaking", "isUTXOBased", "isAccountBased", "isFiat", "isFA12", "isFA20", "isNFT", "enabled", "id", "displayName", "type", "wlcaId", "network", "tokenID", "logo", "tokenInfo"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -93,6 +95,9 @@ class TgvalidatordCurrency(BaseModel):
             exclude=excluded_fields,
             exclude_none=True,
         )
+        # override the default output from pydantic by calling `to_dict()` of token_info
+        if self.token_info:
+            _dict['tokenInfo'] = self.token_info.to_dict()
         # puts key-value pairs in additional_properties in the top level
         if self.additional_properties is not None:
             for _key, _value in self.additional_properties.items():
@@ -132,7 +137,8 @@ class TgvalidatordCurrency(BaseModel):
             "wlcaId": obj.get("wlcaId"),
             "network": obj.get("network"),
             "tokenID": obj.get("tokenID"),
-            "logo": obj.get("logo")
+            "logo": obj.get("logo"),
+            "tokenInfo": TgvalidatordTokenInfo.from_dict(obj["tokenInfo"]) if obj.get("tokenInfo") is not None else None
         })
         # store additional fields in additional_properties
         for _key in obj.keys():

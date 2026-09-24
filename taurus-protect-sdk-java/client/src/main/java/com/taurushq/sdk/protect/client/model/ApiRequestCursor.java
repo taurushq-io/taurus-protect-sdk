@@ -5,19 +5,24 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 /**
  * Cursor pagination parameters for API requests.
  * <p>
- * Use this class to request specific pages of paginated results.
- * For initial requests, use {@link Pagination#first(int)}. For subsequent
- * pages, use the cursor from the previous response.
+ * This is the low-level form of a cursor-list page request: it can express every
+ * {@link PageRequest}, including {@code PREVIOUS} and {@code LAST}. The contract form is a
+ * page size plus the previous page's {@link CursorPage#getNextCursor()}, which the list
+ * methods accept directly or through {@link Pagination#page(Integer, String)}.
+ * <p>
+ * An explicit page size must be between 1 and {@link Pagination#MAX_PAGE_SIZE}; a cursor
+ * built with the no-argument constructor leaves it unset, and the SDK then sends
+ * {@link Pagination#DEFAULT_PAGE_SIZE}.
  * <p>
  * Example:
  * <pre>{@code
  * // First page request
- * ApiRequestCursor cursor = Pagination.first(50);
+ * ApiRequestCursor cursor = Pagination.first(20);
  * BalanceResult result = service.getBalances(cursor);
  *
  * // Next page request (if available)
  * if (result.hasNext()) {
- *     cursor = result.nextCursor(50);
+ *     cursor = result.nextCursor(20);
  *     result = service.getBalances(cursor);
  * }
  * }</pre>
@@ -39,7 +44,7 @@ public class ApiRequestCursor {
     private PageRequest pageRequest;
 
     /**
-     * The number of items to return per page.
+     * The number of items to return per page; 0 when unset.
      */
     private long pageSize;
 
@@ -54,11 +59,12 @@ public class ApiRequestCursor {
      * Creates a cursor for initial page requests.
      *
      * @param pageRequest the page request type (typically FIRST)
-     * @param pageSize    the page size
+     * @param pageSize    the page size, between 1 and {@link Pagination#MAX_PAGE_SIZE}
+     * @throws IllegalArgumentException if the page size is out of range
      */
     public ApiRequestCursor(PageRequest pageRequest, long pageSize) {
         this.pageRequest = pageRequest;
-        this.pageSize = pageSize;
+        this.pageSize = Pagination.checkPageSize(pageSize);
     }
 
     /**
@@ -66,12 +72,13 @@ public class ApiRequestCursor {
      *
      * @param currentPage the current page token
      * @param pageRequest the page request type (typically NEXT)
-     * @param pageSize    the page size
+     * @param pageSize    the page size, between 1 and {@link Pagination#MAX_PAGE_SIZE}
+     * @throws IllegalArgumentException if the page size is out of range
      */
     public ApiRequestCursor(String currentPage, PageRequest pageRequest, long pageSize) {
         this.currentPage = currentPage;
         this.pageRequest = pageRequest;
-        this.pageSize = pageSize;
+        this.pageSize = Pagination.checkPageSize(pageSize);
     }
 
     @Override
@@ -118,7 +125,7 @@ public class ApiRequestCursor {
     /**
      * Returns the number of items to return per page.
      *
-     * @return the page size
+     * @return the page size, or 0 when unset (the SDK then sends the default)
      */
     public long getPageSize() {
         return pageSize;
@@ -127,9 +134,10 @@ public class ApiRequestCursor {
     /**
      * Sets the number of items to return per page.
      *
-     * @param pageSize the page size
+     * @param pageSize the page size, between 1 and {@link Pagination#MAX_PAGE_SIZE}
+     * @throws IllegalArgumentException if the page size is out of range
      */
     public void setPageSize(long pageSize) {
-        this.pageSize = pageSize;
+        this.pageSize = Pagination.checkPageSize(pageSize);
     }
 }

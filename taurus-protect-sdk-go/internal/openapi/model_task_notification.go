@@ -22,7 +22,10 @@ type TaskNotification struct {
 	EmailAddresses []string `json:"emailAddresses,omitempty"`
 	NotificationMessage *string `json:"notificationMessage,omitempty"`
 	NumberOfReminders *string `json:"numberOfReminders,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TaskNotification TaskNotification
 
 // NewTaskNotification instantiates a new TaskNotification object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TaskNotification) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.NumberOfReminders) {
 		toSerialize["numberOfReminders"] = o.NumberOfReminders
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TaskNotification) UnmarshalJSON(data []byte) (err error) {
+	varTaskNotification := _TaskNotification{}
+
+	err = json.Unmarshal(data, &varTaskNotification)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TaskNotification(varTaskNotification)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "emailAddresses")
+		delete(additionalProperties, "notificationMessage")
+		delete(additionalProperties, "numberOfReminders")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTaskNotification struct {

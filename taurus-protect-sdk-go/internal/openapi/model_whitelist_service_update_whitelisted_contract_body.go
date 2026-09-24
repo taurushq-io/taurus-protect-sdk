@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -27,6 +26,7 @@ type WhitelistServiceUpdateWhitelistedContractBody struct {
 	Name string `json:"name"`
 	// Number of decimal places to consider as minimum unit of transfer
 	Decimals string `json:"decimals"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _WhitelistServiceUpdateWhitelistedContractBody WhitelistServiceUpdateWhitelistedContractBody
@@ -136,6 +136,11 @@ func (o WhitelistServiceUpdateWhitelistedContractBody) ToMap() (map[string]inter
 	toSerialize["symbol"] = o.Symbol
 	toSerialize["name"] = o.Name
 	toSerialize["decimals"] = o.Decimals
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -165,15 +170,22 @@ func (o *WhitelistServiceUpdateWhitelistedContractBody) UnmarshalJSON(data []byt
 
 	varWhitelistServiceUpdateWhitelistedContractBody := _WhitelistServiceUpdateWhitelistedContractBody{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varWhitelistServiceUpdateWhitelistedContractBody)
+	err = json.Unmarshal(data, &varWhitelistServiceUpdateWhitelistedContractBody)
 
 	if err != nil {
 		return err
 	}
 
 	*o = WhitelistServiceUpdateWhitelistedContractBody(varWhitelistServiceUpdateWhitelistedContractBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "symbol")
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "decimals")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

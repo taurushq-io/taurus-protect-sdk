@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/internal/openapi"
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/mapper"
@@ -56,44 +55,44 @@ func (s *UserService) GetUser(ctx context.Context, id string) (*model.User, erro
 	return mapper.UserFromDTO(resp.Result), nil
 }
 
-// ListUsers retrieves a list of users with optional filtering.
+// ListUsers retrieves one page of users. Result.Pagination is never nil; continue with its
+// NextOffset until HasMore is false.
 func (s *UserService) ListUsers(ctx context.Context, opts *model.ListUsersOptions) (*model.ListUsersResult, error) {
-	req := s.api.UserServiceGetUsers(ctx)
+	if opts == nil {
+		opts = &model.ListUsersOptions{}
+	}
+	window, err := resolveOffsetWindow(opts.Limit, opts.Offset)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if opts.Limit > 0 {
-			req = req.Limit(fmt.Sprintf("%d", opts.Limit))
-		}
-		if opts.Offset > 0 {
-			req = req.Offset(fmt.Sprintf("%d", opts.Offset))
-		}
-		if len(opts.IDs) > 0 {
-			req = req.Ids(opts.IDs)
-		}
-		if len(opts.ExternalUserIDs) > 0 {
-			req = req.ExternalUserIds(opts.ExternalUserIDs)
-		}
-		if len(opts.Emails) > 0 {
-			req = req.Emails(opts.Emails)
-		}
-		if len(opts.Roles) > 0 {
-			req = req.Roles(opts.Roles)
-		}
-		if len(opts.GroupIDs) > 0 {
-			req = req.GroupIds(opts.GroupIDs)
-		}
-		if opts.Query != "" {
-			req = req.Query(opts.Query)
-		}
-		if opts.Status != "" {
-			req = req.Status(opts.Status)
-		}
-		if opts.TotpEnabled != nil {
-			req = req.TotpEnabled(*opts.TotpEnabled)
-		}
-		if opts.ExcludeTechnicalUsers {
-			req = req.ExcludeTechnicalUsers(true)
-		}
+	req := applyOffsetWindow(s.api.UserServiceGetUsers(ctx), window)
+	if len(opts.IDs) > 0 {
+		req = req.Ids(opts.IDs)
+	}
+	if len(opts.ExternalUserIDs) > 0 {
+		req = req.ExternalUserIds(opts.ExternalUserIDs)
+	}
+	if len(opts.Emails) > 0 {
+		req = req.Emails(opts.Emails)
+	}
+	if len(opts.Roles) > 0 {
+		req = req.Roles(opts.Roles)
+	}
+	if len(opts.GroupIDs) > 0 {
+		req = req.GroupIds(opts.GroupIDs)
+	}
+	if opts.Query != "" {
+		req = req.Query(opts.Query)
+	}
+	if opts.Status != "" {
+		req = req.Status(opts.Status)
+	}
+	if opts.TotpEnabled != nil {
+		req = req.TotpEnabled(*opts.TotpEnabled)
+	}
+	if opts.ExcludeTechnicalUsers {
+		req = req.ExcludeTechnicalUsers(true)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -101,39 +100,42 @@ func (s *UserService) ListUsers(ctx context.Context, opts *model.ListUsersOption
 		return nil, s.errMapper.MapError(err, httpResp)
 	}
 
-	result := &model.ListUsersResult{
-		Users: mapper.UsersFromDTO(resp.Result),
+	// A synthetic daemon user can be appended beyond the limit, so the next page starts at
+	// offset + min(rows, limit).
+	pagination, err := offsetPagination(rulePlusMinRowsLimit, window, len(resp.Result), 0,
+		offsetReply{TotalItems: resp.TotalItems})
+	if err != nil {
+		return nil, err
 	}
-
-	// Parse total items
-	if resp.TotalItems != nil {
-		if total, parseErr := strconv.ParseInt(*resp.TotalItems, 10, 64); parseErr == nil {
-			result.TotalItems = total
-		}
-	}
-
-	// Set offset from options
-	if opts != nil {
-		result.Offset = opts.Offset
-	}
-
-	return result, nil
+	return &model.ListUsersResult{
+		Users:      mapper.UsersFromDTO(resp.Result),
+		Pagination: pagination,
+	}, nil
 }
 
-// GetUsersByEmail retrieves users by their email addresses.
+// GetUsersByEmail retrieves the users with these email addresses. The emails are sent in
+// batches of at most model.MaxPageSize, and each batch is walked to its last page.
 func (s *UserService) GetUsersByEmail(ctx context.Context, emails []string) ([]*model.User, error) {
 	if len(emails) == 0 {
 		return nil, fmt.Errorf("emails cannot be empty")
 	}
 
-	req := s.api.UserServiceGetUsers(ctx).Emails(emails)
-
-	resp, httpResp, err := req.Execute()
-	if err != nil {
-		return nil, s.errMapper.MapError(err, httpResp)
+	var users []*model.User
+	for _, batch := range chunkIDs(emails, model.MaxPageSize) {
+		opts := &model.ListUsersOptions{Emails: batch, Limit: model.MaxPageSize}
+		for {
+			result, err := s.ListUsers(ctx, opts)
+			if err != nil {
+				return nil, err
+			}
+			users = append(users, result.Users...)
+			if !result.Pagination.HasMore {
+				break
+			}
+			opts.Offset = result.Pagination.NextOffset
+		}
 	}
-
-	return mapper.UsersFromDTO(resp.Result), nil
+	return users, nil
 }
 
 // CreateUserAttribute creates an attribute for a user.

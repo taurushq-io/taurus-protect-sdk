@@ -12,15 +12,12 @@ import type {
   TgvalidatordTnSharedAsset,
 } from '../../internal/openapi/models/index';
 import { BaseService } from '../base';
-
-/**
- * Cursor-based pagination information.
- */
-export interface CursorPagination {
-  currentPage?: string;
-  hasNext: boolean;
-  hasPrevious: boolean;
-}
+import type {
+  ListSharedAddressesOptions,
+  ListSharedAssetsOptions,
+} from '../../models/taurus-network/sharing';
+import { buildCursorPage, cursorRequest, type CursorPage } from '../../models/pagination';
+import { cursorQuery } from '../paging';
 
 /**
  * Trail entry for shared address.
@@ -137,40 +134,6 @@ export interface SharedAsset {
   targetRejectedAt?: Date;
   createdAt?: Date;
   updatedAt?: Date;
-}
-
-/**
- * Options for listing shared addresses.
- */
-export interface ListSharedAddressesOptions {
-  participantId?: string;
-  ownerParticipantId?: string;
-  targetParticipantId?: string;
-  blockchain?: string;
-  network?: string;
-  ids?: string[];
-  statuses?: string[];
-  sortOrder?: string;
-  pageSize?: number;
-  currentPage?: string;
-  pageRequest?: string;
-}
-
-/**
- * Options for listing shared assets.
- */
-export interface ListSharedAssetsOptions {
-  participantId?: string;
-  ownerParticipantId?: string;
-  targetParticipantId?: string;
-  blockchain?: string;
-  network?: string;
-  ids?: string[];
-  statuses?: string[];
-  sortOrder?: string;
-  pageSize?: number;
-  currentPage?: string;
-  pageRequest?: string;
 }
 
 /**
@@ -306,25 +269,6 @@ function sharedAssetFromDto(dto?: TgvalidatordTnSharedAsset): SharedAsset | unde
 }
 
 /**
- * Extracts cursor pagination from response.
- */
-function extractCursorPagination(cursor?: {
-  currentPage?: string;
-  hasNext?: boolean;
-  hasPrevious?: boolean;
-}): CursorPagination | undefined {
-  if (!cursor) {
-    return undefined;
-  }
-
-  return {
-    currentPage: cursor.currentPage,
-    hasNext: cursor.hasNext ?? false,
-    hasPrevious: cursor.hasPrevious ?? false,
-  };
-}
-
-/**
  * Service for Taurus Network address and asset sharing operations.
  *
  * Provides methods to share and unshare addresses and assets between
@@ -366,13 +310,15 @@ export class SharingService extends BaseService {
    *
    * Returns addresses that are shared to or from the current participant.
    *
-   * @param options - Optional filtering and pagination options
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
    * @returns Shared addresses list and pagination info
    * @throws {@link APIError} If API request fails
    */
   async listSharedAddresses(
     options?: ListSharedAddressesOptions
-  ): Promise<{ sharedAddresses: SharedAddress[]; pagination?: CursorPagination }> {
+  ): Promise<{ sharedAddresses: SharedAddress[]; pagination: CursorPage }> {
+    const page = cursorRequest(options);
+
     return this.execute(async () => {
       const response = await this.sharedAddressAssetApi.taurusNetworkServiceGetSharedAddresses({
         participantID: options?.participantId,
@@ -383,9 +329,7 @@ export class SharingService extends BaseService {
         ids: options?.ids,
         statuses: options?.statuses,
         sortOrder: options?.sortOrder,
-        cursorCurrentPage: options?.currentPage,
-        cursorPageRequest: options?.pageRequest,
-        cursorPageSize: options?.pageSize ? String(options.pageSize) : undefined,
+        ...cursorQuery(page),
       });
 
       const sharedAddresses: SharedAddress[] = [];
@@ -400,7 +344,7 @@ export class SharingService extends BaseService {
 
       return {
         sharedAddresses,
-        pagination: extractCursorPagination(response.cursor),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
       };
     });
   }
@@ -469,13 +413,15 @@ export class SharingService extends BaseService {
    *
    * Returns whitelisted assets that are shared to or from the current participant.
    *
-   * @param options - Optional filtering and pagination options
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
    * @returns Shared assets list and pagination info
    * @throws {@link APIError} If API request fails
    */
   async listSharedAssets(
     options?: ListSharedAssetsOptions
-  ): Promise<{ sharedAssets: SharedAsset[]; pagination?: CursorPagination }> {
+  ): Promise<{ sharedAssets: SharedAsset[]; pagination: CursorPage }> {
+    const page = cursorRequest(options);
+
     return this.execute(async () => {
       const response = await this.sharedAddressAssetApi.taurusNetworkServiceGetSharedAssets({
         participantID: options?.participantId,
@@ -486,9 +432,7 @@ export class SharingService extends BaseService {
         ids: options?.ids,
         statuses: options?.statuses,
         sortOrder: options?.sortOrder,
-        cursorCurrentPage: options?.currentPage,
-        cursorPageRequest: options?.pageRequest,
-        cursorPageSize: options?.pageSize ? String(options.pageSize) : undefined,
+        ...cursorQuery(page),
       });
 
       const sharedAssets: SharedAsset[] = [];
@@ -503,7 +447,7 @@ export class SharingService extends BaseService {
 
       return {
         sharedAssets,
-        pagination: extractCursorPagination(response.cursor),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
       };
     });
   }

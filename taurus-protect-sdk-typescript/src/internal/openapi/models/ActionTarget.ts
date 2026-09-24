@@ -52,7 +52,16 @@ export interface ActionTarget {
      * @memberof ActionTarget
      */
     wallet?: TargetWallet;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof ActionTarget
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const ActionTargetWireKeys: ReadonlySet<string> = new Set(['kind', 'address', 'wallet']);
 
 /**
  * Check if a given object implements the ActionTarget interface.
@@ -69,12 +78,22 @@ export function ActionTargetFromJSONTyped(json: any, ignoreDiscriminator: boolea
     if (json == null) {
         return json;
     }
-    return {
+    const result: ActionTarget = {
         
         'kind': json['kind'] == null ? undefined : json['kind'],
         'address': json['address'] == null ? undefined : TargetAddressFromJSON(json['address']),
         'wallet': json['wallet'] == null ? undefined : TargetWalletFromJSON(json['wallet']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!ActionTargetWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function ActionTargetToJSON(json: any): ActionTarget {
@@ -91,6 +110,7 @@ export function ActionTargetFromJSONTyped(json: any, ignoreDiscriminator: boolea
         'kind': value['kind'],
         'address': TargetAddressToJSON(value['address']),
         'wallet': TargetWalletToJSON(value['wallet']),
+        ...value['additionalProperties'],
     };
 }
 

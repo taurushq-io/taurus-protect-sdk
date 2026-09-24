@@ -1,12 +1,14 @@
 package com.taurushq.sdk.protect.client.service;
 
 import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
+import com.taurushq.sdk.protect.client.testutil.StubTransport;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class UserServiceTest {
@@ -35,9 +37,10 @@ class UserServiceTest {
     }
 
     @Test
-    void getUsers_throwsOnZeroLimit() {
-        assertThrows(IllegalArgumentException.class, () ->
-                userService.getUsers(0, 0));
+    void getUsers_zeroLimitSendsTheDefault() throws Exception {
+        StubTransport stub = StubTransport.replying("{}");
+        new UserService(stub.client(), new ApiExceptionMapper()).getUsers(0, 0);
+        assertEquals("20", stub.only().param("limit"));
     }
 
     @Test

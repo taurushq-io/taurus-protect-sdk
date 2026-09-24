@@ -41,7 +41,10 @@ type TgvalidatordAutoTransferEventHandler struct {
 	Network *string `json:"network,omitempty"`
 	CreatedAt *time.Time `json:"createdAt,omitempty"`
 	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordAutoTransferEventHandler TgvalidatordAutoTransferEventHandler
 
 // NewTgvalidatordAutoTransferEventHandler instantiates a new TgvalidatordAutoTransferEventHandler object
 // This constructor will assign default values to properties that have it defined,
@@ -490,7 +493,44 @@ func (o TgvalidatordAutoTransferEventHandler) ToMap() (map[string]interface{}, e
 	if !IsNil(o.UpdatedAt) {
 		toSerialize["updatedAt"] = o.UpdatedAt
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordAutoTransferEventHandler) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordAutoTransferEventHandler := _TgvalidatordAutoTransferEventHandler{}
+
+	err = json.Unmarshal(data, &varTgvalidatordAutoTransferEventHandler)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordAutoTransferEventHandler(varTgvalidatordAutoTransferEventHandler)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "monitoredWalletId")
+		delete(additionalProperties, "payerAddressId")
+		delete(additionalProperties, "triggerType")
+		delete(additionalProperties, "lastTriggeredAtBlock")
+		delete(additionalProperties, "lastProccessedAtBlock")
+		delete(additionalProperties, "attributes")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "network")
+		delete(additionalProperties, "createdAt")
+		delete(additionalProperties, "updatedAt")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordAutoTransferEventHandler struct {

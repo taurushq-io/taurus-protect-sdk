@@ -79,7 +79,16 @@ export interface TgvalidatordCreateOutgoingUTXOsRequestRequest {
      * @memberof TgvalidatordCreateOutgoingUTXOsRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingUTXOsRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingUTXOsRequestRequestWireKeys: ReadonlySet<string> = new Set(['amount', 'feeLimit', 'fromAddressId', 'toAddressId', 'toWhitelistedAddressId', 'utxoIds', 'comment', 'feePaidByReceiver', 'transactionReference', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingUTXOsRequestRequest interface.
@@ -99,7 +108,7 @@ export function TgvalidatordCreateOutgoingUTXOsRequestRequestFromJSONTyped(json:
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingUTXOsRequestRequest = {
         
         'amount': json['amount'],
         'feeLimit': json['feeLimit'] == null ? undefined : json['feeLimit'],
@@ -112,6 +121,16 @@ export function TgvalidatordCreateOutgoingUTXOsRequestRequestFromJSONTyped(json:
         'transactionReference': json['transactionReference'] == null ? undefined : json['transactionReference'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingUTXOsRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingUTXOsRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingUTXOsRequestRequest {
@@ -135,6 +154,7 @@ export function TgvalidatordCreateOutgoingUTXOsRequestRequestFromJSONTyped(json:
         'feePaidByReceiver': value['feePaidByReceiver'],
         'transactionReference': value['transactionReference'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

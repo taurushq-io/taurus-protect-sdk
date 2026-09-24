@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -33,6 +32,7 @@ type TgvalidatordCreateOutgoingNEARDepositAndStakeRequestRequest struct {
 	Comment *string `json:"comment,omitempty"`
 	// A client's reference that can then be used for reconciliation in the client's systems later
 	TransactionReference *string `json:"transactionReference,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingNEARDepositAndStakeRequestRequest TgvalidatordCreateOutgoingNEARDepositAndStakeRequestRequest
@@ -247,6 +247,11 @@ func (o TgvalidatordCreateOutgoingNEARDepositAndStakeRequestRequest) ToMap() (ma
 	if !IsNil(o.TransactionReference) {
 		toSerialize["transactionReference"] = o.TransactionReference
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -276,15 +281,25 @@ func (o *TgvalidatordCreateOutgoingNEARDepositAndStakeRequestRequest) UnmarshalJ
 
 	varTgvalidatordCreateOutgoingNEARDepositAndStakeRequestRequest := _TgvalidatordCreateOutgoingNEARDepositAndStakeRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingNEARDepositAndStakeRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingNEARDepositAndStakeRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingNEARDepositAndStakeRequestRequest(varTgvalidatordCreateOutgoingNEARDepositAndStakeRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "toValidatorAddressId")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "transactionReference")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

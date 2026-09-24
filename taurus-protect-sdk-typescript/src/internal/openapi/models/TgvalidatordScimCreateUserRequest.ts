@@ -71,7 +71,16 @@ export interface TgvalidatordScimCreateUserRequest {
      * @memberof TgvalidatordScimCreateUserRequest
      */
     roles?: Array<TgvalidatordScimRole>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordScimCreateUserRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordScimCreateUserRequestWireKeys: ReadonlySet<string> = new Set(['schemas', 'externalId', 'name', 'emails', 'roles']);
 
 /**
  * Check if a given object implements the TgvalidatordScimCreateUserRequest interface.
@@ -88,7 +97,7 @@ export function TgvalidatordScimCreateUserRequestFromJSONTyped(json: any, ignore
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordScimCreateUserRequest = {
         
         'schemas': json['schemas'] == null ? undefined : json['schemas'],
         'externalId': json['externalId'] == null ? undefined : json['externalId'],
@@ -96,6 +105,16 @@ export function TgvalidatordScimCreateUserRequestFromJSONTyped(json: any, ignore
         'emails': json['emails'] == null ? undefined : ((json['emails'] as Array<any>).map(TgvalidatordScimEmailFromJSON)),
         'roles': json['roles'] == null ? undefined : ((json['roles'] as Array<any>).map(TgvalidatordScimRoleFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordScimCreateUserRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordScimCreateUserRequestToJSON(json: any): TgvalidatordScimCreateUserRequest {
@@ -114,6 +133,7 @@ export function TgvalidatordScimCreateUserRequestFromJSONTyped(json: any, ignore
         'name': TgvalidatordScimNameToJSON(value['name']),
         'emails': value['emails'] == null ? undefined : ((value['emails'] as Array<any>).map(TgvalidatordScimEmailToJSON)),
         'roles': value['roles'] == null ? undefined : ((value['roles'] as Array<any>).map(TgvalidatordScimRoleToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

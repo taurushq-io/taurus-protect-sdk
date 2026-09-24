@@ -24,7 +24,10 @@ type TgvalidatordXTZView struct {
 	ArgSchema *TgvalidatordXTZPrimSchema `json:"argSchema,omitempty"`
 	ReturnType *TgvalidatordXTZContractArg `json:"returnType,omitempty"`
 	ReturnSchema *TgvalidatordXTZPrimSchema `json:"returnSchema,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordXTZView TgvalidatordXTZView
 
 // NewTgvalidatordXTZView instantiates a new TgvalidatordXTZView object
 // This constructor will assign default values to properties that have it defined,
@@ -228,7 +231,37 @@ func (o TgvalidatordXTZView) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.ReturnSchema) {
 		toSerialize["returnSchema"] = o.ReturnSchema
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordXTZView) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordXTZView := _TgvalidatordXTZView{}
+
+	err = json.Unmarshal(data, &varTgvalidatordXTZView)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordXTZView(varTgvalidatordXTZView)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "argType")
+		delete(additionalProperties, "argSchema")
+		delete(additionalProperties, "returnType")
+		delete(additionalProperties, "returnSchema")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordXTZView struct {

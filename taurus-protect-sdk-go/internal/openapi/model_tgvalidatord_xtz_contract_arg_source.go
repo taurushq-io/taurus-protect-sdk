@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordXTZContractArgSource{}
 // TgvalidatordXTZContractArgSource struct for TgvalidatordXTZContractArgSource
 type TgvalidatordXTZContractArgSource struct {
 	FromAddressId *string `json:"fromAddressId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordXTZContractArgSource TgvalidatordXTZContractArgSource
 
 // NewTgvalidatordXTZContractArgSource instantiates a new TgvalidatordXTZContractArgSource object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordXTZContractArgSource) ToMap() (map[string]interface{}, error
 	if !IsNil(o.FromAddressId) {
 		toSerialize["fromAddressId"] = o.FromAddressId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordXTZContractArgSource) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordXTZContractArgSource := _TgvalidatordXTZContractArgSource{}
+
+	err = json.Unmarshal(data, &varTgvalidatordXTZContractArgSource)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordXTZContractArgSource(varTgvalidatordXTZContractArgSource)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "fromAddressId")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordXTZContractArgSource struct {

@@ -20,7 +20,7 @@ func TestIntegration_ListRequests(t *testing.T) {
 		t.Fatalf("ListRequests() error = %v", err)
 	}
 
-	t.Logf("Found %d requests, HasNext: %v", len(result.Requests), result.HasNext)
+	t.Logf("Found %d requests, HasMore: %v", len(result.Requests), result.Page.HasMore)
 
 	for _, r := range result.Requests {
 		t.Logf("Request: ID=%s, Status=%s, Currency=%s", r.ID, r.Status, r.Currency)
@@ -180,7 +180,7 @@ func TestIntegration_ListRequestsByStatus(t *testing.T) {
 		t.Fatalf("ListRequests(CONFIRMED) error = %v", err)
 	}
 
-	t.Logf("Found %d CONFIRMED requests, HasNext: %v", len(confirmedResult.Requests), confirmedResult.HasNext)
+	t.Logf("Found %d CONFIRMED requests, HasMore: %v", len(confirmedResult.Requests), confirmedResult.Page.HasMore)
 
 	for _, r := range confirmedResult.Requests {
 		t.Logf("Request: ID=%s, Status=%s, Type=%s", r.ID, r.Status, r.Type)
@@ -199,5 +199,5 @@ func TestIntegration_ListRequestsByStatus(t *testing.T) {
 		t.Fatalf("ListRequests(PENDING) error = %v", err)
 	}
 
-	t.Logf("Found %d PENDING requests, HasNext: %v", len(pendingResult.Requests), pendingResult.HasNext)
+	t.Logf("Found %d PENDING requests, HasMore: %v", len(pendingResult.Requests), pendingResult.Page.HasMore)
 }

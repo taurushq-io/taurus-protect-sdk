@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordICPKnownNeuronData{}
 type TgvalidatordICPKnownNeuronData struct {
 	Name *string `json:"name,omitempty"`
 	Description *string `json:"description,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordICPKnownNeuronData TgvalidatordICPKnownNeuronData
 
 // NewTgvalidatordICPKnownNeuronData instantiates a new TgvalidatordICPKnownNeuronData object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordICPKnownNeuronData) ToMap() (map[string]interface{}, error) 
 	if !IsNil(o.Description) {
 		toSerialize["description"] = o.Description
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordICPKnownNeuronData) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordICPKnownNeuronData := _TgvalidatordICPKnownNeuronData{}
+
+	err = json.Unmarshal(data, &varTgvalidatordICPKnownNeuronData)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordICPKnownNeuronData(varTgvalidatordICPKnownNeuronData)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "description")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordICPKnownNeuronData struct {

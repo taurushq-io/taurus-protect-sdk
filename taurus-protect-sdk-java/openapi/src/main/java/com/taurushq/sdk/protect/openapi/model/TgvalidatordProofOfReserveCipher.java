@@ -25,21 +25,27 @@ import com.google.gson.stream.JsonWriter;
 
 /**
  * Gets or Sets tgvalidatordProofOfReserveCipher
+ * <p>
+ * An open set of values: a value this client was not generated with is kept as-is, so
+ * {@link #fromValue} never throws and a new server value cannot fail a whole decode.
  */
 @JsonAdapter(TgvalidatordProofOfReserveCipher.Adapter.class)
-public enum TgvalidatordProofOfReserveCipher {
+public final class TgvalidatordProofOfReserveCipher {
   
-  ECDSA_SHA256("ECDSA_SHA256"),
+  public static final TgvalidatordProofOfReserveCipher ECDSA_SHA256 = new TgvalidatordProofOfReserveCipher("ECDSA_SHA256");
   
-  ECDSA_SHA512("ECDSA_SHA512"),
+  public static final TgvalidatordProofOfReserveCipher ECDSA_SHA512 = new TgvalidatordProofOfReserveCipher("ECDSA_SHA512");
   
-  EDDSA("EDDSA"),
+  public static final TgvalidatordProofOfReserveCipher EDDSA = new TgvalidatordProofOfReserveCipher("EDDSA");
   
-  SCHNORR("Schnorr");
+  public static final TgvalidatordProofOfReserveCipher SCHNORR = new TgvalidatordProofOfReserveCipher("Schnorr");
+  
 
-  private String value;
+  private static final TgvalidatordProofOfReserveCipher[] knownValues = { ECDSA_SHA256, ECDSA_SHA512, EDDSA, SCHNORR };
 
-  TgvalidatordProofOfReserveCipher(String value) {
+  private final String value;
+
+  private TgvalidatordProofOfReserveCipher(String value) {
     this.value = value;
   }
 
@@ -47,18 +53,53 @@ public enum TgvalidatordProofOfReserveCipher {
     return value;
   }
 
+  /**
+   * Returns the values this client was generated with.
+   *
+   * @return a new array of the known values
+   */
+  public static TgvalidatordProofOfReserveCipher[] values() {
+    return knownValues.clone();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    return Objects.equals(value, ((TgvalidatordProofOfReserveCipher) o).value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(value);
+  }
+
   @Override
   public String toString() {
     return String.valueOf(value);
   }
 
+  /**
+   * Returns the known constant for a value, or a new instance carrying a value this client
+   * does not know. Never throws.
+   *
+   * @param value the wire value
+   * @return the matching instance, or null for a null value
+   */
   public static TgvalidatordProofOfReserveCipher fromValue(String value) {
-    for (TgvalidatordProofOfReserveCipher b : TgvalidatordProofOfReserveCipher.values()) {
+    if (value == null) {
+      return null;
+    }
+    for (TgvalidatordProofOfReserveCipher b : knownValues) {
       if (b.value.equals(value)) {
         return b;
       }
     }
-    throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    return new TgvalidatordProofOfReserveCipher(value);
   }
 
   public static class Adapter extends TypeAdapter<TgvalidatordProofOfReserveCipher> {

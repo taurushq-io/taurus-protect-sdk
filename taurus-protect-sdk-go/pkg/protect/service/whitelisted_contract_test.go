@@ -97,21 +97,6 @@ func TestWhitelistedContractService_UpdateWhitelistedContract_NilRequest(t *test
 	}
 }
 
-func TestWhitelistedContractService_DeleteWhitelistedContract_EmptyID(t *testing.T) {
-	svc := &WhitelistedContractService{
-		api:       nil,
-		errMapper: NewErrorMapper(),
-	}
-
-	_, err := svc.DeleteWhitelistedContract(context.Background(), "", "test comment")
-	if err == nil {
-		t.Error("expected error for empty ID")
-	}
-	if err.Error() != "id cannot be empty" {
-		t.Errorf("expected 'id cannot be empty', got '%s'", err.Error())
-	}
-}
-
 func TestWhitelistedContractService_ApproveWhitelistedContract_EmptyIDs(t *testing.T) {
 	svc := &WhitelistedContractService{
 		api:       nil,

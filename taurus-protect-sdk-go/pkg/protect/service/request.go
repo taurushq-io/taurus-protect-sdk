@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/internal/openapi"
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/crypto"
@@ -114,102 +115,114 @@ func (s *RequestService) verifiedRequests(ctx context.Context, dtos []openapi.Tg
 	return kept, excluded
 }
 
-// ListRequests retrieves a list of requests using cursor-based pagination.
+// ListRequests retrieves one page of requests. Continue with Page.NextCursor until
+// Page.HasMore is false.
 func (s *RequestService) ListRequests(ctx context.Context, opts *model.ListRequestsOptions) (*model.RequestResult, error) {
-	req := s.api.RequestServiceGetRequestsV2(ctx)
+	if opts == nil {
+		opts = &model.ListRequestsOptions{}
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, "", "")
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if opts.PageSize > 0 {
-			req = req.CursorPageSize(fmt.Sprintf("%d", opts.PageSize))
-		}
-		if opts.Cursor != "" {
-			req = req.CursorCurrentPage(opts.Cursor)
-			req = req.CursorPageRequest("NEXT")
-		}
-		if len(opts.Statuses) > 0 {
-			req = req.Statuses(opts.Statuses)
-		}
-		if len(opts.IDs) > 0 {
-			req = req.Ids(opts.IDs)
-		}
-		if len(opts.Types) > 0 {
-			req = req.Types(opts.Types)
-		}
-		if len(opts.ExternalRequestIDs) > 0 {
-			req = req.ExternalRequestIDs(opts.ExternalRequestIDs)
-		}
-		if opts.Currency != "" {
-			req = req.CurrencyID(opts.Currency)
-		}
-		if opts.FromDate != nil {
-			req = req.From(*opts.FromDate)
-		}
-		if opts.ToDate != nil {
-			req = req.To(*opts.ToDate)
-		}
+	req := applyCursorQuery(s.api.RequestServiceGetRequestsV2(ctx), window)
+	if len(opts.Statuses) > 0 {
+		req = req.Statuses(opts.Statuses)
+	}
+	if len(opts.IDs) > 0 {
+		req = req.Ids(opts.IDs)
+	}
+	if len(opts.Types) > 0 {
+		req = req.Types(opts.Types)
+	}
+	if len(opts.ExternalRequestIDs) > 0 {
+		req = req.ExternalRequestIDs(opts.ExternalRequestIDs)
+	}
+	if opts.Currency != "" {
+		req = req.CurrencyID(opts.Currency)
+	}
+	if opts.FromDate != nil {
+		req = req.From(*opts.FromDate)
+	}
+	if opts.ToDate != nil {
+		req = req.To(*opts.ToDate)
 	}
 
 	resp, httpResp, err := req.Execute()
 	if err != nil {
 		return nil, s.errMapper.MapError(err, httpResp)
 	}
-
-	kept, excluded := s.verifiedRequests(ctx, resp.Result)
-	result := &model.RequestResult{
-		Requests:           kept,
-		ExcludedUnverified: excluded,
-	}
-
-	if resp.Cursor != nil {
-		if resp.Cursor.CurrentPage != nil {
-			result.NextCursor = *resp.Cursor.CurrentPage
-		}
-		if resp.Cursor.HasNext != nil {
-			result.HasNext = *resp.Cursor.HasNext
-		}
-	}
-
-	return result, nil
+	return s.requestPage(ctx, window, resp)
 }
 
-// ListRequestsForApproval retrieves requests pending approval for the current user.
+// ListRequestsForApproval retrieves one page of the requests awaiting the current user's
+// approval. The approval queue filters by IDs, Types and Currency only; Statuses, FromDate,
+// ToDate and ExternalRequestIDs are rejected rather than silently dropped (validatord ignores
+// externalRequestIDs on this endpoint).
 func (s *RequestService) ListRequestsForApproval(ctx context.Context, opts *model.ListRequestsOptions) (*model.RequestResult, error) {
-	req := s.api.RequestServiceGetRequestsForApprovalV2(ctx)
+	if opts == nil {
+		opts = &model.ListRequestsOptions{}
+	}
+	if err := rejectForApprovalFilters(opts); err != nil {
+		return nil, err
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, "", "")
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if opts.PageSize > 0 {
-			req = req.CursorPageSize(fmt.Sprintf("%d", opts.PageSize))
-		}
-		if opts.Cursor != "" {
-			req = req.CursorCurrentPage(opts.Cursor)
-			req = req.CursorPageRequest("NEXT")
-		}
-		if opts.Currency != "" {
-			req = req.CurrencyID(opts.Currency)
-		}
+	req := applyCursorQuery(s.api.RequestServiceGetRequestsForApprovalV2(ctx), window)
+	if len(opts.IDs) > 0 {
+		req = req.Ids(opts.IDs)
+	}
+	if len(opts.Types) > 0 {
+		req = req.Types(opts.Types)
+	}
+	if opts.Currency != "" {
+		req = req.CurrencyID(opts.Currency)
 	}
 
 	resp, httpResp, err := req.Execute()
 	if err != nil {
 		return nil, s.errMapper.MapError(err, httpResp)
 	}
+	return s.requestPage(ctx, window, resp)
+}
 
+// rejectForApprovalFilters names the ListRequestsOptions filters the approval queue cannot apply.
+func rejectForApprovalFilters(opts *model.ListRequestsOptions) error {
+	var unsupported []string
+	if len(opts.Statuses) > 0 {
+		unsupported = append(unsupported, "Statuses")
+	}
+	if opts.FromDate != nil {
+		unsupported = append(unsupported, "FromDate")
+	}
+	if opts.ToDate != nil {
+		unsupported = append(unsupported, "ToDate")
+	}
+	if len(opts.ExternalRequestIDs) > 0 {
+		unsupported = append(unsupported, "ExternalRequestIDs")
+	}
+	if len(unsupported) > 0 {
+		return fmt.Errorf("invalid options: ListRequestsForApproval does not support %s", strings.Join(unsupported, ", "))
+	}
+	return nil
+}
+
+// requestPage verifies a page of requests and attaches its cursor.
+func (s *RequestService) requestPage(ctx context.Context, window cursorWindow, resp *openapi.TgvalidatordGetRequestsV2Reply) (*model.RequestResult, error) {
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor})
+	if err != nil {
+		return nil, err
+	}
 	kept, excluded := s.verifiedRequests(ctx, resp.Result)
-	result := &model.RequestResult{
+	return &model.RequestResult{
 		Requests:           kept,
+		Page:               page,
 		ExcludedUnverified: excluded,
-	}
-
-	if resp.Cursor != nil {
-		if resp.Cursor.CurrentPage != nil {
-			result.NextCursor = *resp.Cursor.CurrentPage
-		}
-		if resp.Cursor.HasNext != nil {
-			result.HasNext = *resp.Cursor.HasNext
-		}
-	}
-
-	return result, nil
+	}, nil
 }
 
 // CreateOutgoingRequest creates a new outgoing (withdrawal) request.

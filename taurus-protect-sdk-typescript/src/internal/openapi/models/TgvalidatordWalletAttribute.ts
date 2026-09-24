@@ -67,7 +67,16 @@ export interface TgvalidatordWalletAttribute {
      * @memberof TgvalidatordWalletAttribute
      */
     isfile?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordWalletAttribute
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordWalletAttributeWireKeys: ReadonlySet<string> = new Set(['key', 'value', 'id', 'contentType', 'owner', 'type', 'subtype', 'isfile']);
 
 /**
  * Check if a given object implements the TgvalidatordWalletAttribute interface.
@@ -84,7 +93,7 @@ export function TgvalidatordWalletAttributeFromJSONTyped(json: any, ignoreDiscri
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordWalletAttribute = {
         
         'key': json['key'] == null ? undefined : json['key'],
         'value': json['value'] == null ? undefined : json['value'],
@@ -95,6 +104,16 @@ export function TgvalidatordWalletAttributeFromJSONTyped(json: any, ignoreDiscri
         'subtype': json['subtype'] == null ? undefined : json['subtype'],
         'isfile': json['isfile'] == null ? undefined : json['isfile'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordWalletAttributeWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordWalletAttributeToJSON(json: any): TgvalidatordWalletAttribute {
@@ -116,6 +135,7 @@ export function TgvalidatordWalletAttributeFromJSONTyped(json: any, ignoreDiscri
         'type': value['type'],
         'subtype': value['subtype'],
         'isfile': value['isfile'],
+        ...value['additionalProperties'],
     };
 }
 

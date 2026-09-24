@@ -85,7 +85,16 @@ export interface TgvalidatordCreateOutgoingXLMRevokeSponsorshipRequestRequest {
      * @memberof TgvalidatordCreateOutgoingXLMRevokeSponsorshipRequestRequest
      */
     sponsoredByAddressId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingXLMRevokeSponsorshipRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingXLMRevokeSponsorshipRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'toAddressId', 'toWhitelistedAddressId', 'destinationAddressMemo', 'claimableBalanceID', 'dataName', 'currencyID', 'feeLimit', 'comment', 'externalRequestId', 'sponsoredByAddressId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingXLMRevokeSponsorshipRequestRequest interface.
@@ -103,7 +112,7 @@ export function TgvalidatordCreateOutgoingXLMRevokeSponsorshipRequestRequestFrom
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingXLMRevokeSponsorshipRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'toAddressId': json['toAddressId'] == null ? undefined : json['toAddressId'],
@@ -117,6 +126,16 @@ export function TgvalidatordCreateOutgoingXLMRevokeSponsorshipRequestRequestFrom
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
         'sponsoredByAddressId': json['sponsoredByAddressId'] == null ? undefined : json['sponsoredByAddressId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingXLMRevokeSponsorshipRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingXLMRevokeSponsorshipRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingXLMRevokeSponsorshipRequestRequest {
@@ -141,6 +160,7 @@ export function TgvalidatordCreateOutgoingXLMRevokeSponsorshipRequestRequestFrom
         'comment': value['comment'],
         'externalRequestId': value['externalRequestId'],
         'sponsoredByAddressId': value['sponsoredByAddressId'],
+        ...value['additionalProperties'],
     };
 }
 

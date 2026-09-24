@@ -22,7 +22,10 @@ type TgvalidatordETHSignMessageReply struct {
 	Address *string `json:"address,omitempty"`
 	Message *string `json:"message,omitempty"`
 	Signature *string `json:"signature,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordETHSignMessageReply TgvalidatordETHSignMessageReply
 
 // NewTgvalidatordETHSignMessageReply instantiates a new TgvalidatordETHSignMessageReply object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordETHSignMessageReply) ToMap() (map[string]interface{}, error)
 	if !IsNil(o.Signature) {
 		toSerialize["signature"] = o.Signature
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordETHSignMessageReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordETHSignMessageReply := _TgvalidatordETHSignMessageReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordETHSignMessageReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordETHSignMessageReply(varTgvalidatordETHSignMessageReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "address")
+		delete(additionalProperties, "message")
+		delete(additionalProperties, "signature")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordETHSignMessageReply struct {

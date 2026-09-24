@@ -12,18 +12,8 @@
         },
         {
           "name": "list",
-          "signature": "list(): Promise<ActionEnvelope[]>",
-          "doc": "Lists all actions."
-        },
-        {
-          "name": "list",
-          "signature": "list(options: ListActionsOptions): Promise<ActionEnvelope[]>",
-          "doc": "Lists actions with optional filters."
-        },
-        {
-          "name": "list",
-          "signature": "list(options?: ListActionsOptions): Promise<ActionEnvelope[]>",
-          "doc": ""
+          "signature": "list(options?: ListActionsOptions): Promise<PaginatedResult<ActionEnvelope>>",
+          "doc": "Lists a page of actions."
         }
       ]
     },
@@ -62,13 +52,13 @@
         },
         {
           "name": "list",
-          "signature": "list(walletId: number, options?: Omit<ListAddressesOptions, \"walletId\">): Promise<{ items: Address[]; pagination: Pagination | undefined; }>",
+          "signature": "list(walletId: number, options?: Omit<ListAddressesOptions, \"walletId\">): Promise<PaginatedResult<Address>>",
           "doc": "Lists addresses for a wallet with mandatory signature verification."
         },
         {
           "name": "listWithOptions",
-          "signature": "listWithOptions(options?: ListAddressesOptions): Promise<{ items: Address[]; pagination: Pagination | undefined; }>",
-          "doc": "Lists addresses with full filtering options."
+          "signature": "listWithOptions(options?: ListAddressesOptions): Promise<PaginatedResult<Address>>",
+          "doc": "Lists addresses with full filtering options, with mandatory signature verification."
         }
       ]
     },
@@ -97,13 +87,28 @@
       "methods": [
         {
           "name": "getAssetAddresses",
-          "signature": "getAssetAddresses(options: GetAssetAddressesOptions): Promise<Address[]>",
-          "doc": "Retrieves addresses that hold a specific asset."
+          "signature": "getAssetAddresses(options: GetAssetAddressesOptions): Promise<ListAssetAddressesResult>",
+          "doc": "Retrieves a page of the addresses that hold a specific asset, each signature-verified."
         },
         {
           "name": "getAssetWallets",
-          "signature": "getAssetWallets(options: GetAssetWalletsOptions): Promise<Wallet[]>",
-          "doc": "Retrieves wallets that hold a specific asset."
+          "signature": "getAssetWallets(options: GetAssetWalletsOptions): Promise<ListAssetWalletsResult>",
+          "doc": "Retrieves a page of the wallets that hold a specific asset."
+        },
+        {
+          "name": "listAssetOperations",
+          "signature": "listAssetOperations(assetId: string, options?: ListAssetOperationsOptions): Promise<ListAssetOperationsResult>",
+          "doc": "Lists a page of the lifecycle operations of a v2 asset."
+        },
+        {
+          "name": "queryAssetAddresses",
+          "signature": "queryAssetAddresses(assetId: string, options?: QueryAssetAddressesOptions): Promise<ListAssetAddressesV2Result>",
+          "doc": "Queries a page of the holders of a v2 asset, verifying internal and whitelisted ones."
+        },
+        {
+          "name": "queryAssets",
+          "signature": "queryAssets(options?: QueryAssetsOptions): Promise<ListAssetsV2Result>",
+          "doc": "Queries a page of the v2 asset registry."
         }
       ]
     },
@@ -117,8 +122,8 @@
         },
         {
           "name": "list",
-          "signature": "list(options?: ListAuditTrailsOptions): Promise<AuditTrail[]>",
-          "doc": "Lists audit trails with optional filtering."
+          "signature": "list(options?: ListAuditTrailsOptions): Promise<ListAuditTrailsResult>",
+          "doc": "Lists a page of audit trails with optional filtering."
         }
       ]
     },
@@ -127,13 +132,13 @@
       "methods": [
         {
           "name": "list",
-          "signature": "list(options?: ListBalancesOptions): Promise<AssetBalance[]>",
-          "doc": "Lists asset balances for the tenant."
+          "signature": "list(options?: ListBalancesOptions): Promise<ListBalancesResult>",
+          "doc": "Lists a page of asset balances for the tenant."
         },
         {
           "name": "listNFTCollections",
-          "signature": "listNFTCollections(options: ListNFTCollectionBalancesOptions): Promise<NFTCollectionBalance[]>",
-          "doc": "Lists NFT collection balances for the tenant."
+          "signature": "listNFTCollections(options?: ListNFTCollectionBalancesOptions): Promise<ListNFTCollectionBalancesResult>",
+          "doc": "Lists a page of NFT collection balances for the tenant."
         }
       ]
     },
@@ -293,6 +298,16 @@
       ]
     },
     {
+      "name": "EarnService",
+      "methods": [
+        {
+          "name": "listRewards",
+          "signature": "listRewards(options?: ListEarnRewardsOptions): Promise<ListEarnRewardsResult>",
+          "doc": "Lists a page of rewards."
+        }
+      ]
+    },
+    {
       "name": "ExchangeService",
       "methods": [
         {
@@ -318,7 +333,7 @@
         {
           "name": "list",
           "signature": "list(options?: ListExchangesOptions): Promise<ListExchangesResult>",
-          "doc": "Lists exchange accounts."
+          "doc": "Lists a page of exchange accounts."
         }
       ]
     },
@@ -332,19 +347,14 @@
         },
         {
           "name": "list",
-          "signature": "list(options?: ListFeePayersOptions): Promise<FeePayer[]>",
-          "doc": "Lists fee payers with optional filtering."
+          "signature": "list(options?: ListFeePayersOptions): Promise<PaginatedResult<FeePayer>>",
+          "doc": "Lists a page of fee payers with optional filtering."
         }
       ]
     },
     {
       "name": "FeeService",
       "methods": [
-        {
-          "name": "getFees",
-          "signature": "getFees(): Promise<Fee[]>",
-          "doc": "Retrieves current network fees for all supported blockchains (v1 API)."
-        },
         {
           "name": "getFeesV2",
           "signature": "getFeesV2(): Promise<FeeV2[]>",
@@ -363,7 +373,7 @@
         {
           "name": "getFiatProviderAccounts",
           "signature": "getFiatProviderAccounts(options: ListFiatProviderAccountsOptions): Promise<FiatProviderAccountResult>",
-          "doc": "Retrieves fiat provider accounts with optional filtering."
+          "doc": "Retrieves a page of fiat provider accounts."
         },
         {
           "name": "getFiatProviderCounterpartyAccount",
@@ -373,7 +383,7 @@
         {
           "name": "getFiatProviderCounterpartyAccounts",
           "signature": "getFiatProviderCounterpartyAccounts(options: ListFiatProviderCounterpartyAccountsOptions): Promise<FiatProviderCounterpartyAccountResult>",
-          "doc": "Retrieves fiat provider counterparty accounts with optional filtering."
+          "doc": "Retrieves a page of fiat provider counterparty accounts."
         },
         {
           "name": "getFiatProviderOperation",
@@ -383,12 +393,17 @@
         {
           "name": "getFiatProviderOperations",
           "signature": "getFiatProviderOperations(options?: ListFiatProviderOperationsOptions): Promise<FiatProviderOperationResult>",
-          "doc": "Retrieves fiat provider operations with optional filtering."
+          "doc": "Retrieves a page of fiat provider operations."
         },
         {
           "name": "getFiatProviders",
           "signature": "getFiatProviders(): Promise<FiatProvider[]>",
           "doc": "Retrieves all configured fiat providers."
+        },
+        {
+          "name": "listFiatProviderEntities",
+          "signature": "listFiatProviderEntities(options?: ListFiatProviderEntitiesOptions): Promise<ListFiatProviderEntitiesResult>",
+          "doc": "Lists a page of fiat provider entities."
         }
       ]
     },
@@ -398,12 +413,12 @@
         {
           "name": "approveRulesProposal",
           "signature": "approveRulesProposal(privateKey: KeyObject, comment: string, expectedContainerHash: string): Promise<void>",
-          "doc": ""
+          "doc": "Signs the pending proposal's rules container with a SuperAdmin private key"
         },
         {
           "name": "decodeProposalForReview",
           "signature": "decodeProposalForReview(rules: GovernanceRules): DecodedRulesContainer",
-          "doc": ""
+          "doc": "Decodes a PENDING rules proposal so a SuperAdmin can inspect it before approving."
         },
         {
           "name": "getDecodedRulesContainer",
@@ -438,7 +453,7 @@
         {
           "name": "proposalContainerHash",
           "signature": "proposalContainerHash(rules: GovernanceRules): string",
-          "doc": ""
+          "doc": "Returns the canonical SHA-256 hex digest of a ruleset's decoded rules container."
         },
         {
           "name": "rejectRulesProposal",
@@ -448,7 +463,7 @@
         {
           "name": "updateRulesProposal",
           "signature": "updateRulesProposal(container: DecodedRulesContainer): Promise<void>",
-          "doc": ""
+          "doc": "Submits a rules container as a governance proposal (SuperAdmin only)."
         },
         {
           "name": "verifyGovernanceRules",
@@ -557,17 +572,17 @@
         },
         {
           "name": "listLendingAgreements",
-          "signature": "listLendingAgreements(options?: ListLendingAgreementsOptions): Promise<{ agreements: LendingAgreement[]; pagination?: CursorPagination; }>",
+          "signature": "listLendingAgreements(options?: ListLendingAgreementsOptions): Promise<{ agreements: LendingAgreement[]; pagination: CursorPage; }>",
           "doc": "Lists lending agreements."
         },
         {
           "name": "listLendingAgreementsForApproval",
-          "signature": "listLendingAgreementsForApproval(options?: ListLendingAgreementsOptions): Promise<{ agreements: LendingAgreement[]; pagination?: CursorPagination; }>",
+          "signature": "listLendingAgreementsForApproval(options?: ListLendingAgreementsForApprovalOptions): Promise<{ agreements: LendingAgreement[]; pagination: CursorPage; }>",
           "doc": "Lists lending agreements pending approval."
         },
         {
           "name": "listLendingOffers",
-          "signature": "listLendingOffers(options?: ListLendingOffersOptions): Promise<{ offers: LendingOffer[]; pagination?: CursorPagination; }>",
+          "signature": "listLendingOffers(options?: ListLendingOffersOptions): Promise<{ offers: LendingOffer[]; pagination: CursorPage; }>",
           "doc": "Lists lending offers."
         },
         {
@@ -588,7 +603,7 @@
         {
           "name": "approve",
           "signature": "approve(request: ApproveMultiFactorSignatureRequest): Promise<void>",
-          "doc": ""
+          "doc": "Approve a multi-factor signature."
         },
         {
           "name": "create",
@@ -598,7 +613,7 @@
         {
           "name": "get",
           "signature": "get(id: string): Promise<MultiFactorSignatureInfo>",
-          "doc": ""
+          "doc": "Get multi-factor signature entity info by ID."
         },
         {
           "name": "reject",
@@ -667,22 +682,22 @@
         },
         {
           "name": "list",
-          "signature": "list(options?: ListPledgesOptions): Promise<{ pledges: Pledge[]; pagination?: CursorPagination; }>",
+          "signature": "list(options?: ListPledgesOptions): Promise<{ pledges: Pledge[]; pagination: CursorPage; }>",
           "doc": "Lists pledges with optional filtering."
         },
         {
           "name": "listPledgeActions",
-          "signature": "listPledgeActions(options?: ListPledgeActionsOptions): Promise<{ actions: PledgeAction[]; pagination?: CursorPagination; }>",
+          "signature": "listPledgeActions(options?: ListPledgeActionsOptions): Promise<{ actions: PledgeAction[]; pagination: CursorPage; }>",
           "doc": "Lists pledge actions with optional filtering."
         },
         {
           "name": "listPledgeActionsForApproval",
-          "signature": "listPledgeActionsForApproval(options?: ListPledgeActionsOptions): Promise<{ actions: PledgeAction[]; pagination?: CursorPagination; }>",
+          "signature": "listPledgeActionsForApproval(options?: ListPledgeActionsForApprovalOptions): Promise<{ actions: PledgeAction[]; pagination: CursorPage; }>",
           "doc": "Lists pledge actions pending approval."
         },
         {
           "name": "listPledgeWithdrawals",
-          "signature": "listPledgeWithdrawals(options?: ListPledgeWithdrawalsOptions): Promise<{ withdrawals: PledgeWithdrawal[]; pagination?: CursorPagination; }>",
+          "signature": "listPledgeWithdrawals(options?: ListPledgeWithdrawalsOptions): Promise<{ withdrawals: PledgeWithdrawal[]; pagination: CursorPage; }>",
           "doc": "Lists pledge withdrawals with optional filtering."
         },
         {
@@ -727,8 +742,8 @@
         },
         {
           "name": "list",
-          "signature": "list(): Promise<Price[]>",
-          "doc": "Lists all current prices."
+          "signature": "list(options?: ListPricesOptions): Promise<ListPricesResult>",
+          "doc": "Lists a page of current prices, each verified against its signature."
         }
       ]
     },
@@ -817,8 +832,8 @@
         },
         {
           "name": "list",
-          "signature": "list(options?: ListReservationsOptions): Promise<Reservation[]>",
-          "doc": "Lists all reservations with optional filtering."
+          "signature": "list(options?: ListReservationsOptions): Promise<ListReservationsResult>",
+          "doc": "Lists a page of reservations with optional filtering."
         }
       ]
     },
@@ -857,12 +872,12 @@
         },
         {
           "name": "list",
-          "signature": "list(options?: ListSettlementsOptions): Promise<{ settlements: Settlement[]; pagination?: CursorPagination; }>",
+          "signature": "list(options?: ListSettlementsOptions): Promise<{ settlements: Settlement[]; pagination: CursorPage; }>",
           "doc": "Lists settlements with optional filtering."
         },
         {
           "name": "listForApproval",
-          "signature": "listForApproval(options?: ListSettlementsForApprovalOptions): Promise<{ settlements: Settlement[]; pagination?: CursorPagination; }>",
+          "signature": "listForApproval(options?: ListSettlementsForApprovalOptions): Promise<{ settlements: Settlement[]; pagination: CursorPage; }>",
           "doc": "Lists settlements pending approval."
         },
         {
@@ -877,12 +892,12 @@
       "methods": [
         {
           "name": "listSharedAddresses",
-          "signature": "listSharedAddresses(options?: ListSharedAddressesOptions): Promise<{ sharedAddresses: SharedAddress[]; pagination?: CursorPagination; }>",
+          "signature": "listSharedAddresses(options?: ListSharedAddressesOptions): Promise<{ sharedAddresses: SharedAddress[]; pagination: CursorPage; }>",
           "doc": "Lists shared addresses with optional filtering."
         },
         {
           "name": "listSharedAssets",
-          "signature": "listSharedAssets(options?: ListSharedAssetsOptions): Promise<{ sharedAssets: SharedAsset[]; pagination?: CursorPagination; }>",
+          "signature": "listSharedAssets(options?: ListSharedAssetsOptions): Promise<{ sharedAssets: SharedAsset[]; pagination: CursorPage; }>",
           "doc": "Lists shared assets with optional filtering."
         },
         {
@@ -978,7 +993,7 @@
         {
           "name": "list",
           "signature": "list(options?: ListTagsOptions): Promise<Tag[]>",
-          "doc": "Lists tags."
+          "doc": "Lists every tag, optionally filtered by id or query."
         }
       ]
     },
@@ -989,11 +1004,6 @@
           "name": "getCryptoPunkMetadata",
           "signature": "getCryptoPunkMetadata(options: GetCryptoPunkMetadataOptions): Promise<CryptoPunkMetadata>",
           "doc": "Retrieves CryptoPunk metadata."
-        },
-        {
-          "name": "getERCTokenMetadata",
-          "signature": "getERCTokenMetadata(options: GetERCTokenMetadataOptions): Promise<TokenMetadata>",
-          "doc": "Retrieves ERC token metadata (ERC-20, ERC-721, ERC-1155)."
         },
         {
           "name": "getEVMERCTokenMetadata",
@@ -1012,8 +1022,8 @@
       "methods": [
         {
           "name": "exportTransactions",
-          "signature": "exportTransactions(options?: { fromDate?: Date; toDate?: Date; currency?: string; direction?: string; limit?: number; offset?: number; format?: string; blockchain?: string; network?: string; }): Promise<string>",
-          "doc": "Export transactions to a formatted string (CSV or JSON)."
+          "signature": "exportTransactions(options?: ExportTransactionsOptions): Promise<ExportTransactionsResult>",
+          "doc": "Exports transactions as a formatted string (JSON or CSV)."
         },
         {
           "name": "get",
@@ -1032,12 +1042,12 @@
         },
         {
           "name": "listByAddress",
-          "signature": "listByAddress(address: string, options?: { limit?: number; offset?: number; }): Promise<PaginatedResult<Transaction>>",
+          "signature": "listByAddress(address: string, options?: OffsetPageOptions): Promise<PaginatedResult<Transaction>>",
           "doc": "Lists transactions for a specific blockchain address."
         },
         {
           "name": "listByRequest",
-          "signature": "listByRequest(requestId: string, options?: { limit?: number; offset?: number; }): Promise<PaginatedResult<Transaction>>",
+          "signature": "listByRequest(requestId: string, options?: OffsetPageOptions): Promise<PaginatedResult<Transaction>>",
           "doc": "Lists transactions associated with a specific request ID."
         }
       ]
@@ -1132,8 +1142,8 @@
         },
         {
           "name": "getWalletTokens",
-          "signature": "getWalletTokens(walletId: number, limit?: number): Promise<AssetBalance[]>",
-          "doc": "Gets the list of tokens (asset balances) for a wallet."
+          "signature": "getWalletTokens(walletId: number, options?: ListWalletTokensOptions): Promise<ListWalletTokensResult>",
+          "doc": "Gets a page of the tokens (asset balances) a wallet holds."
         },
         {
           "name": "list",
@@ -1177,8 +1187,8 @@
         },
         {
           "name": "list",
-          "signature": "list(options?: ListWebhooksOptions): Promise<Webhook[]>",
-          "doc": "Lists webhooks."
+          "signature": "list(options?: ListWebhooksOptions): Promise<ListWebhooksResult>",
+          "doc": "Lists a page of webhooks."
         }
       ]
     },
@@ -1188,7 +1198,7 @@
         {
           "name": "approve",
           "signature": "approve(selection: WhitelistedAddressApproval, privateKey: KeyObject, comment: string): Promise<void>",
-          "doc": ""
+          "doc": "Signs and submits an approval for the whitelisted addresses an approver REVIEWED,"
         },
         {
           "name": "get",
@@ -1213,7 +1223,7 @@
         {
           "name": "listForApproval",
           "signature": "listForApproval(options?: ListWhitelistedAddressesForApprovalOptions): Promise<ListWhitelistedAddressesResult>",
-          "doc": ""
+          "doc": "Lists whitelisted addresses awaiting approval, verified exactly as {@link list} is."
         },
         {
           "name": "withVerification",
@@ -1228,12 +1238,12 @@
         {
           "name": "approve",
           "signature": "approve(selection: WhitelistedAssetApproval, privateKey: KeyObject, comment: string): Promise<void>",
-          "doc": ""
+          "doc": "Signs and submits an approval for the whitelisted assets an approver REVIEWED,"
         },
         {
           "name": "get",
           "signature": "get(assetId: number): Promise<WhitelistedAsset>",
-          "doc": ""
+          "doc": "Gets a whitelisted asset by ID, running the full 5-step verification."
         },
         {
           "name": "getEnvelope",
@@ -1253,7 +1263,7 @@
         {
           "name": "listForApproval",
           "signature": "listForApproval(options?: ListWhitelistedAssetsForApprovalOptions): Promise<ListWhitelistedAssetsResult>",
-          "doc": ""
+          "doc": "Lists whitelisted assets awaiting approval, verified exactly as {@link list}."
         },
         {
           "name": "withVerification",

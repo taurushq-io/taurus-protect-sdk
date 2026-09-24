@@ -23,7 +23,10 @@ type TgvalidatordCosmosMessageValue struct {
 	Name *string `json:"name,omitempty"`
 	FieldId *string `json:"fieldId,omitempty"`
 	Value *CosmosMessageValueValue `json:"value,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordCosmosMessageValue TgvalidatordCosmosMessageValue
 
 // NewTgvalidatordCosmosMessageValue instantiates a new TgvalidatordCosmosMessageValue object
 // This constructor will assign default values to properties that have it defined,
@@ -192,7 +195,36 @@ func (o TgvalidatordCosmosMessageValue) ToMap() (map[string]interface{}, error) 
 	if !IsNil(o.Value) {
 		toSerialize["value"] = o.Value
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordCosmosMessageValue) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordCosmosMessageValue := _TgvalidatordCosmosMessageValue{}
+
+	err = json.Unmarshal(data, &varTgvalidatordCosmosMessageValue)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordCosmosMessageValue(varTgvalidatordCosmosMessageValue)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "kind")
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "fieldId")
+		delete(additionalProperties, "value")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordCosmosMessageValue struct {

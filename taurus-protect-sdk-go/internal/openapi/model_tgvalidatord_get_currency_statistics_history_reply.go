@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordGetCurrencyStatisticsHistoryReply{}
 // TgvalidatordGetCurrencyStatisticsHistoryReply struct for TgvalidatordGetCurrencyStatisticsHistoryReply
 type TgvalidatordGetCurrencyStatisticsHistoryReply struct {
 	Result []TgvalidatordCurrencyStatisticsHistory `json:"result,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetCurrencyStatisticsHistoryReply TgvalidatordGetCurrencyStatisticsHistoryReply
 
 // NewTgvalidatordGetCurrencyStatisticsHistoryReply instantiates a new TgvalidatordGetCurrencyStatisticsHistoryReply object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordGetCurrencyStatisticsHistoryReply) ToMap() (map[string]inter
 	if !IsNil(o.Result) {
 		toSerialize["result"] = o.Result
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetCurrencyStatisticsHistoryReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetCurrencyStatisticsHistoryReply := _TgvalidatordGetCurrencyStatisticsHistoryReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetCurrencyStatisticsHistoryReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetCurrencyStatisticsHistoryReply(varTgvalidatordGetCurrencyStatisticsHistoryReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "result")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetCurrencyStatisticsHistoryReply struct {

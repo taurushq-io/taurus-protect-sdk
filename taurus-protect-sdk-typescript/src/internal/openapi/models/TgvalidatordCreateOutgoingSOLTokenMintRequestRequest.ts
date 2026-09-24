@@ -61,7 +61,16 @@ export interface TgvalidatordCreateOutgoingSOLTokenMintRequestRequest {
      * @memberof TgvalidatordCreateOutgoingSOLTokenMintRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingSOLTokenMintRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingSOLTokenMintRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'toAddressId', 'toWhitelistedAddressId', 'amount', 'feeLimit', 'comment', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingSOLTokenMintRequestRequest interface.
@@ -80,7 +89,7 @@ export function TgvalidatordCreateOutgoingSOLTokenMintRequestRequestFromJSONType
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingSOLTokenMintRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'toAddressId': json['toAddressId'] == null ? undefined : json['toAddressId'],
@@ -90,6 +99,16 @@ export function TgvalidatordCreateOutgoingSOLTokenMintRequestRequestFromJSONType
         'comment': json['comment'] == null ? undefined : json['comment'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingSOLTokenMintRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingSOLTokenMintRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingSOLTokenMintRequestRequest {
@@ -110,6 +129,7 @@ export function TgvalidatordCreateOutgoingSOLTokenMintRequestRequestFromJSONType
         'feeLimit': value['feeLimit'],
         'comment': value['comment'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

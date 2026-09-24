@@ -23,7 +23,10 @@ type TgvalidatordTnPledgeStatisticsTnParticipant struct {
 	OutgoingPledgesTotalValuationBaseCurrency *string `json:"outgoingPledgesTotalValuationBaseCurrency,omitempty"`
 	IncomingPledgesTotalValuationBaseCurrency *string `json:"incomingPledgesTotalValuationBaseCurrency,omitempty"`
 	PledgeStatisticsCurrencies []TgvalidatordTnPledgeStatisticsCurrency `json:"pledgeStatisticsCurrencies,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTnPledgeStatisticsTnParticipant TgvalidatordTnPledgeStatisticsTnParticipant
 
 // NewTgvalidatordTnPledgeStatisticsTnParticipant instantiates a new TgvalidatordTnPledgeStatisticsTnParticipant object
 // This constructor will assign default values to properties that have it defined,
@@ -192,7 +195,36 @@ func (o TgvalidatordTnPledgeStatisticsTnParticipant) ToMap() (map[string]interfa
 	if !IsNil(o.PledgeStatisticsCurrencies) {
 		toSerialize["pledgeStatisticsCurrencies"] = o.PledgeStatisticsCurrencies
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTnPledgeStatisticsTnParticipant) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTnPledgeStatisticsTnParticipant := _TgvalidatordTnPledgeStatisticsTnParticipant{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTnPledgeStatisticsTnParticipant)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTnPledgeStatisticsTnParticipant(varTgvalidatordTnPledgeStatisticsTnParticipant)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "counterpartyTnParticipantID")
+		delete(additionalProperties, "outgoingPledgesTotalValuationBaseCurrency")
+		delete(additionalProperties, "incomingPledgesTotalValuationBaseCurrency")
+		delete(additionalProperties, "pledgeStatisticsCurrencies")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTnPledgeStatisticsTnParticipant struct {

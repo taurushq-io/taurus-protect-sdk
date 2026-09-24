@@ -67,9 +67,7 @@ class WhitelistedAddress(BaseModel):
     tn_participant_id: Optional[str] = Field(
         default=None, description="Taurus Network participant ID"
     )
-    exchange_account_id: Optional[str] = Field(
-        default=None, description="Exchange account ID"
-    )
+    exchange_account_id: Optional[str] = Field(default=None, description="Exchange account ID")
     linked_internal_addresses: List[InternalAddress] = Field(
         default_factory=list, description="Linked internal addresses"
     )
@@ -276,11 +274,11 @@ class WhitelistedAddressListResult(BaseModel):
     addresses: List[WhitelistedAddress] = Field(
         default_factory=list, description="Verified addresses in the current page"
     )
-    pagination: Optional[Pagination] = Field(
-        default=None,
+    pagination: Pagination = Field(
+        default_factory=Pagination,
         description=(
-            "Page window, with total_items already reduced by the number of excluded "
-            "rows so has_more stays honest"
+            "Page window: total_items is reduced by the excluded rows, while next_offset "
+            "and has_more count the rows the server returned"
         ),
     )
     excluded_unverified: List[ExcludedWhitelistedAddress] = Field(
@@ -324,7 +322,7 @@ class WhitelistedAddressListResult(BaseModel):
                 for e in rows
                 if e.verified_whitelisted_address is not None
             ],
-            pagination=pagination,
+            pagination=pagination or Pagination(),
             excluded_unverified=excluded_unverified or [],
         )
         result._reviewed_hashes = {
@@ -456,9 +454,7 @@ class WhitelistedAssetApproval:
         self._pinned = dict(pinned)
 
     @classmethod
-    def select(
-        cls, assets: Iterable["WhitelistedAsset"], *ids: str
-    ) -> "WhitelistedAssetApproval":
+    def select(cls, assets: Iterable["WhitelistedAsset"], *ids: str) -> "WhitelistedAssetApproval":
         """Pin the given ids out of the assets a verified read returned.
 
         Args:
@@ -494,9 +490,7 @@ class WhitelistedAssetApproval:
         return cls(pinned)
 
     @classmethod
-    def select_all(
-        cls, assets: Iterable["WhitelistedAsset"]
-    ) -> "WhitelistedAssetApproval":
+    def select_all(cls, assets: Iterable["WhitelistedAsset"]) -> "WhitelistedAssetApproval":
         """Pin every asset a verified read returned.
 
         Raises:

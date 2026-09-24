@@ -81,7 +81,16 @@ export interface TgvalidatordHealth {
      * @memberof TgvalidatordHealth
      */
     validUntilDate?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordHealth
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordHealthWireKeys: ReadonlySet<string> = new Set(['tenantId', 'componentName', 'componentId', 'group', 'healthCheck', 'status', 'report', 'lastUpdateDate', 'validUntilDate']);
 
 /**
  * Check if a given object implements the TgvalidatordHealth interface.
@@ -98,7 +107,7 @@ export function TgvalidatordHealthFromJSONTyped(json: any, ignoreDiscriminator: 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordHealth = {
         
         'tenantId': json['tenantId'] == null ? undefined : json['tenantId'],
         'componentName': json['componentName'] == null ? undefined : json['componentName'],
@@ -110,6 +119,16 @@ export function TgvalidatordHealthFromJSONTyped(json: any, ignoreDiscriminator: 
         'lastUpdateDate': json['lastUpdateDate'] == null ? undefined : (new Date(json['lastUpdateDate'])),
         'validUntilDate': json['validUntilDate'] == null ? undefined : (new Date(json['validUntilDate'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordHealthWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordHealthToJSON(json: any): TgvalidatordHealth {
@@ -132,6 +151,7 @@ export function TgvalidatordHealthFromJSONTyped(json: any, ignoreDiscriminator: 
         'report': TgvalidatordHealthReportToJSON(value['report']),
         'lastUpdateDate': value['lastUpdateDate'] == null ? undefined : ((value['lastUpdateDate']).toISOString()),
         'validUntilDate': value['validUntilDate'] == null ? undefined : ((value['validUntilDate']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

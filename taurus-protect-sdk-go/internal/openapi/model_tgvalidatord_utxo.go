@@ -29,7 +29,10 @@ type TgvalidatordUTXO struct {
 	ReservedByRequestId *string `json:"reservedByRequestId,omitempty"`
 	ReservationId *string `json:"reservationId,omitempty"`
 	ValueString *string `json:"valueString,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordUTXO TgvalidatordUTXO
 
 // NewTgvalidatordUTXO instantiates a new TgvalidatordUTXO object
 // This constructor will assign default values to properties that have it defined,
@@ -373,7 +376,41 @@ func (o TgvalidatordUTXO) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.ValueString) {
 		toSerialize["valueString"] = o.ValueString
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordUTXO) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordUTXO := _TgvalidatordUTXO{}
+
+	err = json.Unmarshal(data, &varTgvalidatordUTXO)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordUTXO(varTgvalidatordUTXO)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "hash")
+		delete(additionalProperties, "outputIndex")
+		delete(additionalProperties, "script")
+		delete(additionalProperties, "value")
+		delete(additionalProperties, "blockHeight")
+		delete(additionalProperties, "reservedByRequestId")
+		delete(additionalProperties, "reservationId")
+		delete(additionalProperties, "valueString")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordUTXO struct {

@@ -32,7 +32,14 @@ type TgvalidatordCurrencyPrice struct {
 	UpdateDate *time.Time `json:"updateDate,omitempty"`
 	CurrencyFromInfo *TgvalidatordCurrency `json:"currencyFromInfo,omitempty"`
 	CurrencyToInfo *TgvalidatordCurrency `json:"currencyToInfo,omitempty"`
+	Id *string `json:"id,omitempty"`
+	IsPrimary *bool `json:"isPrimary,omitempty"`
+	// Deviation status of the price, only valid when isPrimary is true
+	Status *string `json:"status,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordCurrencyPrice TgvalidatordCurrencyPrice
 
 // NewTgvalidatordCurrencyPrice instantiates a new TgvalidatordCurrencyPrice object
 // This constructor will assign default values to properties that have it defined,
@@ -435,6 +442,102 @@ func (o *TgvalidatordCurrencyPrice) SetCurrencyToInfo(v TgvalidatordCurrency) {
 	o.CurrencyToInfo = &v
 }
 
+// GetId returns the Id field value if set, zero value otherwise.
+func (o *TgvalidatordCurrencyPrice) GetId() string {
+	if o == nil || IsNil(o.Id) {
+		var ret string
+		return ret
+	}
+	return *o.Id
+}
+
+// GetIdOk returns a tuple with the Id field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *TgvalidatordCurrencyPrice) GetIdOk() (*string, bool) {
+	if o == nil || IsNil(o.Id) {
+		return nil, false
+	}
+	return o.Id, true
+}
+
+// HasId returns a boolean if a field has been set.
+func (o *TgvalidatordCurrencyPrice) HasId() bool {
+	if o != nil && !IsNil(o.Id) {
+		return true
+	}
+
+	return false
+}
+
+// SetId gets a reference to the given string and assigns it to the Id field.
+func (o *TgvalidatordCurrencyPrice) SetId(v string) {
+	o.Id = &v
+}
+
+// GetIsPrimary returns the IsPrimary field value if set, zero value otherwise.
+func (o *TgvalidatordCurrencyPrice) GetIsPrimary() bool {
+	if o == nil || IsNil(o.IsPrimary) {
+		var ret bool
+		return ret
+	}
+	return *o.IsPrimary
+}
+
+// GetIsPrimaryOk returns a tuple with the IsPrimary field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *TgvalidatordCurrencyPrice) GetIsPrimaryOk() (*bool, bool) {
+	if o == nil || IsNil(o.IsPrimary) {
+		return nil, false
+	}
+	return o.IsPrimary, true
+}
+
+// HasIsPrimary returns a boolean if a field has been set.
+func (o *TgvalidatordCurrencyPrice) HasIsPrimary() bool {
+	if o != nil && !IsNil(o.IsPrimary) {
+		return true
+	}
+
+	return false
+}
+
+// SetIsPrimary gets a reference to the given bool and assigns it to the IsPrimary field.
+func (o *TgvalidatordCurrencyPrice) SetIsPrimary(v bool) {
+	o.IsPrimary = &v
+}
+
+// GetStatus returns the Status field value if set, zero value otherwise.
+func (o *TgvalidatordCurrencyPrice) GetStatus() string {
+	if o == nil || IsNil(o.Status) {
+		var ret string
+		return ret
+	}
+	return *o.Status
+}
+
+// GetStatusOk returns a tuple with the Status field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *TgvalidatordCurrencyPrice) GetStatusOk() (*string, bool) {
+	if o == nil || IsNil(o.Status) {
+		return nil, false
+	}
+	return o.Status, true
+}
+
+// HasStatus returns a boolean if a field has been set.
+func (o *TgvalidatordCurrencyPrice) HasStatus() bool {
+	if o != nil && !IsNil(o.Status) {
+		return true
+	}
+
+	return false
+}
+
+// SetStatus gets a reference to the given string and assigns it to the Status field.
+func (o *TgvalidatordCurrencyPrice) SetStatus(v string) {
+	o.Status = &v
+}
+
 func (o TgvalidatordCurrencyPrice) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -481,7 +584,56 @@ func (o TgvalidatordCurrencyPrice) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.CurrencyToInfo) {
 		toSerialize["currencyToInfo"] = o.CurrencyToInfo
 	}
+	if !IsNil(o.Id) {
+		toSerialize["id"] = o.Id
+	}
+	if !IsNil(o.IsPrimary) {
+		toSerialize["isPrimary"] = o.IsPrimary
+	}
+	if !IsNil(o.Status) {
+		toSerialize["status"] = o.Status
+	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordCurrencyPrice) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordCurrencyPrice := _TgvalidatordCurrencyPrice{}
+
+	err = json.Unmarshal(data, &varTgvalidatordCurrencyPrice)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordCurrencyPrice(varTgvalidatordCurrencyPrice)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "currencyFrom")
+		delete(additionalProperties, "currencyTo")
+		delete(additionalProperties, "decimals")
+		delete(additionalProperties, "rate")
+		delete(additionalProperties, "signatures")
+		delete(additionalProperties, "changePercent24Hour")
+		delete(additionalProperties, "source")
+		delete(additionalProperties, "creationDate")
+		delete(additionalProperties, "updateDate")
+		delete(additionalProperties, "currencyFromInfo")
+		delete(additionalProperties, "currencyToInfo")
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "isPrimary")
+		delete(additionalProperties, "status")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordCurrencyPrice struct {

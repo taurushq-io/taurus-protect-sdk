@@ -37,7 +37,16 @@ export interface TgvalidatordOIDCLocation {
      * @memberof TgvalidatordOIDCLocation
      */
     nonce?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordOIDCLocation
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordOIDCLocationWireKeys: ReadonlySet<string> = new Set(['location', 'state', 'nonce']);
 
 /**
  * Check if a given object implements the TgvalidatordOIDCLocation interface.
@@ -54,12 +63,22 @@ export function TgvalidatordOIDCLocationFromJSONTyped(json: any, ignoreDiscrimin
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordOIDCLocation = {
         
         'location': json['location'] == null ? undefined : json['location'],
         'state': json['state'] == null ? undefined : json['state'],
         'nonce': json['nonce'] == null ? undefined : json['nonce'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordOIDCLocationWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordOIDCLocationToJSON(json: any): TgvalidatordOIDCLocation {
@@ -76,6 +95,7 @@ export function TgvalidatordOIDCLocationFromJSONTyped(json: any, ignoreDiscrimin
         'location': value['location'],
         'state': value['state'],
         'nonce': value['nonce'],
+        ...value['additionalProperties'],
     };
 }
 

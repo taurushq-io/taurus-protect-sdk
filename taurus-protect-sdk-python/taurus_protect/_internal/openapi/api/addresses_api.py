@@ -5245,6 +5245,7 @@ class AddressesApi:
         score_filter_trmlabs_filters_score_greater: Annotated[Optional[StrictStr], Field(description="Filter addresses with an TRM Labs risk score above threshold.")] = None,
         attribute_filters_json: Annotated[Optional[StrictStr], Field(description="A JSON representation of a list of AttributeFilter objects. The filters are combined with an attributeFiltersOperator ('OR' by default). Each AttributeFilter can use different comparison operators: `=` (default if not specified), `<>` (not equal), `>` (greater than), `>=` (greater than or equal), `<` (less than), `<=` (less than or equal)")] = None,
         attribute_filters_operator: Annotated[Optional[StrictStr], Field(description="Specifies how attribute filters are combined. Accepted values: 'OR' (default), 'AND'.")] = None,
+        include_disabled_addresses: Annotated[Optional[StrictStr], Field(description="One of [exclude, include, only] depending on whether you want to include disabled addresses (or you want only those). Filtering will be performed after pagination: `totalItems` won't represent the number of addresses with this filter but can be used in combination with `offset`.")] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -5328,6 +5329,8 @@ class AddressesApi:
         :type attribute_filters_json: str
         :param attribute_filters_operator: Specifies how attribute filters are combined. Accepted values: 'OR' (default), 'AND'.
         :type attribute_filters_operator: str
+        :param include_disabled_addresses: One of [exclude, include, only] depending on whether you want to include disabled addresses (or you want only those). Filtering will be performed after pagination: `totalItems` won't represent the number of addresses with this filter but can be used in combination with `offset`.
+        :type include_disabled_addresses: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -5384,6 +5387,7 @@ class AddressesApi:
             score_filter_trmlabs_filters_score_greater=score_filter_trmlabs_filters_score_greater,
             attribute_filters_json=attribute_filters_json,
             attribute_filters_operator=attribute_filters_operator,
+            include_disabled_addresses=include_disabled_addresses,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -5446,6 +5450,7 @@ class AddressesApi:
         score_filter_trmlabs_filters_score_greater: Annotated[Optional[StrictStr], Field(description="Filter addresses with an TRM Labs risk score above threshold.")] = None,
         attribute_filters_json: Annotated[Optional[StrictStr], Field(description="A JSON representation of a list of AttributeFilter objects. The filters are combined with an attributeFiltersOperator ('OR' by default). Each AttributeFilter can use different comparison operators: `=` (default if not specified), `<>` (not equal), `>` (greater than), `>=` (greater than or equal), `<` (less than), `<=` (less than or equal)")] = None,
         attribute_filters_operator: Annotated[Optional[StrictStr], Field(description="Specifies how attribute filters are combined. Accepted values: 'OR' (default), 'AND'.")] = None,
+        include_disabled_addresses: Annotated[Optional[StrictStr], Field(description="One of [exclude, include, only] depending on whether you want to include disabled addresses (or you want only those). Filtering will be performed after pagination: `totalItems` won't represent the number of addresses with this filter but can be used in combination with `offset`.")] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -5529,6 +5534,8 @@ class AddressesApi:
         :type attribute_filters_json: str
         :param attribute_filters_operator: Specifies how attribute filters are combined. Accepted values: 'OR' (default), 'AND'.
         :type attribute_filters_operator: str
+        :param include_disabled_addresses: One of [exclude, include, only] depending on whether you want to include disabled addresses (or you want only those). Filtering will be performed after pagination: `totalItems` won't represent the number of addresses with this filter but can be used in combination with `offset`.
+        :type include_disabled_addresses: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -5585,6 +5592,7 @@ class AddressesApi:
             score_filter_trmlabs_filters_score_greater=score_filter_trmlabs_filters_score_greater,
             attribute_filters_json=attribute_filters_json,
             attribute_filters_operator=attribute_filters_operator,
+            include_disabled_addresses=include_disabled_addresses,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -5647,6 +5655,7 @@ class AddressesApi:
         score_filter_trmlabs_filters_score_greater: Annotated[Optional[StrictStr], Field(description="Filter addresses with an TRM Labs risk score above threshold.")] = None,
         attribute_filters_json: Annotated[Optional[StrictStr], Field(description="A JSON representation of a list of AttributeFilter objects. The filters are combined with an attributeFiltersOperator ('OR' by default). Each AttributeFilter can use different comparison operators: `=` (default if not specified), `<>` (not equal), `>` (greater than), `>=` (greater than or equal), `<` (less than), `<=` (less than or equal)")] = None,
         attribute_filters_operator: Annotated[Optional[StrictStr], Field(description="Specifies how attribute filters are combined. Accepted values: 'OR' (default), 'AND'.")] = None,
+        include_disabled_addresses: Annotated[Optional[StrictStr], Field(description="One of [exclude, include, only] depending on whether you want to include disabled addresses (or you want only those). Filtering will be performed after pagination: `totalItems` won't represent the number of addresses with this filter but can be used in combination with `offset`.")] = None,
         _request_timeout: Union[
             None,
             Annotated[StrictFloat, Field(gt=0)],
@@ -5730,6 +5739,8 @@ class AddressesApi:
         :type attribute_filters_json: str
         :param attribute_filters_operator: Specifies how attribute filters are combined. Accepted values: 'OR' (default), 'AND'.
         :type attribute_filters_operator: str
+        :param include_disabled_addresses: One of [exclude, include, only] depending on whether you want to include disabled addresses (or you want only those). Filtering will be performed after pagination: `totalItems` won't represent the number of addresses with this filter but can be used in combination with `offset`.
+        :type include_disabled_addresses: str
         :param _request_timeout: timeout setting for this request. If one
                                  number provided, it will be total request
                                  timeout. It can also be a pair (tuple) of
@@ -5786,6 +5797,7 @@ class AddressesApi:
             score_filter_trmlabs_filters_score_greater=score_filter_trmlabs_filters_score_greater,
             attribute_filters_json=attribute_filters_json,
             attribute_filters_operator=attribute_filters_operator,
+            include_disabled_addresses=include_disabled_addresses,
             _request_auth=_request_auth,
             _content_type=_content_type,
             _headers=_headers,
@@ -5843,6 +5855,7 @@ class AddressesApi:
         score_filter_trmlabs_filters_score_greater,
         attribute_filters_json,
         attribute_filters_operator,
+        include_disabled_addresses,
         _request_auth,
         _content_type,
         _headers,
@@ -5999,6 +6012,10 @@ class AddressesApi:
         if attribute_filters_operator is not None:
             
             _query_params.append(('attributeFiltersOperator', attribute_filters_operator))
+            
+        if include_disabled_addresses is not None:
+            
+            _query_params.append(('includeDisabledAddresses', include_disabled_addresses))
             
         # process the header parameters
         # process the form parameters

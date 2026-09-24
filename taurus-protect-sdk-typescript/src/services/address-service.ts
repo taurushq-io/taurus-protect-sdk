@@ -25,9 +25,18 @@ import { verifyAddressSignature } from "../helpers";
 import type { RulesContainerCache } from "../cache";
 import type { DecodedRulesContainer } from "../models/governance-rules";
 import type { Address, CreateAddressRequest, ListAddressesOptions } from "../models/address";
-import type { Pagination } from "../models/pagination";
+import {
+  buildOffsetPagination,
+  offsetRequest,
+  type PaginatedResult,
+} from "../models/pagination";
 import { addressFromDto } from "../mappers/address";
 import { BaseService } from "./base";
+import { offsetQuery } from "./paging";
+import { verifyRowsById, type VerifiedLookup } from "./row-level-error";
+
+/** The most address ids GetAddresses accepts in one request. */
+export const MAX_ADDRESS_IDS_PER_READ = 50;
 
 /**
  * Service for managing blockchain addresses.
@@ -51,8 +60,11 @@ import { BaseService } from "./base";
  * const address = await addressService.get(456);
  * console.log(`Address: ${address.address}`);
  *
- * // List addresses for a wallet
+ * // List addresses for a wallet, page by page
  * const { items, pagination } = await addressService.list(123);
+ * if (pagination.hasMore) {
+ *   await addressService.list(123, { offset: pagination.nextOffset });
+ * }
  * ```
  */
 export class AddressService extends BaseService {
@@ -121,91 +133,121 @@ export class AddressService extends BaseService {
    * Lists addresses for a wallet with mandatory signature verification.
    *
    * @param walletId - The wallet ID to list addresses for
-   * @param options - Optional pagination and filtering options
-   * @returns Object with addresses array and pagination info
-   * @throws ValidationError if walletId is invalid or limit/offset are invalid
+   * @param options - Filters, `limit` (1-100, default 20) and `offset`
+   * @returns The page of verified addresses and its pagination; continue with
+   *   `offset: pagination.nextOffset` while `pagination.hasMore`
+   * @throws ValidationError if walletId is invalid or limit/offset are out of bounds
    * @throws IntegrityError if signature verification fails for any address
    * @throws APIError if API request fails
    */
   async list(
     walletId: number,
     options?: Omit<ListAddressesOptions, "walletId">
-  ): Promise<{ items: Address[]; pagination: Pagination | undefined }> {
+  ): Promise<PaginatedResult<Address>> {
     if (walletId <= 0) {
       throw new ValidationError("walletId must be positive");
     }
-
-    const limit = options?.limit ?? 50;
-    const offset = options?.offset ?? 0;
-
-    if (limit <= 0) {
-      throw new ValidationError("limit must be positive");
-    }
-    if (offset < 0) {
-      throw new ValidationError("offset cannot be negative");
-    }
-
-    return this.execute(async () => {
-      const response = await this.api.walletServiceGetAddresses({
-        walletId: String(walletId),
-        limit: String(limit),
-        offset: String(offset),
-        query: options?.query,
-        blockchain: options?.blockchain,
-        network: options?.network,
-      });
-
-      // CRITICAL: every row goes through the ONE verification seam.
-      const addresses = await this.verifiedAddresses(response.result);
-
-      // Extract pagination
-      const totalItems = response.totalItems
-        ? parseInt(response.totalItems, 10)
-        : undefined;
-      const pagination: Pagination | undefined = totalItems !== undefined
-        ? { totalItems, offset, limit }
-        : undefined;
-
-      return { items: addresses, pagination };
-    });
+    return this.listWithOptions({ ...options, walletId: String(walletId) });
   }
 
   /**
-   * Lists addresses with full filtering options.
+   * Lists addresses with full filtering options, with mandatory signature verification.
    *
-   * @param options - Optional filtering and pagination options
-   * @returns Object with addresses array and pagination info
+   * Every option reaches the wire; `excludeDisabled` is sent as
+   * `includeDisabledAddresses=exclude`.
+   *
+   * @param options - Filters, `limit` (1-100, default 20) and `offset`
+   * @returns The page of verified addresses and its pagination
+   * @throws ValidationError if limit/offset are out of bounds
    * @throws IntegrityError if signature verification fails for any address
    * @throws APIError if API request fails
    */
   async listWithOptions(
     options?: ListAddressesOptions
-  ): Promise<{ items: Address[]; pagination: Pagination | undefined }> {
-    const limit = options?.limit ?? 50;
-    const offset = options?.offset ?? 0;
+  ): Promise<PaginatedResult<Address>> {
+    const page = offsetRequest(options);
 
     return this.execute(async () => {
       const response = await this.api.walletServiceGetAddresses({
         walletId: options?.walletId,
-        limit: limit > 0 ? String(limit) : undefined,
-        offset: offset > 0 ? String(offset) : undefined,
+        ...offsetQuery(page),
         query: options?.query,
         blockchain: options?.blockchain,
         network: options?.network,
+        addressIds: options?.addressIds,
+        addresses: options?.addresses,
+        tagIDs: options?.tagIds,
+        onlyPositiveBalance: options?.onlyPositiveBalance,
+        balanceAbove: options?.balanceAbove,
+        balanceBelow: options?.balanceBelow,
+        sortBy: options?.sortBy,
+        sortOrder: options?.sortOrder,
+        includeDisabledAddresses: options?.excludeDisabled ? "exclude" : undefined,
       });
 
       // CRITICAL: every row goes through the ONE verification seam.
-      const addresses = await this.verifiedAddresses(response.result);
+      const rows = response.result ?? [];
+      const items = await this.verifiedAddresses(rows);
 
-      // Extract pagination
-      const totalItems = response.totalItems
-        ? parseInt(response.totalItems, 10)
-        : undefined;
-      const pagination: Pagination | undefined = totalItems !== undefined
-        ? { totalItems, offset, limit }
+      return {
+        items,
+        // The reply's offset is the NEXT page's offset.
+        pagination: buildOffsetPagination(
+          "reply_offset",
+          page,
+          response,
+          rows.length,
+          rows.length - items.length
+        ),
+      };
+    });
+  }
+
+  /**
+   * Re-reads managed addresses by id for a caller that completes unsigned rows (the v2
+   * asset-holders list) and must drop a bad row rather than fail its page.
+   *
+   * The request is `listWithOptions`' (`addressIds`, one page the size of `ids`) and
+   * every row goes through the same `verifiedAddress` seam. A row that fails its own
+   * check lands in `failed`; an API error, an unusable rules container (no HSM key), or
+   * anything else that is not a per-row integrity failure aborts the read.
+   *
+   * Not part of the public surface.
+   *
+   * @internal
+   * @param ids - At most {@link MAX_ADDRESS_IDS_PER_READ} address ids
+   * @returns The verified addresses and the failed rows, by address id
+   * @throws ValidationError if more ids are passed than one request accepts
+   */
+  async _verifiedByIds(ids: readonly string[]): Promise<VerifiedLookup<Address>> {
+    if (ids.length > MAX_ADDRESS_IDS_PER_READ) {
+      throw new ValidationError(
+        `at most ${MAX_ADDRESS_IDS_PER_READ} address ids per read, got ${ids.length}`
+      );
+    }
+    if (ids.length === 0) {
+      return { verified: new Map(), failed: new Map() };
+    }
+    const page = offsetRequest({ limit: ids.length });
+
+    return this.execute(async () => {
+      const response = await this.api.walletServiceGetAddresses({
+        ...offsetQuery(page),
+        addressIds: [...ids],
+      });
+      const rows = response.result ?? [];
+
+      // Fetched once and OUTSIDE the per-row check: a container that cannot be fetched or
+      // verified fails the read, it is not one failure per row.
+      const rulesContainer = rows.some((dto) => Boolean(dto.address) && Boolean(dto.signature))
+        ? await this.rulesCache.get()
         : undefined;
 
-      return { items: addresses, pagination };
+      return verifyRowsById(
+        rows,
+        (dto) => dto.id ?? "",
+        (dto) => this.verifiedAddress(dto, rulesContainer)
+      );
     });
   }
 

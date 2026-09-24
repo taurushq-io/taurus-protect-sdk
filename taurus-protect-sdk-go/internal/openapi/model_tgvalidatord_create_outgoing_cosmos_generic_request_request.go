@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -39,6 +38,7 @@ type TgvalidatordCreateOutgoingCosmosGenericRequestRequest struct {
 	Memo *string `json:"memo,omitempty"`
 	// Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingCosmosGenericRequestRequest TgvalidatordCreateOutgoingCosmosGenericRequestRequest
@@ -533,6 +533,11 @@ func (o TgvalidatordCreateOutgoingCosmosGenericRequestRequest) ToMap() (map[stri
 	if !IsNil(o.ExternalRequestId) {
 		toSerialize["externalRequestId"] = o.ExternalRequestId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -562,15 +567,33 @@ func (o *TgvalidatordCreateOutgoingCosmosGenericRequestRequest) UnmarshalJSON(da
 
 	varTgvalidatordCreateOutgoingCosmosGenericRequestRequest := _TgvalidatordCreateOutgoingCosmosGenericRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingCosmosGenericRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingCosmosGenericRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingCosmosGenericRequestRequest(varTgvalidatordCreateOutgoingCosmosGenericRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "chainId")
+		delete(additionalProperties, "signers")
+		delete(additionalProperties, "feeDenom")
+		delete(additionalProperties, "fee")
+		delete(additionalProperties, "feePayer")
+		delete(additionalProperties, "gasLimit")
+		delete(additionalProperties, "messages")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "useUnconfirmedFunds")
+		delete(additionalProperties, "transactionReference")
+		delete(additionalProperties, "broadcastKind")
+		delete(additionalProperties, "accountsInfo")
+		delete(additionalProperties, "memo")
+		delete(additionalProperties, "externalRequestId")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

@@ -37,7 +37,16 @@ export interface TgvalidatordCryptoPunkMetadata {
      * @memberof TgvalidatordCryptoPunkMetadata
      */
     image?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCryptoPunkMetadata
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCryptoPunkMetadataWireKeys: ReadonlySet<string> = new Set(['punkId', 'punkAttributes', 'image']);
 
 /**
  * Check if a given object implements the TgvalidatordCryptoPunkMetadata interface.
@@ -54,12 +63,22 @@ export function TgvalidatordCryptoPunkMetadataFromJSONTyped(json: any, ignoreDis
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCryptoPunkMetadata = {
         
         'punkId': json['punkId'] == null ? undefined : json['punkId'],
         'punkAttributes': json['punkAttributes'] == null ? undefined : json['punkAttributes'],
         'image': json['image'] == null ? undefined : json['image'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCryptoPunkMetadataWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCryptoPunkMetadataToJSON(json: any): TgvalidatordCryptoPunkMetadata {
@@ -76,6 +95,7 @@ export function TgvalidatordCryptoPunkMetadataFromJSONTyped(json: any, ignoreDis
         'punkId': value['punkId'],
         'punkAttributes': value['punkAttributes'],
         'image': value['image'],
+        ...value['additionalProperties'],
     };
 }
 

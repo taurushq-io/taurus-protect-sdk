@@ -25,7 +25,16 @@ export interface TaurusNetworkServiceRepayLendingAgreementBody {
      * @memberof TaurusNetworkServiceRepayLendingAgreementBody
      */
     repayerSharedAddressID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TaurusNetworkServiceRepayLendingAgreementBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TaurusNetworkServiceRepayLendingAgreementBodyWireKeys: ReadonlySet<string> = new Set(['repayerSharedAddressID']);
 
 /**
  * Check if a given object implements the TaurusNetworkServiceRepayLendingAgreementBody interface.
@@ -42,10 +51,20 @@ export function TaurusNetworkServiceRepayLendingAgreementBodyFromJSONTyped(json:
     if (json == null) {
         return json;
     }
-    return {
+    const result: TaurusNetworkServiceRepayLendingAgreementBody = {
         
         'repayerSharedAddressID': json['repayerSharedAddressID'] == null ? undefined : json['repayerSharedAddressID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TaurusNetworkServiceRepayLendingAgreementBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TaurusNetworkServiceRepayLendingAgreementBodyToJSON(json: any): TaurusNetworkServiceRepayLendingAgreementBody {
@@ -60,6 +79,7 @@ export function TaurusNetworkServiceRepayLendingAgreementBodyFromJSONTyped(json:
     return {
         
         'repayerSharedAddressID': value['repayerSharedAddressID'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -23,7 +23,10 @@ type TgvalidatordTagStatistics struct {
 	// Valuation in the base currency main unit (CHF, EUR, USD etc...)
 	TotalValuation *string `json:"totalValuation,omitempty"`
 	Tag *TgvalidatordTag `json:"tag,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTagStatistics TgvalidatordTagStatistics
 
 // NewTgvalidatordTagStatistics instantiates a new TgvalidatordTagStatistics object
 // This constructor will assign default values to properties that have it defined,
@@ -157,7 +160,35 @@ func (o TgvalidatordTagStatistics) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Tag) {
 		toSerialize["tag"] = o.Tag
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTagStatistics) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTagStatistics := _TgvalidatordTagStatistics{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTagStatistics)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTagStatistics(varTgvalidatordTagStatistics)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "tagID")
+		delete(additionalProperties, "totalValuation")
+		delete(additionalProperties, "tag")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTagStatistics struct {

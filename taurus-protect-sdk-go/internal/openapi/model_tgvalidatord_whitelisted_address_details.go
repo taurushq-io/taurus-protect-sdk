@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordWhitelistedAddressDetails{}
 type TgvalidatordWhitelistedAddressDetails struct {
 	Address *string `json:"address,omitempty"`
 	WhitelistedAddressID *string `json:"whitelistedAddressID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordWhitelistedAddressDetails TgvalidatordWhitelistedAddressDetails
 
 // NewTgvalidatordWhitelistedAddressDetails instantiates a new TgvalidatordWhitelistedAddressDetails object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordWhitelistedAddressDetails) ToMap() (map[string]interface{}, 
 	if !IsNil(o.WhitelistedAddressID) {
 		toSerialize["whitelistedAddressID"] = o.WhitelistedAddressID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordWhitelistedAddressDetails) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordWhitelistedAddressDetails := _TgvalidatordWhitelistedAddressDetails{}
+
+	err = json.Unmarshal(data, &varTgvalidatordWhitelistedAddressDetails)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordWhitelistedAddressDetails(varTgvalidatordWhitelistedAddressDetails)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "address")
+		delete(additionalProperties, "whitelistedAddressID")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordWhitelistedAddressDetails struct {

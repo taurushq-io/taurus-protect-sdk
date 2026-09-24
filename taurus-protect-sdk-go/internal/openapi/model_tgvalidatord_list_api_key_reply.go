@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordListApiKeyReply{}
 // TgvalidatordListApiKeyReply struct for TgvalidatordListApiKeyReply
 type TgvalidatordListApiKeyReply struct {
 	Result []TgvalidatordApiKey `json:"result,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordListApiKeyReply TgvalidatordListApiKeyReply
 
 // NewTgvalidatordListApiKeyReply instantiates a new TgvalidatordListApiKeyReply object
 // This constructor will assign default values to properties that have it defined,
@@ -72,7 +75,7 @@ func (o *TgvalidatordListApiKeyReply) SetResult(v []TgvalidatordApiKey) {
 }
 
 func (o TgvalidatordListApiKeyReply) MarshalJSON() ([]byte, error) {
-	toSerialize, err := o.ToMap()
+	toSerialize,err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -84,7 +87,33 @@ func (o TgvalidatordListApiKeyReply) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Result) {
 		toSerialize["result"] = o.Result
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordListApiKeyReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordListApiKeyReply := _TgvalidatordListApiKeyReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordListApiKeyReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordListApiKeyReply(varTgvalidatordListApiKeyReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "result")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordListApiKeyReply struct {
@@ -122,3 +151,5 @@ func (v *NullableTgvalidatordListApiKeyReply) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
+
+

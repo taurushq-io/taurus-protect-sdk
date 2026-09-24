@@ -36,7 +36,10 @@ type TgvalidatordAddressInfo struct {
 	WhitelistedAddressId *string `json:"whitelistedAddressId,omitempty"`
 	// Transaction scores related to this address (only for destinations). Up to one score per [KYT provider, score type].
 	Scores []TgvalidatordTransactionScore `json:"scores,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordAddressInfo TgvalidatordAddressInfo
 
 // NewTgvalidatordAddressInfo instantiates a new TgvalidatordAddressInfo object
 // This constructor will assign default values to properties that have it defined,
@@ -450,7 +453,43 @@ func (o TgvalidatordAddressInfo) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Scores) {
 		toSerialize["scores"] = o.Scores
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordAddressInfo) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordAddressInfo := _TgvalidatordAddressInfo{}
+
+	err = json.Unmarshal(data, &varTgvalidatordAddressInfo)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordAddressInfo(varTgvalidatordAddressInfo)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "address")
+		delete(additionalProperties, "label")
+		delete(additionalProperties, "container")
+		delete(additionalProperties, "customerId")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "amountMainUnit")
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "idx")
+		delete(additionalProperties, "internalAddressId")
+		delete(additionalProperties, "whitelistedAddressId")
+		delete(additionalProperties, "scores")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordAddressInfo struct {

@@ -23,7 +23,10 @@ type TgvalidatordCurrencyStatisticsHistory struct {
 	Blockchain *string `json:"blockchain,omitempty"`
 	History []TgvalidatordAggregatedStatsHistoryPoint `json:"history,omitempty"`
 	CurrencyInfo *TgvalidatordCurrency `json:"currencyInfo,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordCurrencyStatisticsHistory TgvalidatordCurrencyStatisticsHistory
 
 // NewTgvalidatordCurrencyStatisticsHistory instantiates a new TgvalidatordCurrencyStatisticsHistory object
 // This constructor will assign default values to properties that have it defined,
@@ -192,7 +195,36 @@ func (o TgvalidatordCurrencyStatisticsHistory) ToMap() (map[string]interface{}, 
 	if !IsNil(o.CurrencyInfo) {
 		toSerialize["currencyInfo"] = o.CurrencyInfo
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordCurrencyStatisticsHistory) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordCurrencyStatisticsHistory := _TgvalidatordCurrencyStatisticsHistory{}
+
+	err = json.Unmarshal(data, &varTgvalidatordCurrencyStatisticsHistory)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordCurrencyStatisticsHistory(varTgvalidatordCurrencyStatisticsHistory)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "symbol")
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "history")
+		delete(additionalProperties, "currencyInfo")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordCurrencyStatisticsHistory struct {

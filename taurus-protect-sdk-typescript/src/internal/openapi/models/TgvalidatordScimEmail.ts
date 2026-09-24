@@ -37,7 +37,16 @@ export interface TgvalidatordScimEmail {
      * @memberof TgvalidatordScimEmail
      */
     primary?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordScimEmail
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordScimEmailWireKeys: ReadonlySet<string> = new Set(['type', 'value', 'primary']);
 
 /**
  * Check if a given object implements the TgvalidatordScimEmail interface.
@@ -54,12 +63,22 @@ export function TgvalidatordScimEmailFromJSONTyped(json: any, ignoreDiscriminato
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordScimEmail = {
         
         'type': json['type'] == null ? undefined : json['type'],
         'value': json['value'] == null ? undefined : json['value'],
         'primary': json['primary'] == null ? undefined : json['primary'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordScimEmailWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordScimEmailToJSON(json: any): TgvalidatordScimEmail {
@@ -76,6 +95,7 @@ export function TgvalidatordScimEmailFromJSONTyped(json: any, ignoreDiscriminato
         'type': value['type'],
         'value': value['value'],
         'primary': value['primary'],
+        ...value['additionalProperties'],
     };
 }
 

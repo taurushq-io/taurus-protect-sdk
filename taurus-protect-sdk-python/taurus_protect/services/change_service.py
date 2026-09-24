@@ -15,31 +15,11 @@ from taurus_protect.models.audit import (
     CreateChangeRequest,
     ListChangesOptions,
 )
+from taurus_protect.models.pagination import cursor_page
 from taurus_protect.services._base import BaseService
 
 if TYPE_CHECKING:
     pass  # For OpenAPI types when available
-
-
-def _extract_cursor(cursor: Any) -> tuple:
-    """Extract current_page and has_next from a response cursor.
-
-    Returns:
-        Tuple of (current_page: Optional[str], has_next: bool).
-    """
-    if cursor is None:
-        return None, False
-    # The OpenAPI model uses current_page (Python attr) with alias currentPage
-    cp = getattr(cursor, "current_page", None)
-    if cp is None:
-        cp = getattr(cursor, "currentPage", None)
-    # Ensure it's a string or None
-    if cp is not None and not isinstance(cp, str):
-        cp = None
-    hn = getattr(cursor, "has_next", None)
-    if hn is None:
-        hn = getattr(cursor, "hasNext", None)
-    return cp, bool(hn) if hn is not None else False
 
 
 class ChangeService(BaseService):
@@ -137,43 +117,36 @@ class ChangeService(BaseService):
         self,
         options: Optional[ListChangesOptions] = None,
     ) -> ChangeResult:
-        """List changes with cursor-based pagination.
+        """List changes, one page at a time.
 
         Args:
-            options: Filter and pagination options.
+            options: Filters and page window; ``options.cursor`` continues a walk.
 
         Returns:
-            ChangeResult with changes list and cursor info.
+            ChangeResult with the changes and the page.
 
         Raises:
+            ValueError: If the page size is invalid or cursor options conflict.
             APIError: If API request fails.
         """
         opts = options or ListChangesOptions()
+        req = opts.to_cursor_request()
 
         try:
             resp = self._changes_api.change_service_get_changes(
                 entity=opts.entity,
-                entity_id=None,
+                entity_id=opts.entity_id,
                 status=opts.status,
                 creator_id=opts.creator_id,
                 sort_order=opts.sort_order,
-                cursor_current_page=opts.current_page,
-                cursor_page_request=opts.page_request or "FIRST",
-                cursor_page_size=str(opts.page_size) if opts.page_size else None,
                 entity_ids=opts.entity_ids,
                 entity_uuids=opts.entity_uuids,
+                **req.query_params(),
             )
 
-            result_list = getattr(resp, "result", None)
-            change_list = changes_from_dto(result_list) if result_list else []
-
-            cursor = getattr(resp, "cursor", None)
-            current_page, has_next = _extract_cursor(cursor)
-
             return ChangeResult(
-                changes=change_list,
-                current_page=current_page,
-                has_next=has_next,
+                changes=changes_from_dto(resp.result),
+                page=cursor_page(req.page_size, resp.cursor),
             )
         except Exception as e:
             from taurus_protect.errors import APIError
@@ -186,40 +159,39 @@ class ChangeService(BaseService):
         self,
         options: Optional[ListChangesOptions] = None,
     ) -> ChangeResult:
-        """List changes pending approval with cursor-based pagination.
+        """List changes pending approval, one page at a time.
 
         Args:
-            options: Filter and pagination options.
+            options: Filters and page window. ``entity`` filters the queue by entity;
+                ``status``, ``creator_id`` and ``entity_id`` do not apply to it and are
+                refused.
 
         Returns:
-            ChangeResult with changes list and cursor info.
+            ChangeResult with the changes and the page.
 
         Raises:
+            ValueError: If an option does not apply to the approval queue, the page size
+                is invalid, or cursor options conflict.
             APIError: If API request fails.
         """
         opts = options or ListChangesOptions()
+        for name in ("status", "creator_id", "entity_id"):
+            if getattr(opts, name) is not None:
+                raise ValueError(f"{name} cannot be applied to the change approval queue")
+        req = opts.to_cursor_request()
 
         try:
             resp = self._changes_api.change_service_get_changes_for_approval(
-                entities=None,
+                entities=[opts.entity] if opts.entity else None,
                 sort_order=opts.sort_order,
-                cursor_current_page=opts.current_page,
-                cursor_page_request=opts.page_request or "FIRST",
-                cursor_page_size=str(opts.page_size) if opts.page_size else None,
                 entity_ids=opts.entity_ids,
                 entity_uuids=opts.entity_uuids,
+                **req.query_params(),
             )
 
-            result_list = getattr(resp, "result", None)
-            change_list = changes_from_dto(result_list) if result_list else []
-
-            cursor = getattr(resp, "cursor", None)
-            current_page, has_next = _extract_cursor(cursor)
-
             return ChangeResult(
-                changes=change_list,
-                current_page=current_page,
-                has_next=has_next,
+                changes=changes_from_dto(resp.result),
+                page=cursor_page(req.page_size, resp.cursor),
             )
         except Exception as e:
             from taurus_protect.errors import APIError

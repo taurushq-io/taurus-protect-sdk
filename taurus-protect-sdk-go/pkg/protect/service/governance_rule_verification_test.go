@@ -90,6 +90,7 @@ func historyReply(t *testing.T, container string) string {
 			{"id": "1", "rulesContainer": container, "rulesSignatures": []any{}},
 			{"id": "2", "rulesContainer": container, "rulesSignatures": []any{}},
 		},
+		"totalItems": "2",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -285,7 +286,7 @@ func TestGetRulesHistoryExcludesAndNamesUnverifiedEntries(t *testing.T) {
 		}
 	}
 	// The server counted 2; the caller can read 0.
-	if result.TotalItems != 0 {
-		t.Errorf("TotalItems must be reduced by the exclusions, got %d", result.TotalItems)
+	if result.Page.TotalItems == nil || *result.Page.TotalItems != 0 {
+		t.Errorf("TotalItems must be reduced by the exclusions, got %v", result.Page.TotalItems)
 	}
 }

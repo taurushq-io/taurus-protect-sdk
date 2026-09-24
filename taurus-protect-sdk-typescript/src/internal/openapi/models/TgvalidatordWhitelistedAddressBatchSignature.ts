@@ -81,7 +81,16 @@ export interface TgvalidatordWhitelistedAddressBatchSignature {
      * @memberof TgvalidatordWhitelistedAddressBatchSignature
      */
     signatures?: Array<WhitelistedAddressBatchSignatureWhitelistedAddressSignature>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordWhitelistedAddressBatchSignature
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordWhitelistedAddressBatchSignatureWireKeys: ReadonlySet<string> = new Set(['ID', 'TenantID', 'UserID', 'Signature', 'Comment', 'Status', 'CreationDate', 'UpdateDate', 'signatures']);
 
 /**
  * Check if a given object implements the TgvalidatordWhitelistedAddressBatchSignature interface.
@@ -98,7 +107,7 @@ export function TgvalidatordWhitelistedAddressBatchSignatureFromJSONTyped(json: 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordWhitelistedAddressBatchSignature = {
         
         'iD': json['ID'] == null ? undefined : json['ID'],
         'tenantID': json['TenantID'] == null ? undefined : json['TenantID'],
@@ -110,6 +119,16 @@ export function TgvalidatordWhitelistedAddressBatchSignatureFromJSONTyped(json: 
         'updateDate': json['UpdateDate'] == null ? undefined : (new Date(json['UpdateDate'])),
         'signatures': json['signatures'] == null ? undefined : ((json['signatures'] as Array<any>).map(WhitelistedAddressBatchSignatureWhitelistedAddressSignatureFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordWhitelistedAddressBatchSignatureWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordWhitelistedAddressBatchSignatureToJSON(json: any): TgvalidatordWhitelistedAddressBatchSignature {
@@ -132,6 +151,7 @@ export function TgvalidatordWhitelistedAddressBatchSignatureFromJSONTyped(json: 
         'CreationDate': value['creationDate'] == null ? undefined : ((value['creationDate']).toISOString()),
         'UpdateDate': value['updateDate'] == null ? undefined : ((value['updateDate']).toISOString()),
         'signatures': value['signatures'] == null ? undefined : ((value['signatures'] as Array<any>).map(WhitelistedAddressBatchSignatureWhitelistedAddressSignatureToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

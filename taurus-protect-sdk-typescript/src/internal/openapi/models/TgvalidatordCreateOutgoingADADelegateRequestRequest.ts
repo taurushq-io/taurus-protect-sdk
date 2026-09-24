@@ -79,7 +79,16 @@ export interface TgvalidatordCreateOutgoingADADelegateRequestRequest {
      * @memberof TgvalidatordCreateOutgoingADADelegateRequestRequest
      */
     drep?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingADADelegateRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingADADelegateRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'toStakePoolAddressId', 'feeLimit', 'comment', 'useUnconfirmedFunds', 'transactionReference', 'stakePoolRegistrationCertificate', 'stakePoolRegistrationDeposit', 'externalRequestId', 'drep']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingADADelegateRequestRequest interface.
@@ -98,7 +107,7 @@ export function TgvalidatordCreateOutgoingADADelegateRequestRequestFromJSONTyped
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingADADelegateRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'toStakePoolAddressId': json['toStakePoolAddressId'],
@@ -111,6 +120,16 @@ export function TgvalidatordCreateOutgoingADADelegateRequestRequestFromJSONTyped
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
         'drep': json['drep'] == null ? undefined : json['drep'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingADADelegateRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingADADelegateRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingADADelegateRequestRequest {
@@ -132,6 +151,7 @@ export function TgvalidatordCreateOutgoingADADelegateRequestRequestFromJSONTyped
         'transactionReference': value['transactionReference'],
         'externalRequestId': value['externalRequestId'],
         'drep': value['drep'],
+        ...value['additionalProperties'],
     };
 }
 

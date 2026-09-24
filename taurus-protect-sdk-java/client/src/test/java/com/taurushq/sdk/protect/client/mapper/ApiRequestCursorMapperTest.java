@@ -2,6 +2,7 @@ package com.taurushq.sdk.protect.client.mapper;
 
 import com.taurushq.sdk.protect.client.model.ApiRequestCursor;
 import com.taurushq.sdk.protect.client.model.PageRequest;
+import com.taurushq.sdk.protect.client.model.Pagination;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordRequestCursor;
 import org.junit.jupiter.api.Test;
 
@@ -210,61 +211,44 @@ class ApiRequestCursorMapperTest {
     }
 
     // ==================== Page Size Edge Cases ====================
+    // An explicit page size must be between 1 and Pagination.MAX_PAGE_SIZE: the cursor used
+    // to accept anything and send it, including 0, negatives and Long.MAX_VALUE.
 
     @Test
-    void toDTO_withZeroPageSize_mapsToZeroString() {
-        // Given
+    void setPageSize_rejectsZero() {
         ApiRequestCursor cursor = new ApiRequestCursor();
-        cursor.setPageRequest(PageRequest.FIRST);
-        cursor.setPageSize(0);
-
-        // When
-        TgvalidatordRequestCursor result = ApiResponseCursorMapper.INSTANCE.toDTO(cursor);
-
-        // Then
-        assertEquals("0", result.getPageSize());
+        assertThrows(IllegalArgumentException.class, () -> cursor.setPageSize(0));
     }
 
     @Test
-    void toDTO_withLargePageSize_mapsCorrectly() {
-        // Given
+    void setPageSize_rejectsNegative() {
         ApiRequestCursor cursor = new ApiRequestCursor();
-        cursor.setPageRequest(PageRequest.FIRST);
-        cursor.setPageSize(Long.MAX_VALUE);
-
-        // When
-        TgvalidatordRequestCursor result = ApiResponseCursorMapper.INSTANCE.toDTO(cursor);
-
-        // Then
-        assertEquals(String.valueOf(Long.MAX_VALUE), result.getPageSize());
+        assertThrows(IllegalArgumentException.class, () -> cursor.setPageSize(-1));
+        assertThrows(IllegalArgumentException.class, () -> cursor.setPageSize(Long.MIN_VALUE));
     }
 
     @Test
-    void toDTO_withNegativePageSize_mapsCorrectly() {
-        // Given
+    void setPageSize_rejectsAboveTheMaximum() {
         ApiRequestCursor cursor = new ApiRequestCursor();
-        cursor.setPageRequest(PageRequest.FIRST);
-        cursor.setPageSize(-1);
-
-        // When
-        TgvalidatordRequestCursor result = ApiResponseCursorMapper.INSTANCE.toDTO(cursor);
-
-        // Then
-        assertEquals("-1", result.getPageSize());
+        IllegalArgumentException e = assertThrows(IllegalArgumentException.class, () -> cursor.setPageSize(101));
+        assertTrue(e.getMessage().contains("pageSize") && e.getMessage().contains("100"), e.getMessage());
+        assertThrows(IllegalArgumentException.class, () -> cursor.setPageSize(Long.MAX_VALUE));
     }
 
     @Test
-    void toDTO_withMinLongPageSize_mapsCorrectly() {
-        // Given
-        ApiRequestCursor cursor = new ApiRequestCursor();
-        cursor.setPageRequest(PageRequest.NEXT);
-        cursor.setPageSize(Long.MIN_VALUE);
+    void constructors_rejectAnOutOfRangePageSize() {
+        assertThrows(IllegalArgumentException.class, () -> new ApiRequestCursor(PageRequest.FIRST, 0));
+        assertThrows(IllegalArgumentException.class, () -> new ApiRequestCursor(PageRequest.FIRST, 101));
+        assertThrows(IllegalArgumentException.class, () -> new ApiRequestCursor("page", PageRequest.NEXT, -1));
+    }
 
-        // When
+    @Test
+    void toDTO_atTheMaximumPageSize_mapsCorrectly() {
+        ApiRequestCursor cursor = new ApiRequestCursor(PageRequest.FIRST, Pagination.MAX_PAGE_SIZE);
+
         TgvalidatordRequestCursor result = ApiResponseCursorMapper.INSTANCE.toDTO(cursor);
 
-        // Then
-        assertEquals(String.valueOf(Long.MIN_VALUE), result.getPageSize());
+        assertEquals("100", result.getPageSize());
     }
 
     // ==================== Current Page Edge Cases ====================

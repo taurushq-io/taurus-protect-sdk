@@ -33,7 +33,16 @@ export interface TgvalidatordGetPledgeReply {
      * @memberof TgvalidatordGetPledgeReply
      */
     result?: TgvalidatordTnPledge;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetPledgeReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetPledgeReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetPledgeReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetPledgeReplyFromJSONTyped(json: any, ignoreDiscrim
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetPledgeReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordTnPledgeFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetPledgeReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetPledgeReplyToJSON(json: any): TgvalidatordGetPledgeReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetPledgeReplyFromJSONTyped(json: any, ignoreDiscrim
     return {
         
         'result': TgvalidatordTnPledgeToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

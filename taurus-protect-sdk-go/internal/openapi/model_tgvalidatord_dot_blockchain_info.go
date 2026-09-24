@@ -26,7 +26,10 @@ type TgvalidatordDOTBlockchainInfo struct {
 	ForkNumber *string `json:"forkNumber,omitempty"`
 	// Empty when DOT hasn't migrated to AssetHub
 	ForkMigratedAt *time.Time `json:"forkMigratedAt,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordDOTBlockchainInfo TgvalidatordDOTBlockchainInfo
 
 // NewTgvalidatordDOTBlockchainInfo instantiates a new TgvalidatordDOTBlockchainInfo object
 // This constructor will assign default values to properties that have it defined,
@@ -195,7 +198,36 @@ func (o TgvalidatordDOTBlockchainInfo) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.ForkMigratedAt) {
 		toSerialize["forkMigratedAt"] = o.ForkMigratedAt
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordDOTBlockchainInfo) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordDOTBlockchainInfo := _TgvalidatordDOTBlockchainInfo{}
+
+	err = json.Unmarshal(data, &varTgvalidatordDOTBlockchainInfo)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordDOTBlockchainInfo(varTgvalidatordDOTBlockchainInfo)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "currentEra")
+		delete(additionalProperties, "maxNominations")
+		delete(additionalProperties, "forkNumber")
+		delete(additionalProperties, "forkMigratedAt")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordDOTBlockchainInfo struct {

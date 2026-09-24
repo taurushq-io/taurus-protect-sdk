@@ -37,7 +37,16 @@ export interface TgvalidatordDefaultSharedAddress {
      * @memberof TgvalidatordDefaultSharedAddress
      */
     sharedAddressID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordDefaultSharedAddress
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordDefaultSharedAddressWireKeys: ReadonlySet<string> = new Set(['blockchain', 'network', 'sharedAddressID']);
 
 /**
  * Check if a given object implements the TgvalidatordDefaultSharedAddress interface.
@@ -54,12 +63,22 @@ export function TgvalidatordDefaultSharedAddressFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordDefaultSharedAddress = {
         
         'blockchain': json['blockchain'] == null ? undefined : json['blockchain'],
         'network': json['network'] == null ? undefined : json['network'],
         'sharedAddressID': json['sharedAddressID'] == null ? undefined : json['sharedAddressID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordDefaultSharedAddressWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordDefaultSharedAddressToJSON(json: any): TgvalidatordDefaultSharedAddress {
@@ -76,6 +95,7 @@ export function TgvalidatordDefaultSharedAddressFromJSONTyped(json: any, ignoreD
         'blockchain': value['blockchain'],
         'network': value['network'],
         'sharedAddressID': value['sharedAddressID'],
+        ...value['additionalProperties'],
     };
 }
 

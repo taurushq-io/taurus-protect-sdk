@@ -193,7 +193,7 @@ func TestIntegration_ExportTransactions(t *testing.T) {
 	t.Logf("Exporting transactions from %s to %s", thirtyDaysAgo.Format(time.RFC3339), now.Format(time.RFC3339))
 
 	// Export transactions to CSV
-	csvData, err := client.Transactions().ExportTransactions(ctx, &model.ExportTransactionsOptions{
+	export, err := client.Transactions().ExportTransactions(ctx, &model.ExportTransactionsOptions{
 		From:   &thirtyDaysAgo,
 		To:     &now,
 		Format: "csv",
@@ -202,6 +202,8 @@ func TestIntegration_ExportTransactions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ExportTransactions() error = %v", err)
 	}
+	t.Logf("Matching transactions: %d", export.TotalItems)
+	csvData := export.Data
 
 	if csvData == "" {
 		t.Log("No transactions exported (empty CSV)")

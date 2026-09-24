@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -23,6 +22,7 @@ var _ MappedNullable = &TgvalidatordUpdatePasswordRequest{}
 type TgvalidatordUpdatePasswordRequest struct {
 	CurrentPassword string `json:"currentPassword"`
 	NewPassword string `json:"newPassword"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordUpdatePasswordRequest TgvalidatordUpdatePasswordRequest
@@ -106,6 +106,11 @@ func (o TgvalidatordUpdatePasswordRequest) ToMap() (map[string]interface{}, erro
 	toSerialize := map[string]interface{}{}
 	toSerialize["currentPassword"] = o.CurrentPassword
 	toSerialize["newPassword"] = o.NewPassword
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -134,15 +139,21 @@ func (o *TgvalidatordUpdatePasswordRequest) UnmarshalJSON(data []byte) (err erro
 
 	varTgvalidatordUpdatePasswordRequest := _TgvalidatordUpdatePasswordRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordUpdatePasswordRequest)
+	err = json.Unmarshal(data, &varTgvalidatordUpdatePasswordRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordUpdatePasswordRequest(varTgvalidatordUpdatePasswordRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "currentPassword")
+		delete(additionalProperties, "newPassword")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

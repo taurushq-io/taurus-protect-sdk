@@ -33,7 +33,16 @@ export interface TgvalidatordGetFeesReply {
      * @memberof TgvalidatordGetFeesReply
      */
     result?: Array<TgvalidatordKeyValue>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetFeesReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetFeesReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetFeesReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetFeesReplyFromJSONTyped(json: any, ignoreDiscrimin
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetFeesReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordKeyValueFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetFeesReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetFeesReplyToJSON(json: any): TgvalidatordGetFeesReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetFeesReplyFromJSONTyped(json: any, ignoreDiscrimin
     return {
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordKeyValueToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

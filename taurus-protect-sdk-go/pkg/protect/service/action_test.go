@@ -223,13 +223,13 @@ func TestListActionsResult_Structure(t *testing.T) {
 	// Test the ListActionsResult structure
 	result := &model.ListActionsResult{
 		Actions:    []*model.Action{},
-		TotalItems: 100,
+		Pagination: &model.Pagination{TotalItems: 100},
 	}
 
 	if result.Actions == nil {
 		t.Error("Actions should not be nil")
 	}
-	if result.TotalItems != 100 {
-		t.Errorf("TotalItems = %v, want 100", result.TotalItems)
+	if result.Pagination.TotalItems != 100 {
+		t.Errorf("TotalItems = %v, want 100", result.Pagination.TotalItems)
 	}
 }

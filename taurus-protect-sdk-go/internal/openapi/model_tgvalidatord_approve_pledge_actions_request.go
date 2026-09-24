@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -27,6 +26,7 @@ type TgvalidatordApprovePledgeActionsRequest struct {
 	Comment string `json:"comment"`
 	// The IDs of the pledge actions to approve. The IDs must be sorted in ascending order before computing the signature.
 	Ids []string `json:"ids"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordApprovePledgeActionsRequest TgvalidatordApprovePledgeActionsRequest
@@ -136,6 +136,11 @@ func (o TgvalidatordApprovePledgeActionsRequest) ToMap() (map[string]interface{}
 	toSerialize["signature"] = o.Signature
 	toSerialize["comment"] = o.Comment
 	toSerialize["ids"] = o.Ids
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -165,15 +170,22 @@ func (o *TgvalidatordApprovePledgeActionsRequest) UnmarshalJSON(data []byte) (er
 
 	varTgvalidatordApprovePledgeActionsRequest := _TgvalidatordApprovePledgeActionsRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordApprovePledgeActionsRequest)
+	err = json.Unmarshal(data, &varTgvalidatordApprovePledgeActionsRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordApprovePledgeActionsRequest(varTgvalidatordApprovePledgeActionsRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "signature")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "ids")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

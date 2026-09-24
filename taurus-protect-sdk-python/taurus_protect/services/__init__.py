@@ -18,6 +18,7 @@ from taurus_protect.services.contract_whitelisting_service import (
     ContractWhitelistingService,
 )
 from taurus_protect.services.currency_service import CurrencyService
+from taurus_protect.services.earn_service import EarnService
 from taurus_protect.services.exchange_service import ExchangeService
 from taurus_protect.services.fee_payer_service import FeePayerService
 from taurus_protect.services.fee_service import FeeService
@@ -70,6 +71,7 @@ __all__ = [
     "ConfigService",
     "ContractWhitelistingService",
     "CurrencyService",
+    "EarnService",
     "ExchangeService",
     "FeePayerService",
     "FeeService",

@@ -33,7 +33,16 @@ export interface TgvalidatordGetXTZBakerReply {
      * @memberof TgvalidatordGetXTZBakerReply
      */
     result?: TgvalidatordXTZBaker;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetXTZBakerReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetXTZBakerReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetXTZBakerReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetXTZBakerReplyFromJSONTyped(json: any, ignoreDiscr
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetXTZBakerReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordXTZBakerFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetXTZBakerReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetXTZBakerReplyToJSON(json: any): TgvalidatordGetXTZBakerReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetXTZBakerReplyFromJSONTyped(json: any, ignoreDiscr
     return {
         
         'result': TgvalidatordXTZBakerToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

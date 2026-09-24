@@ -21,7 +21,10 @@ var _ MappedNullable = &ActionTrigger{}
 type ActionTrigger struct {
 	Kind *string `json:"kind,omitempty"`
 	Balance *TriggerBalance `json:"balance,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _ActionTrigger ActionTrigger
 
 // NewActionTrigger instantiates a new ActionTrigger object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o ActionTrigger) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Balance) {
 		toSerialize["balance"] = o.Balance
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *ActionTrigger) UnmarshalJSON(data []byte) (err error) {
+	varActionTrigger := _ActionTrigger{}
+
+	err = json.Unmarshal(data, &varActionTrigger)
+
+	if err != nil {
+		return err
+	}
+
+	*o = ActionTrigger(varActionTrigger)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "kind")
+		delete(additionalProperties, "balance")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableActionTrigger struct {

@@ -43,7 +43,16 @@ export interface TgvalidatordTnContactPerson {
      * @memberof TgvalidatordTnContactPerson
      */
     email?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTnContactPerson
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTnContactPersonWireKeys: ReadonlySet<string> = new Set(['firstName', 'lastName', 'phoneNumber', 'email']);
 
 /**
  * Check if a given object implements the TgvalidatordTnContactPerson interface.
@@ -60,13 +69,23 @@ export function TgvalidatordTnContactPersonFromJSONTyped(json: any, ignoreDiscri
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTnContactPerson = {
         
         'firstName': json['firstName'] == null ? undefined : json['firstName'],
         'lastName': json['lastName'] == null ? undefined : json['lastName'],
         'phoneNumber': json['phoneNumber'] == null ? undefined : json['phoneNumber'],
         'email': json['email'] == null ? undefined : json['email'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTnContactPersonWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTnContactPersonToJSON(json: any): TgvalidatordTnContactPerson {
@@ -84,6 +103,7 @@ export function TgvalidatordTnContactPersonFromJSONTyped(json: any, ignoreDiscri
         'lastName': value['lastName'],
         'phoneNumber': value['phoneNumber'],
         'email': value['email'],
+        ...value['additionalProperties'],
     };
 }
 

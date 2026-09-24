@@ -69,7 +69,16 @@ export interface TgvalidatordFeePayerEnvelope {
      * @memberof TgvalidatordFeePayerEnvelope
      */
     network?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordFeePayerEnvelope
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordFeePayerEnvelopeWireKeys: ReadonlySet<string> = new Set(['id', 'tenantId', 'blockchain', 'name', 'feePayer', 'creationDate', 'network']);
 
 /**
  * Check if a given object implements the TgvalidatordFeePayerEnvelope interface.
@@ -86,7 +95,7 @@ export function TgvalidatordFeePayerEnvelopeFromJSONTyped(json: any, ignoreDiscr
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordFeePayerEnvelope = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'tenantId': json['tenantId'] == null ? undefined : json['tenantId'],
@@ -96,6 +105,16 @@ export function TgvalidatordFeePayerEnvelopeFromJSONTyped(json: any, ignoreDiscr
         'creationDate': json['creationDate'] == null ? undefined : (new Date(json['creationDate'])),
         'network': json['network'] == null ? undefined : json['network'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordFeePayerEnvelopeWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordFeePayerEnvelopeToJSON(json: any): TgvalidatordFeePayerEnvelope {
@@ -116,6 +135,7 @@ export function TgvalidatordFeePayerEnvelopeFromJSONTyped(json: any, ignoreDiscr
         'feePayer': TgvalidatordFeePayerToJSON(value['feePayer']),
         'creationDate': value['creationDate'] == null ? undefined : ((value['creationDate']).toISOString()),
         'network': value['network'],
+        ...value['additionalProperties'],
     };
 }
 

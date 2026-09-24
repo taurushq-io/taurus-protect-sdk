@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordGetChecksumReply{}
 // TgvalidatordGetChecksumReply struct for TgvalidatordGetChecksumReply
 type TgvalidatordGetChecksumReply struct {
 	Checksum *string `json:"checksum,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetChecksumReply TgvalidatordGetChecksumReply
 
 // NewTgvalidatordGetChecksumReply instantiates a new TgvalidatordGetChecksumReply object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordGetChecksumReply) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Checksum) {
 		toSerialize["checksum"] = o.Checksum
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetChecksumReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetChecksumReply := _TgvalidatordGetChecksumReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetChecksumReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetChecksumReply(varTgvalidatordGetChecksumReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "checksum")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetChecksumReply struct {

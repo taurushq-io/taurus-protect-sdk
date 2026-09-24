@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -22,6 +21,7 @@ var _ MappedNullable = &RequestServiceUpdateRequestStatusBody{}
 // RequestServiceUpdateRequestStatusBody struct for RequestServiceUpdateRequestStatusBody
 type RequestServiceUpdateRequestStatusBody struct {
 	Status string `json:"status"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _RequestServiceUpdateRequestStatusBody RequestServiceUpdateRequestStatusBody
@@ -79,6 +79,11 @@ func (o RequestServiceUpdateRequestStatusBody) MarshalJSON() ([]byte, error) {
 func (o RequestServiceUpdateRequestStatusBody) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["status"] = o.Status
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -106,15 +111,20 @@ func (o *RequestServiceUpdateRequestStatusBody) UnmarshalJSON(data []byte) (err 
 
 	varRequestServiceUpdateRequestStatusBody := _RequestServiceUpdateRequestStatusBody{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varRequestServiceUpdateRequestStatusBody)
+	err = json.Unmarshal(data, &varRequestServiceUpdateRequestStatusBody)
 
 	if err != nil {
 		return err
 	}
 
 	*o = RequestServiceUpdateRequestStatusBody(varRequestServiceUpdateRequestStatusBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "status")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

@@ -37,7 +37,16 @@ export interface TgvalidatordFiatProvider {
      * @memberof TgvalidatordFiatProvider
      */
     baseCurrencyValuation?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordFiatProvider
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordFiatProviderWireKeys: ReadonlySet<string> = new Set(['provider', 'label', 'baseCurrencyValuation']);
 
 /**
  * Check if a given object implements the TgvalidatordFiatProvider interface.
@@ -54,12 +63,22 @@ export function TgvalidatordFiatProviderFromJSONTyped(json: any, ignoreDiscrimin
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordFiatProvider = {
         
         'provider': json['provider'] == null ? undefined : json['provider'],
         'label': json['label'] == null ? undefined : json['label'],
         'baseCurrencyValuation': json['baseCurrencyValuation'] == null ? undefined : json['baseCurrencyValuation'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordFiatProviderWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordFiatProviderToJSON(json: any): TgvalidatordFiatProvider {
@@ -76,6 +95,7 @@ export function TgvalidatordFiatProviderFromJSONTyped(json: any, ignoreDiscrimin
         'provider': value['provider'],
         'label': value['label'],
         'baseCurrencyValuation': value['baseCurrencyValuation'],
+        ...value['additionalProperties'],
     };
 }
 

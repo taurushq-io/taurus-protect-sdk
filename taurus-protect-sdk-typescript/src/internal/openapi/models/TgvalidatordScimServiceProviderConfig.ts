@@ -136,7 +136,16 @@ export interface TgvalidatordScimServiceProviderConfig {
      * @memberof TgvalidatordScimServiceProviderConfig
      */
     meta?: TgvalidatordScimMeta;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordScimServiceProviderConfig
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordScimServiceProviderConfigWireKeys: ReadonlySet<string> = new Set(['schemas', 'documentationUri', 'patch', 'bulk', 'filter', 'changePassword', 'sort', 'etag', 'authenticationSchemes', 'meta']);
 
 /**
  * Check if a given object implements the TgvalidatordScimServiceProviderConfig interface.
@@ -153,7 +162,7 @@ export function TgvalidatordScimServiceProviderConfigFromJSONTyped(json: any, ig
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordScimServiceProviderConfig = {
         
         'schemas': json['schemas'] == null ? undefined : json['schemas'],
         'documentationUri': json['documentationUri'] == null ? undefined : json['documentationUri'],
@@ -166,6 +175,16 @@ export function TgvalidatordScimServiceProviderConfigFromJSONTyped(json: any, ig
         'authenticationSchemes': json['authenticationSchemes'] == null ? undefined : ((json['authenticationSchemes'] as Array<any>).map(ScimServiceProviderConfigAuthenticationSchemeFromJSON)),
         'meta': json['meta'] == null ? undefined : TgvalidatordScimMetaFromJSON(json['meta']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordScimServiceProviderConfigWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordScimServiceProviderConfigToJSON(json: any): TgvalidatordScimServiceProviderConfig {
@@ -189,6 +208,7 @@ export function TgvalidatordScimServiceProviderConfigFromJSONTyped(json: any, ig
         'etag': ScimServiceProviderConfigEtagToJSON(value['etag']),
         'authenticationSchemes': value['authenticationSchemes'] == null ? undefined : ((value['authenticationSchemes'] as Array<any>).map(ScimServiceProviderConfigAuthenticationSchemeToJSON)),
         'meta': TgvalidatordScimMetaToJSON(value['meta']),
+        ...value['additionalProperties'],
     };
 }
 

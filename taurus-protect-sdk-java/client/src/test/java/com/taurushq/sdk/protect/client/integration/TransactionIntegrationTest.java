@@ -42,7 +42,7 @@ class TransactionIntegrationTest {
     void getTransaction() throws ApiException {
         // First get a list to find a valid transaction ID
         List<Transaction> transactions = client.getTransactionService()
-                .getTransactions(null, null, null, null, 1, 0);
+                .getTransactions(null, null, null, null, 1, 0).getTransactions();
 
         if (transactions.isEmpty()) {
             System.out.println("No transactions available for testing");
@@ -65,7 +65,7 @@ class TransactionIntegrationTest {
     @Test
     void listTransactions() throws ApiException {
         List<Transaction> transactions = client.getTransactionService()
-                .getTransactions(null, null, null, null, 10, 0);
+                .getTransactions(null, null, null, null, 10, 0).getTransactions();
 
         System.out.println("Found " + transactions.size() + " transactions");
         for (Transaction tx : transactions) {
@@ -78,7 +78,7 @@ class TransactionIntegrationTest {
     @Test
     void listTransactionsByCurrency() throws ApiException {
         List<Transaction> transactions = client.getTransactionService()
-                .getTransactions(null, null, "ETH", null, 10, 0);
+                .getTransactions(null, null, "ETH", null, 10, 0).getTransactions();
 
         System.out.println("Found " + transactions.size() + " ETH transactions");
         for (Transaction tx : transactions) {
@@ -92,7 +92,7 @@ class TransactionIntegrationTest {
     void listTransactionsByAddress() throws ApiException {
         // First get a transaction to find an address
         List<Transaction> transactions = client.getTransactionService()
-                .getTransactions(null, null, null, null, 1, 0);
+                .getTransactions(null, null, null, null, 1, 0).getTransactions();
 
         if (transactions.isEmpty()) {
             System.out.println("No transactions available for testing");
@@ -113,7 +113,7 @@ class TransactionIntegrationTest {
         }
 
         List<Transaction> txByAddress = client.getTransactionService()
-                .getTransactionsByAddress(address, 10, 0);
+                .getTransactionsByAddress(address, 10, 0).getTransactions();
 
         System.out.println("Found " + txByAddress.size() + " transactions for address " + address);
 
@@ -124,7 +124,7 @@ class TransactionIntegrationTest {
     void getTransactionByHash() throws ApiException {
         // First get a transaction to find a hash
         List<Transaction> transactions = client.getTransactionService()
-                .getTransactions(null, null, null, null, 1, 0);
+                .getTransactions(null, null, null, null, 1, 0).getTransactions();
 
         if (transactions.isEmpty()) {
             System.out.println("No transactions available for testing");
@@ -153,11 +153,11 @@ class TransactionIntegrationTest {
         int limit = 10;
 
         List<Transaction> transactions = client.getTransactionService()
-                .getTransactions(start, null, null, null, limit, 0);
+                .getTransactions(start, null, null, null, limit, 0).getTransactions();
         System.out.println("Found " + transactions.size() + " transactions since " + start);
 
         String csv = client.getTransactionService()
-                .exportTransactions(start, null, null, null, limit, 0);
+                .exportTransactions(start, null, null, null, null, null, "csv", limit).getContent();
 
         int csvLines = csv.split("\r?\n", -1).length - 1; // Subtract header line
         System.out.println("Exported CSV (found " + csvLines + " out of " + transactions.size() + " expected transactions):");

@@ -24,7 +24,10 @@ type TgvalidatordProofOfOwnershipPayload struct {
 	Address *string `json:"address,omitempty"`
 	Blockchain *string `json:"blockchain,omitempty"`
 	Network *string `json:"network,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordProofOfOwnershipPayload TgvalidatordProofOfOwnershipPayload
 
 // NewTgvalidatordProofOfOwnershipPayload instantiates a new TgvalidatordProofOfOwnershipPayload object
 // This constructor will assign default values to properties that have it defined,
@@ -228,7 +231,37 @@ func (o TgvalidatordProofOfOwnershipPayload) ToMap() (map[string]interface{}, er
 	if !IsNil(o.Network) {
 		toSerialize["network"] = o.Network
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordProofOfOwnershipPayload) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordProofOfOwnershipPayload := _TgvalidatordProofOfOwnershipPayload{}
+
+	err = json.Unmarshal(data, &varTgvalidatordProofOfOwnershipPayload)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordProofOfOwnershipPayload(varTgvalidatordProofOfOwnershipPayload)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "ownerParticipantID")
+		delete(additionalProperties, "targetParticipantID")
+		delete(additionalProperties, "address")
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "network")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordProofOfOwnershipPayload struct {

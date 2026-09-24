@@ -25,7 +25,10 @@ type UserServiceCreateAttributeBody struct {
 	Type *string `json:"type,omitempty"`
 	Subtype *string `json:"subtype,omitempty"`
 	Isfile *bool `json:"isfile,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _UserServiceCreateAttributeBody UserServiceCreateAttributeBody
 
 // NewUserServiceCreateAttributeBody instantiates a new UserServiceCreateAttributeBody object
 // This constructor will assign default values to properties that have it defined,
@@ -264,7 +267,38 @@ func (o UserServiceCreateAttributeBody) ToMap() (map[string]interface{}, error) 
 	if !IsNil(o.Isfile) {
 		toSerialize["isfile"] = o.Isfile
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *UserServiceCreateAttributeBody) UnmarshalJSON(data []byte) (err error) {
+	varUserServiceCreateAttributeBody := _UserServiceCreateAttributeBody{}
+
+	err = json.Unmarshal(data, &varUserServiceCreateAttributeBody)
+
+	if err != nil {
+		return err
+	}
+
+	*o = UserServiceCreateAttributeBody(varUserServiceCreateAttributeBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "key")
+		delete(additionalProperties, "value")
+		delete(additionalProperties, "contentType")
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "subtype")
+		delete(additionalProperties, "isfile")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableUserServiceCreateAttributeBody struct {

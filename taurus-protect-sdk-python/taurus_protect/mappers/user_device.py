@@ -45,10 +45,13 @@ def user_device_pairing_info_from_dto(dto: Any) -> Optional[UserDevicePairingInf
     if dto is None:
         return None
 
+    # The wire string, not the generated enum member: a status this SDK does not know
+    # arrives as its raw value.
+    status = getattr(dto, "status", None)
     return UserDevicePairingInfo(
         pairing_id=safe_string(getattr(dto, "pairing_id", None)),
         user_id=safe_string(getattr(dto, "user_id", None)),
-        status=safe_string(getattr(dto, "status", None)),
+        status=safe_string(getattr(status, "value", status)),
         device_name=safe_string(getattr(dto, "device_name", None)),
         device_type=safe_string(getattr(dto, "device_type", None)),
         encryption_key=safe_string(getattr(dto, "encryption_key", None)),

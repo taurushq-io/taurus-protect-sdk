@@ -45,7 +45,16 @@ export interface TgvalidatordShareAddressRequest {
      * @memberof TgvalidatordShareAddressRequest
      */
     keyValueAttributes?: Array<TgvalidatordKeyValue>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordShareAddressRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordShareAddressRequestWireKeys: ReadonlySet<string> = new Set(['toParticipantID', 'addressID', 'keyValueAttributes']);
 
 /**
  * Check if a given object implements the TgvalidatordShareAddressRequest interface.
@@ -64,12 +73,22 @@ export function TgvalidatordShareAddressRequestFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordShareAddressRequest = {
         
         'toParticipantID': json['toParticipantID'],
         'addressID': json['addressID'],
         'keyValueAttributes': json['keyValueAttributes'] == null ? undefined : ((json['keyValueAttributes'] as Array<any>).map(TgvalidatordKeyValueFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordShareAddressRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordShareAddressRequestToJSON(json: any): TgvalidatordShareAddressRequest {
@@ -86,6 +105,7 @@ export function TgvalidatordShareAddressRequestFromJSONTyped(json: any, ignoreDi
         'toParticipantID': value['toParticipantID'],
         'addressID': value['addressID'],
         'keyValueAttributes': value['keyValueAttributes'] == null ? undefined : ((value['keyValueAttributes'] as Array<any>).map(TgvalidatordKeyValueToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

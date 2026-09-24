@@ -22,7 +22,10 @@ type TgvalidatordOIDCLocation struct {
 	Location *string `json:"location,omitempty"`
 	State *string `json:"state,omitempty"`
 	Nonce *string `json:"nonce,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordOIDCLocation TgvalidatordOIDCLocation
 
 // NewTgvalidatordOIDCLocation instantiates a new TgvalidatordOIDCLocation object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordOIDCLocation) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Nonce) {
 		toSerialize["nonce"] = o.Nonce
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordOIDCLocation) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordOIDCLocation := _TgvalidatordOIDCLocation{}
+
+	err = json.Unmarshal(data, &varTgvalidatordOIDCLocation)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordOIDCLocation(varTgvalidatordOIDCLocation)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "location")
+		delete(additionalProperties, "state")
+		delete(additionalProperties, "nonce")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordOIDCLocation struct {

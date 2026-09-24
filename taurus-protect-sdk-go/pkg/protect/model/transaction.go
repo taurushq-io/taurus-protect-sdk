@@ -62,9 +62,9 @@ type TransactionAddressInfo struct {
 
 // ListTransactionsOptions contains options for listing transactions.
 type ListTransactionsOptions struct {
-	// Limit is the maximum number of transactions to return.
+	// Limit is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
 	Limit int64
-	// Offset is the number of transactions to skip.
+	// Offset is the number of transactions to skip; continue with Pagination.NextOffset.
 	Offset int64
 	// Currency filters by currency symbol.
 	Currency string
@@ -99,9 +99,9 @@ type ListTransactionsOptions struct {
 
 // ListTransactionsByAddressOptions contains options for listing transactions by address.
 type ListTransactionsByAddressOptions struct {
-	// Limit is the maximum number of transactions to return.
+	// Limit is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
 	Limit int64
-	// Offset is the number of transactions to skip.
+	// Offset is the number of transactions to skip; continue with Pagination.NextOffset.
 	Offset int64
 	// Currency filters by currency symbol.
 	Currency string
@@ -123,14 +123,23 @@ type ExportTransactionsOptions struct {
 	Direction string
 	// Blockchain filters by blockchain.
 	Blockchain string
-	// Format specifies the export format (csv, json, csv_simple).
+	// Format specifies the export format: json (the server's default when empty), csv or
+	// csv_simple (one line per transfer rather than per transaction).
 	Format string
-	// Limit is the maximum number of transactions to export.
+	// Limit is the number of transactions to export: 0 selects DefaultPageSize; there is no
+	// SDK maximum. The export cannot page (the server always exports from the first matching
+	// transaction), so a larger Limit is the only way to reach more rows.
 	Limit int64
-	// Offset is the number of transactions to skip.
-	Offset int64
 	// Address filters transactions involving this address.
 	Address string
 	// Query searches transaction fields.
 	Query string
+}
+
+// ExportTransactionsResult is an export of transactions.
+type ExportTransactionsResult struct {
+	// Data is the export in the requested format.
+	Data string `json:"data"`
+	// TotalItems is the number of matching transactions; above Limit, the export is truncated.
+	TotalItems int64 `json:"total_items"`
 }

@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -37,6 +36,7 @@ type TgvalidatordCreateOutgoingSOLDelegateRequestRequest struct {
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
 	// Allows the resulting stake account to be automatically merged into other existing accounts.
 	AutoMerging *bool `json:"autoMerging,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingSOLDelegateRequestRequest TgvalidatordCreateOutgoingSOLDelegateRequestRequest
@@ -321,6 +321,11 @@ func (o TgvalidatordCreateOutgoingSOLDelegateRequestRequest) ToMap() (map[string
 	if !IsNil(o.AutoMerging) {
 		toSerialize["autoMerging"] = o.AutoMerging
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -350,15 +355,27 @@ func (o *TgvalidatordCreateOutgoingSOLDelegateRequestRequest) UnmarshalJSON(data
 
 	varTgvalidatordCreateOutgoingSOLDelegateRequestRequest := _TgvalidatordCreateOutgoingSOLDelegateRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingSOLDelegateRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingSOLDelegateRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingSOLDelegateRequestRequest(varTgvalidatordCreateOutgoingSOLDelegateRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "toValidatorAddressId")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "useUnconfirmedFunds")
+		delete(additionalProperties, "externalRequestId")
+		delete(additionalProperties, "autoMerging")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

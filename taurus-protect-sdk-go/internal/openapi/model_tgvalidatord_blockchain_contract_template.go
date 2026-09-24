@@ -37,7 +37,10 @@ type TgvalidatordBlockchainContractTemplate struct {
 	CustomXTZ *TgvalidatordCustomXTZContractTemplate `json:"customXTZ,omitempty"`
 	SmartPyFA12Token *TgvalidatordSmartPyFA12TokenContractTemplate `json:"smartPyFA12Token,omitempty"`
 	SmartPyFA2NFT *TgvalidatordSmartPyFA2NFTContractTemplate `json:"smartPyFA2NFT,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordBlockchainContractTemplate TgvalidatordBlockchainContractTemplate
 
 // NewTgvalidatordBlockchainContractTemplate instantiates a new TgvalidatordBlockchainContractTemplate object
 // This constructor will assign default values to properties that have it defined,
@@ -696,7 +699,50 @@ func (o TgvalidatordBlockchainContractTemplate) ToMap() (map[string]interface{},
 	if !IsNil(o.SmartPyFA2NFT) {
 		toSerialize["smartPyFA2NFT"] = o.SmartPyFA2NFT
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordBlockchainContractTemplate) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordBlockchainContractTemplate := _TgvalidatordBlockchainContractTemplate{}
+
+	err = json.Unmarshal(data, &varTgvalidatordBlockchainContractTemplate)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordBlockchainContractTemplate(varTgvalidatordBlockchainContractTemplate)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "customEVM")
+		delete(additionalProperties, "cmta20Token")
+		delete(additionalProperties, "cmta20RuleEngine")
+		delete(additionalProperties, "cmta20KycRule")
+		delete(additionalProperties, "erc1400UniversalToken")
+		delete(additionalProperties, "erc2771ProxyAdmin")
+		delete(additionalProperties, "transparentUpgradeableProxy")
+		delete(additionalProperties, "cmtatToken")
+		delete(additionalProperties, "cmtatStandalone")
+		delete(additionalProperties, "cmtatUpgradeable")
+		delete(additionalProperties, "terc1155A")
+		delete(additionalProperties, "terc20Standalone")
+		delete(additionalProperties, "terc20Upgradeable")
+		delete(additionalProperties, "terc721Standalone")
+		delete(additionalProperties, "terc721Upgradeable")
+		delete(additionalProperties, "customXTZ")
+		delete(additionalProperties, "smartPyFA12Token")
+		delete(additionalProperties, "smartPyFA2NFT")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordBlockchainContractTemplate struct {

@@ -62,16 +62,27 @@ describe('WebhookService', () => {
       } as never);
 
       const webhooks = await service.list();
-      expect(webhooks).toHaveLength(2);
+      expect(webhooks.items).toHaveLength(2);
+      expect(webhooks.pagination).toEqual({ pageSize: 20, nextCursor: '', hasMore: false });
     });
 
-    it('should throw ValidationError when limit is 0', async () => {
-      await expect(service.list({ limit: 0 })).rejects.toThrow(ValidationError);
-      await expect(service.list({ limit: 0 })).rejects.toThrow('limit must be positive');
+    it('should return the reply cursor, which the old list dropped', async () => {
+      mockApi.webhookServiceGetWebhooks.mockResolvedValue({
+        webhooks: [{ id: 'wh-1' }],
+        cursor: { currentPage: 'next-page', hasNext: true },
+      } as never);
+
+      const webhooks = await service.list({ pageSize: 1 });
+      expect(webhooks.pagination).toEqual({ pageSize: 1, nextCursor: 'next-page', hasMore: true });
     });
 
-    it('should throw ValidationError when limit is negative', async () => {
-      await expect(service.list({ limit: -1 })).rejects.toThrow(ValidationError);
+    it('should throw ValidationError when the page size is above the maximum', async () => {
+      await expect(service.list({ pageSize: 101 })).rejects.toThrow(ValidationError);
+      await expect(service.list({ pageSize: 101 })).rejects.toThrow('pageSize must be at most 100, got 101');
+    });
+
+    it('should throw ValidationError when the page size is negative', async () => {
+      await expect(service.list({ pageSize: -1 })).rejects.toThrow(ValidationError);
     });
   });
 

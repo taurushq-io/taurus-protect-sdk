@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -23,6 +22,7 @@ var _ MappedNullable = &TgvalidatordSAMLInitiateRequest{}
 type TgvalidatordSAMLInitiateRequest struct {
 	Email string `json:"email"`
 	RedirectUri string `json:"redirectUri"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordSAMLInitiateRequest TgvalidatordSAMLInitiateRequest
@@ -106,6 +106,11 @@ func (o TgvalidatordSAMLInitiateRequest) ToMap() (map[string]interface{}, error)
 	toSerialize := map[string]interface{}{}
 	toSerialize["email"] = o.Email
 	toSerialize["redirectUri"] = o.RedirectUri
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -134,15 +139,21 @@ func (o *TgvalidatordSAMLInitiateRequest) UnmarshalJSON(data []byte) (err error)
 
 	varTgvalidatordSAMLInitiateRequest := _TgvalidatordSAMLInitiateRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordSAMLInitiateRequest)
+	err = json.Unmarshal(data, &varTgvalidatordSAMLInitiateRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordSAMLInitiateRequest(varTgvalidatordSAMLInitiateRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "email")
+		delete(additionalProperties, "redirectUri")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

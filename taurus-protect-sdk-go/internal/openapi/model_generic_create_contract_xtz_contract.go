@@ -22,7 +22,10 @@ type GenericCreateContractXTZContract struct {
 	Code *string `json:"code,omitempty"`
 	Storage *TgvalidatordXTZContractArg `json:"storage,omitempty"`
 	Delegate *XTZContractDelegate `json:"delegate,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _GenericCreateContractXTZContract GenericCreateContractXTZContract
 
 // NewGenericCreateContractXTZContract instantiates a new GenericCreateContractXTZContract object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o GenericCreateContractXTZContract) ToMap() (map[string]interface{}, error
 	if !IsNil(o.Delegate) {
 		toSerialize["delegate"] = o.Delegate
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *GenericCreateContractXTZContract) UnmarshalJSON(data []byte) (err error) {
+	varGenericCreateContractXTZContract := _GenericCreateContractXTZContract{}
+
+	err = json.Unmarshal(data, &varGenericCreateContractXTZContract)
+
+	if err != nil {
+		return err
+	}
+
+	*o = GenericCreateContractXTZContract(varGenericCreateContractXTZContract)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "code")
+		delete(additionalProperties, "storage")
+		delete(additionalProperties, "delegate")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableGenericCreateContractXTZContract struct {

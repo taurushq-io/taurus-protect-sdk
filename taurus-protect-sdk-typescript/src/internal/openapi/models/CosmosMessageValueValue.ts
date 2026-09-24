@@ -90,7 +90,16 @@ export interface CosmosMessageValueValue {
      * @memberof CosmosMessageValueValue
      */
     array?: CosmosMessageValueArray;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof CosmosMessageValueValue
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const CosmosMessageValueValueWireKeys: ReadonlySet<string> = new Set(['source', 'destination', 'string', 'int', 'bytes', 'message', 'array']);
 
 /**
  * Check if a given object implements the CosmosMessageValueValue interface.
@@ -107,7 +116,7 @@ export function CosmosMessageValueValueFromJSONTyped(json: any, ignoreDiscrimina
     if (json == null) {
         return json;
     }
-    return {
+    const result: CosmosMessageValueValue = {
         
         'source': json['source'] == null ? undefined : TgvalidatordCosmosMessageValueSourceFromJSON(json['source']),
         'destination': json['destination'] == null ? undefined : TgvalidatordCosmosMessageValueDestinationFromJSON(json['destination']),
@@ -117,6 +126,16 @@ export function CosmosMessageValueValueFromJSONTyped(json: any, ignoreDiscrimina
         'message': json['message'] == null ? undefined : ((json['message'] as Array<any>).map(TgvalidatordCosmosMessageValueFromJSON)),
         'array': json['array'] == null ? undefined : CosmosMessageValueArrayFromJSON(json['array']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!CosmosMessageValueValueWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function CosmosMessageValueValueToJSON(json: any): CosmosMessageValueValue {
@@ -137,6 +156,7 @@ export function CosmosMessageValueValueFromJSONTyped(json: any, ignoreDiscrimina
         'bytes': value['bytes'],
         'message': value['message'] == null ? undefined : ((value['message'] as Array<any>).map(TgvalidatordCosmosMessageValueToJSON)),
         'array': CosmosMessageValueArrayToJSON(value['array']),
+        ...value['additionalProperties'],
     };
 }
 

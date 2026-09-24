@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -22,6 +21,7 @@ var _ MappedNullable = &TgvalidatordCreateUserDevicePairingReply{}
 // TgvalidatordCreateUserDevicePairingReply struct for TgvalidatordCreateUserDevicePairingReply
 type TgvalidatordCreateUserDevicePairingReply struct {
 	PairingID string `json:"pairingID"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateUserDevicePairingReply TgvalidatordCreateUserDevicePairingReply
@@ -79,6 +79,11 @@ func (o TgvalidatordCreateUserDevicePairingReply) MarshalJSON() ([]byte, error) 
 func (o TgvalidatordCreateUserDevicePairingReply) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["pairingID"] = o.PairingID
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -106,15 +111,20 @@ func (o *TgvalidatordCreateUserDevicePairingReply) UnmarshalJSON(data []byte) (e
 
 	varTgvalidatordCreateUserDevicePairingReply := _TgvalidatordCreateUserDevicePairingReply{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateUserDevicePairingReply)
+	err = json.Unmarshal(data, &varTgvalidatordCreateUserDevicePairingReply)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateUserDevicePairingReply(varTgvalidatordCreateUserDevicePairingReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "pairingID")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

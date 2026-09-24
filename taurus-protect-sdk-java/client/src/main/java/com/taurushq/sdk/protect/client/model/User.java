@@ -73,9 +73,21 @@ public class User {
     private Boolean totpEnabled;
 
     /**
-     * Whether this user is enforced in governance rules (must be part of approval workflow).
+     * Whether this user is enforced in governance rules (must be part of approval workflow),
+     * or {@code null} when the endpoint that returned the user does not compute it.
      */
     private Boolean enforcedInRules;
+
+    /**
+     * Whether the user's public key is the one the governance rules hold for this user,
+     * or {@code null} when the endpoint that returned the user does not compute it.
+     */
+    private Boolean publicKeyEnforcedInRules;
+
+    /**
+     * The groups this user belongs to.
+     */
+    private List<UserGroup> groups;
 
     /**
      * Timestamp when the user was created.
@@ -298,7 +310,8 @@ public class User {
     /**
      * Returns whether this user is enforced in governance rules.
      *
-     * @return {@code true} if the user must be part of approval workflows
+     * @return {@code true} if the user must be part of approval workflows, or {@code null}
+     *         when the endpoint that returned the user does not compute it
      */
     public Boolean getEnforcedInRules() {
         return enforcedInRules;
@@ -311,6 +324,43 @@ public class User {
      */
     public void setEnforcedInRules(Boolean enforcedInRules) {
         this.enforcedInRules = enforcedInRules;
+    }
+
+    /**
+     * Returns whether the user's public key is the one the governance rules hold for this user.
+     * Only {@link com.taurushq.sdk.protect.client.service.UserService#getMe()} computes it.
+     *
+     * @return the flag, or {@code null} when the endpoint that returned the user does not compute it
+     */
+    public Boolean getPublicKeyEnforcedInRules() {
+        return publicKeyEnforcedInRules;
+    }
+
+    /**
+     * Sets whether the user's public key is the one the governance rules hold for this user.
+     *
+     * @param publicKeyEnforcedInRules the flag
+     */
+    public void setPublicKeyEnforcedInRules(Boolean publicKeyEnforcedInRules) {
+        this.publicKeyEnforcedInRules = publicKeyEnforcedInRules;
+    }
+
+    /**
+     * Returns the groups this user belongs to.
+     *
+     * @return the group memberships
+     */
+    public List<UserGroup> getGroups() {
+        return groups;
+    }
+
+    /**
+     * Sets the groups this user belongs to.
+     *
+     * @param groups the group memberships
+     */
+    public void setGroups(List<UserGroup> groups) {
+        this.groups = groups;
     }
 
     /**

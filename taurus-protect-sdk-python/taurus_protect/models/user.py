@@ -12,7 +12,10 @@ class UserGroup(BaseModel):
     """Group membership information for a user."""
 
     id: str = Field(description="Group identifier")
-    name: str = Field(default="", description="Group name")
+    external_group_id: Optional[str] = Field(default=None, description="External group identifier")
+    enforced_in_rules: Optional[bool] = Field(
+        default=None, description="Whether the group is enforced in rules; None if not computed"
+    )
 
     model_config = {"frozen": True}
 
@@ -47,7 +50,10 @@ class User(BaseModel):
         groups: Groups the user belongs to.
         totp_enabled: Whether TOTP 2FA is enabled.
         password_changed: Whether password has been changed.
-        enforced_in_rules: Whether user is enforced in governance rules.
+        enforced_in_rules: Whether user is enforced in governance rules; None when the
+            endpoint did not compute it.
+        public_key_enforced_in_rules: Whether the user's public key is the one in the
+            governance rules; None when the endpoint did not compute it.
         created_at: When the user was created.
         updated_at: When the user was last updated.
         last_login: When the user last logged in.
@@ -67,7 +73,12 @@ class User(BaseModel):
     groups: List[UserGroup] = Field(default_factory=list, description="Group memberships")
     totp_enabled: bool = Field(default=False, description="Whether TOTP 2FA is enabled")
     password_changed: bool = Field(default=False, description="Whether password has been changed")
-    enforced_in_rules: bool = Field(default=False, description="Whether user is enforced in rules")
+    enforced_in_rules: Optional[bool] = Field(
+        default=None, description="Whether user is enforced in rules; None if not computed"
+    )
+    public_key_enforced_in_rules: Optional[bool] = Field(
+        default=None, description="Whether the key is enforced in rules; None if not computed"
+    )
     created_at: Optional[datetime] = Field(default=None, description="Creation timestamp")
     updated_at: Optional[datetime] = Field(default=None, description="Last update timestamp")
     last_login: Optional[datetime] = Field(default=None, description="Last login timestamp")
@@ -80,7 +91,10 @@ class GroupUser(BaseModel):
     """User membership information within a group."""
 
     id: str = Field(description="User identifier")
-    email: Optional[str] = Field(default=None, description="User email")
+    external_user_id: Optional[str] = Field(default=None, description="External user identifier")
+    enforced_in_rules: Optional[bool] = Field(
+        default=None, description="Whether the user is enforced in rules; None if not computed"
+    )
 
     model_config = {"frozen": True}
 
@@ -99,7 +113,8 @@ class Group(BaseModel):
         email: Group email address.
         description: Group description.
         users: Users in the group.
-        enforced_in_rules: Whether group is enforced in governance rules.
+        enforced_in_rules: Whether group is enforced in governance rules; None when the
+            endpoint did not compute it.
         created_at: When the group was created.
         updated_at: When the group was last updated.
     """
@@ -111,7 +126,9 @@ class Group(BaseModel):
     email: Optional[str] = Field(default=None, description="Group email address")
     description: Optional[str] = Field(default=None, description="Group description")
     users: List[GroupUser] = Field(default_factory=list, description="Users in the group")
-    enforced_in_rules: bool = Field(default=False, description="Whether group is enforced in rules")
+    enforced_in_rules: Optional[bool] = Field(
+        default=None, description="Whether group is enforced in rules; None if not computed"
+    )
     created_at: Optional[datetime] = Field(default=None, description="Creation timestamp")
     updated_at: Optional[datetime] = Field(default=None, description="Last update timestamp")
 

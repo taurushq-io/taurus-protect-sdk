@@ -92,7 +92,7 @@ public class GroupService {
                     ids, externalGroupIds, query);
             List<TgvalidatordInternalGroup> rows = reply.getResult() == null
                     ? Collections.emptyList() : reply.getResult();
-            return new GroupResult(groupMapper.fromDTOList(rows),
+            return new GroupResult(EnforcedInRules.computedGroups(groupMapper.fromDTOList(rows)),
                     PagedOperation.GROUPS.offsetPage(size, from, rows.size(), 0,
                             reply.getTotalItems(), null));
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {

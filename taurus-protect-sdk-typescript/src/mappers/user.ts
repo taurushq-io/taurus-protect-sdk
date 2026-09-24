@@ -2,9 +2,64 @@
  * User, Group, and Tag mapper functions for converting OpenAPI DTOs to domain models.
  */
 
-import type { Group, Tag, User, UserAttribute } from '../models/user';
+import type { Group, GroupUser, Tag, User, UserAttribute, UserGroup } from '../models/user';
 import { UserStatus } from '../models/user';
 import { safeBool, safeDate, safeMap, safeString } from './base';
+
+/**
+ * Maps a list of membership objects. A list of bare IDs (or anything else) maps to
+ * undefined rather than to an empty membership list.
+ */
+function membershipsFromDto<T>(value: unknown, mapper: (dto: unknown) => T | undefined): T[] | undefined {
+  if (!Array.isArray(value) || !value.every((item) => item !== null && typeof item === 'object')) {
+    return undefined;
+  }
+  return safeMap(value, mapper);
+}
+
+/**
+ * Reads IDs from a list of bare IDs or, as validatord sends memberships, of objects with an `id`.
+ */
+function idsFromDto(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+  const ids: string[] = [];
+  for (const item of value) {
+    const id =
+      item !== null && typeof item === 'object' ? safeString((item as Record<string, unknown>).id) : safeString(item);
+    if (id !== undefined) {
+      ids.push(id);
+    }
+  }
+  return ids;
+}
+
+function userGroupFromDto(dto: unknown): UserGroup | undefined {
+  if (!dto || typeof dto !== 'object') {
+    return undefined;
+  }
+
+  const d = dto as Record<string, unknown>;
+  return {
+    id: safeString(d.id),
+    externalGroupId: safeString(d.externalGroupId ?? d.external_group_id),
+    enforcedInRules: safeBool(d.enforcedInRules ?? d.enforced_in_rules),
+  };
+}
+
+function groupUserFromDto(dto: unknown): GroupUser | undefined {
+  if (!dto || typeof dto !== 'object') {
+    return undefined;
+  }
+
+  const d = dto as Record<string, unknown>;
+  return {
+    id: safeString(d.id),
+    externalUserId: safeString(d.externalUserId ?? d.external_user_id),
+    enforcedInRules: safeBool(d.enforcedInRules ?? d.enforced_in_rules),
+  };
+}
 
 /**
  * Maps a user attribute DTO to a UserAttribute domain model.
@@ -70,7 +125,10 @@ export function userFromDto(dto: unknown): User | undefined {
     createdAt: safeDate(d.createdAt ?? d.created_at ?? d.creationDate),
     updatedAt: safeDate(d.updatedAt ?? d.updated_at ?? d.modificationDate),
     attributes: attributes ? safeMap(attributes, userAttributeFromDto) : undefined,
-    groupIds: Array.isArray(groupIds) ? groupIds.map((id) => String(id)) : undefined,
+    groupIds: idsFromDto(groupIds),
+    groups: membershipsFromDto(d.groups, userGroupFromDto),
+    enforcedInRules: safeBool(d.enforcedInRules ?? d.enforced_in_rules),
+    publicKeyEnforcedInRules: safeBool(d.publicKeyEnforcedInRules ?? d.public_key_enforced_in_rules),
   };
 }
 
@@ -97,7 +155,9 @@ export function groupFromDto(dto: unknown): Group | undefined {
     externalGroupId: safeString(d.externalGroupId ?? d.external_group_id),
     name: safeString(d.name),
     description: safeString(d.description),
-    userIds: Array.isArray(userIds) ? userIds.map((id) => String(id)) : undefined,
+    userIds: idsFromDto(userIds),
+    users: membershipsFromDto(d.users, groupUserFromDto),
+    enforcedInRules: safeBool(d.enforcedInRules ?? d.enforced_in_rules),
     createdAt: safeDate(d.createdAt ?? d.created_at ?? d.creationDate),
     updatedAt: safeDate(d.updatedAt ?? d.updated_at ?? d.modificationDate),
   };

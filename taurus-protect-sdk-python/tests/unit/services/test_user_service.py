@@ -9,6 +9,7 @@ import pytest
 from taurus_protect._internal.openapi import UsersApi
 from taurus_protect.errors import APIError, NotFoundError
 from taurus_protect.models.pagination import Pagination
+from taurus_protect.models.user import User
 from taurus_protect.services.user_service import UserService
 from tests.unit.transport_stub import StubTransport, api_client
 
@@ -72,14 +73,16 @@ class TestGetCurrent:
         reply.result = MagicMock()
         api.user_service_get_me.return_value = reply
 
-        mock_user = MagicMock()
         with patch(
             "taurus_protect.services.user_service.user_from_dto",
-            return_value=mock_user,
+            return_value=User(id="u-1"),
         ):
             result = service.get_current()
 
-        assert result is mock_user
+        assert result.id == "u-1"
+        api.user_service_get_me.assert_called_once_with(check_enforced_in_rules=True)
+        assert result.enforced_in_rules is False
+        assert result.public_key_enforced_in_rules is None
 
     def test_get_current_raises_when_no_result(self) -> None:
         service, api = self._make_service()

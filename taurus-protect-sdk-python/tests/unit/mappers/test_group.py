@@ -59,7 +59,8 @@ class TestGroupFromDto:
         assert result is not None
         assert result.id == "g-2"
         assert result.users == []
-        assert result.enforced_in_rules is False
+        # Absent stays None here; services that call a computing endpoint default it.
+        assert result.enforced_in_rules is None
 
 
 class TestGroupsFromDto:
@@ -89,13 +90,13 @@ class TestGroupUserFromDto:
     """Tests for group_user_from_dto function."""
 
     def test_maps_fields(self) -> None:
-        dto = SimpleNamespace(id="u-1", email="test@example.com")
+        dto = SimpleNamespace(id="u-1", external_user_id="test@example.com")
         result = group_user_from_dto(dto)
         assert result.id == "u-1"
-        assert result.email == "test@example.com"
+        assert result.external_user_id == "test@example.com"
 
-    def test_handles_none_email(self) -> None:
-        dto = SimpleNamespace(id="u-2", email=None)
+    def test_handles_missing_external_user_id(self) -> None:
+        dto = SimpleNamespace(id="u-2")
         result = group_user_from_dto(dto)
         assert result.id == "u-2"
-        assert result.email is None
+        assert result.external_user_id is None

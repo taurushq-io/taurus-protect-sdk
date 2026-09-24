@@ -17,6 +17,21 @@ import { BaseService } from './base';
 import { offsetQuery } from './paging';
 
 /**
+ * For the reads whose endpoint computes enforcedInRules: validatord omits a false bool, so
+ * absent means false. publicKeyEnforcedInRules is a BoolValue and is never defaulted.
+ */
+function withComputedRulesFlags(user: User): User {
+  return {
+    ...user,
+    enforcedInRules: user.enforcedInRules ?? false,
+    groups: user.groups?.map((group) => ({
+      ...group,
+      enforcedInRules: group.enforcedInRules ?? false,
+    })),
+  };
+}
+
+/**
  * Service for user management operations.
  *
  * Provides methods to list and retrieve users.
@@ -88,6 +103,9 @@ export class UserService extends BaseService {
   /**
    * Gets the current authenticated user.
    *
+   * The reply carries the governance rules flags (`enforcedInRules`,
+   * `publicKeyEnforcedInRules`, and each group's `enforcedInRules`).
+   *
    * @returns The current user
    * @throws {@link APIError} If API request fails
    *
@@ -100,7 +118,8 @@ export class UserService extends BaseService {
    */
   async getCurrentUser(): Promise<User> {
     return this.execute(async () => {
-      const response = await this.usersApi.userServiceGetMe({});
+      // validatord computes the flags on this endpoint only when asked.
+      const response = await this.usersApi.userServiceGetMe({ checkEnforcedInRules: true });
 
       const result = response.result;
       const user = userFromDto(result);
@@ -109,7 +128,7 @@ export class UserService extends BaseService {
         throw new ValidationError('Failed to get current user: no result returned');
       }
 
-      return user;
+      return withComputedRulesFlags(user);
     });
   }
 
@@ -156,7 +175,7 @@ export class UserService extends BaseService {
 
       const rows = response.result ?? [];
       return {
-        items: usersFromDto(rows),
+        items: usersFromDto(rows).map(withComputedRulesFlags),
         // The server may append a synthetic daemon user beyond `limit`.
         pagination: buildOffsetPagination('plus_min_rows_limit', page, response, rows.length),
       };

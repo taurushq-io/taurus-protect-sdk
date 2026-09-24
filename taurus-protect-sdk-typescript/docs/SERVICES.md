@@ -1002,7 +1002,10 @@ if (page.pagination.hasMore) {
 
 ### Key Models
 
-- `User` - id, email, firstName, lastName, roles, attributes
+- `User` - id, email, firstName, lastName, roles, attributes, groups
+- Rules flags: `enforcedInRules` (user and each of its `groups`) is `true`/`false` from
+  `getCurrentUser` and `list`, `undefined` from `get`; `publicKeyEnforcedInRules` comes only from
+  `getCurrentUser` and is `undefined` elsewhere.
 
 ---
 
@@ -1021,7 +1024,8 @@ list(options?: ListGroupsOptions): Promise<PaginatedResult<Group>>
 
 ### Key Models
 
-- `Group` - id, name, members, threshold
+- `Group` - id, name, members, threshold, users
+- Rules flags: `enforcedInRules` (group and each of its `users`) is `true`/`false` from `get` and `list`.
 
 ---
 

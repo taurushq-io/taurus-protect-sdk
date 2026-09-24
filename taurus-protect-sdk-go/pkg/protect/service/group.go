@@ -56,8 +56,19 @@ func (s *GroupService) ListGroups(ctx context.Context, opts *model.ListGroupsOpt
 	if err != nil {
 		return nil, err
 	}
+	groups := mapper.GroupsFromDTO(resp.Result)
+	for _, group := range groups {
+		// GetGroups computes the flag on each group and its users; see defaultComputedUserFlags.
+		if group == nil {
+			continue
+		}
+		group.EnforcedInRules = falseIfNil(group.EnforcedInRules)
+		for i := range group.Users {
+			group.Users[i].EnforcedInRules = falseIfNil(group.Users[i].EnforcedInRules)
+		}
+	}
 	return &model.ListGroupsResult{
-		Groups:     mapper.GroupsFromDTO(resp.Result),
+		Groups:     groups,
 		Pagination: pagination,
 	}, nil
 }

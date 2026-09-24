@@ -20,6 +20,19 @@ if TYPE_CHECKING:
     pass  # For OpenAPI types when available
 
 
+def _with_computed_flags(group: Group) -> Group:
+    """validatord omits a false bool, so where it computed the flags an absent one is False."""
+    return group.model_copy(
+        update={
+            "enforced_in_rules": bool(group.enforced_in_rules),
+            "users": [
+                u.model_copy(update={"enforced_in_rules": bool(u.enforced_in_rules)})
+                for u in group.users
+            ],
+        }
+    )
+
+
 class GroupService(BaseService):
     """
     Service for group management operations.
@@ -88,7 +101,7 @@ class GroupService(BaseService):
 
                 raise NotFoundError(f"Group {group_id} not found")
 
-            return group
+            return _with_computed_flags(group)
         except Exception as e:
             from taurus_protect.errors import APIError, NotFoundError
 
@@ -123,7 +136,7 @@ class GroupService(BaseService):
             resp = self._groups_api.user_service_get_groups(**offset_query(page_size, start))
 
             rows = resp.result or []
-            groups = groups_from_dto(rows)
+            groups = [_with_computed_flags(g) for g in groups_from_dto(rows)]
             pagination = offset_pagination(
                 PLUS_MIN_ROWS_LIMIT,
                 limit=page_size,

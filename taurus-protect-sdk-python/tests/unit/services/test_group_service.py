@@ -9,6 +9,7 @@ import pytest
 from taurus_protect._internal.openapi import GroupsApi
 from taurus_protect.errors import NotFoundError
 from taurus_protect.models.pagination import Pagination
+from taurus_protect.models.user import Group
 from taurus_protect.services.group_service import GroupService
 from tests.unit.transport_stub import StubTransport, api_client
 
@@ -29,14 +30,15 @@ class TestGet:
         reply.result = [MagicMock()]
         api.user_service_get_groups.return_value = reply
 
-        mock_group = MagicMock()
         with patch(
             "taurus_protect.services.group_service.group_from_dto",
-            return_value=mock_group,
+            return_value=Group(id="group-1"),
         ):
             result = service.get("group-1")
 
-        assert result is mock_group
+        assert result.id == "group-1"
+        # GetGroups computes the flag, so an absent one reads False.
+        assert result.enforced_in_rules is False
 
     def test_get_raises_for_empty_id(self) -> None:
         service, _ = self._make_service()

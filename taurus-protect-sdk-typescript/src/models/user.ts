@@ -56,6 +56,30 @@ export interface User {
   readonly attributes?: UserAttribute[];
   /** Group IDs the user belongs to */
   readonly groupIds?: string[];
+  /** Groups the user belongs to */
+  readonly groups?: UserGroup[];
+  /**
+   * Whether the user is in the enforced governance rules. `undefined` where the endpoint
+   * does not compute it (`users.get`, `visibilityGroups.getUsersByVisibilityGroup`).
+   */
+  readonly enforcedInRules?: boolean;
+  /**
+   * Whether the user's public key is the one in the enforced governance rules. Only
+   * `users.getCurrentUser` computes it; `undefined` elsewhere.
+   */
+  readonly publicKeyEnforcedInRules?: boolean;
+}
+
+/**
+ * A group the user belongs to.
+ */
+export interface UserGroup {
+  /** Group identifier */
+  readonly id?: string;
+  /** External group identifier */
+  readonly externalGroupId?: string;
+  /** Whether the group is in the enforced governance rules; `undefined` where not computed */
+  readonly enforcedInRules?: boolean;
 }
 
 /**
@@ -84,10 +108,26 @@ export interface Group {
   readonly description?: string;
   /** User IDs in the group */
   readonly userIds?: string[];
+  /** Users in the group */
+  readonly users?: GroupUser[];
+  /** Whether the group is in the enforced governance rules */
+  readonly enforcedInRules?: boolean;
   /** Group creation date */
   readonly createdAt?: Date;
   /** Last modification date */
   readonly updatedAt?: Date;
+}
+
+/**
+ * A user within a group.
+ */
+export interface GroupUser {
+  /** User identifier */
+  readonly id?: string;
+  /** External user identifier */
+  readonly externalUserId?: string;
+  /** Whether the user is in the enforced governance rules */
+  readonly enforcedInRules?: boolean;
 }
 
 /**

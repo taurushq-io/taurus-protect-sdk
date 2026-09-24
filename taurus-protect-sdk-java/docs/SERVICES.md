@@ -608,6 +608,7 @@ at most 365 daily points, newest first.
 
 ```java
 User getMe() throws ApiException
+User getUser(String userId) throws ApiException
 UserResult getUsers(int limit, long offset) throws ApiException
 List<User> getUsersByEmail(List<String> emails) throws ApiException      // walks every page
 void createUserAttribute(String userId, String key, String value) throws ApiException
@@ -615,7 +616,10 @@ void createUserAttribute(String userId, String key, String value) throws ApiExce
 
 ### Key Models
 
-- `User` - id, email, name, roles, attributes
+- `User` - id, email, name, roles, group memberships (`getGroups()`)
+- `enforcedInRules` (user and each membership) is `true`/`false` from `getMe`, `getUsers` and
+  `getUsersByEmail`, and `null` from `getUser`, whose endpoint does not compute it.
+  `publicKeyEnforcedInRules` is computed by `getMe` only and is `null` everywhere else.
 
 ---
 
@@ -1422,7 +1426,8 @@ GroupResult getGroups(int limit, long offset, List<String> ids, List<String> ext
 ### Key Models
 
 - `GroupResult` - groups + `getPagination()` (`OffsetPagination`)
-- `Group` - id, name, members, threshold
+- `Group` - id, name, members, threshold; `enforcedInRules` on the group and each of its users
+  is always `true`/`false` from `getGroups`
 
 ---
 
@@ -2197,7 +2202,7 @@ Generated from the java source by `scripts/api-surface/docs.py`; regenerate with
 `./build.sh docs`. Every method below exists in the SDK, and `./build.sh docs --check`
 fails if this list drifts or if the prose above documents a method that does not.
 
-44 services, 221 public methods.
+44 services, 222 public methods.
 
 ### ActionService
 
@@ -2494,6 +2499,7 @@ fails if this list drifts or if the prose above documents a method that does not
 
 - `createUserAttribute(long, String, String): void`
 - `getMe(): User`
+- `getUser(String): User`
 - `getUsers(int, long): UserResult`
 - `getUsersByEmail(List<String>): List<User>`
 

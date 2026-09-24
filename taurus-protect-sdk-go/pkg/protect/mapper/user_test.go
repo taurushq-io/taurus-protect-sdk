@@ -1,6 +1,7 @@
 package mapper
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -134,8 +135,8 @@ func TestUserFromDTO_WithGroups(t *testing.T) {
 	if got.Groups[0].ExternalGroupID != externalGroupID {
 		t.Errorf("Group.ExternalGroupID = %v, want %v", got.Groups[0].ExternalGroupID, externalGroupID)
 	}
-	if got.Groups[0].EnforcedInRules != enforcedInRules {
-		t.Errorf("Group.EnforcedInRules = %v, want %v", got.Groups[0].EnforcedInRules, enforcedInRules)
+	if !sameBool(got.Groups[0].EnforcedInRules, &enforcedInRules) {
+		t.Errorf("Group.EnforcedInRules = %s, want %v", boolString(got.Groups[0].EnforcedInRules), enforcedInRules)
 	}
 }
 
@@ -253,7 +254,7 @@ func TestUserGroupFromDTO(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := UserGroupFromDTO(tt.dto)
 			if tt.dto == nil {
-				if got.ID != "" || got.ExternalGroupID != "" || got.EnforcedInRules != false {
+				if got.ID != "" || got.ExternalGroupID != "" || got.EnforcedInRules != nil {
 					t.Errorf("UserGroupFromDTO(nil) should return zero value")
 				}
 				return
@@ -264,8 +265,8 @@ func TestUserGroupFromDTO(t *testing.T) {
 			if tt.dto.ExternalGroupId != nil && got.ExternalGroupID != *tt.dto.ExternalGroupId {
 				t.Errorf("ExternalGroupID = %v, want %v", got.ExternalGroupID, *tt.dto.ExternalGroupId)
 			}
-			if tt.dto.EnforcedInRules != nil && got.EnforcedInRules != *tt.dto.EnforcedInRules {
-				t.Errorf("EnforcedInRules = %v, want %v", got.EnforcedInRules, *tt.dto.EnforcedInRules)
+			if !sameBool(got.EnforcedInRules, tt.dto.EnforcedInRules) {
+				t.Errorf("EnforcedInRules = %s, want %s", boolString(got.EnforcedInRules), boolString(tt.dto.EnforcedInRules))
 			}
 		})
 	}
@@ -426,4 +427,19 @@ func TestUserAttributesFromDTO(t *testing.T) {
 			}
 		})
 	}
+}
+
+// sameBool reports whether two optional bools are both nil or hold the same value.
+func sameBool(a, b *bool) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return *a == *b
+}
+
+func boolString(b *bool) string {
+	if b == nil {
+		return "nil"
+	}
+	return fmt.Sprint(*b)
 }

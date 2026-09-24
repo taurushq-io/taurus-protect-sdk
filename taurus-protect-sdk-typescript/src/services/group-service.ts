@@ -17,6 +17,21 @@ import { BaseService } from './base';
 import { offsetQuery } from './paging';
 
 /**
+ * GetGroups computes enforcedInRules for each group and its users, and validatord omits a
+ * false bool, so absent means false.
+ */
+function withComputedRulesFlags(group: Group): Group {
+  return {
+    ...group,
+    enforcedInRules: group.enforcedInRules ?? false,
+    users: group.users?.map((user) => ({
+      ...user,
+      enforcedInRules: user.enforcedInRules ?? false,
+    })),
+  };
+}
+
+/**
  * Service for group management operations.
  *
  * Provides methods to list and retrieve groups.
@@ -87,7 +102,7 @@ export class GroupService extends BaseService {
         throw new NotFoundError(`Group ${groupId} not found`);
       }
 
-      return group;
+      return withComputedRulesFlags(group);
     });
   }
 
@@ -121,7 +136,7 @@ export class GroupService extends BaseService {
 
       const rows = response.result ?? [];
       return {
-        items: groupsFromDto(rows),
+        items: groupsFromDto(rows).map(withComputedRulesFlags),
         // The server may append a synthetic technical group beyond `limit`.
         pagination: buildOffsetPagination('plus_min_rows_limit', page, response, rows.length),
       };

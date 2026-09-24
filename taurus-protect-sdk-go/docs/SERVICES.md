@@ -753,6 +753,9 @@ func (s *UserService) GetUsersByEmail(ctx context.Context, emails []string) ([]*
 `ListUsersResult.Pagination` is never nil. validatord can append a synthetic daemon user beyond
 the limit, so the next page starts at `NextOffset`, not at `Offset + len(Users)`.
 `GetUsersByEmail` reads in batches of at most 100 emails.
+`GetMe`, `ListUsers` and `GetUsersByEmail` compute `EnforcedInRules` (user and group memberships);
+only `GetMe` computes `PublicKeyEnforcedInRules`. A flag the endpoint does not compute, such as
+every flag on `GetUser` or `GetUsersByVisibilityGroupID`, is nil, not false.
 
 ### Key Models
 
@@ -774,6 +777,7 @@ func (s *GroupService) ListGroups(ctx context.Context, opts *model.ListGroupsOpt
 
 `ListGroupsResult.Pagination` is never nil; a technical group may be appended beyond the limit,
 so continue with `NextOffset`.
+`ListGroups` computes `EnforcedInRules` for each group and each of its users.
 
 ### Key Models
 
@@ -1836,7 +1840,7 @@ fails if this list drifts or if the prose above documents a method that does not
 ### UserService
 
 - `CreateUserAttribute(ctx context.Context, userID, key, value string) error` — CreateUserAttribute creates an attribute for a user.
-- `GetMe(ctx context.Context) (*model.User, error)` — GetMe retrieves the currently authenticated user.
+- `GetMe(ctx context.Context) (*model.User, error)` — GetMe retrieves the currently authenticated user, with the enforced-in-rules flags computed.
 - `GetUser(ctx context.Context, id string) (*model.User, error)` — GetUser retrieves a user by ID.
 - `GetUsersByEmail(ctx context.Context, emails []string) ([]*model.User, error)` — GetUsersByEmail retrieves the users with these email addresses. The emails are sent in
 - `ListUsers(ctx context.Context, opts *model.ListUsersOptions) (*model.ListUsersResult, error)` — ListUsers retrieves one page of users. Result.Pagination is never nil; continue with its

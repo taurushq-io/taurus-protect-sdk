@@ -993,7 +993,7 @@
         {
           "name": "GetMe",
           "signature": "GetMe(ctx context.Context) (*model.User, error)",
-          "doc": "GetMe retrieves the currently authenticated user."
+          "doc": "GetMe retrieves the currently authenticated user, with the enforced-in-rules flags computed."
         },
         {
           "name": "GetUser",

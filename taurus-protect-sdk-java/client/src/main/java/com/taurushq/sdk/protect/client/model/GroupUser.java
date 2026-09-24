@@ -50,7 +50,8 @@ public class GroupUser {
     /**
      * Returns whether this user is enforced in business rules.
      *
-     * @return true if enforced in rules, false otherwise
+     * @return true if enforced in rules, false otherwise, or {@code null} when the endpoint
+     *         that returned the group does not compute it
      */
     public Boolean getEnforcedInRules() {
         return enforcedInRules;

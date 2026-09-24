@@ -24,6 +24,19 @@ if TYPE_CHECKING:
     pass  # For OpenAPI types when available
 
 
+def _with_computed_flags(user: User) -> User:
+    """validatord omits a false bool, so where it computed the flags an absent one is False."""
+    return user.model_copy(
+        update={
+            "enforced_in_rules": bool(user.enforced_in_rules),
+            "groups": [
+                g.model_copy(update={"enforced_in_rules": bool(g.enforced_in_rules)})
+                for g in user.groups
+            ],
+        }
+    )
+
+
 class UserService(BaseService):
     """
     Service for user management operations.
@@ -107,7 +120,8 @@ class UserService(BaseService):
             APIError: If API request fails.
         """
         try:
-            resp = self._users_api.user_service_get_me()
+            # GetMe computes the enforced-in-rules flags only when asked.
+            resp = self._users_api.user_service_get_me(check_enforced_in_rules=True)
 
             result = getattr(resp, "result", None)
             if result is None:
@@ -121,7 +135,7 @@ class UserService(BaseService):
 
                 raise APIError(500, "Failed to get current user: invalid response")
 
-            return user
+            return _with_computed_flags(user)
         except Exception as e:
             from taurus_protect.errors import APIError
 
@@ -186,7 +200,7 @@ class UserService(BaseService):
             resp = self._users_api.user_service_get_users(**offset_query(limit, offset), **filters)
 
             rows = resp.result or []
-            users = users_from_dto(rows)
+            users = [_with_computed_flags(u) for u in users_from_dto(rows)]
             pagination = offset_pagination(
                 PLUS_MIN_ROWS_LIMIT,
                 limit=limit,

@@ -23,9 +23,9 @@ func NewUserService(client *openapi.APIClient) *UserService {
 	}
 }
 
-// GetMe retrieves the currently authenticated user.
+// GetMe retrieves the currently authenticated user, with the enforced-in-rules flags computed.
 func (s *UserService) GetMe(ctx context.Context) (*model.User, error) {
-	resp, httpResp, err := s.api.UserServiceGetMe(ctx).Execute()
+	resp, httpResp, err := s.api.UserServiceGetMe(ctx).CheckEnforcedInRules(true).Execute()
 	if err != nil {
 		return nil, s.errMapper.MapError(err, httpResp)
 	}
@@ -34,7 +34,9 @@ func (s *UserService) GetMe(ctx context.Context) (*model.User, error) {
 		return nil, fmt.Errorf("user not found")
 	}
 
-	return mapper.UserFromDTO(resp.Result), nil
+	user := mapper.UserFromDTO(resp.Result)
+	defaultComputedUserFlags(user)
+	return user, nil
 }
 
 // GetUser retrieves a user by ID.
@@ -107,10 +109,35 @@ func (s *UserService) ListUsers(ctx context.Context, opts *model.ListUsersOption
 	if err != nil {
 		return nil, err
 	}
+	users := mapper.UsersFromDTO(resp.Result)
+	defaultComputedUserFlags(users...)
 	return &model.ListUsersResult{
-		Users:      mapper.UsersFromDTO(resp.Result),
+		Users:      users,
 		Pagination: pagination,
 	}, nil
+}
+
+// defaultComputedUserFlags sets an absent EnforcedInRules to false on users read from an
+// endpoint that computes it: validatord leaves a false bool out of its JSON. The public-key flag
+// is a BoolValue, sent whenever computed, so it is never defaulted.
+func defaultComputedUserFlags(users ...*model.User) {
+	for _, user := range users {
+		if user == nil {
+			continue
+		}
+		user.EnforcedInRules = falseIfNil(user.EnforcedInRules)
+		for i := range user.Groups {
+			user.Groups[i].EnforcedInRules = falseIfNil(user.Groups[i].EnforcedInRules)
+		}
+	}
+}
+
+func falseIfNil(b *bool) *bool {
+	if b != nil {
+		return b
+	}
+	f := false
+	return &f
 }
 
 // GetUsersByEmail retrieves the users with these email addresses. The emails are sent in

@@ -1101,6 +1101,11 @@
           "doc": ""
         },
         {
+          "name": "getUser",
+          "signature": "getUser(String): User",
+          "doc": ""
+        },
+        {
           "name": "getUsers",
           "signature": "getUsers(int, long): UserResult",
           "doc": ""

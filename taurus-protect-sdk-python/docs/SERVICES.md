@@ -762,6 +762,8 @@ Provides user management operations.
 | `get_users_by_email(emails)` | `emails: List[str]` | `List[User]` | Get users by email addresses (reads every page) |
 | `create_user_attribute(user_id, key, value)` | `user_id: str`, `key: str`, `value: str` | `None` | Create user attribute |
 
+`get_current()`, `list()` and `get_users_by_email()` compute `enforced_in_rules` (user and group memberships); only `get_current()` computes `public_key_enforced_in_rules`. A flag the endpoint does not compute, such as every flag on `get()`, is `None`, not `False`.
+
 #### Example
 
 ```python
@@ -789,6 +791,8 @@ Provides user group management operations.
 |--------|------------|---------|-------------|
 | `get(group_id)` | `group_id: str` | `Group` | Get group by ID |
 | `list(limit, offset)` | `limit: Optional[int]` (20, max 100), `offset: Optional[int]` | `Tuple[List[Group], Pagination]` | List groups |
+
+`get()` and `list()` compute `enforced_in_rules` for the group and each of its users.
 
 #### Example
 

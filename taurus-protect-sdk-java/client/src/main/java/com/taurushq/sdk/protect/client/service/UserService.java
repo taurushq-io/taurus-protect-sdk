@@ -10,6 +10,7 @@ import com.taurushq.sdk.protect.client.model.UserResult;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import com.taurushq.sdk.protect.openapi.api.UsersApi;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetMeReply;
+import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetUserReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetUsersReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordInternalUser;
 import com.taurushq.sdk.protect.openapi.model.UserServiceCreateAttributeBody;
@@ -77,7 +78,8 @@ public class UserService {
 
 
     /**
-     * Gets current user details.
+     * Gets current user details, including whether the user, its group memberships and its
+     * public key are enforced in the governance rules.
      *
      * @return the current user
      * @throws ApiException the api exception
@@ -86,8 +88,30 @@ public class UserService {
         try {
             TgvalidatordGetMeReply reply = usersApi.userServiceGetMe(
                     false,  // includeKeyContainer
-                    false   // checkEnforcedInRules
+                    true    // checkEnforcedInRules: the only way GetMe computes the flags
             );
+            return EnforcedInRules.computed(UserMapper.INSTANCE.fromDTO(reply.getResult()));
+        } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
+            throw apiExceptionMapper.toApiException(e);
+        }
+    }
+
+    /**
+     * Gets a user by ID.
+     * <p>
+     * This endpoint does not compute the enforced-in-rules flags: they are {@code null} unless
+     * the reply carries them.
+     *
+     * @param userId the user ID
+     * @return the user
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if userId is null or empty
+     */
+    public User getUser(final String userId) throws ApiException {
+        checkArgument(!Strings.isNullOrEmpty(userId), "userId cannot be null or empty");
+
+        try {
+            TgvalidatordGetUserReply reply = usersApi.userServiceGetUser(userId);
             return UserMapper.INSTANCE.fromDTO(reply.getResult());
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
@@ -153,7 +177,7 @@ public class UserService {
 
             List<TgvalidatordInternalUser> rows = reply.getResult() == null
                     ? Collections.emptyList() : reply.getResult();
-            return new UserResult(UserMapper.INSTANCE.fromDTO(rows),
+            return new UserResult(EnforcedInRules.computedUsers(UserMapper.INSTANCE.fromDTO(rows)),
                     PagedOperation.USERS.offsetPage(size, from, rows.size(), 0,
                             reply.getTotalItems(), null));
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {

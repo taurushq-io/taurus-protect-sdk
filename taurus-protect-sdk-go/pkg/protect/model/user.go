@@ -32,10 +32,12 @@ type User struct {
 	PasswordChanged bool `json:"password_changed"`
 	// TotpEnabled indicates if TOTP is enabled for the user.
 	TotpEnabled bool `json:"totp_enabled"`
-	// EnforcedInRules indicates if the user is enforced in rules.
-	EnforcedInRules bool `json:"enforced_in_rules"`
-	// PublicKeyEnforcedInRules indicates if the user's public key is enforced in rules.
-	PublicKeyEnforcedInRules bool `json:"public_key_enforced_in_rules"`
+	// EnforcedInRules reports whether the enforced governance rules list the user. Nil when the
+	// endpoint does not compute it: GetUser and the visibility-group reads.
+	EnforcedInRules *bool `json:"enforced_in_rules"`
+	// PublicKeyEnforcedInRules reports whether PublicKey is the key the enforced rules hold for
+	// the user. Only GetMe computes it; nil elsewhere.
+	PublicKeyEnforcedInRules *bool `json:"public_key_enforced_in_rules"`
 	// CreatedAt is when the user was created.
 	CreatedAt time.Time `json:"created_at"`
 	// UpdatedAt is when the user was last updated.
@@ -50,8 +52,9 @@ type UserGroup struct {
 	ID string `json:"id"`
 	// ExternalGroupID is an optional external identifier.
 	ExternalGroupID string `json:"external_group_id,omitempty"`
-	// EnforcedInRules indicates if this group membership is enforced in rules.
-	EnforcedInRules bool `json:"enforced_in_rules"`
+	// EnforcedInRules reports whether the enforced governance rules list this group; nil when
+	// the endpoint does not compute it.
+	EnforcedInRules *bool `json:"enforced_in_rules"`
 }
 
 // UserAttribute represents a custom attribute on a user.

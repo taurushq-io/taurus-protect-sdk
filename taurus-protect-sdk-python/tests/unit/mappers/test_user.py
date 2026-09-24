@@ -97,10 +97,10 @@ class TestUserGroupFromDto:
     """Tests for user_group_from_dto function."""
 
     def test_maps_fields(self) -> None:
-        dto = SimpleNamespace(id="g-1", name="Admins")
+        dto = SimpleNamespace(id="g-1", external_group_id="team1")
         result = user_group_from_dto(dto)
         assert result.id == "g-1"
-        assert result.name == "Admins"
+        assert result.external_group_id == "team1"
 
 
 class TestUserAttributeFromDto:
@@ -154,10 +154,10 @@ class TestGroupUserFromDto:
     """Tests for group_user_from_dto function."""
 
     def test_maps_fields(self) -> None:
-        dto = SimpleNamespace(id="u-1", email="user@example.com")
+        dto = SimpleNamespace(id="u-1", external_user_id="user@example.com")
         result = group_user_from_dto(dto)
         assert result.id == "u-1"
-        assert result.email == "user@example.com"
+        assert result.external_user_id == "user@example.com"
 
 
 class TestTagFromDto:

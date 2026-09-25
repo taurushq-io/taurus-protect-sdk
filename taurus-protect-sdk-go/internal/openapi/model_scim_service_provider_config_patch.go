@@ -20,7 +20,10 @@ var _ MappedNullable = &ScimServiceProviderConfigPatch{}
 // ScimServiceProviderConfigPatch struct for ScimServiceProviderConfigPatch
 type ScimServiceProviderConfigPatch struct {
 	Supported *bool `json:"supported,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _ScimServiceProviderConfigPatch ScimServiceProviderConfigPatch
 
 // NewScimServiceProviderConfigPatch instantiates a new ScimServiceProviderConfigPatch object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o ScimServiceProviderConfigPatch) ToMap() (map[string]interface{}, error) 
 	if !IsNil(o.Supported) {
 		toSerialize["supported"] = o.Supported
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *ScimServiceProviderConfigPatch) UnmarshalJSON(data []byte) (err error) {
+	varScimServiceProviderConfigPatch := _ScimServiceProviderConfigPatch{}
+
+	err = json.Unmarshal(data, &varScimServiceProviderConfigPatch)
+
+	if err != nil {
+		return err
+	}
+
+	*o = ScimServiceProviderConfigPatch(varScimServiceProviderConfigPatch)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "supported")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableScimServiceProviderConfigPatch struct {

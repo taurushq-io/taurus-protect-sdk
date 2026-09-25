@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -26,6 +25,7 @@ type TgvalidatordCreateOutgoingHederaUnstakingRequestRequest struct {
 	Comment *string `json:"comment,omitempty"`
 	// Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingHederaUnstakingRequestRequest TgvalidatordCreateOutgoingHederaUnstakingRequestRequest
@@ -188,6 +188,11 @@ func (o TgvalidatordCreateOutgoingHederaUnstakingRequestRequest) ToMap() (map[st
 	if !IsNil(o.ExternalRequestId) {
 		toSerialize["externalRequestId"] = o.ExternalRequestId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -215,15 +220,23 @@ func (o *TgvalidatordCreateOutgoingHederaUnstakingRequestRequest) UnmarshalJSON(
 
 	varTgvalidatordCreateOutgoingHederaUnstakingRequestRequest := _TgvalidatordCreateOutgoingHederaUnstakingRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingHederaUnstakingRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingHederaUnstakingRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingHederaUnstakingRequestRequest(varTgvalidatordCreateOutgoingHederaUnstakingRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "externalRequestId")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

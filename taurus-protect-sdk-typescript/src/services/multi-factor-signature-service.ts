@@ -9,34 +9,17 @@
 
 import { NotFoundError, ValidationError } from '../errors';
 import type { MultiFactorSignatureApi } from '../internal/openapi/apis/MultiFactorSignatureApi';
-import { TgvalidatordMultiFactorSignaturesEntityType } from '../internal/openapi/models/TgvalidatordMultiFactorSignaturesEntityType';
-import { multiFactorSignatureInfoFromDto } from '../mappers/multi-factor-signature';
+import {
+  multiFactorSignatureEntityTypeToDto,
+  multiFactorSignatureInfoFromDto,
+} from '../mappers/multi-factor-signature';
 import type {
   ApproveMultiFactorSignatureRequest,
   CreateMultiFactorSignatureRequest,
-  MultiFactorSignatureEntityType,
   MultiFactorSignatureInfo,
   RejectMultiFactorSignatureRequest,
 } from '../models/multi-factor-signature';
 import { BaseService } from './base';
-
-/**
- * Converts SDK entity type to OpenAPI entity type.
- */
-function toOpenApiEntityType(
-  entityType: MultiFactorSignatureEntityType
-): TgvalidatordMultiFactorSignaturesEntityType {
-  switch (entityType) {
-    case 'REQUEST':
-      return TgvalidatordMultiFactorSignaturesEntityType.Request;
-    case 'WHITELISTED_ADDRESS':
-      return TgvalidatordMultiFactorSignaturesEntityType.WhitelistedAddress;
-    case 'WHITELISTED_CONTRACT':
-      return TgvalidatordMultiFactorSignaturesEntityType.WhitelistedContract;
-    default:
-      return TgvalidatordMultiFactorSignaturesEntityType.Request;
-  }
-}
 
 /**
  * Service for multi-factor signature operations.
@@ -139,6 +122,9 @@ export class MultiFactorSignatureService extends BaseService {
    * specified entities. Returns an ID that must be used by another factor
    * device to sign.
    *
+   * The entity type is sent verbatim, like in every other SDK: the server rejects a kind it
+   * does not know.
+   *
    * @param request - The create request with entity type and IDs.
    * @returns The created multi-factor signature ID.
    * @throws {@link ValidationError} If request is invalid.
@@ -157,7 +143,7 @@ export class MultiFactorSignatureService extends BaseService {
         await this.multiFactorSignatureApi.multiFactorSignatureServiceCreateMultiFactorSignatureBatch(
           {
             body: {
-              entityType: toOpenApiEntityType(request.entityType),
+              entityType: multiFactorSignatureEntityTypeToDto(request.entityType),
               entityIDs: request.entityIds,
             },
           }

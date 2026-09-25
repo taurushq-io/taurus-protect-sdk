@@ -421,8 +421,8 @@ func findTwoFundedAddressesForCurrency(t *testing.T, ctx context.Context, client
 		// For tokens, use AssetService to find token addresses
 		t.Logf("%s Step 0: Searching via AssetService for token addresses...", tag)
 		tokenResult, err := client.Assets().GetAssetAddresses(ctx, &model.GetAssetAddressesRequest{
-			Asset: model.AssetFilter{Currency: cfg.symbol},
-			Limit: 50,
+			Asset:    model.AssetFilter{Currency: cfg.symbol},
+			PageSize: 50,
 		})
 		if err != nil {
 			return nil, fmt.Errorf("GetAssetAddresses(%s) failed: %w", cfg.symbol, err)
@@ -435,8 +435,8 @@ func findTwoFundedAddressesForCurrency(t *testing.T, ctx context.Context, client
 		// Fetch native currency addresses to check gas balance
 		t.Logf("%s Step 0: Fetching %s addresses for gas balance check...", tag, cfg.blockchain)
 		nativeResult, err := client.Assets().GetAssetAddresses(ctx, &model.GetAssetAddressesRequest{
-			Asset: model.AssetFilter{Currency: cfg.blockchain},
-			Limit: 50,
+			Asset:    model.AssetFilter{Currency: cfg.blockchain},
+			PageSize: 50,
 		})
 		if err == nil && nativeResult != nil {
 			for _, nAddr := range nativeResult.Addresses {
@@ -558,8 +558,8 @@ func findNativeAddresses(t *testing.T, ctx context.Context, client *protect.Clie
 	tag := fmt.Sprintf("[%s]", cfg.symbol)
 
 	walletsResult, err := client.Assets().GetAssetWallets(ctx, &model.GetAssetWalletsRequest{
-		Asset: model.AssetFilter{Currency: cfg.symbol},
-		Limit: 50,
+		Asset:    model.AssetFilter{Currency: cfg.symbol},
+		PageSize: 50,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("GetAssetWallets(%s) failed: %w", cfg.symbol, err)

@@ -22,7 +22,10 @@ type AuthenticationServiceValidateAuthenticationBody struct {
 	ApiRequestToValidate *AuthenticationServiceValidateAuthenticationBodyApiRequestToValidate `json:"apiRequestToValidate,omitempty"`
 	// The signature of the protobuf-serialized ApiRequestToValidate message, that uses the shared JWT secret (through the REST API, the bytes are encoded as a base64 string)
 	Signature *string `json:"signature,omitempty" validate:"regexp=^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=)?$"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _AuthenticationServiceValidateAuthenticationBody AuthenticationServiceValidateAuthenticationBody
 
 // NewAuthenticationServiceValidateAuthenticationBody instantiates a new AuthenticationServiceValidateAuthenticationBody object
 // This constructor will assign default values to properties that have it defined,
@@ -121,7 +124,34 @@ func (o AuthenticationServiceValidateAuthenticationBody) ToMap() (map[string]int
 	if !IsNil(o.Signature) {
 		toSerialize["signature"] = o.Signature
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *AuthenticationServiceValidateAuthenticationBody) UnmarshalJSON(data []byte) (err error) {
+	varAuthenticationServiceValidateAuthenticationBody := _AuthenticationServiceValidateAuthenticationBody{}
+
+	err = json.Unmarshal(data, &varAuthenticationServiceValidateAuthenticationBody)
+
+	if err != nil {
+		return err
+	}
+
+	*o = AuthenticationServiceValidateAuthenticationBody(varAuthenticationServiceValidateAuthenticationBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "apiRequestToValidate")
+		delete(additionalProperties, "signature")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableAuthenticationServiceValidateAuthenticationBody struct {

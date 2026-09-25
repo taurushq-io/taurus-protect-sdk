@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordGetNFTCollectionBalancesReply{}
 type TgvalidatordGetNFTCollectionBalancesReply struct {
 	Balances []TgvalidatordNFTCollectionBalance `json:"balances,omitempty"`
 	Cursor *TgvalidatordResponseCursor `json:"cursor,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetNFTCollectionBalancesReply TgvalidatordGetNFTCollectionBalancesReply
 
 // NewTgvalidatordGetNFTCollectionBalancesReply instantiates a new TgvalidatordGetNFTCollectionBalancesReply object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordGetNFTCollectionBalancesReply) ToMap() (map[string]interface
 	if !IsNil(o.Cursor) {
 		toSerialize["cursor"] = o.Cursor
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetNFTCollectionBalancesReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetNFTCollectionBalancesReply := _TgvalidatordGetNFTCollectionBalancesReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetNFTCollectionBalancesReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetNFTCollectionBalancesReply(varTgvalidatordGetNFTCollectionBalancesReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "balances")
+		delete(additionalProperties, "cursor")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetNFTCollectionBalancesReply struct {

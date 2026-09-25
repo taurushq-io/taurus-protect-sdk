@@ -29,7 +29,10 @@ type TgvalidatordCompanyTravelRuleData struct {
 	LegalEntityIdentifier *string `json:"legalEntityIdentifier,omitempty"`
 	BusinessName *string `json:"businessName,omitempty"`
 	AccountNumber *string `json:"accountNumber,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordCompanyTravelRuleData TgvalidatordCompanyTravelRuleData
 
 // NewTgvalidatordCompanyTravelRuleData instantiates a new TgvalidatordCompanyTravelRuleData object
 // This constructor will assign default values to properties that have it defined,
@@ -408,7 +411,42 @@ func (o TgvalidatordCompanyTravelRuleData) ToMap() (map[string]interface{}, erro
 	if !IsNil(o.AccountNumber) {
 		toSerialize["accountNumber"] = o.AccountNumber
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordCompanyTravelRuleData) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordCompanyTravelRuleData := _TgvalidatordCompanyTravelRuleData{}
+
+	err = json.Unmarshal(data, &varTgvalidatordCompanyTravelRuleData)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordCompanyTravelRuleData(varTgvalidatordCompanyTravelRuleData)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "department")
+		delete(additionalProperties, "buildingNumber")
+		delete(additionalProperties, "street")
+		delete(additionalProperties, "city")
+		delete(additionalProperties, "province")
+		delete(additionalProperties, "postalCode")
+		delete(additionalProperties, "country")
+		delete(additionalProperties, "legalEntityIdentifier")
+		delete(additionalProperties, "businessName")
+		delete(additionalProperties, "accountNumber")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordCompanyTravelRuleData struct {

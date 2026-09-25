@@ -46,7 +46,16 @@ export interface TgvalidatordGetFiatProviderOperationsReply {
      * @memberof TgvalidatordGetFiatProviderOperationsReply
      */
     cursor?: TgvalidatordResponseCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetFiatProviderOperationsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetFiatProviderOperationsReplyWireKeys: ReadonlySet<string> = new Set(['result', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetFiatProviderOperationsReply interface.
@@ -63,11 +72,21 @@ export function TgvalidatordGetFiatProviderOperationsReplyFromJSONTyped(json: an
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetFiatProviderOperationsReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordFiatProviderOperationFromJSON)),
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetFiatProviderOperationsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetFiatProviderOperationsReplyToJSON(json: any): TgvalidatordGetFiatProviderOperationsReply {
@@ -83,6 +102,7 @@ export function TgvalidatordGetFiatProviderOperationsReplyFromJSONTyped(json: an
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordFiatProviderOperationToJSON)),
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
+        ...value['additionalProperties'],
     };
 }
 

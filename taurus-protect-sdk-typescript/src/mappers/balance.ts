@@ -2,63 +2,79 @@
  * Balance mapper functions for converting OpenAPI DTOs to domain models.
  */
 
+import type { TgvalidatordAssetBalance } from '../internal/openapi/models/TgvalidatordAssetBalance';
+import type { TgvalidatordNFTCollectionBalance } from '../internal/openapi/models/TgvalidatordNFTCollectionBalance';
 import type { AssetBalance, NFTCollectionBalance } from '../models/balance';
-import { safeInt, safeMap, safeString } from './base';
+import { safeInt, safeMap } from './base';
 
 /**
- * Maps a balance DTO to an AssetBalance domain model.
+ * Maps a balance row to an AssetBalance domain model.
+ *
+ * The row is `{asset, balance}`: the currency lives in `asset.currencyInfo` and the amounts
+ * in the nested `balance` object. The flat `currency` / `balance` keys this mapper used to
+ * read do not exist on the wire, so every row came back without a currency and with a
+ * `"[object Object]"` balance.
  */
-export function assetBalanceFromDto(dto: unknown): AssetBalance | undefined {
+export function assetBalanceFromDto(
+  dto: TgvalidatordAssetBalance | null | undefined
+): AssetBalance | undefined {
   if (!dto || typeof dto !== 'object') {
     return undefined;
   }
 
-  const d = dto as Record<string, unknown>;
+  const info = dto.asset?.currencyInfo;
   return {
-    currencyId: safeString(d.currencyId ?? d.currency_id),
-    currency: safeString(d.currency ?? d.symbol),
-    blockchain: safeString(d.blockchain),
-    network: safeString(d.network),
-    contractAddress: safeString(d.contractAddress ?? d.contract_address),
-    tokenId: safeString(d.tokenId ?? d.token_id),
-    balance: safeString(d.balance ?? d.totalConfirmed ?? d.total_confirmed),
-    fiatValue: safeString(d.fiatValue ?? d.fiat_value),
-    fiatCurrency: safeString(d.fiatCurrency ?? d.fiat_currency),
+    currencyId: info?.id,
+    currency: info?.symbol ?? dto.asset?.currency,
+    blockchain: info?.blockchain,
+    network: info?.network,
+    contractAddress: info?.contractAddress,
+    tokenId: dto.asset?.nft?.tokenid ?? info?.tokenID,
+    balance: dto.balance?.totalConfirmed,
+    fiatValue: undefined,
+    fiatCurrency: undefined,
   };
 }
 
 /**
- * Maps an array of balance DTOs to AssetBalance domain models.
+ * Maps an array of balance rows to AssetBalance domain models.
  */
-export function assetBalancesFromDto(dtos: unknown[] | null | undefined): AssetBalance[] {
+export function assetBalancesFromDto(
+  dtos: TgvalidatordAssetBalance[] | null | undefined
+): AssetBalance[] {
   return safeMap(dtos, assetBalanceFromDto);
 }
 
 /**
- * Maps an NFT collection balance DTO to an NFTCollectionBalance domain model.
+ * Maps an NFT collection balance row to an NFTCollectionBalance domain model.
+ *
+ * The row is `{currencyInfo, balance}`: the collection is described by its currency and
+ * the count is the confirmed balance.
  */
-export function nftCollectionBalanceFromDto(dto: unknown): NFTCollectionBalance | undefined {
+export function nftCollectionBalanceFromDto(
+  dto: TgvalidatordNFTCollectionBalance | null | undefined
+): NFTCollectionBalance | undefined {
   if (!dto || typeof dto !== 'object') {
     return undefined;
   }
 
-  const d = dto as Record<string, unknown>;
+  const info = dto.currencyInfo;
   return {
-    name: safeString(d.name),
-    symbol: safeString(d.symbol),
-    blockchain: safeString(d.blockchain),
-    network: safeString(d.network),
-    contractAddress: safeString(d.contractAddress ?? d.contract_address),
-    count: safeInt(d.count ?? d.balance),
-    logoUrl: safeString(d.logoUrl ?? d.logo_url ?? d.logo),
+    name: info?.name,
+    symbol: info?.symbol,
+    blockchain: info?.blockchain,
+    network: info?.network,
+    contractAddress: info?.contractAddress,
+    count: safeInt(dto.balance?.totalConfirmed),
+    logoUrl: info?.logo,
   };
 }
 
 /**
- * Maps an array of NFT collection balance DTOs to NFTCollectionBalance domain models.
+ * Maps an array of NFT collection balance rows to NFTCollectionBalance domain models.
  */
 export function nftCollectionBalancesFromDto(
-  dtos: unknown[] | null | undefined
+  dtos: TgvalidatordNFTCollectionBalance[] | null | undefined
 ): NFTCollectionBalance[] {
   return safeMap(dtos, nftCollectionBalanceFromDto);
 }

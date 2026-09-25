@@ -55,7 +55,16 @@ export interface TgvalidatordCreateOutgoingXTZStakeRequestRequest {
      * @memberof TgvalidatordCreateOutgoingXTZStakeRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingXTZStakeRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingXTZStakeRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'amount', 'gasLimit', 'feeLimit', 'comment', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingXTZStakeRequestRequest interface.
@@ -73,7 +82,7 @@ export function TgvalidatordCreateOutgoingXTZStakeRequestRequestFromJSONTyped(js
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingXTZStakeRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'amount': json['amount'] == null ? undefined : json['amount'],
@@ -82,6 +91,16 @@ export function TgvalidatordCreateOutgoingXTZStakeRequestRequestFromJSONTyped(js
         'comment': json['comment'] == null ? undefined : json['comment'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingXTZStakeRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingXTZStakeRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingXTZStakeRequestRequest {
@@ -101,6 +120,7 @@ export function TgvalidatordCreateOutgoingXTZStakeRequestRequestFromJSONTyped(js
         'feeLimit': value['feeLimit'],
         'comment': value['comment'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

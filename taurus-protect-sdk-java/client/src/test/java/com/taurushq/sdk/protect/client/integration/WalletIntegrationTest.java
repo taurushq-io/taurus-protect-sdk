@@ -1,9 +1,10 @@
 package com.taurushq.sdk.protect.client.integration;
 
 import com.taurushq.sdk.protect.client.ProtectClient;
-import com.taurushq.sdk.protect.client.testutil.TestHelper;
 import com.taurushq.sdk.protect.client.model.ApiException;
 import com.taurushq.sdk.protect.client.model.Wallet;
+import com.taurushq.sdk.protect.client.model.WalletResult;
+import com.taurushq.sdk.protect.client.testutil.TestHelper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,7 @@ class WalletIntegrationTest {
 
     @Test
     void listWallets() throws ApiException {
-        List<Wallet> wallets = client.getWalletService().getWallets(10, 0);
+        List<Wallet> wallets = client.getWalletService().getWallets(10, 0).getWallets();
 
         System.out.println("Found " + wallets.size() + " wallets");
         for (Wallet w : wallets) {
@@ -49,7 +50,7 @@ class WalletIntegrationTest {
     @Test
     void getWallet() throws ApiException {
         // First, get a list to find a valid wallet ID
-        List<Wallet> wallets = client.getWalletService().getWallets(1, 0);
+        List<Wallet> wallets = client.getWalletService().getWallets(1, 0).getWallets();
 
         if (wallets.isEmpty()) {
             System.out.println("No wallets available for testing");
@@ -73,14 +74,16 @@ class WalletIntegrationTest {
     @Test
     void pagination() throws ApiException {
         int pageSize = 2;
-        int offset = 0;
+        long offset = 0;
         int totalFetched = 0;
         int maxPages = 5;
         int pageCount = 0;
 
+        WalletResult page;
         List<Wallet> wallets;
         do {
-            wallets = client.getWalletService().getWallets(pageSize, offset);
+            page = client.getWalletService().getWallets(pageSize, offset);
+            wallets = page.getWallets();
             totalFetched += wallets.size();
             pageCount++;
 
@@ -89,13 +92,13 @@ class WalletIntegrationTest {
                 System.out.println("  " + w.getId() + ": " + w.getName());
             }
 
-            offset += wallets.size();
+            offset = page.getPagination().getNextOffset();
 
             if (pageCount >= maxPages) {
                 System.out.println("Stopping pagination test at " + maxPages + " pages");
                 break;
             }
-        } while (!wallets.isEmpty());
+        } while (page.getPagination().hasMore());
 
         System.out.println("Total wallets fetched via pagination: " + totalFetched);
         assertTrue(totalFetched >= 0);

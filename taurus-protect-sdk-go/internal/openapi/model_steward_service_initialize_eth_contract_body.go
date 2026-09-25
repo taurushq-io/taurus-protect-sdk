@@ -20,7 +20,10 @@ var _ MappedNullable = &StewardServiceInitializeETHContractBody{}
 // StewardServiceInitializeETHContractBody struct for StewardServiceInitializeETHContractBody
 type StewardServiceInitializeETHContractBody struct {
 	RulesToCreate *string `json:"rulesToCreate,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _StewardServiceInitializeETHContractBody StewardServiceInitializeETHContractBody
 
 // NewStewardServiceInitializeETHContractBody instantiates a new StewardServiceInitializeETHContractBody object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o StewardServiceInitializeETHContractBody) ToMap() (map[string]interface{}
 	if !IsNil(o.RulesToCreate) {
 		toSerialize["rulesToCreate"] = o.RulesToCreate
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *StewardServiceInitializeETHContractBody) UnmarshalJSON(data []byte) (err error) {
+	varStewardServiceInitializeETHContractBody := _StewardServiceInitializeETHContractBody{}
+
+	err = json.Unmarshal(data, &varStewardServiceInitializeETHContractBody)
+
+	if err != nil {
+		return err
+	}
+
+	*o = StewardServiceInitializeETHContractBody(varStewardServiceInitializeETHContractBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "rulesToCreate")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableStewardServiceInitializeETHContractBody struct {

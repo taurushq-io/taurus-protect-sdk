@@ -22,7 +22,10 @@ type TaurusNetworkServiceCreateParticipantAttributeBody struct {
 	AttributeData *TgvalidatordParticipantAttributeData `json:"attributeData,omitempty"`
 	// Set to true to share the attribute with the Taurus-NETWORK participant linked to the participantID.
 	ShareToTaurusNetworkParticipant *bool `json:"shareToTaurusNetworkParticipant,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TaurusNetworkServiceCreateParticipantAttributeBody TaurusNetworkServiceCreateParticipantAttributeBody
 
 // NewTaurusNetworkServiceCreateParticipantAttributeBody instantiates a new TaurusNetworkServiceCreateParticipantAttributeBody object
 // This constructor will assign default values to properties that have it defined,
@@ -121,7 +124,34 @@ func (o TaurusNetworkServiceCreateParticipantAttributeBody) ToMap() (map[string]
 	if !IsNil(o.ShareToTaurusNetworkParticipant) {
 		toSerialize["shareToTaurusNetworkParticipant"] = o.ShareToTaurusNetworkParticipant
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TaurusNetworkServiceCreateParticipantAttributeBody) UnmarshalJSON(data []byte) (err error) {
+	varTaurusNetworkServiceCreateParticipantAttributeBody := _TaurusNetworkServiceCreateParticipantAttributeBody{}
+
+	err = json.Unmarshal(data, &varTaurusNetworkServiceCreateParticipantAttributeBody)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TaurusNetworkServiceCreateParticipantAttributeBody(varTaurusNetworkServiceCreateParticipantAttributeBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "attributeData")
+		delete(additionalProperties, "shareToTaurusNetworkParticipant")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTaurusNetworkServiceCreateParticipantAttributeBody struct {

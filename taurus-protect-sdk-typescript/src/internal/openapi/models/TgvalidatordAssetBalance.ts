@@ -46,7 +46,16 @@ export interface TgvalidatordAssetBalance {
      * @memberof TgvalidatordAssetBalance
      */
     balance?: TgvalidatordBalance;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordAssetBalance
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordAssetBalanceWireKeys: ReadonlySet<string> = new Set(['asset', 'balance']);
 
 /**
  * Check if a given object implements the TgvalidatordAssetBalance interface.
@@ -63,11 +72,21 @@ export function TgvalidatordAssetBalanceFromJSONTyped(json: any, ignoreDiscrimin
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordAssetBalance = {
         
         'asset': json['asset'] == null ? undefined : TgvalidatordAssetFromJSON(json['asset']),
         'balance': json['balance'] == null ? undefined : TgvalidatordBalanceFromJSON(json['balance']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordAssetBalanceWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordAssetBalanceToJSON(json: any): TgvalidatordAssetBalance {
@@ -83,6 +102,7 @@ export function TgvalidatordAssetBalanceFromJSONTyped(json: any, ignoreDiscrimin
         
         'asset': TgvalidatordAssetToJSON(value['asset']),
         'balance': TgvalidatordBalanceToJSON(value['balance']),
+        ...value['additionalProperties'],
     };
 }
 

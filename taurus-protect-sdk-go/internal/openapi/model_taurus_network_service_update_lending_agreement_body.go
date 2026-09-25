@@ -20,7 +20,10 @@ var _ MappedNullable = &TaurusNetworkServiceUpdateLendingAgreementBody{}
 // TaurusNetworkServiceUpdateLendingAgreementBody struct for TaurusNetworkServiceUpdateLendingAgreementBody
 type TaurusNetworkServiceUpdateLendingAgreementBody struct {
 	LenderSharedAddressID *string `json:"lenderSharedAddressID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TaurusNetworkServiceUpdateLendingAgreementBody TaurusNetworkServiceUpdateLendingAgreementBody
 
 // NewTaurusNetworkServiceUpdateLendingAgreementBody instantiates a new TaurusNetworkServiceUpdateLendingAgreementBody object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TaurusNetworkServiceUpdateLendingAgreementBody) ToMap() (map[string]inte
 	if !IsNil(o.LenderSharedAddressID) {
 		toSerialize["lenderSharedAddressID"] = o.LenderSharedAddressID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TaurusNetworkServiceUpdateLendingAgreementBody) UnmarshalJSON(data []byte) (err error) {
+	varTaurusNetworkServiceUpdateLendingAgreementBody := _TaurusNetworkServiceUpdateLendingAgreementBody{}
+
+	err = json.Unmarshal(data, &varTaurusNetworkServiceUpdateLendingAgreementBody)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TaurusNetworkServiceUpdateLendingAgreementBody(varTaurusNetworkServiceUpdateLendingAgreementBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "lenderSharedAddressID")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTaurusNetworkServiceUpdateLendingAgreementBody struct {

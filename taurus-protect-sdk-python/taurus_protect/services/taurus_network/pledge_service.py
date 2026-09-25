@@ -24,7 +24,7 @@ from taurus_protect.mappers.taurus_network.pledge import (
     pledge_withdrawals_from_dto,
     pledges_from_dto,
 )
-from taurus_protect.models.pagination import Pagination
+from taurus_protect.models.pagination import CursorPage, cursor_page
 from taurus_protect.models.taurus_network.pledge import (
     AddPledgeCollateralRequest,
     CreatePledgeRequest,
@@ -162,43 +162,41 @@ class PledgeService(BaseService):
     def list_pledges(
         self,
         opts: Optional[ListPledgesOptions] = None,
-    ) -> Tuple[List[Pledge], Optional[Pagination]]:
+    ) -> Tuple[List[Pledge], CursorPage]:
         """
-        List pledges with optional filtering.
+        List pledges, one page at a time.
 
         Args:
-            opts: Optional filtering and pagination options.
+            opts: Filters and page window.
 
         Returns:
-            Tuple of (pledges list, pagination info).
+            Tuple of (pledges, page).
 
         Raises:
+            ValueError: If paging options are invalid.
             APIError: If API request fails.
         """
         options = opts or ListPledgesOptions()
+        req = options.to_cursor_request()
 
         try:
             resp = self._pledge_api.taurus_network_service_get_pledges(
-                statuses=options.statuses if options.statuses else None,
-                currency_id=options.currency_id if options.currency_id else None,
-                owner_participant_id=options.participant_id if options.participant_id else None,
-                sort_order=options.direction if options.direction else None,
-                cursor_page_size=str(options.limit) if options.limit > 0 else None,
+                owner_participant_id=options.owner_participant_id,
+                target_participant_id=options.target_participant_id,
+                shared_address_ids=options.shared_address_ids,
+                currency_id=options.currency_id,
+                statuses=options.statuses,
+                sort_order=options.sort_order,
+                attribute_filters_json=options.attribute_filters_json,
+                attribute_filters_operator=options.attribute_filters_operator,
+                **req.query_params(),
             )
 
-            result = getattr(resp, "result", None)
-            pledges = pledges_from_dto(result) if result else []
-
-            pagination = self._extract_pagination(
-                total_items=getattr(resp, "total_items", None),
-                offset=getattr(resp, "offset", None),
-                limit=options.limit,
-            )
-
-            return pledges, pagination
+            pledges = pledges_from_dto(resp.pledges or [])
+            return pledges, cursor_page(req.page_size, resp.cursor)
         except Exception as e:
 
-            if isinstance(e, (APIError, IntegrityError, WhitelistError)):
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -627,89 +625,85 @@ class PledgeService(BaseService):
     def list_pledge_actions(
         self,
         opts: Optional[ListPledgeActionsOptions] = None,
-    ) -> Tuple[List[PledgeAction], Optional[Pagination]]:
+    ) -> Tuple[List[PledgeAction], CursorPage]:
         """
-        List all pledge actions with optional filtering.
+        List pledge actions, one page at a time, each hash verified against its payload.
 
         Args:
-            opts: Optional filtering and pagination options.
+            opts: Filters and page window; ``types`` applies only to the approval queue
+                and is refused here.
 
         Returns:
-            Tuple of (pledge actions list, pagination info).
+            Tuple of (pledge actions, page).
 
         Raises:
+            ValueError: If ``types`` is set or paging options are invalid.
+            IntegrityError: If an action's hash does not cover its payload.
             APIError: If API request fails.
         """
         options = opts or ListPledgeActionsOptions()
+        if options.types:
+            raise ValueError("types can only filter the pledge action approval queue")
+        req = options.to_cursor_request()
 
         try:
             resp = self._pledge_api.taurus_network_service_get_pledge_actions(
-                statuses=options.statuses,
-                action_types=options.action_types,
+                ids=options.ids,
                 pledge_id=options.pledge_id,
-                limit=str(options.limit) if options.limit > 0 else None,
-                offset=str(options.offset) if options.offset > 0 else None,
+                sort_order=options.sort_order,
+                **req.query_params(),
             )
 
-            result = getattr(resp, "result", None)
-            actions = pledge_actions_from_dto(result) if result else []
+            actions = pledge_actions_from_dto(resp.result or [])
             _verify_pledge_action_metadata(actions)
-
-            pagination = self._extract_pagination(
-                total_items=getattr(resp, "total_items", None),
-                offset=getattr(resp, "offset", None),
-                limit=options.limit,
-            )
-
-            return actions, pagination
+            return actions, cursor_page(req.page_size, resp.cursor)
         except Exception as e:
 
-            if isinstance(e, (APIError, IntegrityError, WhitelistError)):
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
     def list_pledge_actions_for_approval(
         self,
         opts: Optional[ListPledgeActionsOptions] = None,
-    ) -> Tuple[List[PledgeAction], Optional[Pagination]]:
+    ) -> Tuple[List[PledgeAction], CursorPage]:
         """
-        List pledge actions pending approval.
+        List pledge actions pending approval, one page at a time.
 
-        Returns only actions that require approval from the current user.
+        Returns only actions that require approval from the current user, each hash
+        verified against its payload.
 
         Args:
-            opts: Optional filtering and pagination options.
+            opts: Filters and page window; ``pledge_id`` applies only to the plain list
+                and is refused here.
 
         Returns:
-            Tuple of (pledge actions list, pagination info).
+            Tuple of (pledge actions, page).
 
         Raises:
+            ValueError: If ``pledge_id`` is set or paging options are invalid.
+            IntegrityError: If an action's hash does not cover its payload.
             APIError: If API request fails.
         """
         options = opts or ListPledgeActionsOptions()
+        if options.pledge_id:
+            raise ValueError("pledge_id cannot filter the pledge action approval queue")
+        req = options.to_cursor_request()
 
         try:
             resp = self._pledge_api.taurus_network_service_get_pledge_actions_for_approval(
-                action_types=options.action_types,
-                pledge_id=options.pledge_id,
-                limit=str(options.limit) if options.limit > 0 else None,
-                offset=str(options.offset) if options.offset > 0 else None,
+                types=options.types,
+                ids=options.ids,
+                sort_order=options.sort_order,
+                **req.query_params(),
             )
 
-            result = getattr(resp, "result", None)
-            actions = pledge_actions_from_dto(result) if result else []
+            actions = pledge_actions_from_dto(resp.result or [])
             _verify_pledge_action_metadata(actions)
-
-            pagination = self._extract_pagination(
-                total_items=getattr(resp, "total_items", None),
-                offset=getattr(resp, "offset", None),
-                limit=options.limit,
-            )
-
-            return actions, pagination
+            return actions, cursor_page(req.page_size, resp.cursor)
         except Exception as e:
 
-            if isinstance(e, (APIError, IntegrityError, WhitelistError)):
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -849,41 +843,35 @@ class PledgeService(BaseService):
     def list_pledge_withdrawals(
         self,
         opts: Optional[ListPledgeWithdrawalsOptions] = None,
-    ) -> Tuple[List[PledgeWithdrawal], Optional[Pagination]]:
+    ) -> Tuple[List[PledgeWithdrawal], CursorPage]:
         """
-        List pledge withdrawals with optional filtering.
+        List pledge withdrawals, one page at a time.
 
         Args:
-            opts: Optional filtering and pagination options.
+            opts: Filters and page window.
 
         Returns:
-            Tuple of (withdrawals list, pagination info).
+            Tuple of (withdrawals, page).
 
         Raises:
+            ValueError: If paging options are invalid.
             APIError: If API request fails.
         """
         options = opts or ListPledgeWithdrawalsOptions()
+        req = options.to_cursor_request()
 
         try:
             resp = self._pledge_api.taurus_network_service_get_pledges_withdrawals(
-                statuses=options.statuses,
                 pledge_id=options.pledge_id,
-                limit=str(options.limit) if options.limit > 0 else None,
-                offset=str(options.offset) if options.offset > 0 else None,
+                withdrawal_status=options.withdrawal_status,
+                sort_order=options.sort_order,
+                **req.query_params(),
             )
 
-            result = getattr(resp, "result", None)
-            withdrawals = pledge_withdrawals_from_dto(result) if result else []
-
-            pagination = self._extract_pagination(
-                total_items=getattr(resp, "total_items", None),
-                offset=getattr(resp, "offset", None),
-                limit=options.limit,
-            )
-
-            return withdrawals, pagination
+            withdrawals = pledge_withdrawals_from_dto(resp.withdrawals or [])
+            return withdrawals, cursor_page(req.page_size, resp.cursor)
         except Exception as e:
 
-            if isinstance(e, (APIError, IntegrityError, WhitelistError)):
+            if isinstance(e, (APIError, IntegrityError, WhitelistError, ValueError)):
                 raise
             raise self._handle_error(e) from e

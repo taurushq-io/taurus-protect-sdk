@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordWorkflowActionResult{}
 type TgvalidatordWorkflowActionResult struct {
 	Type *WorkflowActionResultResultType `json:"type,omitempty"`
 	ErrorResult *TgvalidatordWorkflowError `json:"errorResult,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordWorkflowActionResult TgvalidatordWorkflowActionResult
 
 // NewTgvalidatordWorkflowActionResult instantiates a new TgvalidatordWorkflowActionResult object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordWorkflowActionResult) ToMap() (map[string]interface{}, error
 	if !IsNil(o.ErrorResult) {
 		toSerialize["errorResult"] = o.ErrorResult
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordWorkflowActionResult) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordWorkflowActionResult := _TgvalidatordWorkflowActionResult{}
+
+	err = json.Unmarshal(data, &varTgvalidatordWorkflowActionResult)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordWorkflowActionResult(varTgvalidatordWorkflowActionResult)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "errorResult")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordWorkflowActionResult struct {

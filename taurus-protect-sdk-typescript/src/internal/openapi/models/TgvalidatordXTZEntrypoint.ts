@@ -58,7 +58,16 @@ export interface TgvalidatordXTZEntrypoint {
      * @memberof TgvalidatordXTZEntrypoint
      */
     legacyView?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordXTZEntrypoint
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordXTZEntrypointWireKeys: ReadonlySet<string> = new Set(['name', 'type', 'schema', 'legacyView']);
 
 /**
  * Check if a given object implements the TgvalidatordXTZEntrypoint interface.
@@ -75,13 +84,23 @@ export function TgvalidatordXTZEntrypointFromJSONTyped(json: any, ignoreDiscrimi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordXTZEntrypoint = {
         
         'name': json['name'] == null ? undefined : json['name'],
         'type': json['type'] == null ? undefined : TgvalidatordXTZContractArgFromJSON(json['type']),
         'schema': json['schema'] == null ? undefined : TgvalidatordXTZPrimSchemaFromJSON(json['schema']),
         'legacyView': json['legacyView'] == null ? undefined : json['legacyView'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordXTZEntrypointWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordXTZEntrypointToJSON(json: any): TgvalidatordXTZEntrypoint {
@@ -99,6 +118,7 @@ export function TgvalidatordXTZEntrypointFromJSONTyped(json: any, ignoreDiscrimi
         'type': TgvalidatordXTZContractArgToJSON(value['type']),
         'schema': TgvalidatordXTZPrimSchemaToJSON(value['schema']),
         'legacyView': value['legacyView'],
+        ...value['additionalProperties'],
     };
 }
 

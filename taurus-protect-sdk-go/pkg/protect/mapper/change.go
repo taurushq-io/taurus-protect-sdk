@@ -51,19 +51,6 @@ func ChangesFromDTO(dtos []openapi.TgvalidatordChange) []*model.Change {
 	return changes
 }
 
-// CursorPaginationFromDTO converts an OpenAPI ResponseCursor to a domain CursorPagination.
-func CursorPaginationFromDTO(dto *openapi.TgvalidatordResponseCursor) *model.CursorPagination {
-	if dto == nil {
-		return nil
-	}
-
-	return &model.CursorPagination{
-		CurrentPage: safeString(dto.CurrentPage),
-		HasPrevious: safeBool(dto.HasPrevious),
-		HasNext:     safeBool(dto.HasNext),
-	}
-}
-
 // CreateChangeResultFromDTO converts an OpenAPI CreateChangeResult to a domain CreateChangeResult.
 func CreateChangeResultFromDTO(dto *openapi.TgvalidatordCreateChangeResult) *model.CreateChangeResult {
 	if dto == nil {

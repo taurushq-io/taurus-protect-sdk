@@ -5,6 +5,7 @@ import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
 import com.taurushq.sdk.protect.client.model.GovernanceRules;
 import com.taurushq.sdk.protect.client.model.IntegrityException;
 import com.taurushq.sdk.protect.client.model.RuleUserSignature;
+import com.taurushq.sdk.protect.client.testutil.StubTransport;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import com.taurushq.sdk.protect.openapi.auth.CryptoTPV1;
 import org.apache.commons.codec.binary.Base64;
@@ -224,12 +225,10 @@ class GovernanceRuleServiceTest {
     // --- getRulesHistory validation ---
 
     @Test
-    void getRulesHistory_throwsOnZeroPageSize() {
-        GovernanceRuleService service = new GovernanceRuleService(
-                apiClient, apiExceptionMapper, superAdminKeys, 1);
-
-        assertThrows(IllegalArgumentException.class, () ->
-                service.getRulesHistory(0));
+    void getRulesHistory_zeroPageSizeSendsTheDefault() throws Exception {
+        StubTransport stub = StubTransport.replying("{}");
+        new GovernanceRuleService(stub.client(), apiExceptionMapper, superAdminKeys, 1).getRulesHistory(0);
+        assertEquals("20", stub.only().param("limit"));
     }
 
     @Test

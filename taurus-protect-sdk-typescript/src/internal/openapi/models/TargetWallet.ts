@@ -31,7 +31,16 @@ export interface TargetWallet {
      * @memberof TargetWallet
      */
     walletID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TargetWallet
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TargetWalletWireKeys: ReadonlySet<string> = new Set(['kind', 'walletID']);
 
 /**
  * Check if a given object implements the TargetWallet interface.
@@ -48,11 +57,21 @@ export function TargetWalletFromJSONTyped(json: any, ignoreDiscriminator: boolea
     if (json == null) {
         return json;
     }
-    return {
+    const result: TargetWallet = {
         
         'kind': json['kind'] == null ? undefined : json['kind'],
         'walletID': json['walletID'] == null ? undefined : json['walletID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TargetWalletWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TargetWalletToJSON(json: any): TargetWallet {
@@ -68,6 +87,7 @@ export function TargetWalletFromJSONTyped(json: any, ignoreDiscriminator: boolea
         
         'kind': value['kind'],
         'walletID': value['walletID'],
+        ...value['additionalProperties'],
     };
 }
 

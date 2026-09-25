@@ -25,8 +25,12 @@ isn't there — worse than no gate.
 | TypeScript | TypeScript compiler API | Classifies private/protected the way `tsc` does. The script sits outside the package, so `typescript` is resolved with `createRequire` off the SDK root. |
 | Java | `javap -public` on `client/target/classes` | Avoids writing a Java parser; overloads and visibility come out right. **Requires `mvn compile -o -pl client` first** — a stale `target/classes` yields a stale surface. |
 
-Exclude abstract bases: TS's `BaseService` made that SDK report 44 services where the others report
-43.
+Exclude abstract bases: TS's `BaseService` once made that SDK report one service more than the
+others.
+
+**Read TS JSDoc through `ts.getTextOfJSDocComment`.** A comment holding `{@link}` is a `NodeArray`,
+not a string, so `typeof comment === "string"` silently dropped those summaries — 11 blank entries in
+the TS method index until 2026-09-24.
 
 ## diff.py — what is a gate and what is advisory
 

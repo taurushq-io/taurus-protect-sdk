@@ -23,6 +23,7 @@ import type { PricesApi } from '../../../src/internal/openapi/apis/PricesApi';
 function createMockApi(): jest.Mocked<PricesApi> {
   return {
     priceServiceGetPrices: jest.fn(),
+    priceServiceQueryPricesV2: jest.fn(),
     priceServiceGetPricesHistory: jest.fn(),
     priceServiceConvert: jest.fn(),
   } as unknown as jest.Mocked<PricesApi>;
@@ -38,25 +39,51 @@ describe('PriceService', () => {
   });
 
   describe('list', () => {
-    it('should return current prices', async () => {
-      mockApi.priceServiceGetPrices.mockResolvedValue({
+    it('should list through QueryPricesV2, never the unpaged v1 list', async () => {
+      mockApi.priceServiceQueryPricesV2.mockResolvedValue({
         result: [
-          { currencyId: 'ETH', price: '3000.50' },
-          { currencyId: 'BTC', price: '65000.00' },
+          { currencyFrom: 'ETH', currencyTo: 'USD', rate: '3000.50' },
+          { currencyFrom: 'BTC', currencyTo: 'USD', rate: '65000.00' },
         ],
+        cursor: { currentPage: 'next-page', hasNext: true },
       } as never);
 
       const prices = await service.list();
-      expect(prices).toHaveLength(2);
+      expect(prices.items).toHaveLength(2);
+      expect(prices.pagination).toEqual({ pageSize: 20, nextCursor: 'next-page', hasMore: true });
+      expect(mockApi.priceServiceGetPrices).not.toHaveBeenCalled();
     });
 
     it('should handle empty results', async () => {
-      mockApi.priceServiceGetPrices.mockResolvedValue({
-        result: [],
-      } as never);
+      mockApi.priceServiceQueryPricesV2.mockResolvedValue({} as never);
 
       const prices = await service.list();
-      expect(prices).toHaveLength(0);
+      expect(prices.items).toHaveLength(0);
+      expect(prices.pagination.hasMore).toBe(false);
+    });
+
+    it.each([
+      ['source only', { fromCurrencyId: 'c1' }, { from: { currencyFromId: 'c1' } }],
+      [
+        'source and targets',
+        { fromCurrencyId: 'c1', toCurrencyIds: ['c2', 'c3'] },
+        { fromTo: { currencyFromId: 'c1', currencyToIds: ['c2', 'c3'] } },
+      ],
+      ['targets only', { toCurrencyIds: ['c2'] }, { to: { currencyToIds: ['c2'] } }],
+      ['no filter', {}, {}],
+    ])('should map the currency filter (%s) onto the request oneof', async (_n, options, expected) => {
+      mockApi.priceServiceQueryPricesV2.mockResolvedValue({} as never);
+
+      await service.list({ ...options, onlyPrimary: true, sortOrder: 'ASC' });
+
+      expect(mockApi.priceServiceQueryPricesV2).toHaveBeenCalledWith({
+        body: {
+          onlyPrimary: true,
+          sortOrder: 'ASC',
+          cursor: { currentPage: undefined, pageRequest: undefined, pageSize: '20' },
+          ...expected,
+        },
+      });
     });
   });
 
@@ -83,6 +110,28 @@ describe('PriceService', () => {
 
       const history = await service.getHistory({ base: 'ETH', quote: 'USD', limit: 100 });
       expect(history).toHaveLength(2);
+    });
+
+    it('should always send a limit, 20 by default, at most 365', async () => {
+      mockApi.priceServiceGetPricesHistory.mockResolvedValue({ result: [] } as never);
+
+      await service.getHistory({ base: 'ETH', quote: 'USD' });
+      expect(mockApi.priceServiceGetPricesHistory).toHaveBeenLastCalledWith({
+        base: 'ETH',
+        quote: 'USD',
+        limit: '20',
+      });
+
+      await service.getHistory({ base: 'ETH', quote: 'USD', limit: 365 });
+      expect(mockApi.priceServiceGetPricesHistory).toHaveBeenLastCalledWith({
+        base: 'ETH',
+        quote: 'USD',
+        limit: '365',
+      });
+
+      await expect(service.getHistory({ base: 'ETH', quote: 'USD', limit: 366 })).rejects.toThrow(
+        'limit must be at most 365, got 366'
+      );
     });
   });
 

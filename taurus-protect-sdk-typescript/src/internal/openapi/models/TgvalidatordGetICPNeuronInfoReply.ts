@@ -94,9 +94,18 @@ export interface TgvalidatordGetICPNeuronInfoReply {
      * @memberof TgvalidatordGetICPNeuronInfoReply
      */
     knownNeuronData?: TgvalidatordICPKnownNeuronData;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetICPNeuronInfoReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
 
 
+
+const TgvalidatordGetICPNeuronInfoReplyWireKeys: ReadonlySet<string> = new Set(['neuronId', 'retrieveAtTimestampSeconds', 'neuronState', 'ageSeconds', 'dissolveDelaySeconds', 'votingPower', 'createdTimestampSeconds', 'stakeE8S', 'joinedCommunityFundTimestampSeconds', 'knownNeuronData']);
 
 /**
  * Check if a given object implements the TgvalidatordGetICPNeuronInfoReply interface.
@@ -113,7 +122,7 @@ export function TgvalidatordGetICPNeuronInfoReplyFromJSONTyped(json: any, ignore
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetICPNeuronInfoReply = {
         
         'neuronId': json['neuronId'] == null ? undefined : json['neuronId'],
         'retrieveAtTimestampSeconds': json['retrieveAtTimestampSeconds'] == null ? undefined : json['retrieveAtTimestampSeconds'],
@@ -126,6 +135,16 @@ export function TgvalidatordGetICPNeuronInfoReplyFromJSONTyped(json: any, ignore
         'joinedCommunityFundTimestampSeconds': json['joinedCommunityFundTimestampSeconds'] == null ? undefined : json['joinedCommunityFundTimestampSeconds'],
         'knownNeuronData': json['knownNeuronData'] == null ? undefined : TgvalidatordICPKnownNeuronDataFromJSON(json['knownNeuronData']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetICPNeuronInfoReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetICPNeuronInfoReplyToJSON(json: any): TgvalidatordGetICPNeuronInfoReply {
@@ -149,6 +168,7 @@ export function TgvalidatordGetICPNeuronInfoReplyFromJSONTyped(json: any, ignore
         'stakeE8S': value['stakeE8S'],
         'joinedCommunityFundTimestampSeconds': value['joinedCommunityFundTimestampSeconds'],
         'knownNeuronData': TgvalidatordICPKnownNeuronDataToJSON(value['knownNeuronData']),
+        ...value['additionalProperties'],
     };
 }
 

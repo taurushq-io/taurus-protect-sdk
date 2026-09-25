@@ -59,9 +59,9 @@ def test_pagination(client: ProtectClient) -> None:
         for wallet in wallets:
             print(f"  {wallet}")
 
-        if pagination is None or not pagination.has_more:
+        if not pagination.has_more:
             break
-        offset += page_size
+        offset = pagination.next_offset
 
         # Safety limit for tests
         if offset > 100:

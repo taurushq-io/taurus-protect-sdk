@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordGetContractTemplatesFilter{}
 // TgvalidatordGetContractTemplatesFilter struct for TgvalidatordGetContractTemplatesFilter
 type TgvalidatordGetContractTemplatesFilter struct {
 	GenericFilter *GetContractTemplatesFilterGenericFilter `json:"genericFilter,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetContractTemplatesFilter TgvalidatordGetContractTemplatesFilter
 
 // NewTgvalidatordGetContractTemplatesFilter instantiates a new TgvalidatordGetContractTemplatesFilter object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordGetContractTemplatesFilter) ToMap() (map[string]interface{},
 	if !IsNil(o.GenericFilter) {
 		toSerialize["genericFilter"] = o.GenericFilter
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetContractTemplatesFilter) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetContractTemplatesFilter := _TgvalidatordGetContractTemplatesFilter{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetContractTemplatesFilter)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetContractTemplatesFilter(varTgvalidatordGetContractTemplatesFilter)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "genericFilter")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetContractTemplatesFilter struct {

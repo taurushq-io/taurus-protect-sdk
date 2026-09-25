@@ -9,22 +9,12 @@ export { AirGapService } from "./air-gap-service";
 export { BaseService } from "./base";
 export { ActionService } from "./action-service";
 export { AddressService } from "./address-service";
-export {
-  AssetService,
-  type GetAssetAddressesOptions,
-  type GetAssetWalletsOptions,
-} from "./asset-service";
+export { AssetService, type AssetHolderReaders } from "./asset-service";
 export { AuditService } from "./audit-service";
 export { BalanceService } from "./balance-service";
 export { BlockchainService } from "./blockchain-service";
 export { ChangeService } from "./change-service";
-export {
-  BusinessRuleService,
-  type BusinessRule,
-  type BusinessRuleCurrency,
-  type ListBusinessRulesOptions,
-  type ListBusinessRulesResult,
-} from "./business-rule-service";
+export { BusinessRuleService } from "./business-rule-service";
 export { ConfigService } from "./config-service";
 export {
   ContractWhitelistingService,
@@ -33,6 +23,7 @@ export {
   type UpdateWhitelistedContractRequest,
 } from "./contract-whitelisting-service";
 export { CurrencyService } from "./currency-service";
+export { EarnService } from "./earn-service";
 export { ExchangeService } from "./exchange-service";
 export { FeePayerService } from "./fee-payer-service";
 export { FeeService } from "./fee-service";
@@ -61,14 +52,7 @@ export { UserService } from "./user-service";
 export { VisibilityGroupService } from "./visibility-group-service";
 export { WalletService } from "./wallet-service";
 export { WebhookService } from "./webhook-service";
-export {
-  WebhookCallService,
-  type ListWebhookCallsOptions,
-  type WebhookCall,
-  type WebhookCallResult,
-  type WebhookCallResponseCursor,
-  type WebhookCallStatus,
-} from "./webhook-call-service";
+export { WebhookCallService } from "./webhook-call-service";
 export {
   WhitelistedAddressService,
   type ListWhitelistedAddressesOptions,
@@ -79,6 +63,7 @@ export {
 export {
   WhitelistedAssetService,
   type ListWhitelistedAssetsOptions,
+  type ListWhitelistedAssetsForApprovalOptions,
   type ListWhitelistedAssetsResult,
   type WhitelistedAssetServiceConfig,
 } from "./whitelisted-asset-service";

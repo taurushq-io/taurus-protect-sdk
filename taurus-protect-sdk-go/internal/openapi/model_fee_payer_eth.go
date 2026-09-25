@@ -23,7 +23,10 @@ type FeePayerETH struct {
 	Local *ETHLocal `json:"local,omitempty"`
 	Remote *ETHRemote `json:"remote,omitempty"`
 	RemoteEncrypted *string `json:"remoteEncrypted,omitempty" validate:"regexp=^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=)?$"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _FeePayerETH FeePayerETH
 
 // NewFeePayerETH instantiates a new FeePayerETH object
 // This constructor will assign default values to properties that have it defined,
@@ -192,7 +195,36 @@ func (o FeePayerETH) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.RemoteEncrypted) {
 		toSerialize["remoteEncrypted"] = o.RemoteEncrypted
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *FeePayerETH) UnmarshalJSON(data []byte) (err error) {
+	varFeePayerETH := _FeePayerETH{}
+
+	err = json.Unmarshal(data, &varFeePayerETH)
+
+	if err != nil {
+		return err
+	}
+
+	*o = FeePayerETH(varFeePayerETH)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "kind")
+		delete(additionalProperties, "local")
+		delete(additionalProperties, "remote")
+		delete(additionalProperties, "remoteEncrypted")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableFeePayerETH struct {

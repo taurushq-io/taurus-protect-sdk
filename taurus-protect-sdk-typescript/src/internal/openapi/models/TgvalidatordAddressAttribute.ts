@@ -67,7 +67,16 @@ export interface TgvalidatordAddressAttribute {
      * @memberof TgvalidatordAddressAttribute
      */
     isfile?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordAddressAttribute
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordAddressAttributeWireKeys: ReadonlySet<string> = new Set(['key', 'value', 'id', 'contentType', 'owner', 'type', 'subtype', 'isfile']);
 
 /**
  * Check if a given object implements the TgvalidatordAddressAttribute interface.
@@ -84,7 +93,7 @@ export function TgvalidatordAddressAttributeFromJSONTyped(json: any, ignoreDiscr
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordAddressAttribute = {
         
         'key': json['key'] == null ? undefined : json['key'],
         'value': json['value'] == null ? undefined : json['value'],
@@ -95,6 +104,16 @@ export function TgvalidatordAddressAttributeFromJSONTyped(json: any, ignoreDiscr
         'subtype': json['subtype'] == null ? undefined : json['subtype'],
         'isfile': json['isfile'] == null ? undefined : json['isfile'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordAddressAttributeWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordAddressAttributeToJSON(json: any): TgvalidatordAddressAttribute {
@@ -116,6 +135,7 @@ export function TgvalidatordAddressAttributeFromJSONTyped(json: any, ignoreDiscr
         'type': value['type'],
         'subtype': value['subtype'],
         'isfile': value['isfile'],
+        ...value['additionalProperties'],
     };
 }
 

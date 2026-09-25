@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordWhitelistSignature{}
 type TgvalidatordWhitelistSignature struct {
 	Signature *TgvalidatordWhitelistUserSignature `json:"signature,omitempty"`
 	Hashes []string `json:"hashes,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordWhitelistSignature TgvalidatordWhitelistSignature
 
 // NewTgvalidatordWhitelistSignature instantiates a new TgvalidatordWhitelistSignature object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordWhitelistSignature) ToMap() (map[string]interface{}, error) 
 	if !IsNil(o.Hashes) {
 		toSerialize["hashes"] = o.Hashes
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordWhitelistSignature) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordWhitelistSignature := _TgvalidatordWhitelistSignature{}
+
+	err = json.Unmarshal(data, &varTgvalidatordWhitelistSignature)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordWhitelistSignature(varTgvalidatordWhitelistSignature)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "signature")
+		delete(additionalProperties, "hashes")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordWhitelistSignature struct {

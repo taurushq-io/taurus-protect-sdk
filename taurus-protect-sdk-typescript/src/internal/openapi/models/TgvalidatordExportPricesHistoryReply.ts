@@ -31,7 +31,16 @@ export interface TgvalidatordExportPricesHistoryReply {
      * @memberof TgvalidatordExportPricesHistoryReply
      */
     period?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordExportPricesHistoryReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordExportPricesHistoryReplyWireKeys: ReadonlySet<string> = new Set(['result', 'period']);
 
 /**
  * Check if a given object implements the TgvalidatordExportPricesHistoryReply interface.
@@ -48,11 +57,21 @@ export function TgvalidatordExportPricesHistoryReplyFromJSONTyped(json: any, ign
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordExportPricesHistoryReply = {
         
         'result': json['result'] == null ? undefined : json['result'],
         'period': json['period'] == null ? undefined : json['period'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordExportPricesHistoryReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordExportPricesHistoryReplyToJSON(json: any): TgvalidatordExportPricesHistoryReply {
@@ -68,6 +87,7 @@ export function TgvalidatordExportPricesHistoryReplyFromJSONTyped(json: any, ign
         
         'result': value['result'],
         'period': value['period'],
+        ...value['additionalProperties'],
     };
 }
 

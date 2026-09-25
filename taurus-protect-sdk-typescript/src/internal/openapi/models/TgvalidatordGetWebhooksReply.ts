@@ -46,7 +46,16 @@ export interface TgvalidatordGetWebhooksReply {
      * @memberof TgvalidatordGetWebhooksReply
      */
     cursor?: TgvalidatordResponseCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetWebhooksReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetWebhooksReplyWireKeys: ReadonlySet<string> = new Set(['webhooks', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetWebhooksReply interface.
@@ -63,11 +72,21 @@ export function TgvalidatordGetWebhooksReplyFromJSONTyped(json: any, ignoreDiscr
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetWebhooksReply = {
         
         'webhooks': json['webhooks'] == null ? undefined : ((json['webhooks'] as Array<any>).map(TgvalidatordWebhookFromJSON)),
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetWebhooksReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetWebhooksReplyToJSON(json: any): TgvalidatordGetWebhooksReply {
@@ -83,6 +102,7 @@ export function TgvalidatordGetWebhooksReplyFromJSONTyped(json: any, ignoreDiscr
         
         'webhooks': value['webhooks'] == null ? undefined : ((value['webhooks'] as Array<any>).map(TgvalidatordWebhookToJSON)),
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
+        ...value['additionalProperties'],
     };
 }
 

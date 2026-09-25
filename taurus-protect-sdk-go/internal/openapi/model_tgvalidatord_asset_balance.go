@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordAssetBalance{}
 type TgvalidatordAssetBalance struct {
 	Asset *TgvalidatordAsset `json:"asset,omitempty"`
 	Balance *TgvalidatordBalance `json:"balance,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordAssetBalance TgvalidatordAssetBalance
 
 // NewTgvalidatordAssetBalance instantiates a new TgvalidatordAssetBalance object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordAssetBalance) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Balance) {
 		toSerialize["balance"] = o.Balance
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordAssetBalance) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordAssetBalance := _TgvalidatordAssetBalance{}
+
+	err = json.Unmarshal(data, &varTgvalidatordAssetBalance)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordAssetBalance(varTgvalidatordAssetBalance)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "asset")
+		delete(additionalProperties, "balance")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordAssetBalance struct {

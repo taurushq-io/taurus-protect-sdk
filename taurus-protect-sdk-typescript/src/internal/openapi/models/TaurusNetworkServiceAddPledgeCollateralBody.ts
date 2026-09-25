@@ -25,7 +25,16 @@ export interface TaurusNetworkServiceAddPledgeCollateralBody {
      * @memberof TaurusNetworkServiceAddPledgeCollateralBody
      */
     amount?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TaurusNetworkServiceAddPledgeCollateralBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TaurusNetworkServiceAddPledgeCollateralBodyWireKeys: ReadonlySet<string> = new Set(['amount']);
 
 /**
  * Check if a given object implements the TaurusNetworkServiceAddPledgeCollateralBody interface.
@@ -42,10 +51,20 @@ export function TaurusNetworkServiceAddPledgeCollateralBodyFromJSONTyped(json: a
     if (json == null) {
         return json;
     }
-    return {
+    const result: TaurusNetworkServiceAddPledgeCollateralBody = {
         
         'amount': json['amount'] == null ? undefined : json['amount'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TaurusNetworkServiceAddPledgeCollateralBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TaurusNetworkServiceAddPledgeCollateralBodyToJSON(json: any): TaurusNetworkServiceAddPledgeCollateralBody {
@@ -60,6 +79,7 @@ export function TaurusNetworkServiceAddPledgeCollateralBodyFromJSONTyped(json: a
     return {
         
         'amount': value['amount'],
+        ...value['additionalProperties'],
     };
 }
 

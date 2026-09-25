@@ -39,7 +39,16 @@ export interface TgvalidatordGetExchangeCounterpartiesReply {
      * @memberof TgvalidatordGetExchangeCounterpartiesReply
      */
     exchanges?: Array<TgvalidatordExchangeCounterparty>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetExchangeCounterpartiesReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetExchangeCounterpartiesReplyWireKeys: ReadonlySet<string> = new Set(['exchangesTotalValuation', 'exchanges']);
 
 /**
  * Check if a given object implements the TgvalidatordGetExchangeCounterpartiesReply interface.
@@ -56,11 +65,21 @@ export function TgvalidatordGetExchangeCounterpartiesReplyFromJSONTyped(json: an
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetExchangeCounterpartiesReply = {
         
         'exchangesTotalValuation': json['exchangesTotalValuation'] == null ? undefined : json['exchangesTotalValuation'],
         'exchanges': json['exchanges'] == null ? undefined : ((json['exchanges'] as Array<any>).map(TgvalidatordExchangeCounterpartyFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetExchangeCounterpartiesReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetExchangeCounterpartiesReplyToJSON(json: any): TgvalidatordGetExchangeCounterpartiesReply {
@@ -76,6 +95,7 @@ export function TgvalidatordGetExchangeCounterpartiesReplyFromJSONTyped(json: an
         
         'exchangesTotalValuation': value['exchangesTotalValuation'],
         'exchanges': value['exchanges'] == null ? undefined : ((value['exchanges'] as Array<any>).map(TgvalidatordExchangeCounterpartyToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

@@ -73,7 +73,16 @@ export interface TgvalidatordXTZPrimSchema {
      * @memberof TgvalidatordXTZPrimSchema
      */
     _const?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordXTZPrimSchema
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordXTZPrimSchemaWireKeys: ReadonlySet<string> = new Set(['type', 'title', 'prim', 'typeSignature', 'format', 'default', 'properties', 'namedPair', 'const']);
 
 /**
  * Check if a given object implements the TgvalidatordXTZPrimSchema interface.
@@ -90,7 +99,7 @@ export function TgvalidatordXTZPrimSchemaFromJSONTyped(json: any, ignoreDiscrimi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordXTZPrimSchema = {
         
         'type': json['type'] == null ? undefined : json['type'],
         'title': json['title'] == null ? undefined : json['title'],
@@ -102,6 +111,16 @@ export function TgvalidatordXTZPrimSchemaFromJSONTyped(json: any, ignoreDiscrimi
         'namedPair': json['namedPair'] == null ? undefined : json['namedPair'],
         '_const': json['const'] == null ? undefined : json['const'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordXTZPrimSchemaWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordXTZPrimSchemaToJSON(json: any): TgvalidatordXTZPrimSchema {
@@ -124,6 +143,7 @@ export function TgvalidatordXTZPrimSchemaFromJSONTyped(json: any, ignoreDiscrimi
         'properties': value['properties'] == null ? undefined : ((value['properties'] as Array<any>).map(TgvalidatordXTZPrimSchemaToJSON)),
         'namedPair': value['namedPair'],
         'const': value['_const'],
+        ...value['additionalProperties'],
     };
 }
 

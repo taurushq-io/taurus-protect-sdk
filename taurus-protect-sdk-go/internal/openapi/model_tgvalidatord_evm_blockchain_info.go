@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordEVMBlockchainInfo{}
 // TgvalidatordEVMBlockchainInfo struct for TgvalidatordEVMBlockchainInfo
 type TgvalidatordEVMBlockchainInfo struct {
 	ChainId *string `json:"chainId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordEVMBlockchainInfo TgvalidatordEVMBlockchainInfo
 
 // NewTgvalidatordEVMBlockchainInfo instantiates a new TgvalidatordEVMBlockchainInfo object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordEVMBlockchainInfo) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.ChainId) {
 		toSerialize["chainId"] = o.ChainId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordEVMBlockchainInfo) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordEVMBlockchainInfo := _TgvalidatordEVMBlockchainInfo{}
+
+	err = json.Unmarshal(data, &varTgvalidatordEVMBlockchainInfo)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordEVMBlockchainInfo(varTgvalidatordEVMBlockchainInfo)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "chainId")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordEVMBlockchainInfo struct {

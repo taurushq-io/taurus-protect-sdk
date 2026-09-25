@@ -75,7 +75,16 @@ export interface TgvalidatordJobStatistics {
      * @memberof TgvalidatordJobStatistics
      */
     minDuration?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordJobStatistics
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordJobStatisticsWireKeys: ReadonlySet<string> = new Set(['pending', 'successes', 'failures', 'lastSuccess', 'lastFailure', 'avgDuration', 'maxDuration', 'minDuration']);
 
 /**
  * Check if a given object implements the TgvalidatordJobStatistics interface.
@@ -92,7 +101,7 @@ export function TgvalidatordJobStatisticsFromJSONTyped(json: any, ignoreDiscrimi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordJobStatistics = {
         
         'pending': json['pending'] == null ? undefined : json['pending'],
         'successes': json['successes'] == null ? undefined : json['successes'],
@@ -103,6 +112,16 @@ export function TgvalidatordJobStatisticsFromJSONTyped(json: any, ignoreDiscrimi
         'maxDuration': json['maxDuration'] == null ? undefined : json['maxDuration'],
         'minDuration': json['minDuration'] == null ? undefined : json['minDuration'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordJobStatisticsWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordJobStatisticsToJSON(json: any): TgvalidatordJobStatistics {
@@ -124,6 +143,7 @@ export function TgvalidatordJobStatisticsFromJSONTyped(json: any, ignoreDiscrimi
         'avgDuration': value['avgDuration'],
         'maxDuration': value['maxDuration'],
         'minDuration': value['minDuration'],
+        ...value['additionalProperties'],
     };
 }
 

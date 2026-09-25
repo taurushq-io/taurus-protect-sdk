@@ -23,7 +23,10 @@ type AssetUnknown struct {
 	Arg1 *string `json:"arg1,omitempty"`
 	Arg2 *string `json:"arg2,omitempty"`
 	Network *string `json:"network,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _AssetUnknown AssetUnknown
 
 // NewAssetUnknown instantiates a new AssetUnknown object
 // This constructor will assign default values to properties that have it defined,
@@ -192,7 +195,36 @@ func (o AssetUnknown) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Network) {
 		toSerialize["network"] = o.Network
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *AssetUnknown) UnmarshalJSON(data []byte) (err error) {
+	varAssetUnknown := _AssetUnknown{}
+
+	err = json.Unmarshal(data, &varAssetUnknown)
+
+	if err != nil {
+		return err
+	}
+
+	*o = AssetUnknown(varAssetUnknown)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "arg1")
+		delete(additionalProperties, "arg2")
+		delete(additionalProperties, "network")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableAssetUnknown struct {

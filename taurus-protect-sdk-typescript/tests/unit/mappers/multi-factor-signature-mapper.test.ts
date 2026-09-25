@@ -25,19 +25,21 @@ describe('multiFactorSignatureEntityTypeFromDto', () => {
     expect(result).toBe(MultiFactorSignatureEntityType.WHITELISTED_CONTRACT);
   });
 
-  it('should default to REQUEST for unknown type', () => {
-    const result = multiFactorSignatureEntityTypeFromDto('UNKNOWN' as any);
-    expect(result).toBe(MultiFactorSignatureEntityType.REQUEST);
+  // An unknown kind used to come back as REQUEST, so an entity of a kind this client has never
+  // seen was presented as a request. It now stays the raw wire value, as in every other SDK.
+  it('should pass an unknown type through verbatim', () => {
+    const result = multiFactorSignatureEntityTypeFromDto('FUTURE_KIND' as any);
+    expect(result).toBe('FUTURE_KIND');
   });
 
-  it('should default to REQUEST for undefined', () => {
+  it('should keep undefined absent', () => {
     const result = multiFactorSignatureEntityTypeFromDto(undefined);
-    expect(result).toBe(MultiFactorSignatureEntityType.REQUEST);
+    expect(result).toBeUndefined();
   });
 
-  it('should default to REQUEST for null', () => {
+  it('should keep null absent', () => {
     const result = multiFactorSignatureEntityTypeFromDto(null);
-    expect(result).toBe(MultiFactorSignatureEntityType.REQUEST);
+    expect(result).toBeUndefined();
   });
 });
 

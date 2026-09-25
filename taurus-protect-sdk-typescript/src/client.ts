@@ -27,6 +27,7 @@ import {
   AddressWhitelistingApi,
   AddressesApi,
   AirGapApi,
+  AssetV2Api,
   AssetsApi,
   AuditApi,
   AuthenticationApi,
@@ -40,6 +41,7 @@ import {
   ConfigApi,
   ContractWhitelistingApi,
   CurrenciesApi,
+  EarnApi,
   ExchangeApi,
   FeeApi,
   FeePayersApi,
@@ -96,6 +98,7 @@ import { AuditService } from "./services/audit-service";
 import { BalanceService } from "./services/balance-service";
 import { ConfigService } from "./services/config-service";
 import { CurrencyService } from "./services/currency-service";
+import { EarnService } from "./services/earn-service";
 import { ExchangeService } from "./services/exchange-service";
 import { FeePayerService } from "./services/fee-payer-service";
 import { FeeService } from "./services/fee-service";
@@ -390,6 +393,7 @@ export class ProtectClient {
   private _addressesApi?: AddressesApi;
   private _airGapApi?: AirGapApi;
   private _assetsApi?: AssetsApi;
+  private _assetV2Api?: AssetV2Api;
   private _auditApi?: AuditApi;
   private _authenticationApi?: AuthenticationApi;
   private _authenticationHMACApi?: AuthenticationHMACApi;
@@ -402,6 +406,7 @@ export class ProtectClient {
   private _configApi?: ConfigApi;
   private _contractWhitelistingApi?: ContractWhitelistingApi;
   private _currenciesApi?: CurrenciesApi;
+  private _earnApi?: EarnApi;
   private _exchangeApi?: ExchangeApi;
   private _feeApi?: FeeApi;
   private _feePayersApi?: FeePayersApi;
@@ -453,6 +458,7 @@ export class ProtectClient {
   private _balanceService?: BalanceService;
   private _configService?: ConfigService;
   private _currencyService?: CurrencyService;
+  private _earnService?: EarnService;
   private _exchangeService?: ExchangeService;
   private _feeService?: FeeService;
   private _feePayerService?: FeePayerService;
@@ -633,6 +639,7 @@ export class ProtectClient {
       '_addressesApi',
       '_airGapApi',
       '_assetsApi',
+      '_assetV2Api',
       '_auditApi',
       '_authenticationApi',
       '_authenticationHMACApi',
@@ -645,6 +652,7 @@ export class ProtectClient {
       '_configApi',
       '_contractWhitelistingApi',
       '_currenciesApi',
+      '_earnApi',
       '_exchangeApi',
       '_feeApi',
       '_feePayersApi',
@@ -707,6 +715,7 @@ export class ProtectClient {
       '_configService',
       '_contractWhitelistingService',
       '_currencyService',
+      '_earnService',
       '_feeService',
       '_exchangeService',
       '_feePayerService',
@@ -886,6 +895,17 @@ export class ProtectClient {
   }
 
   /**
+   * Low-level Asset V2 API access (the v2 asset registry).
+   */
+  get assetV2Api(): AssetV2Api {
+    this.ensureOpen();
+    if (!this._assetV2Api) {
+      this._assetV2Api = new AssetV2Api(this.apiConfiguration);
+    }
+    return this._assetV2Api;
+  }
+
+  /**
    * Low-level Audit API access.
    */
   get auditApi(): AuditApi {
@@ -1023,6 +1043,17 @@ export class ProtectClient {
       this._currenciesApi = new CurrenciesApi(this.apiConfiguration);
     }
     return this._currenciesApi;
+  }
+
+  /**
+   * Low-level Earn API access.
+   */
+  get earnApi(): EarnApi {
+    this.ensureOpen();
+    if (!this._earnApi) {
+      this._earnApi = new EarnApi(this.apiConfiguration);
+    }
+    return this._earnApi;
   }
 
   /**
@@ -1621,7 +1652,17 @@ export class ProtectClient {
   get assets(): AssetService {
     this.ensureOpen();
     if (!this._assetService) {
-      this._assetService = new AssetService(this.assetsApi, this.getRulesCache());
+      // The holder readers resolve lazily: `addresses` refuses to build without
+      // SuperAdmin keys, and only a page with internal or whitelisted holders needs it.
+      this._assetService = new AssetService(
+        this.assetsApi,
+        this.getRulesCache(),
+        this.assetV2Api,
+        {
+          addresses: () => this.addresses,
+          whitelistedAddresses: () => this.whitelistedAddresses,
+        }
+      );
     }
     return this._assetService;
   }
@@ -2112,6 +2153,22 @@ export class ProtectClient {
       );
     }
     return this._contractWhitelistingService;
+  }
+
+  /**
+   * High-level Earn service for the rewards earned by addresses.
+   *
+   * @example
+   * ```typescript
+   * const page = await client.earn.listRewards({ recipientAddressId: '42' });
+   * ```
+   */
+  get earn(): EarnService {
+    this.ensureOpen();
+    if (!this._earnService) {
+      this._earnService = new EarnService(this.earnApi);
+    }
+    return this._earnService;
   }
 
   /**

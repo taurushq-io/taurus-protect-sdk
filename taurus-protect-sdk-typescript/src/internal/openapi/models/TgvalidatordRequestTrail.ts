@@ -61,7 +61,16 @@ export interface TgvalidatordRequestTrail {
      * @memberof TgvalidatordRequestTrail
      */
     requestStatus?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordRequestTrail
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordRequestTrailWireKeys: ReadonlySet<string> = new Set(['id', 'userId', 'externalUserId', 'action', 'comment', 'date', 'requestStatus']);
 
 /**
  * Check if a given object implements the TgvalidatordRequestTrail interface.
@@ -78,7 +87,7 @@ export function TgvalidatordRequestTrailFromJSONTyped(json: any, ignoreDiscrimin
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordRequestTrail = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'userId': json['userId'] == null ? undefined : json['userId'],
@@ -88,6 +97,16 @@ export function TgvalidatordRequestTrailFromJSONTyped(json: any, ignoreDiscrimin
         'date': json['date'] == null ? undefined : (new Date(json['date'])),
         'requestStatus': json['requestStatus'] == null ? undefined : json['requestStatus'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordRequestTrailWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordRequestTrailToJSON(json: any): TgvalidatordRequestTrail {
@@ -108,6 +127,7 @@ export function TgvalidatordRequestTrailFromJSONTyped(json: any, ignoreDiscrimin
         'comment': value['comment'],
         'date': value['date'] == null ? undefined : ((value['date']).toISOString()),
         'requestStatus': value['requestStatus'],
+        ...value['additionalProperties'],
     };
 }
 

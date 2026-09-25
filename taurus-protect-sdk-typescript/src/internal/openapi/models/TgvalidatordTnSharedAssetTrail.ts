@@ -49,7 +49,16 @@ export interface TgvalidatordTnSharedAssetTrail {
      * @memberof TgvalidatordTnSharedAssetTrail
      */
     createdAt?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTnSharedAssetTrail
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTnSharedAssetTrailWireKeys: ReadonlySet<string> = new Set(['id', 'sharedAssetID', 'assetStatus', 'comment', 'createdAt']);
 
 /**
  * Check if a given object implements the TgvalidatordTnSharedAssetTrail interface.
@@ -66,7 +75,7 @@ export function TgvalidatordTnSharedAssetTrailFromJSONTyped(json: any, ignoreDis
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTnSharedAssetTrail = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'sharedAssetID': json['sharedAssetID'] == null ? undefined : json['sharedAssetID'],
@@ -74,6 +83,16 @@ export function TgvalidatordTnSharedAssetTrailFromJSONTyped(json: any, ignoreDis
         'comment': json['comment'] == null ? undefined : json['comment'],
         'createdAt': json['createdAt'] == null ? undefined : (new Date(json['createdAt'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTnSharedAssetTrailWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTnSharedAssetTrailToJSON(json: any): TgvalidatordTnSharedAssetTrail {
@@ -92,6 +111,7 @@ export function TgvalidatordTnSharedAssetTrailFromJSONTyped(json: any, ignoreDis
         'assetStatus': value['assetStatus'],
         'comment': value['comment'],
         'createdAt': value['createdAt'] == null ? undefined : ((value['createdAt']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

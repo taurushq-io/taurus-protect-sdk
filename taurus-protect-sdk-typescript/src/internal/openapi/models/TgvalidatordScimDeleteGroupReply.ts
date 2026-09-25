@@ -25,7 +25,16 @@ export interface TgvalidatordScimDeleteGroupReply {
      * @memberof TgvalidatordScimDeleteGroupReply
      */
     result?: object;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordScimDeleteGroupReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordScimDeleteGroupReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordScimDeleteGroupReply interface.
@@ -42,10 +51,20 @@ export function TgvalidatordScimDeleteGroupReplyFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordScimDeleteGroupReply = {
         
         'result': json['result'] == null ? undefined : json['result'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordScimDeleteGroupReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordScimDeleteGroupReplyToJSON(json: any): TgvalidatordScimDeleteGroupReply {
@@ -60,6 +79,7 @@ export function TgvalidatordScimDeleteGroupReplyFromJSONTyped(json: any, ignoreD
     return {
         
         'result': value['result'],
+        ...value['additionalProperties'],
     };
 }
 

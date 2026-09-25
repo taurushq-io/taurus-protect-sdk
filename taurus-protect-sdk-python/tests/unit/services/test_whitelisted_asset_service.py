@@ -133,9 +133,7 @@ class TestWhitelistedAssetServiceSecurity:
         """Create a WhitelistedAssetService for testing with mocked verifier."""
         return _create_service_with_mock_verifier()
 
-    def test_security_fields_from_payload_not_dto(
-        self, service: WhitelistedAssetService
-    ) -> None:
+    def test_security_fields_from_payload_not_dto(self, service: WhitelistedAssetService) -> None:
         """Test that name, symbol, contract_address come from payload, not DTO."""
         # Payload has verified values
         payload = {
@@ -224,9 +222,7 @@ class TestWhitelistedAssetServiceSecurity:
         assert asset.blockchain is None
         assert asset.network is None
 
-    def test_contract_address_snake_case_in_payload(
-        self, service: WhitelistedAssetService
-    ) -> None:
+    def test_contract_address_snake_case_in_payload(self, service: WhitelistedAssetService) -> None:
         """Test contract_address is extracted with snake_case key."""
         payload = {
             "contract_address": "0xsnake_case_address",
@@ -237,9 +233,7 @@ class TestWhitelistedAssetServiceSecurity:
 
         assert asset.contract_address == "0xsnake_case_address"
 
-    def test_contract_address_camel_case_in_payload(
-        self, service: WhitelistedAssetService
-    ) -> None:
+    def test_contract_address_camel_case_in_payload(self, service: WhitelistedAssetService) -> None:
         """Test contract_address is extracted with camelCase key."""
         payload = {
             "contractAddress": "0xcamel_case_address",
@@ -250,9 +244,7 @@ class TestWhitelistedAssetServiceSecurity:
 
         assert asset.contract_address == "0xcamel_case_address"
 
-    def test_blockchain_case_variations_in_payload(
-        self, service: WhitelistedAssetService
-    ) -> None:
+    def test_blockchain_case_variations_in_payload(self, service: WhitelistedAssetService) -> None:
         """Test blockchain is extracted with different case variations."""
         # Test lowercase
         payload1 = {"blockchain": "eth"}
@@ -266,9 +258,7 @@ class TestWhitelistedAssetServiceSecurity:
         asset2 = _verified(service, dto2)
         assert asset2.blockchain == "ETH"
 
-    def test_non_security_fields_can_come_from_dto(
-        self, service: WhitelistedAssetService
-    ) -> None:
+    def test_non_security_fields_can_come_from_dto(self, service: WhitelistedAssetService) -> None:
         """Test that non-security fields (status, action, etc.) come from DTO."""
         payload = {"name": "Token"}
 
@@ -330,9 +320,7 @@ class TestWhitelistedAssetServiceSecurity:
         mock_reply.total_items = "2"
 
         api = service._api
-        api.whitelist_service_get_whitelisted_contracts_for_approval.return_value = (
-            mock_reply
-        )
+        api.whitelist_service_get_whitelisted_contracts_for_approval.return_value = mock_reply
 
         assets, pagination = service.list_for_approval(limit=50, offset=0)
 
@@ -348,9 +336,7 @@ class TestWhitelistedAssetServiceSecurity:
         mock_reply.total_items = "0"
 
         api = service._api
-        api.whitelist_service_get_whitelisted_contracts_for_approval.return_value = (
-            mock_reply
-        )
+        api.whitelist_service_get_whitelisted_contracts_for_approval.return_value = mock_reply
 
         service.list_for_approval(ids=["3", "4"], limit=25, offset=50)
 
@@ -361,9 +347,9 @@ class TestWhitelistedAssetServiceSecurity:
     def test_list_for_approval_rejects_bad_paging(self) -> None:
         service = _create_service_with_mock_verifier()
 
-        with pytest.raises(ValueError):
-            service.list_for_approval(limit=0)
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="limit"):
+            service.list_for_approval(limit=101)
+        with pytest.raises(ValueError, match="offset"):
             service.list_for_approval(offset=-1)
 
 
@@ -381,9 +367,7 @@ def _reviewed_assets(**id_to_hash: str) -> "WhitelistedAssetApproval":
     )
 
     assets = [
-        WhitelistedAsset(
-            id=aid, metadata=WhitelistedAssetMetadata(hash=h, payload_as_string="{}")
-        )
+        WhitelistedAsset(id=aid, metadata=WhitelistedAssetMetadata(hash=h, payload_as_string="{}"))
         for aid, h in id_to_hash.items()
     ]
     return WhitelistedAssetApproval.select(assets, *id_to_hash.keys())
@@ -419,26 +403,54 @@ class TestApproveWhitelistedAssets:
                 raise IntegrityError("hash mismatch")
             return asset
 
+        # The approval re-reads through the LIST path; stubbing the single GET here
+        # used to leave the list answering with nothing, so the test passed on the
+        # missing-row refusal without ever meeting the failing row.
         api = service._api
-        api.whitelist_service_get_whitelisted_contract.side_effect = [
-            MagicMock(result=good),
-            MagicMock(
-                result=create_mock_dto_with_payload(
+        api.whitelist_service_get_whitelisted_contracts.return_value = MagicMock(
+            result=[
+                good,
+                create_mock_dto_with_payload(
                     {"name": "Bad", "symbol": "B", "contract_address": "0xEVIL"},
                     {"id": "asset-456"},
-                )
-            ),
-        ]
+                ),
+            ],
+            total_items="2",
+        )
 
-        with patch.object(service, "_verified_asset", side_effect=verify):
-            with pytest.raises(IntegrityError, match="refusing to sign"):
+        with patch.object(service, "_verified_asset", side_effect=verify) as verified:
+            with pytest.raises(IntegrityError, match="hash mismatch"):
                 service.approve(
                     _reviewed_assets(**{"1": "abc123", "2": "abc123"}),
                     self._key(),
                     "batch approval",
                 )
 
+        assert verified.call_count == 2, "the failing row must be the one that aborts"
         api.whitelist_service_approve_whitelisted_contract.assert_not_called()
+
+    def test_rereads_a_large_batch_in_pages_of_one_hundred(self) -> None:
+        """The re-read asked for every id in one page; a page holds at most 100."""
+        from taurus_protect._internal.openapi import ContractWhitelistingApi
+        from taurus_protect.errors import IntegrityError
+        from tests.unit.transport_stub import StubTransport, api_client
+
+        ac = api_client()
+        service = WhitelistedAssetService(ac, ContractWhitelistingApi(ac), [MagicMock()], 1)
+        ids = {str(i): f"hash-{i}" for i in range(1, 151)}
+
+        with StubTransport({}, {}) as transport:
+            with pytest.raises(IntegrityError, match="was not returned by the verified read"):
+                service.approve(_reviewed_assets(**ids), self._key(), "batch approval")
+
+        sizes = [
+            len([k for k, _ in r.query if k == "whitelistedContractAddressIds"])
+            for r in transport.requests
+        ]
+        assert sizes == [100, 50]
+        assert [r.param("limit") for r in transport.requests] == ["100", "50"]
+        assert all(r.param("includeForApproval") == "true" for r in transport.requests)
+        assert all(r.method == "GET" for r in transport.requests), "nothing was signed"
 
     def test_signs_the_verified_hashes_in_sorted_order(self) -> None:
         """
@@ -454,12 +466,15 @@ class TestApproveWhitelistedAssets:
         def row(asset_id: str) -> Any:
             return create_mock_dto_with_payload(
                 {"name": "T", "symbol": "T", "contract_address": "0x1"},
-                {"id": asset_id, "metadata": MockDTO(
-                    hash=f"hash-{asset_id}",
-                    payload={},
-                    payload_as_string="{}",
-                    payloadAsString="{}",
-                )},
+                {
+                    "id": asset_id,
+                    "metadata": MockDTO(
+                        hash=f"hash-{asset_id}",
+                        payload={},
+                        payload_as_string="{}",
+                        payloadAsString="{}",
+                    ),
+                },
             )
 
         api.whitelist_service_get_whitelisted_contracts.return_value = MagicMock(
@@ -502,10 +517,10 @@ class TestApproveWhitelistedAssets:
         with patch.object(service, "_verified_asset", side_effect=lambda asset, dto=None: asset):
             with pytest.raises(IntegrityError, match="was not returned by the verified read"):
                 service.approve(
-                _reviewed_assets(**{"7": "hash-7", "3": "hash-3"}),
-                self._key(),
-                "batch approval",
-            )
+                    _reviewed_assets(**{"7": "hash-7", "3": "hash-3"}),
+                    self._key(),
+                    "batch approval",
+                )
 
         api.whitelist_service_approve_whitelisted_contract.assert_not_called()
 
@@ -526,24 +541,23 @@ class TestApproveWhitelistedAssets:
 
         substituted = create_mock_dto_with_payload(
             {"name": "T", "symbol": "T", "contract_address": "0xEVIL"},
-            {"id": "3", "metadata": MockDTO(
-                hash="hash-substituted",
-                payload={},
-                payload_as_string="{}",
-                payloadAsString="{}",
-            )},
+            {
+                "id": "3",
+                "metadata": MockDTO(
+                    hash="hash-substituted",
+                    payload={},
+                    payload_as_string="{}",
+                    payloadAsString="{}",
+                ),
+            },
         )
         api.whitelist_service_get_whitelisted_contracts.return_value = MagicMock(
             result=[substituted], total_items="1"
         )
 
-        with patch.object(
-            service, "_verified_asset", side_effect=lambda asset, dto=None: asset
-        ):
+        with patch.object(service, "_verified_asset", side_effect=lambda asset, dto=None: asset):
             with pytest.raises(IntegrityError, match="changed since it was reviewed"):
-                service.approve(
-                    _reviewed_assets(**{"3": "hash-3"}), self._key(), "batch approval"
-                )
+                service.approve(_reviewed_assets(**{"3": "hash-3"}), self._key(), "batch approval")
 
         api.whitelist_service_approve_whitelisted_contract.assert_not_called()
 
@@ -715,3 +729,49 @@ class TestMapAssetFromDto:
         assert len(asset.signed_contract_address.signatures) == 1
         assert asset.signed_contract_address.signatures[0].user_signature.user_id == "user-1"
         assert asset.signed_contract_address.signatures[0].hashes == ["hash1", "hash2"]
+
+
+class TestWhitelistedAssetPagination:
+    """Next offset = offset + limit: rows the server skips keep their SQL slot."""
+
+    @staticmethod
+    def _service() -> WhitelistedAssetService:
+        from taurus_protect._internal.openapi import ContractWhitelistingApi
+        from tests.unit.transport_stub import api_client
+
+        ac = api_client()
+        return WhitelistedAssetService(ac, ContractWhitelistingApi(ac), [MagicMock()], 1)
+
+    def test_a_short_page_is_not_the_end(self) -> None:
+        from unittest.mock import patch
+
+        from taurus_protect.models.pagination import Pagination
+        from tests.unit.transport_stub import StubTransport
+
+        rows = [{"id": str(i)} for i in range(17)]
+        with (
+            patch.object(
+                WhitelistedAssetService, "_verified_asset", lambda self, asset, dto=None: asset
+            ),
+            StubTransport({"result": rows, "totalItems": "45"}) as transport,
+        ):
+            assets, pagination = self._service().list(blockchain="ETH", network="mainnet")
+
+        assert len(assets) == 17
+        assert pagination == Pagination(
+            limit=20, offset=0, total_items=45, next_offset=20, has_more=True
+        )
+        assert transport.last.query == sorted(
+            [("blockchain", "ETH"), ("network", "mainnet"), ("limit", "20")]
+        )
+
+    def test_for_approval_filters_and_continuation(self) -> None:
+        from tests.unit.transport_stub import StubTransport
+
+        with StubTransport() as transport:
+            self._service().list_for_approval(ids=["1", "2"], limit=5, offset=40)
+
+        assert transport.last.path == "/api/rest/v1/whitelists/contracts/for-approval"
+        assert transport.last.query == sorted(
+            [("ids", "1"), ("ids", "2"), ("limit", "5"), ("offset", "40")]
+        )

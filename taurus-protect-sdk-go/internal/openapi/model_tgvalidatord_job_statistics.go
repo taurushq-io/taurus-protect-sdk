@@ -27,7 +27,10 @@ type TgvalidatordJobStatistics struct {
 	AvgDuration *string `json:"avgDuration,omitempty"`
 	MaxDuration *string `json:"maxDuration,omitempty"`
 	MinDuration *string `json:"minDuration,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordJobStatistics TgvalidatordJobStatistics
 
 // NewTgvalidatordJobStatistics instantiates a new TgvalidatordJobStatistics object
 // This constructor will assign default values to properties that have it defined,
@@ -336,7 +339,40 @@ func (o TgvalidatordJobStatistics) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.MinDuration) {
 		toSerialize["minDuration"] = o.MinDuration
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordJobStatistics) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordJobStatistics := _TgvalidatordJobStatistics{}
+
+	err = json.Unmarshal(data, &varTgvalidatordJobStatistics)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordJobStatistics(varTgvalidatordJobStatistics)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "pending")
+		delete(additionalProperties, "successes")
+		delete(additionalProperties, "failures")
+		delete(additionalProperties, "lastSuccess")
+		delete(additionalProperties, "lastFailure")
+		delete(additionalProperties, "avgDuration")
+		delete(additionalProperties, "maxDuration")
+		delete(additionalProperties, "minDuration")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordJobStatistics struct {

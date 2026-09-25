@@ -33,7 +33,16 @@ export interface TgvalidatordCreateUserAttributeReply {
      * @memberof TgvalidatordCreateUserAttributeReply
      */
     result?: InternalUserAttribute;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateUserAttributeReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateUserAttributeReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateUserAttributeReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordCreateUserAttributeReplyFromJSONTyped(json: any, ign
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateUserAttributeReply = {
         
         'result': json['result'] == null ? undefined : InternalUserAttributeFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateUserAttributeReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateUserAttributeReplyToJSON(json: any): TgvalidatordCreateUserAttributeReply {
@@ -68,6 +87,7 @@ export function TgvalidatordCreateUserAttributeReplyFromJSONTyped(json: any, ign
     return {
         
         'result': InternalUserAttributeToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

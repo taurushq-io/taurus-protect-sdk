@@ -25,7 +25,16 @@ export interface TgvalidatordUpdateRulesProposalRequest {
      * @memberof TgvalidatordUpdateRulesProposalRequest
      */
     rulesContainer: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordUpdateRulesProposalRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordUpdateRulesProposalRequestWireKeys: ReadonlySet<string> = new Set(['rulesContainer']);
 
 /**
  * Check if a given object implements the TgvalidatordUpdateRulesProposalRequest interface.
@@ -43,10 +52,20 @@ export function TgvalidatordUpdateRulesProposalRequestFromJSONTyped(json: any, i
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordUpdateRulesProposalRequest = {
         
         'rulesContainer': json['rulesContainer'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordUpdateRulesProposalRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordUpdateRulesProposalRequestToJSON(json: any): TgvalidatordUpdateRulesProposalRequest {
@@ -61,6 +80,7 @@ export function TgvalidatordUpdateRulesProposalRequestFromJSONTyped(json: any, i
     return {
         
         'rulesContainer': value['rulesContainer'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -25,7 +25,16 @@ export interface MaintenanceServiceForceKillBundleBody {
      * @memberof MaintenanceServiceForceKillBundleBody
      */
     tenantId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof MaintenanceServiceForceKillBundleBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const MaintenanceServiceForceKillBundleBodyWireKeys: ReadonlySet<string> = new Set(['tenantId']);
 
 /**
  * Check if a given object implements the MaintenanceServiceForceKillBundleBody interface.
@@ -42,10 +51,20 @@ export function MaintenanceServiceForceKillBundleBodyFromJSONTyped(json: any, ig
     if (json == null) {
         return json;
     }
-    return {
+    const result: MaintenanceServiceForceKillBundleBody = {
         
         'tenantId': json['tenantId'] == null ? undefined : json['tenantId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!MaintenanceServiceForceKillBundleBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function MaintenanceServiceForceKillBundleBodyToJSON(json: any): MaintenanceServiceForceKillBundleBody {
@@ -60,6 +79,7 @@ export function MaintenanceServiceForceKillBundleBodyFromJSONTyped(json: any, ig
     return {
         
         'tenantId': value['tenantId'],
+        ...value['additionalProperties'],
     };
 }
 

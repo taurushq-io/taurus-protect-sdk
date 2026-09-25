@@ -43,7 +43,16 @@ export interface TgvalidatordSignedRequestAttribute {
      * @memberof TgvalidatordSignedRequestAttribute
      */
     contentType?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordSignedRequestAttribute
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordSignedRequestAttributeWireKeys: ReadonlySet<string> = new Set(['id', 'key', 'value', 'contentType']);
 
 /**
  * Check if a given object implements the TgvalidatordSignedRequestAttribute interface.
@@ -60,13 +69,23 @@ export function TgvalidatordSignedRequestAttributeFromJSONTyped(json: any, ignor
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordSignedRequestAttribute = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'key': json['key'] == null ? undefined : json['key'],
         'value': json['value'] == null ? undefined : json['value'],
         'contentType': json['contentType'] == null ? undefined : json['contentType'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordSignedRequestAttributeWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordSignedRequestAttributeToJSON(json: any): TgvalidatordSignedRequestAttribute {
@@ -84,6 +103,7 @@ export function TgvalidatordSignedRequestAttributeFromJSONTyped(json: any, ignor
         'key': value['key'],
         'value': value['value'],
         'contentType': value['contentType'],
+        ...value['additionalProperties'],
     };
 }
 

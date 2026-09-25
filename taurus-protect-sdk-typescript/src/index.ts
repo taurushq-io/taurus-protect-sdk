@@ -50,6 +50,7 @@ export {
   ConfigurationError,
   RequestMetadataError,
   UnverifiedMetadataError,
+  PaginationError,
   mapHttpError,
   // Exported so a caller holding a server message from somewhere other than a mapped
   // error (a log line, a wrapped gRPC status) can still recover the required roles.

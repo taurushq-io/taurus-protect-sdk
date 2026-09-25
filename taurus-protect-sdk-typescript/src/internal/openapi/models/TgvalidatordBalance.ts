@@ -55,7 +55,16 @@ export interface TgvalidatordBalance {
      * @memberof TgvalidatordBalance
      */
     reservedUnconfirmed?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordBalance
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordBalanceWireKeys: ReadonlySet<string> = new Set(['totalConfirmed', 'totalUnconfirmed', 'availableConfirmed', 'availableUnconfirmed', 'reservedConfirmed', 'reservedUnconfirmed']);
 
 /**
  * Check if a given object implements the TgvalidatordBalance interface.
@@ -72,7 +81,7 @@ export function TgvalidatordBalanceFromJSONTyped(json: any, ignoreDiscriminator:
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordBalance = {
         
         'totalConfirmed': json['totalConfirmed'] == null ? undefined : json['totalConfirmed'],
         'totalUnconfirmed': json['totalUnconfirmed'] == null ? undefined : json['totalUnconfirmed'],
@@ -81,6 +90,16 @@ export function TgvalidatordBalanceFromJSONTyped(json: any, ignoreDiscriminator:
         'reservedConfirmed': json['reservedConfirmed'] == null ? undefined : json['reservedConfirmed'],
         'reservedUnconfirmed': json['reservedUnconfirmed'] == null ? undefined : json['reservedUnconfirmed'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordBalanceWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordBalanceToJSON(json: any): TgvalidatordBalance {
@@ -100,6 +119,7 @@ export function TgvalidatordBalanceFromJSONTyped(json: any, ignoreDiscriminator:
         'availableUnconfirmed': value['availableUnconfirmed'],
         'reservedConfirmed': value['reservedConfirmed'],
         'reservedUnconfirmed': value['reservedUnconfirmed'],
+        ...value['additionalProperties'],
     };
 }
 

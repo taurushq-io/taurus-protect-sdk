@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordSAMLCheckAssertionReply{}
 // TgvalidatordSAMLCheckAssertionReply struct for TgvalidatordSAMLCheckAssertionReply
 type TgvalidatordSAMLCheckAssertionReply struct {
 	Result *TgvalidatordSAMLAuthRedirect `json:"result,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordSAMLCheckAssertionReply TgvalidatordSAMLCheckAssertionReply
 
 // NewTgvalidatordSAMLCheckAssertionReply instantiates a new TgvalidatordSAMLCheckAssertionReply object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordSAMLCheckAssertionReply) ToMap() (map[string]interface{}, er
 	if !IsNil(o.Result) {
 		toSerialize["result"] = o.Result
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordSAMLCheckAssertionReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordSAMLCheckAssertionReply := _TgvalidatordSAMLCheckAssertionReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordSAMLCheckAssertionReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordSAMLCheckAssertionReply(varTgvalidatordSAMLCheckAssertionReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "result")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordSAMLCheckAssertionReply struct {

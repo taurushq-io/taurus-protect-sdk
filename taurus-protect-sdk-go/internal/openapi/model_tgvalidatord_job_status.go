@@ -26,7 +26,10 @@ type TgvalidatordJobStatus struct {
 	TimeoutAt *time.Time `json:"timeoutAt,omitempty"`
 	Message *string `json:"message,omitempty"`
 	Status *string `json:"status,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordJobStatus TgvalidatordJobStatus
 
 // NewTgvalidatordJobStatus instantiates a new TgvalidatordJobStatus object
 // This constructor will assign default values to properties that have it defined,
@@ -265,7 +268,38 @@ func (o TgvalidatordJobStatus) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Status) {
 		toSerialize["status"] = o.Status
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordJobStatus) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordJobStatus := _TgvalidatordJobStatus{}
+
+	err = json.Unmarshal(data, &varTgvalidatordJobStatus)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordJobStatus(varTgvalidatordJobStatus)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "startedAt")
+		delete(additionalProperties, "updatedAt")
+		delete(additionalProperties, "timeoutAt")
+		delete(additionalProperties, "message")
+		delete(additionalProperties, "status")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordJobStatus struct {

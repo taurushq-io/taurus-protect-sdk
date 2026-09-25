@@ -27,11 +27,9 @@ def test_list_groups(client: ProtectClient) -> None:
 @pytest.mark.integration
 def test_list_visibility_groups(client: ProtectClient) -> None:
     """Test listing visibility groups."""
-    groups, pagination = client.visibility_groups.list()
+    groups = client.visibility_groups.list()
 
     print(f"Found {len(groups)} visibility groups")
-    if pagination:
-        print(f"Total items: {pagination.total_items}, HasMore: {pagination.has_more}")
 
     for group in groups:
         print(f"VisibilityGroup: ID={group.id}, Name={group.name}")

@@ -140,27 +140,25 @@ async function createWalletExample(client: ProtectClient): Promise<void> {
 import { ProtectClient, Wallet } from '@taurushq/protect-sdk';
 
 async function listWalletsExample(client: ProtectClient): Promise<void> {
-  // List first page of wallets
-  const result = await client.wallets.list({ limit: 50, offset: 0 });
+  // List first page of wallets (limit 1-100, default 20)
+  const result = await client.wallets.list({ limit: 50 });
   console.log(`Found ${result.pagination.totalItems} wallets`);
 
   for (const wallet of result.items) {
     console.log(`${wallet.id}: ${wallet.name} (${wallet.blockchain})`);
   }
 
-  // List all wallets with pagination
+  // List all wallets: continue with nextOffset while hasMore
   const allWallets: Wallet[] = [];
   let offset = 0;
-  const limit = 50;
 
-  while (true) {
-    const page = await client.wallets.list({ limit, offset });
+  for (;;) {
+    const page = await client.wallets.list({ limit: 100, offset });
     allWallets.push(...page.items);
-
-    if (page.items.length < limit) {
-      break; // No more pages
+    if (!page.pagination.hasMore) {
+      break;
     }
-    offset += limit;
+    offset = page.pagination.nextOffset;
   }
 
   console.log(`Total wallets loaded: ${allWallets.length}`);
@@ -293,14 +291,15 @@ async function listAddressesExample(
   walletId: number
 ): Promise<void> {
   // List addresses for a wallet
-  const result = await client.addresses.list(walletId, {
-    limit: 50,
-    offset: 0,
-  });
+  const result = await client.addresses.list(walletId, { limit: 50 });
 
-  console.log(`Addresses: ${result.items.length}`);
-  if (result.pagination) {
-    console.log(`Total: ${result.pagination.totalItems}`);
+  console.log(`Addresses: ${result.items.length} of ${result.pagination.totalItems}`);
+  if (result.pagination.hasMore) {
+    const next = await client.addresses.list(walletId, {
+      limit: 50,
+      offset: result.pagination.nextOffset,
+    });
+    console.log(`Next page: ${next.items.length}`);
   }
 
   for (const addr of result.items) {
@@ -312,6 +311,7 @@ async function listAddressesExample(
     walletId: String(walletId),
     blockchain: 'ETH',
     network: 'mainnet',
+    excludeDisabled: true, // sent as includeDisabledAddresses=exclude
     limit: 100,
   });
 
@@ -403,7 +403,7 @@ import { ProtectClient, decodePrivateKeyPem, Request } from '@taurushq/protect-s
 
 async function batchApprovalExample(client: ProtectClient): Promise<void> {
   // Get all requests pending approval
-  const { requests } = await client.requests.listForApproval({ limit: 100 });
+  const { requests } = await client.requests.listForApproval({ pageSize: 100 });
 
   // Filter by currency
   const ethRequests = requests.filter(r => r.currency === 'ETH');
@@ -533,11 +533,11 @@ async function queryTransactionsExample(client: ProtectClient): Promise<void> {
 import { ProtectClient } from '@taurushq/protect-sdk';
 
 async function getAllBalancesExample(client: ProtectClient): Promise<void> {
-  const result = await client.balances.list({ limit: 100 });
+  const result = await client.balances.list({ pageSize: 100 });
 
-  console.log('=== Asset Balances ===');
+  console.log(`=== Asset Balances (${result.pagination.totalItems} in total) ===`);
   for (const balance of result.items) {
-    console.log(`${balance.currency}: ${balance.available} available`);
+    console.log(`${balance.currency}: ${balance.balance}`);
   }
 
   // Summarize by currency
@@ -622,7 +622,8 @@ import { ProtectClient } from '@taurushq/protect-sdk';
 async function listWhitelistedAddressesExample(client: ProtectClient): Promise<void> {
   // List all
   const all = await client.whitelistedAddresses.list({ limit: 100 });
-  console.log(`Total: ${all.pagination?.totalItems ?? all.items.length}`);
+  // totalItems excludes rows withheld as unverifiable (listed in excludedUnverified)
+  console.log(`Total: ${all.pagination.totalItems}`);
 
   // Filter by blockchain
   const ethAddresses = await client.whitelistedAddresses.list({
@@ -699,7 +700,7 @@ import { ProtectClient } from '@taurushq/protect-sdk';
 
 async function rulesHistoryExample(client: ProtectClient): Promise<void> {
   // Get first page
-  const page1 = await client.governanceRules.getHistory({ limit: 10 });
+  const page1 = await client.governanceRules.getRulesHistory({ pageSize: 10 });
   console.log(`Found ${page1.items.length} rule sets`);
 
   for (const rules of page1.items) {
@@ -707,10 +708,10 @@ async function rulesHistoryExample(client: ProtectClient): Promise<void> {
   }
 
   // Get next page if available
-  if (page1.nextCursor) {
-    const page2 = await client.governanceRules.getHistory({
-      limit: 10,
-      cursor: page1.nextCursor,
+  if (page1.pagination.hasMore) {
+    const page2 = await client.governanceRules.getRulesHistory({
+      pageSize: 10,
+      cursor: page1.pagination.nextCursor,
     });
     console.log(`Page 2: ${page2.items.length} rule sets`);
   }
@@ -762,20 +763,19 @@ async function participantExample(client: ProtectClient): Promise<void> {
 import { ProtectClient } from '@taurushq/protect-sdk';
 
 async function pledgeExample(client: ProtectClient): Promise<void> {
-  // List all pledges
-  const pledgesResponse = await client.taurusNetwork.pledgeApi.getAllPledges({ pageSize: 50 });
-  const pledges = pledgesResponse.result?.pledges ?? [];
-  console.log(`Found ${pledges.length} pledges`);
-
-  for (const pledge of pledges) {
-    console.log(`${pledge.id}: ${pledge.status}`);
-  }
+  // List all pledges, page by page
+  let cursor: string | undefined;
+  do {
+    const page = await client.taurusNetwork.pledges.list({ pageSize: 50, cursor });
+    for (const pledge of page.pledges) {
+      console.log(`${pledge.id}: ${pledge.status}`);
+    }
+    cursor = page.pagination.hasMore ? page.pagination.nextCursor : undefined;
+  } while (cursor);
 
   // Get specific pledge
-  const pledgeResponse = await client.taurusNetwork.pledgeApi.getPledge({ pledgeId: 'pledge-id' });
-  const pledge = pledgeResponse.result?.pledge;
-  console.log(`Pledge amount: ${pledge?.pledgedAmount}`);
-  console.log(`Asset: ${pledge?.currencyInfo?.symbol}`);
+  const pledge = await client.taurusNetwork.pledges.get('pledge-id');
+  console.log(`Pledge amount: ${pledge.amount} (${pledge.currencyId})`);
 }
 ```
 
@@ -785,15 +785,15 @@ async function pledgeExample(client: ProtectClient): Promise<void> {
 import { ProtectClient } from '@taurushq/protect-sdk';
 
 async function lendingExample(client: ProtectClient): Promise<void> {
-  // List lending offers
-  const offersResponse = await client.taurusNetwork.lendingApi.getAllLendingOffers({ pageSize: 50 });
-  const offers = offersResponse.result?.lendingOffers ?? [];
+  // List lending offers (first page)
+  const { offers } = await client.taurusNetwork.lending.listLendingOffers({ pageSize: 50 });
   console.log(`Found ${offers.length} offers`);
 
-  // List lending agreements
-  const agreementsResponse = await client.taurusNetwork.lendingApi.getAllLendingAgreements({ pageSize: 50 });
-  const agreements = agreementsResponse.result?.lendingAgreements ?? [];
-  console.log(`Found ${agreements.length} agreements`);
+  // List lending agreements (first page)
+  const { agreements, pagination } = await client.taurusNetwork.lending.listLendingAgreements({
+    pageSize: 50,
+  });
+  console.log(`Found ${agreements.length} agreements${pagination.hasMore ? ' (more pages)' : ''}`);
 }
 ```
 
@@ -803,9 +803,8 @@ async function lendingExample(client: ProtectClient): Promise<void> {
 import { ProtectClient } from '@taurushq/protect-sdk';
 
 async function settlementExample(client: ProtectClient): Promise<void> {
-  // List settlements
-  const settlementsResponse = await client.taurusNetwork.settlementApi.getAllSettlements({ pageSize: 50 });
-  const settlements = settlementsResponse.result?.settlements ?? [];
+  // List settlements (first page)
+  const { settlements } = await client.taurusNetwork.settlements.list({ pageSize: 50 });
   console.log(`Found ${settlements.length} settlements`);
 
   for (const settlement of settlements) {
@@ -820,13 +819,12 @@ async function settlementExample(client: ProtectClient): Promise<void> {
 import { ProtectClient } from '@taurushq/protect-sdk';
 
 async function sharingExample(client: ProtectClient): Promise<void> {
-  // List shared address assets
-  const sharedResponse = await client.taurusNetwork.sharedAddressAssetApi.getAllSharedAddressAssets({ pageSize: 50 });
-  const sharedAssets = sharedResponse.result?.sharedAddressAssets ?? [];
+  // List shared assets (first page)
+  const { sharedAssets } = await client.taurusNetwork.sharing.listSharedAssets({ pageSize: 50 });
   console.log(`Found ${sharedAssets.length} shared assets`);
 
   for (const asset of sharedAssets) {
-    console.log(`${asset.id}: ${asset.currencyInfo?.symbol}`);
+    console.log(`${asset.id}: ${asset.symbol}`);
   }
 }
 ```
@@ -878,22 +876,19 @@ async function webhookExample(client: ProtectClient): Promise<void> {
 import { ProtectClient, Wallet } from '@taurushq/protect-sdk';
 
 async function offsetPaginationExample(client: ProtectClient): Promise<void> {
-  const pageSize = 50;
   let offset = 0;
   const allWallets: Wallet[] = [];
 
-  while (true) {
-    const result = await client.wallets.list({ limit: pageSize, offset });
+  for (;;) {
+    const result = await client.wallets.list({ limit: 100, offset });
     allWallets.push(...result.items);
 
-    console.log(`Page ${offset / pageSize + 1}: ${result.items.length} items`);
-
-    // Check if we've reached the end
-    if (result.items.length < pageSize) {
+    // Stop on hasMore, never on a short page: some endpoints skip or append rows, so a
+    // page can be short without being the last one.
+    if (!result.pagination.hasMore) {
       break;
     }
-
-    offset += pageSize;
+    offset = result.pagination.nextOffset;
   }
 
   console.log(`Total wallets: ${allWallets.length}`);
@@ -907,25 +902,19 @@ import { ProtectClient, Request } from '@taurushq/protect-sdk';
 
 async function cursorPaginationExample(client: ProtectClient): Promise<void> {
   const allRequests: Request[] = [];
-  let currentPage: string | undefined;
+  let cursor: string | undefined;
   let pageNumber = 0;
 
-  while (true) {
-    const result = await client.requests.list({
-      limit: 50,
-      currentPage,
-    });
+  do {
+    // `cursor` sends currentPage=<cursor> + pageRequest=NEXT + the page size.
+    const result = await client.requests.list({ pageSize: 100, cursor });
 
     pageNumber++;
     allRequests.push(...result.requests);
     console.log(`Page ${pageNumber}: ${result.requests.length} items`);
 
-    if (!result.cursor.hasMore) {
-      break;
-    }
-
-    currentPage = result.cursor.nextCursor;
-  }
+    cursor = result.pagination.hasMore ? result.pagination.nextCursor : undefined;
+  } while (cursor);
 
   console.log(`Total requests: ${allRequests.length}`);
 }
@@ -934,34 +923,31 @@ async function cursorPaginationExample(client: ProtectClient): Promise<void> {
 ### Generic Async Iterator Pattern
 
 ```typescript
-import { ProtectClient } from '@taurushq/protect-sdk';
+import { ProtectClient, PaginatedResult } from '@taurushq/protect-sdk';
 
 async function* paginateAll<T>(
-  fetchPage: (offset: number) => Promise<{ items: T[]; pagination?: { totalItems: number } }>,
-  pageSize: number = 50
+  fetchPage: (offset: number) => Promise<PaginatedResult<T>>
 ): AsyncGenerator<T, void, unknown> {
   let offset = 0;
 
-  while (true) {
+  for (;;) {
     const result = await fetchPage(offset);
 
     for (const item of result.items) {
       yield item;
     }
 
-    if (result.items.length < pageSize) {
+    if (!result.pagination.hasMore) {
       break;
     }
-
-    offset += pageSize;
+    offset = result.pagination.nextOffset;
   }
 }
 
 // Usage
 async function useGenericPagination(client: ProtectClient): Promise<void> {
-  for await (const wallet of paginateAll(
-    (offset) => client.wallets.list({ limit: 50, offset }),
-    50
+  for await (const wallet of paginateAll((offset) =>
+    client.wallets.list({ limit: 100, offset })
   )) {
     console.log(`Wallet: ${wallet.name}`);
   }
@@ -1111,7 +1097,7 @@ async function parallelOperations(client: ProtectClient): Promise<void> {
   // Execute multiple independent operations in parallel
   const [wallets, requests, transactions] = await Promise.all([
     client.wallets.list({ limit: 10 }),
-    client.requests.list({ limit: 10 }),
+    client.requests.list({ pageSize: 10 }),
     client.transactions.list({ limit: 10 }),
   ]);
 
@@ -1146,7 +1132,7 @@ async function processInBatches<T, R>(
 
 // Usage
 async function processManyRequests(client: ProtectClient): Promise<void> {
-  const { requests } = await client.requests.list({ limit: 100 });
+  const { requests } = await client.requests.list({ pageSize: 100 });
 
   // Process requests in batches of 5 to avoid overwhelming the API
   const verifiedRequests = await processInBatches(

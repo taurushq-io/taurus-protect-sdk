@@ -25,7 +25,16 @@ export interface TgvalidatordAddPledgeCollateralReply {
      * @memberof TgvalidatordAddPledgeCollateralReply
      */
     pledgeActionID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordAddPledgeCollateralReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordAddPledgeCollateralReplyWireKeys: ReadonlySet<string> = new Set(['pledgeActionID']);
 
 /**
  * Check if a given object implements the TgvalidatordAddPledgeCollateralReply interface.
@@ -42,10 +51,20 @@ export function TgvalidatordAddPledgeCollateralReplyFromJSONTyped(json: any, ign
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordAddPledgeCollateralReply = {
         
         'pledgeActionID': json['pledgeActionID'] == null ? undefined : json['pledgeActionID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordAddPledgeCollateralReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordAddPledgeCollateralReplyToJSON(json: any): TgvalidatordAddPledgeCollateralReply {
@@ -60,6 +79,7 @@ export function TgvalidatordAddPledgeCollateralReplyFromJSONTyped(json: any, ign
     return {
         
         'pledgeActionID': value['pledgeActionID'],
+        ...value['additionalProperties'],
     };
 }
 

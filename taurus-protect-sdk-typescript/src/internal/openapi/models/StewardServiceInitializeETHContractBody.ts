@@ -25,7 +25,16 @@ export interface StewardServiceInitializeETHContractBody {
      * @memberof StewardServiceInitializeETHContractBody
      */
     rulesToCreate?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof StewardServiceInitializeETHContractBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const StewardServiceInitializeETHContractBodyWireKeys: ReadonlySet<string> = new Set(['rulesToCreate']);
 
 /**
  * Check if a given object implements the StewardServiceInitializeETHContractBody interface.
@@ -42,10 +51,20 @@ export function StewardServiceInitializeETHContractBodyFromJSONTyped(json: any, 
     if (json == null) {
         return json;
     }
-    return {
+    const result: StewardServiceInitializeETHContractBody = {
         
         'rulesToCreate': json['rulesToCreate'] == null ? undefined : json['rulesToCreate'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!StewardServiceInitializeETHContractBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function StewardServiceInitializeETHContractBodyToJSON(json: any): StewardServiceInitializeETHContractBody {
@@ -60,6 +79,7 @@ export function StewardServiceInitializeETHContractBodyFromJSONTyped(json: any, 
     return {
         
         'rulesToCreate': value['rulesToCreate'],
+        ...value['additionalProperties'],
     };
 }
 

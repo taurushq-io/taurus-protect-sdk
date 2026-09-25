@@ -28,7 +28,10 @@ type TgvalidatordXTZContractArg struct {
 	Int *string `json:"int,omitempty"`
 	Bytes *string `json:"bytes,omitempty" validate:"regexp=^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=)?$"`
 	Annotations []string `json:"annotations,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordXTZContractArg TgvalidatordXTZContractArg
 
 // NewTgvalidatordXTZContractArg instantiates a new TgvalidatordXTZContractArg object
 // This constructor will assign default values to properties that have it defined,
@@ -372,7 +375,41 @@ func (o TgvalidatordXTZContractArg) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Annotations) {
 		toSerialize["annotations"] = o.Annotations
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordXTZContractArg) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordXTZContractArg := _TgvalidatordXTZContractArg{}
+
+	err = json.Unmarshal(data, &varTgvalidatordXTZContractArg)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordXTZContractArg(varTgvalidatordXTZContractArg)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "kind")
+		delete(additionalProperties, "prim")
+		delete(additionalProperties, "args")
+		delete(additionalProperties, "source")
+		delete(additionalProperties, "destination")
+		delete(additionalProperties, "string")
+		delete(additionalProperties, "int")
+		delete(additionalProperties, "bytes")
+		delete(additionalProperties, "annotations")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordXTZContractArg struct {

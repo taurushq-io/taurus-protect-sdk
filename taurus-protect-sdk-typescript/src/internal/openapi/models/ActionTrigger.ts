@@ -39,7 +39,16 @@ export interface ActionTrigger {
      * @memberof ActionTrigger
      */
     balance?: TriggerBalance;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof ActionTrigger
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const ActionTriggerWireKeys: ReadonlySet<string> = new Set(['kind', 'balance']);
 
 /**
  * Check if a given object implements the ActionTrigger interface.
@@ -56,11 +65,21 @@ export function ActionTriggerFromJSONTyped(json: any, ignoreDiscriminator: boole
     if (json == null) {
         return json;
     }
-    return {
+    const result: ActionTrigger = {
         
         'kind': json['kind'] == null ? undefined : json['kind'],
         'balance': json['balance'] == null ? undefined : TriggerBalanceFromJSON(json['balance']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!ActionTriggerWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function ActionTriggerToJSON(json: any): ActionTrigger {
@@ -76,6 +95,7 @@ export function ActionTriggerFromJSONTyped(json: any, ignoreDiscriminator: boole
         
         'kind': value['kind'],
         'balance': TriggerBalanceToJSON(value['balance']),
+        ...value['additionalProperties'],
     };
 }
 

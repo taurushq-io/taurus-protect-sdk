@@ -74,12 +74,12 @@ This is a monorepo containing SDKs for the Taurus-PROTECT API, a cryptocurrency 
 
 | Directory | Language | Status | Services |
 |-----------|----------|--------|----------|
-| `taurus-protect-sdk-java/` | Java | Active development | 43 (38 + 5 TaurusNetwork) |
-| `taurus-protect-sdk-go/` | Go | Active development | 43 (38 + 5 TaurusNetwork) |
-| `taurus-protect-sdk-python/` | Python | Active development | 43 (38 + 5 TaurusNetwork) |
-| `taurus-protect-sdk-typescript/` | TypeScript | Active development | 43 (38 + 5 TaurusNetwork) |
+| `taurus-protect-sdk-java/` | Java | Active development | 44 (39 + 5 TaurusNetwork) |
+| `taurus-protect-sdk-go/` | Go | Active development | 44 (39 + 5 TaurusNetwork) |
+| `taurus-protect-sdk-python/` | Python | Active development | 44 (39 + 5 TaurusNetwork) |
+| `taurus-protect-sdk-typescript/` | TypeScript | Active development | 44 (39 + 5 TaurusNetwork) |
 
-**Service Parity (All SDKs):** All four SDKs have 43 high-level service wrappers (38 core services + 5 TaurusNetwork services). TypeScript also provides access to all 61 OpenAPI-generated APIs. All SDKs split Taurus Network into 5 services (Participants, Pledges, Lending, Settlements, Sharing).
+**Service Parity (All SDKs):** All four SDKs have 44 high-level service wrappers (39 core services + 5 TaurusNetwork services). TypeScript also provides access to all 63 OpenAPI-generated APIs. All SDKs split Taurus Network into 5 services (Participants, Pledges, Lending, Settlements, Sharing).
 
 
 ## Build gates — there is no CI pipeline in this repo
@@ -124,16 +124,19 @@ shared vector files are the oracle, not any one SDK (past passes found Java itse
 unknown-enum passthrough, deterministic encoding and aggregate `hasUnknownFields`). The report lives
 at [`docs/SDK_ALIGNMENT_REPORT.md`](docs/SDK_ALIGNMENT_REPORT.md).
 
-**Alignment is gated, not inspected.** Six gates, all runnable locally:
+**Alignment is gated, not inspected.** Every gate is runnable locally:
 
 | Gate | File / command |
 |---|---|
 | Cell wire parity (39 vectors) | `scripts/resources/governance-cell-vectors.json` |
-| Lossless / non-canonical parity (8 vectors) | `scripts/resources/governance-lossless-vectors.json` |
+| Lossless / non-canonical parity (9 vectors) | `scripts/resources/governance-lossless-vectors.json` |
 | Authorization-error parsing (8 vectors) | `scripts/resources/authorization-error-vectors.json` |
 | **Verification behaviour (35 vectors)** | `scripts/resources/verification-behaviour-vectors.json` |
 | **Signed fixtures — both thresholds (10 SuperAdmin + 8 group vectors)** | `scripts/resources/verification-signed-fixtures.json` |
 | **Signing-site inventory** | `python3 scripts/signing-sites/check.py` |
+| **Pagination rules (53 operations; 26 offset / 12 cursor / 14 page-size / 4 offset vectors)** | `scripts/resources/pagination-vectors.json` |
+| **List requests on the wire (53 methods / 278 vectors)** | `scripts/resources/list-request-vectors.json` |
+| **Decode tolerance (3 model / 4 enum / 3 service vectors)** — unknown fields kept, unknown enum values raw, caller values verbatim | `scripts/resources/decode-tolerance-vectors.json` |
 | API-surface parity | `./scripts/api-surface/generate.sh all` |
 | Docs match code | `<sdk>/build.sh docs --check` |
 
@@ -318,6 +321,32 @@ override passed to the generator with `-t`). The template is what makes it survi
 alone is silently reverted. Only the "asked to populate a typed reply and got nil" shape is an
 error: `*string`, `*os.File`, `[]byte`, value types and `google.protobuf.Empty` endpoints all
 legitimately accept an empty body.
+
+## Generated clients: data the client does not know must not fail a decode
+
+One contract in all four SDKs, gated by `scripts/resources/decode-tolerance-vectors.json` (every unit
+suite consumes it; each loader hard-fails when the file is missing):
+
+- Unknown **field** → kept in the generated model's additional-properties map (unknown keys only), written
+  back after the known fields on serialization; domain models never expose it.
+- Unknown **enum value** from the server → the raw string is kept (known values still resolve to the
+  generated constant); mappers hand the raw wire string to domain models.
+- **Caller-supplied** enum value → sent verbatim: no client-side rejection, no substitution. Never validate
+  caller input by relying on a generated enum constructor or `fromValue` throwing — none of them does.
+- Asset-holder row of an unknown address type → returned unverified.
+
+| SDK | Mechanism (each `generate-openapi.sh` fails loud if it stops applying) |
+|---|---|
+| Go | `disallowAdditionalPropertiesIfNotPresent=false` (all four scripts pass it) + `scripts/resources/templates/go/model_enum.mustache` |
+| Java | `templates/java/libraries/okhttp-gson/modelEnum.mustache`: generated enums are open final classes — no `switch`/`name()`/`EnumSet` |
+| Python | `templates/python/model_enum.mustache`: `_missing_` pseudo-member; read the raw value from `.value` (`str()` shows `X.UNKNOWN`) |
+| TypeScript | `templates/typescript-fetch/modelGeneric*.mustache`: `additionalProperties` set only when non-empty; enums were already casts |
+
+Generator traps (7.9.0, verified in the JAR): Go `generateUnmarshalJSON=false` does not compile (the
+codegen still imports `bytes`/`fmt`); `enumUnknownDefaultCase` is only honoured by the Java templates;
+typescript-fetch's own `...json` spread duplicates keys whose wire name differs (`BatchSignatureID`). In
+shared vectors keep JSON numbers out of unknown values — Gson reads them back as doubles (`7` → `7.0`).
+Before/after table: `docs/SDK_ALIGNMENT_REPORT.md`, "Decode tolerance pass".
 
 ## Security Invariants (Cross-SDK)
 
@@ -530,6 +559,23 @@ legitimately accept an empty body.
   *never return a non-empty address string that has not been verified*: signature present →
   verify; signature absent and address non-empty → refuse; address empty → fine, nothing to
   misuse. Java needed `status` added to its `Address` model to express this at all.
+- **The v2 asset-holders list returns an address only after the SDK verified it.**
+  `AssetServiceV2_QueryAssetAddressesV2` rows (`address`, `addressType`, `addressID`,
+  `whitelistedAddressID`, `balance`, `kycStatus`) carry **no signature**, so the rows cannot be verified
+  on their own. Each page is completed through the verified readers:
+  - `ADDRESS_TYPE_V2_INTERNAL` rows need an `addressID`. The SDK re-reads those ids through its verified
+    managed-address list (`WalletService_GetAddresses` + `addressIds`, HSM signature checked, ≤ 50 ids per
+    request), and keeps a row only when a verified address with that id exists and its address string
+    equals the row's. The kept row's address comes from the verified address.
+  - `ADDRESS_TYPE_V2_WHITELISTED` rows need a `whitelistedAddressID`, re-read through the verified
+    whitelisted-address list (6-step, ≤ 100 ids per request), with the same equality check.
+  - Every other type (`EXTERNAL`: an on-chain holder no one signs; unknown; empty) is returned with
+    `verified = false`. Verified rows carry `verified = true`. Treat a `false` row as on-chain data, never
+    as a Taurus-PROTECT address.
+  - A row that fails is excluded and reported on the result (`excludedUnverified`, `{id, reason}`, id =
+    the addressID / whitelistedAddressID, else the address). Rows came back but none survived → error.
+    A container-level failure aborts the call. Exclusions never move the cursor. A page with no
+    INTERNAL/WHITELISTED rows makes no extra request.
 - **`includeNetworkInPayload` is NOT signed and must never be consulted as if it were.**
   `AddressWhitelistingRules` in `scripts/resources/proto/schema/v1/request_reply.proto:3434-3449`
   carries only `currency`, `parallelThresholds`, `properties`, `network`, `lines` — the flag has
@@ -757,7 +803,7 @@ Documentation is organized hierarchically to avoid duplication:
 Each SDK directory has:
 - `README.md` - Entry point with quick start, services overview, and build commands
 - `docs/SDK_OVERVIEW.md` - Architecture, package structure, design patterns
-- `docs/SERVICES.md` - Complete API reference for all 43 services
+- `docs/SERVICES.md` - Complete API reference for all 44 services
 - `docs/CONCEPTS.md` - SDK-specific model classes and exceptions
 - `docs/AUTHENTICATION.md` - SDK-specific authentication implementation
 - `docs/USAGE_EXAMPLES.md` - Code examples and patterns
@@ -775,6 +821,20 @@ When adding new services or features:
 4. Ensure cross-references in `docs/CONCEPTS.md` files include all SDKs
 
 ## Cross-SDK Lessons Learned
+
+### A controller passing a field through is not the server applying it
+
+Two server facts behind the pagination contract were first read wrong from the controller alone, and
+both would have shipped a broken contract to four SDKs:
+
+- `TransactionController.ExportTransactions` copies `req.GetOffset()` into the service request, and
+  `ExportTransactionsAsText` never reads it — it pages internally from row 0. A continuation re-exported
+  page 1 forever; the export is limit-only now.
+- `GetRequestsForApprovalV2` copies `externalRequestIDs` into the paginator request, and the paginator's
+  data getter drops it.
+
+Follow a field down to the store query (or the paginator's data getter) before encoding "the server
+applies X" in a vector, a rule table or an SDK option.
 
 ### Prove a new test fails without the fix
 
@@ -1088,8 +1148,8 @@ All SDKs must use the v2 API endpoint for listing business rules (`ruleServiceGe
 One spec at the repo root feeds the Go, Python, Java and TypeScript generators, and it has drifted from
 `tg-validatord/api/swagger/`. The generator emits only what the spec contains, so a live validatord endpoint
 can be **completely absent from all four clients** with no error anywhere — it simply has no generated
-method. Confirmed missing 2026-09-03: `PriceService_QueryPricesV2`, `GetPriceByID`, and the
-`entities`/`fieldKey`/`fieldValue` parameters on `ChangeServiceGetChanges`.
+method. Still missing (checked 2026-09-24): `PriceService_GetPriceByID`, and the
+`entities`/`fieldKey`/`fieldValue` parameters on `ChangeService_GetChanges`.
 
 **Grep the generated client before writing a builder call** — do not infer from validatord's proto or swagger,
 and do not infer from another SDK. A plausible-looking method that does not exist costs an options field, a
@@ -1102,8 +1162,120 @@ mapping and a consumer before the compiler says so.
   diff across all services, and this repo already carries a large uncommitted tree.
 - Then either regenerate all four SDKs, or state plainly that the spec now leads them. Regenerating one
   leaves the other three built from a spec that has since moved, which is how they silently diverge.
+- **`scripts/swagger/adopt-from-validatord.py` does the patching.** `--op <operationId>` adopts a path
+  plus every definition it references, `--param <operationId>:<name>` one parameter, `--def <name>` an
+  additive update to a definition the snapshot already has; `--dry-run` lists the changes. It refuses to
+  remove or retype a member, and writes the file in Go's JSON style so the diff is the adoption and
+  nothing else. Regeneration is not byte-reproducible (Java stamps a date into every file, 10 committed
+  Go files are gofmt'd and the generator's output is not — see `TODOS.md`), so after running each SDK's
+  `scripts/generate-openapi.sh`, keep only the generated files the patch explains.
+  Before regenerating over an uncommitted tree, prove its generated code is reproducible: run each SDK's
+  script in a scratch mirror (copy `scripts/resources/{swagger,templates}`, symlink `jars/`, copy each SDK's
+  `scripts/`, plus Java's `openapi/src/main/java` — its `cp -R` merges rather than replaces) and compare: Go
+  after `gofmt`, Java with `diff -I '@javax.annotation.Generated'`, Python and TypeScript byte-exact. Any other
+  difference is a hand edit a regeneration would destroy.
 
 Tracked in `TODOS.md`; the Go SDK's `CLAUDE.md` has the service-layer consequences.
+
+## Pagination (cross-SDK)
+
+Every list method in all four SDKs follows this contract; `scripts/resources/pagination-vectors.json`
+and `scripts/resources/list-request-vectors.json` pin it in every unit suite. validatord's JSON omits
+zero values (`EmitUnpopulated:false`), so an absent `totalItems`/`offset`/`hasNext`/`next` means
+0/false/none and `{}` is a valid empty page.
+
+**Page size.** One constant pair per SDK — Go `model.DefaultPageSize`/`model.MaxPageSize` (plus
+`model.MaxPriceHistoryLimit` = 365), Python
+`DEFAULT_PAGE_SIZE`/`MAX_PAGE_SIZE` (`taurus_protect.models.pagination`), TypeScript
+`DEFAULT_PAGE_SIZE`/`MAX_PAGE_SIZE` (`src/models/pagination.ts`), Java
+`Pagination.DEFAULT_PAGE_SIZE`/`MAX_PAGE_SIZE` — **20 and 100**, whatever the backend's own defaults
+(20/100/300) or maxima (100–5000). A page size is always sent: unset/0 → 20; above 100 or negative →
+the SDK's validation error (Go error, Python `ValueError`, TS `ValidationError`, Java
+`IllegalArgumentException`) before any request; a negative offset likewise. Internal reads obey it:
+approval re-reads batch ids in chunks of 100, get-by-scan helpers walk pages. Exempt because they
+cannot page: price history (`limit` ≤ 365, default 20), the prices-history export and the transaction
+export (default 20, no SDK maximum). **The transaction export cannot page although its request has an
+`offset`**: validatord ignores it and always exports from the first matching row
+(`ExportTransactionsAsText` restarts at 0), so a continuation would re-download page 1 forever. No SDK
+exposes that offset; the result carries the exported text and the server's `totalItems`, so a caller
+can tell a truncated export (`totalItems` > transactions exported) and raise the limit or narrow the
+filters. `totalItems` counts transactions: `json` and `csv` write one record per transaction, `csv_simple`
+one row per transaction leg.
+
+**Offset lists** return a pagination value that is never nil/None/undefined on success — Go
+`*model.Pagination{Limit, Offset, TotalItems, NextOffset, HasMore}`, Python `Pagination(limit, offset,
+total_items, next_offset, has_more)`, TS `Pagination {limit, offset, totalItems, nextOffset, hasMore}`,
+Java `OffsetPagination` — built by ONE helper per SDK:
+
+- `limit` = the page size sent; `offset` = the request's offset (never the reply's).
+- `next_offset` follows the endpoint's rule; `has_more = next_offset > offset && next_offset <
+  server_total` (no progress ends a walk; some totals are upper bounds).
+- `total_items` = server total, reduced by rows the SDK withheld (clamped ≥ 0); `next_offset` and
+  `has_more` always use the server's numbers.
+
+| Rule | next_offset | Operations |
+|---|---|---|
+| `reply_offset` | reply `offset` (= offset + rows), else offset + rows | `WalletService_GetWalletsV2`, `WalletService_GetAddresses` |
+| `plus_rows` | offset + rows | `TransactionService_GetTransactions`, `FeePayerService_GetFeePayers`, `ActionService_GetActions` |
+| `plus_min_rows_limit` | offset + min(rows, limit) — a synthetic daemon user / tech group can be appended beyond `limit` | `UserService_GetUsers`, `UserService_GetGroups` |
+| `plus_server_rows` | offset + rows the SERVER returned (before SDK exclusions); bad-signature rows are dropped for good | `WhitelistService_GetWhitelistedAddresses` (+ `ForApproval`) |
+| `plus_limit` | offset + limit — skipped rows keep their SQL slot | `WhitelistService_GetWhitelistedContracts` (+ `ForApproval`) |
+
+**Cursor lists** take `page_size` + `cursor` (a previous `next_cursor`) and return a cursor value —
+Go `model.CursorPage{PageSize, NextCursor, HasMore, TotalItems *int64}` in the result's `Page` field,
+Python `CursorPage(page_size, next_cursor, has_more, total_items)`, TS `CursorPage {pageSize,
+nextCursor, hasMore, totalItems?}`, Java `CursorPage`:
+
+- With `cursor` set the SDK sends `currentPage=<cursor>` + `pageRequest=NEXT` + the page size, in
+  whatever form the operation takes (`cursor.*` query, `requestCursor.*` query, body `cursor` /
+  `requestCursor`). The low-level `current_page`/`page_request` options stay where they exist; setting
+  `cursor` together with either of them is a validation error (a cursor always requests the NEXT page,
+  so neither can be honoured alongside it).
+- `has_more` = reply `cursor.hasNext`; `next_cursor` = reply `cursor.currentPage` when `has_more`,
+  else `""`. Sending NEXT past the end is a 400 on the v2 lists and silently returns page 1 on the
+  keyset lists, so never derive a cursor any other way.
+- Token-only operations — `WalletService_GetWalletTokens` (request `cursor` + `limit`, reply
+  `next`/`total`) and `RuleService_GetRulesHistory` (request `cursor` + `limit`, reply
+  `cursor`/`totalItems`): `has_more` = token present, `next_cursor` = the token.
+- `total_items` only where the server returns one (balances, wallet tokens, rules history, asset
+  balances); otherwise nil/None/undefined.
+- Cursors are opaque strings in every SDK — base64 text as received, possibly containing `+ / =`, so
+  always URL-encoded on the wire. An SDK whose generated type is bytes converts at the boundary.
+
+**Endpoints.** Newest endpoint everywhere, cursor wherever validatord offers one; offset only where
+it does not (wallets, addresses, transactions, users, groups, fee payers, actions, the whitelists). Prices list via `PriceService_QueryPricesV2` (request cursor), fees via
+`FeeService_GetFeesV2`, requests via `RequestService_GetRequestsV2`, ERC token metadata via
+`TokenMetadataService_GetEVMERCTokenMetadata`; balances and asset balances via `requestCursor` only.
+`WhitelistService_DeleteWhitelistedContract` is deprecated with no replacement and cannot succeed, so
+no SDK wraps it.
+
+**Replies are read through the generated types only** — never `getattr(resp, "x", None)` or
+`as Record<string, unknown>` on a reply field. That is how six lists came to read fields the generated
+models do not have (and always return `[]`), and why unit tests must stub the TRANSPORT (Go
+`httptest`, Python `RESTClientObject.request`, TS `fetchApi`, Java an OkHttp interceptor) so the real
+generated signatures and deserializers run.
+
+**An endpoint the server does not page returns every row.** No SDK slices a reply client-side: tags,
+jobs, visibility groups and ETH validators used to be cut at a default of 20 (50 before) with no
+pagination, so a longer list silently read as complete — and `VisibilityGroupService.get`, which
+searches `list()`, could not find a group past the 20th.
+
+**A filter the endpoint cannot apply is rejected by name, even when the spec declares it.**
+`RequestService_GetRequestsForApprovalV2` takes `externalRequestIDs` in the swagger and its controller
+reads it, but the paginator drops it before the query (`pkg/request/service/paginator/paginator.go`),
+so no SDK sends it there: Go and TypeScript reject it by name at runtime, Python and Java have no such
+parameter on the approval-queue method. `statuses` is refused the same way. Pinned by the
+`external_request_ids` / `statuses` error vectors of `RequestService_GetRequestsForApprovalV2`.
+
+**Vectors and loaders.** Both vector files are generated by `scripts/pagination-vectors/` (its
+`CLAUDE.md` has the procedure); never edit them by hand. Loaders: Go
+`pkg/protect/service/{pagination_vectors,list_request_vectors}_test.go`; Python
+`tests/unit/models/test_pagination_vectors.py` + `tests/unit/services/test_list_request_vectors.py`
+(adapters in `list_adapters.py`); TS `tests/unit/pagination/{pagination-vectors,list-request-vectors}.test.ts`
+(+ `list-adapters.ts`); Java `service/{PaginationVectorsTest,ListRequestVectorsTest}.java`. Each maps
+operationId → method and canonical option → option field in an explicit adapter table; an unmapped
+operation or option fails, except the operations that SDK does not wrap, listed with a reason (see
+`TODOS.md` → "Paged operations missing from some SDKs").
 
 ## Shared Proto Schema (`scripts/resources/proto/schema/v1/`)
 
@@ -1158,7 +1330,7 @@ Shared invariants (identical in all four SDKs — keep them so):
 
 **Cross-SDK parity vectors beyond the golden-vectors file.** `governance-cell-vectors.json` covers
 *canonical* cell encodings only — every one of its 39 vectors was produced by Go, so it is blind to
-anything a decoder might silently rewrite. Five further scenarios (8 vectors) are pinned by
+anything a decoder might silently rewrite. Seven further scenarios (9 vectors) are pinned by
 `scripts/resources/governance-lossless-vectors.json`, loaded by all four round-trip suites
 (`rule_cell_codec_lossless_test.go`, `test_rules_container_roundtrip.py`,
 `rules-container-roundtrip.test.ts`, `RulesContainerRoundtripTest.java`):
@@ -1170,6 +1342,8 @@ anything a decoder might silently rewrite. Five further scenarios (8 vectors) ar
 | ≥3 `properties` map entries, encoded 20× | non-deterministic map ordering |
 | unknown fields inside all four nested rule-detail sub-messages | nested preservation, which no top-level assertion sees |
 | a non-UTF-8 `RuleStringEqual` cell + a truncated `RuleFiatAmount` | one bad cell aborting the whole container |
+| an empty payload on a payload-carrying `RuleSource` arm | a decoder materializing a default sub-message, so the variant reads as an empty wallet instead of unset |
+| an explicitly-present zero-length payload (`08011200`) | a non-canonical source re-encoded to `0801`, dropping two bytes of a signed container; only the decode → re-encode → byte-compare guard sees it |
 
 Non-canonical cases cannot be produced by the Go encoder, which is why they are a separate file from
 the cell-vector gate. To add one: build the bytes with the Python protobuf runtime (it emits

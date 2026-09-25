@@ -55,7 +55,16 @@ export interface TgvalidatordCreateFiatProviderDepositRequestRequest {
      * @memberof TgvalidatordCreateFiatProviderDepositRequestRequest
      */
     externalRequestID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateFiatProviderDepositRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateFiatProviderDepositRequestRequestWireKeys: ReadonlySet<string> = new Set(['amount', 'fromAccountID', 'fromAddressID', 'toAccountID', 'comment', 'externalRequestID']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateFiatProviderDepositRequestRequest interface.
@@ -74,7 +83,7 @@ export function TgvalidatordCreateFiatProviderDepositRequestRequestFromJSONTyped
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateFiatProviderDepositRequestRequest = {
         
         'amount': json['amount'],
         'fromAccountID': json['fromAccountID'] == null ? undefined : json['fromAccountID'],
@@ -83,6 +92,16 @@ export function TgvalidatordCreateFiatProviderDepositRequestRequestFromJSONTyped
         'comment': json['comment'] == null ? undefined : json['comment'],
         'externalRequestID': json['externalRequestID'] == null ? undefined : json['externalRequestID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateFiatProviderDepositRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateFiatProviderDepositRequestRequestToJSON(json: any): TgvalidatordCreateFiatProviderDepositRequestRequest {
@@ -102,6 +121,7 @@ export function TgvalidatordCreateFiatProviderDepositRequestRequestFromJSONTyped
         'toAccountID': value['toAccountID'],
         'comment': value['comment'],
         'externalRequestID': value['externalRequestID'],
+        ...value['additionalProperties'],
     };
 }
 

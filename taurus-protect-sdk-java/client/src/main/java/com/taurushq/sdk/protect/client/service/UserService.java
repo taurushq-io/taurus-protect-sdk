@@ -4,14 +4,18 @@ import com.google.common.base.Strings;
 import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
 import com.taurushq.sdk.protect.client.mapper.UserMapper;
 import com.taurushq.sdk.protect.client.model.ApiException;
+import com.taurushq.sdk.protect.client.model.Pagination;
 import com.taurushq.sdk.protect.client.model.User;
+import com.taurushq.sdk.protect.client.model.UserResult;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import com.taurushq.sdk.protect.openapi.api.UsersApi;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetMeReply;
+import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetUserReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetUsersReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordInternalUser;
 import com.taurushq.sdk.protect.openapi.model.UserServiceCreateAttributeBody;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -30,8 +34,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * // Get current authenticated user
  * User me = client.getUserService().getMe();
  *
- * // List users with pagination
- * List<User> users = client.getUserService().getUsers(50, 0);
+ * // List users, one page at a time
+ * UserResult page = client.getUserService().getUsers(20, 0);
+ * // next page: getUsers(20, page.getPagination().getNextOffset())
  *
  * // Find users by email
  * List<User> found = client.getUserService()
@@ -73,7 +78,8 @@ public class UserService {
 
 
     /**
-     * Gets current user details.
+     * Gets current user details, including whether the user, its group memberships and its
+     * public key are enforced in the governance rules.
      *
      * @return the current user
      * @throws ApiException the api exception
@@ -82,8 +88,30 @@ public class UserService {
         try {
             TgvalidatordGetMeReply reply = usersApi.userServiceGetMe(
                     false,  // includeKeyContainer
-                    false   // checkEnforcedInRules
+                    true    // checkEnforcedInRules: the only way GetMe computes the flags
             );
+            return EnforcedInRules.computed(UserMapper.INSTANCE.fromDTO(reply.getResult()));
+        } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
+            throw apiExceptionMapper.toApiException(e);
+        }
+    }
+
+    /**
+     * Gets a user by ID.
+     * <p>
+     * This endpoint does not compute the enforced-in-rules flags: they are {@code null} unless
+     * the reply carries them.
+     *
+     * @param userId the user ID
+     * @return the user
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if userId is null or empty
+     */
+    public User getUser(final String userId) throws ApiException {
+        checkArgument(!Strings.isNullOrEmpty(userId), "userId cannot be null or empty");
+
+        try {
+            TgvalidatordGetUserReply reply = usersApi.userServiceGetUser(userId);
             return UserMapper.INSTANCE.fromDTO(reply.getResult());
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
@@ -92,59 +120,49 @@ public class UserService {
 
 
     /**
-     * Gets users with pagination.
+     * Gets a page of users.
      *
-     * @param limit  the limit
-     * @param offset the offset
-     * @return the list of users
-     * @throws ApiException the api exception
+     * @param limit  the page size, 0 for the default ({@link Pagination#DEFAULT_PAGE_SIZE})
+     * @param offset the offset, 0 for the first page
+     * @return the users and their pagination
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if limit or offset is out of range
      */
-    public List<User> getUsers(final int limit, final int offset) throws ApiException {
-        checkArgument(limit > 0, "limit must be positive");
-        checkArgument(offset >= 0, "offset cannot be negative");
-
-        try {
-            TgvalidatordGetUsersReply reply = usersApi.userServiceGetUsers(
-                    String.valueOf(limit),      // limit
-                    String.valueOf(offset),     // offset
-                    null,                       // ids
-                    null,                       // externalUserIds
-                    null,                       // emails
-                    null,                       // query
-                    null,                       // publicKey
-                    null,                       // excludeTechnicalUsers
-                    null,                       // roles
-                    null,                       // excludeIds
-                    null,                       // nonTechnical
-                    null                        // groupIds
-            );
-
-            List<TgvalidatordInternalUser> result = reply.getResult();
-            if (result == null) {
-                return Collections.emptyList();
-            }
-            return UserMapper.INSTANCE.fromDTO(result);
-        } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
-            throw apiExceptionMapper.toApiException(e);
-        }
+    public UserResult getUsers(final int limit, final long offset) throws ApiException {
+        return listUsers(null, limit, offset);
     }
 
-
     /**
-     * Gets users by email addresses.
+     * Gets the users with the given email addresses, walking every page.
      *
      * @param emails the list of email addresses
-     * @return the list of users
+     * @return the matching users
      * @throws ApiException the api exception
      */
     public List<User> getUsersByEmail(final List<String> emails) throws ApiException {
         checkNotNull(emails, "emails cannot be null");
         checkArgument(!emails.isEmpty(), "emails cannot be empty");
 
+        List<User> users = new ArrayList<>();
+        long offset = 0;
+        UserResult page;
+        do {
+            page = listUsers(emails, Pagination.MAX_PAGE_SIZE, offset);
+            users.addAll(page.getUsers());
+            offset = page.getPagination().getNextOffset();
+        } while (page.getPagination().hasMore());
+        return users;
+    }
+
+    private UserResult listUsers(final List<String> emails, final int limit, final long offset)
+            throws ApiException {
+        final int size = PagedOperation.USERS.resolveSize("limit", limit);
+        final long from = Pagination.resolveOffset("offset", offset);
+
         try {
             TgvalidatordGetUsersReply reply = usersApi.userServiceGetUsers(
-                    null,                       // limit
-                    null,                       // offset
+                    String.valueOf(size),       // limit
+                    from == 0 ? null : String.valueOf(from), // offset
                     null,                       // ids
                     null,                       // externalUserIds
                     emails,                     // emails
@@ -157,11 +175,11 @@ public class UserService {
                     null                        // groupIds
             );
 
-            List<TgvalidatordInternalUser> result = reply.getResult();
-            if (result == null) {
-                return Collections.emptyList();
-            }
-            return UserMapper.INSTANCE.fromDTO(result);
+            List<TgvalidatordInternalUser> rows = reply.getResult() == null
+                    ? Collections.emptyList() : reply.getResult();
+            return new UserResult(EnforcedInRules.computedUsers(UserMapper.INSTANCE.fromDTO(rows)),
+                    PagedOperation.USERS.offsetPage(size, from, rows.size(), 0,
+                            reply.getTotalItems(), null));
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }

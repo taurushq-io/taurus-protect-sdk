@@ -29,8 +29,9 @@ class TgvalidatordGetAddressesReply(BaseModel):
     """ # noqa: E501
     result: Optional[List[TgvalidatordAddress]] = None
     total_items: Optional[StrictStr] = Field(default=None, alias="totalItems")
+    offset: Optional[StrictStr] = Field(default=None, description="The offset to get the next page. Note: the value is not always the same as the number of elements returned.")
     additional_properties: Dict[str, Any] = {}
-    __properties: ClassVar[List[str]] = ["result", "totalItems"]
+    __properties: ClassVar[List[str]] = ["result", "totalItems", "offset"]
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -98,7 +99,8 @@ class TgvalidatordGetAddressesReply(BaseModel):
 
         _obj = cls.model_validate({
             "result": [TgvalidatordAddress.from_dict(_item) for _item in obj["result"]] if obj.get("result") is not None else None,
-            "totalItems": obj.get("totalItems")
+            "totalItems": obj.get("totalItems"),
+            "offset": obj.get("offset")
         })
         # store additional fields in additional_properties
         for _key in obj.keys():

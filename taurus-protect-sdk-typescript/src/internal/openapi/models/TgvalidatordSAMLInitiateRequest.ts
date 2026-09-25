@@ -31,7 +31,16 @@ export interface TgvalidatordSAMLInitiateRequest {
      * @memberof TgvalidatordSAMLInitiateRequest
      */
     redirectUri: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordSAMLInitiateRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordSAMLInitiateRequestWireKeys: ReadonlySet<string> = new Set(['email', 'redirectUri']);
 
 /**
  * Check if a given object implements the TgvalidatordSAMLInitiateRequest interface.
@@ -50,11 +59,21 @@ export function TgvalidatordSAMLInitiateRequestFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordSAMLInitiateRequest = {
         
         'email': json['email'],
         'redirectUri': json['redirectUri'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordSAMLInitiateRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordSAMLInitiateRequestToJSON(json: any): TgvalidatordSAMLInitiateRequest {
@@ -70,6 +89,7 @@ export function TgvalidatordSAMLInitiateRequestFromJSONTyped(json: any, ignoreDi
         
         'email': value['email'],
         'redirectUri': value['redirectUri'],
+        ...value['additionalProperties'],
     };
 }
 

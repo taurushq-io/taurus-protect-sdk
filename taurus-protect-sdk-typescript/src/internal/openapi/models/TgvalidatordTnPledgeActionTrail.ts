@@ -61,7 +61,16 @@ export interface TgvalidatordTnPledgeActionTrail {
      * @memberof TgvalidatordTnPledgeActionTrail
      */
     createdAt?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTnPledgeActionTrail
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTnPledgeActionTrailWireKeys: ReadonlySet<string> = new Set(['id', 'pledgeActionID', 'userID', 'externalUserID', 'action', 'comment', 'createdAt']);
 
 /**
  * Check if a given object implements the TgvalidatordTnPledgeActionTrail interface.
@@ -78,7 +87,7 @@ export function TgvalidatordTnPledgeActionTrailFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTnPledgeActionTrail = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'pledgeActionID': json['pledgeActionID'] == null ? undefined : json['pledgeActionID'],
@@ -88,6 +97,16 @@ export function TgvalidatordTnPledgeActionTrailFromJSONTyped(json: any, ignoreDi
         'comment': json['comment'] == null ? undefined : json['comment'],
         'createdAt': json['createdAt'] == null ? undefined : (new Date(json['createdAt'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTnPledgeActionTrailWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTnPledgeActionTrailToJSON(json: any): TgvalidatordTnPledgeActionTrail {
@@ -108,6 +127,7 @@ export function TgvalidatordTnPledgeActionTrailFromJSONTyped(json: any, ignoreDi
         'action': value['action'],
         'comment': value['comment'],
         'createdAt': value['createdAt'] == null ? undefined : ((value['createdAt']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

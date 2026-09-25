@@ -29,7 +29,10 @@ type TgvalidatordAssetHolder struct {
 	Balance *string `json:"balance,omitempty"`
 	CreatedAt *time.Time `json:"createdAt,omitempty"`
 	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordAssetHolder TgvalidatordAssetHolder
 
 // NewTgvalidatordAssetHolder instantiates a new TgvalidatordAssetHolder object
 // This constructor will assign default values to properties that have it defined,
@@ -373,7 +376,41 @@ func (o TgvalidatordAssetHolder) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.UpdatedAt) {
 		toSerialize["updatedAt"] = o.UpdatedAt
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordAssetHolder) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordAssetHolder := _TgvalidatordAssetHolder{}
+
+	err = json.Unmarshal(data, &varTgvalidatordAssetHolder)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordAssetHolder(varTgvalidatordAssetHolder)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "tenantID")
+		delete(additionalProperties, "internalAddressDetails")
+		delete(additionalProperties, "whitelistedAddressDetails")
+		delete(additionalProperties, "externalAddressDetails")
+		delete(additionalProperties, "asset")
+		delete(additionalProperties, "balance")
+		delete(additionalProperties, "createdAt")
+		delete(additionalProperties, "updatedAt")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordAssetHolder struct {

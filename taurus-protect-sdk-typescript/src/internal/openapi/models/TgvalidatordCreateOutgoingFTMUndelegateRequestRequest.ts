@@ -67,7 +67,16 @@ export interface TgvalidatordCreateOutgoingFTMUndelegateRequestRequest {
      * @memberof TgvalidatordCreateOutgoingFTMUndelegateRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingFTMUndelegateRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingFTMUndelegateRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'toValidatorAddressId', 'amount', 'feeLimit', 'gasLimit', 'comment', 'transactionReference', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingFTMUndelegateRequestRequest interface.
@@ -87,7 +96,7 @@ export function TgvalidatordCreateOutgoingFTMUndelegateRequestRequestFromJSONTyp
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingFTMUndelegateRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'toValidatorAddressId': json['toValidatorAddressId'],
@@ -98,6 +107,16 @@ export function TgvalidatordCreateOutgoingFTMUndelegateRequestRequestFromJSONTyp
         'transactionReference': json['transactionReference'] == null ? undefined : json['transactionReference'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingFTMUndelegateRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingFTMUndelegateRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingFTMUndelegateRequestRequest {
@@ -119,6 +138,7 @@ export function TgvalidatordCreateOutgoingFTMUndelegateRequestRequestFromJSONTyp
         'comment': value['comment'],
         'transactionReference': value['transactionReference'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

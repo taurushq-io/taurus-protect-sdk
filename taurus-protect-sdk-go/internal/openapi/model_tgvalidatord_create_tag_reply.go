@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordCreateTagReply{}
 // TgvalidatordCreateTagReply struct for TgvalidatordCreateTagReply
 type TgvalidatordCreateTagReply struct {
 	Result *TgvalidatordTag `json:"result,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordCreateTagReply TgvalidatordCreateTagReply
 
 // NewTgvalidatordCreateTagReply instantiates a new TgvalidatordCreateTagReply object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordCreateTagReply) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Result) {
 		toSerialize["result"] = o.Result
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordCreateTagReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordCreateTagReply := _TgvalidatordCreateTagReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordCreateTagReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordCreateTagReply(varTgvalidatordCreateTagReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "result")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordCreateTagReply struct {

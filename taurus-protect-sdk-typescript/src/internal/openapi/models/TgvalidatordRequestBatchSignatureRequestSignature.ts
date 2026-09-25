@@ -73,7 +73,16 @@ export interface TgvalidatordRequestBatchSignatureRequestSignature {
      * @memberof TgvalidatordRequestBatchSignatureRequestSignature
      */
     updateDate?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordRequestBatchSignatureRequestSignature
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordRequestBatchSignatureRequestSignatureWireKeys: ReadonlySet<string> = new Set(['ID', 'TenantID', 'BatchSignatureID', 'RequestID', 'MetadataHash', 'Status', 'Message', 'CreationDate', 'UpdateDate']);
 
 /**
  * Check if a given object implements the TgvalidatordRequestBatchSignatureRequestSignature interface.
@@ -90,7 +99,7 @@ export function TgvalidatordRequestBatchSignatureRequestSignatureFromJSONTyped(j
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordRequestBatchSignatureRequestSignature = {
         
         'iD': json['ID'] == null ? undefined : json['ID'],
         'tenantID': json['TenantID'] == null ? undefined : json['TenantID'],
@@ -102,6 +111,16 @@ export function TgvalidatordRequestBatchSignatureRequestSignatureFromJSONTyped(j
         'creationDate': json['CreationDate'] == null ? undefined : (new Date(json['CreationDate'])),
         'updateDate': json['UpdateDate'] == null ? undefined : (new Date(json['UpdateDate'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordRequestBatchSignatureRequestSignatureWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordRequestBatchSignatureRequestSignatureToJSON(json: any): TgvalidatordRequestBatchSignatureRequestSignature {
@@ -124,6 +143,7 @@ export function TgvalidatordRequestBatchSignatureRequestSignatureFromJSONTyped(j
         'Message': value['message'],
         'CreationDate': value['creationDate'] == null ? undefined : ((value['creationDate']).toISOString()),
         'UpdateDate': value['updateDate'] == null ? undefined : ((value['updateDate']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

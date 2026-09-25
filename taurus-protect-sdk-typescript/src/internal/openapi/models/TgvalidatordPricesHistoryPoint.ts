@@ -105,7 +105,16 @@ export interface TgvalidatordPricesHistoryPoint {
      * @memberof TgvalidatordPricesHistoryPoint
      */
     currencyToInfo?: TgvalidatordCurrency;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordPricesHistoryPoint
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordPricesHistoryPointWireKeys: ReadonlySet<string> = new Set(['periodStartDate', 'blockchain', 'currencyFrom', 'currencyTo', 'high', 'low', 'open', 'close', 'volumeFrom', 'volumeTo', 'changePercent', 'currencyFromInfo', 'currencyToInfo']);
 
 /**
  * Check if a given object implements the TgvalidatordPricesHistoryPoint interface.
@@ -122,7 +131,7 @@ export function TgvalidatordPricesHistoryPointFromJSONTyped(json: any, ignoreDis
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordPricesHistoryPoint = {
         
         'periodStartDate': json['periodStartDate'] == null ? undefined : (new Date(json['periodStartDate'])),
         'blockchain': json['blockchain'] == null ? undefined : json['blockchain'],
@@ -138,6 +147,16 @@ export function TgvalidatordPricesHistoryPointFromJSONTyped(json: any, ignoreDis
         'currencyFromInfo': json['currencyFromInfo'] == null ? undefined : TgvalidatordCurrencyFromJSON(json['currencyFromInfo']),
         'currencyToInfo': json['currencyToInfo'] == null ? undefined : TgvalidatordCurrencyFromJSON(json['currencyToInfo']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordPricesHistoryPointWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordPricesHistoryPointToJSON(json: any): TgvalidatordPricesHistoryPoint {
@@ -164,6 +183,7 @@ export function TgvalidatordPricesHistoryPointFromJSONTyped(json: any, ignoreDis
         'changePercent': value['changePercent'],
         'currencyFromInfo': TgvalidatordCurrencyToJSON(value['currencyFromInfo']),
         'currencyToInfo': TgvalidatordCurrencyToJSON(value['currencyToInfo']),
+        ...value['additionalProperties'],
     };
 }
 

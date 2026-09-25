@@ -31,7 +31,16 @@ export interface TgvalidatordCreateTagRequest {
      * @memberof TgvalidatordCreateTagRequest
      */
     color: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateTagRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateTagRequestWireKeys: ReadonlySet<string> = new Set(['value', 'color']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateTagRequest interface.
@@ -50,11 +59,21 @@ export function TgvalidatordCreateTagRequestFromJSONTyped(json: any, ignoreDiscr
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateTagRequest = {
         
         'value': json['value'],
         'color': json['color'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateTagRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateTagRequestToJSON(json: any): TgvalidatordCreateTagRequest {
@@ -70,6 +89,7 @@ export function TgvalidatordCreateTagRequestFromJSONTyped(json: any, ignoreDiscr
         
         'value': value['value'],
         'color': value['color'],
+        ...value['additionalProperties'],
     };
 }
 

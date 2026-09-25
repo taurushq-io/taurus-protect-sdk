@@ -49,7 +49,16 @@ export interface TgvalidatordApproveRequestsRequest {
      * @memberof TgvalidatordApproveRequestsRequest
      */
     async?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordApproveRequestsRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordApproveRequestsRequestWireKeys: ReadonlySet<string> = new Set(['signature', 'comment', 'requestIds', 'ids', 'async']);
 
 /**
  * Check if a given object implements the TgvalidatordApproveRequestsRequest interface.
@@ -69,7 +78,7 @@ export function TgvalidatordApproveRequestsRequestFromJSONTyped(json: any, ignor
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordApproveRequestsRequest = {
         
         'signature': json['signature'],
         'comment': json['comment'],
@@ -77,6 +86,16 @@ export function TgvalidatordApproveRequestsRequestFromJSONTyped(json: any, ignor
         'ids': json['ids'],
         'async': json['async'] == null ? undefined : json['async'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordApproveRequestsRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordApproveRequestsRequestToJSON(json: any): TgvalidatordApproveRequestsRequest {
@@ -95,6 +114,7 @@ export function TgvalidatordApproveRequestsRequestFromJSONTyped(json: any, ignor
         'requestIds': value['requestIds'],
         'ids': value['ids'],
         'async': value['async'],
+        ...value['additionalProperties'],
     };
 }
 

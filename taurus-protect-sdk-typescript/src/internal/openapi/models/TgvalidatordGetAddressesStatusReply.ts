@@ -46,7 +46,16 @@ export interface TgvalidatordGetAddressesStatusReply {
      * @memberof TgvalidatordGetAddressesStatusReply
      */
     cursor?: TgvalidatordResponseCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetAddressesStatusReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetAddressesStatusReplyWireKeys: ReadonlySet<string> = new Set(['result', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetAddressesStatusReply interface.
@@ -63,11 +72,21 @@ export function TgvalidatordGetAddressesStatusReplyFromJSONTyped(json: any, igno
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetAddressesStatusReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordLightAddressInfoFromJSON)),
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetAddressesStatusReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetAddressesStatusReplyToJSON(json: any): TgvalidatordGetAddressesStatusReply {
@@ -83,6 +102,7 @@ export function TgvalidatordGetAddressesStatusReplyFromJSONTyped(json: any, igno
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordLightAddressInfoToJSON)),
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
+        ...value['additionalProperties'],
     };
 }
 

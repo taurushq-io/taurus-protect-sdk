@@ -41,95 +41,91 @@ func (s *ChangeService) GetChange(ctx context.Context, changeID string) (*model.
 	return mapper.ChangeFromDTO(resp.Result), nil
 }
 
-// ListChanges retrieves a list of changes.
+// ListChanges retrieves one page of changes. Continue with Page.NextCursor until
+// Page.HasMore is false.
 func (s *ChangeService) ListChanges(ctx context.Context, opts *model.ListChangesOptions) (*model.ListChangesResult, error) {
-	req := s.api.ChangeServiceGetChanges(ctx)
+	if opts == nil {
+		opts = &model.ListChangesOptions{}
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, opts.CurrentPage, opts.PageRequest)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if opts.Entity != "" {
-			req = req.Entity(opts.Entity)
-		}
-		if opts.EntityID != "" {
-			req = req.EntityId(opts.EntityID)
-		}
-		if len(opts.EntityIDs) > 0 {
-			req = req.EntityIDs(opts.EntityIDs)
-		}
-		if len(opts.EntityUUIDs) > 0 {
-			req = req.EntityUUIDs(opts.EntityUUIDs)
-		}
-		if opts.Status != "" {
-			req = req.Status(opts.Status)
-		}
-		if opts.CreatorID != "" {
-			req = req.CreatorId(opts.CreatorID)
-		}
-		if opts.SortOrder != "" {
-			req = req.SortOrder(opts.SortOrder)
-		}
-		if opts.PageSize > 0 {
-			req = req.CursorPageSize(fmt.Sprintf("%d", opts.PageSize))
-		}
-		if opts.CurrentPage != "" {
-			req = req.CursorCurrentPage(opts.CurrentPage)
-		}
-		if opts.PageRequest != "" {
-			req = req.CursorPageRequest(opts.PageRequest)
-		}
+	req := applyCursorQuery(s.api.ChangeServiceGetChanges(ctx), window)
+	if opts.Entity != "" {
+		req = req.Entity(opts.Entity)
+	}
+	if opts.EntityID != "" {
+		req = req.EntityId(opts.EntityID)
+	}
+	if len(opts.EntityIDs) > 0 {
+		req = req.EntityIDs(opts.EntityIDs)
+	}
+	if len(opts.EntityUUIDs) > 0 {
+		req = req.EntityUUIDs(opts.EntityUUIDs)
+	}
+	if opts.Status != "" {
+		req = req.Status(opts.Status)
+	}
+	if opts.CreatorID != "" {
+		req = req.CreatorId(opts.CreatorID)
+	}
+	if opts.SortOrder != "" {
+		req = req.SortOrder(opts.SortOrder)
 	}
 
 	resp, httpResp, err := req.Execute()
 	if err != nil {
 		return nil, s.errMapper.MapError(err, httpResp)
 	}
-
-	result := &model.ListChangesResult{
-		Changes: mapper.ChangesFromDTO(resp.Result),
-		Cursor:  mapper.CursorPaginationFromDTO(resp.Cursor),
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor})
+	if err != nil {
+		return nil, err
 	}
-
-	return result, nil
+	return &model.ListChangesResult{
+		Changes: mapper.ChangesFromDTO(resp.Result),
+		Page:    page,
+	}, nil
 }
 
-// ListChangesForApproval retrieves a list of changes pending approval for the current user.
+// ListChangesForApproval retrieves one page of the changes awaiting the current user's
+// approval. Continue with Page.NextCursor until Page.HasMore is false.
 func (s *ChangeService) ListChangesForApproval(ctx context.Context, opts *model.ListChangesForApprovalOptions) (*model.ListChangesResult, error) {
-	req := s.api.ChangeServiceGetChangesForApproval(ctx)
+	if opts == nil {
+		opts = &model.ListChangesForApprovalOptions{}
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, opts.CurrentPage, opts.PageRequest)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if len(opts.Entities) > 0 {
-			req = req.Entities(opts.Entities)
-		}
-		if len(opts.EntityIDs) > 0 {
-			req = req.EntityIDs(opts.EntityIDs)
-		}
-		if len(opts.EntityUUIDs) > 0 {
-			req = req.EntityUUIDs(opts.EntityUUIDs)
-		}
-		if opts.SortOrder != "" {
-			req = req.SortOrder(opts.SortOrder)
-		}
-		if opts.PageSize > 0 {
-			req = req.CursorPageSize(fmt.Sprintf("%d", opts.PageSize))
-		}
-		if opts.CurrentPage != "" {
-			req = req.CursorCurrentPage(opts.CurrentPage)
-		}
-		if opts.PageRequest != "" {
-			req = req.CursorPageRequest(opts.PageRequest)
-		}
+	req := applyCursorQuery(s.api.ChangeServiceGetChangesForApproval(ctx), window)
+	if len(opts.Entities) > 0 {
+		req = req.Entities(opts.Entities)
+	}
+	if len(opts.EntityIDs) > 0 {
+		req = req.EntityIDs(opts.EntityIDs)
+	}
+	if len(opts.EntityUUIDs) > 0 {
+		req = req.EntityUUIDs(opts.EntityUUIDs)
+	}
+	if opts.SortOrder != "" {
+		req = req.SortOrder(opts.SortOrder)
 	}
 
 	resp, httpResp, err := req.Execute()
 	if err != nil {
 		return nil, s.errMapper.MapError(err, httpResp)
 	}
-
-	result := &model.ListChangesResult{
-		Changes: mapper.ChangesFromDTO(resp.Result),
-		Cursor:  mapper.CursorPaginationFromDTO(resp.Cursor),
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor})
+	if err != nil {
+		return nil, err
 	}
-
-	return result, nil
+	return &model.ListChangesResult{
+		Changes: mapper.ChangesFromDTO(resp.Result),
+		Page:    page,
+	}, nil
 }
 
 // CreateChange creates a new change request.

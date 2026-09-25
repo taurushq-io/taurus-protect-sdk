@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -33,6 +32,7 @@ type TgvalidatordCreateOutgoingDOTNominateRequestRequest struct {
 	TransactionReference *string `json:"transactionReference,omitempty"`
 	// Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingDOTNominateRequestRequest TgvalidatordCreateOutgoingDOTNominateRequestRequest
@@ -256,6 +256,11 @@ func (o TgvalidatordCreateOutgoingDOTNominateRequestRequest) ToMap() (map[string
 	if !IsNil(o.ExternalRequestId) {
 		toSerialize["externalRequestId"] = o.ExternalRequestId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -284,15 +289,25 @@ func (o *TgvalidatordCreateOutgoingDOTNominateRequestRequest) UnmarshalJSON(data
 
 	varTgvalidatordCreateOutgoingDOTNominateRequestRequest := _TgvalidatordCreateOutgoingDOTNominateRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingDOTNominateRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingDOTNominateRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingDOTNominateRequestRequest(varTgvalidatordCreateOutgoingDOTNominateRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "validatorWLAIds")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "transactionReference")
+		delete(additionalProperties, "externalRequestId")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

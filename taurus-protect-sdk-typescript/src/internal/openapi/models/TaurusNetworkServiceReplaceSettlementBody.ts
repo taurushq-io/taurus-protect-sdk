@@ -33,7 +33,16 @@ export interface TaurusNetworkServiceReplaceSettlementBody {
      * @memberof TaurusNetworkServiceReplaceSettlementBody
      */
     createSettlementRequest?: TgvalidatordCreateSettlementRequest;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TaurusNetworkServiceReplaceSettlementBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TaurusNetworkServiceReplaceSettlementBodyWireKeys: ReadonlySet<string> = new Set(['createSettlementRequest']);
 
 /**
  * Check if a given object implements the TaurusNetworkServiceReplaceSettlementBody interface.
@@ -50,10 +59,20 @@ export function TaurusNetworkServiceReplaceSettlementBodyFromJSONTyped(json: any
     if (json == null) {
         return json;
     }
-    return {
+    const result: TaurusNetworkServiceReplaceSettlementBody = {
         
         'createSettlementRequest': json['createSettlementRequest'] == null ? undefined : TgvalidatordCreateSettlementRequestFromJSON(json['createSettlementRequest']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TaurusNetworkServiceReplaceSettlementBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TaurusNetworkServiceReplaceSettlementBodyToJSON(json: any): TaurusNetworkServiceReplaceSettlementBody {
@@ -68,6 +87,7 @@ export function TaurusNetworkServiceReplaceSettlementBodyFromJSONTyped(json: any
     return {
         
         'createSettlementRequest': TgvalidatordCreateSettlementRequestToJSON(value['createSettlementRequest']),
+        ...value['additionalProperties'],
     };
 }
 

@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordExportTransactionTravelRuleReply{}
 // TgvalidatordExportTransactionTravelRuleReply struct for TgvalidatordExportTransactionTravelRuleReply
 type TgvalidatordExportTransactionTravelRuleReply struct {
 	Result *string `json:"result,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordExportTransactionTravelRuleReply TgvalidatordExportTransactionTravelRuleReply
 
 // NewTgvalidatordExportTransactionTravelRuleReply instantiates a new TgvalidatordExportTransactionTravelRuleReply object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordExportTransactionTravelRuleReply) ToMap() (map[string]interf
 	if !IsNil(o.Result) {
 		toSerialize["result"] = o.Result
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordExportTransactionTravelRuleReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordExportTransactionTravelRuleReply := _TgvalidatordExportTransactionTravelRuleReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordExportTransactionTravelRuleReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordExportTransactionTravelRuleReply(varTgvalidatordExportTransactionTravelRuleReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "result")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordExportTransactionTravelRuleReply struct {

@@ -46,7 +46,16 @@ export interface TgvalidatordNFTCollectionBalance {
      * @memberof TgvalidatordNFTCollectionBalance
      */
     balance?: TgvalidatordBalance;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordNFTCollectionBalance
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordNFTCollectionBalanceWireKeys: ReadonlySet<string> = new Set(['currencyInfo', 'balance']);
 
 /**
  * Check if a given object implements the TgvalidatordNFTCollectionBalance interface.
@@ -63,11 +72,21 @@ export function TgvalidatordNFTCollectionBalanceFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordNFTCollectionBalance = {
         
         'currencyInfo': json['currencyInfo'] == null ? undefined : TgvalidatordCurrencyFromJSON(json['currencyInfo']),
         'balance': json['balance'] == null ? undefined : TgvalidatordBalanceFromJSON(json['balance']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordNFTCollectionBalanceWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordNFTCollectionBalanceToJSON(json: any): TgvalidatordNFTCollectionBalance {
@@ -83,6 +102,7 @@ export function TgvalidatordNFTCollectionBalanceFromJSONTyped(json: any, ignoreD
         
         'currencyInfo': TgvalidatordCurrencyToJSON(value['currencyInfo']),
         'balance': TgvalidatordBalanceToJSON(value['balance']),
+        ...value['additionalProperties'],
     };
 }
 

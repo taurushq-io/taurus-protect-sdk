@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Union
 
 from taurus_protect.errors import APIError, IntegrityError, WhitelistError
 from taurus_protect.models.multi_factor_signature import (
@@ -76,6 +76,10 @@ class MultiFactorSignatureService(BaseService):
         ``client.whitelisted_assets``) and require each ``payload_to_sign`` element to
         equal a locally recomputed, verified metadata hash. Until the SDK does that for
         you, do it yourself.
+
+        An ``entity_type`` this SDK does not know comes back with its raw value and is
+        none of the known members: there is no verifying reader for it, so its payload
+        must not be signed as any known kind.
 
         Args:
             id: The multi-factor signature ID.
@@ -240,11 +244,11 @@ class MultiFactorSignatureService(BaseService):
 def _entity_type_to_dto(
     entity_type: Union[MultiFactorSignatureEntityType, str],
 ) -> Any:
-    """Map the domain entity type onto the generated enum.
+    """Map the domain entity type onto the generated enum, sending the kind verbatim.
 
-    A value the generated enum does not know is a ``ValueError`` rather than a silent
-    substitution: sending the wrong kind would put an entity through the wrong approval
-    channel.
+    A kind this SDK does not know is not refused here: validatord rejects an unknown kind
+    itself, and a check against the known names could never catch the real hazard -- a
+    known but wrong kind, which would put an entity through the wrong approval channel.
     """
     from taurus_protect._internal.openapi.models.tgvalidatord_multi_factor_signatures_entity_type import (  # noqa: E501
         TgvalidatordMultiFactorSignaturesEntityType,
@@ -255,26 +259,16 @@ def _entity_type_to_dto(
         if isinstance(entity_type, MultiFactorSignatureEntityType)
         else str(entity_type)
     )
-    try:
-        return TgvalidatordMultiFactorSignaturesEntityType(value)
-    except ValueError as exc:
-        raise ValueError(f"unknown multi-factor signature entity type {value!r}") from exc
+    return TgvalidatordMultiFactorSignaturesEntityType(value)
 
 
-def _entity_type_from_dto(value: Any) -> MultiFactorSignatureEntityType:
-    """Map the generated enum back onto the domain one.
+def _entity_type_from_dto(value: Any) -> Optional[MultiFactorSignatureEntityType]:
+    """Map the generated enum back onto the domain one, keeping an unknown kind raw.
 
-    An unknown kind is refused rather than defaulted. Defaulting would tell the caller a
-    payload covers a REQUEST when the server said something else, and the kind is what
-    decides which verifying reader they must check the payload against.
+    It is never defaulted: defaulting would tell the caller a payload covers a REQUEST
+    when the server said something else, and the kind is what decides which verifying
+    reader they must check the payload against. A missing kind stays None.
     """
     if value is None:
-        raise IntegrityError("multi-factor signature reply carries no entity type")
-    raw = getattr(value, "value", value)
-    try:
-        return MultiFactorSignatureEntityType(str(raw))
-    except ValueError as exc:
-        raise IntegrityError(
-            f"unknown multi-factor signature entity type {raw!r}: the kind decides which "
-            "verifying reader the payload must be checked against, so it is not defaulted"
-        ) from exc
+        return None
+    return MultiFactorSignatureEntityType(str(getattr(value, "value", value)))

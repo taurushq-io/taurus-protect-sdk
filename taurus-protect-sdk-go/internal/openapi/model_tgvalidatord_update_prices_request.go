@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -23,6 +22,7 @@ var _ MappedNullable = &TgvalidatordUpdatePricesRequest{}
 type TgvalidatordUpdatePricesRequest struct {
 	// Prices to be updated. Required price fields are: blockchain, currencyFrom, currencyTo, decimals, rate, signatures.
 	Prices []TgvalidatordCurrencyPrice `json:"prices"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordUpdatePricesRequest TgvalidatordUpdatePricesRequest
@@ -80,6 +80,11 @@ func (o TgvalidatordUpdatePricesRequest) MarshalJSON() ([]byte, error) {
 func (o TgvalidatordUpdatePricesRequest) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["prices"] = o.Prices
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -107,15 +112,20 @@ func (o *TgvalidatordUpdatePricesRequest) UnmarshalJSON(data []byte) (err error)
 
 	varTgvalidatordUpdatePricesRequest := _TgvalidatordUpdatePricesRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordUpdatePricesRequest)
+	err = json.Unmarshal(data, &varTgvalidatordUpdatePricesRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordUpdatePricesRequest(varTgvalidatordUpdatePricesRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "prices")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

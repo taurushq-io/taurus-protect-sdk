@@ -39,7 +39,16 @@ export interface TgvalidatordDefaultSharedAddresses {
      * @memberof TgvalidatordDefaultSharedAddresses
      */
     incomingDefaultSharedAddresses?: Array<TgvalidatordDefaultSharedAddress>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordDefaultSharedAddresses
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordDefaultSharedAddressesWireKeys: ReadonlySet<string> = new Set(['outgoingDefaultSharedAddresses', 'incomingDefaultSharedAddresses']);
 
 /**
  * Check if a given object implements the TgvalidatordDefaultSharedAddresses interface.
@@ -56,11 +65,21 @@ export function TgvalidatordDefaultSharedAddressesFromJSONTyped(json: any, ignor
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordDefaultSharedAddresses = {
         
         'outgoingDefaultSharedAddresses': json['outgoingDefaultSharedAddresses'] == null ? undefined : ((json['outgoingDefaultSharedAddresses'] as Array<any>).map(TgvalidatordDefaultSharedAddressFromJSON)),
         'incomingDefaultSharedAddresses': json['incomingDefaultSharedAddresses'] == null ? undefined : ((json['incomingDefaultSharedAddresses'] as Array<any>).map(TgvalidatordDefaultSharedAddressFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordDefaultSharedAddressesWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordDefaultSharedAddressesToJSON(json: any): TgvalidatordDefaultSharedAddresses {
@@ -76,6 +95,7 @@ export function TgvalidatordDefaultSharedAddressesFromJSONTyped(json: any, ignor
         
         'outgoingDefaultSharedAddresses': value['outgoingDefaultSharedAddresses'] == null ? undefined : ((value['outgoingDefaultSharedAddresses'] as Array<any>).map(TgvalidatordDefaultSharedAddressToJSON)),
         'incomingDefaultSharedAddresses': value['incomingDefaultSharedAddresses'] == null ? undefined : ((value['incomingDefaultSharedAddresses'] as Array<any>).map(TgvalidatordDefaultSharedAddressToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

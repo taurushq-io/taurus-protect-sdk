@@ -49,7 +49,16 @@ export interface TgvalidatordProofOfOwnershipPayload {
      * @memberof TgvalidatordProofOfOwnershipPayload
      */
     network?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordProofOfOwnershipPayload
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordProofOfOwnershipPayloadWireKeys: ReadonlySet<string> = new Set(['ownerParticipantID', 'targetParticipantID', 'address', 'blockchain', 'network']);
 
 /**
  * Check if a given object implements the TgvalidatordProofOfOwnershipPayload interface.
@@ -66,7 +75,7 @@ export function TgvalidatordProofOfOwnershipPayloadFromJSONTyped(json: any, igno
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordProofOfOwnershipPayload = {
         
         'ownerParticipantID': json['ownerParticipantID'] == null ? undefined : json['ownerParticipantID'],
         'targetParticipantID': json['targetParticipantID'] == null ? undefined : json['targetParticipantID'],
@@ -74,6 +83,16 @@ export function TgvalidatordProofOfOwnershipPayloadFromJSONTyped(json: any, igno
         'blockchain': json['blockchain'] == null ? undefined : json['blockchain'],
         'network': json['network'] == null ? undefined : json['network'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordProofOfOwnershipPayloadWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordProofOfOwnershipPayloadToJSON(json: any): TgvalidatordProofOfOwnershipPayload {
@@ -92,6 +111,7 @@ export function TgvalidatordProofOfOwnershipPayloadFromJSONTyped(json: any, igno
         'address': value['address'],
         'blockchain': value['blockchain'],
         'network': value['network'],
+        ...value['additionalProperties'],
     };
 }
 

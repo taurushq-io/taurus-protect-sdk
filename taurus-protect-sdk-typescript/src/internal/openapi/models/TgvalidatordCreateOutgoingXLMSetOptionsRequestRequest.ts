@@ -55,7 +55,16 @@ export interface TgvalidatordCreateOutgoingXLMSetOptionsRequestRequest {
      * @memberof TgvalidatordCreateOutgoingXLMSetOptionsRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingXLMSetOptionsRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingXLMSetOptionsRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'setFlags', 'clearFlags', 'feeLimit', 'comment', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingXLMSetOptionsRequestRequest interface.
@@ -73,7 +82,7 @@ export function TgvalidatordCreateOutgoingXLMSetOptionsRequestRequestFromJSONTyp
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingXLMSetOptionsRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'setFlags': json['setFlags'] == null ? undefined : json['setFlags'],
@@ -82,6 +91,16 @@ export function TgvalidatordCreateOutgoingXLMSetOptionsRequestRequestFromJSONTyp
         'comment': json['comment'] == null ? undefined : json['comment'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingXLMSetOptionsRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingXLMSetOptionsRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingXLMSetOptionsRequestRequest {
@@ -101,6 +120,7 @@ export function TgvalidatordCreateOutgoingXLMSetOptionsRequestRequestFromJSONTyp
         'feeLimit': value['feeLimit'],
         'comment': value['comment'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

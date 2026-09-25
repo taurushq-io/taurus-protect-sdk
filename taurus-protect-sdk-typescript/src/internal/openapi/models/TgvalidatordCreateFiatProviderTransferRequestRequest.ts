@@ -55,7 +55,16 @@ export interface TgvalidatordCreateFiatProviderTransferRequestRequest {
      * @memberof TgvalidatordCreateFiatProviderTransferRequestRequest
      */
     externalRequestID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateFiatProviderTransferRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateFiatProviderTransferRequestRequestWireKeys: ReadonlySet<string> = new Set(['amount', 'fromAccountID', 'toAccountID', 'toCounterpartyAccountID', 'comment', 'externalRequestID']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateFiatProviderTransferRequestRequest interface.
@@ -74,7 +83,7 @@ export function TgvalidatordCreateFiatProviderTransferRequestRequestFromJSONType
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateFiatProviderTransferRequestRequest = {
         
         'amount': json['amount'],
         'fromAccountID': json['fromAccountID'],
@@ -83,6 +92,16 @@ export function TgvalidatordCreateFiatProviderTransferRequestRequestFromJSONType
         'comment': json['comment'] == null ? undefined : json['comment'],
         'externalRequestID': json['externalRequestID'] == null ? undefined : json['externalRequestID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateFiatProviderTransferRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateFiatProviderTransferRequestRequestToJSON(json: any): TgvalidatordCreateFiatProviderTransferRequestRequest {
@@ -102,6 +121,7 @@ export function TgvalidatordCreateFiatProviderTransferRequestRequestFromJSONType
         'toCounterpartyAccountID': value['toCounterpartyAccountID'],
         'comment': value['comment'],
         'externalRequestID': value['externalRequestID'],
+        ...value['additionalProperties'],
     };
 }
 

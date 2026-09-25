@@ -45,7 +45,16 @@ export interface TgvalidatordGetWalletsInfoReply {
      * @memberof TgvalidatordGetWalletsInfoReply
      */
     offset?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetWalletsInfoReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetWalletsInfoReplyWireKeys: ReadonlySet<string> = new Set(['result', 'totalItems', 'offset']);
 
 /**
  * Check if a given object implements the TgvalidatordGetWalletsInfoReply interface.
@@ -62,12 +71,22 @@ export function TgvalidatordGetWalletsInfoReplyFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetWalletsInfoReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordWalletInfoFromJSON)),
         'totalItems': json['totalItems'] == null ? undefined : json['totalItems'],
         'offset': json['offset'] == null ? undefined : json['offset'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetWalletsInfoReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetWalletsInfoReplyToJSON(json: any): TgvalidatordGetWalletsInfoReply {
@@ -84,6 +103,7 @@ export function TgvalidatordGetWalletsInfoReplyFromJSONTyped(json: any, ignoreDi
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordWalletInfoToJSON)),
         'totalItems': value['totalItems'],
         'offset': value['offset'],
+        ...value['additionalProperties'],
     };
 }
 

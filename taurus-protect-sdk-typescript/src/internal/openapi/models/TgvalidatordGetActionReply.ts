@@ -33,7 +33,16 @@ export interface TgvalidatordGetActionReply {
      * @memberof TgvalidatordGetActionReply
      */
     action?: TgvalidatordActionEnvelope;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetActionReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetActionReplyWireKeys: ReadonlySet<string> = new Set(['action']);
 
 /**
  * Check if a given object implements the TgvalidatordGetActionReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetActionReplyFromJSONTyped(json: any, ignoreDiscrim
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetActionReply = {
         
         'action': json['action'] == null ? undefined : TgvalidatordActionEnvelopeFromJSON(json['action']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetActionReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetActionReplyToJSON(json: any): TgvalidatordGetActionReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetActionReplyFromJSONTyped(json: any, ignoreDiscrim
     return {
         
         'action': TgvalidatordActionEnvelopeToJSON(value['action']),
+        ...value['additionalProperties'],
     };
 }
 

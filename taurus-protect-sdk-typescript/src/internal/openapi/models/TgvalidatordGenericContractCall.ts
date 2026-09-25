@@ -58,7 +58,16 @@ export interface TgvalidatordGenericContractCall {
      * @memberof TgvalidatordGenericContractCall
      */
     evm?: TgvalidatordContractCall;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGenericContractCall
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGenericContractCallWireKeys: ReadonlySet<string> = new Set(['blockchain', 'eth', 'xtz', 'evm']);
 
 /**
  * Check if a given object implements the TgvalidatordGenericContractCall interface.
@@ -75,13 +84,23 @@ export function TgvalidatordGenericContractCallFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGenericContractCall = {
         
         'blockchain': json['blockchain'] == null ? undefined : json['blockchain'],
         'eth': json['eth'] == null ? undefined : TgvalidatordContractCallFromJSON(json['eth']),
         'xtz': json['xtz'] == null ? undefined : TgvalidatordXTZContractCallFromJSON(json['xtz']),
         'evm': json['evm'] == null ? undefined : TgvalidatordContractCallFromJSON(json['evm']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGenericContractCallWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGenericContractCallToJSON(json: any): TgvalidatordGenericContractCall {
@@ -99,6 +118,7 @@ export function TgvalidatordGenericContractCallFromJSONTyped(json: any, ignoreDi
         'eth': TgvalidatordContractCallToJSON(value['eth']),
         'xtz': TgvalidatordXTZContractCallToJSON(value['xtz']),
         'evm': TgvalidatordContractCallToJSON(value['evm']),
+        ...value['additionalProperties'],
     };
 }
 

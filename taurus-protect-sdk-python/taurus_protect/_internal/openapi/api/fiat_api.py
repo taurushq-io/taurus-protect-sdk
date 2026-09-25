@@ -23,6 +23,7 @@ from taurus_protect._internal.openapi.models.tgvalidatord_get_fiat_provider_acco
 from taurus_protect._internal.openapi.models.tgvalidatord_get_fiat_provider_accounts_reply import TgvalidatordGetFiatProviderAccountsReply
 from taurus_protect._internal.openapi.models.tgvalidatord_get_fiat_provider_counterparty_account_reply import TgvalidatordGetFiatProviderCounterpartyAccountReply
 from taurus_protect._internal.openapi.models.tgvalidatord_get_fiat_provider_counterparty_accounts_reply import TgvalidatordGetFiatProviderCounterpartyAccountsReply
+from taurus_protect._internal.openapi.models.tgvalidatord_get_fiat_provider_entities_reply import TgvalidatordGetFiatProviderEntitiesReply
 from taurus_protect._internal.openapi.models.tgvalidatord_get_fiat_provider_operation_reply import TgvalidatordGetFiatProviderOperationReply
 from taurus_protect._internal.openapi.models.tgvalidatord_get_fiat_provider_operations_reply import TgvalidatordGetFiatProviderOperationsReply
 from taurus_protect._internal.openapi.models.tgvalidatord_get_fiat_providers_reply import TgvalidatordGetFiatProvidersReply
@@ -1354,6 +1355,372 @@ class FiatApi:
         return self.api_client.param_serialize(
             method='GET',
             resource_path='/api/rest/v1/fiat_providers/counterpartyaccounts',
+            path_params=_path_params,
+            query_params=_query_params,
+            header_params=_header_params,
+            body=_body_params,
+            post_params=_form_params,
+            files=_files,
+            auth_settings=_auth_settings,
+            collection_formats=_collection_formats,
+            _host=_host,
+            _request_auth=_request_auth
+        )
+
+
+
+
+    @validate_call
+    def fiat_provider_service_get_fiat_provider_entities(
+        self,
+        provider: Annotated[Optional[StrictStr], Field(description="Optional. Filter entities by fiat provider. Example: 'circle'")] = None,
+        label: Annotated[Optional[StrictStr], Field(description="Optional. Filter entities by the label of the fiat provider set in the config")] = None,
+        sort_order: Annotated[Optional[StrictStr], Field(description="Set this parameter to ASC to get the id sorted in ASC order or DESC to get them in descending order. By default, the order is DESC.")] = None,
+        cursor_current_page: Annotated[Optional[StrictStr], Field(description="Base64-encoded string representing the current window of data")] = None,
+        cursor_page_request: Annotated[Optional[StrictStr], Field(description="The page to request, w.r.t the current page. Can be one of `FIRST`, `PREVIOUS`, `NEXT`, `LAST`")] = None,
+        cursor_page_size: Annotated[Optional[StrictStr], Field(description="The size of the page requested. The handling service should impose a hard limit on this")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> TgvalidatordGetFiatProviderEntitiesReply:
+        """List fiat provider entities
+
+        This endpoint returns a list of fiat provider account entities (Circle wallets / Paxos profiles), optionally filtered by provider and label
+
+        :param provider: Optional. Filter entities by fiat provider. Example: 'circle'
+        :type provider: str
+        :param label: Optional. Filter entities by the label of the fiat provider set in the config
+        :type label: str
+        :param sort_order: Set this parameter to ASC to get the id sorted in ASC order or DESC to get them in descending order. By default, the order is DESC.
+        :type sort_order: str
+        :param cursor_current_page: Base64-encoded string representing the current window of data
+        :type cursor_current_page: str
+        :param cursor_page_request: The page to request, w.r.t the current page. Can be one of `FIRST`, `PREVIOUS`, `NEXT`, `LAST`
+        :type cursor_page_request: str
+        :param cursor_page_size: The size of the page requested. The handling service should impose a hard limit on this
+        :type cursor_page_size: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._fiat_provider_service_get_fiat_provider_entities_serialize(
+            provider=provider,
+            label=label,
+            sort_order=sort_order,
+            cursor_current_page=cursor_current_page,
+            cursor_page_request=cursor_page_request,
+            cursor_page_size=cursor_page_size,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "TgvalidatordGetFiatProviderEntitiesReply",
+            '400': "object",
+            '401': "object",
+            '403': "object",
+            '404': "object",
+            '500': "object",
+            '503': "object",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        ).data
+
+
+    @validate_call
+    def fiat_provider_service_get_fiat_provider_entities_with_http_info(
+        self,
+        provider: Annotated[Optional[StrictStr], Field(description="Optional. Filter entities by fiat provider. Example: 'circle'")] = None,
+        label: Annotated[Optional[StrictStr], Field(description="Optional. Filter entities by the label of the fiat provider set in the config")] = None,
+        sort_order: Annotated[Optional[StrictStr], Field(description="Set this parameter to ASC to get the id sorted in ASC order or DESC to get them in descending order. By default, the order is DESC.")] = None,
+        cursor_current_page: Annotated[Optional[StrictStr], Field(description="Base64-encoded string representing the current window of data")] = None,
+        cursor_page_request: Annotated[Optional[StrictStr], Field(description="The page to request, w.r.t the current page. Can be one of `FIRST`, `PREVIOUS`, `NEXT`, `LAST`")] = None,
+        cursor_page_size: Annotated[Optional[StrictStr], Field(description="The size of the page requested. The handling service should impose a hard limit on this")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> ApiResponse[TgvalidatordGetFiatProviderEntitiesReply]:
+        """List fiat provider entities
+
+        This endpoint returns a list of fiat provider account entities (Circle wallets / Paxos profiles), optionally filtered by provider and label
+
+        :param provider: Optional. Filter entities by fiat provider. Example: 'circle'
+        :type provider: str
+        :param label: Optional. Filter entities by the label of the fiat provider set in the config
+        :type label: str
+        :param sort_order: Set this parameter to ASC to get the id sorted in ASC order or DESC to get them in descending order. By default, the order is DESC.
+        :type sort_order: str
+        :param cursor_current_page: Base64-encoded string representing the current window of data
+        :type cursor_current_page: str
+        :param cursor_page_request: The page to request, w.r.t the current page. Can be one of `FIRST`, `PREVIOUS`, `NEXT`, `LAST`
+        :type cursor_page_request: str
+        :param cursor_page_size: The size of the page requested. The handling service should impose a hard limit on this
+        :type cursor_page_size: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._fiat_provider_service_get_fiat_provider_entities_serialize(
+            provider=provider,
+            label=label,
+            sort_order=sort_order,
+            cursor_current_page=cursor_current_page,
+            cursor_page_request=cursor_page_request,
+            cursor_page_size=cursor_page_size,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "TgvalidatordGetFiatProviderEntitiesReply",
+            '400': "object",
+            '401': "object",
+            '403': "object",
+            '404': "object",
+            '500': "object",
+            '503': "object",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        response_data.read()
+        return self.api_client.response_deserialize(
+            response_data=response_data,
+            response_types_map=_response_types_map,
+        )
+
+
+    @validate_call
+    def fiat_provider_service_get_fiat_provider_entities_without_preload_content(
+        self,
+        provider: Annotated[Optional[StrictStr], Field(description="Optional. Filter entities by fiat provider. Example: 'circle'")] = None,
+        label: Annotated[Optional[StrictStr], Field(description="Optional. Filter entities by the label of the fiat provider set in the config")] = None,
+        sort_order: Annotated[Optional[StrictStr], Field(description="Set this parameter to ASC to get the id sorted in ASC order or DESC to get them in descending order. By default, the order is DESC.")] = None,
+        cursor_current_page: Annotated[Optional[StrictStr], Field(description="Base64-encoded string representing the current window of data")] = None,
+        cursor_page_request: Annotated[Optional[StrictStr], Field(description="The page to request, w.r.t the current page. Can be one of `FIRST`, `PREVIOUS`, `NEXT`, `LAST`")] = None,
+        cursor_page_size: Annotated[Optional[StrictStr], Field(description="The size of the page requested. The handling service should impose a hard limit on this")] = None,
+        _request_timeout: Union[
+            None,
+            Annotated[StrictFloat, Field(gt=0)],
+            Tuple[
+                Annotated[StrictFloat, Field(gt=0)],
+                Annotated[StrictFloat, Field(gt=0)]
+            ]
+        ] = None,
+        _request_auth: Optional[Dict[StrictStr, Any]] = None,
+        _content_type: Optional[StrictStr] = None,
+        _headers: Optional[Dict[StrictStr, Any]] = None,
+        _host_index: Annotated[StrictInt, Field(ge=0, le=0)] = 0,
+    ) -> RESTResponseType:
+        """List fiat provider entities
+
+        This endpoint returns a list of fiat provider account entities (Circle wallets / Paxos profiles), optionally filtered by provider and label
+
+        :param provider: Optional. Filter entities by fiat provider. Example: 'circle'
+        :type provider: str
+        :param label: Optional. Filter entities by the label of the fiat provider set in the config
+        :type label: str
+        :param sort_order: Set this parameter to ASC to get the id sorted in ASC order or DESC to get them in descending order. By default, the order is DESC.
+        :type sort_order: str
+        :param cursor_current_page: Base64-encoded string representing the current window of data
+        :type cursor_current_page: str
+        :param cursor_page_request: The page to request, w.r.t the current page. Can be one of `FIRST`, `PREVIOUS`, `NEXT`, `LAST`
+        :type cursor_page_request: str
+        :param cursor_page_size: The size of the page requested. The handling service should impose a hard limit on this
+        :type cursor_page_size: str
+        :param _request_timeout: timeout setting for this request. If one
+                                 number provided, it will be total request
+                                 timeout. It can also be a pair (tuple) of
+                                 (connection, read) timeouts.
+        :type _request_timeout: int, tuple(int, int), optional
+        :param _request_auth: set to override the auth_settings for an a single
+                              request; this effectively ignores the
+                              authentication in the spec for a single request.
+        :type _request_auth: dict, optional
+        :param _content_type: force content-type for the request.
+        :type _content_type: str, Optional
+        :param _headers: set to override the headers for a single
+                         request; this effectively ignores the headers
+                         in the spec for a single request.
+        :type _headers: dict, optional
+        :param _host_index: set to override the host_index for a single
+                            request; this effectively ignores the host_index
+                            in the spec for a single request.
+        :type _host_index: int, optional
+        :return: Returns the result object.
+        """ # noqa: E501
+
+        _param = self._fiat_provider_service_get_fiat_provider_entities_serialize(
+            provider=provider,
+            label=label,
+            sort_order=sort_order,
+            cursor_current_page=cursor_current_page,
+            cursor_page_request=cursor_page_request,
+            cursor_page_size=cursor_page_size,
+            _request_auth=_request_auth,
+            _content_type=_content_type,
+            _headers=_headers,
+            _host_index=_host_index
+        )
+
+        _response_types_map: Dict[str, Optional[str]] = {
+            '200': "TgvalidatordGetFiatProviderEntitiesReply",
+            '400': "object",
+            '401': "object",
+            '403': "object",
+            '404': "object",
+            '500': "object",
+            '503': "object",
+        }
+        response_data = self.api_client.call_api(
+            *_param,
+            _request_timeout=_request_timeout
+        )
+        return response_data.response
+
+
+    def _fiat_provider_service_get_fiat_provider_entities_serialize(
+        self,
+        provider,
+        label,
+        sort_order,
+        cursor_current_page,
+        cursor_page_request,
+        cursor_page_size,
+        _request_auth,
+        _content_type,
+        _headers,
+        _host_index,
+    ) -> RequestSerialized:
+
+        _host = None
+
+        _collection_formats: Dict[str, str] = {
+        }
+
+        _path_params: Dict[str, str] = {}
+        _query_params: List[Tuple[str, str]] = []
+        _header_params: Dict[str, Optional[str]] = _headers or {}
+        _form_params: List[Tuple[str, str]] = []
+        _files: Dict[
+            str, Union[str, bytes, List[str], List[bytes], List[Tuple[str, bytes]]]
+        ] = {}
+        _body_params: Optional[bytes] = None
+
+        # process the path parameters
+        # process the query parameters
+        if provider is not None:
+            
+            _query_params.append(('provider', provider))
+            
+        if label is not None:
+            
+            _query_params.append(('label', label))
+            
+        if sort_order is not None:
+            
+            _query_params.append(('sortOrder', sort_order))
+            
+        if cursor_current_page is not None:
+            
+            _query_params.append(('cursor.currentPage', cursor_current_page))
+            
+        if cursor_page_request is not None:
+            
+            _query_params.append(('cursor.pageRequest', cursor_page_request))
+            
+        if cursor_page_size is not None:
+            
+            _query_params.append(('cursor.pageSize', cursor_page_size))
+            
+        # process the header parameters
+        # process the form parameters
+        # process the body parameter
+
+
+        # set the HTTP header `Accept`
+        if 'Accept' not in _header_params:
+            _header_params['Accept'] = self.api_client.select_header_accept(
+                [
+                    'application/json'
+                ]
+            )
+
+
+        # authentication setting
+        _auth_settings: List[str] = [
+            'ApiKeyTPV1'
+        ]
+
+        return self.api_client.param_serialize(
+            method='GET',
+            resource_path='/api/rest/v1/fiat_providers/entities',
             path_params=_path_params,
             query_params=_query_params,
             header_params=_header_params,

@@ -2,6 +2,8 @@
  * Audit models for Taurus-PROTECT SDK.
  */
 
+import type { CursorPage, CursorPageOptions } from './pagination';
+
 /**
  * Audit trail entry.
  */
@@ -31,11 +33,10 @@ export interface AuditTrail {
 }
 
 /**
- * Options for listing audit trails.
+ * Options for listing audit trails. A cursor list: `pageSize` 1-100 (default 20) and the
+ * `cursor` of a previous page.
  */
-export interface ListAuditTrailsOptions {
-  /** Maximum number of audit trails to return */
-  limit?: number;
+export interface ListAuditTrailsOptions extends CursorPageOptions {
   /** Filter by external user ID */
   externalUserId?: string;
   /** Filter by entity types */
@@ -48,4 +49,14 @@ export interface ListAuditTrailsOptions {
   creationDateTo?: Date;
   /** Sort order (ASC or DESC) */
   sortOrder?: 'ASC' | 'DESC';
+}
+
+/**
+ * A page of audit trails.
+ */
+export interface ListAuditTrailsResult {
+  /** The audit trails of this page */
+  readonly items: AuditTrail[];
+  /** Cursor pagination: continue with `cursor: pagination.nextCursor` while `hasMore` */
+  readonly pagination: CursorPage;
 }

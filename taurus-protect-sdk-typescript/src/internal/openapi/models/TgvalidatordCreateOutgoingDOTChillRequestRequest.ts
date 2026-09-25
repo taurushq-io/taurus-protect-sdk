@@ -49,7 +49,16 @@ export interface TgvalidatordCreateOutgoingDOTChillRequestRequest {
      * @memberof TgvalidatordCreateOutgoingDOTChillRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingDOTChillRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingDOTChillRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'feeLimit', 'comment', 'transactionReference', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingDOTChillRequestRequest interface.
@@ -67,7 +76,7 @@ export function TgvalidatordCreateOutgoingDOTChillRequestRequestFromJSONTyped(js
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingDOTChillRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'feeLimit': json['feeLimit'] == null ? undefined : json['feeLimit'],
@@ -75,6 +84,16 @@ export function TgvalidatordCreateOutgoingDOTChillRequestRequestFromJSONTyped(js
         'transactionReference': json['transactionReference'] == null ? undefined : json['transactionReference'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingDOTChillRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingDOTChillRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingDOTChillRequestRequest {
@@ -93,6 +112,7 @@ export function TgvalidatordCreateOutgoingDOTChillRequestRequestFromJSONTyped(js
         'comment': value['comment'],
         'transactionReference': value['transactionReference'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

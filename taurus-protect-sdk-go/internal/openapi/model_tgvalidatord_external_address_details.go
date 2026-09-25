@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordExternalAddressDetails{}
 // TgvalidatordExternalAddressDetails struct for TgvalidatordExternalAddressDetails
 type TgvalidatordExternalAddressDetails struct {
 	Address *string `json:"address,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordExternalAddressDetails TgvalidatordExternalAddressDetails
 
 // NewTgvalidatordExternalAddressDetails instantiates a new TgvalidatordExternalAddressDetails object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordExternalAddressDetails) ToMap() (map[string]interface{}, err
 	if !IsNil(o.Address) {
 		toSerialize["address"] = o.Address
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordExternalAddressDetails) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordExternalAddressDetails := _TgvalidatordExternalAddressDetails{}
+
+	err = json.Unmarshal(data, &varTgvalidatordExternalAddressDetails)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordExternalAddressDetails(varTgvalidatordExternalAddressDetails)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "address")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordExternalAddressDetails struct {

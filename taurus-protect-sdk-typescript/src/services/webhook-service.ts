@@ -7,8 +7,15 @@
 import { NotFoundError, ValidationError } from '../errors';
 import type { WebhooksApi } from '../internal/openapi/apis/WebhooksApi';
 import { webhookFromDto, webhooksFromDto } from '../mappers/webhook';
-import type { CreateWebhookRequest, ListWebhooksOptions, Webhook } from '../models/webhook';
+import { buildCursorPage, cursorRequest } from '../models/pagination';
+import type {
+  CreateWebhookRequest,
+  ListWebhooksOptions,
+  ListWebhooksResult,
+  Webhook,
+} from '../models/webhook';
 import { BaseService } from './base';
+import { cursorQuery, scanPages } from './paging';
 
 /**
  * Service for webhook management operations.
@@ -54,8 +61,8 @@ export class WebhookService extends BaseService {
   /**
    * Gets a webhook by ID.
    *
-   * Note: This method lists webhooks and filters by ID since the API
-   * does not provide a direct get-by-ID endpoint.
+   * The API has no get-by-ID endpoint, so this walks the webhook list page by page
+   * (100 per page) until the ID shows up.
    *
    * @param webhookId - The webhook ID to retrieve
    * @returns The webhook
@@ -75,68 +82,57 @@ export class WebhookService extends BaseService {
     }
 
     return this.execute(async () => {
-      // List webhooks and find the one with matching ID
-      const response = await this.webhooksApi.webhookServiceGetWebhooks({
-        cursorPageSize: '100',
-      });
+      // No single-webhook read exists: walk the list page by page until the id shows up.
+      const dto = await scanPages(
+        async (page) => {
+          const response = await this.webhooksApi.webhookServiceGetWebhooks(cursorQuery(page));
+          return { rows: response.webhooks, cursor: response.cursor };
+        },
+        (row) => row.id === webhookId
+      );
 
-      const resp = response as Record<string, unknown>;
-      const webhooksDto = resp.webhooks as unknown[];
-
-      if (webhooksDto) {
-        for (const dto of webhooksDto) {
-          const d = dto as Record<string, unknown>;
-          if (d.id === webhookId) {
-            const webhook = webhookFromDto(dto);
-            if (webhook) {
-              return webhook;
-            }
-          }
-        }
+      const webhook = webhookFromDto(dto);
+      if (!webhook) {
+        throw new NotFoundError(`Webhook ${webhookId} not found`);
       }
-
-      throw new NotFoundError(`Webhook ${webhookId} not found`);
+      return webhook;
     });
   }
 
   /**
-   * Lists webhooks.
+   * Lists a page of webhooks.
    *
-   * @param options - Optional filtering options
-   * @returns Array of webhooks
-   * @throws {@link ValidationError} If limit is invalid
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
+   * @returns The page of webhooks and its cursor pagination
+   * @throws {@link ValidationError} If the paging options are invalid
    * @throws {@link APIError} If API request fails
    *
    * @example
    * ```typescript
-   * // List all webhooks
-   * const webhooks = await webhookService.list();
+   * // First page
+   * const { items, pagination } = await webhookService.list({ sortOrder: 'DESC' });
    *
-   * // List with filters
-   * const webhooks = await webhookService.list({
-   *   limit: 50,
-   *   sortOrder: 'DESC',
-   * });
+   * // Next page
+   * if (pagination.hasMore) {
+   *   await webhookService.list({ sortOrder: 'DESC', cursor: pagination.nextCursor });
+   * }
    * ```
    */
-  async list(options?: ListWebhooksOptions): Promise<Webhook[]> {
-    const limit = options?.limit ?? 50;
-
-    if (limit <= 0) {
-      throw new ValidationError('limit must be positive');
-    }
+  async list(options?: ListWebhooksOptions): Promise<ListWebhooksResult> {
+    const page = cursorRequest(options);
 
     return this.execute(async () => {
       const response = await this.webhooksApi.webhookServiceGetWebhooks({
         type: options?.type,
         url: options?.url,
-        cursorPageSize: String(limit),
+        ...cursorQuery(page),
         sortOrder: options?.sortOrder,
       });
 
-      const resp = response as Record<string, unknown>;
-      const webhooksDto = resp.webhooks;
-      return webhooksFromDto(webhooksDto as unknown[]);
+      return {
+        items: webhooksFromDto(response.webhooks),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
+      };
     });
   }
 
@@ -174,9 +170,7 @@ export class WebhookService extends BaseService {
         },
       });
 
-      const resp = response as Record<string, unknown>;
-      const webhookDto = resp.webhook ?? resp.result;
-      const webhook = webhookFromDto(webhookDto);
+      const webhook = webhookFromDto(response.webhook);
 
       if (!webhook) {
         throw new ValidationError('Failed to create webhook: no result returned');

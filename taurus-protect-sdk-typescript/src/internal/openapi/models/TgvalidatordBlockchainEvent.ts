@@ -39,7 +39,16 @@ export interface TgvalidatordBlockchainEvent {
      * @memberof TgvalidatordBlockchainEvent
      */
     hederaNativeTokenTransaction?: TgvalidatordHederaNativeTokenTransaction;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordBlockchainEvent
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordBlockchainEventWireKeys: ReadonlySet<string> = new Set(['eventType', 'hederaNativeTokenTransaction']);
 
 /**
  * Check if a given object implements the TgvalidatordBlockchainEvent interface.
@@ -56,11 +65,21 @@ export function TgvalidatordBlockchainEventFromJSONTyped(json: any, ignoreDiscri
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordBlockchainEvent = {
         
         'eventType': json['eventType'] == null ? undefined : json['eventType'],
         'hederaNativeTokenTransaction': json['hederaNativeTokenTransaction'] == null ? undefined : TgvalidatordHederaNativeTokenTransactionFromJSON(json['hederaNativeTokenTransaction']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordBlockchainEventWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordBlockchainEventToJSON(json: any): TgvalidatordBlockchainEvent {
@@ -76,6 +95,7 @@ export function TgvalidatordBlockchainEventFromJSONTyped(json: any, ignoreDiscri
         
         'eventType': value['eventType'],
         'hederaNativeTokenTransaction': TgvalidatordHederaNativeTokenTransactionToJSON(value['hederaNativeTokenTransaction']),
+        ...value['additionalProperties'],
     };
 }
 

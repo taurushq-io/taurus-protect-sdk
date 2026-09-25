@@ -677,6 +677,8 @@ public class ApiClient {
             //Serialize to json string and remove the " enclosing characters
             String jsonStr = JSON.serialize(param);
             return jsonStr.substring(1, jsonStr.length() - 1);
+        } else if (param instanceof byte[]) {
+            return java.util.Base64.getEncoder().encodeToString((byte[]) param);
         } else if (param instanceof Collection) {
             StringBuilder b = new StringBuilder();
             for (Object o : (Collection) param) {

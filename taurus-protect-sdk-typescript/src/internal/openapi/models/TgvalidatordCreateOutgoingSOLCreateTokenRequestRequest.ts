@@ -67,7 +67,16 @@ export interface TgvalidatordCreateOutgoingSOLCreateTokenRequestRequest {
      * @memberof TgvalidatordCreateOutgoingSOLCreateTokenRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingSOLCreateTokenRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingSOLCreateTokenRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'feeLimit', 'decimals', 'name', 'symbol', 'uri', 'comment', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingSOLCreateTokenRequestRequest interface.
@@ -87,7 +96,7 @@ export function TgvalidatordCreateOutgoingSOLCreateTokenRequestRequestFromJSONTy
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingSOLCreateTokenRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'feeLimit': json['feeLimit'] == null ? undefined : json['feeLimit'],
@@ -98,6 +107,16 @@ export function TgvalidatordCreateOutgoingSOLCreateTokenRequestRequestFromJSONTy
         'comment': json['comment'] == null ? undefined : json['comment'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingSOLCreateTokenRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingSOLCreateTokenRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingSOLCreateTokenRequestRequest {
@@ -119,6 +138,7 @@ export function TgvalidatordCreateOutgoingSOLCreateTokenRequestRequestFromJSONTy
         'uri': value['uri'],
         'comment': value['comment'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

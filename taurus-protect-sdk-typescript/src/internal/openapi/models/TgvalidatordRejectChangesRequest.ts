@@ -25,7 +25,16 @@ export interface TgvalidatordRejectChangesRequest {
      * @memberof TgvalidatordRejectChangesRequest
      */
     ids?: Array<string>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordRejectChangesRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordRejectChangesRequestWireKeys: ReadonlySet<string> = new Set(['ids']);
 
 /**
  * Check if a given object implements the TgvalidatordRejectChangesRequest interface.
@@ -42,10 +51,20 @@ export function TgvalidatordRejectChangesRequestFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordRejectChangesRequest = {
         
         'ids': json['ids'] == null ? undefined : json['ids'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordRejectChangesRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordRejectChangesRequestToJSON(json: any): TgvalidatordRejectChangesRequest {
@@ -60,6 +79,7 @@ export function TgvalidatordRejectChangesRequestFromJSONTyped(json: any, ignoreD
     return {
         
         'ids': value['ids'],
+        ...value['additionalProperties'],
     };
 }
 

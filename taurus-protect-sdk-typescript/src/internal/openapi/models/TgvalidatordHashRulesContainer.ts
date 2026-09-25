@@ -37,7 +37,16 @@ export interface TgvalidatordHashRulesContainer {
      * @memberof TgvalidatordHashRulesContainer
      */
     rulesSignatures?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordHashRulesContainer
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordHashRulesContainerWireKeys: ReadonlySet<string> = new Set(['hash', 'rulesContainer', 'rulesSignatures']);
 
 /**
  * Check if a given object implements the TgvalidatordHashRulesContainer interface.
@@ -54,12 +63,22 @@ export function TgvalidatordHashRulesContainerFromJSONTyped(json: any, ignoreDis
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordHashRulesContainer = {
         
         'hash': json['hash'] == null ? undefined : json['hash'],
         'rulesContainer': json['rulesContainer'] == null ? undefined : json['rulesContainer'],
         'rulesSignatures': json['rulesSignatures'] == null ? undefined : json['rulesSignatures'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordHashRulesContainerWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordHashRulesContainerToJSON(json: any): TgvalidatordHashRulesContainer {
@@ -76,6 +95,7 @@ export function TgvalidatordHashRulesContainerFromJSONTyped(json: any, ignoreDis
         'hash': value['hash'],
         'rulesContainer': value['rulesContainer'],
         'rulesSignatures': value['rulesSignatures'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordApproveWhitelistingReply{}
 type TgvalidatordApproveWhitelistingReply struct {
 	Signatures *string `json:"signatures,omitempty"`
 	AsyncSignature *TgvalidatordWhitelistedAddressBatchSignature `json:"asyncSignature,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordApproveWhitelistingReply TgvalidatordApproveWhitelistingReply
 
 // NewTgvalidatordApproveWhitelistingReply instantiates a new TgvalidatordApproveWhitelistingReply object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordApproveWhitelistingReply) ToMap() (map[string]interface{}, e
 	if !IsNil(o.AsyncSignature) {
 		toSerialize["asyncSignature"] = o.AsyncSignature
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordApproveWhitelistingReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordApproveWhitelistingReply := _TgvalidatordApproveWhitelistingReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordApproveWhitelistingReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordApproveWhitelistingReply(varTgvalidatordApproveWhitelistingReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "signatures")
+		delete(additionalProperties, "asyncSignature")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordApproveWhitelistingReply struct {

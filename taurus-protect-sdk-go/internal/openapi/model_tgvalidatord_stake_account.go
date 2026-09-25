@@ -28,7 +28,10 @@ type TgvalidatordStakeAccount struct {
 	UpdatedAtBlock *string `json:"updatedAtBlock,omitempty"`
 	AccountType *TgvalidatordStakeAccountType `json:"accountType,omitempty"`
 	SolanaStakeAccount *TgvalidatordSolanaStakeAccount `json:"solanaStakeAccount,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordStakeAccount TgvalidatordStakeAccount
 
 // NewTgvalidatordStakeAccount instantiates a new TgvalidatordStakeAccount object
 // This constructor will assign default values to properties that have it defined,
@@ -337,7 +340,40 @@ func (o TgvalidatordStakeAccount) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.SolanaStakeAccount) {
 		toSerialize["solanaStakeAccount"] = o.SolanaStakeAccount
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordStakeAccount) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordStakeAccount := _TgvalidatordStakeAccount{}
+
+	err = json.Unmarshal(data, &varTgvalidatordStakeAccount)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordStakeAccount(varTgvalidatordStakeAccount)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "addressId")
+		delete(additionalProperties, "accountAddress")
+		delete(additionalProperties, "createdAt")
+		delete(additionalProperties, "updatedAt")
+		delete(additionalProperties, "updatedAtBlock")
+		delete(additionalProperties, "accountType")
+		delete(additionalProperties, "solanaStakeAccount")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordStakeAccount struct {

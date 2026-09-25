@@ -69,7 +69,16 @@ export interface ComputeAddressesSignatureReplyAddressSignature {
      * @memberof ComputeAddressesSignatureReplyAddressSignature
      */
     currencyInfo?: TgvalidatordCurrency;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof ComputeAddressesSignatureReplyAddressSignature
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const ComputeAddressesSignatureReplyAddressSignatureWireKeys: ReadonlySet<string> = new Set(['walletId', 'addressId', 'address', 'currency', 'signature', 'error', 'currencyInfo']);
 
 /**
  * Check if a given object implements the ComputeAddressesSignatureReplyAddressSignature interface.
@@ -86,7 +95,7 @@ export function ComputeAddressesSignatureReplyAddressSignatureFromJSONTyped(json
     if (json == null) {
         return json;
     }
-    return {
+    const result: ComputeAddressesSignatureReplyAddressSignature = {
         
         'walletId': json['walletId'] == null ? undefined : json['walletId'],
         'addressId': json['addressId'] == null ? undefined : json['addressId'],
@@ -96,6 +105,16 @@ export function ComputeAddressesSignatureReplyAddressSignatureFromJSONTyped(json
         'error': json['error'] == null ? undefined : json['error'],
         'currencyInfo': json['currencyInfo'] == null ? undefined : TgvalidatordCurrencyFromJSON(json['currencyInfo']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!ComputeAddressesSignatureReplyAddressSignatureWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function ComputeAddressesSignatureReplyAddressSignatureToJSON(json: any): ComputeAddressesSignatureReplyAddressSignature {
@@ -116,6 +135,7 @@ export function ComputeAddressesSignatureReplyAddressSignatureFromJSONTyped(json
         'signature': value['signature'],
         'error': value['error'],
         'currencyInfo': TgvalidatordCurrencyToJSON(value['currencyInfo']),
+        ...value['additionalProperties'],
     };
 }
 

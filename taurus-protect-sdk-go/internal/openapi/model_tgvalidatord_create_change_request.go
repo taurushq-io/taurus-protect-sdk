@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -33,6 +32,7 @@ type TgvalidatordCreateChangeRequest struct {
 	ChangeComment *string `json:"changeComment,omitempty"`
 	// The uuid of the entity being changed.
 	EntityUUID *string `json:"entityUUID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateChangeRequest TgvalidatordCreateChangeRequest
@@ -256,6 +256,11 @@ func (o TgvalidatordCreateChangeRequest) ToMap() (map[string]interface{}, error)
 	if !IsNil(o.EntityUUID) {
 		toSerialize["entityUUID"] = o.EntityUUID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -284,15 +289,25 @@ func (o *TgvalidatordCreateChangeRequest) UnmarshalJSON(data []byte) (err error)
 
 	varTgvalidatordCreateChangeRequest := _TgvalidatordCreateChangeRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateChangeRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateChangeRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateChangeRequest(varTgvalidatordCreateChangeRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "action")
+		delete(additionalProperties, "entityId")
+		delete(additionalProperties, "entity")
+		delete(additionalProperties, "changes")
+		delete(additionalProperties, "changeComment")
+		delete(additionalProperties, "entityUUID")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

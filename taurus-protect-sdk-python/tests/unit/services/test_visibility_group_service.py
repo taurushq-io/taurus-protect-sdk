@@ -6,69 +6,37 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from taurus_protect._internal.openapi import RestrictedVisibilityGroupsApi
 from taurus_protect.services.visibility_group_service import VisibilityGroupService
+from tests.unit.transport_stub import StubTransport, api_client
 
 
 class TestVisibilityGroupServiceList:
-    """Tests for VisibilityGroupService.list()."""
+    """VisibilityGroupService.list: the endpoint does not page, so every group comes back."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        visibility_groups_api = MagicMock()
-        service = VisibilityGroupService(
-            api_client=api_client, visibility_groups_api=visibility_groups_api
-        )
-        return service, visibility_groups_api
+    def _service(self) -> VisibilityGroupService:
+        ac = api_client()
+        return VisibilityGroupService(ac, RestrictedVisibilityGroupsApi(ac))
 
-    def test_raises_on_invalid_limit(self) -> None:
-        service, _ = self._make_service()
-        with pytest.raises(ValueError, match="limit must be positive"):
-            service.list(limit=0)
+    def test_returns_every_group(self) -> None:
+        reply = {"result": [{"id": str(i), "name": f"g{i}"} for i in range(25)]}
+        with StubTransport(reply) as transport:
+            groups = self._service().list()
 
-    def test_raises_on_negative_offset(self) -> None:
-        service, _ = self._make_service()
-        with pytest.raises(ValueError, match="offset cannot be negative"):
-            service.list(offset=-1)
+        assert [g.id for g in groups] == [str(i) for i in range(25)]
+        assert transport.last.query == []
 
-    def test_returns_empty_when_no_results(self) -> None:
-        service, api = self._make_service()
-        resp = MagicMock()
-        resp.result = None
-        api.user_service_get_visibility_groups.return_value = resp
+    def test_empty_reply(self) -> None:
+        with StubTransport({}):
+            assert self._service().list() == []
 
-        groups, pagination = service.list()
+    def test_get_finds_a_group_past_the_first_twenty(self) -> None:
+        """get scans list(); a list cut at 20 reported the 21st group as not found."""
+        groups = {"result": [{"id": str(i), "name": f"g{i}"} for i in range(25)]}
+        with StubTransport(groups, {"result": []}):
+            group = self._service().get("21")
 
-        assert groups == []
-        assert pagination is not None
-        assert pagination.total_items == 0
-
-    def test_applies_client_side_pagination(self) -> None:
-        service, api = self._make_service()
-        # Create 3 mock group DTOs
-        dto1 = MagicMock()
-        dto1.id = "1"
-        dto1.name = "Group A"
-        dto1.description = None
-        dto1.users = None
-        dto2 = MagicMock()
-        dto2.id = "2"
-        dto2.name = "Group B"
-        dto2.description = None
-        dto2.users = None
-        dto3 = MagicMock()
-        dto3.id = "3"
-        dto3.name = "Group C"
-        dto3.description = None
-        dto3.users = None
-        resp = MagicMock()
-        resp.result = [dto1, dto2, dto3]
-        api.user_service_get_visibility_groups.return_value = resp
-
-        groups, pagination = service.list(limit=2, offset=0)
-
-        assert len(groups) <= 2
-        assert pagination.total_items == 3
-        assert pagination.has_more is True
+        assert group.name == "g21"
 
 
 class TestVisibilityGroupServiceGet:

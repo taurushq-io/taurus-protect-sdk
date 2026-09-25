@@ -21,7 +21,10 @@ var _ MappedNullable = &GenericCreateContractEVMContract{}
 type GenericCreateContractEVMContract struct {
 	Bytecode *string `json:"bytecode,omitempty" validate:"regexp=^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=)?$"`
 	Constructor *TgvalidatordContractCall `json:"constructor,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _GenericCreateContractEVMContract GenericCreateContractEVMContract
 
 // NewGenericCreateContractEVMContract instantiates a new GenericCreateContractEVMContract object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o GenericCreateContractEVMContract) ToMap() (map[string]interface{}, error
 	if !IsNil(o.Constructor) {
 		toSerialize["constructor"] = o.Constructor
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *GenericCreateContractEVMContract) UnmarshalJSON(data []byte) (err error) {
+	varGenericCreateContractEVMContract := _GenericCreateContractEVMContract{}
+
+	err = json.Unmarshal(data, &varGenericCreateContractEVMContract)
+
+	if err != nil {
+		return err
+	}
+
+	*o = GenericCreateContractEVMContract(varGenericCreateContractEVMContract)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "bytecode")
+		delete(additionalProperties, "constructor")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableGenericCreateContractEVMContract struct {

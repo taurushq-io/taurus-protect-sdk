@@ -106,7 +106,16 @@ export interface TgvalidatordTnSettlement {
      * @memberof TgvalidatordTnSettlement
      */
     workflowID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTnSettlement
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTnSettlementWireKeys: ReadonlySet<string> = new Set(['id', 'creatorParticipantID', 'targetParticipantID', 'firstLegParticipantID', 'firstLegAssets', 'secondLegAssets', 'clips', 'startExecutionDate', 'status', 'createdAt', 'updatedAt', 'workflowID']);
 
 /**
  * Check if a given object implements the TgvalidatordTnSettlement interface.
@@ -123,7 +132,7 @@ export function TgvalidatordTnSettlementFromJSONTyped(json: any, ignoreDiscrimin
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTnSettlement = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'creatorParticipantID': json['creatorParticipantID'] == null ? undefined : json['creatorParticipantID'],
@@ -138,6 +147,16 @@ export function TgvalidatordTnSettlementFromJSONTyped(json: any, ignoreDiscrimin
         'updatedAt': json['updatedAt'] == null ? undefined : (new Date(json['updatedAt'])),
         'workflowID': json['workflowID'] == null ? undefined : json['workflowID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTnSettlementWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTnSettlementToJSON(json: any): TgvalidatordTnSettlement {
@@ -163,6 +182,7 @@ export function TgvalidatordTnSettlementFromJSONTyped(json: any, ignoreDiscrimin
         'createdAt': value['createdAt'] == null ? undefined : ((value['createdAt']).toISOString()),
         'updatedAt': value['updatedAt'] == null ? undefined : ((value['updatedAt']).toISOString()),
         'workflowID': value['workflowID'],
+        ...value['additionalProperties'],
     };
 }
 

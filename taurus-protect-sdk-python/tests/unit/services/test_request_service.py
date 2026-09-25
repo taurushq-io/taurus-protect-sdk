@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
-
-from taurus_protect.crypto.hashing import calculate_hex_hash
-from taurus_protect.models.request import Request, RequestMetadata
 
 import pytest
 
+from taurus_protect._internal.openapi import RequestsApi
+from taurus_protect.crypto.hashing import calculate_hex_hash
 from taurus_protect.errors import APIError, IntegrityError, NotFoundError
+from taurus_protect.models.pagination import CursorPage
+from taurus_protect.models.request import Request, RequestMetadata, RequestStatus
 from taurus_protect.services.request_service import RequestService
+from tests.unit.transport_stub import StubTransport, api_client
 
 
 class TestGet:
@@ -77,12 +80,15 @@ class TestGet:
         mock_request.metadata.payload_as_string = '{"some":"payload"}'
 
         # IntegrityError from _verify_request_hash propagates directly
-        with patch(
-            "taurus_protect.services.request_service.request_from_dto",
-            return_value=mock_request,
-        ), patch(
-            "taurus_protect.services.request_service.calculate_hex_hash",
-            return_value="correct_hash",
+        with (
+            patch(
+                "taurus_protect.services.request_service.request_from_dto",
+                return_value=mock_request,
+            ),
+            patch(
+                "taurus_protect.services.request_service.calculate_hex_hash",
+                return_value="correct_hash",
+            ),
         ):
             with pytest.raises(IntegrityError):
                 service.get(1)
@@ -140,94 +146,106 @@ def _tampered_request(request_id: str = "2") -> Request:
 
 
 class TestList:
-    """Tests for RequestService.list()."""
+    """RequestService.list goes through GetRequestsV2 (cursor) instead of the deprecated v1."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        requests_api = MagicMock()
-        service = RequestService(api_client=api_client, requests_api=requests_api)
-        return service, requests_api
+    def _service(self) -> RequestService:
+        ac = api_client()
+        return RequestService(ac, RequestsApi(ac))
 
-    def test_list_returns_requests_and_pagination(self) -> None:
-        service, api = self._make_service()
+    def test_filters_reach_the_v2_endpoint(self) -> None:
+        start = datetime(2026, 1, 2, tzinfo=timezone.utc)
+        with StubTransport() as transport:
+            self._service().list(
+                page_size=10,
+                from_date=start,
+                currency_id="c",
+                statuses=[RequestStatus.CREATED, RequestStatus.APPROVED],
+                types=["transfer"],
+                ids=["1"],
+                external_request_ids=["x"],
+                sort_order="DESC",
+            )
 
-        reply = MagicMock()
-        reply.result = [MagicMock(), MagicMock()]
-        reply.total_items = "100"
-        api.request_service_get_requests.return_value = reply
+        assert transport.last.path == "/api/rest/v2/requests"
+        query = dict(transport.last.query)
+        assert query["from"].startswith("2026-01-02T00:00:00")
+        assert query["currencyID"] == "c"
+        assert query["types"] == "transfer"
+        assert query["ids"] == "1"
+        assert query["externalRequestIDs"] == "x"
+        assert query["sortOrder"] == "DESC"
+        assert query["cursor.pageSize"] == "10"
+        assert [v for k, v in transport.last.query if k == "statuses"] == ["APPROVED", "CREATED"]
 
-        with patch(
-            "taurus_protect.services.request_service.request_from_dto",
-            side_effect=[_verified_request("1"), _verified_request("2")],
-        ):
-            requests, pagination = service.list(limit=50, offset=0)
+    def test_page_and_continuation(self) -> None:
+        with StubTransport(
+            {"result": [], "cursor": {"currentPage": "n", "hasNext": True}},
+            {},
+        ) as transport:
+            _, page = self._service().list()
+            assert page == CursorPage(page_size=20, next_cursor="n", has_more=True)
+            _, page = self._service().list(cursor=page.next_cursor)
 
-        assert len(requests) == 2
-        assert all(r.metadata.hash_verified for r in requests)
-        api.request_service_get_requests.assert_called_once()
+        assert page == CursorPage(page_size=20)
+        assert transport.requests[1].param("cursor.currentPage") == "n"
+        assert transport.requests[1].param("cursor.pageRequest") == "NEXT"
 
-    def test_list_raises_value_error_for_invalid_limit(self) -> None:
-        service, _ = self._make_service()
+    def test_invalid_page_size_sends_nothing(self) -> None:
+        with StubTransport() as transport:
+            with pytest.raises(ValueError, match="page_size"):
+                self._service().list(page_size=-1)
 
-        with pytest.raises(ValueError, match="limit must be positive"):
-            service.list(limit=0)
-
-    def test_list_raises_value_error_for_negative_offset(self) -> None:
-        service, _ = self._make_service()
-
-        with pytest.raises(ValueError, match="offset cannot be negative"):
-            service.list(offset=-1)
-
-    def test_list_returns_empty_when_no_result(self) -> None:
-        service, api = self._make_service()
-
-        reply = MagicMock()
-        reply.result = None
-        reply.total_items = None
-        api.request_service_get_requests.return_value = reply
-
-        requests, pagination = service.list()
-        assert requests == []
+        assert transport.requests == []
 
 
 class TestGetForApproval:
-    """Tests for RequestService.get_for_approval()."""
+    """get_for_approval: valid arguments (it sent an invalid ``statuses`` and a numeric pageRequest)."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        requests_api = MagicMock()
-        service = RequestService(api_client=api_client, requests_api=requests_api)
-        return service, requests_api
+    def _service(self) -> RequestService:
+        ac = api_client()
+        return RequestService(ac, RequestsApi(ac))
 
-    def test_get_for_approval_returns_requests(self) -> None:
-        service, api = self._make_service()
+    def test_filters_reach_the_wire(self) -> None:
+        with StubTransport() as transport:
+            self._service().get_for_approval(
+                page_size=5,
+                currency_id="c",
+                types=["transfer"],
+                exclude_types=["stake"],
+                ids=["1"],
+                sort_order="ASC",
+            )
 
-        reply = MagicMock()
-        reply.result = [MagicMock()]
-        reply.cursor = MagicMock()
-        reply.cursor.total_items = "10"
-        api.request_service_get_requests_for_approval_v2.return_value = reply
+        assert transport.last.path == "/api/rest/v2/requests/for-approval"
+        assert transport.last.query == sorted(
+            [
+                ("currencyID", "c"),
+                ("types", "transfer"),
+                ("excludeTypes", "stake"),
+                ("ids", "1"),
+                ("sortOrder", "ASC"),
+                ("cursor.pageSize", "5"),
+            ]
+        )
 
-        with patch(
-            "taurus_protect.services.request_service.request_from_dto",
-            side_effect=[_verified_request("1")],
-        ):
-            requests, pagination = service.get_for_approval(limit=10)
+    def test_external_request_ids_is_refused_by_name(self) -> None:
+        # validatord's approval paginator drops externalRequestIDs, so sending it would return an
+        # unfiltered queue that reads as filtered.
+        with StubTransport() as transport:
+            with pytest.raises(TypeError, match="external_request_ids"):
+                self._service().get_for_approval(external_request_ids=["x"])  # type: ignore[call-arg]
+        assert transport.requests == []
 
-        assert len(requests) == 1
-        assert requests[0].metadata.hash_verified
+    def test_continuation_sends_next_not_a_number(self) -> None:
+        with StubTransport() as transport:
+            self._service().get_for_approval(cursor="n")
 
-    def test_get_for_approval_validates_limit(self) -> None:
-        service, _ = self._make_service()
+        assert transport.last.param("cursor.pageRequest") == "NEXT"
+        assert transport.last.param("cursor.currentPage") == "n"
 
-        with pytest.raises(ValueError, match="limit must be positive"):
-            service.get_for_approval(limit=0)
-
-    def test_get_for_approval_validates_offset(self) -> None:
-        service, _ = self._make_service()
-
-        with pytest.raises(ValueError, match="offset cannot be negative"):
-            service.get_for_approval(offset=-1)
+    def test_statuses_cannot_filter_the_queue(self) -> None:
+        with pytest.raises(TypeError, match="statuses"):
+            self._service().get_for_approval(statuses=["CREATED"])  # type: ignore[call-arg]
 
 
 class TestApproveRequests:
@@ -294,7 +312,6 @@ class TestApproveRequests:
 
         assert count == 1
         api.request_service_approve_requests.assert_called_once()
-
 
     def test_approve_requests_refuses_unverified_metadata(self) -> None:
         """The signature attests to the hash, so an unverified one must be refused."""
@@ -472,65 +489,48 @@ class TestListExcludesUnverifiedRows:
     caller with no error and no flag.
     """
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        requests_api = MagicMock()
-        return RequestService(api_client=api_client, requests_api=requests_api), requests_api
+    def _service(self) -> RequestService:
+        ac = api_client()
+        return RequestService(ac, RequestsApi(ac))
 
     def _tampered_request(self, request_id: str) -> Request:
         good = '[{"key": "currency", "value": "BTC"}]'
         return Request(
             id=request_id,
             metadata=RequestMetadata(
-                hash=calculate_hex_hash(good),                     # hash of the original
+                hash=calculate_hex_hash(good),  # hash of the original
                 payload_as_string='[{"key": "currency", "value": "ETH"}]',  # altered
             ),
         )
 
     def test_list_drops_the_tampered_row(self) -> None:
-        service, api = self._make_service()
-        reply = MagicMock()
-        reply.result = [MagicMock(), MagicMock()]
-        reply.total_items = "2"
-        api.request_service_get_requests.return_value = reply
-
-        with patch(
-            "taurus_protect.services.request_service.request_from_dto",
-            side_effect=[_verified_request("1"), self._tampered_request("2")],
-        ):
-            requests, _ = service.list(limit=50, offset=0)
+        with StubTransport({"result": [{"id": "1"}, {"id": "2"}]}):
+            with patch(
+                "taurus_protect.services.request_service.request_from_dto",
+                side_effect=[_verified_request("1"), self._tampered_request("2")],
+            ):
+                requests, _ = self._service().list()
 
         assert [r.id for r in requests] == ["1"], "the tampered row must not be returned"
         assert requests[0].metadata.hash_verified
 
     def test_get_for_approval_drops_the_tampered_row(self) -> None:
-        service, api = self._make_service()
-        reply = MagicMock()
-        reply.result = [MagicMock()]
-        reply.cursor = MagicMock()
-        reply.cursor.total_items = "2"
-        api.request_service_get_requests_for_approval_v2.return_value = reply
-
-        with patch(
-            "taurus_protect.services.request_service.request_from_dto",
-            side_effect=[_verified_request("1"), self._tampered_request("2")],
-        ):
-            requests, _ = service.get_for_approval(limit=10)
+        with StubTransport({"result": [{"id": "1"}, {"id": "2"}]}):
+            with patch(
+                "taurus_protect.services.request_service.request_from_dto",
+                side_effect=[_verified_request("1"), self._tampered_request("2")],
+            ):
+                requests, _ = self._service().get_for_approval(page_size=10)
 
         assert [r.id for r in requests] == ["1"]
 
     def test_metadata_less_row_is_kept_unmarked(self) -> None:
         """An early-status request has no metadata yet. That is not a failure."""
-        service, api = self._make_service()
-        reply = MagicMock()
-        reply.result = [MagicMock()]
-        reply.total_items = "1"
-        api.request_service_get_requests.return_value = reply
-
-        with patch(
-            "taurus_protect.services.request_service.request_from_dto",
-            side_effect=[Request(id="3", metadata=None)],
-        ):
-            requests, _ = service.list(limit=50, offset=0)
+        with StubTransport({"result": [{"id": "3"}]}):
+            with patch(
+                "taurus_protect.services.request_service.request_from_dto",
+                side_effect=[Request(id="3", metadata=None)],
+            ):
+                requests, _ = self._service().list()
 
         assert [r.id for r in requests] == ["3"]

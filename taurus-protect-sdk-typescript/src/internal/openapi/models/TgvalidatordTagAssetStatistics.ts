@@ -63,7 +63,16 @@ export interface TgvalidatordTagAssetStatistics {
      * @memberof TgvalidatordTagAssetStatistics
      */
     currencyInfo?: TgvalidatordCurrency;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTagAssetStatistics
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTagAssetStatisticsWireKeys: ReadonlySet<string> = new Set(['tagID', 'currencyID', 'totalBalance', 'totalBalanceValuation', 'creationDate', 'currencyInfo']);
 
 /**
  * Check if a given object implements the TgvalidatordTagAssetStatistics interface.
@@ -80,7 +89,7 @@ export function TgvalidatordTagAssetStatisticsFromJSONTyped(json: any, ignoreDis
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTagAssetStatistics = {
         
         'tagID': json['tagID'] == null ? undefined : json['tagID'],
         'currencyID': json['currencyID'] == null ? undefined : json['currencyID'],
@@ -89,6 +98,16 @@ export function TgvalidatordTagAssetStatisticsFromJSONTyped(json: any, ignoreDis
         'creationDate': json['creationDate'] == null ? undefined : (new Date(json['creationDate'])),
         'currencyInfo': json['currencyInfo'] == null ? undefined : TgvalidatordCurrencyFromJSON(json['currencyInfo']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTagAssetStatisticsWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTagAssetStatisticsToJSON(json: any): TgvalidatordTagAssetStatistics {
@@ -108,6 +127,7 @@ export function TgvalidatordTagAssetStatisticsFromJSONTyped(json: any, ignoreDis
         'totalBalanceValuation': value['totalBalanceValuation'],
         'creationDate': value['creationDate'] == null ? undefined : ((value['creationDate']).toISOString()),
         'currencyInfo': TgvalidatordCurrencyToJSON(value['currencyInfo']),
+        ...value['additionalProperties'],
     };
 }
 

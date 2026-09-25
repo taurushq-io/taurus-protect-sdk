@@ -222,6 +222,7 @@ export interface WalletServiceGetAddressesRequest {
     scoreFilterTrmlabsFiltersScoreGreater?: string;
     attributeFiltersJson?: string;
     attributeFiltersOperator?: string;
+    includeDisabledAddresses?: string;
 }
 
 export interface WalletServiceGetAddressesProofOfReserveRequest {
@@ -585,6 +586,7 @@ export interface AddressesApiInterface {
      * @param {string} [scoreFilterTrmlabsFiltersScoreGreater] Filter addresses with an TRM Labs risk score above threshold.
      * @param {string} [attributeFiltersJson] A JSON representation of a list of AttributeFilter objects. The filters are combined with an attributeFiltersOperator (\&#39;OR\&#39; by default). Each AttributeFilter can use different comparison operators: &#x60;&#x3D;&#x60; (default if not specified), &#x60;&lt;&gt;&#x60; (not equal), &#x60;&gt;&#x60; (greater than), &#x60;&gt;&#x3D;&#x60; (greater than or equal), &#x60;&lt;&#x60; (less than), &#x60;&lt;&#x3D;&#x60; (less than or equal)
      * @param {string} [attributeFiltersOperator] Specifies how attribute filters are combined. Accepted values: \&#39;OR\&#39; (default), \&#39;AND\&#39;.
+     * @param {string} [includeDisabledAddresses] One of [exclude, include, only] depending on whether you want to include disabled addresses (or you want only those). Filtering will be performed after pagination: &#x60;totalItems&#x60; won\&#39;t represent the number of addresses with this filter but can be used in combination with &#x60;offset&#x60;.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof AddressesApiInterface
@@ -1580,6 +1582,10 @@ export class AddressesApi extends runtime.BaseAPI implements AddressesApiInterfa
 
         if (requestParameters['attributeFiltersOperator'] != null) {
             queryParameters['attributeFiltersOperator'] = requestParameters['attributeFiltersOperator'];
+        }
+
+        if (requestParameters['includeDisabledAddresses'] != null) {
+            queryParameters['includeDisabledAddresses'] = requestParameters['includeDisabledAddresses'];
         }
 
         const headerParameters: runtime.HTTPHeaders = {};

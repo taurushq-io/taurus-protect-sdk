@@ -1,11 +1,12 @@
 package com.taurushq.sdk.protect.client.integration;
 
 import com.taurushq.sdk.protect.client.ProtectClient;
-import com.taurushq.sdk.protect.client.testutil.TestHelper;
 import com.taurushq.sdk.protect.client.model.ApiException;
 import com.taurushq.sdk.protect.client.model.SignedWhitelistedAssetEnvelope;
 import com.taurushq.sdk.protect.client.model.WhitelistException;
 import com.taurushq.sdk.protect.client.model.WhitelistedAsset;
+import com.taurushq.sdk.protect.client.model.WhitelistedAssetResult;
+import com.taurushq.sdk.protect.client.testutil.TestHelper;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -40,7 +41,7 @@ class WhitelistedAssetIntegrationTest {
     void getWhitelistedAsset() throws ApiException, WhitelistException {
         // First get a list to find a valid ID
         List<SignedWhitelistedAssetEnvelope> assets = client.getWhitelistedAssetService()
-                .getWhitelistedAssets(1, 0);
+                .getWhitelistedAssets(1, 0).getAssets();
 
         if (assets.isEmpty()) {
             System.out.println("No whitelisted assets available for testing");
@@ -65,7 +66,7 @@ class WhitelistedAssetIntegrationTest {
     @Test
     void listWhitelistedAssets() throws ApiException, WhitelistException {
         List<SignedWhitelistedAssetEnvelope> assets = client.getWhitelistedAssetService()
-                .getWhitelistedAssets(10, 0);
+                .getWhitelistedAssets(10, 0).getAssets();
 
         System.out.println("Found " + assets.size() + " whitelisted assets");
         for (SignedWhitelistedAssetEnvelope envelope : assets) {
@@ -83,7 +84,7 @@ class WhitelistedAssetIntegrationTest {
     @Test
     void listWhitelistedAssetsByBlockchain() throws ApiException, WhitelistException {
         List<SignedWhitelistedAssetEnvelope> ethAssets = client.getWhitelistedAssetService()
-                .getWhitelistedAssets(10, 0, "ETH");
+                .getWhitelistedAssets(10, 0, "ETH").getAssets();
 
         System.out.println("Found " + ethAssets.size() + " ETH whitelisted assets");
         for (SignedWhitelistedAssetEnvelope envelope : ethAssets) {
@@ -99,7 +100,7 @@ class WhitelistedAssetIntegrationTest {
     @Test
     void listWhitelistedAssetsByBlockchainAndNetwork() throws ApiException, WhitelistException {
         List<SignedWhitelistedAssetEnvelope> mainnetAssets = client.getWhitelistedAssetService()
-                .getWhitelistedAssets(10, 0, "ETH", "mainnet");
+                .getWhitelistedAssets(10, 0, "ETH", "mainnet").getAssets();
 
         System.out.println("Found " + mainnetAssets.size() + " ETH mainnet whitelisted assets");
         for (SignedWhitelistedAssetEnvelope envelope : mainnetAssets) {
@@ -116,17 +117,17 @@ class WhitelistedAssetIntegrationTest {
     @Test
     void paginateAllWhitelistedAssets() throws ApiException, WhitelistException {
         int limit = 10;
-        int offset = 0;
+        long offset = 0;
         int totalCount = 0;
         int maxIterations = 500;
         int iteration = 0;
 
-        List<SignedWhitelistedAssetEnvelope> assets;
+        WhitelistedAssetResult page;
         do {
-            assets = client.getWhitelistedAssetService()
+            page = client.getWhitelistedAssetService()
                     .getWhitelistedAssets(limit, offset);
 
-            for (SignedWhitelistedAssetEnvelope envelope : assets) {
+            for (SignedWhitelistedAssetEnvelope envelope : page.getAssets()) {
                 WhitelistedAsset asset = envelope.getWhitelistedAsset();
                 System.out.printf("ID: %d, Blockchain: %s, Symbol: %s, Contract: %s, Network: %s%n",
                         envelope.getId(),
@@ -137,9 +138,9 @@ class WhitelistedAssetIntegrationTest {
                 totalCount++;
             }
 
-            offset += assets.size();
+            offset = page.getPagination().getNextOffset();
             iteration++;
-        } while (assets.size() == limit && iteration < maxIterations);
+        } while (page.getPagination().hasMore() && iteration < maxIterations);
 
         System.out.println("Total whitelisted assets scanned: " + totalCount);
         assertTrue(totalCount >= 0);

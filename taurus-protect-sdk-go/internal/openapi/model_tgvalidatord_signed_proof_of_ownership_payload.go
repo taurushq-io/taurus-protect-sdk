@@ -22,7 +22,10 @@ type TgvalidatordSignedProofOfOwnershipPayload struct {
 	Payload *TgvalidatordProofOfOwnershipPayload `json:"payload,omitempty"`
 	// Signature of the payload signed by the owner participant.
 	OwnerParticipantSignature *string `json:"ownerParticipantSignature,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordSignedProofOfOwnershipPayload TgvalidatordSignedProofOfOwnershipPayload
 
 // NewTgvalidatordSignedProofOfOwnershipPayload instantiates a new TgvalidatordSignedProofOfOwnershipPayload object
 // This constructor will assign default values to properties that have it defined,
@@ -121,7 +124,34 @@ func (o TgvalidatordSignedProofOfOwnershipPayload) ToMap() (map[string]interface
 	if !IsNil(o.OwnerParticipantSignature) {
 		toSerialize["ownerParticipantSignature"] = o.OwnerParticipantSignature
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordSignedProofOfOwnershipPayload) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordSignedProofOfOwnershipPayload := _TgvalidatordSignedProofOfOwnershipPayload{}
+
+	err = json.Unmarshal(data, &varTgvalidatordSignedProofOfOwnershipPayload)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordSignedProofOfOwnershipPayload(varTgvalidatordSignedProofOfOwnershipPayload)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "payload")
+		delete(additionalProperties, "ownerParticipantSignature")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordSignedProofOfOwnershipPayload struct {

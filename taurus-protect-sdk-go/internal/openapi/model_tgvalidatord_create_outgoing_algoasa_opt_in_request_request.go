@@ -29,7 +29,10 @@ type TgvalidatordCreateOutgoingALGOASAOptInRequestRequest struct {
 	TransactionReference *string `json:"transactionReference,omitempty"`
 	// Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordCreateOutgoingALGOASAOptInRequestRequest TgvalidatordCreateOutgoingALGOASAOptInRequestRequest
 
 // NewTgvalidatordCreateOutgoingALGOASAOptInRequestRequest instantiates a new TgvalidatordCreateOutgoingALGOASAOptInRequestRequest object
 // This constructor will assign default values to properties that have it defined,
@@ -268,7 +271,38 @@ func (o TgvalidatordCreateOutgoingALGOASAOptInRequestRequest) ToMap() (map[strin
 	if !IsNil(o.ExternalRequestId) {
 		toSerialize["externalRequestId"] = o.ExternalRequestId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordCreateOutgoingALGOASAOptInRequestRequest) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordCreateOutgoingALGOASAOptInRequestRequest := _TgvalidatordCreateOutgoingALGOASAOptInRequestRequest{}
+
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingALGOASAOptInRequestRequest)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordCreateOutgoingALGOASAOptInRequestRequest(varTgvalidatordCreateOutgoingALGOASAOptInRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "assetId")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "transactionReference")
+		delete(additionalProperties, "externalRequestId")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordCreateOutgoingALGOASAOptInRequestRequest struct {

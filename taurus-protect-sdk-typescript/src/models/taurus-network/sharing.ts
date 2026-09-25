@@ -6,6 +6,8 @@
  * transfers, and settlements.
  */
 
+import type { CursorNavigationOptions } from '../pagination';
+
 /**
  * Shared address status enum.
  */
@@ -225,37 +227,47 @@ export interface RejectSharedAssetRequest {
 // Filter options
 
 /**
- * Options for listing shared addresses.
+ * Options for listing shared addresses. A cursor list: `pageSize` 1-100 (default 20) and the
+ * `cursor` of a previous page.
  */
-export interface ListSharedAddressesOptions {
-  /** Maximum items to return (default: 50, max: 1000). */
-  readonly limit?: number;
-  /** Number of items to skip. */
-  readonly offset?: number;
-  /** Filter by statuses. */
-  readonly statuses?: string[];
-  /** Filter by participant ID (owner or target). */
+export interface ListSharedAddressesOptions extends CursorNavigationOptions {
+  /** Filter by participant ID (owner or target) */
   readonly participantId?: string;
-  /** Filter by blockchain. */
+  /** Filter by owner participant ID */
+  readonly ownerParticipantId?: string;
+  /** Filter by target participant ID */
+  readonly targetParticipantId?: string;
+  /** Filter by blockchain */
   readonly blockchain?: string;
-  /** Filter by network. */
+  /** Filter by network */
   readonly network?: string;
+  /** Filter by shared address IDs */
+  readonly ids?: string[];
+  /** Filter by statuses */
+  readonly statuses?: string[];
+  /** Sort order ("ASC" or "DESC") */
+  readonly sortOrder?: string;
 }
 
 /**
- * Options for listing shared assets.
+ * Options for listing shared assets. A cursor list: `pageSize` 1-100 (default 20) and the
+ * `cursor` of a previous page.
  */
-export interface ListSharedAssetsOptions {
-  /** Maximum items to return (default: 50, max: 1000). */
-  readonly limit?: number;
-  /** Number of items to skip. */
-  readonly offset?: number;
-  /** Filter by statuses. */
-  readonly statuses?: string[];
-  /** Filter by participant ID (owner or target). */
+export interface ListSharedAssetsOptions extends CursorNavigationOptions {
+  /** Filter by participant ID (owner or target) */
   readonly participantId?: string;
-  /** Filter by blockchain. */
+  /** Filter by owner participant ID */
+  readonly ownerParticipantId?: string;
+  /** Filter by target participant ID */
+  readonly targetParticipantId?: string;
+  /** Filter by blockchain */
   readonly blockchain?: string;
-  /** Filter by network. */
+  /** Filter by network */
   readonly network?: string;
+  /** Filter by shared asset IDs */
+  readonly ids?: string[];
+  /** Filter by statuses */
+  readonly statuses?: string[];
+  /** Sort order ("ASC" or "DESC") */
+  readonly sortOrder?: string;
 }

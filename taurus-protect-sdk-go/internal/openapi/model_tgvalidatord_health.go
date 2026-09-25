@@ -29,7 +29,10 @@ type TgvalidatordHealth struct {
 	Report *TgvalidatordHealthReport `json:"report,omitempty"`
 	LastUpdateDate *time.Time `json:"lastUpdateDate,omitempty"`
 	ValidUntilDate *time.Time `json:"validUntilDate,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordHealth TgvalidatordHealth
 
 // NewTgvalidatordHealth instantiates a new TgvalidatordHealth object
 // This constructor will assign default values to properties that have it defined,
@@ -373,7 +376,41 @@ func (o TgvalidatordHealth) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.ValidUntilDate) {
 		toSerialize["validUntilDate"] = o.ValidUntilDate
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordHealth) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordHealth := _TgvalidatordHealth{}
+
+	err = json.Unmarshal(data, &varTgvalidatordHealth)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordHealth(varTgvalidatordHealth)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "tenantId")
+		delete(additionalProperties, "componentName")
+		delete(additionalProperties, "componentId")
+		delete(additionalProperties, "group")
+		delete(additionalProperties, "healthCheck")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "report")
+		delete(additionalProperties, "lastUpdateDate")
+		delete(additionalProperties, "validUntilDate")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordHealth struct {

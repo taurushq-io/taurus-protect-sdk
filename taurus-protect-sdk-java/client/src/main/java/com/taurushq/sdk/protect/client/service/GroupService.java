@@ -3,11 +3,14 @@ package com.taurushq.sdk.protect.client.service;
 import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
 import com.taurushq.sdk.protect.client.mapper.GroupMapper;
 import com.taurushq.sdk.protect.client.model.ApiException;
-import com.taurushq.sdk.protect.client.model.Group;
+import com.taurushq.sdk.protect.client.model.GroupResult;
+import com.taurushq.sdk.protect.client.model.Pagination;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import com.taurushq.sdk.protect.openapi.api.GroupsApi;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetGroupsReply;
+import com.taurushq.sdk.protect.openapi.model.TgvalidatordInternalGroup;
 
+import java.util.Collections;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -20,17 +23,18 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * <p>
  * Example usage:
  * <pre>{@code
- * // Get all groups
- * List<Group> groups = client.getGroupService().getGroups();
+ * // First page of groups (default page size)
+ * GroupResult groups = client.getGroupService().getGroups();
  *
- * // Get groups with pagination
- * List<Group> groups = client.getGroupService().getGroups("10", "0", null, null, null);
+ * // A page of 10 groups, then the next one
+ * GroupResult page = client.getGroupService().getGroups(10, 0, null, null, null);
+ * page = client.getGroupService().getGroups(10, page.getPagination().getNextOffset(), null, null, null);
  *
  * // Search for groups
- * List<Group> groups = client.getGroupService().getGroups(null, null, null, null, "admin");
+ * GroupResult admins = client.getGroupService().getGroups(0, 0, null, null, "admin");
  * }</pre>
  *
- * @see Group
+ * @see com.taurushq.sdk.protect.client.model.Group
  */
 public class GroupService {
 
@@ -54,35 +58,43 @@ public class GroupService {
     }
 
     /**
-     * Retrieves all groups.
+     * Retrieves the first page of groups, with the default page size.
      *
-     * @return the list of groups
+     * @return the groups and their pagination
      * @throws ApiException if the API call fails
      */
-    public List<Group> getGroups() throws ApiException {
-        return getGroups(null, null, null, null, null);
+    public GroupResult getGroups() throws ApiException {
+        return getGroups(0, 0, null, null, null);
     }
 
     /**
-     * Retrieves groups with optional filters and pagination.
+     * Retrieves a page of groups with optional filters.
      *
-     * @param limit            maximum number of results to return
-     * @param offset           number of results to skip
+     * @param limit            the page size, 0 for the default ({@link Pagination#DEFAULT_PAGE_SIZE})
+     * @param offset           the offset, 0 for the first page
      * @param ids              optional list of group IDs to filter by
      * @param externalGroupIds optional list of external group IDs to filter by
      * @param query            optional query string to search groups
-     * @return the list of groups matching the filters
-     * @throws ApiException if the API call fails
+     * @return the groups and their pagination
+     * @throws ApiException             if the API call fails
+     * @throws IllegalArgumentException if limit or offset is out of range
      */
-    public List<Group> getGroups(final String limit,
-                                  final String offset,
-                                  final List<String> ids,
-                                  final List<String> externalGroupIds,
-                                  final String query) throws ApiException {
+    public GroupResult getGroups(final int limit,
+                                 final long offset,
+                                 final List<String> ids,
+                                 final List<String> externalGroupIds,
+                                 final String query) throws ApiException {
+        final int size = PagedOperation.GROUPS.resolveSize("limit", limit);
+        final long from = Pagination.resolveOffset("offset", offset);
         try {
             TgvalidatordGetGroupsReply reply = groupsApi.userServiceGetGroups(
-                    limit, offset, ids, externalGroupIds, query);
-            return groupMapper.fromDTOList(reply.getResult());
+                    String.valueOf(size), from == 0 ? null : String.valueOf(from),
+                    ids, externalGroupIds, query);
+            List<TgvalidatordInternalGroup> rows = reply.getResult() == null
+                    ? Collections.emptyList() : reply.getResult();
+            return new GroupResult(EnforcedInRules.computedGroups(groupMapper.fromDTOList(rows)),
+                    PagedOperation.GROUPS.offsetPage(size, from, rows.size(), 0,
+                            reply.getTotalItems(), null));
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }

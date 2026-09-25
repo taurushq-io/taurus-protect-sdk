@@ -130,7 +130,16 @@ export interface TgvalidatordTnLendingOffer {
      * @memberof TgvalidatordTnLendingOffer
      */
     amountMainUnit?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTnLendingOffer
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTnLendingOfferWireKeys: ReadonlySet<string> = new Set(['id', 'annualPercentageYield', 'duration', 'collateralRequirement', 'participantID', 'blockchain', 'network', 'arg1', 'arg2', 'currencyInfo', 'annualPercentageYieldMainUnit', 'originCreatedAt', 'createdAt', 'updatedAt', 'amount', 'amountMainUnit']);
 
 /**
  * Check if a given object implements the TgvalidatordTnLendingOffer interface.
@@ -147,7 +156,7 @@ export function TgvalidatordTnLendingOfferFromJSONTyped(json: any, ignoreDiscrim
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTnLendingOffer = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'annualPercentageYield': json['annualPercentageYield'] == null ? undefined : json['annualPercentageYield'],
@@ -166,6 +175,16 @@ export function TgvalidatordTnLendingOfferFromJSONTyped(json: any, ignoreDiscrim
         'amount': json['amount'] == null ? undefined : json['amount'],
         'amountMainUnit': json['amountMainUnit'] == null ? undefined : json['amountMainUnit'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTnLendingOfferWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTnLendingOfferToJSON(json: any): TgvalidatordTnLendingOffer {
@@ -195,6 +214,7 @@ export function TgvalidatordTnLendingOfferFromJSONTyped(json: any, ignoreDiscrim
         'updatedAt': value['updatedAt'] == null ? undefined : ((value['updatedAt']).toISOString()),
         'amount': value['amount'],
         'amountMainUnit': value['amountMainUnit'],
+        ...value['additionalProperties'],
     };
 }
 

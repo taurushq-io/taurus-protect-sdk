@@ -45,7 +45,16 @@ export interface TgvalidatordHederaNativeTokenTransfer {
      * @memberof TgvalidatordHederaNativeTokenTransfer
      */
     asset?: TgvalidatordAsset;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordHederaNativeTokenTransfer
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordHederaNativeTokenTransferWireKeys: ReadonlySet<string> = new Set(['address', 'amount', 'asset']);
 
 /**
  * Check if a given object implements the TgvalidatordHederaNativeTokenTransfer interface.
@@ -62,12 +71,22 @@ export function TgvalidatordHederaNativeTokenTransferFromJSONTyped(json: any, ig
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordHederaNativeTokenTransfer = {
         
         'address': json['address'] == null ? undefined : json['address'],
         'amount': json['amount'] == null ? undefined : json['amount'],
         'asset': json['asset'] == null ? undefined : TgvalidatordAssetFromJSON(json['asset']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordHederaNativeTokenTransferWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordHederaNativeTokenTransferToJSON(json: any): TgvalidatordHederaNativeTokenTransfer {
@@ -84,6 +103,7 @@ export function TgvalidatordHederaNativeTokenTransferFromJSONTyped(json: any, ig
         'address': value['address'],
         'amount': value['amount'],
         'asset': TgvalidatordAssetToJSON(value['asset']),
+        ...value['additionalProperties'],
     };
 }
 

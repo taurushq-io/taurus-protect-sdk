@@ -34,7 +34,7 @@ describe("Integration: Balances", () => {
 
     const client = getTestClient();
     try {
-      const balances = await client.balances.list({ limit: 10 });
+      const balances = (await client.balances.list({ pageSize: 10 })).items;
 
       console.log(`Found ${balances.length} balances`);
 
@@ -65,7 +65,7 @@ describe("Integration: Balances", () => {
     const client = getTestClient();
     try {
       // First, get all balances to find a valid currency
-      const allBalances = await client.balances.list({ limit: 1 });
+      const allBalances = (await client.balances.list({ pageSize: 1 })).items;
 
       if (allBalances.length === 0) {
         console.log("No balances available for testing currency filter");
@@ -80,10 +80,12 @@ describe("Integration: Balances", () => {
 
       console.log(`Filtering balances by currency: ${currencyToFilter}`);
 
-      const balances = await client.balances.list({
-        currency: currencyToFilter,
-        limit: 10,
-      });
+      const balances = (
+        await client.balances.list({
+          currency: currencyToFilter,
+          pageSize: 10,
+        })
+      ).items;
 
       console.log(
         `Found ${balances.length} balances for currency ${currencyToFilter}`

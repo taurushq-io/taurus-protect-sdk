@@ -51,7 +51,16 @@ export interface TgvalidatordTnPledgeStatisticsTnParticipant {
      * @memberof TgvalidatordTnPledgeStatisticsTnParticipant
      */
     pledgeStatisticsCurrencies?: Array<TgvalidatordTnPledgeStatisticsCurrency>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTnPledgeStatisticsTnParticipant
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTnPledgeStatisticsTnParticipantWireKeys: ReadonlySet<string> = new Set(['counterpartyTnParticipantID', 'outgoingPledgesTotalValuationBaseCurrency', 'incomingPledgesTotalValuationBaseCurrency', 'pledgeStatisticsCurrencies']);
 
 /**
  * Check if a given object implements the TgvalidatordTnPledgeStatisticsTnParticipant interface.
@@ -68,13 +77,23 @@ export function TgvalidatordTnPledgeStatisticsTnParticipantFromJSONTyped(json: a
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTnPledgeStatisticsTnParticipant = {
         
         'counterpartyTnParticipantID': json['counterpartyTnParticipantID'] == null ? undefined : json['counterpartyTnParticipantID'],
         'outgoingPledgesTotalValuationBaseCurrency': json['outgoingPledgesTotalValuationBaseCurrency'] == null ? undefined : json['outgoingPledgesTotalValuationBaseCurrency'],
         'incomingPledgesTotalValuationBaseCurrency': json['incomingPledgesTotalValuationBaseCurrency'] == null ? undefined : json['incomingPledgesTotalValuationBaseCurrency'],
         'pledgeStatisticsCurrencies': json['pledgeStatisticsCurrencies'] == null ? undefined : ((json['pledgeStatisticsCurrencies'] as Array<any>).map(TgvalidatordTnPledgeStatisticsCurrencyFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTnPledgeStatisticsTnParticipantWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTnPledgeStatisticsTnParticipantToJSON(json: any): TgvalidatordTnPledgeStatisticsTnParticipant {
@@ -92,6 +111,7 @@ export function TgvalidatordTnPledgeStatisticsTnParticipantFromJSONTyped(json: a
         'outgoingPledgesTotalValuationBaseCurrency': value['outgoingPledgesTotalValuationBaseCurrency'],
         'incomingPledgesTotalValuationBaseCurrency': value['incomingPledgesTotalValuationBaseCurrency'],
         'pledgeStatisticsCurrencies': value['pledgeStatisticsCurrencies'] == null ? undefined : ((value['pledgeStatisticsCurrencies'] as Array<any>).map(TgvalidatordTnPledgeStatisticsCurrencyToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

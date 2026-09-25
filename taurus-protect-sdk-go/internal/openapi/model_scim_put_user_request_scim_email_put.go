@@ -21,7 +21,10 @@ var _ MappedNullable = &ScimPutUserRequestScimEmailPut{}
 type ScimPutUserRequestScimEmailPut struct {
 	Type *string `json:"type,omitempty"`
 	Value *string `json:"value,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _ScimPutUserRequestScimEmailPut ScimPutUserRequestScimEmailPut
 
 // NewScimPutUserRequestScimEmailPut instantiates a new ScimPutUserRequestScimEmailPut object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o ScimPutUserRequestScimEmailPut) ToMap() (map[string]interface{}, error) 
 	if !IsNil(o.Value) {
 		toSerialize["value"] = o.Value
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *ScimPutUserRequestScimEmailPut) UnmarshalJSON(data []byte) (err error) {
+	varScimPutUserRequestScimEmailPut := _ScimPutUserRequestScimEmailPut{}
+
+	err = json.Unmarshal(data, &varScimPutUserRequestScimEmailPut)
+
+	if err != nil {
+		return err
+	}
+
+	*o = ScimPutUserRequestScimEmailPut(varScimPutUserRequestScimEmailPut)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "value")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableScimPutUserRequestScimEmailPut struct {

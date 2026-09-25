@@ -20,7 +20,10 @@ var _ MappedNullable = &ScimServiceProviderConfigEtag{}
 // ScimServiceProviderConfigEtag struct for ScimServiceProviderConfigEtag
 type ScimServiceProviderConfigEtag struct {
 	Supported *bool `json:"supported,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _ScimServiceProviderConfigEtag ScimServiceProviderConfigEtag
 
 // NewScimServiceProviderConfigEtag instantiates a new ScimServiceProviderConfigEtag object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o ScimServiceProviderConfigEtag) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Supported) {
 		toSerialize["supported"] = o.Supported
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *ScimServiceProviderConfigEtag) UnmarshalJSON(data []byte) (err error) {
+	varScimServiceProviderConfigEtag := _ScimServiceProviderConfigEtag{}
+
+	err = json.Unmarshal(data, &varScimServiceProviderConfigEtag)
+
+	if err != nil {
+		return err
+	}
+
+	*o = ScimServiceProviderConfigEtag(varScimServiceProviderConfigEtag)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "supported")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableScimServiceProviderConfigEtag struct {

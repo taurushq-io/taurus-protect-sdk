@@ -23,7 +23,10 @@ type TgvalidatordSubmitIncomingAirGapRequest struct {
 	Payload *string `json:"payload,omitempty"`
 	// base64; The signature of the air-gap importer.
 	Signature *string `json:"signature,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordSubmitIncomingAirGapRequest TgvalidatordSubmitIncomingAirGapRequest
 
 // NewTgvalidatordSubmitIncomingAirGapRequest instantiates a new TgvalidatordSubmitIncomingAirGapRequest object
 // This constructor will assign default values to properties that have it defined,
@@ -122,7 +125,34 @@ func (o TgvalidatordSubmitIncomingAirGapRequest) ToMap() (map[string]interface{}
 	if !IsNil(o.Signature) {
 		toSerialize["signature"] = o.Signature
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordSubmitIncomingAirGapRequest) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordSubmitIncomingAirGapRequest := _TgvalidatordSubmitIncomingAirGapRequest{}
+
+	err = json.Unmarshal(data, &varTgvalidatordSubmitIncomingAirGapRequest)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordSubmitIncomingAirGapRequest(varTgvalidatordSubmitIncomingAirGapRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "payload")
+		delete(additionalProperties, "signature")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordSubmitIncomingAirGapRequest struct {

@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Result of a whitelisted-address list query: the rows that verified, plus the rows
@@ -26,52 +27,40 @@ public final class WhitelistedAddressListResult {
 
     private final List<SignedWhitelistedAddressEnvelope> envelopes;
     private final List<ExcludedWhitelistedAddress> excludedUnverified;
-    private final String totalItems;
+    private final OffsetPagination pagination;
 
     /**
-     * Constructs a result with no page total.
+     * Constructs a result.
      *
      * @param envelopes          the envelopes that passed verification
      * @param excludedUnverified the rows dropped for failing verification
-     */
-    public WhitelistedAddressListResult(
-            final List<SignedWhitelistedAddressEnvelope> envelopes,
-            final List<ExcludedWhitelistedAddress> excludedUnverified) {
-        this(envelopes, excludedUnverified, null);
-    }
-
-    /**
-     * Constructs a result carrying the page total.
-     *
-     * @param envelopes          the envelopes that passed verification
-     * @param excludedUnverified the rows dropped for failing verification
-     * @param totalItems         the total already reduced by the exclusion count, or
-     *                           {@code null} when the server reported none
+     * @param pagination         the page's pagination, its total already reduced by the
+     *                           exclusion count
      */
     public WhitelistedAddressListResult(
             final List<SignedWhitelistedAddressEnvelope> envelopes,
             final List<ExcludedWhitelistedAddress> excludedUnverified,
-            final String totalItems) {
+            final OffsetPagination pagination) {
         this.envelopes = envelopes == null
                 ? new ArrayList<>() : new ArrayList<>(envelopes);
         this.excludedUnverified = excludedUnverified == null
                 ? new ArrayList<>() : new ArrayList<>(excludedUnverified);
-        this.totalItems = totalItems;
+        this.pagination = Objects.requireNonNull(pagination, "pagination cannot be null");
     }
 
     /**
-     * Returns the page total, already reduced by the number of excluded rows.
+     * Returns the page's pagination.
      *
-     * <p>The server counts the rows it returned; the caller receives only the ones that
-     * verified. Reporting the server's total would make this promise rows that can never
-     * be read, and would let a filtered page pass for a complete one. This is a
-     * {@code String} because the wire type is a {@code uint64} the generated client
-     * surfaces as text; Go and TypeScript expose the same value as a number.
+     * <p>{@code totalItems} is the server's count reduced by the number of excluded rows: the
+     * server counts the rows it returned, the caller receives only the ones that verified,
+     * and the raw count would promise rows that can never be read. {@code nextOffset} and
+     * {@code hasMore} stay in the server's row space, so a walk neither skips nor repeats
+     * rows around an exclusion.
      *
-     * @return the adjusted total, or {@code null} when the server reported none
+     * @return the pagination, never null
      */
-    public String getTotalItems() {
-        return totalItems;
+    public OffsetPagination getPagination() {
+        return pagination;
     }
 
     /**

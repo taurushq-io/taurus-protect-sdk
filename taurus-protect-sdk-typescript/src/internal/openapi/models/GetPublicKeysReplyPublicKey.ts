@@ -31,7 +31,16 @@ export interface GetPublicKeysReplyPublicKey {
      * @memberof GetPublicKeysReplyPublicKey
      */
     publicKey?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof GetPublicKeysReplyPublicKey
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const GetPublicKeysReplyPublicKeyWireKeys: ReadonlySet<string> = new Set(['userID', 'publicKey']);
 
 /**
  * Check if a given object implements the GetPublicKeysReplyPublicKey interface.
@@ -48,11 +57,21 @@ export function GetPublicKeysReplyPublicKeyFromJSONTyped(json: any, ignoreDiscri
     if (json == null) {
         return json;
     }
-    return {
+    const result: GetPublicKeysReplyPublicKey = {
         
         'userID': json['userID'] == null ? undefined : json['userID'],
         'publicKey': json['publicKey'] == null ? undefined : json['publicKey'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!GetPublicKeysReplyPublicKeyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function GetPublicKeysReplyPublicKeyToJSON(json: any): GetPublicKeysReplyPublicKey {
@@ -68,6 +87,7 @@ export function GetPublicKeysReplyPublicKeyFromJSONTyped(json: any, ignoreDiscri
         
         'userID': value['userID'],
         'publicKey': value['publicKey'],
+        ...value['additionalProperties'],
     };
 }
 

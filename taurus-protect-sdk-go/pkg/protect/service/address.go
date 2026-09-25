@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -117,61 +118,118 @@ func (s *AddressService) verifiedAddress(
 	return address, nil
 }
 
-// ListAddresses retrieves a list of addresses with mandatory signature verification.
-// Returns an IntegrityError if any address fails signature verification.
-func (s *AddressService) ListAddresses(ctx context.Context, opts *model.ListAddressesOptions) ([]*model.Address, *model.Pagination, error) {
-	req := s.api.WalletServiceGetAddresses(ctx)
+// maxAddressIDsPerRequest is validatord's cap on addressIds in one GetAddresses request.
+const maxAddressIDsPerRequest = 50
 
-	if opts != nil {
-		if opts.WalletID != "" {
-			req = req.WalletId(opts.WalletID)
-		}
-		if opts.Limit > 0 {
-			req = req.Limit(fmt.Sprintf("%d", opts.Limit))
-		}
-		if opts.Offset > 0 {
-			req = req.Offset(fmt.Sprintf("%d", opts.Offset))
-		}
-		// Query matches address, alternate address, comment, label and customer id.
-		if opts.Query != "" {
-			req = req.Query(opts.Query)
-		}
-		if len(opts.AddressIDs) > 0 {
-			req = req.AddressIds(opts.AddressIDs)
-		}
-		if len(opts.Addresses) > 0 {
-			req = req.Addresses(opts.Addresses)
-		}
-		if opts.Blockchain != "" {
-			req = req.Blockchain(opts.Blockchain)
-		}
-		if opts.Network != "" {
-			req = req.Network(opts.Network)
-		}
-		if len(opts.TagIDs) > 0 {
-			req = req.TagIDs(opts.TagIDs)
-		}
-		if opts.OnlyPositiveBalance {
-			req = req.OnlyPositiveBalance(true)
-		}
-		if opts.BalanceAbove != "" {
-			req = req.BalanceAbove(opts.BalanceAbove)
-		}
-		if opts.BalanceBelow != "" {
-			req = req.BalanceBelow(opts.BalanceBelow)
-		}
-		if opts.SortBy != "" {
-			req = req.SortBy(opts.SortBy)
-		}
-		if opts.SortOrder != "" {
-			req = req.SortOrder(opts.SortOrder)
-		}
-		req = applyAddressScoreFilter(req, opts.Score)
+// verifiedAddressesByID re-reads managed addresses by id, at most maxAddressIDsPerRequest ids
+// per request, and runs every returned row through verifiedAddress. It returns the rows that
+// verified keyed by id, plus why each other returned row did not.
+//
+// A row whose signature is missing or does not verify is reported, not fatal — the caller
+// decides what to do without it. A rules container that cannot verify any address (none, or no
+// HSMSLOT key) is not a property of one row, so it aborts the call, as does any request error.
+func (s *AddressService) verifiedAddressesByID(ctx context.Context, ids []string) (map[string]*model.Address, map[string]string, error) {
+	rulesContainer, err := s.rulesCache.Get(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get rules container for verification: %w", err)
 	}
+	if rulesContainer == nil || rulesContainer.GetHsmPublicKey() == nil {
+		return nil, nil, &model.IntegrityError{
+			Message: "the rules container has no HSMSLOT key, so no address can be verified",
+		}
+	}
+
+	verified := make(map[string]*model.Address, len(ids))
+	failed := make(map[string]string)
+	for _, batch := range chunkIDs(ids, maxAddressIDsPerRequest) {
+		resp, httpResp, err := s.api.WalletServiceGetAddresses(ctx).
+			AddressIds(batch).
+			Limit(strconv.Itoa(len(batch))).
+			Execute()
+		if err != nil {
+			return nil, nil, s.errMapper.MapError(err, httpResp)
+		}
+		for i := range resp.Result {
+			address, err := s.verifiedAddress(ctx, &resp.Result[i])
+			if err != nil {
+				var integrity *model.IntegrityError
+				if !errors.As(err, &integrity) {
+					return nil, nil, err
+				}
+				failed[safeString(resp.Result[i].Id)] = err.Error()
+				continue
+			}
+			verified[address.ID] = address
+		}
+	}
+	return verified, failed, nil
+}
+
+// ListAddresses retrieves one page of addresses with mandatory signature verification.
+// Returns an IntegrityError if any address fails signature verification. The returned
+// pagination is never nil; continue with its NextOffset until HasMore is false.
+func (s *AddressService) ListAddresses(ctx context.Context, opts *model.ListAddressesOptions) ([]*model.Address, *model.Pagination, error) {
+	if opts == nil {
+		opts = &model.ListAddressesOptions{}
+	}
+	window, err := resolveOffsetWindow(opts.Limit, opts.Offset)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	req := applyOffsetWindow(s.api.WalletServiceGetAddresses(ctx), window)
+	if opts.WalletID != "" {
+		req = req.WalletId(opts.WalletID)
+	}
+	// Query matches address, alternate address, comment, label and customer id.
+	if opts.Query != "" {
+		req = req.Query(opts.Query)
+	}
+	if opts.ExcludeDisabled {
+		req = req.IncludeDisabledAddresses("exclude")
+	}
+	if len(opts.AddressIDs) > 0 {
+		req = req.AddressIds(opts.AddressIDs)
+	}
+	if len(opts.Addresses) > 0 {
+		req = req.Addresses(opts.Addresses)
+	}
+	if opts.Blockchain != "" {
+		req = req.Blockchain(opts.Blockchain)
+	}
+	if opts.Network != "" {
+		req = req.Network(opts.Network)
+	}
+	if len(opts.TagIDs) > 0 {
+		req = req.TagIDs(opts.TagIDs)
+	}
+	if opts.OnlyPositiveBalance {
+		req = req.OnlyPositiveBalance(true)
+	}
+	if opts.BalanceAbove != "" {
+		req = req.BalanceAbove(opts.BalanceAbove)
+	}
+	if opts.BalanceBelow != "" {
+		req = req.BalanceBelow(opts.BalanceBelow)
+	}
+	if opts.SortBy != "" {
+		req = req.SortBy(opts.SortBy)
+	}
+	if opts.SortOrder != "" {
+		req = req.SortOrder(opts.SortOrder)
+	}
+	req = applyAddressScoreFilter(req, opts.Score)
 
 	resp, httpResp, err := req.Execute()
 	if err != nil {
 		return nil, nil, s.errMapper.MapError(err, httpResp)
+	}
+
+	// The reply offset is the NEXT page's offset, not the current one.
+	pagination, err := offsetPagination(ruleReplyOffset, window, len(resp.Result), 0,
+		offsetReply{TotalItems: resp.TotalItems, Offset: resp.Offset})
+	if err != nil {
+		return nil, nil, err
 	}
 
 	addresses := mapper.AddressesFromDTO(resp.Result)
@@ -186,23 +244,6 @@ func (s *AddressService) ListAddresses(ctx context.Context, opts *model.ListAddr
 	}
 	if err := helper.VerifyAddressSignatures(addresses, rulesContainer); err != nil {
 		return nil, nil, err
-	}
-
-	var pagination *model.Pagination
-	if resp.TotalItems != nil {
-		pagination = &model.Pagination{}
-		if total, parseErr := strconv.ParseInt(*resp.TotalItems, 10, 64); parseErr == nil {
-			pagination.TotalItems = total
-		}
-		if opts != nil {
-			pagination.Limit = opts.Limit
-			pagination.Offset = opts.Offset
-		}
-		// Use overflow-safe comparison: check if there are more items beyond offset+limit
-		// Instead of: offset+limit < totalItems (which can overflow)
-		// We use: totalItems > offset && totalItems-offset > limit
-		pagination.HasMore = pagination.TotalItems > pagination.Offset &&
-			pagination.TotalItems-pagination.Offset > pagination.Limit
 	}
 
 	return addresses, pagination, nil

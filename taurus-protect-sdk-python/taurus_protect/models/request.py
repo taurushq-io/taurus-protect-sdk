@@ -196,9 +196,7 @@ class RequestMetadata(BaseModel):
             UnverifiedMetadataError: If a payload is present but unverified.
         """
         if not self.hash_verified and self.payload_as_string:
-            raise UnverifiedMetadataError(
-                "request metadata payload has not been verified"
-            )
+            raise UnverifiedMetadataError("request metadata payload has not been verified")
 
     def _get_payload_value(self, key: str) -> Any:
         """Get the value for a given key from the verified payload entries."""
@@ -263,7 +261,9 @@ class Attribute(BaseModel):
     id: Optional[int] = Field(default=None, description="Attribute identifier")
     key: Optional[str] = Field(default=None, description="Attribute key")
     value: Optional[str] = Field(default=None, description="Attribute value")
-    content_type: Optional[str] = Field(default=None, description="Content type for file attributes")
+    content_type: Optional[str] = Field(
+        default=None, description="Content type for file attributes"
+    )
     owner: Optional[str] = Field(default=None, description="Owner identifier")
     type: Optional[str] = Field(default=None, description="Type classification")
     sub_type: Optional[str] = Field(default=None, description="Sub-type classification")
@@ -336,10 +336,16 @@ class Request(BaseModel):
     updated_at: Optional[datetime] = Field(default=None, description="Update timestamp")
     metadata: Optional[RequestMetadata] = Field(default=None, description="Request metadata")
     rule: Optional[str] = Field(default=None, description="Applied governance rule")
-    signed_requests: List[SignedRequest] = Field(default_factory=list, description="Signed transactions")
+    signed_requests: List[SignedRequest] = Field(
+        default_factory=list, description="Signed transactions"
+    )
     type: Optional[str] = Field(default=None, description="Request type")
-    approvers: Optional[RequestApprovers] = Field(default=None, description="Approval configuration")
-    currency_info: Optional[Currency] = Field(default=None, description="Detailed currency information")
+    approvers: Optional[RequestApprovers] = Field(
+        default=None, description="Approval configuration"
+    )
+    currency_info: Optional[Currency] = Field(
+        default=None, description="Detailed currency information"
+    )
     needs_approval_from: List[str] = Field(default_factory=list, description="Pending approvers")
     request_bundle_id: Optional[str] = Field(default=None, description="Request bundle ID")
     external_request_id: Optional[str] = Field(default=None, description="External request ID")
@@ -369,13 +375,3 @@ class CreateExternalTransferRequest(BaseModel):
     external_request_id: Optional[str] = Field(default=None, description="External request ID")
     fee_level: Optional[str] = Field(default=None, description="Fee level (low, medium, high)")
     memo: Optional[str] = Field(default=None, description="Optional memo/destination tag")
-
-
-class ListRequestsOptions(BaseModel):
-    """Options for listing requests."""
-
-    limit: int = Field(default=50, ge=1, le=1000, description="Maximum items to return")
-    offset: int = Field(default=0, ge=0, description="Number of items to skip")
-    status: Optional[RequestStatus] = Field(default=None, description="Filter by status")
-    currency: Optional[str] = Field(default=None, description="Filter by currency")
-    wallet_id: Optional[str] = Field(default=None, description="Filter by wallet ID")

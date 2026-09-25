@@ -43,51 +43,51 @@ func (s *WalletService) GetWallet(ctx context.Context, walletID string) (*model.
 	return mapper.WalletFromDTO(resp.Result), nil
 }
 
-// ListWallets retrieves a list of wallets.
+// ListWallets retrieves one page of wallets. The returned pagination is never nil; continue
+// with its NextOffset until HasMore is false.
 func (s *WalletService) ListWallets(ctx context.Context, opts *model.ListWalletsOptions) ([]*model.Wallet, *model.Pagination, error) {
+	if opts == nil {
+		opts = &model.ListWalletsOptions{}
+	}
+	window, err := resolveOffsetWindow(opts.Limit, opts.Offset)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	// v2 takes the same request and reply as the deprecated GetWalletsInfo; only the
 	// path differs.
-	req := s.api.WalletServiceGetWalletsV2(ctx)
-
-	if opts != nil {
-		if opts.Limit > 0 {
-			req = req.Limit(fmt.Sprintf("%d", opts.Limit))
-		}
-		if opts.Offset > 0 {
-			req = req.Offset(fmt.Sprintf("%d", opts.Offset))
-		}
-		if opts.Currency != "" {
-			req = req.Currencies([]string{opts.Currency})
-		}
-		// Query matches seven columns (currency, customerid, blockchain, name,
-		// container, accountpath, comment); Name matches the name alone.
-		if opts.Query != "" {
-			req = req.Query(opts.Query)
-		}
-		if opts.Name != "" {
-			req = req.Name(opts.Name)
-		}
-		if opts.ExcludeDisabled {
-			req = req.ExcludeDisabled(true)
-		}
-		if len(opts.IDs) > 0 {
-			req = req.Ids(opts.IDs)
-		}
-		if opts.Blockchain != "" {
-			req = req.Blockchain(opts.Blockchain)
-		}
-		if opts.Network != "" {
-			req = req.Network(opts.Network)
-		}
-		if len(opts.TagIDs) > 0 {
-			req = req.TagIDs(opts.TagIDs)
-		}
-		if opts.OnlyPositiveBalance {
-			req = req.OnlyPositiveBalance(true)
-		}
-		if opts.SortOrder != "" {
-			req = req.SortOrder(opts.SortOrder)
-		}
+	req := applyOffsetWindow(s.api.WalletServiceGetWalletsV2(ctx), window)
+	if opts.Currency != "" {
+		req = req.Currencies([]string{opts.Currency})
+	}
+	// Query matches seven columns (currency, customerid, blockchain, name,
+	// container, accountpath, comment); Name matches the name alone.
+	if opts.Query != "" {
+		req = req.Query(opts.Query)
+	}
+	if opts.Name != "" {
+		req = req.Name(opts.Name)
+	}
+	if opts.ExcludeDisabled {
+		req = req.ExcludeDisabled(true)
+	}
+	if len(opts.IDs) > 0 {
+		req = req.Ids(opts.IDs)
+	}
+	if opts.Blockchain != "" {
+		req = req.Blockchain(opts.Blockchain)
+	}
+	if opts.Network != "" {
+		req = req.Network(opts.Network)
+	}
+	if len(opts.TagIDs) > 0 {
+		req = req.TagIDs(opts.TagIDs)
+	}
+	if opts.OnlyPositiveBalance {
+		req = req.OnlyPositiveBalance(true)
+	}
+	if opts.SortOrder != "" {
+		req = req.SortOrder(opts.SortOrder)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -95,28 +95,13 @@ func (s *WalletService) ListWallets(ctx context.Context, opts *model.ListWallets
 		return nil, nil, s.errMapper.MapError(err, httpResp)
 	}
 
-	wallets := mapper.WalletsFromDTO(resp.Result)
-
-	var pagination *model.Pagination
-	if resp.TotalItems != nil || resp.Offset != nil {
-		pagination = &model.Pagination{}
-		if resp.TotalItems != nil {
-			if total, err := strconv.ParseInt(*resp.TotalItems, 10, 64); err == nil {
-				pagination.TotalItems = total
-			}
-		}
-		if resp.Offset != nil {
-			if offset, err := strconv.ParseInt(*resp.Offset, 10, 64); err == nil {
-				pagination.Offset = offset
-			}
-		}
-		if opts != nil {
-			pagination.Limit = opts.Limit
-		}
-		pagination.HasMore = pagination.Offset+pagination.Limit < pagination.TotalItems
+	// The reply offset is the NEXT page's offset, not the current one.
+	pagination, err := offsetPagination(ruleReplyOffset, window, len(resp.Result), 0,
+		offsetReply{TotalItems: resp.TotalItems, Offset: resp.Offset})
+	if err != nil {
+		return nil, nil, err
 	}
-
-	return wallets, pagination, nil
+	return mapper.WalletsFromDTO(resp.Result), pagination, nil
 }
 
 // CreateWallet creates a new wallet.
@@ -228,21 +213,23 @@ func (s *WalletService) GetWalletBalanceHistory(ctx context.Context, walletID st
 	return mapper.BalanceHistoryPointsFromDTO(resp.Result), nil
 }
 
-// GetWalletTokens retrieves token balances for a wallet.
-// limit specifies the maximum number of tokens to return.
-func (s *WalletService) GetWalletTokens(ctx context.Context, walletID string, opts *model.GetWalletTokensOptions) ([]*model.AssetBalance, error) {
+// GetWalletTokens retrieves one page of a wallet's token balances. Continue with
+// Page.NextCursor until Page.HasMore is false.
+func (s *WalletService) GetWalletTokens(ctx context.Context, walletID string, opts *model.GetWalletTokensOptions) (*model.WalletTokensResult, error) {
 	if walletID == "" {
 		return nil, fmt.Errorf("walletID cannot be empty")
 	}
+	if opts == nil {
+		opts = &model.GetWalletTokensOptions{}
+	}
+	pageSize, err := resolvePageSize("PageSize", opts.PageSize)
+	if err != nil {
+		return nil, err
+	}
 
-	req := s.api.WalletServiceGetWalletTokens(ctx, walletID)
-	if opts != nil {
-		if opts.Limit > 0 {
-			req = req.Limit(fmt.Sprintf("%d", opts.Limit))
-		}
-		if opts.Cursor != "" {
-			req = req.Cursor(opts.Cursor)
-		}
+	req := s.api.WalletServiceGetWalletTokens(ctx, walletID).Limit(strconv.FormatInt(pageSize, 10))
+	if opts.Cursor != "" {
+		req = req.Cursor(opts.Cursor)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -250,5 +237,12 @@ func (s *WalletService) GetWalletTokens(ctx context.Context, walletID string, op
 		return nil, s.errMapper.MapError(err, httpResp)
 	}
 
-	return mapper.AssetBalancesFromDTO(resp.Balances), nil
+	page, err := cursorPage(pageSize, cursorReply{TokenOnly: true, Token: resp.Next, HasTotal: true, Total: resp.Total})
+	if err != nil {
+		return nil, err
+	}
+	return &model.WalletTokensResult{
+		Tokens: mapper.AssetBalancesFromDTO(resp.Balances),
+		Page:   page,
+	}, nil
 }

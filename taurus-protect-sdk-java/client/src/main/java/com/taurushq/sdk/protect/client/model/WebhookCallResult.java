@@ -7,24 +7,25 @@ import java.util.List;
  *
  * @see WebhookCallsService
  */
-public class WebhookCallResult {
+public class WebhookCallResult extends CursorPagedResult {
 
     private List<WebhookCall> calls;
-    private ApiResponseCursor cursor;
 
+    /**
+     * Gets the webhook calls of this page.
+     *
+     * @return the calls
+     */
     public List<WebhookCall> getCalls() {
         return calls;
     }
 
+    /**
+     * Sets the webhook calls of this page.
+     *
+     * @param calls the calls
+     */
     public void setCalls(final List<WebhookCall> calls) {
         this.calls = calls;
-    }
-
-    public ApiResponseCursor getCursor() {
-        return cursor;
-    }
-
-    public void setCursor(final ApiResponseCursor cursor) {
-        this.cursor = cursor;
     }
 }

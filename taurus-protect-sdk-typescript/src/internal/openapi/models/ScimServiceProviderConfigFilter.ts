@@ -31,7 +31,16 @@ export interface ScimServiceProviderConfigFilter {
      * @memberof ScimServiceProviderConfigFilter
      */
     maxResults?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof ScimServiceProviderConfigFilter
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const ScimServiceProviderConfigFilterWireKeys: ReadonlySet<string> = new Set(['supported', 'maxResults']);
 
 /**
  * Check if a given object implements the ScimServiceProviderConfigFilter interface.
@@ -48,11 +57,21 @@ export function ScimServiceProviderConfigFilterFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: ScimServiceProviderConfigFilter = {
         
         'supported': json['supported'] == null ? undefined : json['supported'],
         'maxResults': json['maxResults'] == null ? undefined : json['maxResults'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!ScimServiceProviderConfigFilterWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function ScimServiceProviderConfigFilterToJSON(json: any): ScimServiceProviderConfigFilter {
@@ -68,6 +87,7 @@ export function ScimServiceProviderConfigFilterFromJSONTyped(json: any, ignoreDi
         
         'supported': value['supported'],
         'maxResults': value['maxResults'],
+        ...value['additionalProperties'],
     };
 }
 

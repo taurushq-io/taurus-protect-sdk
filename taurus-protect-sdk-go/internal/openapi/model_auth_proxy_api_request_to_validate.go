@@ -42,7 +42,10 @@ type AuthProxyApiRequestToValidate struct {
 	Body *string `json:"body,omitempty" validate:"regexp=^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=)?$"`
 	// The submitted HMAC signature for the request, which we need to validate (through the REST API, the bytes are encoded as a base64 string)
 	Signature *string `json:"signature,omitempty" validate:"regexp=^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=)?$"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _AuthProxyApiRequestToValidate AuthProxyApiRequestToValidate
 
 // NewAuthProxyApiRequestToValidate instantiates a new AuthProxyApiRequestToValidate object
 // This constructor will assign default values to properties that have it defined,
@@ -456,7 +459,43 @@ func (o AuthProxyApiRequestToValidate) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Signature) {
 		toSerialize["signature"] = o.Signature
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *AuthProxyApiRequestToValidate) UnmarshalJSON(data []byte) (err error) {
+	varAuthProxyApiRequestToValidate := _AuthProxyApiRequestToValidate{}
+
+	err = json.Unmarshal(data, &varAuthProxyApiRequestToValidate)
+
+	if err != nil {
+		return err
+	}
+
+	*o = AuthProxyApiRequestToValidate(varAuthProxyApiRequestToValidate)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "prefix")
+		delete(additionalProperties, "apiKey")
+		delete(additionalProperties, "nonce")
+		delete(additionalProperties, "timestamp")
+		delete(additionalProperties, "method")
+		delete(additionalProperties, "host")
+		delete(additionalProperties, "path")
+		delete(additionalProperties, "query")
+		delete(additionalProperties, "contentType")
+		delete(additionalProperties, "body")
+		delete(additionalProperties, "signature")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableAuthProxyApiRequestToValidate struct {

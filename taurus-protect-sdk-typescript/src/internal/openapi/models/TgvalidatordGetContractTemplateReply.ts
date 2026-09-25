@@ -33,7 +33,16 @@ export interface TgvalidatordGetContractTemplateReply {
      * @memberof TgvalidatordGetContractTemplateReply
      */
     result?: TgvalidatordContractTemplateResource;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetContractTemplateReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetContractTemplateReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetContractTemplateReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetContractTemplateReplyFromJSONTyped(json: any, ign
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetContractTemplateReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordContractTemplateResourceFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetContractTemplateReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetContractTemplateReplyToJSON(json: any): TgvalidatordGetContractTemplateReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetContractTemplateReplyFromJSONTyped(json: any, ign
     return {
         
         'result': TgvalidatordContractTemplateResourceToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

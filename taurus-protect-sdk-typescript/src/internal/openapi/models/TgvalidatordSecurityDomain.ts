@@ -82,9 +82,18 @@ export interface TgvalidatordSecurityDomain {
      * @memberof TgvalidatordSecurityDomain
      */
     enabled?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordSecurityDomain
+     */
+    additionalProperties?: { [key: string]: any };
 }
 
 
+
+const TgvalidatordSecurityDomainWireKeys: ReadonlySet<string> = new Set(['id', 'tenantId', 'domain', 'mode', 'attributes', 'creationDate', 'updateDate', 'enabled']);
 
 /**
  * Check if a given object implements the TgvalidatordSecurityDomain interface.
@@ -101,7 +110,7 @@ export function TgvalidatordSecurityDomainFromJSONTyped(json: any, ignoreDiscrim
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordSecurityDomain = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'tenantId': json['tenantId'] == null ? undefined : json['tenantId'],
@@ -112,6 +121,16 @@ export function TgvalidatordSecurityDomainFromJSONTyped(json: any, ignoreDiscrim
         'updateDate': json['updateDate'] == null ? undefined : (new Date(json['updateDate'])),
         'enabled': json['enabled'] == null ? undefined : json['enabled'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordSecurityDomainWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordSecurityDomainToJSON(json: any): TgvalidatordSecurityDomain {
@@ -133,6 +152,7 @@ export function TgvalidatordSecurityDomainFromJSONTyped(json: any, ignoreDiscrim
         'creationDate': value['creationDate'] == null ? undefined : ((value['creationDate']).toISOString()),
         'updateDate': value['updateDate'] == null ? undefined : ((value['updateDate']).toISOString()),
         'enabled': value['enabled'],
+        ...value['additionalProperties'],
     };
 }
 

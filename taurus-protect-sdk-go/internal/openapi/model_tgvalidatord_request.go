@@ -48,7 +48,10 @@ type TgvalidatordRequest struct {
 	// Identifier for the request in the user's system. This must be unique.
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
 	TravelRuleDataInput *TgvalidatordTravelRuleDataInput `json:"travelRuleDataInput,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordRequest TgvalidatordRequest
 
 // NewTgvalidatordRequest instantiates a new TgvalidatordRequest object
 // This constructor will assign default values to properties that have it defined,
@@ -742,7 +745,51 @@ func (o TgvalidatordRequest) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.TravelRuleDataInput) {
 		toSerialize["travelRuleDataInput"] = o.TravelRuleDataInput
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordRequest) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordRequest := _TgvalidatordRequest{}
+
+	err = json.Unmarshal(data, &varTgvalidatordRequest)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordRequest(varTgvalidatordRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "tenantId")
+		delete(additionalProperties, "currency")
+		delete(additionalProperties, "envelope")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "trails")
+		delete(additionalProperties, "signedRequests")
+		delete(additionalProperties, "creationDate")
+		delete(additionalProperties, "updateDate")
+		delete(additionalProperties, "metadata")
+		delete(additionalProperties, "attributes")
+		delete(additionalProperties, "rule")
+		delete(additionalProperties, "approvers")
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "currencyInfo")
+		delete(additionalProperties, "needsApprovalFrom")
+		delete(additionalProperties, "requestBundleId")
+		delete(additionalProperties, "externalRequestId")
+		delete(additionalProperties, "travelRuleDataInput")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordRequest struct {

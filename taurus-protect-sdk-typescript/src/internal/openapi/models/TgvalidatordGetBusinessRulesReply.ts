@@ -39,7 +39,16 @@ export interface TgvalidatordGetBusinessRulesReply {
      * @memberof TgvalidatordGetBusinessRulesReply
      */
     totalItems?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetBusinessRulesReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetBusinessRulesReplyWireKeys: ReadonlySet<string> = new Set(['result', 'totalItems']);
 
 /**
  * Check if a given object implements the TgvalidatordGetBusinessRulesReply interface.
@@ -56,11 +65,21 @@ export function TgvalidatordGetBusinessRulesReplyFromJSONTyped(json: any, ignore
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetBusinessRulesReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordBusinessRuleFromJSON)),
         'totalItems': json['totalItems'] == null ? undefined : json['totalItems'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetBusinessRulesReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetBusinessRulesReplyToJSON(json: any): TgvalidatordGetBusinessRulesReply {
@@ -76,6 +95,7 @@ export function TgvalidatordGetBusinessRulesReplyFromJSONTyped(json: any, ignore
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordBusinessRuleToJSON)),
         'totalItems': value['totalItems'],
+        ...value['additionalProperties'],
     };
 }
 

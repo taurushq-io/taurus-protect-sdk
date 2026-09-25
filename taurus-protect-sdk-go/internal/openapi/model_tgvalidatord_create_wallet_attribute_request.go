@@ -25,7 +25,10 @@ type TgvalidatordCreateWalletAttributeRequest struct {
 	Type *string `json:"type,omitempty"`
 	Subtype *string `json:"subtype,omitempty"`
 	Isfile *bool `json:"isfile,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordCreateWalletAttributeRequest TgvalidatordCreateWalletAttributeRequest
 
 // NewTgvalidatordCreateWalletAttributeRequest instantiates a new TgvalidatordCreateWalletAttributeRequest object
 // This constructor will assign default values to properties that have it defined,
@@ -264,7 +267,38 @@ func (o TgvalidatordCreateWalletAttributeRequest) ToMap() (map[string]interface{
 	if !IsNil(o.Isfile) {
 		toSerialize["isfile"] = o.Isfile
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordCreateWalletAttributeRequest) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordCreateWalletAttributeRequest := _TgvalidatordCreateWalletAttributeRequest{}
+
+	err = json.Unmarshal(data, &varTgvalidatordCreateWalletAttributeRequest)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordCreateWalletAttributeRequest(varTgvalidatordCreateWalletAttributeRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "key")
+		delete(additionalProperties, "value")
+		delete(additionalProperties, "contentType")
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "subtype")
+		delete(additionalProperties, "isfile")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordCreateWalletAttributeRequest struct {

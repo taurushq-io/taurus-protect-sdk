@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordGetSettlementReply{}
 // TgvalidatordGetSettlementReply struct for TgvalidatordGetSettlementReply
 type TgvalidatordGetSettlementReply struct {
 	Result *TgvalidatordTnSettlement `json:"result,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetSettlementReply TgvalidatordGetSettlementReply
 
 // NewTgvalidatordGetSettlementReply instantiates a new TgvalidatordGetSettlementReply object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordGetSettlementReply) ToMap() (map[string]interface{}, error) 
 	if !IsNil(o.Result) {
 		toSerialize["result"] = o.Result
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetSettlementReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetSettlementReply := _TgvalidatordGetSettlementReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetSettlementReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetSettlementReply(varTgvalidatordGetSettlementReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "result")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetSettlementReply struct {

@@ -49,7 +49,16 @@ export interface TgvalidatordSolanaNativeTokenParams {
      * @memberof TgvalidatordSolanaNativeTokenParams
      */
     enableFreeze?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordSolanaNativeTokenParams
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordSolanaNativeTokenParamsWireKeys: ReadonlySet<string> = new Set(['decimals', 'name', 'symbol', 'uri', 'enableFreeze']);
 
 /**
  * Check if a given object implements the TgvalidatordSolanaNativeTokenParams interface.
@@ -66,7 +75,7 @@ export function TgvalidatordSolanaNativeTokenParamsFromJSONTyped(json: any, igno
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordSolanaNativeTokenParams = {
         
         'decimals': json['decimals'] == null ? undefined : json['decimals'],
         'name': json['name'] == null ? undefined : json['name'],
@@ -74,6 +83,16 @@ export function TgvalidatordSolanaNativeTokenParamsFromJSONTyped(json: any, igno
         'uri': json['uri'] == null ? undefined : json['uri'],
         'enableFreeze': json['enableFreeze'] == null ? undefined : json['enableFreeze'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordSolanaNativeTokenParamsWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordSolanaNativeTokenParamsToJSON(json: any): TgvalidatordSolanaNativeTokenParams {
@@ -92,6 +111,7 @@ export function TgvalidatordSolanaNativeTokenParamsFromJSONTyped(json: any, igno
         'symbol': value['symbol'],
         'uri': value['uri'],
         'enableFreeze': value['enableFreeze'],
+        ...value['additionalProperties'],
     };
 }
 

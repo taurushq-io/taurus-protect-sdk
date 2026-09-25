@@ -59,7 +59,16 @@ export interface TriggerBalance {
      * @memberof TriggerBalance
      */
     amount?: TgvalidatordActionAmount;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TriggerBalance
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TriggerBalanceWireKeys: ReadonlySet<string> = new Set(['target', 'comparator', 'amount']);
 
 /**
  * Check if a given object implements the TriggerBalance interface.
@@ -76,12 +85,22 @@ export function TriggerBalanceFromJSONTyped(json: any, ignoreDiscriminator: bool
     if (json == null) {
         return json;
     }
-    return {
+    const result: TriggerBalance = {
         
         'target': json['target'] == null ? undefined : ActionTargetFromJSON(json['target']),
         'comparator': json['comparator'] == null ? undefined : ActionComparatorFromJSON(json['comparator']),
         'amount': json['amount'] == null ? undefined : TgvalidatordActionAmountFromJSON(json['amount']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TriggerBalanceWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TriggerBalanceToJSON(json: any): TriggerBalance {
@@ -98,6 +117,7 @@ export function TriggerBalanceFromJSONTyped(json: any, ignoreDiscriminator: bool
         'target': ActionTargetToJSON(value['target']),
         'comparator': ActionComparatorToJSON(value['comparator']),
         'amount': TgvalidatordActionAmountToJSON(value['amount']),
+        ...value['additionalProperties'],
     };
 }
 

@@ -31,7 +31,10 @@ type TgvalidatordBalance struct {
 	ReservedConfirmed *string `json:"reservedConfirmed,omitempty"`
 	// Reserved unconfirmed balance that is not yet fully validated.
 	ReservedUnconfirmed *string `json:"reservedUnconfirmed,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordBalance TgvalidatordBalance
 
 // NewTgvalidatordBalance instantiates a new TgvalidatordBalance object
 // This constructor will assign default values to properties that have it defined,
@@ -270,7 +273,38 @@ func (o TgvalidatordBalance) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.ReservedUnconfirmed) {
 		toSerialize["reservedUnconfirmed"] = o.ReservedUnconfirmed
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordBalance) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordBalance := _TgvalidatordBalance{}
+
+	err = json.Unmarshal(data, &varTgvalidatordBalance)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordBalance(varTgvalidatordBalance)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "totalConfirmed")
+		delete(additionalProperties, "totalUnconfirmed")
+		delete(additionalProperties, "availableConfirmed")
+		delete(additionalProperties, "availableUnconfirmed")
+		delete(additionalProperties, "reservedConfirmed")
+		delete(additionalProperties, "reservedUnconfirmed")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordBalance struct {

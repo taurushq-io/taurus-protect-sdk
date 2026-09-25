@@ -5,7 +5,7 @@
 import { ConfigurationError, ValidationError } from '../../../src/errors';
 import type { RulesContainerCache } from '../../../src/cache';
 import type { DecodedRulesContainer } from '../../../src/models/governance-rules';
-import { AssetService } from '../../../src/services/asset-service';
+import { AssetService, type AssetHolderReaders } from '../../../src/services/asset-service';
 
 // The verification itself is covered by the address-signature-verifier tests; what
 // matters here is that getAssetAddresses runs it at all, which the constructor and the
@@ -25,15 +25,38 @@ function createMockRulesCache(): jest.Mocked<RulesContainerCache> {
   } as unknown as jest.Mocked<RulesContainerCache>;
 }
 
+// The holder readers are exercised through the transport in asset-holders.test.ts; the
+// replies here carry no internal or whitelisted holders, so nothing resolves them.
+const NO_HOLDERS: AssetHolderReaders = {
+  addresses: () => {
+    throw new Error('the address reader must not be used');
+  },
+  whitelistedAddresses: () => {
+    throw new Error('the whitelisted-address reader must not be used');
+  },
+};
+
 describe('AssetService', () => {
   describe('constructor', () => {
+    it('should throw ConfigurationError when the holder readers are not provided', () => {
+      expect(
+        () =>
+          new AssetService(
+            {} as never,
+            createMockRulesCache(),
+            {} as never,
+            undefined as unknown as AssetHolderReaders
+          )
+      ).toThrow(ConfigurationError);
+    });
+
     it('should throw ConfigurationError when rulesCache is not provided', () => {
       const mockApi = {} as never;
       expect(
-        () => new AssetService(mockApi, undefined as unknown as RulesContainerCache)
+        () => new AssetService(mockApi, undefined as unknown as RulesContainerCache, {} as never, NO_HOLDERS)
       ).toThrow(ConfigurationError);
       expect(
-        () => new AssetService(mockApi, null as unknown as RulesContainerCache)
+        () => new AssetService(mockApi, null as unknown as RulesContainerCache, {} as never, NO_HOLDERS)
       ).toThrow(ConfigurationError);
     });
   });
@@ -55,7 +78,7 @@ describe('AssetService', () => {
         }),
       };
       const rulesCache = createMockRulesCache();
-      const service = new AssetService(mockApi as any, rulesCache);
+      const service = new AssetService(mockApi as any, rulesCache, {} as never, NO_HOLDERS);
 
       await service.getAssetAddresses({ currency: 'ETH' });
 
@@ -81,7 +104,7 @@ describe('AssetService', () => {
           totalItems: '1',
         }),
       };
-      const service = new AssetService(mockApi as any, createMockRulesCache());
+      const service = new AssetService(mockApi as any, createMockRulesCache(), {} as never, NO_HOLDERS);
 
       await expect(service.getAssetAddresses({ currency: 'ETH' })).rejects.toThrow();
     });
@@ -99,20 +122,28 @@ describe('AssetService', () => {
         }),
       };
 
-      const service = new AssetService(mockApi as any, createMockRulesCache());
+      const service = new AssetService(mockApi as any, createMockRulesCache(), {} as never, NO_HOLDERS);
       const result = await service.getAssetAddresses({ currency: 'ETH' });
 
+      // Paged through requestCursor only: the legacy limit/cursor fields are never sent.
       expect(mockApi.walletServiceGetAssetAddresses).toHaveBeenCalledWith({
         body: {
           asset: { currency: 'ETH' },
           walletId: undefined,
           addressId: undefined,
-          limit: undefined,
+          addresses: undefined,
+          requestCursor: { currentPage: undefined, pageRequest: undefined, pageSize: '20' },
         },
       });
-      expect(result).toHaveLength(2);
-      expect(result[0].id).toBe('1');
-      expect(result[0].address).toBe('0x123');
+      expect(result.items).toHaveLength(2);
+      expect(result.items[0].id).toBe('1');
+      expect(result.items[0].address).toBe('0x123');
+      expect(result.pagination).toEqual({
+        pageSize: 20,
+        nextCursor: '',
+        hasMore: false,
+        totalItems: 2,
+      });
     });
 
     it('should pass optional filters', async () => {
@@ -122,12 +153,14 @@ describe('AssetService', () => {
         }),
       };
 
-      const service = new AssetService(mockApi as any, createMockRulesCache());
+      const service = new AssetService(mockApi as any, createMockRulesCache(), {} as never, NO_HOLDERS);
       await service.getAssetAddresses({
         currency: 'BTC',
         walletId: 'wallet-123',
         addressId: 'addr-456',
-        limit: '50',
+        addresses: ['bc1q'],
+        pageSize: 50,
+        cursor: 'next-page',
       });
 
       expect(mockApi.walletServiceGetAssetAddresses).toHaveBeenCalledWith({
@@ -135,7 +168,8 @@ describe('AssetService', () => {
           asset: { currency: 'BTC' },
           walletId: 'wallet-123',
           addressId: 'addr-456',
-          limit: '50',
+          addresses: ['bc1q'],
+          requestCursor: { currentPage: 'next-page', pageRequest: 'NEXT', pageSize: '50' },
         },
       });
     });
@@ -145,7 +179,7 @@ describe('AssetService', () => {
         walletServiceGetAssetAddresses: jest.fn(),
       };
 
-      const service = new AssetService(mockApi as any, createMockRulesCache());
+      const service = new AssetService(mockApi as any, createMockRulesCache(), {} as never, NO_HOLDERS);
 
       await expect(service.getAssetAddresses({ currency: '' }))
         .rejects.toThrow(ValidationError);
@@ -160,10 +194,11 @@ describe('AssetService', () => {
         }),
       };
 
-      const service = new AssetService(mockApi as any, createMockRulesCache());
+      const service = new AssetService(mockApi as any, createMockRulesCache(), {} as never, NO_HOLDERS);
       const result = await service.getAssetAddresses({ currency: 'USDC' });
 
-      expect(result).toEqual([]);
+      expect(result.items).toEqual([]);
+      expect(result.pagination.totalItems).toBe(0);
     });
   });
 
@@ -181,7 +216,7 @@ describe('AssetService', () => {
         }),
       };
 
-      const service = new AssetService(mockApi as any, createMockRulesCache());
+      const service = new AssetService(mockApi as any, createMockRulesCache(), {} as never, NO_HOLDERS);
       const result = await service.getAssetWallets({ currency: 'ETH' });
 
       expect(mockApi.walletServiceGetAssetWallets).toHaveBeenCalledWith({
@@ -189,12 +224,13 @@ describe('AssetService', () => {
           asset: { currency: 'ETH' },
           walletId: undefined,
           walletName: undefined,
-          limit: undefined,
+          requestCursor: { currentPage: undefined, pageRequest: undefined, pageSize: '20' },
         },
       });
-      expect(result).toHaveLength(2);
-      expect(result[0].id).toBe('1');
-      expect(result[0].name).toBe('Wallet 1');
+      expect(result.items).toHaveLength(2);
+      expect(result.items[0].id).toBe('1');
+      expect(result.items[0].name).toBe('Wallet 1');
+      expect(result.pagination.totalItems).toBe(2);
     });
 
     it('should pass optional filters', async () => {
@@ -204,12 +240,12 @@ describe('AssetService', () => {
         }),
       };
 
-      const service = new AssetService(mockApi as any, createMockRulesCache());
+      const service = new AssetService(mockApi as any, createMockRulesCache(), {} as never, NO_HOLDERS);
       await service.getAssetWallets({
         currency: 'USDC',
         walletId: 'wallet-123',
         walletName: 'My Wallet',
-        limit: '100',
+        pageSize: 100,
       });
 
       expect(mockApi.walletServiceGetAssetWallets).toHaveBeenCalledWith({
@@ -217,7 +253,7 @@ describe('AssetService', () => {
           asset: { currency: 'USDC' },
           walletId: 'wallet-123',
           walletName: 'My Wallet',
-          limit: '100',
+          requestCursor: { currentPage: undefined, pageRequest: undefined, pageSize: '100' },
         },
       });
     });
@@ -227,7 +263,7 @@ describe('AssetService', () => {
         walletServiceGetAssetWallets: jest.fn(),
       };
 
-      const service = new AssetService(mockApi as any, createMockRulesCache());
+      const service = new AssetService(mockApi as any, createMockRulesCache(), {} as never, NO_HOLDERS);
 
       await expect(service.getAssetWallets({ currency: '' }))
         .rejects.toThrow(ValidationError);
@@ -242,10 +278,51 @@ describe('AssetService', () => {
         }),
       };
 
-      const service = new AssetService(mockApi as any, createMockRulesCache());
+      const service = new AssetService(mockApi as any, createMockRulesCache(), {} as never, NO_HOLDERS);
       const result = await service.getAssetWallets({ currency: 'USDC' });
 
-      expect(result).toEqual([]);
+      expect(result.items).toEqual([]);
+    });
+  });
+
+  describe('v2 registry reads', () => {
+    it('should reject an empty assetId before sending', async () => {
+      const assetV2Api = {
+        assetServiceV2QueryAssetAddressesV2: jest.fn(),
+        assetServiceV2ListAssetOperationsV2: jest.fn(),
+      };
+      const service = new AssetService({} as never, createMockRulesCache(), assetV2Api as never, NO_HOLDERS);
+      await expect(service.queryAssetAddresses('')).rejects.toThrow('assetId is required');
+      await expect(service.listAssetOperations(' ')).rejects.toThrow('assetId is required');
+      expect(assetV2Api.assetServiceV2QueryAssetAddressesV2).not.toHaveBeenCalled();
+      expect(assetV2Api.assetServiceV2ListAssetOperationsV2).not.toHaveBeenCalled();
+    });
+
+    it('should send every queryAssets filter with the page size in the body', async () => {
+      const assetV2Api = {
+        assetServiceV2QueryAssetsV2: jest.fn().mockResolvedValue({ result: [{ id: 'a1' }] }),
+      };
+      const service = new AssetService({} as never, createMockRulesCache(), assetV2Api as never, NO_HOLDERS);
+      const page = await service.queryAssets({
+        blockchain: 'CANTON',
+        network: 'mainnet',
+        symbol: 'TKN',
+        contractAddress: 'c',
+        label: 'l',
+        currencyName: 'n',
+      });
+      expect(assetV2Api.assetServiceV2QueryAssetsV2).toHaveBeenCalledWith({
+        body: {
+          cursor: { currentPage: undefined, pageRequest: undefined, pageSize: '20' },
+          blockchain: 'CANTON',
+          network: 'mainnet',
+          symbol: 'TKN',
+          contractAddress: 'c',
+          label: 'l',
+          currencyName: 'n',
+        },
+      });
+      expect(page.items.map((a) => a.id)).toEqual(['a1']);
     });
   });
 });

@@ -39,21 +39,17 @@ func (s *TaurusNetworkLendingService) GetLendingAgreement(ctx context.Context, l
 
 // ListLendingAgreements retrieves a list of lending agreements with optional filtering and pagination.
 func (s *TaurusNetworkLendingService) ListLendingAgreements(ctx context.Context, opts *taurusnetwork.ListLendingAgreementsOptions) (*taurusnetwork.ListLendingAgreementsResult, error) {
-	req := s.api.TaurusNetworkServiceGetLendingAgreements(ctx)
+	if opts == nil {
+		opts = &taurusnetwork.ListLendingAgreementsOptions{}
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, opts.CurrentPage, opts.PageRequest)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if opts.CurrentPage != "" {
-			req = req.CursorCurrentPage(opts.CurrentPage)
-		}
-		if opts.PageRequest != "" {
-			req = req.CursorPageRequest(opts.PageRequest)
-		}
-		if opts.PageSize > 0 {
-			req = req.CursorPageSize(fmt.Sprintf("%d", opts.PageSize))
-		}
-		if opts.SortOrder != "" {
-			req = req.SortOrder(opts.SortOrder)
-		}
+	req := applyCursorQuery(s.api.TaurusNetworkServiceGetLendingAgreements(ctx), window)
+	if opts.SortOrder != "" {
+		req = req.SortOrder(opts.SortOrder)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -65,42 +61,31 @@ func (s *TaurusNetworkLendingService) ListLendingAgreements(ctx context.Context,
 		LendingAgreements: mapper.LendingAgreementsFromDTO(resp.LendingAgreements),
 	}
 
-	// Parse cursor pagination info
-	if resp.Cursor != nil {
-		if resp.Cursor.CurrentPage != nil {
-			result.CurrentPage = *resp.Cursor.CurrentPage
-		}
-		if resp.Cursor.HasPrevious != nil {
-			result.HasPrevious = *resp.Cursor.HasPrevious
-		}
-		if resp.Cursor.HasNext != nil {
-			result.HasNext = *resp.Cursor.HasNext
-		}
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor})
+	if err != nil {
+		return nil, err
 	}
+	result.Page = page
 
 	return result, nil
 }
 
 // ListLendingAgreementsForApproval retrieves lending agreements pending approval.
 func (s *TaurusNetworkLendingService) ListLendingAgreementsForApproval(ctx context.Context, opts *taurusnetwork.ListLendingAgreementsForApprovalOptions) (*taurusnetwork.ListLendingAgreementsForApprovalResult, error) {
-	req := s.api.TaurusNetworkServiceGetLendingAgreementsForApproval(ctx)
+	if opts == nil {
+		opts = &taurusnetwork.ListLendingAgreementsForApprovalOptions{}
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, opts.CurrentPage, opts.PageRequest)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if len(opts.IDs) > 0 {
-			req = req.Ids(opts.IDs)
-		}
-		if opts.CurrentPage != "" {
-			req = req.CursorCurrentPage(opts.CurrentPage)
-		}
-		if opts.PageRequest != "" {
-			req = req.CursorPageRequest(opts.PageRequest)
-		}
-		if opts.PageSize > 0 {
-			req = req.CursorPageSize(fmt.Sprintf("%d", opts.PageSize))
-		}
-		if opts.SortOrder != "" {
-			req = req.SortOrder(opts.SortOrder)
-		}
+	req := applyCursorQuery(s.api.TaurusNetworkServiceGetLendingAgreementsForApproval(ctx), window)
+	if len(opts.IDs) > 0 {
+		req = req.Ids(opts.IDs)
+	}
+	if opts.SortOrder != "" {
+		req = req.SortOrder(opts.SortOrder)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -112,18 +97,11 @@ func (s *TaurusNetworkLendingService) ListLendingAgreementsForApproval(ctx conte
 		LendingAgreements: mapper.LendingAgreementsFromDTO(resp.Result),
 	}
 
-	// Parse cursor pagination info
-	if resp.Cursor != nil {
-		if resp.Cursor.CurrentPage != nil {
-			result.CurrentPage = *resp.Cursor.CurrentPage
-		}
-		if resp.Cursor.HasPrevious != nil {
-			result.HasPrevious = *resp.Cursor.HasPrevious
-		}
-		if resp.Cursor.HasNext != nil {
-			result.HasNext = *resp.Cursor.HasNext
-		}
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor})
+	if err != nil {
+		return nil, err
 	}
+	result.Page = page
 
 	return result, nil
 }
@@ -307,30 +285,26 @@ func (s *TaurusNetworkLendingService) GetLendingOffer(ctx context.Context, offer
 
 // ListLendingOffers retrieves a list of lending offers with optional filtering and pagination.
 func (s *TaurusNetworkLendingService) ListLendingOffers(ctx context.Context, opts *taurusnetwork.ListLendingOffersOptions) (*taurusnetwork.ListLendingOffersResult, error) {
-	req := s.api.TaurusNetworkServiceGetLendingOffers(ctx)
+	if opts == nil {
+		opts = &taurusnetwork.ListLendingOffersOptions{}
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, opts.CurrentPage, opts.PageRequest)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if len(opts.CurrencyIDs) > 0 {
-			req = req.CurrencyIDsCurrencyIDs(opts.CurrencyIDs)
-		}
-		if opts.ParticipantID != "" {
-			req = req.ParticipantID(opts.ParticipantID)
-		}
-		if opts.Duration != "" {
-			req = req.Duration(opts.Duration)
-		}
-		if opts.CurrentPage != "" {
-			req = req.CursorCurrentPage(opts.CurrentPage)
-		}
-		if opts.PageRequest != "" {
-			req = req.CursorPageRequest(opts.PageRequest)
-		}
-		if opts.PageSize > 0 {
-			req = req.CursorPageSize(fmt.Sprintf("%d", opts.PageSize))
-		}
-		if opts.SortOrder != "" {
-			req = req.SortOrder(opts.SortOrder)
-		}
+	req := applyCursorQuery(s.api.TaurusNetworkServiceGetLendingOffers(ctx), window)
+	if len(opts.CurrencyIDs) > 0 {
+		req = req.CurrencyIDsCurrencyIDs(opts.CurrencyIDs)
+	}
+	if opts.ParticipantID != "" {
+		req = req.ParticipantID(opts.ParticipantID)
+	}
+	if opts.Duration != "" {
+		req = req.Duration(opts.Duration)
+	}
+	if opts.SortOrder != "" {
+		req = req.SortOrder(opts.SortOrder)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -342,18 +316,11 @@ func (s *TaurusNetworkLendingService) ListLendingOffers(ctx context.Context, opt
 		LendingOffers: mapper.LendingOffersFromDTO(resp.LendingOffers),
 	}
 
-	// Parse cursor pagination info
-	if resp.Cursor != nil {
-		if resp.Cursor.CurrentPage != nil {
-			result.CurrentPage = *resp.Cursor.CurrentPage
-		}
-		if resp.Cursor.HasPrevious != nil {
-			result.HasPrevious = *resp.Cursor.HasPrevious
-		}
-		if resp.Cursor.HasNext != nil {
-			result.HasNext = *resp.Cursor.HasNext
-		}
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor})
+	if err != nil {
+		return nil, err
 	}
+	result.Page = page
 
 	return result, nil
 }

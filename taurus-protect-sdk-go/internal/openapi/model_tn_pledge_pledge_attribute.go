@@ -27,7 +27,10 @@ type TnPledgePledgeAttribute struct {
 	Subtype *string `json:"subtype,omitempty"`
 	ContentType *string `json:"contentType,omitempty"`
 	IsTaurusNetworkShared *bool `json:"isTaurusNetworkShared,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TnPledgePledgeAttribute TnPledgePledgeAttribute
 
 // NewTnPledgePledgeAttribute instantiates a new TnPledgePledgeAttribute object
 // This constructor will assign default values to properties that have it defined,
@@ -336,7 +339,40 @@ func (o TnPledgePledgeAttribute) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.IsTaurusNetworkShared) {
 		toSerialize["isTaurusNetworkShared"] = o.IsTaurusNetworkShared
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TnPledgePledgeAttribute) UnmarshalJSON(data []byte) (err error) {
+	varTnPledgePledgeAttribute := _TnPledgePledgeAttribute{}
+
+	err = json.Unmarshal(data, &varTnPledgePledgeAttribute)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TnPledgePledgeAttribute(varTnPledgePledgeAttribute)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "key")
+		delete(additionalProperties, "value")
+		delete(additionalProperties, "owner")
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "subtype")
+		delete(additionalProperties, "contentType")
+		delete(additionalProperties, "isTaurusNetworkShared")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTnPledgePledgeAttribute struct {

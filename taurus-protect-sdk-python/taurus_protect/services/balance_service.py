@@ -9,7 +9,7 @@ from taurus_protect.mappers.currency import (
     nft_collection_balances_from_dto,
 )
 from taurus_protect.models.currency import AssetBalance, NFTCollectionBalance
-from taurus_protect.models.pagination import Pagination
+from taurus_protect.models.pagination import CursorPage, cursor_page, cursor_request
 from taurus_protect.services._base import BaseService
 
 if TYPE_CHECKING:
@@ -25,15 +25,15 @@ class BalanceService(BaseService):
 
     Example:
         >>> # List all balances
-        >>> balances, pagination = client.balances.list(limit=50)
+        >>> balances, page = client.balances.list(page_size=100)
         >>> for balance in balances:
         ...     print(f"{balance.currency}: {balance.balance}")
         >>>
         >>> # List balances for a specific currency
-        >>> balances, pagination = client.balances.list(currency="ETH")
+        >>> balances, page = client.balances.list(currency="ETH")
         >>>
         >>> # List NFT collection balances
-        >>> nft_balances, pagination = client.balances.list_nft_collections(
+        >>> nft_balances, page = client.balances.list_nft_collections(
         ...     blockchain="ETH",
         ...     network="mainnet",
         ... )
@@ -57,53 +57,48 @@ class BalanceService(BaseService):
     def list(
         self,
         currency: Optional[str] = None,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> Tuple[List[AssetBalance], Optional[Pagination]]:
+        page_size: Optional[int] = None,
+        cursor: Optional[str] = None,
+        *,
+        token_id: Optional[str] = None,
+        current_page: Optional[str] = None,
+        page_request: Optional[str] = None,
+    ) -> Tuple[List[AssetBalance], CursorPage]:
         """
-        Get all balances for the tenant, optionally filtered by currency.
+        List the tenant's balances, one page at a time, optionally by currency.
 
         Each asset is identified by a full triplet of attributes (blockchain,
         contract address, and token ID).
 
         Args:
             currency: Filter by currency ID or symbol. If None, returns all balances.
-            limit: Maximum number of balances to return (must be positive).
-            offset: Number of balances to skip (must be non-negative).
+            page_size: Page size (default 20, max 100).
+            cursor: ``page.next_cursor`` from the previous page, to continue.
+            token_id: Filter by token ID.
+            current_page: Low-level page token; not with ``cursor``.
+            page_request: Low-level page direction (FIRST, PREVIOUS, NEXT, LAST).
 
         Returns:
-            Tuple of (balances list, pagination info).
+            Tuple of (balances, page); the page carries the server's total.
 
         Raises:
-            ValueError: If limit or offset are invalid.
+            ValueError: If the page size is invalid or cursor options conflict.
             APIError: If API request fails.
         """
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
+        req = cursor_request(
+            page_size, cursor, current_page=current_page, page_request=page_request
+        )
 
         try:
             resp = self._api.wallet_service_get_balances(
                 currency=currency,
-                limit=str(limit),
-                cursor=None,
-                token_id=None,
-                request_cursor_current_page=None,
-                request_cursor_page_request=None,
-                request_cursor_page_size=str(limit),
+                token_id=token_id,
+                **req.query_params("request_cursor"),
             )
 
-            result = getattr(resp, "balances", None) or getattr(resp, "result", None)
-            balances = asset_balances_from_dto(result) if result else []
-
-            pagination = self._extract_pagination(
-                total_items=getattr(resp, "total_items", None),
-                offset=offset,
-                limit=limit,
-            )
-
-            return balances, pagination
+            balances = asset_balances_from_dto(resp.balances or [])
+            page = cursor_page(req.page_size, resp.cursor, total=resp.total, has_total=True)
+            return balances, page
         except Exception as e:
             from taurus_protect.errors import APIError
 
@@ -113,55 +108,51 @@ class BalanceService(BaseService):
 
     def list_nft_collections(
         self,
-        blockchain: str,
-        network: str,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> Tuple[List[NFTCollectionBalance], Optional[Pagination]]:
+        blockchain: Optional[str] = None,
+        network: Optional[str] = None,
+        page_size: Optional[int] = None,
+        cursor: Optional[str] = None,
+        *,
+        query: Optional[str] = None,
+        only_positive_balance: Optional[bool] = None,
+        current_page: Optional[str] = None,
+        page_request: Optional[str] = None,
+    ) -> Tuple[List[NFTCollectionBalance], CursorPage]:
         """
-        Get NFT collection balances for the tenant.
+        List the tenant's NFT collection balances, one page at a time.
 
         Args:
-            blockchain: Blockchain to filter by (e.g., "ETH").
-            network: Network to filter by (e.g., "mainnet").
-            limit: Maximum number of collections to return (must be positive).
-            offset: Number of collections to skip (must be non-negative).
+            blockchain: Filter by blockchain (e.g., "ETH").
+            network: Filter by network (e.g., "mainnet").
+            page_size: Page size (default 20, max 100).
+            cursor: ``page.next_cursor`` from the previous page, to continue.
+            query: Search query.
+            only_positive_balance: Only collections with a non-zero balance.
+            current_page: Low-level page token; not with ``cursor``.
+            page_request: Low-level page direction (FIRST, PREVIOUS, NEXT, LAST).
 
         Returns:
-            Tuple of (NFT collection balances list, pagination info).
+            Tuple of (NFT collection balances, page).
 
         Raises:
-            ValueError: If required arguments are missing or invalid.
+            ValueError: If paging options are invalid.
             APIError: If API request fails.
         """
-        self._validate_required(blockchain, "blockchain")
-        self._validate_required(network, "network")
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
+        req = cursor_request(
+            page_size, cursor, current_page=current_page, page_request=page_request
+        )
 
         try:
             resp = self._api.wallet_service_get_nft_collection_balances(
                 blockchain=blockchain,
                 network=network,
-                query=None,
-                cursor_current_page=None,
-                cursor_page_request=None,
-                cursor_page_size=str(limit),
-                only_positive_balance=None,
+                query=query,
+                only_positive_balance=only_positive_balance,
+                **req.query_params(),
             )
 
-            result = getattr(resp, "collections", None) or getattr(resp, "result", None)
-            balances = nft_collection_balances_from_dto(result) if result else []
-
-            pagination = self._extract_pagination(
-                total_items=getattr(resp, "total_items", None),
-                offset=offset,
-                limit=limit,
-            )
-
-            return balances, pagination
+            balances = nft_collection_balances_from_dto(resp.balances or [])
+            return balances, cursor_page(req.page_size, resp.cursor)
         except Exception as e:
             from taurus_protect.errors import APIError
 

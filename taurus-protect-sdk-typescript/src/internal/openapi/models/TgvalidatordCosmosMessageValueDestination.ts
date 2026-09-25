@@ -31,7 +31,16 @@ export interface TgvalidatordCosmosMessageValueDestination {
      * @memberof TgvalidatordCosmosMessageValueDestination
      */
     whitelistedAddressId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCosmosMessageValueDestination
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCosmosMessageValueDestinationWireKeys: ReadonlySet<string> = new Set(['addressId', 'whitelistedAddressId']);
 
 /**
  * Check if a given object implements the TgvalidatordCosmosMessageValueDestination interface.
@@ -48,11 +57,21 @@ export function TgvalidatordCosmosMessageValueDestinationFromJSONTyped(json: any
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCosmosMessageValueDestination = {
         
         'addressId': json['addressId'] == null ? undefined : json['addressId'],
         'whitelistedAddressId': json['whitelistedAddressId'] == null ? undefined : json['whitelistedAddressId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCosmosMessageValueDestinationWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCosmosMessageValueDestinationToJSON(json: any): TgvalidatordCosmosMessageValueDestination {
@@ -68,6 +87,7 @@ export function TgvalidatordCosmosMessageValueDestinationFromJSONTyped(json: any
         
         'addressId': value['addressId'],
         'whitelistedAddressId': value['whitelistedAddressId'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -21,7 +21,10 @@ var _ MappedNullable = &ScimServiceProviderConfigFilter{}
 type ScimServiceProviderConfigFilter struct {
 	Supported *bool `json:"supported,omitempty"`
 	MaxResults *string `json:"maxResults,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _ScimServiceProviderConfigFilter ScimServiceProviderConfigFilter
 
 // NewScimServiceProviderConfigFilter instantiates a new ScimServiceProviderConfigFilter object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o ScimServiceProviderConfigFilter) ToMap() (map[string]interface{}, error)
 	if !IsNil(o.MaxResults) {
 		toSerialize["maxResults"] = o.MaxResults
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *ScimServiceProviderConfigFilter) UnmarshalJSON(data []byte) (err error) {
+	varScimServiceProviderConfigFilter := _ScimServiceProviderConfigFilter{}
+
+	err = json.Unmarshal(data, &varScimServiceProviderConfigFilter)
+
+	if err != nil {
+		return err
+	}
+
+	*o = ScimServiceProviderConfigFilter(varScimServiceProviderConfigFilter)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "supported")
+		delete(additionalProperties, "maxResults")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableScimServiceProviderConfigFilter struct {

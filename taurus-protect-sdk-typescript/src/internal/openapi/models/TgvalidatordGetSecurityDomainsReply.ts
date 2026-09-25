@@ -33,7 +33,16 @@ export interface TgvalidatordGetSecurityDomainsReply {
      * @memberof TgvalidatordGetSecurityDomainsReply
      */
     result?: Array<TgvalidatordSecurityDomain>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetSecurityDomainsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetSecurityDomainsReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetSecurityDomainsReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetSecurityDomainsReplyFromJSONTyped(json: any, igno
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetSecurityDomainsReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordSecurityDomainFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetSecurityDomainsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetSecurityDomainsReplyToJSON(json: any): TgvalidatordGetSecurityDomainsReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetSecurityDomainsReplyFromJSONTyped(json: any, igno
     return {
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordSecurityDomainToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

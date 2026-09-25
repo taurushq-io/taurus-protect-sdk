@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordCMTATTokenContractTemplate{}
 // TgvalidatordCMTATTokenContractTemplate struct for TgvalidatordCMTATTokenContractTemplate
 type TgvalidatordCMTATTokenContractTemplate struct {
 	Evm *TgvalidatordEVMContractTemplateParams `json:"evm,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordCMTATTokenContractTemplate TgvalidatordCMTATTokenContractTemplate
 
 // NewTgvalidatordCMTATTokenContractTemplate instantiates a new TgvalidatordCMTATTokenContractTemplate object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordCMTATTokenContractTemplate) ToMap() (map[string]interface{},
 	if !IsNil(o.Evm) {
 		toSerialize["evm"] = o.Evm
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordCMTATTokenContractTemplate) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordCMTATTokenContractTemplate := _TgvalidatordCMTATTokenContractTemplate{}
+
+	err = json.Unmarshal(data, &varTgvalidatordCMTATTokenContractTemplate)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordCMTATTokenContractTemplate(varTgvalidatordCMTATTokenContractTemplate)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "evm")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordCMTATTokenContractTemplate struct {

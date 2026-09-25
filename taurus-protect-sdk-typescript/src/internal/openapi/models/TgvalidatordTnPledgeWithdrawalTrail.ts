@@ -61,7 +61,16 @@ export interface TgvalidatordTnPledgeWithdrawalTrail {
      * @memberof TgvalidatordTnPledgeWithdrawalTrail
      */
     createdAt?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTnPledgeWithdrawalTrail
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTnPledgeWithdrawalTrailWireKeys: ReadonlySet<string> = new Set(['id', 'pledgeWithdrawalID', 'addressCommandID', 'participantID', 'action', 'comment', 'createdAt']);
 
 /**
  * Check if a given object implements the TgvalidatordTnPledgeWithdrawalTrail interface.
@@ -78,7 +87,7 @@ export function TgvalidatordTnPledgeWithdrawalTrailFromJSONTyped(json: any, igno
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTnPledgeWithdrawalTrail = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'pledgeWithdrawalID': json['pledgeWithdrawalID'] == null ? undefined : json['pledgeWithdrawalID'],
@@ -88,6 +97,16 @@ export function TgvalidatordTnPledgeWithdrawalTrailFromJSONTyped(json: any, igno
         'comment': json['comment'] == null ? undefined : json['comment'],
         'createdAt': json['createdAt'] == null ? undefined : (new Date(json['createdAt'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTnPledgeWithdrawalTrailWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTnPledgeWithdrawalTrailToJSON(json: any): TgvalidatordTnPledgeWithdrawalTrail {
@@ -108,6 +127,7 @@ export function TgvalidatordTnPledgeWithdrawalTrailFromJSONTyped(json: any, igno
         'action': value['action'],
         'comment': value['comment'],
         'createdAt': value['createdAt'] == null ? undefined : ((value['createdAt']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

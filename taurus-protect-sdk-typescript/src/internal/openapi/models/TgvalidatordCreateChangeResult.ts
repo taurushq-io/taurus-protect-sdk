@@ -25,7 +25,16 @@ export interface TgvalidatordCreateChangeResult {
      * @memberof TgvalidatordCreateChangeResult
      */
     id?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateChangeResult
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateChangeResultWireKeys: ReadonlySet<string> = new Set(['id']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateChangeResult interface.
@@ -42,10 +51,20 @@ export function TgvalidatordCreateChangeResultFromJSONTyped(json: any, ignoreDis
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateChangeResult = {
         
         'id': json['id'] == null ? undefined : json['id'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateChangeResultWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateChangeResultToJSON(json: any): TgvalidatordCreateChangeResult {
@@ -60,6 +79,7 @@ export function TgvalidatordCreateChangeResultFromJSONTyped(json: any, ignoreDis
     return {
         
         'id': value['id'],
+        ...value['additionalProperties'],
     };
 }
 

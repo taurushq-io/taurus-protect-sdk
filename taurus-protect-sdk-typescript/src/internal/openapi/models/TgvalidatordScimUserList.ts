@@ -57,7 +57,16 @@ export interface TgvalidatordScimUserList {
      * @memberof TgvalidatordScimUserList
      */
     startIndex?: number;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordScimUserList
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordScimUserListWireKeys: ReadonlySet<string> = new Set(['schemas', 'totalResults', 'Resources', 'itemsPerPage', 'startIndex']);
 
 /**
  * Check if a given object implements the TgvalidatordScimUserList interface.
@@ -74,7 +83,7 @@ export function TgvalidatordScimUserListFromJSONTyped(json: any, ignoreDiscrimin
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordScimUserList = {
         
         'schemas': json['schemas'] == null ? undefined : json['schemas'],
         'totalResults': json['totalResults'] == null ? undefined : json['totalResults'],
@@ -82,6 +91,16 @@ export function TgvalidatordScimUserListFromJSONTyped(json: any, ignoreDiscrimin
         'itemsPerPage': json['itemsPerPage'] == null ? undefined : json['itemsPerPage'],
         'startIndex': json['startIndex'] == null ? undefined : json['startIndex'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordScimUserListWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordScimUserListToJSON(json: any): TgvalidatordScimUserList {
@@ -100,6 +119,7 @@ export function TgvalidatordScimUserListFromJSONTyped(json: any, ignoreDiscrimin
         'Resources': value['resources'] == null ? undefined : ((value['resources'] as Array<any>).map(TgvalidatordScimUserToJSON)),
         'itemsPerPage': value['itemsPerPage'],
         'startIndex': value['startIndex'],
+        ...value['additionalProperties'],
     };
 }
 

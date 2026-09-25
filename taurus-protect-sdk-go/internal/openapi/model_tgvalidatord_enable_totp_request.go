@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -22,6 +21,7 @@ var _ MappedNullable = &TgvalidatordEnableTotpRequest{}
 // TgvalidatordEnableTotpRequest struct for TgvalidatordEnableTotpRequest
 type TgvalidatordEnableTotpRequest struct {
 	Totp string `json:"totp"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordEnableTotpRequest TgvalidatordEnableTotpRequest
@@ -79,6 +79,11 @@ func (o TgvalidatordEnableTotpRequest) MarshalJSON() ([]byte, error) {
 func (o TgvalidatordEnableTotpRequest) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["totp"] = o.Totp
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -106,15 +111,20 @@ func (o *TgvalidatordEnableTotpRequest) UnmarshalJSON(data []byte) (err error) {
 
 	varTgvalidatordEnableTotpRequest := _TgvalidatordEnableTotpRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordEnableTotpRequest)
+	err = json.Unmarshal(data, &varTgvalidatordEnableTotpRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordEnableTotpRequest(varTgvalidatordEnableTotpRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "totp")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

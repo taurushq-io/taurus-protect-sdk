@@ -44,7 +44,10 @@ type TgvalidatordTnPledge struct {
 	Direction *string `json:"direction,omitempty"`
 	// Represent the id of a whitelisted address if your participant is the target participant of the pledge. internalAddressID and wladdressID can not be set simultaneously.
 	WladdressID *string `json:"wladdressID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTnPledge TgvalidatordTnPledge
 
 // NewTgvalidatordTnPledge instantiates a new TgvalidatordTnPledge object
 // This constructor will assign default values to properties that have it defined,
@@ -878,7 +881,55 @@ func (o TgvalidatordTnPledge) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.WladdressID) {
 		toSerialize["wladdressID"] = o.WladdressID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTnPledge) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTnPledge := _TgvalidatordTnPledge{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTnPledge)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTnPledge(varTgvalidatordTnPledge)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "sharedAddressID")
+		delete(additionalProperties, "ownerParticipantID")
+		delete(additionalProperties, "targetParticipantID")
+		delete(additionalProperties, "currencyID")
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "network")
+		delete(additionalProperties, "arg1")
+		delete(additionalProperties, "arg2")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "pledgeType")
+		delete(additionalProperties, "trails")
+		delete(additionalProperties, "originCreationDate")
+		delete(additionalProperties, "durationSetup")
+		delete(additionalProperties, "unpledgeDate")
+		delete(additionalProperties, "attributes")
+		delete(additionalProperties, "createdAt")
+		delete(additionalProperties, "updatedAt")
+		delete(additionalProperties, "externalReferenceId")
+		delete(additionalProperties, "reconciliationNote")
+		delete(additionalProperties, "direction")
+		delete(additionalProperties, "wladdressID")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTnPledge struct {

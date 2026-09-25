@@ -2,140 +2,123 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
-
 import pytest
 
+from taurus_protect._internal.openapi import WebhookCallsApi
+from taurus_protect.errors import NotFoundError
+from taurus_protect.models.pagination import CursorPage
 from taurus_protect.services.webhook_call_service import (
     ApiRequestCursor,
     WebhookCallResult,
     WebhookCallService,
 )
+from tests.unit.transport_stub import StubTransport, api_client
 
 
 class TestGetWebhookCalls:
-    """Tests for WebhookCallService.get_webhook_calls()."""
+    """get_webhook_calls: has_more comes from hasNext, and the next cursor is returned."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        webhook_calls_api = MagicMock()
-        service = WebhookCallService(
-            api_client=api_client, webhook_calls_api=webhook_calls_api
-        )
-        return service, webhook_calls_api
+    def _service(self) -> WebhookCallService:
+        ac = api_client()
+        return WebhookCallService(ac, WebhookCallsApi(ac))
 
     def test_returns_empty_result_when_no_calls(self) -> None:
-        service, api = self._make_service()
-        resp = MagicMock()
-        resp.calls = None
-        resp.result = None
-        resp.cursor = None
-        api.webhook_service_get_webhook_calls.return_value = resp
-
-        result = service.get_webhook_calls()
+        with StubTransport({}) as transport:
+            result = self._service().get_webhook_calls()
 
         assert isinstance(result, WebhookCallResult)
         assert result.calls == []
-        assert result.has_more is False
+        assert result.page == CursorPage(page_size=20)
+        assert transport.last.query == [("cursor.pageSize", "20")]
+
+    def test_last_page_is_not_has_more(self) -> None:
+        """has_more was read from the presence of currentPage, which the last page also has."""
+        with StubTransport({"calls": [{"id": "c1"}], "cursor": {"currentPage": "last"}}):
+            result = self._service().get_webhook_calls()
+
+        assert result.page.has_more is False
+        assert result.page.next_cursor == ""
 
     def test_passes_filter_parameters(self) -> None:
-        service, api = self._make_service()
-        resp = MagicMock()
-        resp.calls = []
-        resp.cursor = None
-        api.webhook_service_get_webhook_calls.return_value = resp
+        with StubTransport() as transport:
+            self._service().get_webhook_calls(
+                event_id="e", webhook_id="w", status="FAILED", sort_order="ASC", page_size=5
+            )
 
-        service.get_webhook_calls(
-            event_id="evt-1",
-            webhook_id="wh-1",
-            status="SUCCESS",
-            sort_order="ASC",
+        assert transport.last.query == sorted(
+            [
+                ("eventID", "e"),
+                ("webhookID", "w"),
+                ("status", "FAILED"),
+                ("sortOrder", "ASC"),
+                ("cursor.pageSize", "5"),
+            ]
         )
 
-        api.webhook_service_get_webhook_calls.assert_called_once_with(
-            event_id="evt-1",
-            webhook_id="wh-1",
-            status="SUCCESS",
-            cursor_current_page=None,
-            cursor_page_request=None,
-            cursor_page_size=None,
-            sort_order="ASC",
-        )
+    def test_string_cursor_continues(self) -> None:
+        with StubTransport() as transport:
+            self._service().get_webhook_calls(cursor="n+/=")
 
-    def test_uses_cursor_when_provided(self) -> None:
-        service, api = self._make_service()
-        resp = MagicMock()
-        resp.calls = []
-        resp.cursor = None
-        api.webhook_service_get_webhook_calls.return_value = resp
+        assert transport.last.param("cursor.currentPage") == "n+/="
+        assert transport.last.param("cursor.pageRequest") == "NEXT"
 
-        cursor = ApiRequestCursor(current_page="page2", page_request="NEXT", page_size=25)
-        service.get_webhook_calls(cursor=cursor)
+    def test_low_level_cursor(self) -> None:
+        with StubTransport() as transport:
+            self._service().get_webhook_calls(
+                cursor=ApiRequestCursor(current_page="p", page_request="PREVIOUS", page_size=7)
+            )
 
-        api.webhook_service_get_webhook_calls.assert_called_once_with(
-            event_id=None,
-            webhook_id=None,
-            status=None,
-            cursor_current_page="page2",
-            cursor_page_request="NEXT",
-            cursor_page_size="25",
-            sort_order=None,
-        )
+        assert transport.last.param("cursor.currentPage") == "p"
+        assert transport.last.param("cursor.pageRequest") == "PREVIOUS"
+        assert transport.last.param("cursor.pageSize") == "7"
 
 
 class TestWebhookCallServiceList:
-    """Tests for WebhookCallService.list()."""
+    """WebhookCallService.list: rows, page and continuation."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        webhook_calls_api = MagicMock()
-        service = WebhookCallService(
-            api_client=api_client, webhook_calls_api=webhook_calls_api
-        )
-        return service, webhook_calls_api
+    def _service(self) -> WebhookCallService:
+        ac = api_client()
+        return WebhookCallService(ac, WebhookCallsApi(ac))
 
-    def test_list_raises_on_invalid_limit(self) -> None:
-        service, _ = self._make_service()
-        with pytest.raises(ValueError, match="limit must be positive"):
-            service.list(limit=0)
+    def test_list_raises_on_invalid_page_size(self) -> None:
+        with StubTransport() as transport:
+            with pytest.raises(ValueError, match="page_size"):
+                self._service().list(page_size=101)
 
-    def test_list_returns_empty_when_no_calls(self) -> None:
-        service, api = self._make_service()
-        resp = MagicMock()
-        resp.calls = None
-        resp.result = None
-        resp.cursor = None
-        api.webhook_service_get_webhook_calls.return_value = resp
+        assert transport.requests == []
 
-        calls, pagination = service.list()
+    def test_rows_and_next_cursor(self) -> None:
+        with StubTransport(
+            {"calls": [{"id": "c1"}], "cursor": {"currentPage": "n", "hasNext": True}}
+        ):
+            calls, page = self._service().list(webhook_id="w")
 
-        assert calls == []
-        assert pagination is not None
+        assert [c.id for c in calls] == ["c1"]
+        assert page == CursorPage(page_size=20, next_cursor="n", has_more=True)
 
 
 class TestWebhookCallServiceGet:
-    """Tests for WebhookCallService.get()."""
+    """WebhookCallService.get walks the pages."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        webhook_calls_api = MagicMock()
-        service = WebhookCallService(
-            api_client=api_client, webhook_calls_api=webhook_calls_api
-        )
-        return service, webhook_calls_api
+    def _service(self) -> WebhookCallService:
+        ac = api_client()
+        return WebhookCallService(ac, WebhookCallsApi(ac))
 
     def test_get_raises_on_empty_id(self) -> None:
-        service, _ = self._make_service()
         with pytest.raises(ValueError, match="call_id"):
-            service.get("")
+            self._service().get("")
+
+    def test_found_on_page_two(self) -> None:
+        with StubTransport(
+            {"calls": [{"id": "c1"}], "cursor": {"currentPage": "n", "hasNext": True}},
+            {"calls": [{"id": "c2"}]},
+        ) as transport:
+            call = self._service().get("c2")
+
+        assert call.id == "c2"
+        assert transport.requests[1].param("cursor.currentPage") == "n"
 
     def test_get_raises_not_found(self) -> None:
-        service, api = self._make_service()
-        resp = MagicMock()
-        resp.calls = []
-        api.webhook_service_get_webhook_calls.return_value = resp
-
-        from taurus_protect.errors import NotFoundError
-
-        with pytest.raises(NotFoundError):
-            service.get("call-missing")
+        with StubTransport({"calls": [{"id": "c1"}]}):
+            with pytest.raises(NotFoundError):
+                self._service().get("c2")

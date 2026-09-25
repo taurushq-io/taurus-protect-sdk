@@ -563,6 +563,38 @@ export class UnverifiedMetadataError extends RequestMetadataError {
 }
 
 /**
+ * A reply's paging fields cannot be interpreted.
+ *
+ * Raised for a count that is not a canonical decimal in [0, 2^53 - 1], a reply offset
+ * that is not one, or a cursor that reports a next page without naming it. Reading any
+ * of these as 0 or "no more pages" would end a walk early and pass a truncated list off
+ * as complete, so the call fails instead. Not retryable: the same reply fails the same
+ * way.
+ */
+export class PaginationError extends Error {
+  /**
+   * Constructs a PaginationError with the specified message.
+   *
+   * @param message - What in the reply could not be interpreted
+   */
+  constructor(message: string) {
+    super(message);
+    this.name = "PaginationError";
+
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor);
+    }
+  }
+
+  /**
+   * Returns a string representation of this error.
+   */
+  override toString(): string {
+    return `PaginationError: ${this.message}`;
+  }
+}
+
+/**
  * Maps an HTTP status code to the appropriate error class.
  *
  * @param statusCode - HTTP status code

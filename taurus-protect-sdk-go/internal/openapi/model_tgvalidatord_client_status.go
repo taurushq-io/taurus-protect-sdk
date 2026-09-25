@@ -24,7 +24,10 @@ type TgvalidatordClientStatus struct {
 	Connected *bool `json:"connected,omitempty"`
 	Error *string `json:"error,omitempty"`
 	LastPing *time.Time `json:"lastPing,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordClientStatus TgvalidatordClientStatus
 
 // NewTgvalidatordClientStatus instantiates a new TgvalidatordClientStatus object
 // This constructor will assign default values to properties that have it defined,
@@ -193,7 +196,36 @@ func (o TgvalidatordClientStatus) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.LastPing) {
 		toSerialize["lastPing"] = o.LastPing
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordClientStatus) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordClientStatus := _TgvalidatordClientStatus{}
+
+	err = json.Unmarshal(data, &varTgvalidatordClientStatus)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordClientStatus(varTgvalidatordClientStatus)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "hostPort")
+		delete(additionalProperties, "connected")
+		delete(additionalProperties, "error")
+		delete(additionalProperties, "lastPing")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordClientStatus struct {

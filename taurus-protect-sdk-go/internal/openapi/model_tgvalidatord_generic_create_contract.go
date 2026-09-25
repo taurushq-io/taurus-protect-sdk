@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -25,6 +24,7 @@ type TgvalidatordGenericCreateContract struct {
 	Eth *GenericCreateContractEVMContract `json:"eth,omitempty"`
 	Xtz *GenericCreateContractXTZContract `json:"xtz,omitempty"`
 	Evm *GenericCreateContractEVMContract `json:"evm,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordGenericCreateContract TgvalidatordGenericCreateContract
@@ -187,6 +187,11 @@ func (o TgvalidatordGenericCreateContract) ToMap() (map[string]interface{}, erro
 	if !IsNil(o.Evm) {
 		toSerialize["evm"] = o.Evm
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -214,15 +219,23 @@ func (o *TgvalidatordGenericCreateContract) UnmarshalJSON(data []byte) (err erro
 
 	varTgvalidatordGenericCreateContract := _TgvalidatordGenericCreateContract{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordGenericCreateContract)
+	err = json.Unmarshal(data, &varTgvalidatordGenericCreateContract)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordGenericCreateContract(varTgvalidatordGenericCreateContract)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "eth")
+		delete(additionalProperties, "xtz")
+		delete(additionalProperties, "evm")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

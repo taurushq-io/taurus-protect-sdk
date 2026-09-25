@@ -43,7 +43,16 @@ export interface AssetUnknown {
      * @memberof AssetUnknown
      */
     network?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof AssetUnknown
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const AssetUnknownWireKeys: ReadonlySet<string> = new Set(['blockchain', 'arg1', 'arg2', 'network']);
 
 /**
  * Check if a given object implements the AssetUnknown interface.
@@ -60,13 +69,23 @@ export function AssetUnknownFromJSONTyped(json: any, ignoreDiscriminator: boolea
     if (json == null) {
         return json;
     }
-    return {
+    const result: AssetUnknown = {
         
         'blockchain': json['blockchain'] == null ? undefined : json['blockchain'],
         'arg1': json['arg1'] == null ? undefined : json['arg1'],
         'arg2': json['arg2'] == null ? undefined : json['arg2'],
         'network': json['network'] == null ? undefined : json['network'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!AssetUnknownWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function AssetUnknownToJSON(json: any): AssetUnknown {
@@ -84,6 +103,7 @@ export function AssetUnknownFromJSONTyped(json: any, ignoreDiscriminator: boolea
         'arg1': value['arg1'],
         'arg2': value['arg2'],
         'network': value['network'],
+        ...value['additionalProperties'],
     };
 }
 

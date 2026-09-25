@@ -43,7 +43,16 @@ export interface TgvalidatordActionDestination {
      * @memberof TgvalidatordActionDestination
      */
     walletID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordActionDestination
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordActionDestinationWireKeys: ReadonlySet<string> = new Set(['kind', 'addressID', 'whitelistedAddressID', 'walletID']);
 
 /**
  * Check if a given object implements the TgvalidatordActionDestination interface.
@@ -60,13 +69,23 @@ export function TgvalidatordActionDestinationFromJSONTyped(json: any, ignoreDisc
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordActionDestination = {
         
         'kind': json['kind'] == null ? undefined : json['kind'],
         'addressID': json['addressID'] == null ? undefined : json['addressID'],
         'whitelistedAddressID': json['whitelistedAddressID'] == null ? undefined : json['whitelistedAddressID'],
         'walletID': json['walletID'] == null ? undefined : json['walletID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordActionDestinationWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordActionDestinationToJSON(json: any): TgvalidatordActionDestination {
@@ -84,6 +103,7 @@ export function TgvalidatordActionDestinationFromJSONTyped(json: any, ignoreDisc
         'addressID': value['addressID'],
         'whitelistedAddressID': value['whitelistedAddressID'],
         'walletID': value['walletID'],
+        ...value['additionalProperties'],
     };
 }
 

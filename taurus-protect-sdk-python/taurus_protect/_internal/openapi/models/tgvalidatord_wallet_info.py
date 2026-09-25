@@ -35,7 +35,7 @@ class TgvalidatordWalletInfo(BaseModel):
     currency: Optional[StrictStr] = None
     coin: Optional[StrictStr] = None
     name: Optional[StrictStr] = None
-    container: Optional[StrictStr] = None
+    container: Optional[StrictStr] = Field(default=None, description="Deprecated: Do not use")
     seed: Optional[StrictStr] = None
     account_path: Optional[StrictStr] = Field(default=None, alias="accountPath")
     is_omnibus: Optional[StrictBool] = Field(default=None, alias="isOmnibus")

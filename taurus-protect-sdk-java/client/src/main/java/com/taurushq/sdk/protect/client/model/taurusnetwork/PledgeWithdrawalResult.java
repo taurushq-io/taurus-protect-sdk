@@ -1,30 +1,31 @@
 package com.taurushq.sdk.protect.client.model.taurusnetwork;
 
-import com.taurushq.sdk.protect.client.model.ApiResponseCursor;
+import com.taurushq.sdk.protect.client.model.CursorPagedResult;
 
 import java.util.List;
 
 /**
  * Result containing a list of pledge withdrawals with pagination.
  */
-public class PledgeWithdrawalResult {
+public class PledgeWithdrawalResult extends CursorPagedResult {
 
     private List<PledgeWithdrawal> withdrawals;
-    private ApiResponseCursor cursor;
 
+    /**
+     * Gets the pledge withdrawals of this page.
+     *
+     * @return the withdrawals
+     */
     public List<PledgeWithdrawal> getWithdrawals() {
         return withdrawals;
     }
 
+    /**
+     * Sets the pledge withdrawals of this page.
+     *
+     * @param withdrawals the withdrawals
+     */
     public void setWithdrawals(final List<PledgeWithdrawal> withdrawals) {
         this.withdrawals = withdrawals;
-    }
-
-    public ApiResponseCursor getCursor() {
-        return cursor;
-    }
-
-    public void setCursor(final ApiResponseCursor cursor) {
-        this.cursor = cursor;
     }
 }

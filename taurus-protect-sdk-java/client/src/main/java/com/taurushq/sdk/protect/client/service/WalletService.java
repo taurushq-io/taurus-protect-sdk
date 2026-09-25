@@ -9,7 +9,10 @@ import com.taurushq.sdk.protect.client.model.ApiException;
 import com.taurushq.sdk.protect.client.model.AssetBalance;
 import com.taurushq.sdk.protect.client.model.BalanceHistoryPoint;
 import com.taurushq.sdk.protect.client.model.CreateWalletRequest;
+import com.taurushq.sdk.protect.client.model.Pagination;
 import com.taurushq.sdk.protect.client.model.Wallet;
+import com.taurushq.sdk.protect.client.model.WalletResult;
+import com.taurushq.sdk.protect.client.model.WalletTokensResult;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import com.taurushq.sdk.protect.openapi.api.WalletsApi;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordAssetBalance;
@@ -51,8 +54,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * // Retrieve wallet information
  * Wallet wallet = client.getWalletService().getWallet(walletId);
  *
- * // List wallets with pagination
- * List<Wallet> wallets = client.getWalletService().getWallets(50, 0);
+ * // List wallets, one page at a time
+ * WalletResult page = client.getWalletService().getWallets(20, 0);
+ * while (page.getPagination().hasMore()) {
+ *     page = client.getWalletService().getWallets(20, page.getPagination().getNextOffset());
+ * }
  * }</pre>
  *
  * @see Wallet
@@ -204,69 +210,66 @@ public class WalletService {
 
 
     /**
-     * Gets wallets with pagination.
+     * Gets a page of wallets.
      *
-     * @param limit  the maximum number of wallets to return
-     * @param offset the offset for pagination
-     * @return the list of wallets
-     * @throws ApiException the api exception
+     * @param limit  the page size, 0 for the default ({@link Pagination#DEFAULT_PAGE_SIZE})
+     * @param offset the offset, 0 for the first page
+     * @return the wallets and their pagination
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if limit or offset is out of range
      */
-    public List<Wallet> getWallets(final int limit, final int offset) throws ApiException {
-        checkArgument(limit > 0, "limit must be positive");
-        checkArgument(offset >= 0, "offset cannot be negative");
-
-        try {
-            TgvalidatordGetWalletsInfoReply reply = walletsApi.walletServiceGetWalletsV2(
-                    null,                       // currencies
-                    null,                       // query
-                    String.valueOf(limit),      // limit
-                    String.valueOf(offset),     // offset
-                    null,                       // name
-                    null,                       // sortOrder
-                    null,                       // excludeDisabled
-                    null,                       // tagIDs
-                    null,                       // onlyPositiveBalance
-                    null,                       // blockchain
-                    null,                       // network
-                    null                        // ids
-            );
-
-            List<TgvalidatordWalletInfo> result = reply.getResult();
-            if (result == null) {
-                return Collections.emptyList();
-            }
-            return result.stream()
-                    .map(WalletMapper.INSTANCE::fromDTO)
-                    .collect(Collectors.toList());
-        } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
-            throw apiExceptionMapper.toApiException(e);
-        }
+    public WalletResult getWallets(final int limit, final long offset) throws ApiException {
+        return listWallets(null, limit, offset, null);
     }
 
+    /**
+     * Gets a page of wallets, optionally hiding disabled ones.
+     * <p>
+     * By default the server hides wallets whose currency is disabled; {@code excludeDisabled}
+     * true hides every disabled wallet.
+     *
+     * @param limit           the page size, 0 for the default
+     * @param offset          the offset, 0 for the first page
+     * @param excludeDisabled true to hide every disabled wallet, null for the server default
+     * @return the wallets and their pagination
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if limit or offset is out of range
+     */
+    public WalletResult getWallets(final int limit, final long offset, final Boolean excludeDisabled)
+            throws ApiException {
+        return listWallets(null, limit, offset, excludeDisabled);
+    }
 
     /**
-     * Gets wallets by name/query with pagination.
+     * Gets a page of wallets by name.
      *
-     * @param name  the wallet name
-     * @param limit  the maximum number of wallets to return
-     * @param offset the offset for pagination
-     * @return the list of wallets
-     * @throws ApiException the api exception
+     * @param name   the wallet name
+     * @param limit  the page size, 0 for the default
+     * @param offset the offset, 0 for the first page
+     * @return the wallets and their pagination
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if name is empty or limit or offset is out of range
      */
-    public List<Wallet> getWalletsByName(final String name, final int limit, final int offset) throws ApiException {
+    public WalletResult getWalletsByName(final String name, final int limit, final long offset)
+            throws ApiException {
         checkArgument(!Strings.isNullOrEmpty(name), "name cannot be empty");
-        checkArgument(limit > 0, "limit must be positive");
-        checkArgument(offset >= 0, "offset cannot be negative");
+        return listWallets(name, limit, offset, null);
+    }
+
+    private WalletResult listWallets(final String name, final int limit, final long offset,
+                                     final Boolean excludeDisabled) throws ApiException {
+        final int size = PagedOperation.WALLETS.resolveSize("limit", limit);
+        final long from = Pagination.resolveOffset("offset", offset);
 
         try {
             TgvalidatordGetWalletsInfoReply reply = walletsApi.walletServiceGetWalletsV2(
                     null,                       // currencies
                     null,                       // query
-                    String.valueOf(limit),      // limit
-                    String.valueOf(offset),     // offset
+                    String.valueOf(size),       // limit
+                    from == 0 ? null : String.valueOf(from), // offset
                     name,                       // name
                     null,                       // sortOrder
-                    null,                       // excludeDisabled
+                    excludeDisabled,            // excludeDisabled
                     null,                       // tagIDs
                     null,                       // onlyPositiveBalance
                     null,                       // blockchain
@@ -274,13 +277,13 @@ public class WalletService {
                     null                        // ids
             );
 
-            List<TgvalidatordWalletInfo> result = reply.getResult();
-            if (result == null) {
-                return Collections.emptyList();
-            }
-            return result.stream()
+            List<TgvalidatordWalletInfo> rows = reply.getResult() == null
+                    ? Collections.emptyList() : reply.getResult();
+            List<Wallet> wallets = rows.stream()
                     .map(WalletMapper.INSTANCE::fromDTO)
                     .collect(Collectors.toList());
+            return new WalletResult(wallets, PagedOperation.WALLETS.offsetPage(
+                    size, from, rows.size(), 0, reply.getTotalItems(), reply.getOffset()));
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
@@ -345,29 +348,46 @@ public class WalletService {
 
 
     /**
-     * Gets wallet tokens (asset balances).
+     * Gets the first page of a wallet's token balances.
      *
      * @param walletId the wallet id
-     * @param limit    the maximum number of tokens to return
-     * @return the list of asset balances
+     * @param pageSize the page size, null or 0 for the default
+     * @return the balances and their page
      * @throws ApiException the api exception
      */
-    public List<AssetBalance> getWalletTokens(final long walletId, final int limit) throws ApiException {
+    public WalletTokensResult getWalletTokens(final long walletId, final Integer pageSize) throws ApiException {
+        return getWalletTokens(walletId, pageSize, null);
+    }
+
+    /**
+     * Gets a page of a wallet's token balances.
+     *
+     * @param walletId the wallet id
+     * @param pageSize the page size, null or 0 for the default
+     * @param cursor   a previous page's {@code getPage().getNextCursor()}, null for the first page
+     * @return the balances and their page
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if the page size is out of range or the cursor is not
+     *                                  a cursor this list returned
+     */
+    public WalletTokensResult getWalletTokens(final long walletId, final Integer pageSize,
+                                              final String cursor) throws ApiException {
         checkArgument(walletId > 0, "walletId cannot be zero");
-        checkArgument(limit > 0, "limit must be positive");
+        final int size = PagedOperation.WALLET_TOKENS.resolveSize("pageSize", pageSize);
+        final byte[] token = CursorRequest.hasToken(cursor) ? CursorRequest.tokenBytes(cursor) : null;
 
         try {
             TgvalidatordGetWalletTokensReply reply = walletsApi.walletServiceGetWalletTokens(
                     String.valueOf(walletId),
-                    String.valueOf(limit),
-                    null                        // cursor
+                    String.valueOf(size),
+                    token
             );
 
             List<TgvalidatordAssetBalance> result = reply.getBalances();
-            if (result == null) {
-                return Collections.emptyList();
-            }
-            return AssetBalanceMapper.INSTANCE.fromDTO(result);
+            List<AssetBalance> balances = result == null
+                    ? Collections.emptyList() : AssetBalanceMapper.INSTANCE.fromDTO(result);
+            return new WalletTokensResult(balances, PagedOperation.WALLET_TOKENS.tokenPage(
+                    size, CursorRequest.tokenText(reply.getNext()), reply.getTotal()));
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }

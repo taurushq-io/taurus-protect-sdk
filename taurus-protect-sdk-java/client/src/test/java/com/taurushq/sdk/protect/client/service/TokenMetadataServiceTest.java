@@ -32,29 +32,9 @@ class TokenMetadataServiceTest {
                 new TokenMetadataService(apiClient, null));
     }
 
-    @Test
-    void getERCTokenMetadata_throwsOnNullNetwork() {
-        assertThrows(IllegalArgumentException.class, () ->
-                tokenMetadataService.getERCTokenMetadata(null, "0x123", null, false, "ETH"));
-    }
 
-    @Test
-    void getERCTokenMetadata_throwsOnEmptyNetwork() {
-        assertThrows(IllegalArgumentException.class, () ->
-                tokenMetadataService.getERCTokenMetadata("", "0x123", null, false, "ETH"));
-    }
 
-    @Test
-    void getERCTokenMetadata_throwsOnNullContract() {
-        assertThrows(IllegalArgumentException.class, () ->
-                tokenMetadataService.getERCTokenMetadata("mainnet", null, null, false, "ETH"));
-    }
 
-    @Test
-    void getERCTokenMetadata_throwsOnEmptyContract() {
-        assertThrows(IllegalArgumentException.class, () ->
-                tokenMetadataService.getERCTokenMetadata("mainnet", "", null, false, "ETH"));
-    }
 
     @Test
     void getEVMERCTokenMetadata_throwsOnNullNetwork() {

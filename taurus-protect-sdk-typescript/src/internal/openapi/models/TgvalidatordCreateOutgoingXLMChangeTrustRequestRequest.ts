@@ -61,7 +61,16 @@ export interface TgvalidatordCreateOutgoingXLMChangeTrustRequestRequest {
      * @memberof TgvalidatordCreateOutgoingXLMChangeTrustRequestRequest
      */
     sponsoredByAddressId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingXLMChangeTrustRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingXLMChangeTrustRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'trustlineLimit', 'feeLimit', 'comment', 'poolID', 'externalRequestId', 'sponsoredByAddressId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingXLMChangeTrustRequestRequest interface.
@@ -80,7 +89,7 @@ export function TgvalidatordCreateOutgoingXLMChangeTrustRequestRequestFromJSONTy
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingXLMChangeTrustRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'trustlineLimit': json['trustlineLimit'],
@@ -90,6 +99,16 @@ export function TgvalidatordCreateOutgoingXLMChangeTrustRequestRequestFromJSONTy
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
         'sponsoredByAddressId': json['sponsoredByAddressId'] == null ? undefined : json['sponsoredByAddressId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingXLMChangeTrustRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingXLMChangeTrustRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingXLMChangeTrustRequestRequest {
@@ -110,6 +129,7 @@ export function TgvalidatordCreateOutgoingXLMChangeTrustRequestRequestFromJSONTy
         'poolID': value['poolID'],
         'externalRequestId': value['externalRequestId'],
         'sponsoredByAddressId': value['sponsoredByAddressId'],
+        ...value['additionalProperties'],
     };
 }
 

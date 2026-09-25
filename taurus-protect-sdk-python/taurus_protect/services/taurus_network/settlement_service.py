@@ -6,6 +6,11 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
+from taurus_protect.models.pagination import CursorPage, cursor_page
+from taurus_protect.models.taurus_network.settlement import (
+    ListSettlementsForApprovalOptions,
+    ListSettlementsOptions,
+)
 from taurus_protect.services._base import BaseService
 
 if TYPE_CHECKING:
@@ -95,48 +100,6 @@ class Settlement:
 
 
 @dataclass
-class ListSettlementsOptions:
-    """
-    Options for listing settlements.
-
-    Attributes:
-        counter_participant_id: Filter by counter participant ID.
-        statuses: Filter by settlement statuses.
-        sort_order: Sort order (ASC or DESC).
-        page_size: Number of items per page.
-        current_page: Current page cursor (base64).
-        page_request: Page request direction (FIRST, PREVIOUS, NEXT, LAST).
-    """
-
-    counter_participant_id: Optional[str] = None
-    statuses: Optional[List[str]] = None
-    sort_order: Optional[str] = None
-    page_size: int = 50
-    current_page: Optional[str] = None
-    page_request: Optional[str] = None
-
-
-@dataclass
-class ListSettlementsForApprovalOptions:
-    """
-    Options for listing settlements pending approval.
-
-    Attributes:
-        ids: Filter by settlement IDs.
-        sort_order: Sort order (ASC or DESC).
-        page_size: Number of items per page.
-        current_page: Current page cursor (base64).
-        page_request: Page request direction (FIRST, PREVIOUS, NEXT, LAST).
-    """
-
-    ids: Optional[List[str]] = None
-    sort_order: Optional[str] = None
-    page_size: int = 50
-    current_page: Optional[str] = None
-    page_request: Optional[str] = None
-
-
-@dataclass
 class CreateSettlementRequest:
     """
     Request to create a settlement.
@@ -156,22 +119,6 @@ class CreateSettlementRequest:
     second_leg_assets: List[SettlementAssetTransfer]
     clips: Optional[List[Dict[str, Any]]] = None
     start_execution_date: Optional[datetime] = None
-
-
-@dataclass
-class CursorPagination:
-    """
-    Cursor-based pagination information.
-
-    Attributes:
-        current_page: The current page cursor.
-        has_next: Whether there is a next page.
-        has_previous: Whether there is a previous page.
-    """
-
-    current_page: Optional[str] = None
-    has_next: bool = False
-    has_previous: bool = False
 
 
 def _settlement_from_dto(dto: Any) -> Optional[Settlement]:
@@ -307,111 +254,81 @@ class SettlementService(BaseService):
     def list_settlements(
         self,
         options: Optional[ListSettlementsOptions] = None,
-    ) -> Tuple[List[Settlement], Optional[CursorPagination]]:
+    ) -> Tuple[List[Settlement], CursorPage]:
         """
-        List settlements.
+        List settlements, one page at a time.
 
         Args:
-            options: Optional filtering and pagination options.
+            options: Filters and page window.
 
         Returns:
-            Tuple of (settlements list, cursor pagination info).
+            Tuple of (settlements, page).
 
         Raises:
+            ValueError: If paging options are invalid.
             APIError: If API request fails.
         """
         opts = options or ListSettlementsOptions()
+        req = opts.to_cursor_request()
 
         try:
             resp = self._settlement_api.taurus_network_service_get_settlements(
                 counter_participant_id=opts.counter_participant_id,
                 statuses=opts.statuses,
                 sort_order=opts.sort_order,
-                cursor_current_page=opts.current_page,
-                cursor_page_request=opts.page_request,
-                cursor_page_size=str(opts.page_size) if opts.page_size > 0 else None,
+                **req.query_params(),
             )
 
-            result = getattr(resp, "result", None)
-            settlements = []
-            if result:
-                for dto in result:
-                    settlement = _settlement_from_dto(dto)
-                    if settlement:
-                        settlements.append(settlement)
-
-            # Extract cursor pagination
-            cursor = getattr(resp, "cursor", None)
-            pagination = None
-            if cursor:
-                pagination = CursorPagination(
-                    current_page=getattr(cursor, "current_page", None),
-                    has_next=getattr(cursor, "has_next", False) or False,
-                    has_previous=getattr(cursor, "has_previous", False) or False,
-                )
-
-            return settlements, pagination
+            settlements = [
+                st for dto in resp.result or [] if (st := _settlement_from_dto(dto)) is not None
+            ]
+            return settlements, cursor_page(req.page_size, resp.cursor)
         except Exception as e:
             from taurus_protect.errors import APIError
 
             if type(e).__name__ == "ApiException":
                 raise self._handle_error(e) from e
-            if isinstance(e, APIError):
+            if isinstance(e, (APIError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
     def list_settlements_for_approval(
         self,
         options: Optional[ListSettlementsForApprovalOptions] = None,
-    ) -> Tuple[List[Settlement], Optional[CursorPagination]]:
+    ) -> Tuple[List[Settlement], CursorPage]:
         """
-        List settlements pending approval.
+        List settlements pending approval, one page at a time.
 
         Args:
-            options: Optional filtering and pagination options.
+            options: Filters and page window.
 
         Returns:
-            Tuple of (settlements list, cursor pagination info).
+            Tuple of (settlements, page).
 
         Raises:
+            ValueError: If paging options are invalid.
             APIError: If API request fails.
         """
         opts = options or ListSettlementsForApprovalOptions()
+        req = opts.to_cursor_request()
 
         try:
             resp = self._settlement_api.taurus_network_service_get_settlements_for_approval(
                 ids=opts.ids,
                 sort_order=opts.sort_order,
-                cursor_current_page=opts.current_page,
-                cursor_page_request=opts.page_request,
-                cursor_page_size=str(opts.page_size) if opts.page_size > 0 else None,
+                **req.query_params(),
             )
 
-            result = getattr(resp, "result", None)
-            settlements = []
-            if result:
-                for dto in result:
-                    settlement = _settlement_from_dto(dto)
-                    if settlement:
-                        settlements.append(settlement)
-
-            # Extract cursor pagination
-            cursor = getattr(resp, "cursor", None)
-            pagination = None
-            if cursor:
-                pagination = CursorPagination(
-                    current_page=getattr(cursor, "current_page", None),
-                    has_next=getattr(cursor, "has_next", False) or False,
-                    has_previous=getattr(cursor, "has_previous", False) or False,
-                )
-
-            return settlements, pagination
+            settlements = [
+                st for dto in resp.result or [] if (st := _settlement_from_dto(dto)) is not None
+            ]
+            return settlements, cursor_page(req.page_size, resp.cursor)
         except Exception as e:
             from taurus_protect.errors import APIError
 
             if type(e).__name__ == "ApiException":
                 raise self._handle_error(e) from e
-            if isinstance(e, APIError):
+            if isinstance(e, (APIError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 

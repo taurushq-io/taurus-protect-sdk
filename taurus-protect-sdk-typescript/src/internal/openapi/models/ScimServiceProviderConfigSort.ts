@@ -25,7 +25,16 @@ export interface ScimServiceProviderConfigSort {
      * @memberof ScimServiceProviderConfigSort
      */
     supported?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof ScimServiceProviderConfigSort
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const ScimServiceProviderConfigSortWireKeys: ReadonlySet<string> = new Set(['supported']);
 
 /**
  * Check if a given object implements the ScimServiceProviderConfigSort interface.
@@ -42,10 +51,20 @@ export function ScimServiceProviderConfigSortFromJSONTyped(json: any, ignoreDisc
     if (json == null) {
         return json;
     }
-    return {
+    const result: ScimServiceProviderConfigSort = {
         
         'supported': json['supported'] == null ? undefined : json['supported'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!ScimServiceProviderConfigSortWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function ScimServiceProviderConfigSortToJSON(json: any): ScimServiceProviderConfigSort {
@@ -60,6 +79,7 @@ export function ScimServiceProviderConfigSortFromJSONTyped(json: any, ignoreDisc
     return {
         
         'supported': value['supported'],
+        ...value['additionalProperties'],
     };
 }
 

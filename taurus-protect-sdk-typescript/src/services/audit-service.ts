@@ -4,11 +4,12 @@
  * Provides methods for retrieving audit trail information.
  */
 
-import { ValidationError } from '../errors';
 import type { AuditApi } from '../internal/openapi/apis/AuditApi';
 import { auditTrailsFromDto } from '../mappers/audit';
-import type { AuditTrail, ListAuditTrailsOptions } from '../models/audit';
+import type { ListAuditTrailsOptions, ListAuditTrailsResult } from '../models/audit';
+import { buildCursorPage, cursorRequest } from '../models/pagination';
 import { BaseService } from './base';
+import { cursorQuery } from './paging';
 
 /**
  * Service for audit trail operations.
@@ -18,11 +19,15 @@ import { BaseService } from './base';
  *
  * @example
  * ```typescript
- * // List audit trails
- * const audits = await auditService.list({ limit: 50 });
- * for (const audit of audits) {
- *   console.log(`${audit.action} on ${audit.entity} by ${audit.userEmail}`);
- * }
+ * // List audit trails, page by page
+ * let cursor: string | undefined;
+ * do {
+ *   const page = await auditService.list({ pageSize: 50, cursor });
+ *   for (const audit of page.items) {
+ *     console.log(`${audit.action} on ${audit.entity} by ${audit.userEmail}`);
+ *   }
+ *   cursor = page.pagination.hasMore ? page.pagination.nextCursor : undefined;
+ * } while (cursor);
  *
  * // Filter by entity type
  * const walletAudits = await auditService.list({
@@ -51,17 +56,17 @@ export class AuditService extends BaseService {
   }
 
   /**
-   * Lists audit trails with optional filtering.
+   * Lists a page of audit trails with optional filtering.
    *
-   * @param options - Optional filtering options
-   * @returns Array of audit trails
-   * @throws {@link ValidationError} If limit is invalid
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
+   * @returns The page of audit trails and its cursor pagination
+   * @throws {@link ValidationError} If the page size is out of bounds
    * @throws {@link APIError} If API request fails
    *
    * @example
    * ```typescript
    * // List recent audit trails
-   * const audits = await auditService.list({ limit: 100 });
+   * const { items, pagination } = await auditService.list({ pageSize: 100 });
    *
    * // Filter by entity and action
    * const walletCreations = await auditService.list({
@@ -81,12 +86,8 @@ export class AuditService extends BaseService {
    * });
    * ```
    */
-  async list(options?: ListAuditTrailsOptions): Promise<AuditTrail[]> {
-    const limit = options?.limit ?? 50;
-
-    if (limit <= 0) {
-      throw new ValidationError('limit must be positive');
-    }
+  async list(options?: ListAuditTrailsOptions): Promise<ListAuditTrailsResult> {
+    const page = cursorRequest(options);
 
     return this.execute(async () => {
       const response = await this.auditApi.auditServiceGetAuditTrails({
@@ -95,13 +96,14 @@ export class AuditService extends BaseService {
         actions: options?.actions,
         creationDateFrom: options?.creationDateFrom,
         creationDateTo: options?.creationDateTo,
-        cursorPageSize: String(limit),
+        ...cursorQuery(page),
         sortingSortOrder: options?.sortOrder,
       });
 
-      const resp = response as Record<string, unknown>;
-      const result = resp.auditTrails ?? resp.audit_trails ?? resp.result ?? resp.trails;
-      return auditTrailsFromDto(result as unknown[]);
+      return {
+        items: auditTrailsFromDto(response.result),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
+      };
     });
   }
 

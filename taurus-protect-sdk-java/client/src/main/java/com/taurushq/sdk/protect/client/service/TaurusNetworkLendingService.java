@@ -5,6 +5,7 @@ import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
 import com.taurushq.sdk.protect.client.mapper.TaurusNetworkMapper;
 import com.taurushq.sdk.protect.client.model.ApiException;
 import com.taurushq.sdk.protect.client.model.ApiRequestCursor;
+import com.taurushq.sdk.protect.client.model.Pagination;
 import com.taurushq.sdk.protect.client.model.taurusnetwork.LendingAgreement;
 import com.taurushq.sdk.protect.client.model.taurusnetwork.LendingAgreementResult;
 import com.taurushq.sdk.protect.client.model.taurusnetwork.LendingOffer;
@@ -29,12 +30,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * <p>
  * Example usage:
  * <pre>{@code
- * // List lending offers
- * LendingOfferResult offers = client.getTaurusNetworkLendingService()
- *     .getLendingOffers(null, null, null, null, null);
+ * // List lending offers, first page
+ * LendingOfferResult offers = client.taurusNetwork().lending()
+ *     .getLendingOffers(null, null, null, null, 20, null);
  *
  * // Get a specific lending agreement
- * LendingAgreement agreement = client.getTaurusNetworkLendingService()
+ * LendingAgreement agreement = client.taurusNetwork().lending()
  *     .getLendingAgreement("agreement-123");
  * }</pre>
  */
@@ -79,14 +80,34 @@ public class TaurusNetworkLendingService {
     }
 
     /**
-     * Retrieves lending offers with optional filtering.
+     * Retrieves a page of lending offers with optional filtering.
      *
      * @param currencyIds   filter by currency IDs (optional)
      * @param participantId filter by participant ID (optional)
      * @param duration      filter by duration (optional)
      * @param sortOrder     sort order for results (optional, "ASC" or "DESC")
-     * @param cursor        pagination cursor (optional, null for first page)
-     * @return a paginated result containing lending offers
+     * @param pageSize      the page size, null or 0 for the default
+     * @param cursor        a previous page's {@code getPage().getNextCursor()}, null for the first page
+     * @return the lending offers and their page
+     * @throws ApiException             if the API call fails
+     * @throws IllegalArgumentException if the page size is out of range
+     */
+    public LendingOfferResult getLendingOffers(final List<String> currencyIds, final String participantId,
+                                               final String duration, final String sortOrder,
+                                               final Integer pageSize, final String cursor)
+            throws ApiException {
+        return getLendingOffers(currencyIds, participantId, duration, sortOrder, Pagination.page(pageSize, cursor));
+    }
+
+    /**
+     * Retrieves a page of lending offers, with a low-level request cursor.
+     *
+     * @param currencyIds   filter by currency IDs (optional)
+     * @param participantId filter by participant ID (optional)
+     * @param duration      filter by duration (optional)
+     * @param sortOrder     sort order for results (optional, "ASC" or "DESC")
+     * @param cursor        the request cursor, null for the first page with the default size
+     * @return the lending offers and their page
      * @throws ApiException if the API call fails
      */
     public LendingOfferResult getLendingOffers(final List<String> currencyIds, final String participantId,
@@ -94,27 +115,19 @@ public class TaurusNetworkLendingService {
                                                final ApiRequestCursor cursor)
             throws ApiException {
 
-        String cursorCurrentPage = null;
-        String cursorPageRequest = null;
-        String cursorPageSize = null;
-
-        if (cursor != null) {
-            cursorCurrentPage = cursor.getCurrentPage();
-            cursorPageRequest = cursor.getPageRequest() != null ? cursor.getPageRequest().name() : null;
-            cursorPageSize = String.valueOf(cursor.getPageSize());
-        }
+        final CursorRequest page = CursorRequest.of(cursor);
 
         try {
             TgvalidatordGetLendingOffersReply reply = lendingApi.taurusNetworkServiceGetLendingOffers(
                     sortOrder,
-                    cursorCurrentPage,
-                    cursorPageRequest,
-                    cursorPageSize,
+                    page.currentPage(),
+                    page.pageRequest(),
+                    page.pageSizeParam(),
                     currencyIds,
                     participantId,
                     duration
             );
-            return mapper.fromLendingOffersReply(reply);
+            return page.complete(mapper.fromLendingOffersReply(reply), PagedOperation.LENDING_OFFERS);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
@@ -140,34 +153,41 @@ public class TaurusNetworkLendingService {
     }
 
     /**
-     * Retrieves lending agreements with optional filtering.
+     * Retrieves a page of lending agreements.
      *
      * @param sortOrder sort order for results (optional, "ASC" or "DESC")
-     * @param cursor    pagination cursor (optional, null for first page)
-     * @return a paginated result containing lending agreements
+     * @param pageSize  the page size, null or 0 for the default
+     * @param cursor    a previous page's {@code getPage().getNextCursor()}, null for the first page
+     * @return the lending agreements and their page
+     * @throws ApiException             if the API call fails
+     * @throws IllegalArgumentException if the page size is out of range
+     */
+    public LendingAgreementResult getLendingAgreements(final String sortOrder, final Integer pageSize,
+                                                       final String cursor) throws ApiException {
+        return getLendingAgreements(sortOrder, Pagination.page(pageSize, cursor));
+    }
+
+    /**
+     * Retrieves a page of lending agreements, with a low-level request cursor.
+     *
+     * @param sortOrder sort order for results (optional, "ASC" or "DESC")
+     * @param cursor    the request cursor, null for the first page with the default size
+     * @return the lending agreements and their page
      * @throws ApiException if the API call fails
      */
     public LendingAgreementResult getLendingAgreements(final String sortOrder, final ApiRequestCursor cursor)
             throws ApiException {
 
-        String cursorCurrentPage = null;
-        String cursorPageRequest = null;
-        String cursorPageSize = null;
-
-        if (cursor != null) {
-            cursorCurrentPage = cursor.getCurrentPage();
-            cursorPageRequest = cursor.getPageRequest() != null ? cursor.getPageRequest().name() : null;
-            cursorPageSize = String.valueOf(cursor.getPageSize());
-        }
+        final CursorRequest page = CursorRequest.of(cursor);
 
         try {
             TgvalidatordGetLendingAgreementsReply reply = lendingApi.taurusNetworkServiceGetLendingAgreements(
                     sortOrder,
-                    cursorCurrentPage,
-                    cursorPageRequest,
-                    cursorPageSize
+                    page.currentPage(),
+                    page.pageRequest(),
+                    page.pageSizeParam()
             );
-            return mapper.fromLendingAgreementsReply(reply);
+            return page.complete(mapper.fromLendingAgreementsReply(reply), PagedOperation.LENDING_AGREEMENTS);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }

@@ -43,7 +43,16 @@ export interface TgvalidatordCreateOutgoingMinaUndelegationRequestRequest {
      * @memberof TgvalidatordCreateOutgoingMinaUndelegationRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingMinaUndelegationRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingMinaUndelegationRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'feeLimit', 'comment', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingMinaUndelegationRequestRequest interface.
@@ -61,13 +70,23 @@ export function TgvalidatordCreateOutgoingMinaUndelegationRequestRequestFromJSON
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingMinaUndelegationRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'feeLimit': json['feeLimit'] == null ? undefined : json['feeLimit'],
         'comment': json['comment'] == null ? undefined : json['comment'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingMinaUndelegationRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingMinaUndelegationRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingMinaUndelegationRequestRequest {
@@ -85,6 +104,7 @@ export function TgvalidatordCreateOutgoingMinaUndelegationRequestRequestFromJSON
         'feeLimit': value['feeLimit'],
         'comment': value['comment'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -276,7 +276,17 @@ async function findNativeAddresses(
 ): Promise<TgvalidatordAddress[]> {
   const tag = `[${config.symbol}]`;
 
-  const wallets: Wallet[] = await client.assets.getAssetWallets({ currency: config.symbol });
+  const wallets: Wallet[] = [];
+  let cursor: string | undefined;
+  do {
+    const page = await client.assets.getAssetWallets({
+      currency: config.symbol,
+      pageSize: 100,
+      cursor,
+    });
+    wallets.push(...page.items);
+    cursor = page.pagination.hasMore ? page.pagination.nextCursor : undefined;
+  } while (cursor);
   if (wallets.length === 0) {
     console.log(`${tag}     No wallets found via getAssetWallets`);
     return [];

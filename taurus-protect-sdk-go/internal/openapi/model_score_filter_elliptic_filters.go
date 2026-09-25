@@ -21,7 +21,10 @@ var _ MappedNullable = &ScoreFilterEllipticFilters{}
 type ScoreFilterEllipticFilters struct {
 	// Filter addresses with an Elliptic risk score above threshold.
 	ScoreGreater *string `json:"scoreGreater,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _ScoreFilterEllipticFilters ScoreFilterEllipticFilters
 
 // NewScoreFilterEllipticFilters instantiates a new ScoreFilterEllipticFilters object
 // This constructor will assign default values to properties that have it defined,
@@ -85,7 +88,33 @@ func (o ScoreFilterEllipticFilters) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.ScoreGreater) {
 		toSerialize["scoreGreater"] = o.ScoreGreater
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *ScoreFilterEllipticFilters) UnmarshalJSON(data []byte) (err error) {
+	varScoreFilterEllipticFilters := _ScoreFilterEllipticFilters{}
+
+	err = json.Unmarshal(data, &varScoreFilterEllipticFilters)
+
+	if err != nil {
+		return err
+	}
+
+	*o = ScoreFilterEllipticFilters(varScoreFilterEllipticFilters)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "scoreGreater")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableScoreFilterEllipticFilters struct {

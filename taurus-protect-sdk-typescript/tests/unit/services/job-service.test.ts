@@ -26,7 +26,7 @@ describe('JobService', () => {
   describe('list', () => {
     it('should return jobs', async () => {
       mockApi.jobServiceGetJobs.mockResolvedValue({
-        result: [
+        jobs: [
           { name: 'balance-sync', status: 'RUNNING' },
           { name: 'tx-monitor', status: 'IDLE' },
         ],
@@ -38,7 +38,7 @@ describe('JobService', () => {
 
     it('should handle empty results', async () => {
       mockApi.jobServiceGetJobs.mockResolvedValue({
-        result: [],
+        jobs: [],
       } as never);
 
       const jobs = await service.list();
@@ -54,7 +54,7 @@ describe('JobService', () => {
 
     it('should return job when found', async () => {
       mockApi.jobServiceGetJob.mockResolvedValue({
-        result: { name: 'balance-sync', status: 'RUNNING' },
+        job: { name: 'balance-sync', status: 'RUNNING' },
       } as never);
 
       const job = await service.get('balance-sync');
@@ -73,7 +73,7 @@ describe('JobService', () => {
 
     it('should return job status', async () => {
       mockApi.jobServiceGetJobStatus.mockResolvedValue({
-        result: { status: 'COMPLETED', progress: '100' },
+        status: { status: 'COMPLETED', progress: '100' },
       } as never);
 
       const status = await service.getStatus('balance-sync', 'run-1');

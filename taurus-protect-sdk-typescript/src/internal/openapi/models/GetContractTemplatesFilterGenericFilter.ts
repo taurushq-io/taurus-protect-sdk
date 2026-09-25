@@ -63,7 +63,16 @@ export interface GetContractTemplatesFilterGenericFilter {
      * @memberof GetContractTemplatesFilterGenericFilter
      */
     contractTemplateTypes?: Array<TgvalidatordContractTemplateType>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof GetContractTemplatesFilterGenericFilter
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const GetContractTemplatesFilterGenericFilterWireKeys: ReadonlySet<string> = new Set(['blockchain', 'tag', 'providedOnly', 'auditedOnly', 'nameSearch', 'contractTemplateTypes']);
 
 /**
  * Check if a given object implements the GetContractTemplatesFilterGenericFilter interface.
@@ -81,7 +90,7 @@ export function GetContractTemplatesFilterGenericFilterFromJSONTyped(json: any, 
     if (json == null) {
         return json;
     }
-    return {
+    const result: GetContractTemplatesFilterGenericFilter = {
         
         'blockchain': json['blockchain'],
         'tag': json['tag'] == null ? undefined : json['tag'],
@@ -90,6 +99,16 @@ export function GetContractTemplatesFilterGenericFilterFromJSONTyped(json: any, 
         'nameSearch': json['nameSearch'] == null ? undefined : json['nameSearch'],
         'contractTemplateTypes': json['contractTemplateTypes'] == null ? undefined : ((json['contractTemplateTypes'] as Array<any>).map(TgvalidatordContractTemplateTypeFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!GetContractTemplatesFilterGenericFilterWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function GetContractTemplatesFilterGenericFilterToJSON(json: any): GetContractTemplatesFilterGenericFilter {
@@ -109,6 +128,7 @@ export function GetContractTemplatesFilterGenericFilterFromJSONTyped(json: any, 
         'auditedOnly': value['auditedOnly'],
         'nameSearch': value['nameSearch'],
         'contractTemplateTypes': value['contractTemplateTypes'] == null ? undefined : ((value['contractTemplateTypes'] as Array<any>).map(TgvalidatordContractTemplateTypeToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

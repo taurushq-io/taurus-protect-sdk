@@ -46,7 +46,16 @@ export interface TgvalidatordAssetParams {
      * @memberof TgvalidatordAssetParams
      */
     solanaNativeTokenParams?: TgvalidatordSolanaNativeTokenParams;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordAssetParams
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordAssetParamsWireKeys: ReadonlySet<string> = new Set(['hederaNativeTokenParams', 'solanaNativeTokenParams']);
 
 /**
  * Check if a given object implements the TgvalidatordAssetParams interface.
@@ -63,11 +72,21 @@ export function TgvalidatordAssetParamsFromJSONTyped(json: any, ignoreDiscrimina
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordAssetParams = {
         
         'hederaNativeTokenParams': json['hederaNativeTokenParams'] == null ? undefined : TgvalidatordHederaNativeTokenParamsFromJSON(json['hederaNativeTokenParams']),
         'solanaNativeTokenParams': json['solanaNativeTokenParams'] == null ? undefined : TgvalidatordSolanaNativeTokenParamsFromJSON(json['solanaNativeTokenParams']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordAssetParamsWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordAssetParamsToJSON(json: any): TgvalidatordAssetParams {
@@ -83,6 +102,7 @@ export function TgvalidatordAssetParamsFromJSONTyped(json: any, ignoreDiscrimina
         
         'hederaNativeTokenParams': TgvalidatordHederaNativeTokenParamsToJSON(value['hederaNativeTokenParams']),
         'solanaNativeTokenParams': TgvalidatordSolanaNativeTokenParamsToJSON(value['solanaNativeTokenParams']),
+        ...value['additionalProperties'],
     };
 }
 

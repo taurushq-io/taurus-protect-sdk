@@ -31,7 +31,10 @@ type TgvalidatordPersonTravelRuleData struct {
 	Birthdate *string `json:"birthdate,omitempty"`
 	BirthPlace *string `json:"birthPlace,omitempty"`
 	AccountNumber *string `json:"accountNumber,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordPersonTravelRuleData TgvalidatordPersonTravelRuleData
 
 // NewTgvalidatordPersonTravelRuleData instantiates a new TgvalidatordPersonTravelRuleData object
 // This constructor will assign default values to properties that have it defined,
@@ -480,7 +483,44 @@ func (o TgvalidatordPersonTravelRuleData) ToMap() (map[string]interface{}, error
 	if !IsNil(o.AccountNumber) {
 		toSerialize["accountNumber"] = o.AccountNumber
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordPersonTravelRuleData) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordPersonTravelRuleData := _TgvalidatordPersonTravelRuleData{}
+
+	err = json.Unmarshal(data, &varTgvalidatordPersonTravelRuleData)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordPersonTravelRuleData(varTgvalidatordPersonTravelRuleData)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "houseNumber")
+		delete(additionalProperties, "street")
+		delete(additionalProperties, "city")
+		delete(additionalProperties, "province")
+		delete(additionalProperties, "postalCode")
+		delete(additionalProperties, "country")
+		delete(additionalProperties, "idNumber")
+		delete(additionalProperties, "externalCustomerID")
+		delete(additionalProperties, "birthdate")
+		delete(additionalProperties, "birthPlace")
+		delete(additionalProperties, "accountNumber")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordPersonTravelRuleData struct {

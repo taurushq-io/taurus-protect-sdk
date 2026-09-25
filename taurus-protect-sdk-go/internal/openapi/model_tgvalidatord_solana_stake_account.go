@@ -25,7 +25,10 @@ type TgvalidatordSolanaStakeAccount struct {
 	ActiveBalance *string `json:"activeBalance,omitempty"`
 	InactiveBalance *string `json:"inactiveBalance,omitempty"`
 	AllowMerge *bool `json:"allowMerge,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordSolanaStakeAccount TgvalidatordSolanaStakeAccount
 
 // NewTgvalidatordSolanaStakeAccount instantiates a new TgvalidatordSolanaStakeAccount object
 // This constructor will assign default values to properties that have it defined,
@@ -264,7 +267,38 @@ func (o TgvalidatordSolanaStakeAccount) ToMap() (map[string]interface{}, error) 
 	if !IsNil(o.AllowMerge) {
 		toSerialize["allowMerge"] = o.AllowMerge
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordSolanaStakeAccount) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordSolanaStakeAccount := _TgvalidatordSolanaStakeAccount{}
+
+	err = json.Unmarshal(data, &varTgvalidatordSolanaStakeAccount)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordSolanaStakeAccount(varTgvalidatordSolanaStakeAccount)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "derivationIndex")
+		delete(additionalProperties, "state")
+		delete(additionalProperties, "validatorAddress")
+		delete(additionalProperties, "activeBalance")
+		delete(additionalProperties, "inactiveBalance")
+		delete(additionalProperties, "allowMerge")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordSolanaStakeAccount struct {

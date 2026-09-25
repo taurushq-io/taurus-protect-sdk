@@ -31,7 +31,10 @@ type TgvalidatordActionEnvelope struct {
 	AutoApprove *bool `json:"autoApprove,omitempty"`
 	Attributes []TgvalidatordActionAttribute `json:"attributes,omitempty"`
 	Trails []TgvalidatordActionEnvelopeTrail `json:"trails,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordActionEnvelope TgvalidatordActionEnvelope
 
 // NewTgvalidatordActionEnvelope instantiates a new TgvalidatordActionEnvelope object
 // This constructor will assign default values to properties that have it defined,
@@ -445,7 +448,43 @@ func (o TgvalidatordActionEnvelope) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Trails) {
 		toSerialize["trails"] = o.Trails
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordActionEnvelope) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordActionEnvelope := _TgvalidatordActionEnvelope{}
+
+	err = json.Unmarshal(data, &varTgvalidatordActionEnvelope)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordActionEnvelope(varTgvalidatordActionEnvelope)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "tenantId")
+		delete(additionalProperties, "label")
+		delete(additionalProperties, "action")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "creationDate")
+		delete(additionalProperties, "updateDate")
+		delete(additionalProperties, "lastcheckeddate")
+		delete(additionalProperties, "autoApprove")
+		delete(additionalProperties, "attributes")
+		delete(additionalProperties, "trails")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordActionEnvelope struct {

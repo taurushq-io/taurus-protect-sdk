@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordParallelApproversGroups{}
 // TgvalidatordParallelApproversGroups struct for TgvalidatordParallelApproversGroups
 type TgvalidatordParallelApproversGroups struct {
 	Sequential []TgvalidatordApproversGroup `json:"sequential,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordParallelApproversGroups TgvalidatordParallelApproversGroups
 
 // NewTgvalidatordParallelApproversGroups instantiates a new TgvalidatordParallelApproversGroups object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordParallelApproversGroups) ToMap() (map[string]interface{}, er
 	if !IsNil(o.Sequential) {
 		toSerialize["sequential"] = o.Sequential
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordParallelApproversGroups) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordParallelApproversGroups := _TgvalidatordParallelApproversGroups{}
+
+	err = json.Unmarshal(data, &varTgvalidatordParallelApproversGroups)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordParallelApproversGroups(varTgvalidatordParallelApproversGroups)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "sequential")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordParallelApproversGroups struct {

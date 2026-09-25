@@ -126,7 +126,16 @@ export interface TgvalidatordBlockchainEntity {
      * @memberof TgvalidatordBlockchainEntity
      */
     xtzInfo?: TgvalidatordXTZBlockchainInfo;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordBlockchainEntity
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordBlockchainEntityWireKeys: ReadonlySet<string> = new Set(['symbol', 'name', 'baseCurrency', 'dotInfo', 'ethInfo', 'network', 'chainId', 'blackholeAddress', 'confirmations', 'blockHeight', 'isLayer2Chain', 'layer1Network', 'xtzInfo']);
 
 /**
  * Check if a given object implements the TgvalidatordBlockchainEntity interface.
@@ -143,7 +152,7 @@ export function TgvalidatordBlockchainEntityFromJSONTyped(json: any, ignoreDiscr
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordBlockchainEntity = {
         
         'symbol': json['symbol'] == null ? undefined : json['symbol'],
         'name': json['name'] == null ? undefined : json['name'],
@@ -159,6 +168,16 @@ export function TgvalidatordBlockchainEntityFromJSONTyped(json: any, ignoreDiscr
         'layer1Network': json['layer1Network'] == null ? undefined : json['layer1Network'],
         'xtzInfo': json['xtzInfo'] == null ? undefined : TgvalidatordXTZBlockchainInfoFromJSON(json['xtzInfo']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordBlockchainEntityWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordBlockchainEntityToJSON(json: any): TgvalidatordBlockchainEntity {
@@ -185,6 +204,7 @@ export function TgvalidatordBlockchainEntityFromJSONTyped(json: any, ignoreDiscr
         'isLayer2Chain': value['isLayer2Chain'],
         'layer1Network': value['layer1Network'],
         'xtzInfo': TgvalidatordXTZBlockchainInfoToJSON(value['xtzInfo']),
+        ...value['additionalProperties'],
     };
 }
 

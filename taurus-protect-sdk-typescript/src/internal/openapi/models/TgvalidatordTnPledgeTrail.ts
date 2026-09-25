@@ -67,7 +67,16 @@ export interface TgvalidatordTnPledgeTrail {
      * @memberof TgvalidatordTnPledgeTrail
      */
     createdAt?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTnPledgeTrail
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTnPledgeTrailWireKeys: ReadonlySet<string> = new Set(['id', 'pledgeID', 'addressCommandID', 'participantID', 'pledgeAmount', 'action', 'comment', 'createdAt']);
 
 /**
  * Check if a given object implements the TgvalidatordTnPledgeTrail interface.
@@ -84,7 +93,7 @@ export function TgvalidatordTnPledgeTrailFromJSONTyped(json: any, ignoreDiscrimi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTnPledgeTrail = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'pledgeID': json['pledgeID'] == null ? undefined : json['pledgeID'],
@@ -95,6 +104,16 @@ export function TgvalidatordTnPledgeTrailFromJSONTyped(json: any, ignoreDiscrimi
         'comment': json['comment'] == null ? undefined : json['comment'],
         'createdAt': json['createdAt'] == null ? undefined : (new Date(json['createdAt'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTnPledgeTrailWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTnPledgeTrailToJSON(json: any): TgvalidatordTnPledgeTrail {
@@ -116,6 +135,7 @@ export function TgvalidatordTnPledgeTrailFromJSONTyped(json: any, ignoreDiscrimi
         'action': value['action'],
         'comment': value['comment'],
         'createdAt': value['createdAt'] == null ? undefined : ((value['createdAt']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

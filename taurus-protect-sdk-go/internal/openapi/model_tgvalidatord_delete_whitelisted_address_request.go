@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -25,6 +24,7 @@ type TgvalidatordDeleteWhitelistedAddressRequest struct {
 	Id string `json:"id"`
 	// A comment can be provided as the reason for deletion
 	Comment *string `json:"comment,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordDeleteWhitelistedAddressRequest TgvalidatordDeleteWhitelistedAddressRequest
@@ -117,6 +117,11 @@ func (o TgvalidatordDeleteWhitelistedAddressRequest) ToMap() (map[string]interfa
 	if !IsNil(o.Comment) {
 		toSerialize["comment"] = o.Comment
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -144,15 +149,21 @@ func (o *TgvalidatordDeleteWhitelistedAddressRequest) UnmarshalJSON(data []byte)
 
 	varTgvalidatordDeleteWhitelistedAddressRequest := _TgvalidatordDeleteWhitelistedAddressRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordDeleteWhitelistedAddressRequest)
+	err = json.Unmarshal(data, &varTgvalidatordDeleteWhitelistedAddressRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordDeleteWhitelistedAddressRequest(varTgvalidatordDeleteWhitelistedAddressRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "comment")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

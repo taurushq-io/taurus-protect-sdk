@@ -6,6 +6,11 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
+from taurus_protect.models.pagination import CursorPage, cursor_page
+from taurus_protect.models.taurus_network.lending import (
+    ListLendingAgreementsOptions,
+    ListLendingOffersOptions,
+)
 from taurus_protect.services._base import BaseService
 
 if TYPE_CHECKING:
@@ -251,48 +256,6 @@ class LendingAgreementAttachment:
 
 
 @dataclass
-class ListLendingOffersOptions:
-    """
-    Options for listing lending offers.
-
-    Attributes:
-        currency_ids: Filter by currency IDs.
-        participant_id: Filter by participant ID.
-        duration: Filter by duration.
-        sort_order: Sort order (ASC or DESC).
-        page_size: Number of results per page.
-        current_page: Current page token.
-        page_request: Page navigation (FIRST, PREVIOUS, NEXT, LAST).
-    """
-
-    currency_ids: Optional[List[str]] = None
-    participant_id: Optional[str] = None
-    duration: Optional[str] = None
-    sort_order: Optional[str] = None
-    page_size: int = 50
-    current_page: Optional[str] = None
-    page_request: Optional[str] = None
-
-
-@dataclass
-class ListLendingAgreementsOptions:
-    """
-    Options for listing lending agreements.
-
-    Attributes:
-        sort_order: Sort order (ASC or DESC).
-        page_size: Number of results per page.
-        current_page: Current page token.
-        page_request: Page navigation (FIRST, PREVIOUS, NEXT, LAST).
-    """
-
-    sort_order: Optional[str] = None
-    page_size: int = 50
-    current_page: Optional[str] = None
-    page_request: Optional[str] = None
-
-
-@dataclass
 class CollateralRequest:
     """
     Collateral configuration for creating a lending agreement.
@@ -394,22 +357,6 @@ class CreateLendingAgreementAttachmentRequest:
     value: str
     content_type: str
     type: str = "EMBEDDED"
-
-
-@dataclass
-class CursorPagination:
-    """
-    Cursor-based pagination information.
-
-    Attributes:
-        current_page: The current page cursor.
-        has_next: Whether there is a next page.
-        has_previous: Whether there is a previous page.
-    """
-
-    current_page: Optional[str] = None
-    has_next: bool = False
-    has_previous: bool = False
 
 
 # =============================================================================
@@ -659,108 +606,86 @@ class LendingService(BaseService):
     def list_lending_agreements(
         self,
         options: Optional[ListLendingAgreementsOptions] = None,
-    ) -> Tuple[List[LendingAgreement], Optional[CursorPagination]]:
+    ) -> Tuple[List[LendingAgreement], CursorPage]:
         """
-        List lending agreements.
+        List lending agreements, one page at a time.
 
         Args:
-            options: Optional filtering and pagination options.
+            options: Sort order and page window; ``ids`` applies only to the approval
+                queue and is refused here.
 
         Returns:
-            Tuple of (agreements list, cursor pagination info).
+            Tuple of (agreements, page).
 
         Raises:
+            ValueError: If ``ids`` is set or paging options are invalid.
             APIError: If API request fails.
         """
         opts = options or ListLendingAgreementsOptions()
+        if opts.ids:
+            raise ValueError("ids can only filter the lending agreement approval queue")
+        req = opts.to_cursor_request()
 
         try:
             resp = self._lending_api.taurus_network_service_get_lending_agreements(
                 sort_order=opts.sort_order,
-                cursor_current_page=opts.current_page,
-                cursor_page_request=opts.page_request,
-                cursor_page_size=str(opts.page_size) if opts.page_size > 0 else None,
+                **req.query_params(),
             )
 
-            result = getattr(resp, "result", None)
-            agreements = []
-            if result:
-                for dto in result:
-                    agreement = _lending_agreement_from_dto(dto)
-                    if agreement:
-                        agreements.append(agreement)
-
-            # Extract cursor pagination
-            cursor = getattr(resp, "cursor", None)
-            pagination = None
-            if cursor:
-                pagination = CursorPagination(
-                    current_page=getattr(cursor, "current_page", None),
-                    has_next=getattr(cursor, "has_next", False) or False,
-                    has_previous=getattr(cursor, "has_previous", False) or False,
-                )
-
-            return agreements, pagination
+            agreements = [
+                a
+                for dto in resp.lending_agreements or []
+                if (a := _lending_agreement_from_dto(dto)) is not None
+            ]
+            return agreements, cursor_page(req.page_size, resp.cursor)
         except Exception as e:
             from taurus_protect.errors import APIError
 
             if type(e).__name__ == "ApiException":
                 raise self._handle_error(e) from e
-            if isinstance(e, APIError):
+            if isinstance(e, (APIError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
     def list_lending_agreements_for_approval(
         self,
         options: Optional[ListLendingAgreementsOptions] = None,
-    ) -> Tuple[List[LendingAgreement], Optional[CursorPagination]]:
+    ) -> Tuple[List[LendingAgreement], CursorPage]:
         """
-        List lending agreements pending approval.
+        List lending agreements pending approval, one page at a time.
 
         Args:
-            options: Optional filtering and pagination options.
+            options: Filters and page window.
 
         Returns:
-            Tuple of (agreements list, cursor pagination info).
+            Tuple of (agreements, page).
 
         Raises:
+            ValueError: If paging options are invalid.
             APIError: If API request fails.
         """
         opts = options or ListLendingAgreementsOptions()
+        req = opts.to_cursor_request()
 
         try:
             resp = self._lending_api.taurus_network_service_get_lending_agreements_for_approval(
+                ids=opts.ids,
                 sort_order=opts.sort_order,
-                cursor_current_page=opts.current_page,
-                cursor_page_request=opts.page_request,
-                cursor_page_size=str(opts.page_size) if opts.page_size > 0 else None,
+                **req.query_params(),
             )
 
-            result = getattr(resp, "result", None)
-            agreements = []
-            if result:
-                for dto in result:
-                    agreement = _lending_agreement_from_dto(dto)
-                    if agreement:
-                        agreements.append(agreement)
-
-            # Extract cursor pagination
-            cursor = getattr(resp, "cursor", None)
-            pagination = None
-            if cursor:
-                pagination = CursorPagination(
-                    current_page=getattr(cursor, "current_page", None),
-                    has_next=getattr(cursor, "has_next", False) or False,
-                    has_previous=getattr(cursor, "has_previous", False) or False,
-                )
-
-            return agreements, pagination
+            agreements = [
+                a
+                for dto in resp.result or []
+                if (a := _lending_agreement_from_dto(dto)) is not None
+            ]
+            return agreements, cursor_page(req.page_size, resp.cursor)
         except Exception as e:
             from taurus_protect.errors import APIError
 
             if type(e).__name__ == "ApiException":
                 raise self._handle_error(e) from e
-            if isinstance(e, APIError):
+            if isinstance(e, (APIError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 
@@ -1090,57 +1015,44 @@ class LendingService(BaseService):
     def list_lending_offers(
         self,
         options: Optional[ListLendingOffersOptions] = None,
-    ) -> Tuple[List[LendingOffer], Optional[CursorPagination]]:
+    ) -> Tuple[List[LendingOffer], CursorPage]:
         """
-        List lending offers.
+        List lending offers, one page at a time.
 
         Args:
-            options: Optional filtering and pagination options.
+            options: Filters and page window.
 
         Returns:
-            Tuple of (offers list, cursor pagination info).
+            Tuple of (offers, page).
 
         Raises:
+            ValueError: If paging options are invalid.
             APIError: If API request fails.
         """
         opts = options or ListLendingOffersOptions()
+        req = opts.to_cursor_request()
 
         try:
             resp = self._lending_api.taurus_network_service_get_lending_offers(
                 sort_order=opts.sort_order,
-                cursor_current_page=opts.current_page,
-                cursor_page_request=opts.page_request,
-                cursor_page_size=str(opts.page_size) if opts.page_size > 0 else None,
                 currency_ids_currency_ids=opts.currency_ids,
                 participant_id=opts.participant_id,
                 duration=opts.duration,
+                **req.query_params(),
             )
 
-            result = getattr(resp, "result", None)
-            offers = []
-            if result:
-                for dto in result:
-                    offer = _lending_offer_from_dto(dto)
-                    if offer:
-                        offers.append(offer)
-
-            # Extract cursor pagination
-            cursor = getattr(resp, "cursor", None)
-            pagination = None
-            if cursor:
-                pagination = CursorPagination(
-                    current_page=getattr(cursor, "current_page", None),
-                    has_next=getattr(cursor, "has_next", False) or False,
-                    has_previous=getattr(cursor, "has_previous", False) or False,
-                )
-
-            return offers, pagination
+            offers = [
+                o
+                for dto in resp.lending_offers or []
+                if (o := _lending_offer_from_dto(dto)) is not None
+            ]
+            return offers, cursor_page(req.page_size, resp.cursor)
         except Exception as e:
             from taurus_protect.errors import APIError
 
             if type(e).__name__ == "ApiException":
                 raise self._handle_error(e) from e
-            if isinstance(e, APIError):
+            if isinstance(e, (APIError, ValueError)):
                 raise
             raise self._handle_error(e) from e
 

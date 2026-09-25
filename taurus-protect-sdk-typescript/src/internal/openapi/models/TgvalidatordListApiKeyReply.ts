@@ -33,7 +33,16 @@ export interface TgvalidatordListApiKeyReply {
      * @memberof TgvalidatordListApiKeyReply
      */
     result?: Array<TgvalidatordApiKey>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordListApiKeyReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordListApiKeyReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordListApiKeyReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordListApiKeyReplyFromJSONTyped(json: any, ignoreDiscri
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordListApiKeyReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordApiKeyFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordListApiKeyReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordListApiKeyReplyToJSON(json: any): TgvalidatordListApiKeyReply {
@@ -68,6 +87,7 @@ export function TgvalidatordListApiKeyReplyFromJSONTyped(json: any, ignoreDiscri
     return {
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordApiKeyToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

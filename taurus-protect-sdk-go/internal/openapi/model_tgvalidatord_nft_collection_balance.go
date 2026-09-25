@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordNFTCollectionBalance{}
 type TgvalidatordNFTCollectionBalance struct {
 	CurrencyInfo *TgvalidatordCurrency `json:"currencyInfo,omitempty"`
 	Balance *TgvalidatordBalance `json:"balance,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordNFTCollectionBalance TgvalidatordNFTCollectionBalance
 
 // NewTgvalidatordNFTCollectionBalance instantiates a new TgvalidatordNFTCollectionBalance object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordNFTCollectionBalance) ToMap() (map[string]interface{}, error
 	if !IsNil(o.Balance) {
 		toSerialize["balance"] = o.Balance
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordNFTCollectionBalance) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordNFTCollectionBalance := _TgvalidatordNFTCollectionBalance{}
+
+	err = json.Unmarshal(data, &varTgvalidatordNFTCollectionBalance)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordNFTCollectionBalance(varTgvalidatordNFTCollectionBalance)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "currencyInfo")
+		delete(additionalProperties, "balance")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordNFTCollectionBalance struct {

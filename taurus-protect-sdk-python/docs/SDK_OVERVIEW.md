@@ -19,7 +19,7 @@ taurus_protect/
 ├── client.py                   # ProtectClient - main entry point
 ├── errors.py                   # Exception hierarchy
 │
-├── services/                   # Service layer (38 core services)
+├── services/                   # Service layer (39 core services)
 │   ├── __init__.py
 │   ├── _base.py               # BaseService with common functionality
 │   ├── wallet_service.py

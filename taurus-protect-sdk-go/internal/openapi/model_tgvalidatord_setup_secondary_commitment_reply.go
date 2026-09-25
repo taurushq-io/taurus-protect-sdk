@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordSetupSecondaryCommitmentReply{}
 // TgvalidatordSetupSecondaryCommitmentReply struct for TgvalidatordSetupSecondaryCommitmentReply
 type TgvalidatordSetupSecondaryCommitmentReply struct {
 	Result *string `json:"result,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordSetupSecondaryCommitmentReply TgvalidatordSetupSecondaryCommitmentReply
 
 // NewTgvalidatordSetupSecondaryCommitmentReply instantiates a new TgvalidatordSetupSecondaryCommitmentReply object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordSetupSecondaryCommitmentReply) ToMap() (map[string]interface
 	if !IsNil(o.Result) {
 		toSerialize["result"] = o.Result
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordSetupSecondaryCommitmentReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordSetupSecondaryCommitmentReply := _TgvalidatordSetupSecondaryCommitmentReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordSetupSecondaryCommitmentReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordSetupSecondaryCommitmentReply(varTgvalidatordSetupSecondaryCommitmentReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "result")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordSetupSecondaryCommitmentReply struct {

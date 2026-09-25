@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordUpdateWhitelistedContractAddressResult{}
 // TgvalidatordUpdateWhitelistedContractAddressResult struct for TgvalidatordUpdateWhitelistedContractAddressResult
 type TgvalidatordUpdateWhitelistedContractAddressResult struct {
 	UpdatedContractTemporaryId *string `json:"updatedContractTemporaryId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordUpdateWhitelistedContractAddressResult TgvalidatordUpdateWhitelistedContractAddressResult
 
 // NewTgvalidatordUpdateWhitelistedContractAddressResult instantiates a new TgvalidatordUpdateWhitelistedContractAddressResult object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordUpdateWhitelistedContractAddressResult) ToMap() (map[string]
 	if !IsNil(o.UpdatedContractTemporaryId) {
 		toSerialize["updatedContractTemporaryId"] = o.UpdatedContractTemporaryId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordUpdateWhitelistedContractAddressResult) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordUpdateWhitelistedContractAddressResult := _TgvalidatordUpdateWhitelistedContractAddressResult{}
+
+	err = json.Unmarshal(data, &varTgvalidatordUpdateWhitelistedContractAddressResult)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordUpdateWhitelistedContractAddressResult(varTgvalidatordUpdateWhitelistedContractAddressResult)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "updatedContractTemporaryId")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordUpdateWhitelistedContractAddressResult struct {

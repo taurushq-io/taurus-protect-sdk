@@ -58,7 +58,8 @@ def user_from_dto(dto: Any) -> Optional[User]:
         groups=groups,
         totp_enabled=safe_bool(getattr(dto, "totp_enabled", None)),
         password_changed=safe_bool(getattr(dto, "password_changed", None)),
-        enforced_in_rules=safe_bool(getattr(dto, "enforced_in_rules", None)),
+        enforced_in_rules=getattr(dto, "enforced_in_rules", None),
+        public_key_enforced_in_rules=getattr(dto, "public_key_enforced_in_rules", None),
         created_at=safe_datetime(getattr(dto, "creation_date", None)),
         updated_at=safe_datetime(getattr(dto, "update_date", None)),
         last_login=safe_datetime(getattr(dto, "last_login", None)),
@@ -93,7 +94,8 @@ def user_group_from_dto(dto: Any) -> UserGroup:
     """
     return UserGroup(
         id=safe_string(getattr(dto, "id", None)),
-        name=safe_string(getattr(dto, "name", None)),
+        external_group_id=getattr(dto, "external_group_id", None),
+        enforced_in_rules=getattr(dto, "enforced_in_rules", None),
     )
 
 
@@ -141,7 +143,7 @@ def group_from_dto(dto: Any) -> Optional[Group]:
         email=getattr(dto, "email", None),
         description=getattr(dto, "description", None),
         users=users,
-        enforced_in_rules=safe_bool(getattr(dto, "enforced_in_rules", None)),
+        enforced_in_rules=getattr(dto, "enforced_in_rules", None),
         created_at=safe_datetime(getattr(dto, "creation_date", None)),
         updated_at=safe_datetime(getattr(dto, "update_date", None)),
     )
@@ -174,7 +176,8 @@ def group_user_from_dto(dto: Any) -> GroupUser:
     """
     return GroupUser(
         id=safe_string(getattr(dto, "id", None)),
-        email=getattr(dto, "email", None),
+        external_user_id=getattr(dto, "external_user_id", None),
+        enforced_in_rules=getattr(dto, "enforced_in_rules", None),
     )
 
 

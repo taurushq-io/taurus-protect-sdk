@@ -23,7 +23,10 @@ type TgvalidatordTnSettlementAssetTransfer struct {
 	Amount *string `json:"amount,omitempty"`
 	SourceSharedAddressID *string `json:"sourceSharedAddressID,omitempty"`
 	DestinationSharedAddressID *string `json:"destinationSharedAddressID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTnSettlementAssetTransfer TgvalidatordTnSettlementAssetTransfer
 
 // NewTgvalidatordTnSettlementAssetTransfer instantiates a new TgvalidatordTnSettlementAssetTransfer object
 // This constructor will assign default values to properties that have it defined,
@@ -192,7 +195,36 @@ func (o TgvalidatordTnSettlementAssetTransfer) ToMap() (map[string]interface{}, 
 	if !IsNil(o.DestinationSharedAddressID) {
 		toSerialize["destinationSharedAddressID"] = o.DestinationSharedAddressID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTnSettlementAssetTransfer) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTnSettlementAssetTransfer := _TgvalidatordTnSettlementAssetTransfer{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTnSettlementAssetTransfer)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTnSettlementAssetTransfer(varTgvalidatordTnSettlementAssetTransfer)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "currencyID")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "sourceSharedAddressID")
+		delete(additionalProperties, "destinationSharedAddressID")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTnSettlementAssetTransfer struct {

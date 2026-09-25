@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -25,6 +24,7 @@ type TgvalidatordShareWhitelistedAssetRequest struct {
 	ToParticipantID string `json:"toParticipantID"`
 	// The ID of the whitelisted contract to share.
 	WhitelistedContractID string `json:"whitelistedContractID"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordShareWhitelistedAssetRequest TgvalidatordShareWhitelistedAssetRequest
@@ -108,6 +108,11 @@ func (o TgvalidatordShareWhitelistedAssetRequest) ToMap() (map[string]interface{
 	toSerialize := map[string]interface{}{}
 	toSerialize["toParticipantID"] = o.ToParticipantID
 	toSerialize["whitelistedContractID"] = o.WhitelistedContractID
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -136,15 +141,21 @@ func (o *TgvalidatordShareWhitelistedAssetRequest) UnmarshalJSON(data []byte) (e
 
 	varTgvalidatordShareWhitelistedAssetRequest := _TgvalidatordShareWhitelistedAssetRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordShareWhitelistedAssetRequest)
+	err = json.Unmarshal(data, &varTgvalidatordShareWhitelistedAssetRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordShareWhitelistedAssetRequest(varTgvalidatordShareWhitelistedAssetRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "toParticipantID")
+		delete(additionalProperties, "whitelistedContractID")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

@@ -21,7 +21,10 @@ var _ MappedNullable = &XTZContractDelegate{}
 type XTZContractDelegate struct {
 	ToAddressId *string `json:"toAddressId,omitempty"`
 	ToWhitelistedAddressId *string `json:"toWhitelistedAddressId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _XTZContractDelegate XTZContractDelegate
 
 // NewXTZContractDelegate instantiates a new XTZContractDelegate object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o XTZContractDelegate) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.ToWhitelistedAddressId) {
 		toSerialize["toWhitelistedAddressId"] = o.ToWhitelistedAddressId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *XTZContractDelegate) UnmarshalJSON(data []byte) (err error) {
+	varXTZContractDelegate := _XTZContractDelegate{}
+
+	err = json.Unmarshal(data, &varXTZContractDelegate)
+
+	if err != nil {
+		return err
+	}
+
+	*o = XTZContractDelegate(varXTZContractDelegate)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "toAddressId")
+		delete(additionalProperties, "toWhitelistedAddressId")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableXTZContractDelegate struct {

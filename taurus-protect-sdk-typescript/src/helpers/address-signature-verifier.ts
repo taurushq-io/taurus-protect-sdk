@@ -8,7 +8,7 @@
 import type { KeyObject } from "crypto";
 
 import { verifySignature, decodePublicKeyPem } from "../crypto";
-import { IntegrityError } from "../errors";
+import { ContainerIntegrityError, IntegrityError } from "../errors";
 import type { DecodedRulesContainer } from "../models/governance-rules";
 import { getHsmPublicKey } from "../models/governance-rules";
 import { isCryptoVerificationError } from "../crypto";
@@ -28,8 +28,10 @@ import { isCryptoVerificationError } from "../crypto";
  * @param signatureBase64 - Base64-encoded signature
  * @param rulesContainer - The decoded rules container containing HSM public key
  * @param addressId - Optional identifier used in error messages
- * @throws IntegrityError if the address or signature is missing, the HSM public key
- *   is absent, or the signature does not verify
+ * @throws IntegrityError if the address or signature is missing, or the signature does
+ *   not verify
+ * @throws ContainerIntegrityError if the rules container has no usable HSM public key:
+ *   that invalidates every address judged against it, not just this one
  */
 export function verifyAddressSignature(
   address: string,
@@ -49,14 +51,14 @@ export function verifyAddressSignature(
   // Get HSM public key from rules container
   const hsmPublicKeyPem = getHsmPublicKey(rulesContainer);
   if (!hsmPublicKeyPem) {
-    throw new IntegrityError("HSM public key not found in rules container");
+    throw new ContainerIntegrityError("HSM public key not found in rules container");
   }
 
   let hsmPublicKey: KeyObject;
   try {
     hsmPublicKey = decodePublicKeyPem(hsmPublicKeyPem);
   } catch (error) {
-    throw new IntegrityError(`Invalid HSM public key format: ${error}`);
+    throw new ContainerIntegrityError(`Invalid HSM public key format: ${error}`);
   }
 
   // Verify signature - signed data is the raw address string

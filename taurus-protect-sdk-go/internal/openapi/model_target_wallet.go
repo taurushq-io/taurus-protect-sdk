@@ -21,7 +21,10 @@ var _ MappedNullable = &TargetWallet{}
 type TargetWallet struct {
 	Kind *string `json:"kind,omitempty"`
 	WalletID *string `json:"walletID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TargetWallet TargetWallet
 
 // NewTargetWallet instantiates a new TargetWallet object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TargetWallet) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.WalletID) {
 		toSerialize["walletID"] = o.WalletID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TargetWallet) UnmarshalJSON(data []byte) (err error) {
+	varTargetWallet := _TargetWallet{}
+
+	err = json.Unmarshal(data, &varTargetWallet)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TargetWallet(varTargetWallet)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "kind")
+		delete(additionalProperties, "walletID")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTargetWallet struct {

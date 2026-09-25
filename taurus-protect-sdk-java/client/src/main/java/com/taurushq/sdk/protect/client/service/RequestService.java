@@ -3,11 +3,11 @@ package com.taurushq.sdk.protect.client.service;
 import com.google.common.base.Strings;
 import com.google.gson.Gson;
 import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
-import com.taurushq.sdk.protect.client.mapper.ApiResponseCursorMapper;
 import com.taurushq.sdk.protect.client.mapper.RequestMapper;
 import com.taurushq.sdk.protect.client.model.ApiException;
 import com.taurushq.sdk.protect.client.model.IntegrityException;
 import com.taurushq.sdk.protect.client.model.ApiRequestCursor;
+import com.taurushq.sdk.protect.client.model.Pagination;
 import com.taurushq.sdk.protect.client.model.Request;
 import com.taurushq.sdk.protect.client.model.RequestResult;
 import com.taurushq.sdk.protect.client.model.RequestStatus;
@@ -24,7 +24,6 @@ import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetRequestReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetRequestsV2Reply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordRejectRequestsRequest;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordRequest;
-import com.taurushq.sdk.protect.openapi.model.TgvalidatordRequestCursor;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -64,9 +63,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * Request request = client.getRequestService()
  *     .createInternalTransferRequest(fromAddressId, toAddressId, amount);
  *
- * // Get requests pending approval
- * ApiRequestCursor cursor = Pagination.first(50);
- * RequestResult result = client.getRequestService().getRequestsForApproval(cursor);
+ * // Get requests pending approval, one page at a time
+ * RequestResult result = client.getRequestService().getRequestsForApproval(20, null);
+ * // next page: getRequestsForApproval(20, result.getPage().getNextCursor())
  *
  * // Approve a request
  * int signed = client.getRequestService().approveRequest(request, privateKey);
@@ -450,23 +449,40 @@ public class RequestService {
     }
 
     /**
-     * Gets requests with filtering.
+     * Gets a page of requests with filtering.
      *
      * @param from       filter requests created after this date (optional)
      * @param to         filter requests created before this date (optional)
      * @param currencyId filter by currency ID or symbol (optional)
      * @param statuses   filter by request statuses (optional)
-     * @param cursor     the request cursor for pagination
-     * @return the request result with list and response cursor
+     * @param pageSize   the page size, null or 0 for the default
+     * @param cursor     a previous page's {@code getPage().getNextCursor()}, null for the first page
+     * @return the verified requests and their page
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if the page size is out of range
+     */
+    public RequestResult getRequests(final OffsetDateTime from, final OffsetDateTime to,
+                                     final String currencyId, final List<RequestStatus> statuses,
+                                     final Integer pageSize, final String cursor) throws ApiException {
+        return getRequests(from, to, currencyId, statuses, Pagination.page(pageSize, cursor));
+    }
+
+    /**
+     * Gets a page of requests with filtering, with a low-level request cursor.
+     *
+     * @param from       filter requests created after this date (optional)
+     * @param to         filter requests created before this date (optional)
+     * @param currencyId filter by currency ID or symbol (optional)
+     * @param statuses   filter by request statuses (optional)
+     * @param cursor     the request cursor, null for the first page with the default size
+     * @return the verified requests and their page
      * @throws ApiException the api exception
      */
     public RequestResult getRequests(final OffsetDateTime from, final OffsetDateTime to,
                                      final String currencyId, final List<RequestStatus> statuses,
                                      final ApiRequestCursor cursor) throws ApiException {
 
-        checkNotNull(cursor, "cursor cannot be null");
-
-        TgvalidatordRequestCursor requestCursor = ApiResponseCursorMapper.INSTANCE.toDTO(cursor);
+        final CursorRequest page = CursorRequest.of(cursor);
 
         try {
             List<String> statusStrings = statuses != null
@@ -480,25 +496,17 @@ public class RequestService {
                     statusStrings,
                     null,                               // types
                     null,                               // ids
-                    requestCursor.getCurrentPage(),     // cursorCurrentPage
-                    requestCursor.getPageRequest(),     // cursorPageRequest
-                    requestCursor.getPageSize(),        // cursorPageSize
+                    page.currentPage(),                 // cursorCurrentPage
+                    page.pageRequest(),                 // cursorPageRequest
+                    page.pageSizeParam(),               // cursorPageSize
                     null,                               // sortOrder
                     null                                // excludeStatuses
             );
 
             RequestResult result = new RequestResult();
-
             List<TgvalidatordRequest> requests = reply.getResult();
-            if (requests == null) {
-                result.setRequests(Collections.emptyList());
-            } else {
-                result.setRequests(verifiedRequests(requests));
-            }
-
-            result.setCursor(ApiResponseCursorMapper.INSTANCE.fromDTO(reply.getCursor()));
-
-            return result;
+            result.setRequests(requests == null ? Collections.emptyList() : verifiedRequests(requests));
+            return page.complete(result, PagedOperation.REQUESTS, reply.getCursor(), null);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
@@ -506,43 +514,47 @@ public class RequestService {
 
 
     /**
-     * Gets requests pending approval.
+     * Gets a page of requests pending approval.
      *
-     * @param cursor the request cursor for pagination
-     * @return the request result with list and response cursor
+     * @param pageSize the page size, null or 0 for the default
+     * @param cursor   a previous page's {@code getPage().getNextCursor()}, null for the first page
+     * @return the verified requests and their page
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if the page size is out of range
+     */
+    public RequestResult getRequestsForApproval(final Integer pageSize, final String cursor)
+            throws ApiException {
+        return getRequestsForApproval(Pagination.page(pageSize, cursor));
+    }
+
+    /**
+     * Gets a page of requests pending approval, with a low-level request cursor.
+     *
+     * @param cursor the request cursor, null for the first page with the default size
+     * @return the verified requests and their page
      * @throws ApiException the api exception
      */
     public RequestResult getRequestsForApproval(final ApiRequestCursor cursor) throws ApiException {
 
-        checkNotNull(cursor, "cursor cannot be null");
-
-        TgvalidatordRequestCursor requestCursor = ApiResponseCursorMapper.INSTANCE.toDTO(cursor);
+        final CursorRequest page = CursorRequest.of(cursor);
 
         try {
             TgvalidatordGetRequestsV2Reply reply = requestsApi.requestServiceGetRequestsForApprovalV2(
                     null,                               // currencyID
                     null,                               // types
                     null,                               // ids
-                    requestCursor.getCurrentPage(),     // cursorCurrentPage
-                    requestCursor.getPageRequest(),     // cursorPageRequest
-                    requestCursor.getPageSize(),        // cursorPageSize
+                    page.currentPage(),                 // cursorCurrentPage
+                    page.pageRequest(),                 // cursorPageRequest
+                    page.pageSizeParam(),               // cursorPageSize
                     null,                               // sortOrder
                     null,                               // excludeTypes
-                    null                                // statuses
+                    null                                // externalRequestIDs: the approval paginator drops it
             );
 
             RequestResult result = new RequestResult();
-
             List<TgvalidatordRequest> requests = reply.getResult();
-            if (requests == null) {
-                result.setRequests(Collections.emptyList());
-            } else {
-                result.setRequests(verifiedRequests(requests));
-            }
-
-            result.setCursor(ApiResponseCursorMapper.INSTANCE.fromDTO(reply.getCursor()));
-
-            return result;
+            result.setRequests(requests == null ? Collections.emptyList() : verifiedRequests(requests));
+            return page.complete(result, PagedOperation.REQUESTS_FOR_APPROVAL, reply.getCursor(), null);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }

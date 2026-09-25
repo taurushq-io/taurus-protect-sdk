@@ -33,7 +33,16 @@ export interface TgvalidatordGetAddressReply {
      * @memberof TgvalidatordGetAddressReply
      */
     result?: TgvalidatordAddress;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetAddressReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetAddressReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetAddressReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetAddressReplyFromJSONTyped(json: any, ignoreDiscri
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetAddressReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordAddressFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetAddressReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetAddressReplyToJSON(json: any): TgvalidatordGetAddressReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetAddressReplyFromJSONTyped(json: any, ignoreDiscri
     return {
         
         'result': TgvalidatordAddressToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

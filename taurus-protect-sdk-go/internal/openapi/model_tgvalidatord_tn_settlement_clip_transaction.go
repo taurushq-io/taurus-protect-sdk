@@ -30,7 +30,10 @@ type TgvalidatordTnSettlementClipTransaction struct {
 	Status *string `json:"status,omitempty"`
 	CreatedAt *time.Time `json:"createdAt,omitempty"`
 	WorkflowID *string `json:"workflowID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTnSettlementClipTransaction TgvalidatordTnSettlementClipTransaction
 
 // NewTgvalidatordTnSettlementClipTransaction instantiates a new TgvalidatordTnSettlementClipTransaction object
 // This constructor will assign default values to properties that have it defined,
@@ -409,7 +412,42 @@ func (o TgvalidatordTnSettlementClipTransaction) ToMap() (map[string]interface{}
 	if !IsNil(o.WorkflowID) {
 		toSerialize["workflowID"] = o.WorkflowID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTnSettlementClipTransaction) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTnSettlementClipTransaction := _TgvalidatordTnSettlementClipTransaction{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTnSettlementClipTransaction)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTnSettlementClipTransaction(varTgvalidatordTnSettlementClipTransaction)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "assetTransfer")
+		delete(additionalProperties, "requestID")
+		delete(additionalProperties, "requestMetadata")
+		delete(additionalProperties, "txHash")
+		delete(additionalProperties, "txID")
+		delete(additionalProperties, "txBlockNumber")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "createdAt")
+		delete(additionalProperties, "workflowID")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTnSettlementClipTransaction struct {

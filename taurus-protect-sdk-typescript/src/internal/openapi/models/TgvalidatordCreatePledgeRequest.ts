@@ -88,7 +88,16 @@ export interface TgvalidatordCreatePledgeRequest {
      * @memberof TgvalidatordCreatePledgeRequest
      */
     reconciliationNote?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreatePledgeRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreatePledgeRequestWireKeys: ReadonlySet<string> = new Set(['sharedAddressID', 'currencyID', 'amount', 'pledgeDurationSetup', 'pledgeType', 'keyValueAttributes', 'externalReferenceId', 'reconciliationNote']);
 
 /**
  * Check if a given object implements the TgvalidatordCreatePledgeRequest interface.
@@ -105,7 +114,7 @@ export function TgvalidatordCreatePledgeRequestFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreatePledgeRequest = {
         
         'sharedAddressID': json['sharedAddressID'] == null ? undefined : json['sharedAddressID'],
         'currencyID': json['currencyID'] == null ? undefined : json['currencyID'],
@@ -116,6 +125,16 @@ export function TgvalidatordCreatePledgeRequestFromJSONTyped(json: any, ignoreDi
         'externalReferenceId': json['externalReferenceId'] == null ? undefined : json['externalReferenceId'],
         'reconciliationNote': json['reconciliationNote'] == null ? undefined : json['reconciliationNote'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreatePledgeRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreatePledgeRequestToJSON(json: any): TgvalidatordCreatePledgeRequest {
@@ -137,6 +156,7 @@ export function TgvalidatordCreatePledgeRequestFromJSONTyped(json: any, ignoreDi
         'keyValueAttributes': value['keyValueAttributes'] == null ? undefined : ((value['keyValueAttributes'] as Array<any>).map(TgvalidatordKeyValueToJSON)),
         'externalReferenceId': value['externalReferenceId'],
         'reconciliationNote': value['reconciliationNote'],
+        ...value['additionalProperties'],
     };
 }
 

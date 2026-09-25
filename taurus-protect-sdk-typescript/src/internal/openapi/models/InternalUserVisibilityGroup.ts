@@ -37,7 +37,16 @@ export interface InternalUserVisibilityGroup {
      * @memberof InternalUserVisibilityGroup
      */
     description?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof InternalUserVisibilityGroup
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const InternalUserVisibilityGroupWireKeys: ReadonlySet<string> = new Set(['id', 'name', 'description']);
 
 /**
  * Check if a given object implements the InternalUserVisibilityGroup interface.
@@ -54,12 +63,22 @@ export function InternalUserVisibilityGroupFromJSONTyped(json: any, ignoreDiscri
     if (json == null) {
         return json;
     }
-    return {
+    const result: InternalUserVisibilityGroup = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'name': json['name'] == null ? undefined : json['name'],
         'description': json['description'] == null ? undefined : json['description'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!InternalUserVisibilityGroupWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function InternalUserVisibilityGroupToJSON(json: any): InternalUserVisibilityGroup {
@@ -76,6 +95,7 @@ export function InternalUserVisibilityGroupFromJSONTyped(json: any, ignoreDiscri
         'id': value['id'],
         'name': value['name'],
         'description': value['description'],
+        ...value['additionalProperties'],
     };
 }
 

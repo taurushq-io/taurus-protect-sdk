@@ -39,7 +39,16 @@ export interface WhitelistServiceUpdateWhitelistedContractBody {
      * @memberof WhitelistServiceUpdateWhitelistedContractBody
      */
     decimals: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof WhitelistServiceUpdateWhitelistedContractBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const WhitelistServiceUpdateWhitelistedContractBodyWireKeys: ReadonlySet<string> = new Set(['symbol', 'name', 'decimals']);
 
 /**
  * Check if a given object implements the WhitelistServiceUpdateWhitelistedContractBody interface.
@@ -59,12 +68,22 @@ export function WhitelistServiceUpdateWhitelistedContractBodyFromJSONTyped(json:
     if (json == null) {
         return json;
     }
-    return {
+    const result: WhitelistServiceUpdateWhitelistedContractBody = {
         
         'symbol': json['symbol'],
         'name': json['name'],
         'decimals': json['decimals'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!WhitelistServiceUpdateWhitelistedContractBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function WhitelistServiceUpdateWhitelistedContractBodyToJSON(json: any): WhitelistServiceUpdateWhitelistedContractBody {
@@ -81,6 +100,7 @@ export function WhitelistServiceUpdateWhitelistedContractBodyFromJSONTyped(json:
         'symbol': value['symbol'],
         'name': value['name'],
         'decimals': value['decimals'],
+        ...value['additionalProperties'],
     };
 }
 

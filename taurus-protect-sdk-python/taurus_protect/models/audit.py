@@ -7,6 +7,8 @@ from typing import Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from taurus_protect.models.pagination import CursorListOptions, CursorPage
+
 
 class Audit(BaseModel):
     """Audit event record."""
@@ -50,33 +52,42 @@ class CreateChangeRequest(BaseModel):
 
 
 class ChangeResult(BaseModel):
-    """Result of listing changes with cursor pagination."""
+    """
+    One page of changes.
+
+    Continue with ``ListChangesOptions(cursor=result.page.next_cursor)`` while
+    ``result.page.has_more`` is true.
+    """
 
     changes: List[Change] = Field(default_factory=list)
-    current_page: Optional[str] = Field(default=None)
-    has_next: bool = Field(default=False)
+    page: CursorPage = Field(default_factory=CursorPage)
 
     model_config = {"frozen": True}
 
 
-class ListChangesOptions(BaseModel):
-    """Options for listing changes."""
+class ListChangesOptions(CursorListOptions):
+    """
+    Options for listing changes. Every field reaches the wire or is refused by name.
+
+    ``page_size`` defaults to 20 and may not exceed 100; continue with
+    ``cursor=result.page.next_cursor``. The approval queue accepts neither ``status``,
+    ``creator_id`` nor ``entity_id``.
+    """
 
     entity: Optional[str] = None
+    entity_id: Optional[str] = None
     status: Optional[str] = None
     creator_id: Optional[str] = None
     sort_order: Optional[str] = None
-    page_size: Optional[int] = None
-    current_page: Optional[str] = None
-    page_request: Optional[str] = None
     entity_ids: Optional[List[str]] = None
     entity_uuids: Optional[List[str]] = None
 
 
 class Job(BaseModel):
-    """Job record."""
+    """Job record. A job is identified by its name, which is also its ``id``."""
 
-    id: str = Field(description="Unique job identifier")
+    id: str = Field(description="Unique job identifier (the job name)")
+    name: str = Field(default="", description="Job name")
     type: str = Field(default="", description="Type of the job")
     timestamp: Optional[datetime] = Field(default=None, description="When the job was created")
     description: str = Field(default="", description="Human-readable description")

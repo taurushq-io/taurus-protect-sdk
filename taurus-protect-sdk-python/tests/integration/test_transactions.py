@@ -127,11 +127,13 @@ def test_export_transactions(client: ProtectClient) -> None:
     to_date = datetime.now(timezone.utc)
     from_date = to_date - timedelta(days=30)
 
-    csv_content = client.transactions.export_csv(
+    export = client.transactions.export_csv(
         from_date=from_date,
         to_date=to_date,
         limit=10,
     )
+    csv_content = export.content
+    logger.info(f"Server matched {export.total_items} transactions")
 
     logger.info(f"Exported CSV content length: {len(csv_content)} characters")
     if csv_content:
@@ -163,10 +165,10 @@ def test_paginate_transactions(client: ProtectClient) -> None:
         )
 
         # Check if there are more items
-        if pagination is None or not pagination.has_more:
+        if not pagination.has_more:
             break
 
-        offset += page_size
+        offset = pagination.next_offset
 
     logger.info(f"Total transactions collected through pagination: {len(all_transactions)}")
 

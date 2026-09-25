@@ -49,7 +49,16 @@ export interface TgvalidatordTnPledgeStatisticsCurrency {
      * @memberof TgvalidatordTnPledgeStatisticsCurrency
      */
     incomingPledgesValuationBaseCurrency?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTnPledgeStatisticsCurrency
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTnPledgeStatisticsCurrencyWireKeys: ReadonlySet<string> = new Set(['currencyID', 'outgoingPledgesAmount', 'outgoingPledgesValuationBaseCurrency', 'incomingPledgesAmount', 'incomingPledgesValuationBaseCurrency']);
 
 /**
  * Check if a given object implements the TgvalidatordTnPledgeStatisticsCurrency interface.
@@ -66,7 +75,7 @@ export function TgvalidatordTnPledgeStatisticsCurrencyFromJSONTyped(json: any, i
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTnPledgeStatisticsCurrency = {
         
         'currencyID': json['currencyID'] == null ? undefined : json['currencyID'],
         'outgoingPledgesAmount': json['outgoingPledgesAmount'] == null ? undefined : json['outgoingPledgesAmount'],
@@ -74,6 +83,16 @@ export function TgvalidatordTnPledgeStatisticsCurrencyFromJSONTyped(json: any, i
         'incomingPledgesAmount': json['incomingPledgesAmount'] == null ? undefined : json['incomingPledgesAmount'],
         'incomingPledgesValuationBaseCurrency': json['incomingPledgesValuationBaseCurrency'] == null ? undefined : json['incomingPledgesValuationBaseCurrency'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTnPledgeStatisticsCurrencyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTnPledgeStatisticsCurrencyToJSON(json: any): TgvalidatordTnPledgeStatisticsCurrency {
@@ -92,6 +111,7 @@ export function TgvalidatordTnPledgeStatisticsCurrencyFromJSONTyped(json: any, i
         'outgoingPledgesValuationBaseCurrency': value['outgoingPledgesValuationBaseCurrency'],
         'incomingPledgesAmount': value['incomingPledgesAmount'],
         'incomingPledgesValuationBaseCurrency': value['incomingPledgesValuationBaseCurrency'],
+        ...value['additionalProperties'],
     };
 }
 

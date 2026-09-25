@@ -1,20 +1,19 @@
 package com.taurushq.sdk.protect.client.service;
 
 import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
-import com.taurushq.sdk.protect.client.mapper.ApiResponseCursorMapper;
 import com.taurushq.sdk.protect.client.mapper.AssetBalanceMapper;
 import com.taurushq.sdk.protect.client.mapper.NFTCollectionBalanceMapper;
 import com.taurushq.sdk.protect.client.model.ApiException;
 import com.taurushq.sdk.protect.client.model.ApiRequestCursor;
 import com.taurushq.sdk.protect.client.model.BalanceResult;
 import com.taurushq.sdk.protect.client.model.NFTCollectionBalanceResult;
+import com.taurushq.sdk.protect.client.model.Pagination;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import com.taurushq.sdk.protect.openapi.api.BalancesApi;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordAssetBalance;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetBalancesReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetNFTCollectionBalancesReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordNFTCollectionBalance;
-import com.taurushq.sdk.protect.openapi.model.TgvalidatordRequestCursor;
 
 import java.util.Collections;
 import java.util.List;
@@ -30,16 +29,18 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * <p>
  * Example usage:
  * <pre>{@code
- * // Get all balances with pagination
- * ApiRequestCursor cursor = Pagination.first(50);
- * BalanceResult result = client.getBalanceService().getBalances(cursor);
+ * // Get all balances, one page at a time
+ * BalanceResult result = client.getBalanceService().getBalances(null, 20, null);
+ * while (result.getPage().hasMore()) {
+ *     result = client.getBalanceService().getBalances(null, 20, result.getPage().getNextCursor());
+ * }
  *
  * // Get balances for a specific currency
- * BalanceResult ethBalances = client.getBalanceService().getBalances("ETH", cursor);
+ * BalanceResult ethBalances = client.getBalanceService().getBalances("ETH", 20, null);
  *
  * // Get NFT collection balances
  * NFTCollectionBalanceResult nfts = client.getBalanceService()
- *     .getNFTCollectionBalances("ETH", "mainnet", cursor);
+ *     .getNFTCollectionBalances("ETH", "mainnet", 20, null);
  * }</pre>
  *
  * @see BalanceResult
@@ -75,10 +76,10 @@ public class BalanceService {
 
 
     /**
-     * Gets balances for all assets.
+     * Gets a page of balances for all assets, with a low-level request cursor.
      *
-     * @param cursor the request cursor for pagination
-     * @return the balance result with list and response cursor
+     * @param cursor the request cursor, null for the first page with the default size
+     * @return the balances and their page, with the server total
      * @throws ApiException the api exception
      */
     public BalanceResult getBalances(final ApiRequestCursor cursor) throws ApiException {
@@ -87,41 +88,48 @@ public class BalanceService {
 
 
     /**
-     * Gets balances for a specific currency.
+     * Gets a page of balances, optionally for one currency.
      *
-     * @param currency the currency ID or symbol to filter by
-     * @param cursor   the request cursor for pagination
-     * @return the balance result with list and response cursor
+     * @param currency the currency ID or symbol to filter by, or null for every asset
+     * @param pageSize the page size, null or 0 for the default
+     * @param cursor   a previous page's {@code getPage().getNextCursor()}, null for the first page
+     * @return the balances and their page, with the server total
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if the page size is out of range
+     */
+    public BalanceResult getBalances(final String currency, final Integer pageSize, final String cursor)
+            throws ApiException {
+        return getBalances(currency, Pagination.page(pageSize, cursor));
+    }
+
+
+    /**
+     * Gets a page of balances, optionally for one currency, with a low-level request cursor.
+     *
+     * @param currency the currency ID or symbol to filter by, or null for every asset
+     * @param cursor   the request cursor, null for the first page with the default size
+     * @return the balances and their page, with the server total
      * @throws ApiException the api exception
      */
     public BalanceResult getBalances(final String currency, final ApiRequestCursor cursor) throws ApiException {
-        checkNotNull(cursor, "cursor cannot be null");
-
-        TgvalidatordRequestCursor requestCursor = ApiResponseCursorMapper.INSTANCE.toDTO(cursor);
+        final CursorRequest page = CursorRequest.of(cursor);
 
         try {
             TgvalidatordGetBalancesReply reply = balancesApi.walletServiceGetBalances(
                     currency,                                   // currency
-                    null,                                       // limit (deprecated)
-                    null,                                       // cursor (deprecated)
+                    null,                                       // limit: legacy, requestCursor only
+                    null,                                       // cursor: legacy, requestCursor only
                     null,                                       // tokenId
-                    requestCursor.getCurrentPage(),             // requestCursorCurrentPage
-                    requestCursor.getPageRequest(),             // requestCursorPageRequest
-                    requestCursor.getPageSize()                 // requestCursorPageSize
+                    page.currentPage(),                         // requestCursorCurrentPage
+                    page.pageRequest(),                         // requestCursorPageRequest
+                    page.pageSizeParam()                        // requestCursorPageSize
             );
 
             BalanceResult result = new BalanceResult();
-
             List<TgvalidatordAssetBalance> balances = reply.getBalances();
-            if (balances == null) {
-                result.setBalances(Collections.emptyList());
-            } else {
-                result.setBalances(AssetBalanceMapper.INSTANCE.fromDTO(balances));
-            }
-
-            result.setCursor(ApiResponseCursorMapper.INSTANCE.fromDTO(reply.getCursor()));
-
-            return result;
+            result.setBalances(balances == null
+                    ? Collections.emptyList() : AssetBalanceMapper.INSTANCE.fromDTO(balances));
+            return page.complete(result, PagedOperation.BALANCES, reply.getCursor(), reply.getTotal());
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
@@ -129,44 +137,52 @@ public class BalanceService {
 
 
     /**
-     * Gets NFT collection balances.
+     * Gets a page of NFT collection balances.
      *
-     * @param blockchain the blockchain to filter by
-     * @param network    the network to filter by
-     * @param cursor     the request cursor for pagination
-     * @return the NFT collection balance result with list and response cursor
+     * @param blockchain the blockchain to filter by (optional)
+     * @param network    the network to filter by (optional)
+     * @param pageSize   the page size, null or 0 for the default
+     * @param cursor     a previous page's {@code getPage().getNextCursor()}, null for the first page
+     * @return the NFT collection balances and their page
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if the page size is out of range
+     */
+    public NFTCollectionBalanceResult getNFTCollectionBalances(final String blockchain, final String network,
+                                                               final Integer pageSize, final String cursor)
+            throws ApiException {
+        return getNFTCollectionBalances(blockchain, network, Pagination.page(pageSize, cursor));
+    }
+
+
+    /**
+     * Gets a page of NFT collection balances, with a low-level request cursor.
+     *
+     * @param blockchain the blockchain to filter by (optional)
+     * @param network    the network to filter by (optional)
+     * @param cursor     the request cursor, null for the first page with the default size
+     * @return the NFT collection balances and their page
      * @throws ApiException the api exception
      */
     public NFTCollectionBalanceResult getNFTCollectionBalances(final String blockchain, final String network,
                                                                final ApiRequestCursor cursor) throws ApiException {
-        checkNotNull(cursor, "cursor cannot be null");
-
-        TgvalidatordRequestCursor requestCursor = ApiResponseCursorMapper.INSTANCE.toDTO(cursor);
+        final CursorRequest page = CursorRequest.of(cursor);
 
         try {
             TgvalidatordGetNFTCollectionBalancesReply reply = balancesApi.walletServiceGetNFTCollectionBalances(
                     blockchain,                                 // blockchain
                     null,                                       // query
-                    requestCursor.getCurrentPage(),             // cursorCurrentPage
-                    requestCursor.getPageRequest(),             // cursorPageRequest
-                    requestCursor.getPageSize(),                // cursorPageSize
+                    page.currentPage(),                         // cursorCurrentPage
+                    page.pageRequest(),                         // cursorPageRequest
+                    page.pageSizeParam(),                       // cursorPageSize
                     network,                                    // network
                     null                                        // onlyPositiveBalance
             );
 
-
             NFTCollectionBalanceResult result = new NFTCollectionBalanceResult();
-
             List<TgvalidatordNFTCollectionBalance> balances = reply.getBalances();
-            if (balances == null) {
-                result.setBalances(Collections.emptyList());
-            } else {
-                result.setBalances(NFTCollectionBalanceMapper.INSTANCE.fromDTO(balances));
-            }
-
-            result.setCursor(ApiResponseCursorMapper.INSTANCE.fromDTO(reply.getCursor()));
-
-            return result;
+            result.setBalances(balances == null
+                    ? Collections.emptyList() : NFTCollectionBalanceMapper.INSTANCE.fromDTO(balances));
+            return page.complete(result, PagedOperation.NFT_COLLECTION_BALANCES, reply.getCursor(), null);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }

@@ -67,7 +67,16 @@ export interface TgvalidatordCreateOutgoingXLMLiquidityPoolDepositRequestRequest
      * @memberof TgvalidatordCreateOutgoingXLMLiquidityPoolDepositRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingXLMLiquidityPoolDepositRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingXLMLiquidityPoolDepositRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'poolID', 'maxAmountAssetA', 'maxAmountAssetB', 'priceVariation', 'feeLimit', 'comment', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingXLMLiquidityPoolDepositRequestRequest interface.
@@ -88,7 +97,7 @@ export function TgvalidatordCreateOutgoingXLMLiquidityPoolDepositRequestRequestF
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingXLMLiquidityPoolDepositRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'poolID': json['poolID'],
@@ -99,6 +108,16 @@ export function TgvalidatordCreateOutgoingXLMLiquidityPoolDepositRequestRequestF
         'comment': json['comment'] == null ? undefined : json['comment'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingXLMLiquidityPoolDepositRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingXLMLiquidityPoolDepositRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingXLMLiquidityPoolDepositRequestRequest {
@@ -120,6 +139,7 @@ export function TgvalidatordCreateOutgoingXLMLiquidityPoolDepositRequestRequestF
         'feeLimit': value['feeLimit'],
         'comment': value['comment'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

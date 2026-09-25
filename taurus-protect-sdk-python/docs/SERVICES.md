@@ -1,10 +1,10 @@
 # Services Reference
 
-This document provides complete API documentation for all 43 services in the Taurus-PROTECT Python SDK.
+This document provides complete API documentation for all 44 services in the Taurus-PROTECT Python SDK.
 
 ## Service Overview
 
-The SDK provides services organized into two categories: core services (38) and TaurusNetwork services (5).
+The SDK provides services organized into two categories: core services (39) and TaurusNetwork services (5).
 
 ### Core Services
 
@@ -39,6 +39,7 @@ The SDK provides services organized into two categories: core services (38) and 
 | `AssetService` | `client.assets` | Asset information |
 | `ActionService` | `client.actions` | Action management |
 | `BlockchainService` | `client.blockchains` | Blockchain information |
+| `EarnService` | `client.earn` | Earn rewards |
 | `ExchangeService` | `client.exchanges` | Exchange integration |
 | `FiatService` | `client.fiat` | Fiat operations |
 | `FeePayerService` | `client.fee_payers` | Fee payer management |
@@ -74,23 +75,23 @@ Provides wallet management operations including creation, retrieval, and balance
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
 | `get(wallet_id)` | `wallet_id: int` | `Wallet` | Get wallet by ID |
-| `list(limit, offset)` | `limit: int = 50`, `offset: int = 0` | `Tuple[List[Wallet], Optional[Pagination]]` | List wallets |
-| `list_with_options(options)` | `options: ListWalletsOptions` | `Tuple[List[Wallet], Optional[Pagination]]` | List with full filtering |
-| `get_by_name(name, limit, offset)` | `name: str`, `limit: int`, `offset: int` | `Tuple[List[Wallet], Optional[Pagination]]` | Find wallets by name |
+| `list(limit, offset, exclude_disabled)` | `limit: Optional[int]` (20, max 100), `offset: Optional[int]`, `exclude_disabled: Optional[bool]` | `Tuple[List[Wallet], Pagination]` | List wallets |
+| `list_with_options(options)` | `options: ListWalletsOptions` | `Tuple[List[Wallet], Pagination]` | List with every filter (name, sort, tags, balance, chain, ids) |
+| `get_by_name(name, limit, offset, exclude_disabled)` | `name: str`, `limit`, `offset`, `exclude_disabled` | `Tuple[List[Wallet], Pagination]` | Find wallets by name |
 | `create(request)` | `request: CreateWalletRequest` | `Wallet` | Create wallet |
 | `create_wallet(...)` | See below | `Wallet` | Create with explicit params |
 | `create_attribute(wallet_id, key, value)` | `wallet_id: int`, `key: str`, `value: str` | `None` | Add attribute |
 | `get_balance_history(wallet_id, interval_hours)` | `wallet_id: int`, `interval_hours: int` | `List[BalanceHistoryPoint]` | Get balance history |
-| `get_tokens(wallet_id, limit)` | `wallet_id: int`, `limit: int` | `List[AssetBalance]` | Get token balances |
+| `get_tokens(wallet_id, page_size, cursor)` | `wallet_id: int`, `page_size: Optional[int]`, `cursor: Optional[str]` | `Tuple[List[AssetBalance], CursorPage]` | Get token balances, one page at a time |
 
 #### Example
 
 ```python
 from taurus_protect.models import CreateWalletRequest
 
-# List wallets
+# List wallets (continue with offset=pagination.next_offset while pagination.has_more)
 wallets, pagination = client.wallets.list(limit=50)
-print(f"Total: {pagination.total_items if pagination else len(wallets)}")
+print(f"Total: {pagination.total_items}")
 
 # Get single wallet
 wallet = client.wallets.get(123)
@@ -120,8 +121,8 @@ Provides address management with mandatory signature verification.
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
 | `get(address_id)` | `address_id: int` | `Address` | Get address (with verification) |
-| `list(wallet_id, limit, offset)` | `wallet_id: int`, `limit: int`, `offset: int` | `Tuple[List[Address], Optional[Pagination]]` | List addresses |
-| `list_with_options(options)` | `options: ListAddressesOptions` | `Tuple[List[Address], Optional[Pagination]]` | List with filtering |
+| `list(wallet_id, limit, offset, exclude_disabled)` | `wallet_id: int`, `limit: Optional[int]` (20, max 100), `offset: Optional[int]`, `exclude_disabled: Optional[bool]` | `Tuple[List[Address], Pagination]` | List addresses |
+| `list_with_options(options)` | `options: ListAddressesOptions` | `Tuple[List[Address], Pagination]` | List with filtering; `exclude_disabled` sends `includeDisabledAddresses` |
 | `create(request)` | `request: CreateAddressRequest` | `Address` | Create address |
 | `create_address(...)` | See below | `Address` | Create with explicit params |
 | `create_attribute(address_id, key, value)` | `address_id: int`, `key: str`, `value: str` | `None` | Add attribute |
@@ -163,8 +164,8 @@ Provides transaction request management with ECDSA approval signing.
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
 | `get(request_id)` | `request_id: int` | `Request` | Get request (with hash verification) |
-| `list(limit, offset, ...)` | Multiple filters | `Tuple[List[Request], Optional[Pagination]]` | List requests |
-| `get_for_approval(limit, offset)` | `limit: int`, `offset: int` | `Tuple[List[Request], Optional[Pagination]]` | Get pending approvals |
+| `list(page_size, cursor, ...)` | Filters (dates, currency, statuses, types, ids, sort) | `Tuple[List[Request], CursorPage]` | List requests (v2) |
+| `get_for_approval(page_size, cursor, ...)` | Filters (currency, types, exclude_types, ids, sort) | `Tuple[List[Request], CursorPage]` | Get pending approvals (v2); no status filter |
 | `approve_requests(requests, private_key, comment)` | `requests: List[Request]`, `private_key: EllipticCurvePrivateKey` | `int` | Approve with signature; refuses metadata whose hash was not verified |
 | `approve_request(request, private_key, comment)` | Single request | `int` | Approve single request |
 | `reject_requests(request_ids, comment)` | `request_ids: List[int]`, `comment: str` | `None` | Reject requests |
@@ -186,7 +187,7 @@ with open("key.pem", "rb") as f:
     private_key = load_pem_private_key(f.read(), password=None)
 
 # Get requests pending approval
-requests, _ = client.requests.get_for_approval(limit=10)
+requests, _ = client.requests.get_for_approval(page_size=10)
 
 # Approve with ECDSA signature
 if requests:
@@ -214,8 +215,10 @@ Provides transaction query operations.
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
 | `get(transaction_id)` | `transaction_id: int` | `Transaction` | Get transaction |
-| `list(...)` | Multiple filters | `Tuple[List[Transaction], Optional[Pagination]]` | List transactions |
-| `export(...)` | Export filters | Export response | Export transactions |
+| `list(...)` | Multiple filters | `Tuple[List[Transaction], Pagination]` | List transactions |
+| `list_by_address(address, limit, offset)` | `address: str` | `Tuple[List[Transaction], Pagination]` | List an address's transactions |
+| `export(..., limit, format)` | Export filters | `TransactionExport` | Export in one reply (no offset: the server always starts at row 0) |
+| `export_csv(..., limit)` | Export filters | `TransactionExport` | `export` with `format="csv"` |
 
 #### Example
 
@@ -238,8 +241,8 @@ Provides balance query operations.
 
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
-| `list(...)` | Filters | `Tuple[List[Balance], Optional[Pagination]]` | List balances |
-| `get_totals(...)` | Filters | `BalanceTotals` | Get balance totals |
+| `list(currency, page_size, cursor, token_id)` | Filters | `Tuple[List[AssetBalance], CursorPage]` | List balances (request cursor; the page carries the total) |
+| `list_nft_collections(blockchain, network, page_size, cursor, ...)` | Filters | `Tuple[List[NFTCollectionBalance], CursorPage]` | List NFT collection balances |
 
 ---
 
@@ -258,7 +261,7 @@ Provides governance rules with SuperAdmin signature verification.
 | `get_rules()` | None | `Optional[GovernanceRules]` | Get current governance rules |
 | `get_rules_by_id(rules_id)` | `rules_id: str` | `Optional[GovernanceRules]` | Get governance rules by ID |
 | `get_rules_proposal()` | None | `Optional[GovernanceRules]` | Get proposed governance rules |
-| `get_rules_history(page_size, cursor)` | `page_size: int = 50`, `cursor: Optional[bytes] = None` | `Tuple[List[GovernanceRules], Optional[bytes]]` | Get governance rules history |
+| `get_rules_history(page_size, cursor)` | `page_size: Optional[int]` (20, max 100), `cursor: Optional[str]` | `GovernanceRulesHistoryResult` | Get governance rules history; `result.page` continues the walk |
 | `get_public_keys()` | None | `List[SuperAdminPublicKey]` | Get SuperAdmin public keys |
 | `get_decoded_rules_container(rules)` | `rules: GovernanceRules` | `DecodedRulesContainer` | Decode rules container from governance rules |
 | `verify_governance_rules(rules)` | `rules: GovernanceRules` | `GovernanceRules` | Verify SuperAdmin signatures on rules |
@@ -346,8 +349,8 @@ whitelisted asset and a whitelisted contract are one server entity, and
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
 | `get(asset_id)` | `asset_id: int` | `WhitelistedAsset` | Get with verification |
-| `list(...)` | Filters | `Tuple[List[WhitelistedAsset], Optional[Pagination]]` | List assets |
-| `list_for_approval(ids, limit, offset)` | `ids: Optional[List[str]]`, `limit: int = 50`, `offset: int = 0` | `Tuple[List[WhitelistedAsset], Optional[Pagination]]` | List assets awaiting approval, verified as in `list` |
+| `list(...)` | Filters | `Tuple[List[WhitelistedAsset], Pagination]` | List assets; a short page is not the end, follow `has_more` |
+| `list_for_approval(ids, limit, offset)` | `ids: Optional[List[str]]`, `limit: Optional[int]` (20, max 100), `offset: Optional[int]` | `Tuple[List[WhitelistedAsset], Pagination]` | List assets awaiting approval, verified as in `list` |
 | `approve(selection, private_key, comment)` | `selection: WhitelistedAssetApproval`, `private_key`, `comment: str` | `None` | Sign an approval, all-or-nothing, pinned to the reviewed rows |
 
 `list_for_approval` exists here because the for-approval read used to live only on the
@@ -421,14 +424,14 @@ Provides audit event query operations.
 
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
-| `list(limit, offset)` | `limit: int = 50`, `offset: int = 0` | `Tuple[List[Audit], Optional[Pagination]]` | List audit events |
-| `get(audit_id)` | `audit_id: str` | `Audit` | Get audit event by ID |
+| `list(page_size, cursor, ...)` | Filters (user, entities, actions, dates, sort) | `Tuple[List[Audit], CursorPage]` | List audit events |
+| `get(audit_id)` | `audit_id: str` | `Audit` | Get audit event by ID (walks the pages) |
 
 #### Example
 
 ```python
 # List audit events
-audits, pagination = client.audits.list(limit=50)
+audits, page = client.audits.list(page_size=50)
 for audit in audits:
     print(f"{audit.id}: {audit.description}")
 ```
@@ -445,7 +448,8 @@ Provides configuration change tracking and approval operations.
 
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
-| `list(limit, offset)` | `limit: int = 50`, `offset: int = 0` | `Tuple[List[Change], Optional[Pagination]]` | List changes |
+| `list(options)` | `options: ListChangesOptions` | `ChangeResult` | List changes; `result.page` continues the walk |
+| `list_for_approval(options)` | `options: ListChangesOptions` | `ChangeResult` | List changes pending approval |
 | `get(change_id)` | `change_id: str` | `Change` | Get change by ID |
 | `approve_change(change_id)` | `change_id: str` | `None` | Approve a change |
 | `approve_changes(change_ids)` | `change_ids: List[str]` | `None` | Approve multiple changes |
@@ -455,9 +459,9 @@ Provides configuration change tracking and approval operations.
 #### Example
 
 ```python
-# List pending changes
-changes, pagination = client.changes.list(limit=50)
-for change in changes:
+# List changes
+result = client.changes.list(ListChangesOptions(page_size=50))
+for change in result.changes:
     print(f"{change.id}: {change.description}")
 
 # Approve a change
@@ -501,7 +505,7 @@ Provides cryptocurrency price data.
 **Access:** `client.prices`
 
 `rate` and `decimals` feed amount conversion, so an unverified price is a wrong number a
-caller acts on. `get_current` verifies each price against the `PRICEUPDATER` keys in the
+caller acts on. `get_current` lists through `QueryPricesV2` and verifies each price against the `PRICEUPDATER` keys in the
 SuperAdmin-verified rules container, which is why the service takes the cache as a mandatory
 parameter. Whether prices must be signed is the **container's** call: no `PRICEUPDATER`
 configured means this tenant does not sign prices and the price passes through; a
@@ -511,14 +515,14 @@ configured means this tenant does not sign prices and the price passes through; 
 
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
-| `get_current(currency)` | `currency: Optional[str] = None` | `List[Price]` | Get current prices |
-| `get_historical(base_currency, quote_currency, limit)` | `base_currency: str`, `quote_currency: str`, `limit: Optional[int]` | `List[PriceHistoryPoint]` | Get historical prices |
+| `get_current(*, from_currency_id, to_currency_ids, only_primary, sort_order, page_size, cursor)` | Keyword-only filters | `Tuple[List[Price], CursorPage]` | List current prices (from / fromTo / to filter) |
+| `get_historical(base_currency, quote_currency, limit)` | `base_currency: str`, `quote_currency: str`, `limit: Optional[int]` (20, max 365) | `List[PriceHistoryPoint]` | Get historical prices (one reply) |
 
 #### Example
 
 ```python
-# Get all current prices
-prices = client.prices.get_current()
+# Current prices quoted from one currency
+prices, page = client.prices.get_current(from_currency_id="<currency-id>", page_size=100)
 for price in prices:
     print(f"{price.currency_from}/{price.currency_to}: {price.rate}")
 
@@ -566,14 +570,14 @@ Provides multi-chain staking information including validators and staking positi
 
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
-| `list_validators(blockchain, network, limit, offset)` | `blockchain: str`, `network: str = "mainnet"`, `limit: int = 50`, `offset: int = 0` | `Tuple[List[Validator], Optional[Pagination]]` | List validators |
+| `list_validators(blockchain, network, *, ids)` | `blockchain: str`, `network: str = "mainnet"`, `ids: Optional[List[str]]` | `List[Validator]` | Every validator (ETH only; the endpoint does not page) |
 | `get_staking_info(address_id)` | `address_id: int` | `StakingInfo` | Get staking info for address |
 
 #### Example
 
 ```python
 # List ETH validators
-validators, pagination = client.staking.list_validators(blockchain="ETH", limit=50)
+validators = client.staking.list_validators(blockchain="ETH")
 for v in validators:
     print(f"{v.name}: {v.commission}% commission")
 
@@ -593,13 +597,13 @@ Provides smart contract whitelisting **WRITE** operations.
 > **Reads live on `client.whitelisted_assets`.** A whitelisted contract and a whitelisted
 > asset are one server entity (`/whitelists/contracts`); the `get`/`list` that used to sit here
 > returned the DTO with no verification, which made the verified reader avoidable.
+> There is no `delete`: the endpoint is deprecated with no replacement and cannot succeed.
 
 #### Methods
 
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
 | `create(address, name, blockchain, network, abi)` | `address: str`, `name: str`, `blockchain: str`, `network: Optional[str]`, `abi: Optional[str]` | `int` | Create whitelisted contract |
-| `delete(contract_id)` | `contract_id: int` | `None` | Delete whitelisted contract |
 | `approve_whitelisted_contracts(contract_ids, signature, comment)` | `contract_ids: List[str]`, `signature: str`, `comment: Optional[str]` | `None` | **Deprecated** — signature is an opaque blob over unverified hashes; use `whitelisted_assets.approve` |
 | `create_attribute(contract_id, key, value)` | `contract_id: str`, `key: str`, `value: str` | `None` | Add attribute |
 | `get_attribute(contract_id, key)` | `contract_id: str`, `key: str` | `Optional[str]` | Get attribute value |
@@ -632,16 +636,22 @@ Provides business rule management for custom transaction validation logic.
 
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
-| `get(rule_id)` | `rule_id: int` | `BusinessRule` | Get business rule by ID |
-| `list(limit, offset)` | `limit: int = 50`, `offset: int = 0` | `Tuple[List[BusinessRule], Optional[Pagination]]` | List business rules |
+| `list(page_size, current_page, page_request, ..., cursor)` | Filters | `BusinessRuleResult` | List business rules (v2); `result.page` continues the walk |
+| `list_by_wallet(wallet_id, ...)` | `wallet_id: int` | `BusinessRuleResult` | Rules of one wallet |
+| `list_by_currency(currency_id, ...)` | `currency_id: str` | `BusinessRuleResult` | Rules of one currency |
 
 #### Example
 
 ```python
-# List business rules
-rules, pagination = client.business_rules.list()
-for rule in rules:
-    print(f"{rule.name}: {'enabled' if rule.enabled else 'disabled'}")
+# Walk every business rule
+cursor = None
+while True:
+    result = client.business_rules.list(page_size=100, cursor=cursor)
+    for rule in result.rules:
+        print(f"{rule.rule_key}: {rule.rule_value}")
+    if not result.page.has_more:
+        break
+    cursor = result.page.next_cursor
 ```
 
 ---
@@ -657,19 +667,15 @@ Provides balance reservation management for pending transactions.
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
 | `get(reservation_id)` | `reservation_id: int` | `Reservation` | Get reservation by ID |
-| `list(wallet_id, limit, offset)` | `wallet_id: Optional[int]`, `limit: int = 50`, `offset: int = 0` | `Tuple[List[Reservation], Optional[Pagination]]` | List reservations |
-| `cancel(reservation_id)` | `reservation_id: int` | `None` | Cancel a reservation |
+| `list(page_size, cursor, *, kind, kinds, address, address_id)` | Filters | `Tuple[List[Reservation], CursorPage]` | List reservations |
 
 #### Example
 
 ```python
-# List reservations for a wallet
-reservations, pagination = client.reservations.list(wallet_id=123)
+# List the reservations on an address
+reservations, page = client.reservations.list(address_id="123")
 for r in reservations:
-    print(f"{r.id}: {r.amount} {r.currency} ({r.status})")
-
-# Cancel a reservation
-client.reservations.cancel(reservation_id=456)
+    print(f"{r.id}: {r.amount} {r.currency} ({r.kind})")
 ```
 
 ---
@@ -752,9 +758,11 @@ Provides user management operations.
 |--------|------------|---------|-------------|
 | `get(user_id)` | `user_id: str` | `User` | Get user by ID |
 | `get_current()` | None | `User` | Get current authenticated user |
-| `list(limit, offset)` | `limit: int = 50`, `offset: int = 0` | `Tuple[List[User], Optional[Pagination]]` | List users |
-| `get_users_by_email(emails)` | `emails: List[str]` | `List[User]` | Get users by email addresses |
+| `list(limit, offset)` | `limit: Optional[int]` (20, max 100), `offset: Optional[int]` | `Tuple[List[User], Pagination]` | List users |
+| `get_users_by_email(emails)` | `emails: List[str]` | `List[User]` | Get users by email addresses (reads every page) |
 | `create_user_attribute(user_id, key, value)` | `user_id: str`, `key: str`, `value: str` | `None` | Create user attribute |
+
+`get_current()`, `list()` and `get_users_by_email()` compute `enforced_in_rules` (user and group memberships); only `get_current()` computes `public_key_enforced_in_rules`. A flag the endpoint does not compute, such as every flag on `get()`, is `None`, not `False`.
 
 #### Example
 
@@ -782,7 +790,9 @@ Provides user group management operations.
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
 | `get(group_id)` | `group_id: str` | `Group` | Get group by ID |
-| `list(limit, offset)` | `limit: int = 50`, `offset: int = 0` | `Tuple[List[Group], Optional[Pagination]]` | List groups |
+| `list(limit, offset)` | `limit: Optional[int]` (20, max 100), `offset: Optional[int]` | `Tuple[List[Group], Pagination]` | List groups |
+
+`get()` and `list()` compute `enforced_in_rules` for the group and each of its users.
 
 #### Example
 
@@ -806,14 +816,14 @@ Provides visibility group management for controlling resource access.
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
 | `get(group_id)` | `group_id: str` | `VisibilityGroup` | Get visibility group by ID |
-| `list(limit, offset)` | `limit: int = 50`, `offset: int = 0` | `Tuple[List[VisibilityGroup], Optional[Pagination]]` | List visibility groups |
+| `list()` | None | `List[VisibilityGroup]` | Every visibility group (the endpoint does not page) |
 | `get_users(group_id)` | `group_id: str` | `List[Any]` | Get users in a visibility group |
 
 #### Example
 
 ```python
 # List visibility groups
-groups, pagination = client.visibility_groups.list()
+groups = client.visibility_groups.list()
 for group in groups:
     print(f"{group.name}: {group.user_count} users")
 ```
@@ -858,8 +868,8 @@ Provides webhook management for event notifications.
 
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
-| `list(limit, offset)` | `limit: int = 50`, `offset: int = 0` | `Tuple[List[Webhook], Optional[Pagination]]` | List webhooks |
-| `get(webhook_id)` | `webhook_id: str` | `Webhook` | Get webhook by ID |
+| `list(page_size, cursor, *, type, url, sort_order)` | Filters | `Tuple[List[Webhook], CursorPage]` | List webhooks |
+| `get(webhook_id)` | `webhook_id: str` | `Webhook` | Get webhook by ID (walks the pages) |
 | `create(url, events)` | `url: str`, `events: List[str]` | `Webhook` | Create webhook |
 | `delete(webhook_id)` | `webhook_id: str` | `None` | Delete webhook |
 
@@ -874,7 +884,7 @@ webhook = client.webhooks.create(
 print(f"Created webhook: {webhook.id}")
 
 # List webhooks
-webhooks, pagination = client.webhooks.list()
+webhooks, page = client.webhooks.list()
 for wh in webhooks:
     print(f"{wh.id}: {wh.url} ({wh.status})")
 
@@ -894,9 +904,9 @@ Provides webhook call history and delivery status tracking.
 
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
-| `get_webhook_calls(event_id, webhook_id, status, sort_order, cursor)` | All optional filters | `WebhookCallResult` | Get webhook calls with filtering |
-| `list(webhook_id, event_id, status, sort_order, limit, cursor)` | Optional filters, `limit: int = 50` | `Tuple[List[WebhookCall], Optional[Pagination]]` | List webhook calls |
-| `get(call_id)` | `call_id: str` | `WebhookCall` | Get webhook call by ID |
+| `get_webhook_calls(event_id, webhook_id, status, sort_order, cursor, page_size)` | Optional filters; `cursor` is a `next_cursor` or an `ApiRequestCursor` | `WebhookCallResult` | Get webhook calls; `result.page` continues the walk |
+| `list(webhook_id, event_id, status, sort_order, page_size, cursor)` | Optional filters | `Tuple[List[WebhookCall], CursorPage]` | List webhook calls |
+| `get(call_id)` | `call_id: str` | `WebhookCall` | Get webhook call by ID (walks the pages) |
 
 #### Example
 
@@ -907,7 +917,7 @@ for call in result.calls:
     print(f"{call.id}: {call.status}")
 
 # List failed calls
-calls, pagination = client.webhook_calls.list(status="FAILED", limit=50)
+calls, page = client.webhook_calls.list(status="FAILED", page_size=50)
 ```
 
 ---
@@ -923,7 +933,7 @@ Provides tag management for organizing entities.
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
 | `get(tag_id)` | `tag_id: str` | `Tag` | Get tag by ID |
-| `list(limit, offset)` | `limit: int = 50`, `offset: int = 0` | `List[Tag]` | List tags |
+| `list(*, query, ids)` | `query: Optional[str]`, `ids: Optional[List[str]]` | `List[Tag]` | Every matching tag (the endpoint does not page) |
 | `create(name, color)` | `name: str`, `color: str` | `Tag` | Create tag |
 | `delete(tag_id)` | `tag_id: str` | `None` | Delete tag |
 
@@ -953,22 +963,47 @@ Provides asset information and balance queries across wallets and addresses.
 returning it unverified made `AddressService`'s mandatory verification avoidable. It also
 returns domain `Address` objects rather than the raw generated DTOs it used to.
 
+The rows of `query_asset_addresses` (v2) carry no signature, so each page is confirmed through
+the verified readers: an `ADDRESS_TYPE_V2_INTERNAL` row by re-reading its `address_id` through
+the HSM-verified managed-address list (at most 50 ids per request), an
+`ADDRESS_TYPE_V2_WHITELISTED` row by re-reading its `whitelisted_address_id` through the
+6-step whitelist list (at most 100 ids per request). A row is kept only when the verified
+address with that id has the same address string; it then carries `verified=True` and the
+verified address. Any other row (EXTERNAL, untyped) is returned with `verified=False`: on-chain
+data, never a Taurus-PROTECT address. A row that cannot be confirmed is excluded and named in
+`excluded_unverified` (`{id, reason}`); rows came back but none survived raises
+`IntegrityError`, and a verified reader's own failure aborts the call. Exclusions never move
+the cursor, and a page with no INTERNAL/WHITELISTED rows makes no extra request.
+
 #### Methods
 
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
-| `list(limit, offset)` | `limit: int = 50`, `offset: int = 0` | `Tuple[List[Asset], Optional[Pagination]]` | List assets |
-| `get(asset_id)` | `asset_id: str` | `Asset` | Get asset by ID |
-| `get_wallets(currency, limit, offset)` | `currency: str`, `limit: int = 50`, `offset: int = 0` | `Tuple[List[Any], Optional[Pagination]]` | Get wallet balances for an asset |
-| `get_addresses(currency, limit, offset)` | `currency: str`, `limit: int = 50`, `offset: int = 0` | `Tuple[List[Address], Optional[Pagination]]` | Get address balances for an asset, HSM-verified |
+| `list(currency, page_size, cursor)` | `currency: str` | `Tuple[List[Wallet], CursorPage]` | The wallets holding an asset (same as `get_wallets`) |
+| `get(asset_id)` | `asset_id: str` | `Asset` | Get asset by currency; `NotFoundError` when no address holds it |
+| `get_wallets(currency, page_size, cursor, *, wallet_id, wallet_name)` | `currency: str` | `Tuple[List[Wallet], CursorPage]` | Wallets holding an asset (request cursor, with total) |
+| `get_addresses(currency, page_size, cursor, *, wallet_id, address_id, addresses)` | `currency: str` | `Tuple[List[Address], CursorPage]` | Addresses holding an asset, HSM-verified |
+| `query_assets(*, blockchain, network, symbol, contract_address, label, currency_name, page_size, cursor)` | Filters | `Tuple[List[AssetV2], CursorPage]` | Asset definitions (v2) |
+| `query_asset_addresses(asset_id, *, address_type, kyc_status, page_size, cursor)` | `asset_id: str` | `QueryAssetAddressesResult` | Addresses holding a v2 asset; INTERNAL/WHITELISTED rows verified, the rest `verified=False` |
+| `list_asset_operations(asset_id, *, type, status, page_size, cursor)` | `asset_id: str` | `Tuple[List[AssetOperationV2], CursorPage]` | Operations of a v2 asset |
 
 #### Example
 
 ```python
-# List assets
-assets, pagination = client.assets.list(limit=50)
-for asset in assets:
-    print(f"{asset.symbol}: {asset.name}")
+# Wallets holding ETH
+wallets, page = client.assets.get_wallets("ETH", page_size=50)
+for wallet in wallets:
+    print(f"{wallet.name}: {wallet.balance}")
+
+# v2 asset definitions
+assets, page = client.assets.query_assets(blockchain="CANTON", page_size=50)
+
+# Holders of a v2 asset: only verified rows are Taurus-PROTECT addresses
+holders = client.assets.query_asset_addresses(assets[0].id, page_size=50)
+for holder in holders.addresses:
+    print(holder.address, holder.address_type, holder.verified)
+for excluded in holders.excluded_unverified:
+    print(f"withheld {excluded.id}: {excluded.reason}")
 
 # Get asset by ID
 asset = client.assets.get("BTC")
@@ -988,7 +1023,7 @@ Provides action management operations for pending or completed operations.
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
 | `get(action_id)` | `action_id: str` | `Action` | Get action by ID |
-| `list(limit, offset)` | `limit: int = 50`, `offset: int = 0` | `Tuple[List[Action], Optional[Pagination]]` | List actions |
+| `list(limit, offset)` | `limit: Optional[int]` (20, max 100), `offset: Optional[int]` | `Tuple[List[Action], Pagination]` | List actions |
 
 #### Example
 
@@ -1040,7 +1075,7 @@ Provides exchange account integration and management.
 
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
-| `list(limit, offset, currency_id, exchange_label, status, only_positive_balance)` | Multiple filters | `Tuple[List[Exchange], Optional[Pagination]]` | List exchange accounts |
+| `list(page_size, cursor, currency_id, exchange_label, status, only_positive_balance, *, sort_order, include_base_currency_valuation)` | Multiple filters | `Tuple[List[Exchange], CursorPage]` | List exchange accounts |
 | `get(exchange_id)` | `exchange_id: str` | `Exchange` | Get exchange account by ID |
 | `list_counterparties()` | None | `List[Any]` | List exchange counterparties |
 | `get_withdrawal_fee(exchange_id, to_address_id, amount)` | `exchange_id: str`, `to_address_id: Optional[str]`, `amount: Optional[str]` | `Any` | Get withdrawal fees |
@@ -1049,12 +1084,34 @@ Provides exchange account integration and management.
 
 ```python
 # List exchange accounts
-exchanges, pagination = client.exchanges.list(limit=50)
+exchanges, page = client.exchanges.list(page_size=50)
 for exchange in exchanges:
     print(f"{exchange.name} ({exchange.exchange_label}): {exchange.balance}")
 
 # Get withdrawal fee
 fee = client.exchanges.get_withdrawal_fee(exchange_id="123")
+```
+
+---
+
+### EarnService
+
+Provides earn rewards.
+
+**Access:** `client.earn`
+
+#### Methods
+
+| Method | Parameters | Returns | Description |
+|--------|------------|---------|-------------|
+| `list_rewards(recipient_address_id, page_size, cursor)` | `recipient_address_id: Optional[str]` | `Tuple[List[EarnReward], CursorPage]` | List earn rewards |
+
+#### Example
+
+```python
+rewards, page = client.earn.list_rewards(page_size=100)
+for reward in rewards:
+    print(f"{reward.recipient_address}: {reward.amount} {reward.token_symbol}")
 ```
 
 ---
@@ -1069,7 +1126,8 @@ Provides fiat currency operations including provider accounts and exchange rates
 
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
-| `list(limit, offset)` | `limit: int = 50`, `offset: int = 0` | `Tuple[List[FiatProviderAccount], Optional[Pagination]]` | List fiat provider accounts |
+| `list_fiat_provider_accounts(provider, label, page_size, cursor, *, account_type, sort_order)` | `provider: str`, `label: str` | `Tuple[List[FiatProviderAccount], CursorPage]` | List a provider's accounts |
+| `list_fiat_provider_entities(provider, label, page_size, cursor, *, sort_order)` | Optional filters | `Tuple[List[FiatProviderEntity], CursorPage]` | List fiat provider entities |
 | `get_account(account_id)` | `account_id: str` | `FiatProviderAccount` | Get fiat provider account |
 | `get_base_currency()` | None | `FiatCurrency` | Get configured base currency |
 | `get_rate(from_currency, to_currency)` | `from_currency: str`, `to_currency: str` | `ExchangeRate` | Get exchange rate |
@@ -1078,8 +1136,8 @@ Provides fiat currency operations including provider accounts and exchange rates
 #### Example
 
 ```python
-# List fiat provider accounts
-accounts, pagination = client.fiat.list()
+# List a provider's fiat accounts
+accounts, page = client.fiat.list_fiat_provider_accounts("provider", "label")
 for account in accounts:
     print(f"{account.name}: {account.balance} {account.currency_code}")
 
@@ -1100,7 +1158,7 @@ Provides fee payer management for sponsored transactions.
 
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
-| `list(limit, offset, blockchain, network)` | `limit: int = 50`, `offset: int = 0`, `blockchain: Optional[str]`, `network: Optional[str]` | `Tuple[List[FeePayer], Optional[Pagination]]` | List fee payers |
+| `list(limit, offset, blockchain, network)` | `limit: Optional[int]` (20, max 100), `offset: Optional[int]`, `blockchain: Optional[str]`, `network: Optional[str]` | `Tuple[List[FeePayer], Pagination]` | List fee payers |
 | `get(fee_payer_id)` | `fee_payer_id: str` | `FeePayer` | Get fee payer by ID |
 
 #### Example
@@ -1152,16 +1210,16 @@ Provides background job management and monitoring.
 
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
-| `list(limit, offset)` | `limit: int = 50`, `offset: int = 0` | `Tuple[List[Job], Optional[Pagination]]` | List jobs |
+| `list()` | None | `List[Job]` | Every job (the endpoint does not page) |
 | `get(job_id)` | `job_id: str` | `Job` | Get job by ID |
 
 #### Example
 
 ```python
 # List jobs
-jobs, pagination = client.jobs.list(limit=50)
+jobs = client.jobs.list()
 for job in jobs:
-    print(f"{job.id}: {job.description}")
+    print(job.name)
 ```
 
 ---
@@ -1339,7 +1397,7 @@ Provides pledge lifecycle management with ECDSA approval signing.
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
 | `get_pledge(pledge_id)` | `pledge_id: str` | `Pledge` | Get pledge |
-| `list_pledges(opts)` | `opts: ListPledgesOptions` | `Tuple[List[Pledge], Optional[Pagination]]` | List pledges |
+| `list_pledges(opts)` | `opts: ListPledgesOptions` | `Tuple[List[Pledge], CursorPage]` | List pledges |
 | `create_pledge(req)` | `req: CreatePledgeRequest` | `Tuple[Pledge, PledgeAction]` | Create pledge |
 | `update_pledge(pledge_id, req)` | `pledge_id: str`, `req: UpdatePledgeRequest` | `Pledge` | Update pledge |
 | `add_pledge_collateral(pledge_id, req)` | `pledge_id: str`, `req: AddPledgeCollateralRequest` | `Tuple[Pledge, PledgeAction]` | Add collateral |
@@ -1347,11 +1405,11 @@ Provides pledge lifecycle management with ECDSA approval signing.
 | `initiate_withdraw_pledge(pledge_id, req)` | `pledge_id: str`, `req: InitiateWithdrawPledgeRequest` | `Tuple[PledgeWithdrawal, PledgeAction]` | Initiate withdrawal (pledgor) |
 | `unpledge(pledge_id)` | `pledge_id: str` | `Tuple[Pledge, PledgeAction]` | Unpledge all funds |
 | `reject_pledge(pledge_id, req)` | `pledge_id: str`, `req: RejectPledgeRequest` | `Pledge` | Reject pledge |
-| `list_pledge_actions(opts)` | `opts: ListPledgeActionsOptions` | `Tuple[List[PledgeAction], Optional[Pagination]]` | List actions |
-| `list_pledge_actions_for_approval(opts)` | `opts: ListPledgeActionsOptions` | `Tuple[List[PledgeAction], Optional[Pagination]]` | Get pending actions |
+| `list_pledge_actions(opts)` | `opts: ListPledgeActionsOptions` | `Tuple[List[PledgeAction], CursorPage]` | List actions (hash verified) |
+| `list_pledge_actions_for_approval(opts)` | `opts: ListPledgeActionsOptions` | `Tuple[List[PledgeAction], CursorPage]` | Get pending actions (hash verified) |
 | `approve_pledge_actions(actions, private_key, comment)` | `actions: List[PledgeAction]`, `private_key` | `int` | Approve with signature |
 | `reject_pledge_actions(req)` | `req: RejectPledgeActionsRequest` | `int` | Reject actions |
-| `list_pledge_withdrawals(opts)` | `opts: ListPledgeWithdrawalsOptions` | `Tuple[List[PledgeWithdrawal], Optional[Pagination]]` | List withdrawals |
+| `list_pledge_withdrawals(opts)` | `opts: ListPledgeWithdrawalsOptions` | `Tuple[List[PledgeWithdrawal], CursorPage]` | List withdrawals |
 
 #### Example
 
@@ -1390,11 +1448,12 @@ Provides lending offer and agreement management.
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
 | `get_lending_offer(offer_id)` | `offer_id: str` | `LendingOffer` | Get offer |
-| `list_lending_offers(opts)` | `opts: ListLendingOffersOptions` | `Tuple[List[LendingOffer], Optional[Pagination]]` | List offers |
+| `list_lending_offers(opts)` | `opts: ListLendingOffersOptions` | `Tuple[List[LendingOffer], CursorPage]` | List offers |
 | `create_lending_offer(req)` | `req: CreateLendingOfferRequest` | `LendingOffer` | Create offer |
 | `cancel_lending_offer(offer_id)` | `offer_id: str` | `LendingOffer` | Cancel offer |
 | `get_lending_agreement(agreement_id)` | `agreement_id: str` | `LendingAgreement` | Get agreement |
-| `list_lending_agreements(opts)` | `opts: ListLendingAgreementsOptions` | `Tuple[List[LendingAgreement], Optional[Pagination]]` | List agreements |
+| `list_lending_agreements(opts)` | `opts: ListLendingAgreementsOptions` | `Tuple[List[LendingAgreement], CursorPage]` | List agreements |
+| `list_lending_agreements_for_approval(opts)` | `opts: ListLendingAgreementsOptions` | `Tuple[List[LendingAgreement], CursorPage]` | List agreements pending approval (`ids` filter) |
 | `accept_lending_offer(offer_id, req)` | `offer_id: str`, `req: AcceptLendingOfferRequest` | `LendingAgreement` | Accept offer |
 | `repay_lending_agreement(agreement_id, req)` | `agreement_id: str`, `req: RepayLendingAgreementRequest` | `LendingAgreement` | Repay loan |
 
@@ -1429,7 +1488,8 @@ Provides settlement operations for Taurus Network.
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
 | `get_settlement(settlement_id)` | `settlement_id: str` | `Settlement` | Get settlement |
-| `list_settlements(opts)` | `opts: ListSettlementsOptions` | `Tuple[List[Settlement], Optional[Pagination]]` | List settlements |
+| `list_settlements(opts)` | `opts: ListSettlementsOptions` | `Tuple[List[Settlement], CursorPage]` | List settlements |
+| `list_settlements_for_approval(opts)` | `opts: ListSettlementsForApprovalOptions` | `Tuple[List[Settlement], CursorPage]` | List settlements pending approval |
 | `create_settlement(req)` | `req: CreateSettlementRequest` | `Settlement` | Create settlement |
 | `approve_settlement(settlement_id)` | `settlement_id: str` | `Settlement` | Approve settlement |
 | `reject_settlement(settlement_id, comment)` | `settlement_id: str`, `comment: str` | `Settlement` | Reject settlement |
@@ -1455,10 +1515,10 @@ Provides address and asset sharing operations.
 
 | Method | Parameters | Returns | Description |
 |--------|------------|---------|-------------|
-| `list_shared_addresses(opts)` | `opts: ListSharedAddressesOptions` | `Tuple[List[SharedAddress], Optional[Pagination]]` | List shared addresses |
+| `list_shared_addresses(opts)` | `opts: ListSharedAddressesOptions` | `Tuple[List[SharedAddress], CursorPage]` | List shared addresses |
 | `create_shared_address(req)` | `req: CreateSharedAddressRequest` | `SharedAddress` | Share an address |
 | `revoke_shared_address(address_id)` | `address_id: str` | `None` | Revoke sharing |
-| `list_shared_assets(opts)` | `opts: ListSharedAssetsOptions` | `Tuple[List[SharedAsset], Optional[Pagination]]` | List shared assets |
+| `list_shared_assets(opts)` | `opts: ListSharedAssetsOptions` | `Tuple[List[SharedAsset], CursorPage]` | List shared assets |
 | `create_shared_asset(req)` | `req: CreateSharedAssetRequest` | `SharedAsset` | Share an asset |
 | `revoke_shared_asset(asset_id)` | `asset_id: str` | `None` | Revoke sharing |
 
@@ -1526,37 +1586,50 @@ except APIError as e:
 
 ## Pagination Patterns
 
-### Offset-Based Pagination
+Page sizes default to 20 and may not exceed 100 (`DEFAULT_PAGE_SIZE` / `MAX_PAGE_SIZE`);
+above 100 or negative raises `ValueError` before any request. See
+[Key Concepts](CONCEPTS.md#pagination-model) for the contract.
 
-Most services use offset-based pagination:
+### Offset lists
+
+Continue with `offset=pagination.next_offset` while `pagination.has_more`; never compute the
+next offset yourself.
 
 ```python
 all_wallets = []
 offset = 0
-limit = 50
 
 while True:
-    wallets, pagination = client.wallets.list(limit=limit, offset=offset)
+    wallets, pagination = client.wallets.list(limit=100, offset=offset)
     all_wallets.extend(wallets)
-
-    if pagination is None or offset + limit >= pagination.total_items:
+    if not pagination.has_more:
         break
-    offset += limit
+    offset = pagination.next_offset
+```
+
+### Cursor lists
+
+Continue with `cursor=page.next_cursor` while `page.has_more`.
+
+```python
+cursor = None
+while True:
+    balances, page = client.balances.list(page_size=100, cursor=cursor)
+    for balance in balances:
+        print(balance)
+    if not page.has_more:
+        break
+    cursor = page.next_cursor
 ```
 
 ### Options-Based Pagination
 
-For advanced filtering:
+For advanced filtering, the page window rides on the options:
 
 ```python
 from taurus_protect.models import ListWalletsOptions
 
-options = ListWalletsOptions(
-    currency="ETH",
-    exclude_disabled=True,
-    limit=50,
-    offset=0,
-)
+options = ListWalletsOptions(currency="ETH", exclude_disabled=True, limit=50)
 wallets, pagination = client.wallets.list_with_options(options)
 ```
 
@@ -1577,12 +1650,12 @@ Generated from the python source by `scripts/api-surface/docs.py`; regenerate wi
 `./build.sh docs`. Every method below exists in the SDK, and `./build.sh docs --check`
 fails if this list drifts or if the prose above documents a method that does not.
 
-43 services, 206 public methods.
+44 services, 210 public methods.
 
 ### ActionService
 
 - `get(action_id: 'str') -> 'Action'` — Get an action by ID.
-- `list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Action], Optional[Pagination]]'` — List actions with pagination.
+- `list(limit: 'Optional[int]' = None, offset: 'Optional[int]' = None) -> 'Tuple[List[Action], Pagination]'` — List actions, one page at a time.
 
 ### AddressService
 
@@ -1592,8 +1665,8 @@ fails if this list drifts or if the prose above documents a method that does not
 - `delete_attribute(address_id: 'int', attribute_id: 'int') -> 'None'` — Delete an attribute from an address.
 - `get(address_id: 'int') -> 'Address'` — Get an address by ID with mandatory signature verification.
 - `get_proof_of_reserve(address_id: 'int', challenge: 'Optional[str]' = None) -> 'Any'` — Get the proof of reserve for an address.
-- `list(wallet_id: 'int', limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Address], Optional[Pagination]]'` — List addresses for a wallet with mandatory signature verification.
-- `list_with_options(options: 'Optional[ListAddressesOptions]' = None) -> 'Tuple[List[Address], Optional[Pagination]]'` — List addresses with full filtering options.
+- `list(wallet_id: 'int', limit: 'Optional[int]' = None, offset: 'Optional[int]' = None, exclude_disabled: 'Optional[bool]' = None) -> 'Tuple[List[Address], Pagination]'` — List a wallet's addresses, one page at a time, with mandatory signature verification.
+- `list_with_options(options: 'Optional[ListAddressesOptions]' = None) -> 'Tuple[List[Address], Pagination]'` — List addresses with filters, one page at a time, with mandatory signature verification.
 
 ### AirGapService
 
@@ -1602,21 +1675,24 @@ fails if this list drifts or if the prose above documents a method that does not
 
 ### AssetService
 
-- `get(asset_id: 'str') -> 'Asset'` — Get an asset by ID.
-- `get_addresses(currency: 'str', limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Address], Optional[Pagination]]'` — Get address balances for a specific asset.
-- `get_wallets(currency: 'str', limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Any], Optional[Pagination]]'` — Get wallet balances for a specific asset.
-- `list(currency: 'str' = 'ETH', limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Asset], Optional[Pagination]]'` — List asset wallets for a given currency.
+- `get(asset_id: 'str') -> 'Asset'` — Get an asset by its currency ID or symbol.
+- `get_addresses(currency: 'str', page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, *, wallet_id: 'Optional[str]' = None, address_id: 'Optional[str]' = None, addresses: 'Optional[List[str]]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[Address], CursorPage]'` — List the addresses holding an asset, one page at a time, each signature verified.
+- `get_wallets(currency: 'str', page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, *, wallet_id: 'Optional[str]' = None, wallet_name: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[Wallet], CursorPage]'` — List the wallets holding an asset, one page at a time.
+- `list(currency: 'str', page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None) -> 'Tuple[List[Wallet], CursorPage]'` — List the wallets holding an asset, one page at a time; same as :meth:`get_wallets`.
+- `list_asset_operations(asset_id: 'str', *, type: 'Optional[str]' = None, status: 'Optional[str]' = None, page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[AssetOperationV2], CursorPage]'` — List the operations of a v2 asset, one page at a time.
+- `query_asset_addresses(asset_id: 'str', *, address_type: 'Optional[str]' = None, kyc_status: 'Optional[str]' = None, page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'QueryAssetAddressesResult'` — List the addresses holding a v2 asset, one page at a time.
+- `query_assets(*, blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None, symbol: 'Optional[str]' = None, contract_address: 'Optional[str]' = None, label: 'Optional[str]' = None, currency_name: 'Optional[str]' = None, page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[AssetV2], CursorPage]'` — List asset definitions (v2 API), one page at a time.
 
 ### AuditService
 
 - `export_audit_trails(external_user_id: 'Optional[str]' = None, entities: 'Optional[List[str]]' = None, actions: 'Optional[List[str]]' = None, from_date: 'Optional[datetime]' = None, to_date: 'Optional[datetime]' = None, format: 'Optional[str]' = None) -> 'str'` — Export audit trails in the specified format.
 - `get(audit_id: 'str') -> 'Audit'` — Get an audit event by ID.
-- `list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Audit], Optional[Pagination]]'` — List audit events with pagination.
+- `list(page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, *, external_user_id: 'Optional[str]' = None, entities: 'Optional[List[str]]' = None, actions: 'Optional[List[str]]' = None, from_date: 'Optional[datetime]' = None, to_date: 'Optional[datetime]' = None, sort_by: 'Optional[List[str]]' = None, sort_order: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[Audit], CursorPage]'` — List audit trails, one page at a time.
 
 ### BalanceService
 
-- `list(currency: 'Optional[str]' = None, limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[AssetBalance], Optional[Pagination]]'` — Get all balances for the tenant, optionally filtered by currency.
-- `list_nft_collections(blockchain: 'str', network: 'str', limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[NFTCollectionBalance], Optional[Pagination]]'` — Get NFT collection balances for the tenant.
+- `list(currency: 'Optional[str]' = None, page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, *, token_id: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[AssetBalance], CursorPage]'` — List the tenant's balances, one page at a time, optionally by currency.
+- `list_nft_collections(blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None, page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, *, query: 'Optional[str]' = None, only_positive_balance: 'Optional[bool]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[NFTCollectionBalance], CursorPage]'` — List the tenant's NFT collection balances, one page at a time.
 
 ### BlockchainService
 
@@ -1626,9 +1702,9 @@ fails if this list drifts or if the prose above documents a method that does not
 
 ### BusinessRuleService
 
-- `list(page_size: 'Optional[int]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None, rule_keys: 'Optional[List[str]]' = None, wallet_ids: 'Optional[List[str]]' = None, currency_ids: 'Optional[List[str]]' = None, entity_type: 'Optional[str]' = None, entity_ids: 'Optional[List[str]]' = None) -> 'BusinessRuleResult'` — List business rules with cursor-based pagination (v2 API).
-- `list_by_currency(currency_id: 'str', page_size: 'Optional[int]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'BusinessRuleResult'` — List business rules for a specific currency.
-- `list_by_wallet(wallet_id: 'int', page_size: 'Optional[int]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'BusinessRuleResult'` — List business rules for a specific wallet.
+- `list(page_size: 'Optional[int]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None, rule_keys: 'Optional[List[str]]' = None, wallet_ids: 'Optional[List[str]]' = None, currency_ids: 'Optional[List[str]]' = None, entity_type: 'Optional[str]' = None, entity_ids: 'Optional[List[str]]' = None, *, cursor: 'Optional[str]' = None, ids: 'Optional[List[str]]' = None, rule_groups: 'Optional[List[str]]' = None, address_ids: 'Optional[List[str]]' = None, level: 'Optional[str]' = None) -> 'BusinessRuleResult'` — List business rules, one page at a time (v2 API).
+- `list_by_currency(currency_id: 'str', page_size: 'Optional[int]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None, *, cursor: 'Optional[str]' = None) -> 'BusinessRuleResult'` — List business rules for a specific currency, one page at a time.
+- `list_by_wallet(wallet_id: 'int', page_size: 'Optional[int]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None, *, cursor: 'Optional[str]' = None) -> 'BusinessRuleResult'` — List business rules for a specific wallet, one page at a time.
 - `update_transactions_enabled(enabled: 'bool') -> 'None'` — Enable or disable transaction processing for the tenant.
 
 ### ChangeService
@@ -1637,8 +1713,8 @@ fails if this list drifts or if the prose above documents a method that does not
 - `approve_changes(change_ids: 'List[str]') -> 'None'` — Approve multiple changes.
 - `create_change(request: 'CreateChangeRequest') -> 'str'` — Create a change request.
 - `get(change_id: 'str') -> 'Change'` — Get a change by ID.
-- `list(options: 'Optional[ListChangesOptions]' = None) -> 'ChangeResult'` — List changes with cursor-based pagination.
-- `list_for_approval(options: 'Optional[ListChangesOptions]' = None) -> 'ChangeResult'` — List changes pending approval with cursor-based pagination.
+- `list(options: 'Optional[ListChangesOptions]' = None) -> 'ChangeResult'` — List changes, one page at a time.
+- `list_for_approval(options: 'Optional[ListChangesOptions]' = None) -> 'ChangeResult'` — List changes pending approval, one page at a time.
 - `reject_change(change_id: 'str') -> 'None'` — Reject a change.
 - `reject_changes(change_ids: 'List[str]') -> 'None'` — Reject multiple changes.
 
@@ -1652,7 +1728,6 @@ fails if this list drifts or if the prose above documents a method that does not
 - `approve_whitelisted_contracts(contract_ids: 'List[str]', signature: 'str', comment: 'Optional[str]' = None) -> 'None'` — Approve whitelisted contracts with a signature.
 - `create(address: 'str', name: 'str', blockchain: 'str', network: 'Optional[str]' = None, abi: 'Optional[str]' = None) -> 'int'` — Create a whitelisted contract request.
 - `create_attribute(contract_id: 'str', key: 'str', value: 'str') -> 'None'` — Create an attribute on a whitelisted contract.
-- `delete(contract_id: 'int') -> 'None'` — Delete a whitelisted contract.
 - `get_attribute(contract_id: 'str', key: 'str') -> 'Optional[str]'` — Get an attribute value from a whitelisted contract.
 
 ### CurrencyService
@@ -1662,17 +1737,21 @@ fails if this list drifts or if the prose above documents a method that does not
 - `get_by_blockchain(blockchain: 'str', network: 'str', contract_address: 'Optional[str]' = None, token_id: 'Optional[str]' = None) -> 'Currency'` — Get a currency by blockchain and network.
 - `list(show_disabled: 'bool' = False, include_logo: 'bool' = False) -> 'List[Currency]'` — Get all currencies.
 
+### EarnService
+
+- `list_rewards(recipient_address_id: 'Optional[str]' = None, page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, *, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[EarnReward], CursorPage]'` — List earn rewards, one page at a time.
+
 ### ExchangeService
 
 - `get(exchange_id: 'str') -> 'Exchange'` — Get an exchange account by ID.
 - `get_withdrawal_fee(exchange_id: 'str', to_address_id: 'Optional[str]' = None, amount: 'Optional[str]' = None) -> 'Any'` — Get withdrawal fees for an exchange account.
-- `list(limit: 'int' = 50, offset: 'int' = 0, currency_id: 'Optional[str]' = None, exchange_label: 'Optional[str]' = None, status: 'Optional[str]' = None, only_positive_balance: 'bool' = False) -> 'Tuple[List[Exchange], Optional[Pagination]]'` — List exchange accounts with pagination.
+- `list(page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, currency_id: 'Optional[str]' = None, exchange_label: 'Optional[str]' = None, status: 'Optional[str]' = None, only_positive_balance: 'Optional[bool]' = None, *, sort_order: 'Optional[str]' = None, include_base_currency_valuation: 'Optional[bool]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[Exchange], CursorPage]'` — List exchange accounts, one page at a time.
 - `list_counterparties() -> 'List[Any]'` — List exchange counterparties with their exposure limits.
 
 ### FeePayerService
 
 - `get(fee_payer_id: 'str') -> 'FeePayer'` — Get a fee payer by ID.
-- `list(limit: 'int' = 50, offset: 'int' = 0, blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None) -> 'Tuple[List[FeePayer], Optional[Pagination]]'` — List fee payers with pagination.
+- `list(limit: 'Optional[int]' = None, offset: 'Optional[int]' = None, blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None) -> 'Tuple[List[FeePayer], Pagination]'` — List fee payers, one page at a time.
 
 ### FeeService
 
@@ -1684,7 +1763,8 @@ fails if this list drifts or if the prose above documents a method that does not
 - `get_account(account_id: 'str') -> 'FiatProviderAccount'` — Get a fiat provider account by ID.
 - `get_base_currency() -> 'FiatCurrency'` — Get the configured base currency.
 - `get_rate(from_currency: 'str', to_currency: 'str') -> 'ExchangeRate'` — Get the exchange rate between two currencies.
-- `list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[FiatProviderAccount], Optional[Pagination]]'` — List fiat provider accounts with pagination.
+- `list_fiat_provider_accounts(provider: 'str', label: 'str', page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, *, account_type: 'Optional[str]' = None, sort_order: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[FiatProviderAccount], CursorPage]'` — List a fiat provider's accounts, one page at a time.
+- `list_fiat_provider_entities(provider: 'Optional[str]' = None, label: 'Optional[str]' = None, page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, *, sort_order: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[FiatProviderEntity], CursorPage]'` — List the entities registered with fiat providers, one page at a time.
 - `list_providers() -> 'List[Any]'` — List available fiat providers.
 
 ### GovernanceRuleService
@@ -1695,7 +1775,7 @@ fails if this list drifts or if the prose above documents a method that does not
 - `get_public_keys() -> 'List[SuperAdminPublicKey]'` — Get the list of SuperAdmin public keys.
 - `get_rules() -> 'Optional[GovernanceRules]'` — Get the currently enforced governance rules.
 - `get_rules_by_id(rules_id: 'str') -> 'Optional[GovernanceRules]'` — Get a governance ruleset by its ID.
-- `get_rules_history(page_size: 'int' = 50, cursor: 'Optional[str]' = None) -> 'GovernanceRulesHistoryResult'` — Get the history of governance rules with cursor-based pagination.
+- `get_rules_history(page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None) -> 'GovernanceRulesHistoryResult'` — Get the history of governance rules, one page at a time.
 - `get_rules_proposal() -> 'Optional[GovernanceRules]'` — Get the proposed governance rules.
 - `proposal_container_hash(rules: 'GovernanceRules') -> 'str'` — Return the canonical SHA-256 hex digest of a ruleset's decoded container.
 - `reject_rules_proposal(comment: 'str') -> 'None'` — Reject the pending rules proposal with a comment (SuperAdmin only).
@@ -1705,7 +1785,7 @@ fails if this list drifts or if the prose above documents a method that does not
 ### GroupService
 
 - `get(group_id: 'str') -> 'Group'` — Get a group by ID.
-- `list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Group], Optional[Pagination]]'` — List groups with pagination.
+- `list(limit: 'Optional[int]' = None, offset: 'Optional[int]' = None) -> 'Tuple[List[Group], Pagination]'` — List groups, one page at a time.
 
 ### HealthService
 
@@ -1715,7 +1795,7 @@ fails if this list drifts or if the prose above documents a method that does not
 ### JobService
 
 - `get(job_id: 'str') -> 'Job'` — Get a job by ID.
-- `list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Job], Optional[Pagination]]'` — List jobs with pagination.
+- `list() -> 'List[Job]'` — List jobs: every job the endpoint returns, which does not page.
 
 ### LendingService
 
@@ -1730,9 +1810,9 @@ fails if this list drifts or if the prose above documents a method that does not
 - `get_lending_offer(offer_id: 'str') -> 'LendingOffer'` — Get a lending offer by ID.
 - `list_attachments(agreement_id: 'str') -> 'List[LendingAgreementAttachment]'` — List attachments for a lending agreement.
 - `list_lending_agreement_attachments(lending_agreement_id: 'str') -> 'List[LendingAgreementAttachment]'` — List attachments for a lending agreement.
-- `list_lending_agreements(options: 'Optional[ListLendingAgreementsOptions]' = None) -> 'Tuple[List[LendingAgreement], Optional[CursorPagination]]'` — List lending agreements.
-- `list_lending_agreements_for_approval(options: 'Optional[ListLendingAgreementsOptions]' = None) -> 'Tuple[List[LendingAgreement], Optional[CursorPagination]]'` — List lending agreements pending approval.
-- `list_lending_offers(options: 'Optional[ListLendingOffersOptions]' = None) -> 'Tuple[List[LendingOffer], Optional[CursorPagination]]'` — List lending offers.
+- `list_lending_agreements(options: 'Optional[ListLendingAgreementsOptions]' = None) -> 'Tuple[List[LendingAgreement], CursorPage]'` — List lending agreements, one page at a time.
+- `list_lending_agreements_for_approval(options: 'Optional[ListLendingAgreementsOptions]' = None) -> 'Tuple[List[LendingAgreement], CursorPage]'` — List lending agreements pending approval, one page at a time.
+- `list_lending_offers(options: 'Optional[ListLendingOffersOptions]' = None) -> 'Tuple[List[LendingOffer], CursorPage]'` — List lending offers, one page at a time.
 - `repay_lending_agreement(lending_agreement_id: 'str', request: 'RepayLendingAgreementRequest') -> 'None'` — Record repayment for a lending agreement.
 - `update_lending_agreement(lending_agreement_id: 'str', request: 'UpdateLendingAgreementRequest') -> 'None'` — Update a lending agreement.
 
@@ -1758,10 +1838,10 @@ fails if this list drifts or if the prose above documents a method that does not
 - `create_pledge(req: 'CreatePledgeRequest') -> 'Tuple[Pledge, PledgeAction]'` — Create a new pledge.
 - `get_pledge(pledge_id: 'str') -> 'Pledge'` — Get a pledge by ID.
 - `initiate_withdraw_pledge(pledge_id: 'str', req: 'InitiateWithdrawPledgeRequest') -> 'Tuple[PledgeWithdrawal, PledgeAction]'` — Initiate withdrawal from a pledge (pledgor operation).
-- `list_pledge_actions(opts: 'Optional[ListPledgeActionsOptions]' = None) -> 'Tuple[List[PledgeAction], Optional[Pagination]]'` — List all pledge actions with optional filtering.
-- `list_pledge_actions_for_approval(opts: 'Optional[ListPledgeActionsOptions]' = None) -> 'Tuple[List[PledgeAction], Optional[Pagination]]'` — List pledge actions pending approval.
-- `list_pledge_withdrawals(opts: 'Optional[ListPledgeWithdrawalsOptions]' = None) -> 'Tuple[List[PledgeWithdrawal], Optional[Pagination]]'` — List pledge withdrawals with optional filtering.
-- `list_pledges(opts: 'Optional[ListPledgesOptions]' = None) -> 'Tuple[List[Pledge], Optional[Pagination]]'` — List pledges with optional filtering.
+- `list_pledge_actions(opts: 'Optional[ListPledgeActionsOptions]' = None) -> 'Tuple[List[PledgeAction], CursorPage]'` — List pledge actions, one page at a time, each hash verified against its payload.
+- `list_pledge_actions_for_approval(opts: 'Optional[ListPledgeActionsOptions]' = None) -> 'Tuple[List[PledgeAction], CursorPage]'` — List pledge actions pending approval, one page at a time.
+- `list_pledge_withdrawals(opts: 'Optional[ListPledgeWithdrawalsOptions]' = None) -> 'Tuple[List[PledgeWithdrawal], CursorPage]'` — List pledge withdrawals, one page at a time.
+- `list_pledges(opts: 'Optional[ListPledgesOptions]' = None) -> 'Tuple[List[Pledge], CursorPage]'` — List pledges, one page at a time.
 - `reject_pledge(pledge_id: 'str', req: 'RejectPledgeRequest') -> 'Pledge'` — Reject a pledge.
 - `reject_pledge_actions(req: 'RejectPledgeActionsRequest') -> 'int'` — Reject multiple pledge actions.
 - `unpledge(pledge_id: 'str') -> 'Tuple[Pledge, PledgeAction]'` — Unpledge all funds from a pledge.
@@ -1770,7 +1850,7 @@ fails if this list drifts or if the prose above documents a method that does not
 
 ### PriceService
 
-- `get_current(currency: 'Optional[str]' = None) -> 'List[Price]'` — Get current prices for all currencies or a specific currency.
+- `get_current(*, from_currency_id: 'Optional[str]' = None, to_currency_ids: 'Optional[List[str]]' = None, only_primary: 'Optional[bool]' = None, sort_order: 'Optional[str]' = None, page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[Price], CursorPage]'` — List current prices, one page at a time, each signature verified.
 - `get_historical(base_currency: 'str', quote_currency: 'str', limit: 'Optional[int]' = None) -> 'List[PriceHistoryPoint]'` — Get historical prices for a currency pair.
 
 ### RequestService
@@ -1784,16 +1864,15 @@ fails if this list drifts or if the prose above documents a method that does not
 - `create_internal_transfer(from_address_id: 'int', to_address_id: 'int', amount: 'str') -> 'Request'` — Create an internal transfer request between addresses.
 - `create_internal_transfer_from_wallet(from_wallet_id: 'int', to_address_id: 'int', amount: 'str') -> 'Request'` — Create an internal transfer from an omnibus wallet.
 - `get(request_id: 'int') -> 'Request'` — Get a request by ID with mandatory hash verification.
-- `get_for_approval(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Request], Optional[Pagination]]'` — Get requests pending approval.
-- `list(limit: 'int' = 50, offset: 'int' = 0, from_date: 'Optional[datetime]' = None, to_date: 'Optional[datetime]' = None, currency_id: 'Optional[str]' = None, statuses: 'Optional[List[RequestStatus]]' = None) -> 'Tuple[List[Request], Optional[Pagination]]'` — List requests with filtering and pagination.
+- `get_for_approval(page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, *, currency_id: 'Optional[str]' = None, types: 'Optional[List[str]]' = None, exclude_types: 'Optional[List[str]]' = None, ids: 'Optional[List[str]]' = None, sort_order: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[Request], CursorPage]'` — List requests pending the caller's approval, one page at a time.
+- `list(page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, from_date: 'Optional[datetime]' = None, to_date: 'Optional[datetime]' = None, currency_id: 'Optional[str]' = None, statuses: 'Optional[List[RequestStatus]]' = None, *, types: 'Optional[List[str]]' = None, ids: 'Optional[List[str]]' = None, external_request_ids: 'Optional[List[str]]' = None, sort_order: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[Request], CursorPage]'` — List requests with filtering, one page at a time.
 - `reject_request(request_id: 'int', comment: 'str') -> 'None'` — Reject a single request.
 - `reject_requests(request_ids: 'List[int]', comment: 'str') -> 'None'` — Reject multiple requests.
 
 ### ReservationService
 
-- `cancel(reservation_id: 'int') -> 'None'` — Cancel a reservation.
 - `get(reservation_id: 'int') -> 'Reservation'` — Get a reservation by ID.
-- `list(wallet_id: 'Optional[int]' = None, limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Reservation], Optional[Pagination]]'` — List reservations.
+- `list(page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, *, kind: 'Optional[str]' = None, kinds: 'Optional[List[str]]' = None, address: 'Optional[str]' = None, address_id: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[Reservation], CursorPage]'` — List reservations, one page at a time.
 
 ### ScoreService
 
@@ -1806,14 +1885,14 @@ fails if this list drifts or if the prose above documents a method that does not
 - `cancel_settlement(settlement_id: 'str') -> 'None'` — Cancel a settlement.
 - `create_settlement(request: 'CreateSettlementRequest') -> 'str'` — Create a new settlement.
 - `get_settlement(settlement_id: 'str') -> 'Settlement'` — Get a settlement by ID.
-- `list_settlements(options: 'Optional[ListSettlementsOptions]' = None) -> 'Tuple[List[Settlement], Optional[CursorPagination]]'` — List settlements.
-- `list_settlements_for_approval(options: 'Optional[ListSettlementsForApprovalOptions]' = None) -> 'Tuple[List[Settlement], Optional[CursorPagination]]'` — List settlements pending approval.
+- `list_settlements(options: 'Optional[ListSettlementsOptions]' = None) -> 'Tuple[List[Settlement], CursorPage]'` — List settlements, one page at a time.
+- `list_settlements_for_approval(options: 'Optional[ListSettlementsForApprovalOptions]' = None) -> 'Tuple[List[Settlement], CursorPage]'` — List settlements pending approval, one page at a time.
 - `replace_settlement(settlement_id: 'str', request: 'CreateSettlementRequest') -> 'None'` — Replace a settlement with new attributes.
 
 ### SharingService
 
-- `list_shared_addresses(options: 'Optional[ListSharedAddressesOptions]' = None) -> 'Tuple[List[SharedAddress], Optional[CursorPagination]]'` — List shared addresses.
-- `list_shared_assets(options: 'Optional[ListSharedAssetsOptions]' = None) -> 'Tuple[List[SharedAsset], Optional[CursorPagination]]'` — List shared whitelisted assets.
+- `list_shared_addresses(options: 'Optional[ListSharedAddressesOptions]' = None) -> 'Tuple[List[SharedAddress], CursorPage]'` — List shared addresses, one page at a time.
+- `list_shared_assets(options: 'Optional[ListSharedAssetsOptions]' = None) -> 'Tuple[List[SharedAsset], CursorPage]'` — List shared whitelisted assets, one page at a time.
 - `share_address(request: 'ShareAddressRequest') -> 'None'` — Share an address with a Taurus Network participant.
 - `share_whitelisted_asset(request: 'ShareWhitelistedAssetRequest') -> 'None'` — Share a whitelisted asset with a Taurus Network participant.
 - `unshare_address(shared_address_id: 'str') -> 'None'` — Unshare an address with a Taurus Network participant.
@@ -1822,7 +1901,7 @@ fails if this list drifts or if the prose above documents a method that does not
 ### StakingService
 
 - `get_staking_info(address_id: 'int') -> 'StakingInfo'` — Get staking information for an address.
-- `list_validators(blockchain: 'str', network: 'str' = 'mainnet', limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Validator], Optional[Pagination]]'` — List validators for a blockchain.
+- `list_validators(blockchain: 'str', network: 'str' = 'mainnet', *, ids: 'Optional[List[str]]' = None) -> 'List[Validator]'` — List validators for a blockchain: every validator the endpoint returns.
 
 ### StatisticsService
 
@@ -1834,7 +1913,7 @@ fails if this list drifts or if the prose above documents a method that does not
 - `create(name: 'str', color: 'str') -> 'Tag'` — Create a new tag.
 - `delete(tag_id: 'str') -> 'None'` — Delete a tag.
 - `get(tag_id: 'str') -> 'Tag'` — Get a tag by ID.
-- `list(limit: 'int' = 50, offset: 'int' = 0) -> 'List[Tag]'` — List tags.
+- `list(*, query: 'Optional[str]' = None, ids: 'Optional[List[str]]' = None) -> 'List[Tag]'` — List tags: every tag the endpoint returns, which does not page.
 
 ### TokenMetadataService
 
@@ -1845,11 +1924,12 @@ fails if this list drifts or if the prose above documents a method that does not
 
 ### TransactionService
 
-- `export_csv(from_date: 'Optional[datetime]' = None, to_date: 'Optional[datetime]' = None, currency: 'Optional[str]' = None, direction: 'Optional[str]' = None, limit: 'int' = 1000, offset: 'int' = 0, blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None) -> 'str'` — Export transactions to CSV format.
+- `export(from_date: 'Optional[datetime]' = None, to_date: 'Optional[datetime]' = None, currency: 'Optional[str]' = None, direction: 'Optional[str]' = None, limit: 'Optional[int]' = None, blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None, format: 'Optional[str]' = None) -> 'TransactionExport'` — Export transactions in one reply.
+- `export_csv(from_date: 'Optional[datetime]' = None, to_date: 'Optional[datetime]' = None, currency: 'Optional[str]' = None, direction: 'Optional[str]' = None, limit: 'Optional[int]' = None, blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None) -> 'TransactionExport'` — Export transactions as CSV: :meth:`export` with ``format="csv"``.
 - `get(transaction_id: 'int') -> 'Transaction'` — Get a single transaction by ID.
 - `get_by_hash(tx_hash: 'str') -> 'Transaction'` — Get a transaction by its blockchain hash.
-- `list(from_date: 'Optional[datetime]' = None, to_date: 'Optional[datetime]' = None, currency: 'Optional[str]' = None, direction: 'Optional[str]' = None, limit: 'int' = 50, offset: 'int' = 0, blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None) -> 'Tuple[List[Transaction], Optional[Pagination]]'` — List transactions with filtering.
-- `list_by_address(address: 'str', limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Transaction], Optional[Pagination]]'` — List transactions for a specific blockchain address.
+- `list(from_date: 'Optional[datetime]' = None, to_date: 'Optional[datetime]' = None, currency: 'Optional[str]' = None, direction: 'Optional[str]' = None, limit: 'Optional[int]' = None, offset: 'Optional[int]' = None, blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None) -> 'Tuple[List[Transaction], Pagination]'` — List transactions with filtering, one page at a time.
+- `list_by_address(address: 'str', limit: 'Optional[int]' = None, offset: 'Optional[int]' = None) -> 'Tuple[List[Transaction], Pagination]'` — List transactions for a specific blockchain address, one page at a time.
 
 ### UserDeviceService
 
@@ -1857,7 +1937,7 @@ fails if this list drifts or if the prose above documents a method that does not
 - `create_pairing() -> 'UserDevicePairing'` — Create a new user device pairing request (Step 1).
 - `get(device_id: 'str') -> 'UserDevicePairingInfo'` — Get user device pairing by ID.
 - `get_pairing_status(pairing_id: 'str', nonce: 'str') -> 'UserDevicePairingInfo'` — Get the status of a user device pairing request.
-- `list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[UserDevicePairing], Optional[Pagination]]'` — List user device pairings.
+- `list(limit: 'Optional[int]' = None, offset: 'Optional[int]' = None) -> 'Tuple[List[UserDevicePairing], Pagination]'` — List user device pairings.
 - `start_pairing(pairing_id: 'str', nonce: 'str', encryption_key: 'str') -> 'None'` — Start a user device pairing request (Step 2).
 
 ### UserService
@@ -1865,14 +1945,14 @@ fails if this list drifts or if the prose above documents a method that does not
 - `create_user_attribute(user_id: 'str', key: 'str', value: 'str') -> 'None'` — Create an attribute for a user.
 - `get(user_id: 'str') -> 'User'` — Get a user by ID.
 - `get_current() -> 'User'` — Get the current authenticated user.
-- `get_users_by_email(emails: 'List[str]') -> 'List[User]'` — Get users by their email addresses.
-- `list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[User], Optional[Pagination]]'` — List users with pagination.
+- `get_users_by_email(emails: 'List[str]') -> 'List[User]'` — Get users by their email addresses, reading every page.
+- `list(limit: 'Optional[int]' = None, offset: 'Optional[int]' = None) -> 'Tuple[List[User], Pagination]'` — List users, one page at a time.
 
 ### VisibilityGroupService
 
 - `get(group_id: 'str') -> 'VisibilityGroup'` — Get a visibility group by ID.
 - `get_users(group_id: 'str') -> 'List[Any]'` — Get users in a visibility group.
-- `list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[VisibilityGroup], Optional[Pagination]]'` — List visibility groups with pagination.
+- `list() -> 'List[VisibilityGroup]'` — List visibility groups: every group the endpoint returns, which does not page.
 
 ### WalletService
 
@@ -1881,37 +1961,37 @@ fails if this list drifts or if the prose above documents a method that does not
 - `create_wallet(blockchain: 'str', network: 'str', name: 'str', is_omnibus: 'bool' = False, comment: 'str' = '', customer_id: 'str' = '') -> 'Wallet'` — Create a new wallet with explicit parameters.
 - `get(wallet_id: 'int') -> 'Wallet'` — Get a wallet by ID.
 - `get_balance_history(wallet_id: 'int', interval_hours: 'int') -> 'List[BalanceHistoryPoint]'` — Get wallet balance history.
-- `get_by_name(name: 'str', limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Wallet], Optional[Pagination]]'` — Get wallets by name with pagination.
-- `get_tokens(wallet_id: 'int', limit: 'int' = 50) -> 'List[AssetBalance]'` — Get wallet tokens (asset balances).
-- `list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Wallet], Optional[Pagination]]'` — List wallets with pagination.
-- `list_with_options(options: 'Optional[ListWalletsOptions]' = None) -> 'Tuple[List[Wallet], Optional[Pagination]]'` — List wallets with full filtering options.
+- `get_by_name(name: 'str', limit: 'Optional[int]' = None, offset: 'Optional[int]' = None, exclude_disabled: 'Optional[bool]' = None) -> 'Tuple[List[Wallet], Pagination]'` — List wallets whose name matches (case-insensitive, partial), one page at a time.
+- `get_tokens(wallet_id: 'int', page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None) -> 'Tuple[List[AssetBalance], CursorPage]'` — List a wallet's token balances, one page at a time.
+- `list(limit: 'Optional[int]' = None, offset: 'Optional[int]' = None, exclude_disabled: 'Optional[bool]' = None) -> 'Tuple[List[Wallet], Pagination]'` — List wallets, one page at a time.
+- `list_with_options(options: 'Optional[ListWalletsOptions]' = None) -> 'Tuple[List[Wallet], Pagination]'` — List wallets with every filter the endpoint supports.
 
 ### WebhookCallService
 
 - `get(call_id: 'str') -> 'WebhookCall'` — Get a webhook call by ID.
-- `get_webhook_calls(event_id: 'Optional[str]' = None, webhook_id: 'Optional[str]' = None, status: 'Optional[str]' = None, sort_order: 'Optional[str]' = None, cursor: 'Optional[ApiRequestCursor]' = None) -> 'WebhookCallResult'` — Retrieve webhook call history with optional filtering.
-- `list(webhook_id: 'Optional[str]' = None, event_id: 'Optional[str]' = None, status: 'Optional[str]' = None, sort_order: 'Optional[str]' = None, limit: 'int' = 50, cursor: 'Optional[str]' = None) -> 'Tuple[List[WebhookCall], Optional[Pagination]]'` — List webhook calls with optional filtering.
+- `get_webhook_calls(event_id: 'Optional[str]' = None, webhook_id: 'Optional[str]' = None, status: 'Optional[str]' = None, sort_order: 'Optional[str]' = None, cursor: 'Optional[Union[str, ApiRequestCursor]]' = None, *, page_size: 'Optional[int]' = None) -> 'WebhookCallResult'` — Retrieve webhook call history, one page at a time.
+- `list(webhook_id: 'Optional[str]' = None, event_id: 'Optional[str]' = None, status: 'Optional[str]' = None, sort_order: 'Optional[str]' = None, page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None) -> 'Tuple[List[WebhookCall], CursorPage]'` — List webhook calls, one page at a time.
 
 ### WebhookService
 
 - `create(url: 'str', events: 'List[str]') -> 'Webhook'` — Create a new webhook.
 - `delete(webhook_id: 'str') -> 'None'` — Delete a webhook.
 - `get(webhook_id: 'str') -> 'Webhook'` — Get a webhook by ID.
-- `list(limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[Webhook], Optional[Pagination]]'` — List webhooks with pagination.
+- `list(page_size: 'Optional[int]' = None, cursor: 'Optional[str]' = None, *, type: 'Optional[str]' = None, url: 'Optional[str]' = None, sort_order: 'Optional[str]' = None, current_page: 'Optional[str]' = None, page_request: 'Optional[str]' = None) -> 'Tuple[List[Webhook], CursorPage]'` — List webhooks, one page at a time.
 
 ### WhitelistedAddressService
 
 - `approve(selection: 'WhitelistedAddressApproval', private_key: 'Any', comment: 'str') -> 'None'` — Sign and submit an approval for the reviewed whitelisted addresses,
 - `get(whitelisted_address_id: 'int') -> 'WhitelistedAddress'` — Get a whitelisted address by ID with verification.
 - `get_envelope(whitelisted_address_id: 'int') -> 'SignedWhitelistedAddressEnvelope'` — Get the signed envelope for a whitelisted address.
-- `list(currency: 'Optional[str]' = None, limit: 'int' = 50, offset: 'int' = 0, *, ids: 'Optional[List[str]]' = None, include_for_approval: 'bool' = False) -> 'WhitelistedAddressListResult'` — List whitelisted addresses with cryptographic verification.
-- `list_for_approval(limit: 'int' = 50, offset: 'int' = 0, *, ids: 'Optional[List[str]]' = None, include_already_signed_by_user: 'bool' = False) -> 'WhitelistedAddressListResult'` — List whitelisted addresses awaiting approval, verified exactly as ``list`` is.
+- `list(currency: 'Optional[str]' = None, limit: 'Optional[int]' = None, offset: 'Optional[int]' = None, *, ids: 'Optional[List[str]]' = None, include_for_approval: 'bool' = False) -> 'WhitelistedAddressListResult'` — List whitelisted addresses with cryptographic verification.
+- `list_for_approval(limit: 'Optional[int]' = None, offset: 'Optional[int]' = None, *, ids: 'Optional[List[str]]' = None, include_already_signed_by_user: 'bool' = False) -> 'WhitelistedAddressListResult'` — List whitelisted addresses awaiting approval, verified exactly as ``list`` is.
 
 ### WhitelistedAssetService
 
 - `approve(selection: 'WhitelistedAssetApproval', private_key: 'Any', comment: 'str') -> 'None'` — Sign and submit an approval for the reviewed whitelisted assets, all-or-nothing.
 - `get(asset_id: 'int') -> 'WhitelistedAsset'` — Get a whitelisted asset by ID.
-- `list(blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None, limit: 'int' = 50, offset: 'int' = 0, *, ids: 'Optional[List[str]]' = None, include_for_approval: 'bool' = False) -> 'Tuple[List[WhitelistedAsset], Optional[Pagination]]'` — List whitelisted assets.
-- `list_for_approval(ids: 'Optional[List[str]]' = None, limit: 'int' = 50, offset: 'int' = 0) -> 'Tuple[List[WhitelistedAsset], Optional[Pagination]]'` — List whitelisted assets awaiting approval, verified as in list().
+- `list(blockchain: 'Optional[str]' = None, network: 'Optional[str]' = None, limit: 'Optional[int]' = None, offset: 'Optional[int]' = None, *, ids: 'Optional[List[str]]' = None, include_for_approval: 'bool' = False) -> 'Tuple[List[WhitelistedAsset], Pagination]'` — List whitelisted assets, one page at a time.
+- `list_for_approval(ids: 'Optional[List[str]]' = None, limit: 'Optional[int]' = None, offset: 'Optional[int]' = None) -> 'Tuple[List[WhitelistedAsset], Pagination]'` — List whitelisted assets awaiting approval, verified as in list().
 
 <!-- END GENERATED METHOD INDEX -->

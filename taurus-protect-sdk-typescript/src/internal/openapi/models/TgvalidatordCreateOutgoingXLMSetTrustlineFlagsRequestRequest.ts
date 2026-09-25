@@ -67,7 +67,16 @@ export interface TgvalidatordCreateOutgoingXLMSetTrustlineFlagsRequestRequest {
      * @memberof TgvalidatordCreateOutgoingXLMSetTrustlineFlagsRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingXLMSetTrustlineFlagsRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingXLMSetTrustlineFlagsRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'trustorInternalAddressId', 'trustorWhitelistedAddressId', 'setFlags', 'clearFlags', 'feeLimit', 'comment', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingXLMSetTrustlineFlagsRequestRequest interface.
@@ -85,7 +94,7 @@ export function TgvalidatordCreateOutgoingXLMSetTrustlineFlagsRequestRequestFrom
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingXLMSetTrustlineFlagsRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'trustorInternalAddressId': json['trustorInternalAddressId'] == null ? undefined : json['trustorInternalAddressId'],
@@ -96,6 +105,16 @@ export function TgvalidatordCreateOutgoingXLMSetTrustlineFlagsRequestRequestFrom
         'comment': json['comment'] == null ? undefined : json['comment'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingXLMSetTrustlineFlagsRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingXLMSetTrustlineFlagsRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingXLMSetTrustlineFlagsRequestRequest {
@@ -117,6 +136,7 @@ export function TgvalidatordCreateOutgoingXLMSetTrustlineFlagsRequestRequestFrom
         'feeLimit': value['feeLimit'],
         'comment': value['comment'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -13,7 +13,6 @@ import type {
   ICPNeuronInfo,
   NEARValidatorInfo,
   StakeAccount,
-  StakeCursor,
   XTZStakingRewards,
 } from '../../../src/models/staking';
 
@@ -251,32 +250,6 @@ describe('StakeAccount mapping', () => {
 
     expect(result.solanaStakeAccount).toBeUndefined();
     expect(result.accountType).toBeUndefined();
-  });
-});
-
-describe('StakeCursor mapping', () => {
-  it('should map cursor fields', () => {
-    const cursor = {
-      currentPage: 'page-token-xyz',
-      hasNext: true,
-      hasPrevious: false,
-    };
-
-    const result: StakeCursor = {
-      currentPage: cursor.currentPage,
-      hasNext: cursor.hasNext,
-      hasPrevious: cursor.hasPrevious,
-    };
-
-    expect(result.currentPage).toBe('page-token-xyz');
-    expect(result.hasNext).toBe(true);
-    expect(result.hasPrevious).toBe(false);
-  });
-
-  it('should handle undefined cursor', () => {
-    const cursor: undefined = undefined;
-    const result: StakeCursor | undefined = cursor;
-    expect(result).toBeUndefined();
   });
 });
 

@@ -80,7 +80,10 @@ type TgvalidatordTransaction struct {
 	Fees []TgvalidatordTransactionFees `json:"fees,omitempty"`
 	// True if the transaction is fully confirmed, false otherwise.
 	IsConfirmed *bool `json:"isConfirmed,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTransaction TgvalidatordTransaction
 
 // NewTgvalidatordTransaction instantiates a new TgvalidatordTransaction object
 // This constructor will assign default values to properties that have it defined,
@@ -1194,7 +1197,63 @@ func (o TgvalidatordTransaction) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.IsConfirmed) {
 		toSerialize["isConfirmed"] = o.IsConfirmed
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTransaction) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTransaction := _TgvalidatordTransaction{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTransaction)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTransaction(varTgvalidatordTransaction)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "direction")
+		delete(additionalProperties, "currency")
+		delete(additionalProperties, "sources")
+		delete(additionalProperties, "destinations")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "amountMainUnit")
+		delete(additionalProperties, "fee")
+		delete(additionalProperties, "feeMainUnit")
+		delete(additionalProperties, "hash")
+		delete(additionalProperties, "block")
+		delete(additionalProperties, "receptionDate")
+		delete(additionalProperties, "confirmationDate")
+		delete(additionalProperties, "transactionId")
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "uniqueId")
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "arg1")
+		delete(additionalProperties, "arg2")
+		delete(additionalProperties, "currencyInfo")
+		delete(additionalProperties, "network")
+		delete(additionalProperties, "requestId")
+		delete(additionalProperties, "confirmationBlock")
+		delete(additionalProperties, "requestVisible")
+		delete(additionalProperties, "travelRule")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "platformFees")
+		delete(additionalProperties, "attributes")
+		delete(additionalProperties, "forkNumber")
+		delete(additionalProperties, "fees")
+		delete(additionalProperties, "isConfirmed")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTransaction struct {

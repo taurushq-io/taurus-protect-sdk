@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
 from taurus_protect.mappers._base import safe_bool, safe_datetime, safe_string
 from taurus_protect.models.blockchain import Exchange
-from taurus_protect.models.pagination import Pagination
+from taurus_protect.models.pagination import CursorPage, cursor_page, cursor_request
 from taurus_protect.services._base import BaseService
 
 if TYPE_CHECKING:
@@ -70,7 +70,7 @@ class ExchangeService(BaseService):
 
     Example:
         >>> # List exchange accounts
-        >>> exchanges, pagination = client.exchanges.list(limit=50)
+        >>> exchanges, page = client.exchanges.list(page_size=100)
         >>> for exchange in exchanges:
         ...     print(f"{exchange.name} ({exchange.exchange_label}): {exchange.balance}")
         >>>
@@ -92,68 +92,56 @@ class ExchangeService(BaseService):
 
     def list(
         self,
-        limit: int = 50,
-        offset: int = 0,
+        page_size: Optional[int] = None,
+        cursor: Optional[str] = None,
         currency_id: Optional[str] = None,
         exchange_label: Optional[str] = None,
         status: Optional[str] = None,
-        only_positive_balance: bool = False,
-    ) -> Tuple[List[Exchange], Optional[Pagination]]:
+        only_positive_balance: Optional[bool] = None,
+        *,
+        sort_order: Optional[str] = None,
+        include_base_currency_valuation: Optional[bool] = None,
+        current_page: Optional[str] = None,
+        page_request: Optional[str] = None,
+    ) -> Tuple[List[Exchange], CursorPage]:
         """
-        List exchange accounts with pagination.
+        List exchange accounts, one page at a time.
 
         Args:
-            limit: Maximum number of exchanges to return (must be positive).
-            offset: Number of exchanges to skip (must be non-negative).
+            page_size: Page size (default 20, max 100).
+            cursor: ``page.next_cursor`` from the previous page, to continue.
             currency_id: Optional filter by currency ID.
             exchange_label: Optional filter by exchange label.
             status: Optional filter by status.
-            only_positive_balance: Whether to exclude zero-balance accounts.
+            only_positive_balance: Only accounts with a non-zero balance.
+            sort_order: ASC or DESC.
+            include_base_currency_valuation: Include the base-currency valuation.
+            current_page: Low-level page token; not with ``cursor``.
+            page_request: Low-level page direction (FIRST, PREVIOUS, NEXT, LAST).
 
         Returns:
-            Tuple of (exchanges list, pagination info).
+            Tuple of (exchanges, page).
 
         Raises:
-            ValueError: If limit or offset are invalid.
+            ValueError: If the page size is invalid or cursor options conflict.
             APIError: If API request fails.
         """
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
+        req = cursor_request(
+            page_size, cursor, current_page=current_page, page_request=page_request
+        )
 
         try:
             resp = self._exchange_api.exchange_service_get_exchanges(
                 currency_id=currency_id,
                 exchange_label=exchange_label,
                 status=status,
-                only_positive_balance=only_positive_balance if only_positive_balance else None,
-                cursor_page_size=str(limit),
-                cursor_page_request="FIRST" if offset == 0 else None,
+                only_positive_balance=only_positive_balance,
+                sort_order=sort_order,
+                include_base_currency_valuation=include_base_currency_valuation,
+                **req.query_params(),
             )
 
-            result = (
-                getattr(resp, "result", None)
-                or getattr(resp, "exchange_accounts", None)
-                or getattr(resp, "exchangeAccounts", None)
-            )
-            exchanges = exchanges_from_dto(result) if result else []
-
-            # Extract pagination from cursor-based response
-            cursor = getattr(resp, "cursor", None)
-            total_items = None
-            if cursor:
-                total_items = getattr(cursor, "total_items", None) or getattr(
-                    cursor, "totalItems", None
-                )
-
-            pagination = self._extract_pagination(
-                total_items=total_items,
-                offset=offset,
-                limit=limit,
-            )
-
-            return exchanges, pagination
+            return exchanges_from_dto(resp.result or []), cursor_page(req.page_size, resp.cursor)
         except Exception as e:
             from taurus_protect.errors import APIError
 

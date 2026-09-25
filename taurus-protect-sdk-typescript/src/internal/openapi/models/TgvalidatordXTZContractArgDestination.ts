@@ -31,7 +31,16 @@ export interface TgvalidatordXTZContractArgDestination {
      * @memberof TgvalidatordXTZContractArgDestination
      */
     toWhitelistedAddressId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordXTZContractArgDestination
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordXTZContractArgDestinationWireKeys: ReadonlySet<string> = new Set(['toAddressId', 'toWhitelistedAddressId']);
 
 /**
  * Check if a given object implements the TgvalidatordXTZContractArgDestination interface.
@@ -48,11 +57,21 @@ export function TgvalidatordXTZContractArgDestinationFromJSONTyped(json: any, ig
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordXTZContractArgDestination = {
         
         'toAddressId': json['toAddressId'] == null ? undefined : json['toAddressId'],
         'toWhitelistedAddressId': json['toWhitelistedAddressId'] == null ? undefined : json['toWhitelistedAddressId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordXTZContractArgDestinationWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordXTZContractArgDestinationToJSON(json: any): TgvalidatordXTZContractArgDestination {
@@ -68,6 +87,7 @@ export function TgvalidatordXTZContractArgDestinationFromJSONTyped(json: any, ig
         
         'toAddressId': value['toAddressId'],
         'toWhitelistedAddressId': value['toWhitelistedAddressId'],
+        ...value['additionalProperties'],
     };
 }
 

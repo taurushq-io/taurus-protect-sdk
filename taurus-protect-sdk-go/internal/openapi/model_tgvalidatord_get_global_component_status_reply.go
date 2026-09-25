@@ -25,7 +25,10 @@ type TgvalidatordGetGlobalComponentStatusReply struct {
 	Failed *string `json:"failed,omitempty"`
 	ClusterStatus *string `json:"clusterStatus,omitempty"`
 	ComponentsStatus *map[string]TgvalidatordComponentStatus `json:"componentsStatus,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetGlobalComponentStatusReply TgvalidatordGetGlobalComponentStatusReply
 
 // NewTgvalidatordGetGlobalComponentStatusReply instantiates a new TgvalidatordGetGlobalComponentStatusReply object
 // This constructor will assign default values to properties that have it defined,
@@ -264,7 +267,38 @@ func (o TgvalidatordGetGlobalComponentStatusReply) ToMap() (map[string]interface
 	if !IsNil(o.ComponentsStatus) {
 		toSerialize["componentsStatus"] = o.ComponentsStatus
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetGlobalComponentStatusReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetGlobalComponentStatusReply := _TgvalidatordGetGlobalComponentStatusReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetGlobalComponentStatusReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetGlobalComponentStatusReply(varTgvalidatordGetGlobalComponentStatusReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "total")
+		delete(additionalProperties, "working")
+		delete(additionalProperties, "degraded")
+		delete(additionalProperties, "failed")
+		delete(additionalProperties, "clusterStatus")
+		delete(additionalProperties, "componentsStatus")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetGlobalComponentStatusReply struct {

@@ -6,10 +6,11 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Result of a governance rules history query with cursor-based pagination.
+ * One page of the governance rules history, with its {@link CursorPage}.
  * <p>
- * This class wraps the paginated response from querying the history of governance
- * rules changes. Use the cursor to fetch subsequent pages of results.
+ * The history pages by an opaque token: pass {@code getPage().getNextCursor()} back while
+ * {@code getPage().hasMore()} is true. The page total is the server's count reduced by the
+ * entries withheld because their SuperAdmin signatures did not verify.
  *
  * @see GovernanceRules
  */
@@ -21,14 +22,9 @@ public class GovernanceRulesHistoryResult {
     private List<GovernanceRules> rules;
 
     /**
-     * Opaque cursor for fetching the next page of results.
+     * The page: next cursor, whether more pages exist, and the reduced total.
      */
-    private byte[] cursor;
-
-    /**
-     * The total number of items available across all pages, reduced by the exclusions.
-     */
-    private String totalItems;
+    private CursorPage page;
 
     /**
      * Entries withheld because their SuperAdmin signatures did not verify.
@@ -78,39 +74,22 @@ public class GovernanceRulesHistoryResult {
     }
 
     /**
-     * Gets the cursor for the next page.
+     * Gets the page: next cursor, whether more pages exist, and the total reduced by the
+     * withheld entries.
      *
-     * @return the cursor for next page, or null if no more pages
+     * @return the page, never null on a result returned by the service
      */
-    public byte[] getCursor() {
-        return cursor;
+    public CursorPage getPage() {
+        return page;
     }
 
     /**
-     * Sets the cursor for the next page.
+     * Sets the page.
      *
-     * @param cursor the cursor
+     * @param page the page
      */
-    public void setCursor(byte[] cursor) {
-        this.cursor = cursor;
-    }
-
-    /**
-     * Gets total items count.
-     *
-     * @return the total items
-     */
-    public String getTotalItems() {
-        return totalItems;
-    }
-
-    /**
-     * Sets total items count.
-     *
-     * @param totalItems the total items
-     */
-    public void setTotalItems(String totalItems) {
-        this.totalItems = totalItems;
+    public void setPage(final CursorPage page) {
+        this.page = page;
     }
 
     /**
@@ -119,6 +98,6 @@ public class GovernanceRulesHistoryResult {
      * @return true if more pages available
      */
     public boolean hasMorePages() {
-        return cursor != null && cursor.length > 0;
+        return page != null && page.hasMore();
     }
 }

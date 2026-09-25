@@ -23,7 +23,10 @@ type TgvalidatordDefaultSharedAddresses struct {
 	OutgoingDefaultSharedAddresses []TgvalidatordDefaultSharedAddress `json:"outgoingDefaultSharedAddresses,omitempty"`
 	// The TN shared addresses designated by other participant to share to me
 	IncomingDefaultSharedAddresses []TgvalidatordDefaultSharedAddress `json:"incomingDefaultSharedAddresses,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordDefaultSharedAddresses TgvalidatordDefaultSharedAddresses
 
 // NewTgvalidatordDefaultSharedAddresses instantiates a new TgvalidatordDefaultSharedAddresses object
 // This constructor will assign default values to properties that have it defined,
@@ -122,7 +125,34 @@ func (o TgvalidatordDefaultSharedAddresses) ToMap() (map[string]interface{}, err
 	if !IsNil(o.IncomingDefaultSharedAddresses) {
 		toSerialize["incomingDefaultSharedAddresses"] = o.IncomingDefaultSharedAddresses
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordDefaultSharedAddresses) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordDefaultSharedAddresses := _TgvalidatordDefaultSharedAddresses{}
+
+	err = json.Unmarshal(data, &varTgvalidatordDefaultSharedAddresses)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordDefaultSharedAddresses(varTgvalidatordDefaultSharedAddresses)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "outgoingDefaultSharedAddresses")
+		delete(additionalProperties, "incomingDefaultSharedAddresses")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordDefaultSharedAddresses struct {

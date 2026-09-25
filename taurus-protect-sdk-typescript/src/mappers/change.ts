@@ -2,7 +2,7 @@
  * Change mapper functions for converting OpenAPI DTOs to domain models.
  */
 
-import type { Change, CreateChangeRequest, ListChangesResult } from '../models/change';
+import type { Change, CreateChangeRequest } from '../models/change';
 import { safeDate, safeInt, safeMap, safeString } from './base';
 
 /**
@@ -36,28 +36,6 @@ export function changeFromDto(dto: unknown): Change | undefined {
  */
 export function changesFromDto(dtos: unknown[] | null | undefined): Change[] {
   return safeMap(dtos, changeFromDto);
-}
-
-/**
- * Maps a changes response to a ListChangesResult.
- */
-export function listChangesResultFromDto(response: unknown): ListChangesResult {
-  if (!response || typeof response !== 'object') {
-    return {
-      changes: [],
-      hasNext: false,
-    };
-  }
-
-  const r = response as Record<string, unknown>;
-  const result = r.result ?? r.changes ?? [];
-  const cursor = r.cursor as Record<string, unknown> | undefined;
-
-  return {
-    changes: changesFromDto(result as unknown[]),
-    currentPage: safeString(cursor?.currentPage ?? cursor?.current_page),
-    hasNext: Boolean(cursor?.hasNext ?? cursor?.has_next ?? false),
-  };
 }
 
 /**

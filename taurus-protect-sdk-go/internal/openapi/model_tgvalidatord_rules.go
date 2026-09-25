@@ -26,7 +26,10 @@ type TgvalidatordRules struct {
 	CreationDate *time.Time `json:"creationDate,omitempty"`
 	UpdateDate *time.Time `json:"updateDate,omitempty"`
 	Trails []TgvalidatordRulesTrail `json:"trails,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordRules TgvalidatordRules
 
 // NewTgvalidatordRules instantiates a new TgvalidatordRules object
 // This constructor will assign default values to properties that have it defined,
@@ -265,7 +268,38 @@ func (o TgvalidatordRules) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Trails) {
 		toSerialize["trails"] = o.Trails
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordRules) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordRules := _TgvalidatordRules{}
+
+	err = json.Unmarshal(data, &varTgvalidatordRules)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordRules(varTgvalidatordRules)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "rulesContainer")
+		delete(additionalProperties, "rulesSignatures")
+		delete(additionalProperties, "locked")
+		delete(additionalProperties, "creationDate")
+		delete(additionalProperties, "updateDate")
+		delete(additionalProperties, "trails")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordRules struct {

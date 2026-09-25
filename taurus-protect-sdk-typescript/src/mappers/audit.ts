@@ -14,6 +14,10 @@ export function auditTrailFromDto(dto: unknown): AuditTrail | undefined {
   }
 
   const d = dto as Record<string, unknown>;
+  const user =
+    d.user && typeof d.user === 'object'
+      ? (d.user as { id?: unknown; email?: unknown; externalUserId?: unknown })
+      : undefined;
 
   // Handle details field - could be object or JSON string
   let details: Record<string, unknown> | undefined;
@@ -34,9 +38,12 @@ export function auditTrailFromDto(dto: unknown): AuditTrail | undefined {
     entity: safeString(d.entity ?? d.entityType ?? d.entity_type),
     entityId: safeString(d.entityId ?? d.entity_id),
     action: safeString(d.action ?? d.actionType ?? d.action_type),
-    userId: safeString(d.userId ?? d.user_id),
-    userEmail: safeString(d.userEmail ?? d.user_email ?? d.email),
-    externalUserId: safeString(d.externalUserId ?? d.external_user_id),
+    // The wire row carries the actor as a nested `user` object (TgvalidatordUserInfo).
+    userId: safeString(user?.id ?? d.userId ?? d.user_id),
+    userEmail: safeString(user?.email ?? d.userEmail ?? d.user_email ?? d.email),
+    externalUserId: safeString(
+      user?.externalUserId ?? d.externalUserId ?? d.external_user_id
+    ),
     description: safeString(d.description ?? d.message),
     ipAddress: safeString(d.ipAddress ?? d.ip_address ?? d.ip),
     createdAt: safeDate(d.createdAt ?? d.created_at ?? d.creationDate ?? d.timestamp),

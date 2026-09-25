@@ -22,7 +22,10 @@ type TgvalidatordActionSource struct {
 	Kind *string `json:"kind,omitempty"`
 	AddressID *string `json:"addressID,omitempty"`
 	WalletID *string `json:"walletID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordActionSource TgvalidatordActionSource
 
 // NewTgvalidatordActionSource instantiates a new TgvalidatordActionSource object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordActionSource) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.WalletID) {
 		toSerialize["walletID"] = o.WalletID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordActionSource) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordActionSource := _TgvalidatordActionSource{}
+
+	err = json.Unmarshal(data, &varTgvalidatordActionSource)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordActionSource(varTgvalidatordActionSource)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "kind")
+		delete(additionalProperties, "addressID")
+		delete(additionalProperties, "walletID")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordActionSource struct {

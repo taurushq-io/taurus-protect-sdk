@@ -55,7 +55,16 @@ export interface TgvalidatordCreateOutgoingCancelRequestRequest {
      * @memberof TgvalidatordCreateOutgoingCancelRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingCancelRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingCancelRequestRequestWireKeys: ReadonlySet<string> = new Set(['addressId', 'nonce', 'feePayerId', 'addressIds', 'nonces', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingCancelRequestRequest interface.
@@ -73,7 +82,7 @@ export function TgvalidatordCreateOutgoingCancelRequestRequestFromJSONTyped(json
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingCancelRequestRequest = {
         
         'addressId': json['addressId'],
         'nonce': json['nonce'] == null ? undefined : json['nonce'],
@@ -82,6 +91,16 @@ export function TgvalidatordCreateOutgoingCancelRequestRequestFromJSONTyped(json
         'nonces': json['nonces'] == null ? undefined : json['nonces'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingCancelRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingCancelRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingCancelRequestRequest {
@@ -101,6 +120,7 @@ export function TgvalidatordCreateOutgoingCancelRequestRequestFromJSONTyped(json
         'addressIds': value['addressIds'],
         'nonces': value['nonces'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

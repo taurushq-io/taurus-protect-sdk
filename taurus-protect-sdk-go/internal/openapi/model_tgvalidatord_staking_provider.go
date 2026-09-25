@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -23,6 +22,7 @@ var _ MappedNullable = &TgvalidatordStakingProvider{}
 type TgvalidatordStakingProvider struct {
 	// the kind of staking provider. Currently only 'figment' is supported
 	Kind string `json:"kind"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordStakingProvider TgvalidatordStakingProvider
@@ -80,6 +80,11 @@ func (o TgvalidatordStakingProvider) MarshalJSON() ([]byte, error) {
 func (o TgvalidatordStakingProvider) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["kind"] = o.Kind
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -107,15 +112,20 @@ func (o *TgvalidatordStakingProvider) UnmarshalJSON(data []byte) (err error) {
 
 	varTgvalidatordStakingProvider := _TgvalidatordStakingProvider{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordStakingProvider)
+	err = json.Unmarshal(data, &varTgvalidatordStakingProvider)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordStakingProvider(varTgvalidatordStakingProvider)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "kind")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

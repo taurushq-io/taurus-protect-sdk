@@ -33,7 +33,10 @@ type TgvalidatordCreatePledgeRequest struct {
 	ExternalReferenceId *string `json:"externalReferenceId,omitempty"`
 	// Reconciliation note used internally, not shared to the counter participant.
 	ReconciliationNote *string `json:"reconciliationNote,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordCreatePledgeRequest TgvalidatordCreatePledgeRequest
 
 // NewTgvalidatordCreatePledgeRequest instantiates a new TgvalidatordCreatePledgeRequest object
 // This constructor will assign default values to properties that have it defined,
@@ -342,7 +345,40 @@ func (o TgvalidatordCreatePledgeRequest) ToMap() (map[string]interface{}, error)
 	if !IsNil(o.ReconciliationNote) {
 		toSerialize["reconciliationNote"] = o.ReconciliationNote
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordCreatePledgeRequest) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordCreatePledgeRequest := _TgvalidatordCreatePledgeRequest{}
+
+	err = json.Unmarshal(data, &varTgvalidatordCreatePledgeRequest)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordCreatePledgeRequest(varTgvalidatordCreatePledgeRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "sharedAddressID")
+		delete(additionalProperties, "currencyID")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "pledgeDurationSetup")
+		delete(additionalProperties, "pledgeType")
+		delete(additionalProperties, "keyValueAttributes")
+		delete(additionalProperties, "externalReferenceId")
+		delete(additionalProperties, "reconciliationNote")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordCreatePledgeRequest struct {

@@ -45,7 +45,16 @@ export interface TgvalidatordApproveRequestsReply {
      * @memberof TgvalidatordApproveRequestsReply
      */
     asyncSignature?: TgvalidatordRequestBatchSignature;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordApproveRequestsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordApproveRequestsReplyWireKeys: ReadonlySet<string> = new Set(['signedRequests', 'signatures', 'asyncSignature']);
 
 /**
  * Check if a given object implements the TgvalidatordApproveRequestsReply interface.
@@ -62,12 +71,22 @@ export function TgvalidatordApproveRequestsReplyFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordApproveRequestsReply = {
         
         'signedRequests': json['signedRequests'] == null ? undefined : json['signedRequests'],
         'signatures': json['signatures'] == null ? undefined : json['signatures'],
         'asyncSignature': json['asyncSignature'] == null ? undefined : TgvalidatordRequestBatchSignatureFromJSON(json['asyncSignature']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordApproveRequestsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordApproveRequestsReplyToJSON(json: any): TgvalidatordApproveRequestsReply {
@@ -84,6 +103,7 @@ export function TgvalidatordApproveRequestsReplyFromJSONTyped(json: any, ignoreD
         'signedRequests': value['signedRequests'],
         'signatures': value['signatures'],
         'asyncSignature': TgvalidatordRequestBatchSignatureToJSON(value['asyncSignature']),
+        ...value['additionalProperties'],
     };
 }
 

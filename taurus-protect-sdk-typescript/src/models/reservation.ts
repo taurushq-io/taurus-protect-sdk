@@ -6,6 +6,8 @@
  * double-spending during transaction creation.
  */
 
+import type { CursorNavigationOptions, CursorPage } from './pagination';
+
 import type { Currency } from './currency';
 
 /**
@@ -67,9 +69,10 @@ export interface ReservationUtxo {
 }
 
 /**
- * Options for listing reservations.
+ * Options for listing reservations. A cursor list: `pageSize` 1-100 (default 20) and the
+ * `cursor` of a previous page.
  */
-export interface ListReservationsOptions {
+export interface ListReservationsOptions extends CursorNavigationOptions {
   /**
    * Filter by kind of reservation.
    * @deprecated Since 3.20: use 'kinds' instead
@@ -81,10 +84,14 @@ export interface ListReservationsOptions {
   addressId?: string;
   /** Filter by multiple kinds of reservation (takes precedence over 'kind') */
   kinds?: string[];
-  /** Base64-encoded cursor for pagination */
-  cursorCurrentPage?: string;
-  /** Page request direction: FIRST, PREVIOUS, NEXT, or LAST */
-  cursorPageRequest?: string;
-  /** Page size */
-  cursorPageSize?: string;
+}
+
+/**
+ * A page of reservations.
+ */
+export interface ListReservationsResult {
+  /** The reservations of this page */
+  readonly items: Reservation[];
+  /** Cursor pagination: continue with `cursor: pagination.nextCursor` while `hasMore` */
+  readonly pagination: CursorPage;
 }

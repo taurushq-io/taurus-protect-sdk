@@ -61,27 +61,23 @@ func (s *ReservationService) GetReservationUTXO(ctx context.Context, id string) 
 
 // ListReservations retrieves a list of reservations with optional filtering and pagination.
 func (s *ReservationService) ListReservations(ctx context.Context, opts *model.ListReservationsOptions) (*model.ListReservationsResult, error) {
-	req := s.api.WalletServiceGetReservations(ctx)
+	if opts == nil {
+		opts = &model.ListReservationsOptions{}
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, opts.CurrentPage, opts.PageRequest)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if len(opts.Kinds) > 0 {
-			req = req.Kinds(opts.Kinds)
-		}
-		if opts.Address != "" {
-			req = req.Address(opts.Address)
-		}
-		if opts.AddressID != "" {
-			req = req.AddressId(opts.AddressID)
-		}
-		if opts.CurrentPage != "" {
-			req = req.CursorCurrentPage(opts.CurrentPage)
-		}
-		if opts.PageRequest != "" {
-			req = req.CursorPageRequest(opts.PageRequest)
-		}
-		if opts.PageSize > 0 {
-			req = req.CursorPageSize(fmt.Sprintf("%d", opts.PageSize))
-		}
+	req := applyCursorQuery(s.api.WalletServiceGetReservations(ctx), window)
+	if len(opts.Kinds) > 0 {
+		req = req.Kinds(opts.Kinds)
+	}
+	if opts.Address != "" {
+		req = req.Address(opts.Address)
+	}
+	if opts.AddressID != "" {
+		req = req.AddressId(opts.AddressID)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -93,18 +89,11 @@ func (s *ReservationService) ListReservations(ctx context.Context, opts *model.L
 		Reservations: mapper.ReservationsFromDTO(resp.Result),
 	}
 
-	// Parse cursor pagination info
-	if resp.Cursor != nil {
-		if resp.Cursor.CurrentPage != nil {
-			result.CurrentPage = *resp.Cursor.CurrentPage
-		}
-		if resp.Cursor.HasPrevious != nil {
-			result.HasPrevious = *resp.Cursor.HasPrevious
-		}
-		if resp.Cursor.HasNext != nil {
-			result.HasNext = *resp.Cursor.HasNext
-		}
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor})
+	if err != nil {
+		return nil, err
 	}
+	result.Page = page
 
 	return result, nil
 }

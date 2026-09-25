@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordGetReservationUTXOReply{}
 // TgvalidatordGetReservationUTXOReply struct for TgvalidatordGetReservationUTXOReply
 type TgvalidatordGetReservationUTXOReply struct {
 	Result *TgvalidatordUTXO `json:"result,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetReservationUTXOReply TgvalidatordGetReservationUTXOReply
 
 // NewTgvalidatordGetReservationUTXOReply instantiates a new TgvalidatordGetReservationUTXOReply object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordGetReservationUTXOReply) ToMap() (map[string]interface{}, er
 	if !IsNil(o.Result) {
 		toSerialize["result"] = o.Result
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetReservationUTXOReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetReservationUTXOReply := _TgvalidatordGetReservationUTXOReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetReservationUTXOReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetReservationUTXOReply(varTgvalidatordGetReservationUTXOReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "result")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetReservationUTXOReply struct {

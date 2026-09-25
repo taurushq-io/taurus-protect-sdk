@@ -138,64 +138,97 @@ type WhitelistedAddress struct {
 
 ### Pagination
 
-The Go SDK uses two pagination patterns depending on the API endpoint.
+Every list method pages the same way; the rules are shared by all four SDKs (repository
+`CLAUDE.md`, "Pagination (cross-SDK)").
 
-#### Cursor-Based Pagination (Preferred)
+**Page size.** `model.DefaultPageSize` (20) is sent when `Limit` / `PageSize` is 0, and
+`model.MaxPageSize` (100) is the largest accepted. A larger or negative size — or a negative
+`Offset` — returns an error naming the option before any request is sent. A page size is always
+sent. Two endpoints cannot page and take only a `Limit`: price history (at most
+`model.MaxPriceHistoryLimit`, 365 daily points) and the prices-history export (no SDK maximum).
+The transaction export is likewise limit-only: validatord always exports from the first matching
+transaction, so `ExportTransactionsResult.TotalItems` above `Limit` means the export was
+truncated.
 
-Used by services like `RequestService`:
+#### Offset lists
 
-```go
-// Cursor for cursor-based pagination
-type Cursor struct {
-    CurrentPage string
-    PageSize    int64
-    PageRequest string  // "FIRST", "NEXT", "PREVIOUS", "LAST"
-}
-
-// ResponseCursor returned with paginated results
-type ResponseCursor struct {
-    CurrentPage string
-    HasPrevious bool
-    HasNext     bool
-}
-
-// Result wrappers include cursor information
-type RequestResult struct {
-    Requests []*Request
-    Cursor   *ResponseCursor
-}
-```
-
-Usage:
-
-```go
-// Fetch first page
-cursor := &model.Cursor{PageRequest: "FIRST", PageSize: 50}
-result, err := client.Requests().ListRequests(ctx, nil, nil, "", nil, cursor)
-
-// Iterate through pages
-for result.Cursor != nil && result.Cursor.HasNext {
-    cursor = &model.Cursor{
-        CurrentPage: result.Cursor.CurrentPage,
-        PageRequest: "NEXT",
-        PageSize:    50,
-    }
-    result, err = client.Requests().ListRequests(ctx, nil, nil, "", nil, cursor)
-}
-```
-
-#### Offset-Based Pagination (Legacy)
-
-Used by some list endpoints that return `Pagination` metadata:
+Wallets, addresses, transactions, users, groups, fee payers, actions and the whitelists (whose
+endpoints have no cursor) take `Limit` + `Offset` and return a `*model.Pagination` that is never
+nil on success:
 
 ```go
 type Pagination struct {
-    Limit      int64
-    Offset     int64
-    TotalItems int64
-    HasMore    bool
+    Limit      int64 // the page size that was sent
+    Offset     int64 // the offset that was sent
+    TotalItems int64 // the server's total, reduced by rows the SDK withheld
+    NextOffset int64 // where the next page starts
+    HasMore    bool  // NextOffset > Offset && NextOffset < the server's total
 }
 ```
+
+Continue with `NextOffset`, never with `Offset + len(rows)`: the next page does not always start
+there. Wallets and addresses return the next offset themselves; users and groups can append a
+synthetic row beyond the limit; whitelisted addresses advance by every row the server returned,
+including rows the SDK excluded for failing verification; whitelisted contracts advance by the
+limit because validatord keeps the slot of a row it skips.
+
+```go
+opts := &model.ListWalletsOptions{Limit: 50}
+for {
+    wallets, page, err := client.Wallets().ListWallets(ctx, opts)
+    if err != nil {
+        return err
+    }
+    process(wallets)
+    if !page.HasMore {
+        break
+    }
+    opts.Offset = page.NextOffset
+}
+```
+
+An empty reply (`{}` — validatord omits zero values) is a full value: zero total, `HasMore`
+false, `NextOffset` equal to `Offset`.
+
+#### Cursor lists
+
+Every other list takes `PageSize` + `Cursor` and returns a `model.CursorPage` in the result's
+`Page` field:
+
+```go
+type CursorPage struct {
+    PageSize   int64  // the page size that was sent
+    NextCursor string // continues the list; empty when HasMore is false
+    HasMore    bool
+    TotalItems *int64 // only where the reply carries a total (balances, wallet tokens,
+                      // rules history, asset addresses and wallets); nil elsewhere
+}
+```
+
+Pass `NextCursor` back as the next `Cursor`; the SDK then requests the page after it
+(`pageRequest=NEXT`). Cursors are opaque base64 text that may contain `+ / =`; never build or
+modify one. Most cursor options also keep the low-level `CurrentPage` / `PageRequest` pair for
+paging by hand; neither can be combined with `Cursor`.
+
+```go
+opts := &model.ListRequestsOptions{PageSize: 50, Statuses: []string{"CONFIRMED"}}
+for {
+    result, err := client.Requests().ListRequests(ctx, opts)
+    if err != nil {
+        return err
+    }
+    process(result.Requests)
+    if !result.Page.HasMore {
+        break
+    }
+    opts.Cursor = result.Page.NextCursor
+}
+```
+
+Wallet tokens and governance rules history page by a bare token rather than a cursor object;
+they are walked exactly the same way. A malformed reply count (not a canonical decimal, or above
+2^53-1) or a reply cursor claiming a next page without one is an error wrapping
+`model.ErrMalformedPagination` (match it with `errors.Is`) rather than a silent zero.
 
 ---
 

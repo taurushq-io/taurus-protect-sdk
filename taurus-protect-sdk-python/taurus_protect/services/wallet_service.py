@@ -12,7 +12,16 @@ from taurus_protect.mappers.wallet import (
     wallets_from_dto,
 )
 from taurus_protect.models.balance import AssetBalance, BalanceHistoryPoint
-from taurus_protect.models.pagination import Pagination
+from taurus_protect.models.pagination import (
+    REPLY_OFFSET,
+    CursorPage,
+    Pagination,
+    cursor_page,
+    offset_pagination,
+    offset_query,
+    resolve_offset,
+    resolve_page_size,
+)
 from taurus_protect.models.wallet import CreateWalletRequest, ListWalletsOptions, Wallet
 from taurus_protect.services._base import BaseService
 
@@ -28,10 +37,15 @@ class WalletService(BaseService):
     manage wallet attributes and retrieve balance history.
 
     Example:
-        >>> # List wallets
-        >>> wallets, pagination = client.wallets.list(limit=50, offset=0)
-        >>> for wallet in wallets:
-        ...     print(f"{wallet.name}: {wallet.currency}")
+        >>> # Walk every wallet, one page at a time
+        >>> offset = 0
+        >>> while True:
+        ...     wallets, pagination = client.wallets.list(limit=100, offset=offset)
+        ...     for wallet in wallets:
+        ...         print(f"{wallet.name}: {wallet.currency}")
+        ...     if not pagination.has_more:
+        ...         break
+        ...     offset = pagination.next_offset
         >>>
         >>> # Get single wallet
         >>> wallet = client.wallets.get(123)
@@ -100,173 +114,114 @@ class WalletService(BaseService):
 
     def list(
         self,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> Tuple[List[Wallet], Optional[Pagination]]:
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        exclude_disabled: Optional[bool] = None,
+    ) -> Tuple[List[Wallet], Pagination]:
         """
-        List wallets with pagination.
+        List wallets, one page at a time.
 
         Args:
-            limit: Maximum number of wallets to return (must be positive).
-            offset: Number of wallets to skip (must be non-negative).
+            limit: Page size (default 20, max 100).
+            offset: Number of wallets to skip; pass ``pagination.next_offset`` to continue.
+            exclude_disabled: True hides every disabled wallet; unset hides only
+                wallets whose currency is disabled.
 
         Returns:
-            Tuple of (wallets list, pagination info).
+            Tuple of (wallets, pagination).
 
         Raises:
             ValueError: If limit or offset are invalid.
             APIError: If API request fails.
         """
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
+        return self.list_with_options(
+            ListWalletsOptions(limit=limit, offset=offset, exclude_disabled=exclude_disabled)
+        )
+
+    def list_with_options(
+        self,
+        options: Optional[ListWalletsOptions] = None,
+    ) -> Tuple[List[Wallet], Pagination]:
+        """
+        List wallets with every filter the endpoint supports.
+
+        Args:
+            options: Filters and page window; every field reaches the wire.
+
+        Returns:
+            Tuple of (wallets, pagination).
+
+        Raises:
+            ValueError: If limit or offset are invalid.
+            APIError: If API request fails.
+        """
+        opts = options or ListWalletsOptions()
+        limit = resolve_page_size(opts.limit, "limit")
+        offset = resolve_offset(opts.offset)
 
         try:
             resp = self._wallets_api.wallet_service_get_wallets_v2(
-                currencies=None,
-                query=None,
-                limit=str(limit),
-                offset=str(offset),
-                name=None,
-                sort_order=None,
-                exclude_disabled=None,
-                tag_ids=None,
-                only_positive_balance=None,
-                blockchain=None,
-                network=None,
-                ids=None,
+                currencies=[opts.currency] if opts.currency else None,
+                query=opts.query,
+                name=opts.name,
+                sort_order=opts.sort_order,
+                exclude_disabled=opts.exclude_disabled,
+                tag_ids=opts.tag_ids,
+                only_positive_balance=opts.only_positive_balance,
+                blockchain=opts.blockchain,
+                network=opts.network,
+                ids=opts.ids,
+                **offset_query(limit, offset),
             )
 
-            result = getattr(resp, "result", None)
-            wallets = wallets_from_dto(result) if result else []
-
-            pagination = self._extract_pagination(
-                total_items=getattr(resp, "total_items", None),
-                offset=getattr(resp, "offset", None),
+            rows = resp.result or []
+            wallets = wallets_from_dto(rows)
+            pagination = offset_pagination(
+                REPLY_OFFSET,
                 limit=limit,
+                offset=offset,
+                served_rows=len(rows),
+                total_items=resp.total_items,
+                reply_offset=resp.offset,
+                excluded=len(rows) - len(wallets),
             )
-
             return wallets, pagination
         except Exception as e:
             from taurus_protect.errors import APIError
 
             if isinstance(e, (APIError, ValueError)):
-                raise
-            raise self._handle_error(e) from e
-
-    def list_with_options(
-        self,
-        options: Optional[ListWalletsOptions] = None,
-    ) -> Tuple[List[Wallet], Optional[Pagination]]:
-        """
-        List wallets with full filtering options.
-
-        Args:
-            options: Optional filtering and pagination options.
-
-        Returns:
-            Tuple of (wallets list, pagination info).
-
-        Raises:
-            APIError: If API request fails.
-        """
-        opts = options or ListWalletsOptions()
-
-        try:
-            currencies = [opts.currency] if opts.currency else None
-
-            resp = self._wallets_api.wallet_service_get_wallets_v2(
-                currencies=currencies,
-                query=opts.query,
-                limit=str(opts.limit) if opts.limit > 0 else None,
-                offset=str(opts.offset) if opts.offset > 0 else None,
-                name=None,
-                sort_order=None,
-                exclude_disabled=opts.exclude_disabled if opts.exclude_disabled else None,
-                tag_ids=None,
-                only_positive_balance=None,
-                blockchain=None,
-                network=None,
-                ids=None,
-            )
-
-            result = getattr(resp, "result", None)
-            wallets = wallets_from_dto(result) if result else []
-
-            pagination = self._extract_pagination(
-                total_items=getattr(resp, "total_items", None),
-                offset=getattr(resp, "offset", None),
-                limit=opts.limit,
-            )
-
-            return wallets, pagination
-        except Exception as e:
-            from taurus_protect.errors import APIError
-
-            if isinstance(e, APIError):
                 raise
             raise self._handle_error(e) from e
 
     def get_by_name(
         self,
         name: str,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> Tuple[List[Wallet], Optional[Pagination]]:
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        exclude_disabled: Optional[bool] = None,
+    ) -> Tuple[List[Wallet], Pagination]:
         """
-        Get wallets by name with pagination.
+        List wallets whose name matches (case-insensitive, partial), one page at a time.
 
         Args:
             name: The wallet name to search for.
-            limit: Maximum number of wallets to return.
-            offset: Number of wallets to skip.
+            limit: Page size (default 20, max 100).
+            offset: Number of wallets to skip; pass ``pagination.next_offset`` to continue.
+            exclude_disabled: True hides every disabled wallet.
 
         Returns:
-            Tuple of (wallets list, pagination info).
+            Tuple of (wallets, pagination).
 
         Raises:
             ValueError: If name is empty or limit/offset invalid.
             APIError: If API request fails.
         """
         self._validate_required(name, "name")
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
-
-        try:
-            resp = self._wallets_api.wallet_service_get_wallets_v2(
-                currencies=None,
-                query=None,
-                limit=str(limit),
-                offset=str(offset),
-                name=name,
-                sort_order=None,
-                exclude_disabled=None,
-                tag_ids=None,
-                only_positive_balance=None,
-                blockchain=None,
-                network=None,
-                ids=None,
+        return self.list_with_options(
+            ListWalletsOptions(
+                name=name, limit=limit, offset=offset, exclude_disabled=exclude_disabled
             )
-
-            result = getattr(resp, "result", None)
-            wallets = wallets_from_dto(result) if result else []
-
-            pagination = self._extract_pagination(
-                total_items=getattr(resp, "total_items", None),
-                offset=getattr(resp, "offset", None),
-                limit=limit,
-            )
-
-            return wallets, pagination
-        except Exception as e:
-            from taurus_protect.errors import APIError
-
-            if isinstance(e, (APIError, ValueError)):
-                raise
-            raise self._handle_error(e) from e
+        )
 
     def create(self, request: CreateWalletRequest) -> Wallet:
         """
@@ -463,17 +418,19 @@ class WalletService(BaseService):
     def get_tokens(
         self,
         wallet_id: int,
-        limit: int = 50,
-    ) -> List[AssetBalance]:
+        page_size: Optional[int] = None,
+        cursor: Optional[str] = None,
+    ) -> Tuple[List[AssetBalance], CursorPage]:
         """
-        Get wallet tokens (asset balances).
+        List a wallet's token balances, one page at a time.
 
         Args:
             wallet_id: The wallet ID.
-            limit: Maximum number of tokens to return.
+            page_size: Page size (default 20, max 100).
+            cursor: ``page.next_cursor`` from the previous page, to continue.
 
         Returns:
-            List of asset balances.
+            Tuple of (asset balances, page); the page carries the server's total.
 
         Raises:
             ValueError: If arguments are invalid.
@@ -481,21 +438,19 @@ class WalletService(BaseService):
         """
         if wallet_id <= 0:
             raise ValueError("wallet_id must be positive")
-        if limit <= 0:
-            raise ValueError("limit must be positive")
+        size = resolve_page_size(page_size)
 
         try:
             resp = self._wallets_api.wallet_service_get_wallet_tokens(
                 str(wallet_id),
-                str(limit),
-                None,  # cursor
+                limit=str(size),
+                cursor=cursor or None,
             )
 
-            balances = getattr(resp, "balances", None)
-            if balances is None:
-                return []
-
-            return [b for dto in balances if (b := asset_balance_from_dto(dto)) is not None]
+            balances = [
+                b for dto in resp.balances or [] if (b := asset_balance_from_dto(dto)) is not None
+            ]
+            return balances, cursor_page(size, token=resp.next, total=resp.total, has_total=True)
         except Exception as e:
             from taurus_protect.errors import APIError
 

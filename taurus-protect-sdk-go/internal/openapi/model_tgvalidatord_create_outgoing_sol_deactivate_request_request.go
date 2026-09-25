@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -35,6 +34,7 @@ type TgvalidatordCreateOutgoingSOLDeactivateRequestRequest struct {
 	FromStakeAccountDerivationIndex *string `json:"fromStakeAccountDerivationIndex,omitempty"`
 	// The amount to deactivate. If 0 or unspecified, the entire stake account will be deactivated. If a value is provided, the account will be split.
 	Amount *string `json:"amount,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingSOLDeactivateRequestRequest TgvalidatordCreateOutgoingSOLDeactivateRequestRequest
@@ -302,6 +302,11 @@ func (o TgvalidatordCreateOutgoingSOLDeactivateRequestRequest) ToMap() (map[stri
 	if !IsNil(o.Amount) {
 		toSerialize["amount"] = o.Amount
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -329,15 +334,26 @@ func (o *TgvalidatordCreateOutgoingSOLDeactivateRequestRequest) UnmarshalJSON(da
 
 	varTgvalidatordCreateOutgoingSOLDeactivateRequestRequest := _TgvalidatordCreateOutgoingSOLDeactivateRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingSOLDeactivateRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingSOLDeactivateRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingSOLDeactivateRequestRequest(varTgvalidatordCreateOutgoingSOLDeactivateRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "useUnconfirmedFunds")
+		delete(additionalProperties, "externalRequestId")
+		delete(additionalProperties, "fromStakeAccountDerivationIndex")
+		delete(additionalProperties, "amount")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

@@ -33,7 +33,16 @@ export interface TgvalidatordGetPortfolioStatisticsReply {
      * @memberof TgvalidatordGetPortfolioStatisticsReply
      */
     result?: TgvalidatordAggregatedStatsData;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetPortfolioStatisticsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetPortfolioStatisticsReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetPortfolioStatisticsReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetPortfolioStatisticsReplyFromJSONTyped(json: any, 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetPortfolioStatisticsReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordAggregatedStatsDataFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetPortfolioStatisticsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetPortfolioStatisticsReplyToJSON(json: any): TgvalidatordGetPortfolioStatisticsReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetPortfolioStatisticsReplyFromJSONTyped(json: any, 
     return {
         
         'result': TgvalidatordAggregatedStatsDataToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

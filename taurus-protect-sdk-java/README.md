@@ -69,9 +69,9 @@ See [Authentication](docs/AUTHENTICATION.md) for more initialization options.
 
 ## Services
 
-The SDK provides 43 services organized into core services and the TaurusNetwork namespace.
+The SDK provides 44 services organized into core services and the TaurusNetwork namespace.
 
-### Core Services (38 services)
+### Core Services (39 services)
 
 | Service | Purpose |
 |---------|---------|
@@ -104,6 +104,7 @@ The SDK provides 43 services organized into core services and the TaurusNetwork 
 | `AssetService` | Asset information |
 | `ActionService` | Action management |
 | `BlockchainService` | Blockchain information |
+| `EarnService` | Earn rewards credited to addresses |
 | `ExchangeService` | Exchange integration |
 | `FiatService` | Fiat currency operations |
 | `FeePayerService` | Fee payer management |

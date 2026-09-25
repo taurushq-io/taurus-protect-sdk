@@ -37,3 +37,56 @@ export function rethrowIfNotRowLevel(error: unknown): asserts error is Error {
     throw error;
   }
 }
+
+/**
+ * What a by-id re-read verified, and which rows failed their own check.
+ *
+ * For a caller that completes unsigned rows through a verified reader and must drop a
+ * bad row rather than fail its page (the v2 asset-holders list).
+ */
+export interface VerifiedLookup<T> {
+  /** The rows that verified, by id. */
+  readonly verified: ReadonlyMap<string, T>;
+  /** The rows that failed their own check, by id, with the reason. */
+  readonly failed: ReadonlyMap<string, string>;
+}
+
+/**
+ * Verifies each row of a by-id re-read, absorbing only per-row integrity failures.
+ *
+ * Anything {@link rethrowIfNotRowLevel} re-throws aborts the read. An id returned more
+ * than once is reported as failed: a by-id read has one row per id, so a second one is
+ * a server choosing which copy the caller keeps.
+ *
+ * @param rows - The reply rows
+ * @param idOf - The row's id
+ * @param verify - The verified reader's per-row check; undefined means "no row"
+ */
+export async function verifyRowsById<D, T>(
+  rows: readonly D[],
+  idOf: (row: D) => string,
+  verify: (row: D) => T | undefined | Promise<T | undefined>
+): Promise<VerifiedLookup<T>> {
+  const verified = new Map<string, T>();
+  const failed = new Map<string, string>();
+  const seen = new Set<string>();
+  for (const row of rows) {
+    const id = idOf(row);
+    if (seen.has(id)) {
+      verified.delete(id);
+      failed.set(id, `row ${id} was returned more than once`);
+      continue;
+    }
+    seen.add(id);
+    try {
+      const value = await verify(row);
+      if (value !== undefined) {
+        verified.set(id, value);
+      }
+    } catch (error: unknown) {
+      rethrowIfNotRowLevel(error);
+      failed.set(id, error.message);
+    }
+  }
+  return { verified, failed };
+}

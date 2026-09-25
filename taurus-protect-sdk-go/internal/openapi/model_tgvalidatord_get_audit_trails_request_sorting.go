@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordGetAuditTrailsRequestSorting{}
 type TgvalidatordGetAuditTrailsRequestSorting struct {
 	SortBy []string `json:"sortBy,omitempty"`
 	SortOrder *string `json:"sortOrder,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetAuditTrailsRequestSorting TgvalidatordGetAuditTrailsRequestSorting
 
 // NewTgvalidatordGetAuditTrailsRequestSorting instantiates a new TgvalidatordGetAuditTrailsRequestSorting object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordGetAuditTrailsRequestSorting) ToMap() (map[string]interface{
 	if !IsNil(o.SortOrder) {
 		toSerialize["sortOrder"] = o.SortOrder
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetAuditTrailsRequestSorting) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetAuditTrailsRequestSorting := _TgvalidatordGetAuditTrailsRequestSorting{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetAuditTrailsRequestSorting)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetAuditTrailsRequestSorting(varTgvalidatordGetAuditTrailsRequestSorting)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "sortBy")
+		delete(additionalProperties, "sortOrder")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetAuditTrailsRequestSorting struct {

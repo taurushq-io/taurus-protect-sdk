@@ -389,12 +389,12 @@ class MultiCurrencyE2ETest {
         Map<String, BigInteger> nativeBalanceByAddr = new HashMap<>();
         if (config.isToken) {
             System.out.println(tag + "Step 0: Searching via AssetService...");
-            candidates = client.getAssetService().getAssetAddresses(config.symbol);
+            candidates = client.getAssetService().getAssetAddresses(config.symbol).getAddresses();
             System.out.println(tag + "Step 0: AssetService returned " + (candidates == null ? 0 : candidates.size()) + " token addresses");
 
             // Fetch native currency addresses to check gas balance
             System.out.println(tag + "Step 0: Fetching " + config.blockchain + " addresses for gas balance check...");
-            List<Address> nativeAddresses = client.getAssetService().getAssetAddresses(config.blockchain);
+            List<Address> nativeAddresses = client.getAssetService().getAssetAddresses(config.blockchain).getAddresses();
             if (nativeAddresses != null) {
                 for (Address nAddr : nativeAddresses) {
                     BigInteger nBal = (nAddr.getBalance() != null && nAddr.getBalance().getAvailableConfirmed() != null)
@@ -487,7 +487,7 @@ class MultiCurrencyE2ETest {
      */
     private List<Address> findNativeAddresses(CurrencyConfig config) throws ApiException {
         String tag = "[" + config.symbol + "] ";
-        List<Wallet> wallets = client.getAssetService().getAssetWallets(config.symbol);
+        List<Wallet> wallets = client.getAssetService().getAssetWallets(config.symbol).getWallets();
         if (wallets == null || wallets.isEmpty()) {
             System.out.println(tag + "  No wallets found via getAssetWallets");
             return null;
@@ -502,7 +502,7 @@ class MultiCurrencyE2ETest {
             int limit = 50;
             int offset = 0;
             while (true) {
-                List<Address> addresses = client.getAddressService().getAddresses(wallet.getId(), limit, offset);
+                List<Address> addresses = client.getAddressService().getAddresses(wallet.getId(), limit, offset).getAddresses();
                 if (addresses.isEmpty()) {
                     break;
                 }

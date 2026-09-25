@@ -112,35 +112,6 @@ func (s *WhitelistedContractService) UpdateWhitelistedContract(ctx context.Conte
 	return *resp.Result.UpdatedContractTemporaryId, nil
 }
 
-// DeleteWhitelistedContract deletes a whitelisted contract.
-// Note: This operation is deprecated due to complex dependencies.
-func (s *WhitelistedContractService) DeleteWhitelistedContract(ctx context.Context, id string, comment string) (string, error) {
-	if id == "" {
-		return "", fmt.Errorf("id cannot be empty")
-	}
-
-	deleteReq := openapi.TgvalidatordDeleteWhitelistedContractAddressRequest{
-		Id: id,
-	}
-	if comment != "" {
-		deleteReq.Comment = &comment
-	}
-
-	//nolint:staticcheck // deprecated delete-contract endpoint retained for compatibility
-	resp, httpResp, err := s.api.WhitelistServiceDeleteWhitelistedContract(ctx).
-		Body(deleteReq).
-		Execute()
-	if err != nil {
-		return "", s.errMapper.MapError(err, httpResp)
-	}
-
-	if resp.Result == nil || resp.Result.Id == nil {
-		return "", nil
-	}
-
-	return *resp.Result.Id, nil
-}
-
 // ApproveWhitelistedContract approves whitelisted contracts.
 // The signature is base64(ecdsa_sign(sha256([hex(sha256(req1_metadata)),hex(sha256(req2_metadata)),...]))).
 //

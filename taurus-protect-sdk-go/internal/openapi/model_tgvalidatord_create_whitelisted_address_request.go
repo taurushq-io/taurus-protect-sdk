@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -47,6 +46,7 @@ type TgvalidatordCreateWhitelistedAddressRequest struct {
 	VisibilityGroupID *string `json:"visibilityGroupID,omitempty"`
 	// **Deprecated:** use the blockchain parameter instead 
 	Currency *string `json:"currency,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateWhitelistedAddressRequest TgvalidatordCreateWhitelistedAddressRequest
@@ -506,6 +506,11 @@ func (o TgvalidatordCreateWhitelistedAddressRequest) ToMap() (map[string]interfa
 	if !IsNil(o.Currency) {
 		toSerialize["currency"] = o.Currency
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -535,15 +540,32 @@ func (o *TgvalidatordCreateWhitelistedAddressRequest) UnmarshalJSON(data []byte)
 
 	varTgvalidatordCreateWhitelistedAddressRequest := _TgvalidatordCreateWhitelistedAddressRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateWhitelistedAddressRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateWhitelistedAddressRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateWhitelistedAddressRequest(varTgvalidatordCreateWhitelistedAddressRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "address")
+		delete(additionalProperties, "memo")
+		delete(additionalProperties, "label")
+		delete(additionalProperties, "exchangeAccountId")
+		delete(additionalProperties, "customerId")
+		delete(additionalProperties, "linkedInternalAddressIds")
+		delete(additionalProperties, "addressType")
+		delete(additionalProperties, "contractType")
+		delete(additionalProperties, "linkedWalletIds")
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "network")
+		delete(additionalProperties, "visibilityGroupID")
+		delete(additionalProperties, "currency")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

@@ -22,7 +22,10 @@ type ActionTarget struct {
 	Kind *string `json:"kind,omitempty"`
 	Address *TargetAddress `json:"address,omitempty"`
 	Wallet *TargetWallet `json:"wallet,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _ActionTarget ActionTarget
 
 // NewActionTarget instantiates a new ActionTarget object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o ActionTarget) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Wallet) {
 		toSerialize["wallet"] = o.Wallet
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *ActionTarget) UnmarshalJSON(data []byte) (err error) {
+	varActionTarget := _ActionTarget{}
+
+	err = json.Unmarshal(data, &varActionTarget)
+
+	if err != nil {
+		return err
+	}
+
+	*o = ActionTarget(varActionTarget)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "kind")
+		delete(additionalProperties, "address")
+		delete(additionalProperties, "wallet")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableActionTarget struct {

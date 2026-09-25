@@ -6,8 +6,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from taurus_protect._internal.openapi import TagsApi
 from taurus_protect.errors import APIError, NotFoundError
 from taurus_protect.services.tag_service import TagService
+from tests.unit.transport_stub import StubTransport, api_client
 
 
 class TestGet:
@@ -63,56 +65,26 @@ class TestGet:
 
 
 class TestList:
-    """Tests for TagService.list()."""
+    """TagService.list: the endpoint does not page, so every tag it returns comes back."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        tags_api = MagicMock()
-        service = TagService(api_client=api_client, tags_api=tags_api)
-        return service, tags_api
+    def _service(self) -> TagService:
+        ac = api_client()
+        return TagService(ac, TagsApi(ac))
 
-    def test_list_returns_tags(self) -> None:
-        service, api = self._make_service()
+    def test_returns_every_tag(self) -> None:
+        reply = {"result": [{"id": str(i), "value": f"t{i}"} for i in range(25)]}
+        with StubTransport(reply) as transport:
+            tags = self._service().list()
 
-        reply = MagicMock()
-        reply.result = [MagicMock(), MagicMock(), MagicMock()]
-        api.tag_service_get_tags.return_value = reply
+        assert [t.id for t in tags] == [str(i) for i in range(25)]
+        assert transport.last.query == []
 
-        with patch(
-            "taurus_protect.services.tag_service.tags_from_dto",
-            return_value=[MagicMock(), MagicMock(), MagicMock()],
-        ):
-            result = service.list()
+    def test_query_and_ids_reach_the_wire(self) -> None:
+        with StubTransport({}) as transport:
+            tags = self._service().list(query="imp", ids=["1", "2"])
 
-        assert len(result) == 3
-
-    def test_list_raises_for_invalid_limit(self) -> None:
-        service, _ = self._make_service()
-
-        with pytest.raises(ValueError, match="limit must be positive"):
-            service.list(limit=0)
-
-    def test_list_raises_for_negative_offset(self) -> None:
-        service, _ = self._make_service()
-
-        with pytest.raises(ValueError, match="offset cannot be negative"):
-            service.list(offset=-1)
-
-    def test_list_applies_client_side_pagination(self) -> None:
-        service, api = self._make_service()
-
-        tags = [MagicMock() for _ in range(10)]
-        reply = MagicMock()
-        reply.result = [MagicMock() for _ in range(10)]
-        api.tag_service_get_tags.return_value = reply
-
-        with patch(
-            "taurus_protect.services.tag_service.tags_from_dto",
-            return_value=tags,
-        ):
-            result = service.list(limit=3, offset=2)
-
-        assert len(result) == 3
+        assert tags == []
+        assert transport.last.query == [("ids", "1"), ("ids", "2"), ("query", "imp")]
 
 
 class TestCreate:

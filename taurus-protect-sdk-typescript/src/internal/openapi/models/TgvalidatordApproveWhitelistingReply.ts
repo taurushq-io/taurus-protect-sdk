@@ -39,7 +39,16 @@ export interface TgvalidatordApproveWhitelistingReply {
      * @memberof TgvalidatordApproveWhitelistingReply
      */
     asyncSignature?: TgvalidatordWhitelistedAddressBatchSignature;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordApproveWhitelistingReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordApproveWhitelistingReplyWireKeys: ReadonlySet<string> = new Set(['signatures', 'asyncSignature']);
 
 /**
  * Check if a given object implements the TgvalidatordApproveWhitelistingReply interface.
@@ -56,11 +65,21 @@ export function TgvalidatordApproveWhitelistingReplyFromJSONTyped(json: any, ign
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordApproveWhitelistingReply = {
         
         'signatures': json['signatures'] == null ? undefined : json['signatures'],
         'asyncSignature': json['asyncSignature'] == null ? undefined : TgvalidatordWhitelistedAddressBatchSignatureFromJSON(json['asyncSignature']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordApproveWhitelistingReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordApproveWhitelistingReplyToJSON(json: any): TgvalidatordApproveWhitelistingReply {
@@ -76,6 +95,7 @@ export function TgvalidatordApproveWhitelistingReplyFromJSONTyped(json: any, ign
         
         'signatures': value['signatures'],
         'asyncSignature': TgvalidatordWhitelistedAddressBatchSignatureToJSON(value['asyncSignature']),
+        ...value['additionalProperties'],
     };
 }
 

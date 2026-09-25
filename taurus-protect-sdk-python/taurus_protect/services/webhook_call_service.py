@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple, Union
 
-from taurus_protect.mappers.webhook import webhook_call_from_dto, webhook_calls_from_dto
-from taurus_protect.models.pagination import Pagination
+from taurus_protect.mappers.webhook import webhook_calls_from_dto
+from taurus_protect.models.pagination import (
+    MAX_PAGE_SIZE,
+    CursorPage,
+    CursorRequest,
+    cursor_page,
+    cursor_request,
+)
 from taurus_protect.models.webhook import WebhookCall
 from taurus_protect.services._base import BaseService
 
@@ -17,33 +23,34 @@ if TYPE_CHECKING:
 @dataclass
 class ApiRequestCursor:
     """
-    Cursor for paginated API requests.
+    Low-level cursor for :meth:`WebhookCallService.get_webhook_calls`.
+
+    Prefer passing ``page.next_cursor`` as a string; this form is for callers that need
+    an explicit page direction.
 
     Attributes:
-        current_page: Current page token for pagination.
-        page_request: Page request direction (NEXT or PREVIOUS).
-        page_size: Number of items per page.
+        current_page: Page token.
+        page_request: Page direction (FIRST, PREVIOUS, NEXT, LAST).
+        page_size: Page size (default 20, max 100).
     """
 
     current_page: Optional[str] = None
     page_request: Optional[str] = None
-    page_size: int = 50
+    page_size: Optional[int] = None
 
 
 @dataclass
 class WebhookCallResult:
     """
-    Result from webhook calls list operation.
+    One page of webhook calls.
 
     Attributes:
-        calls: List of webhook calls.
-        cursor: Pagination cursor for next page.
-        has_more: Whether more results are available.
+        calls: The webhook calls in this page.
+        page: The page window; continue with ``page.next_cursor`` while ``has_more``.
     """
 
     calls: List[WebhookCall]
-    cursor: Optional[str] = None
-    has_more: bool = False
+    page: CursorPage = field(default_factory=CursorPage)
 
 
 class WebhookCallService(BaseService):
@@ -66,9 +73,9 @@ class WebhookCallService(BaseService):
         >>> result = client.webhook_calls.get_webhook_calls(status="FAILED")
         >>>
         >>> # List webhook calls (alternative method)
-        >>> calls, pagination = client.webhook_calls.list(
+        >>> calls, page = client.webhook_calls.list(
         ...     webhook_id="webhook-123",
-        ...     limit=50,
+        ...     page_size=100,
         ... )
     """
 
@@ -89,83 +96,50 @@ class WebhookCallService(BaseService):
         webhook_id: Optional[str] = None,
         status: Optional[str] = None,
         sort_order: Optional[str] = None,
-        cursor: Optional[ApiRequestCursor] = None,
+        cursor: Optional[Union[str, ApiRequestCursor]] = None,
+        *,
+        page_size: Optional[int] = None,
     ) -> WebhookCallResult:
         """
-        Retrieve webhook call history with optional filtering.
-
-        Returns a paginated list of webhook calls that can be filtered by
-        event ID, webhook ID, or status.
+        Retrieve webhook call history, one page at a time.
 
         Args:
             event_id: Filter by event ID (optional).
             webhook_id: Filter by webhook ID (optional).
             status: Filter by call status (optional, e.g., "SUCCESS", "FAILED").
             sort_order: Sort order for results (optional, "ASC" or "DESC", default "DESC").
-            cursor: Pagination cursor (optional, None for first page).
+            cursor: ``result.page.next_cursor`` from the previous page, or an
+                :class:`ApiRequestCursor` for an explicit page direction.
+            page_size: Page size (default 20, max 100); overrides the page size of an
+                :class:`ApiRequestCursor`.
 
         Returns:
-            WebhookCallResult containing the calls and pagination info.
+            WebhookCallResult with the calls and the page.
 
         Raises:
+            ValueError: If the page size is invalid or cursor options conflict.
             APIError: If the API call fails.
 
         Example:
-            >>> # Get first page of calls
-            >>> result = client.webhook_calls.get_webhook_calls(
-            ...     webhook_id="webhook-123",
-            ...     status="SUCCESS",
-            ... )
-            >>> print(f"Found {len(result.calls)} calls")
-            >>>
-            >>> # Get next page using cursor
-            >>> if result.has_more:
-            ...     next_cursor = ApiRequestCursor(current_page=result.cursor)
-            ...     result = client.webhook_calls.get_webhook_calls(cursor=next_cursor)
+            >>> result = client.webhook_calls.get_webhook_calls(webhook_id="webhook-123")
+            >>> while result.page.has_more:
+            ...     result = client.webhook_calls.get_webhook_calls(
+            ...         webhook_id="webhook-123", cursor=result.page.next_cursor
+            ...     )
         """
-        cursor_current_page = None
-        cursor_page_request = None
-        cursor_page_size = None
-
-        if cursor is not None:
-            cursor_current_page = cursor.current_page
-            cursor_page_request = cursor.page_request
-            cursor_page_size = str(cursor.page_size) if cursor.page_size else None
-
-        try:
-            resp = self._webhook_calls_api.webhook_service_get_webhook_calls(
-                event_id=event_id,
-                webhook_id=webhook_id,
-                status=status,
-                cursor_current_page=cursor_current_page,
-                cursor_page_request=cursor_page_request,
-                cursor_page_size=cursor_page_size,
-                sort_order=sort_order,
+        if isinstance(cursor, ApiRequestCursor):
+            req = cursor_request(
+                page_size if page_size is not None else cursor.page_size,
+                current_page=cursor.current_page,
+                page_request=cursor.page_request,
             )
+        else:
+            req = cursor_request(page_size, cursor)
 
-            # Extract calls from response
-            calls_dto = getattr(resp, "calls", None) or getattr(resp, "result", None)
-            calls = webhook_calls_from_dto(calls_dto) if calls_dto else []
-
-            # Extract cursor for pagination
-            cursor_resp = getattr(resp, "cursor", None)
-            next_cursor = None
-            has_more = False
-            if cursor_resp:
-                next_cursor = getattr(cursor_resp, "current_page", None)
-                has_more = bool(next_cursor)
-
-            return WebhookCallResult(
-                calls=calls,
-                cursor=next_cursor,
-                has_more=has_more,
-            )
-        except Exception as e:
-            from taurus_protect.errors import APIError
-
-            if isinstance(e, APIError):
-                raise
-            raise self._handle_error(e) from e
+        calls, page = self._page(
+            req, event_id=event_id, webhook_id=webhook_id, status=status, sort_order=sort_order
+        )
+        return WebhookCallResult(calls=calls, page=page)
 
     def list(
         self,
@@ -173,87 +147,46 @@ class WebhookCallService(BaseService):
         event_id: Optional[str] = None,
         status: Optional[str] = None,
         sort_order: Optional[str] = None,
-        limit: int = 50,
+        page_size: Optional[int] = None,
         cursor: Optional[str] = None,
-    ) -> Tuple[List[WebhookCall], Optional[Pagination]]:
+    ) -> Tuple[List[WebhookCall], CursorPage]:
         """
-        List webhook calls with optional filtering.
-
-        This is an alternative interface to get_webhook_calls() that returns
-        a tuple of (calls, pagination) for consistency with other services.
+        List webhook calls, one page at a time.
 
         Args:
             webhook_id: Filter by webhook ID (optional).
             event_id: Filter by event ID (optional).
             status: Filter by call status (optional, e.g., "SUCCESS", "FAILED").
             sort_order: Sort order for results (optional, "ASC" or "DESC").
-            limit: Maximum number of calls to return (must be positive).
-            cursor: Pagination cursor for next page (optional).
+            page_size: Page size (default 20, max 100).
+            cursor: ``page.next_cursor`` from the previous page, to continue.
 
         Returns:
-            Tuple of (webhook calls list, pagination info).
+            Tuple of (webhook calls, page).
 
         Raises:
-            ValueError: If limit is invalid.
+            ValueError: If the page size is invalid.
             APIError: If API request fails.
 
         Example:
-            >>> # List all webhook calls
-            >>> calls, pagination = client.webhook_calls.list(limit=50)
-            >>>
-            >>> # Filter by webhook ID
-            >>> calls, pagination = client.webhook_calls.list(webhook_id="webhook-123")
-            >>>
-            >>> # Filter by status
-            >>> calls, pagination = client.webhook_calls.list(status="FAILED")
+            >>> calls, page = client.webhook_calls.list(webhook_id="webhook-123")
+            >>> if page.has_more:
+            ...     more, page = client.webhook_calls.list(cursor=page.next_cursor)
         """
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-
-        try:
-            resp = self._webhook_calls_api.webhook_service_get_webhook_calls(
-                event_id=event_id,
-                webhook_id=webhook_id,
-                status=status,
-                cursor_current_page=cursor,
-                cursor_page_request=None,
-                cursor_page_size=str(limit),
-                sort_order=sort_order,
-            )
-
-            # Extract calls from response
-            calls_dto = getattr(resp, "calls", None) or getattr(resp, "result", None)
-            calls = webhook_calls_from_dto(calls_dto) if calls_dto else []
-
-            # Extract cursor for pagination
-            cursor_resp = getattr(resp, "cursor", None)
-            next_cursor = None
-            has_more = False
-            if cursor_resp:
-                next_cursor = getattr(cursor_resp, "current_page", None)
-                has_more = bool(next_cursor)
-
-            pagination = Pagination(
-                total_items=len(calls),
-                offset=0,
-                limit=limit,
-                has_more=has_more,
-            )
-
-            return calls, pagination
-        except Exception as e:
-            from taurus_protect.errors import APIError
-
-            if isinstance(e, (APIError, ValueError)):
-                raise
-            raise self._handle_error(e) from e
+        return self._page(
+            cursor_request(page_size, cursor),
+            event_id=event_id,
+            webhook_id=webhook_id,
+            status=status,
+            sort_order=sort_order,
+        )
 
     def get(self, call_id: str) -> WebhookCall:
         """
         Get a webhook call by ID.
 
-        Note: This method lists webhook calls and filters by ID since the API
-        does not provide a direct get-by-ID endpoint.
+        The API has no get-by-ID endpoint, so this walks the calls page by page until
+        the ID is found.
 
         Args:
             call_id: The webhook call ID to retrieve.
@@ -268,32 +201,29 @@ class WebhookCallService(BaseService):
         """
         self._validate_required(call_id, "call_id")
 
+        from taurus_protect.errors import NotFoundError
+
+        cursor: Optional[str] = None
+        while True:
+            calls, page = self.list(page_size=MAX_PAGE_SIZE, cursor=cursor)
+            for call in calls:
+                if call.id == call_id:
+                    return call
+            if not page.has_more:
+                raise NotFoundError(f"Webhook call {call_id} not found")
+            cursor = page.next_cursor
+
+    def _page(self, req: CursorRequest, **filters: Any) -> Tuple[List[WebhookCall], CursorPage]:
         try:
-            # List all calls and find the one with matching ID
             resp = self._webhook_calls_api.webhook_service_get_webhook_calls(
-                event_id=None,
-                webhook_id=None,
-                status=None,
-                cursor_current_page=None,
-                cursor_page_request=None,
-                cursor_page_size="100",
-                sort_order=None,
+                **filters, **req.query_params()
             )
 
-            calls_dto = getattr(resp, "calls", None)
-            if calls_dto:
-                for dto in calls_dto:
-                    if getattr(dto, "id", None) == call_id:
-                        call = webhook_call_from_dto(dto)
-                        if call:
-                            return call
-
-            from taurus_protect.errors import NotFoundError
-
-            raise NotFoundError(f"Webhook call {call_id} not found")
+            calls = webhook_calls_from_dto(resp.calls or [])
+            return calls, cursor_page(req.page_size, resp.cursor)
         except Exception as e:
-            from taurus_protect.errors import APIError, NotFoundError
+            from taurus_protect.errors import APIError
 
-            if isinstance(e, (APIError, NotFoundError, ValueError)):
+            if isinstance(e, (APIError, ValueError)):
                 raise
             raise self._handle_error(e) from e

@@ -164,9 +164,8 @@ func listAllBusinessRules(t *testing.T, ctx context.Context, client *protect.Cli
 	allRules = append(allRules, result.BusinessRules...)
 
 	// Subsequent pages
-	for result.HasNext {
-		opts.CurrentPage = result.CurrentPage
-		opts.PageRequest = "NEXT"
+	for result.Page.HasMore {
+		opts.Cursor = result.Page.NextCursor
 		result, err = client.BusinessRules().ListBusinessRules(ctx, opts)
 		if err != nil {
 			t.Fatalf("ListBusinessRules (page) failed: %v", err)
@@ -236,9 +235,8 @@ func findRuleByID(ctx context.Context, client *protect.Client, ruleID string) (*
 		}
 	}
 
-	for result.HasNext {
-		opts.CurrentPage = result.CurrentPage
-		opts.PageRequest = "NEXT"
+	for result.Page.HasMore {
+		opts.Cursor = result.Page.NextCursor
 		result, err = client.BusinessRules().ListBusinessRules(ctx, opts)
 		if err != nil {
 			return nil, err

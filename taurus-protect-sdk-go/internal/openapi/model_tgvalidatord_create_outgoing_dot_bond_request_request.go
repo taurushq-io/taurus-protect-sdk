@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -31,6 +30,7 @@ type TgvalidatordCreateOutgoingDOTBondRequestRequest struct {
 	TransactionReference *string `json:"transactionReference,omitempty"`
 	// Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingDOTBondRequestRequest TgvalidatordCreateOutgoingDOTBondRequestRequest
@@ -333,6 +333,11 @@ func (o TgvalidatordCreateOutgoingDOTBondRequestRequest) ToMap() (map[string]int
 	if !IsNil(o.ExternalRequestId) {
 		toSerialize["externalRequestId"] = o.ExternalRequestId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -360,15 +365,27 @@ func (o *TgvalidatordCreateOutgoingDOTBondRequestRequest) UnmarshalJSON(data []b
 
 	varTgvalidatordCreateOutgoingDOTBondRequestRequest := _TgvalidatordCreateOutgoingDOTBondRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingDOTBondRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingDOTBondRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingDOTBondRequestRequest(varTgvalidatordCreateOutgoingDOTBondRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "restakeRewards")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "useAllFunds")
+		delete(additionalProperties, "transactionReference")
+		delete(additionalProperties, "externalRequestId")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

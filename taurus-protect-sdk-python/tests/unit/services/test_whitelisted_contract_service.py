@@ -44,30 +44,10 @@ class TestContractWhitelistingServiceCreate:
 
 
 class TestContractWhitelistingServiceDelete:
-    """Tests for ContractWhitelistingService.delete()."""
+    """The delete endpoint is deprecated with no replacement and cannot succeed."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        contract_api = MagicMock()
-        service = ContractWhitelistingService(
-            api_client=api_client, contract_whitelisting_api=contract_api
-        )
-        return service, contract_api
-
-    def test_raises_on_invalid_id(self) -> None:
-        service, _ = self._make_service()
-        with pytest.raises(ValueError, match="contract_id must be positive"):
-            service.delete(contract_id=0)
-
-    def test_calls_api(self) -> None:
-        service, api = self._make_service()
-        api.whitelist_service_delete_whitelisted_contract.return_value = None
-
-        service.delete(contract_id=42)
-
-        api.whitelist_service_delete_whitelisted_contract.assert_called_once_with(
-            "42"
-        )
+    def test_there_is_no_delete(self) -> None:
+        assert not hasattr(ContractWhitelistingService, "delete")
 
 
 class TestContractWhitelistingServiceApprove:
@@ -84,16 +64,12 @@ class TestContractWhitelistingServiceApprove:
     def test_raises_on_empty_ids(self) -> None:
         service, _ = self._make_service()
         with pytest.raises(ValueError, match="contract_ids cannot be empty"):
-            service.approve_whitelisted_contracts(
-                contract_ids=[], signature="sig"
-            )
+            service.approve_whitelisted_contracts(contract_ids=[], signature="sig")
 
     def test_raises_on_empty_signature(self) -> None:
         service, _ = self._make_service()
         with pytest.raises(ValueError, match="signature"):
-            service.approve_whitelisted_contracts(
-                contract_ids=["1"], signature=""
-            )
+            service.approve_whitelisted_contracts(contract_ids=["1"], signature="")
 
 
 class TestContractWhitelistingServiceCreateAttribute:

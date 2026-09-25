@@ -21,7 +21,10 @@ var _ MappedNullable = &CreateOutgoingCosmosGenericRequestRequestAccountInfo{}
 type CreateOutgoingCosmosGenericRequestRequestAccountInfo struct {
 	Sequence *string `json:"sequence,omitempty"`
 	AccountNumber *string `json:"accountNumber,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _CreateOutgoingCosmosGenericRequestRequestAccountInfo CreateOutgoingCosmosGenericRequestRequestAccountInfo
 
 // NewCreateOutgoingCosmosGenericRequestRequestAccountInfo instantiates a new CreateOutgoingCosmosGenericRequestRequestAccountInfo object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o CreateOutgoingCosmosGenericRequestRequestAccountInfo) ToMap() (map[strin
 	if !IsNil(o.AccountNumber) {
 		toSerialize["accountNumber"] = o.AccountNumber
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *CreateOutgoingCosmosGenericRequestRequestAccountInfo) UnmarshalJSON(data []byte) (err error) {
+	varCreateOutgoingCosmosGenericRequestRequestAccountInfo := _CreateOutgoingCosmosGenericRequestRequestAccountInfo{}
+
+	err = json.Unmarshal(data, &varCreateOutgoingCosmosGenericRequestRequestAccountInfo)
+
+	if err != nil {
+		return err
+	}
+
+	*o = CreateOutgoingCosmosGenericRequestRequestAccountInfo(varCreateOutgoingCosmosGenericRequestRequestAccountInfo)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "sequence")
+		delete(additionalProperties, "accountNumber")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableCreateOutgoingCosmosGenericRequestRequestAccountInfo struct {

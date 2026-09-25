@@ -45,7 +45,16 @@ export interface TgvalidatordGetRulesHistoryReply {
      * @memberof TgvalidatordGetRulesHistoryReply
      */
     cursor?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetRulesHistoryReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetRulesHistoryReplyWireKeys: ReadonlySet<string> = new Set(['result', 'totalItems', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetRulesHistoryReply interface.
@@ -62,12 +71,22 @@ export function TgvalidatordGetRulesHistoryReplyFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetRulesHistoryReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordRulesFromJSON)),
         'totalItems': json['totalItems'] == null ? undefined : json['totalItems'],
         'cursor': json['cursor'] == null ? undefined : json['cursor'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetRulesHistoryReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetRulesHistoryReplyToJSON(json: any): TgvalidatordGetRulesHistoryReply {
@@ -84,6 +103,7 @@ export function TgvalidatordGetRulesHistoryReplyFromJSONTyped(json: any, ignoreD
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordRulesToJSON)),
         'totalItems': value['totalItems'],
         'cursor': value['cursor'],
+        ...value['additionalProperties'],
     };
 }
 

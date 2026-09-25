@@ -37,7 +37,10 @@ type TgvalidatordReservation struct {
 	ResourceId *string `json:"resourceId,omitempty"`
 	// The resource type associated with the reservation
 	ResourceType *string `json:"resourceType,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordReservation TgvalidatordReservation
 
 // NewTgvalidatordReservation instantiates a new TgvalidatordReservation object
 // This constructor will assign default values to properties that have it defined,
@@ -451,7 +454,43 @@ func (o TgvalidatordReservation) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.ResourceType) {
 		toSerialize["resourceType"] = o.ResourceType
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordReservation) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordReservation := _TgvalidatordReservation{}
+
+	err = json.Unmarshal(data, &varTgvalidatordReservation)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordReservation(varTgvalidatordReservation)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "creationDate")
+		delete(additionalProperties, "kind")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "addressid")
+		delete(additionalProperties, "address")
+		delete(additionalProperties, "currencyInfo")
+		delete(additionalProperties, "asset")
+		delete(additionalProperties, "resourceId")
+		delete(additionalProperties, "resourceType")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordReservation struct {

@@ -31,7 +31,16 @@ export interface TgvalidatordICPKnownNeuronData {
      * @memberof TgvalidatordICPKnownNeuronData
      */
     description?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordICPKnownNeuronData
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordICPKnownNeuronDataWireKeys: ReadonlySet<string> = new Set(['name', 'description']);
 
 /**
  * Check if a given object implements the TgvalidatordICPKnownNeuronData interface.
@@ -48,11 +57,21 @@ export function TgvalidatordICPKnownNeuronDataFromJSONTyped(json: any, ignoreDis
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordICPKnownNeuronData = {
         
         'name': json['name'] == null ? undefined : json['name'],
         'description': json['description'] == null ? undefined : json['description'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordICPKnownNeuronDataWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordICPKnownNeuronDataToJSON(json: any): TgvalidatordICPKnownNeuronData {
@@ -68,6 +87,7 @@ export function TgvalidatordICPKnownNeuronDataFromJSONTyped(json: any, ignoreDis
         
         'name': value['name'],
         'description': value['description'],
+        ...value['additionalProperties'],
     };
 }
 

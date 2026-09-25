@@ -28,7 +28,10 @@ type TgvalidatordInternalVisibilityGroup struct {
 	CreationDate *time.Time `json:"creationDate,omitempty"`
 	UpdateDate *time.Time `json:"updateDate,omitempty"`
 	UserCount *string `json:"userCount,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordInternalVisibilityGroup TgvalidatordInternalVisibilityGroup
 
 // NewTgvalidatordInternalVisibilityGroup instantiates a new TgvalidatordInternalVisibilityGroup object
 // This constructor will assign default values to properties that have it defined,
@@ -337,7 +340,40 @@ func (o TgvalidatordInternalVisibilityGroup) ToMap() (map[string]interface{}, er
 	if !IsNil(o.UserCount) {
 		toSerialize["userCount"] = o.UserCount
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordInternalVisibilityGroup) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordInternalVisibilityGroup := _TgvalidatordInternalVisibilityGroup{}
+
+	err = json.Unmarshal(data, &varTgvalidatordInternalVisibilityGroup)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordInternalVisibilityGroup(varTgvalidatordInternalVisibilityGroup)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "tenantId")
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "description")
+		delete(additionalProperties, "users")
+		delete(additionalProperties, "creationDate")
+		delete(additionalProperties, "updateDate")
+		delete(additionalProperties, "userCount")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordInternalVisibilityGroup struct {

@@ -69,7 +69,16 @@ export interface TgvalidatordHealthReport {
      * @memberof TgvalidatordHealthReport
      */
     vaultdClients?: Array<TgvalidatordClientStatus>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordHealthReport
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordHealthReportWireKeys: ReadonlySet<string> = new Set(['name', 'status', 'message', 'duration', 'error', 'results', 'vaultdClients']);
 
 /**
  * Check if a given object implements the TgvalidatordHealthReport interface.
@@ -86,7 +95,7 @@ export function TgvalidatordHealthReportFromJSONTyped(json: any, ignoreDiscrimin
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordHealthReport = {
         
         'name': json['name'] == null ? undefined : json['name'],
         'status': json['status'] == null ? undefined : json['status'],
@@ -96,6 +105,16 @@ export function TgvalidatordHealthReportFromJSONTyped(json: any, ignoreDiscrimin
         'results': json['results'] == null ? undefined : json['results'],
         'vaultdClients': json['vaultdClients'] == null ? undefined : ((json['vaultdClients'] as Array<any>).map(TgvalidatordClientStatusFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordHealthReportWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordHealthReportToJSON(json: any): TgvalidatordHealthReport {
@@ -116,6 +135,7 @@ export function TgvalidatordHealthReportFromJSONTyped(json: any, ignoreDiscrimin
         'error': value['error'],
         'results': value['results'],
         'vaultdClients': value['vaultdClients'] == null ? undefined : ((value['vaultdClients'] as Array<any>).map(TgvalidatordClientStatusToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

@@ -37,7 +37,10 @@ type TgvalidatordTnLendingOffer struct {
 	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
 	Amount *string `json:"amount,omitempty"`
 	AmountMainUnit *string `json:"amountMainUnit,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTnLendingOffer TgvalidatordTnLendingOffer
 
 // NewTgvalidatordTnLendingOffer instantiates a new TgvalidatordTnLendingOffer object
 // This constructor will assign default values to properties that have it defined,
@@ -626,7 +629,48 @@ func (o TgvalidatordTnLendingOffer) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.AmountMainUnit) {
 		toSerialize["amountMainUnit"] = o.AmountMainUnit
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTnLendingOffer) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTnLendingOffer := _TgvalidatordTnLendingOffer{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTnLendingOffer)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTnLendingOffer(varTgvalidatordTnLendingOffer)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "annualPercentageYield")
+		delete(additionalProperties, "duration")
+		delete(additionalProperties, "collateralRequirement")
+		delete(additionalProperties, "participantID")
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "network")
+		delete(additionalProperties, "arg1")
+		delete(additionalProperties, "arg2")
+		delete(additionalProperties, "currencyInfo")
+		delete(additionalProperties, "annualPercentageYieldMainUnit")
+		delete(additionalProperties, "originCreatedAt")
+		delete(additionalProperties, "createdAt")
+		delete(additionalProperties, "updatedAt")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "amountMainUnit")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTnLendingOffer struct {

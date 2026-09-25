@@ -46,7 +46,16 @@ export interface TgvalidatordGetSharedAddressesReply {
      * @memberof TgvalidatordGetSharedAddressesReply
      */
     cursor?: TgvalidatordResponseCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetSharedAddressesReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetSharedAddressesReplyWireKeys: ReadonlySet<string> = new Set(['sharedAddresses', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetSharedAddressesReply interface.
@@ -63,11 +72,21 @@ export function TgvalidatordGetSharedAddressesReplyFromJSONTyped(json: any, igno
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetSharedAddressesReply = {
         
         'sharedAddresses': json['sharedAddresses'] == null ? undefined : ((json['sharedAddresses'] as Array<any>).map(TgvalidatordTnSharedAddressFromJSON)),
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetSharedAddressesReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetSharedAddressesReplyToJSON(json: any): TgvalidatordGetSharedAddressesReply {
@@ -83,6 +102,7 @@ export function TgvalidatordGetSharedAddressesReplyFromJSONTyped(json: any, igno
         
         'sharedAddresses': value['sharedAddresses'] == null ? undefined : ((value['sharedAddresses'] as Array<any>).map(TgvalidatordTnSharedAddressToJSON)),
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
+        ...value['additionalProperties'],
     };
 }
 

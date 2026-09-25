@@ -22,7 +22,10 @@ type TgvalidatordCryptoPunkMetadata struct {
 	PunkId *string `json:"punkId,omitempty"`
 	PunkAttributes *string `json:"punkAttributes,omitempty"`
 	Image *string `json:"image,omitempty" validate:"regexp=^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=)?$"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordCryptoPunkMetadata TgvalidatordCryptoPunkMetadata
 
 // NewTgvalidatordCryptoPunkMetadata instantiates a new TgvalidatordCryptoPunkMetadata object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordCryptoPunkMetadata) ToMap() (map[string]interface{}, error) 
 	if !IsNil(o.Image) {
 		toSerialize["image"] = o.Image
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordCryptoPunkMetadata) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordCryptoPunkMetadata := _TgvalidatordCryptoPunkMetadata{}
+
+	err = json.Unmarshal(data, &varTgvalidatordCryptoPunkMetadata)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordCryptoPunkMetadata(varTgvalidatordCryptoPunkMetadata)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "punkId")
+		delete(additionalProperties, "punkAttributes")
+		delete(additionalProperties, "image")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordCryptoPunkMetadata struct {

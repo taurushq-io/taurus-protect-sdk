@@ -50,7 +50,7 @@ def test_list_business_rules(client: ProtectClient) -> None:
     logger.info("Found %d business rules", len(result.rules))
     assert result.rules is not None
 
-    logger.info("Pagination: current_page=%s, has_next=%s", result.current_page, result.has_next)
+    logger.info("Page: has_more=%s, next_cursor=%s", result.page.has_more, result.page.next_cursor)
 
     for rule in result.rules[:5]:
         logger.info("  Rule: ID=%s", rule.id)
@@ -69,8 +69,7 @@ def test_list_webhooks(client: ProtectClient) -> None:
     logger.info("Found %d webhooks", len(webhooks))
     assert webhooks is not None
 
-    if pagination is not None:
-        logger.info("Pagination: total=%s, has_more=%s", pagination.total_items, pagination.has_more)
+    logger.info("Page: has_more=%s", pagination.has_more)
 
     for wh in webhooks[:5]:
         logger.info("  Webhook: ID=%s, URL=%s", wh.id, getattr(wh, "url", None))
@@ -89,8 +88,7 @@ def test_list_webhook_calls(client: ProtectClient) -> None:
     logger.info("Found %d webhook calls", len(calls))
     assert calls is not None
 
-    if pagination is not None:
-        logger.info("Pagination: total=%s, has_more=%s", pagination.total_items, pagination.has_more)
+    logger.info("Page: has_more=%s", pagination.has_more)
 
     for call in calls[:5]:
         logger.info("  WebhookCall: ID=%s, Status=%s", call.id, getattr(call, "status", None))
@@ -104,11 +102,7 @@ def test_list_webhook_calls(client: ProtectClient) -> None:
 @pytest.mark.integration
 def test_list_staking_validators(client: ProtectClient) -> None:
     """Test listing staking validators for ETH."""
-    validators, pagination = client.staking.list_validators(
-        blockchain="ETH",
-        network="mainnet",
-        limit=10,
-    )
+    validators = client.staking.list_validators(blockchain="ETH", network="mainnet")
 
     logger.info("Found %d ETH validators", len(validators))
     assert validators is not None
@@ -159,13 +153,13 @@ def test_list_exchanges(client: ProtectClient) -> None:
 @pytest.mark.integration
 def test_list_assets(client: ProtectClient) -> None:
     """Test listing assets (via asset wallets endpoint)."""
-    assets, pagination = client.assets.list(currency="ETH", limit=10)
+    wallets, page = client.assets.list(currency="ETH", page_size=10)
 
-    logger.info("Found %d assets", len(assets))
-    assert assets is not None
+    logger.info("Found %d wallets holding ETH (total %s)", len(wallets), page.total_items)
+    assert wallets is not None
 
-    for asset in assets[:5]:
-        logger.info("  Asset: %s", getattr(asset, "name", asset))
+    for wallet in wallets[:5]:
+        logger.info("  Wallet: %s", wallet.name)
 
 
 # =============================================================================
@@ -196,13 +190,15 @@ def test_list_jobs(client: ProtectClient) -> None:
     from taurus_protect.errors import AuthorizationError
 
     try:
-        jobs, pagination = client.jobs.list()
+        jobs = client.jobs.list()
 
         logger.info("Found %d jobs", len(jobs))
         assert jobs is not None
 
         for job in jobs[:5]:
-            logger.info("  Job: ID=%s, Name=%s", getattr(job, "id", None), getattr(job, "name", None))
+            logger.info(
+                "  Job: ID=%s, Name=%s", getattr(job, "id", None), getattr(job, "name", None)
+            )
     except AuthorizationError:
         # Jobs endpoint requires 'tgvalidatord' role which may not be
         # available with the current test credentials (matches Java SDK behavior)

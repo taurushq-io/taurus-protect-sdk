@@ -67,7 +67,16 @@ export interface TgvalidatordCreateOutgoingSOLDelegateRequestRequest {
      * @memberof TgvalidatordCreateOutgoingSOLDelegateRequestRequest
      */
     autoMerging?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingSOLDelegateRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingSOLDelegateRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'toValidatorAddressId', 'amount', 'feeLimit', 'comment', 'useUnconfirmedFunds', 'externalRequestId', 'autoMerging']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingSOLDelegateRequestRequest interface.
@@ -87,7 +96,7 @@ export function TgvalidatordCreateOutgoingSOLDelegateRequestRequestFromJSONTyped
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingSOLDelegateRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'toValidatorAddressId': json['toValidatorAddressId'],
@@ -98,6 +107,16 @@ export function TgvalidatordCreateOutgoingSOLDelegateRequestRequestFromJSONTyped
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
         'autoMerging': json['autoMerging'] == null ? undefined : json['autoMerging'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingSOLDelegateRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingSOLDelegateRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingSOLDelegateRequestRequest {
@@ -119,6 +138,7 @@ export function TgvalidatordCreateOutgoingSOLDelegateRequestRequestFromJSONTyped
         'useUnconfirmedFunds': value['useUnconfirmedFunds'],
         'externalRequestId': value['externalRequestId'],
         'autoMerging': value['autoMerging'],
+        ...value['additionalProperties'],
     };
 }
 

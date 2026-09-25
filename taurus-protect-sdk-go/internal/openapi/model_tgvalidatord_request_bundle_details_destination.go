@@ -22,7 +22,10 @@ type TgvalidatordRequestBundleDetailsDestination struct {
 	TotalDestinations *string `json:"totalDestinations,omitempty"`
 	ToAddressId *string `json:"toAddressId,omitempty"`
 	ToWhitelistedAddressId *string `json:"toWhitelistedAddressId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordRequestBundleDetailsDestination TgvalidatordRequestBundleDetailsDestination
 
 // NewTgvalidatordRequestBundleDetailsDestination instantiates a new TgvalidatordRequestBundleDetailsDestination object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordRequestBundleDetailsDestination) ToMap() (map[string]interfa
 	if !IsNil(o.ToWhitelistedAddressId) {
 		toSerialize["toWhitelistedAddressId"] = o.ToWhitelistedAddressId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordRequestBundleDetailsDestination) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordRequestBundleDetailsDestination := _TgvalidatordRequestBundleDetailsDestination{}
+
+	err = json.Unmarshal(data, &varTgvalidatordRequestBundleDetailsDestination)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordRequestBundleDetailsDestination(varTgvalidatordRequestBundleDetailsDestination)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "totalDestinations")
+		delete(additionalProperties, "toAddressId")
+		delete(additionalProperties, "toWhitelistedAddressId")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordRequestBundleDetailsDestination struct {

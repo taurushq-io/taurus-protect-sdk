@@ -33,7 +33,16 @@ export interface TgvalidatordCreateWhitelistedAddressAttributesReply {
      * @memberof TgvalidatordCreateWhitelistedAddressAttributesReply
      */
     result?: Array<TgvalidatordWhitelistedAddressAttribute>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateWhitelistedAddressAttributesReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateWhitelistedAddressAttributesReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateWhitelistedAddressAttributesReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordCreateWhitelistedAddressAttributesReplyFromJSONTyped
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateWhitelistedAddressAttributesReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordWhitelistedAddressAttributeFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateWhitelistedAddressAttributesReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateWhitelistedAddressAttributesReplyToJSON(json: any): TgvalidatordCreateWhitelistedAddressAttributesReply {
@@ -68,6 +87,7 @@ export function TgvalidatordCreateWhitelistedAddressAttributesReplyFromJSONTyped
     return {
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordWhitelistedAddressAttributeToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

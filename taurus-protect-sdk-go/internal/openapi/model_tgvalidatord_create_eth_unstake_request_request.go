@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -31,6 +30,7 @@ type TgvalidatordCreateETHUnstakeRequestRequest struct {
 	Comment *string `json:"comment,omitempty"`
 	// Identifier for the request in the user's system. This must be unique.
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateETHUnstakeRequestRequest TgvalidatordCreateETHUnstakeRequestRequest
@@ -219,6 +219,11 @@ func (o TgvalidatordCreateETHUnstakeRequestRequest) ToMap() (map[string]interfac
 	if !IsNil(o.ExternalRequestId) {
 		toSerialize["externalRequestId"] = o.ExternalRequestId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -247,15 +252,24 @@ func (o *TgvalidatordCreateETHUnstakeRequestRequest) UnmarshalJSON(data []byte) 
 
 	varTgvalidatordCreateETHUnstakeRequestRequest := _TgvalidatordCreateETHUnstakeRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateETHUnstakeRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateETHUnstakeRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateETHUnstakeRequestRequest(varTgvalidatordCreateETHUnstakeRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "ethValidatorIDs")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "externalRequestId")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

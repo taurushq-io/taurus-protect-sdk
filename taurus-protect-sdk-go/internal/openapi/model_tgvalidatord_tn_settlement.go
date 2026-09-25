@@ -32,7 +32,10 @@ type TgvalidatordTnSettlement struct {
 	CreatedAt *time.Time `json:"createdAt,omitempty"`
 	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
 	WorkflowID *string `json:"workflowID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTnSettlement TgvalidatordTnSettlement
 
 // NewTgvalidatordTnSettlement instantiates a new TgvalidatordTnSettlement object
 // This constructor will assign default values to properties that have it defined,
@@ -481,7 +484,44 @@ func (o TgvalidatordTnSettlement) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.WorkflowID) {
 		toSerialize["workflowID"] = o.WorkflowID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTnSettlement) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTnSettlement := _TgvalidatordTnSettlement{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTnSettlement)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTnSettlement(varTgvalidatordTnSettlement)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "creatorParticipantID")
+		delete(additionalProperties, "targetParticipantID")
+		delete(additionalProperties, "firstLegParticipantID")
+		delete(additionalProperties, "firstLegAssets")
+		delete(additionalProperties, "secondLegAssets")
+		delete(additionalProperties, "clips")
+		delete(additionalProperties, "startExecutionDate")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "createdAt")
+		delete(additionalProperties, "updatedAt")
+		delete(additionalProperties, "workflowID")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTnSettlement struct {

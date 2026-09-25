@@ -24,7 +24,10 @@ type TaskTransfer struct {
 	Amount *TgvalidatordActionAmount `json:"amount,omitempty"`
 	TopUp *bool `json:"topUp,omitempty"`
 	UseAllFunds *bool `json:"useAllFunds,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TaskTransfer TaskTransfer
 
 // NewTaskTransfer instantiates a new TaskTransfer object
 // This constructor will assign default values to properties that have it defined,
@@ -228,7 +231,37 @@ func (o TaskTransfer) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.UseAllFunds) {
 		toSerialize["useAllFunds"] = o.UseAllFunds
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TaskTransfer) UnmarshalJSON(data []byte) (err error) {
+	varTaskTransfer := _TaskTransfer{}
+
+	err = json.Unmarshal(data, &varTaskTransfer)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TaskTransfer(varTaskTransfer)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "from")
+		delete(additionalProperties, "to")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "topUp")
+		delete(additionalProperties, "useAllFunds")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTaskTransfer struct {

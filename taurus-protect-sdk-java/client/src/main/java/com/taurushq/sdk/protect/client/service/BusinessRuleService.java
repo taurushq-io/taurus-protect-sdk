@@ -2,16 +2,15 @@ package com.taurushq.sdk.protect.client.service;
 
 import com.google.common.base.Strings;
 import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
-import com.taurushq.sdk.protect.client.mapper.ApiResponseCursorMapper;
 import com.taurushq.sdk.protect.client.mapper.BusinessRuleMapper;
 import com.taurushq.sdk.protect.client.model.ApiException;
 import com.taurushq.sdk.protect.client.model.ApiRequestCursor;
 import com.taurushq.sdk.protect.client.model.BusinessRuleResult;
+import com.taurushq.sdk.protect.client.model.Pagination;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import com.taurushq.sdk.protect.openapi.api.BusinessRulesApi;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordBusinessRule;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetBusinessRulesV2Reply;
-import com.taurushq.sdk.protect.openapi.model.TgvalidatordRequestCursor;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordUpdateTransactionsEnabledBusinessRuleRequest;
 
 import java.util.Collections;
@@ -29,17 +28,19 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * <p>
  * Example usage:
  * <pre>{@code
- * // Get all business rules with pagination
- * ApiRequestCursor cursor = Pagination.first(50);
- * BusinessRuleResult result = client.getBusinessRuleService().getBusinessRules(cursor);
+ * // Get business rules, one page at a time
+ * BusinessRuleResult result = client.getBusinessRuleService().getBusinessRules(20, null);
+ * while (result.getPage().hasMore()) {
+ *     result = client.getBusinessRuleService().getBusinessRules(20, result.getPage().getNextCursor());
+ * }
  *
  * // Get rules for a specific wallet
  * BusinessRuleResult walletRules = client.getBusinessRuleService()
- *     .getBusinessRulesByWallet(walletId, cursor);
+ *     .getBusinessRulesByWallet(walletId, 20, null);
  *
  * // Get rules for a specific currency
  * BusinessRuleResult currencyRules = client.getBusinessRuleService()
- *     .getBusinessRulesByCurrency("ETH", cursor);
+ *     .getBusinessRulesByCurrency("ETH", 20, null);
  * }</pre>
  *
  * @see BusinessRuleResult
@@ -74,141 +75,113 @@ public class BusinessRuleService {
 
 
     /**
-     * Gets all business rules with pagination.
+     * Gets a page of business rules.
      *
-     * @param cursor the request cursor for pagination
-     * @return the business rule result with list and response cursor
+     * @param pageSize the page size, null or 0 for the default
+     * @param cursor   a previous page's {@code getPage().getNextCursor()}, null for the first page
+     * @return the business rules and their page
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if the page size is out of range
+     */
+    public BusinessRuleResult getBusinessRules(final Integer pageSize, final String cursor) throws ApiException {
+        return getBusinessRules(Pagination.page(pageSize, cursor));
+    }
+
+    /**
+     * Gets a page of business rules, with a low-level request cursor.
+     *
+     * @param cursor the request cursor, null for the first page with the default size
+     * @return the business rules and their page
      * @throws ApiException the api exception
      */
     public BusinessRuleResult getBusinessRules(final ApiRequestCursor cursor) throws ApiException {
-        checkNotNull(cursor, "cursor cannot be null");
-
-        TgvalidatordRequestCursor requestCursor = ApiResponseCursorMapper.INSTANCE.toDTO(cursor);
-
-        try {
-            TgvalidatordGetBusinessRulesV2Reply reply = businessRulesApi.ruleServiceGetBusinessRulesV2(
-                    null,                               // ids
-                    null,                               // ruleKeys
-                    null,                               // ruleGroups
-                    null,                               // walletIds
-                    null,                               // currencyIds
-                    null,                               // addressIds
-                    null,                               // level
-                    requestCursor.getCurrentPage(),     // cursorCurrentPage
-                    requestCursor.getPageRequest(),     // cursorPageRequest
-                    requestCursor.getPageSize(),        // cursorPageSize
-                    null,                               // entityType
-                    null                                // entityIDs
-            );
-
-            BusinessRuleResult result = new BusinessRuleResult();
-
-            List<TgvalidatordBusinessRule> rules = reply.getResult();
-            if (rules == null) {
-                result.setRules(Collections.emptyList());
-            } else {
-                result.setRules(BusinessRuleMapper.INSTANCE.fromDTO(rules));
-            }
-
-            result.setCursor(ApiResponseCursorMapper.INSTANCE.fromDTO(reply.getCursor()));
-
-            return result;
-        } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
-            throw apiExceptionMapper.toApiException(e);
-        }
+        return listBusinessRules(null, null, cursor);
     }
 
 
     /**
-     * Gets business rules by wallet id.
+     * Gets a page of the business rules of a wallet.
      *
      * @param walletId the wallet id
-     * @param cursor   the request cursor for pagination
-     * @return the business rule result with list and response cursor
+     * @param pageSize the page size, null or 0 for the default
+     * @param cursor   a previous page's {@code getPage().getNextCursor()}, null for the first page
+     * @return the business rules and their page
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if walletId or the page size is out of range
+     */
+    public BusinessRuleResult getBusinessRulesByWallet(final long walletId, final Integer pageSize,
+                                                       final String cursor) throws ApiException {
+        return getBusinessRulesByWallet(walletId, Pagination.page(pageSize, cursor));
+    }
+
+    /**
+     * Gets a page of the business rules of a wallet, with a low-level request cursor.
+     *
+     * @param walletId the wallet id
+     * @param cursor   the request cursor, null for the first page with the default size
+     * @return the business rules and their page
      * @throws ApiException the api exception
      */
-    public BusinessRuleResult getBusinessRulesByWallet(final long walletId, final ApiRequestCursor cursor) throws ApiException {
+    public BusinessRuleResult getBusinessRulesByWallet(final long walletId, final ApiRequestCursor cursor)
+            throws ApiException {
         checkArgument(walletId > 0, "walletId must be positive");
-        checkNotNull(cursor, "cursor cannot be null");
-
-        TgvalidatordRequestCursor requestCursor = ApiResponseCursorMapper.INSTANCE.toDTO(cursor);
-
-        try {
-            TgvalidatordGetBusinessRulesV2Reply reply = businessRulesApi.ruleServiceGetBusinessRulesV2(
-                    null,                               // ids
-                    null,                               // ruleKeys
-                    null,                               // ruleGroups
-                    Collections.singletonList(String.valueOf(walletId)),  // walletIds
-                    null,                               // currencyIds
-                    null,                               // addressIds
-                    null,                               // level
-                    requestCursor.getCurrentPage(),     // cursorCurrentPage
-                    requestCursor.getPageRequest(),     // cursorPageRequest
-                    requestCursor.getPageSize(),        // cursorPageSize
-                    null,                               // entityType
-                    null                                // entityIDs
-            );
-
-            BusinessRuleResult result = new BusinessRuleResult();
-
-            List<TgvalidatordBusinessRule> rules = reply.getResult();
-            if (rules == null) {
-                result.setRules(Collections.emptyList());
-            } else {
-                result.setRules(BusinessRuleMapper.INSTANCE.fromDTO(rules));
-            }
-
-            result.setCursor(ApiResponseCursorMapper.INSTANCE.fromDTO(reply.getCursor()));
-
-            return result;
-        } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
-            throw apiExceptionMapper.toApiException(e);
-        }
+        return listBusinessRules(Collections.singletonList(String.valueOf(walletId)), null, cursor);
     }
 
 
     /**
-     * Gets business rules by currency id.
+     * Gets a page of the business rules of a currency.
      *
      * @param currencyId the currency id
-     * @param cursor     the request cursor for pagination
-     * @return the business rule result with list and response cursor
+     * @param pageSize   the page size, null or 0 for the default
+     * @param cursor     a previous page's {@code getPage().getNextCursor()}, null for the first page
+     * @return the business rules and their page
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if currencyId is empty or the page size is out of range
+     */
+    public BusinessRuleResult getBusinessRulesByCurrency(final String currencyId, final Integer pageSize,
+                                                         final String cursor) throws ApiException {
+        return getBusinessRulesByCurrency(currencyId, Pagination.page(pageSize, cursor));
+    }
+
+    /**
+     * Gets a page of the business rules of a currency, with a low-level request cursor.
+     *
+     * @param currencyId the currency id
+     * @param cursor     the request cursor, null for the first page with the default size
+     * @return the business rules and their page
      * @throws ApiException the api exception
      */
-    public BusinessRuleResult getBusinessRulesByCurrency(final String currencyId, final ApiRequestCursor cursor) throws ApiException {
+    public BusinessRuleResult getBusinessRulesByCurrency(final String currencyId, final ApiRequestCursor cursor)
+            throws ApiException {
         checkArgument(!Strings.isNullOrEmpty(currencyId), "currencyId cannot be null or empty");
-        checkNotNull(cursor, "cursor cannot be null");
+        return listBusinessRules(null, Collections.singletonList(currencyId), cursor);
+    }
 
-        TgvalidatordRequestCursor requestCursor = ApiResponseCursorMapper.INSTANCE.toDTO(cursor);
+    private BusinessRuleResult listBusinessRules(final List<String> walletIds, final List<String> currencyIds,
+                                                 final ApiRequestCursor cursor) throws ApiException {
+        final CursorRequest page = CursorRequest.of(cursor);
 
         try {
             TgvalidatordGetBusinessRulesV2Reply reply = businessRulesApi.ruleServiceGetBusinessRulesV2(
                     null,                               // ids
                     null,                               // ruleKeys
                     null,                               // ruleGroups
-                    null,                               // walletIds
-                    Collections.singletonList(currencyId),  // currencyIds
+                    walletIds,                          // walletIds
+                    currencyIds,                        // currencyIds
                     null,                               // addressIds
                     null,                               // level
-                    requestCursor.getCurrentPage(),     // cursorCurrentPage
-                    requestCursor.getPageRequest(),     // cursorPageRequest
-                    requestCursor.getPageSize(),        // cursorPageSize
+                    page.currentPage(),                 // cursorCurrentPage
+                    page.pageRequest(),                 // cursorPageRequest
+                    page.pageSizeParam(),               // cursorPageSize
                     null,                               // entityType
                     null                                // entityIDs
             );
 
             BusinessRuleResult result = new BusinessRuleResult();
-
             List<TgvalidatordBusinessRule> rules = reply.getResult();
-            if (rules == null) {
-                result.setRules(Collections.emptyList());
-            } else {
-                result.setRules(BusinessRuleMapper.INSTANCE.fromDTO(rules));
-            }
-
-            result.setCursor(ApiResponseCursorMapper.INSTANCE.fromDTO(reply.getCursor()));
-
-            return result;
+            result.setRules(rules == null ? Collections.emptyList() : BusinessRuleMapper.INSTANCE.fromDTO(rules));
+            return page.complete(result, PagedOperation.BUSINESS_RULES, reply.getCursor(), null);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }

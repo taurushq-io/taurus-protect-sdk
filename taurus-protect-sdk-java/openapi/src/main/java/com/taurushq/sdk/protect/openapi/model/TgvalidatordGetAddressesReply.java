@@ -51,7 +51,7 @@ import com.taurushq.sdk.protect.openapi.JSON;
 /**
  * TgvalidatordGetAddressesReply
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2026-04-30T08:14:18.502158138Z[GMT]", comments = "Generator version: 7.9.0")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2026-09-24T07:59:44.783733678Z[GMT]", comments = "Generator version: 7.9.0")
 public class TgvalidatordGetAddressesReply {
   public static final String SERIALIZED_NAME_RESULT = "result";
   @SerializedName(SERIALIZED_NAME_RESULT)
@@ -60,6 +60,10 @@ public class TgvalidatordGetAddressesReply {
   public static final String SERIALIZED_NAME_TOTAL_ITEMS = "totalItems";
   @SerializedName(SERIALIZED_NAME_TOTAL_ITEMS)
   private String totalItems;
+
+  public static final String SERIALIZED_NAME_OFFSET = "offset";
+  @SerializedName(SERIALIZED_NAME_OFFSET)
+  private String offset;
 
   public TgvalidatordGetAddressesReply() {
   }
@@ -107,6 +111,25 @@ public class TgvalidatordGetAddressesReply {
 
   public void setTotalItems(String totalItems) {
     this.totalItems = totalItems;
+  }
+
+
+  public TgvalidatordGetAddressesReply offset(String offset) {
+    this.offset = offset;
+    return this;
+  }
+
+  /**
+   * The offset to get the next page. Note: the value is not always the same as the number of elements returned.
+   * @return offset
+   */
+  @javax.annotation.Nullable
+  public String getOffset() {
+    return offset;
+  }
+
+  public void setOffset(String offset) {
+    this.offset = offset;
   }
 
   /**
@@ -165,13 +188,14 @@ public class TgvalidatordGetAddressesReply {
     }
     TgvalidatordGetAddressesReply tgvalidatordGetAddressesReply = (TgvalidatordGetAddressesReply) o;
     return Objects.equals(this.result, tgvalidatordGetAddressesReply.result) &&
-        Objects.equals(this.totalItems, tgvalidatordGetAddressesReply.totalItems)&&
+        Objects.equals(this.totalItems, tgvalidatordGetAddressesReply.totalItems) &&
+        Objects.equals(this.offset, tgvalidatordGetAddressesReply.offset)&&
         Objects.equals(this.additionalProperties, tgvalidatordGetAddressesReply.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(result, totalItems, additionalProperties);
+    return Objects.hash(result, totalItems, offset, additionalProperties);
   }
 
   @Override
@@ -180,6 +204,7 @@ public class TgvalidatordGetAddressesReply {
     sb.append("class TgvalidatordGetAddressesReply {\n");
     sb.append("    result: ").append(toIndentedString(result)).append("\n");
     sb.append("    totalItems: ").append(toIndentedString(totalItems)).append("\n");
+    sb.append("    offset: ").append(toIndentedString(offset)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -205,6 +230,7 @@ public class TgvalidatordGetAddressesReply {
     openapiFields = new HashSet<String>();
     openapiFields.add("result");
     openapiFields.add("totalItems");
+    openapiFields.add("offset");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
@@ -239,6 +265,9 @@ public class TgvalidatordGetAddressesReply {
       }
       if ((jsonObj.get("totalItems") != null && !jsonObj.get("totalItems").isJsonNull()) && !jsonObj.get("totalItems").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `totalItems` to be a primitive type in the JSON string but got `%s`", jsonObj.get("totalItems").toString()));
+      }
+      if ((jsonObj.get("offset") != null && !jsonObj.get("offset").isJsonNull()) && !jsonObj.get("offset").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format("Expected the field `offset` to be a primitive type in the JSON string but got `%s`", jsonObj.get("offset").toString()));
       }
   }
 

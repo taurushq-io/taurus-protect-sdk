@@ -43,7 +43,16 @@ export interface TgvalidatordClientStatus {
      * @memberof TgvalidatordClientStatus
      */
     lastPing?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordClientStatus
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordClientStatusWireKeys: ReadonlySet<string> = new Set(['hostPort', 'connected', 'error', 'lastPing']);
 
 /**
  * Check if a given object implements the TgvalidatordClientStatus interface.
@@ -60,13 +69,23 @@ export function TgvalidatordClientStatusFromJSONTyped(json: any, ignoreDiscrimin
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordClientStatus = {
         
         'hostPort': json['hostPort'] == null ? undefined : json['hostPort'],
         'connected': json['connected'] == null ? undefined : json['connected'],
         'error': json['error'] == null ? undefined : json['error'],
         'lastPing': json['lastPing'] == null ? undefined : (new Date(json['lastPing'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordClientStatusWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordClientStatusToJSON(json: any): TgvalidatordClientStatus {
@@ -84,6 +103,7 @@ export function TgvalidatordClientStatusFromJSONTyped(json: any, ignoreDiscrimin
         'connected': value['connected'],
         'error': value['error'],
         'lastPing': value['lastPing'] == null ? undefined : ((value['lastPing']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

@@ -20,7 +20,10 @@ var _ MappedNullable = &TaurusNetworkServiceReplaceSettlementBody{}
 // TaurusNetworkServiceReplaceSettlementBody struct for TaurusNetworkServiceReplaceSettlementBody
 type TaurusNetworkServiceReplaceSettlementBody struct {
 	CreateSettlementRequest *TgvalidatordCreateSettlementRequest `json:"createSettlementRequest,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TaurusNetworkServiceReplaceSettlementBody TaurusNetworkServiceReplaceSettlementBody
 
 // NewTaurusNetworkServiceReplaceSettlementBody instantiates a new TaurusNetworkServiceReplaceSettlementBody object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TaurusNetworkServiceReplaceSettlementBody) ToMap() (map[string]interface
 	if !IsNil(o.CreateSettlementRequest) {
 		toSerialize["createSettlementRequest"] = o.CreateSettlementRequest
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TaurusNetworkServiceReplaceSettlementBody) UnmarshalJSON(data []byte) (err error) {
+	varTaurusNetworkServiceReplaceSettlementBody := _TaurusNetworkServiceReplaceSettlementBody{}
+
+	err = json.Unmarshal(data, &varTaurusNetworkServiceReplaceSettlementBody)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TaurusNetworkServiceReplaceSettlementBody(varTaurusNetworkServiceReplaceSettlementBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "createSettlementRequest")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTaurusNetworkServiceReplaceSettlementBody struct {

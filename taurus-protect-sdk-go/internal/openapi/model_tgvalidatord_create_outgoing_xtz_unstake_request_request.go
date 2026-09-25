@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -28,6 +27,7 @@ type TgvalidatordCreateOutgoingXTZUnstakeRequestRequest struct {
 	Comment *string `json:"comment,omitempty"`
 	// Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingXTZUnstakeRequestRequest TgvalidatordCreateOutgoingXTZUnstakeRequestRequest
@@ -260,6 +260,11 @@ func (o TgvalidatordCreateOutgoingXTZUnstakeRequestRequest) ToMap() (map[string]
 	if !IsNil(o.ExternalRequestId) {
 		toSerialize["externalRequestId"] = o.ExternalRequestId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -287,15 +292,25 @@ func (o *TgvalidatordCreateOutgoingXTZUnstakeRequestRequest) UnmarshalJSON(data 
 
 	varTgvalidatordCreateOutgoingXTZUnstakeRequestRequest := _TgvalidatordCreateOutgoingXTZUnstakeRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingXTZUnstakeRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingXTZUnstakeRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingXTZUnstakeRequestRequest(varTgvalidatordCreateOutgoingXTZUnstakeRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "gasLimit")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "externalRequestId")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

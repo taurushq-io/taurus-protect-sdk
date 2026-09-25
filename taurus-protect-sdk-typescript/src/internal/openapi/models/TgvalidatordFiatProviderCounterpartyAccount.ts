@@ -99,7 +99,16 @@ export interface TgvalidatordFiatProviderCounterpartyAccount {
      * @memberof TgvalidatordFiatProviderCounterpartyAccount
      */
     currencyInfo?: TgvalidatordCurrency;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordFiatProviderCounterpartyAccount
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordFiatProviderCounterpartyAccountWireKeys: ReadonlySet<string> = new Set(['id', 'provider', 'label', 'accountType', 'accountIdentifier', 'accountName', 'counterpartyID', 'counterpartyName', 'creationDate', 'updateDate', 'currencyID', 'currencyInfo']);
 
 /**
  * Check if a given object implements the TgvalidatordFiatProviderCounterpartyAccount interface.
@@ -116,7 +125,7 @@ export function TgvalidatordFiatProviderCounterpartyAccountFromJSONTyped(json: a
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordFiatProviderCounterpartyAccount = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'provider': json['provider'] == null ? undefined : json['provider'],
@@ -131,6 +140,16 @@ export function TgvalidatordFiatProviderCounterpartyAccountFromJSONTyped(json: a
         'currencyID': json['currencyID'] == null ? undefined : json['currencyID'],
         'currencyInfo': json['currencyInfo'] == null ? undefined : TgvalidatordCurrencyFromJSON(json['currencyInfo']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordFiatProviderCounterpartyAccountWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordFiatProviderCounterpartyAccountToJSON(json: any): TgvalidatordFiatProviderCounterpartyAccount {
@@ -156,6 +175,7 @@ export function TgvalidatordFiatProviderCounterpartyAccountFromJSONTyped(json: a
         'updateDate': value['updateDate'] == null ? undefined : ((value['updateDate']).toISOString()),
         'currencyID': value['currencyID'],
         'currencyInfo': TgvalidatordCurrencyToJSON(value['currencyInfo']),
+        ...value['additionalProperties'],
     };
 }
 

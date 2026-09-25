@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordTERC721StandaloneContractTemplate{}
 // TgvalidatordTERC721StandaloneContractTemplate struct for TgvalidatordTERC721StandaloneContractTemplate
 type TgvalidatordTERC721StandaloneContractTemplate struct {
 	Evm *TgvalidatordEVMContractTemplateParams `json:"evm,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTERC721StandaloneContractTemplate TgvalidatordTERC721StandaloneContractTemplate
 
 // NewTgvalidatordTERC721StandaloneContractTemplate instantiates a new TgvalidatordTERC721StandaloneContractTemplate object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordTERC721StandaloneContractTemplate) ToMap() (map[string]inter
 	if !IsNil(o.Evm) {
 		toSerialize["evm"] = o.Evm
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTERC721StandaloneContractTemplate) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTERC721StandaloneContractTemplate := _TgvalidatordTERC721StandaloneContractTemplate{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTERC721StandaloneContractTemplate)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTERC721StandaloneContractTemplate(varTgvalidatordTERC721StandaloneContractTemplate)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "evm")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTERC721StandaloneContractTemplate struct {

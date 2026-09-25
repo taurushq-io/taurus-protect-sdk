@@ -76,7 +76,16 @@ export interface TgvalidatordCreateWhitelistedContractAddressRequest {
      * @memberof TgvalidatordCreateWhitelistedContractAddressRequest
      */
     network?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateWhitelistedContractAddressRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateWhitelistedContractAddressRequestWireKeys: ReadonlySet<string> = new Set(['blockchain', 'contractAddress', 'symbol', 'name', 'decimals', 'tokenId', 'kind', 'network']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateWhitelistedContractAddressRequest interface.
@@ -95,7 +104,7 @@ export function TgvalidatordCreateWhitelistedContractAddressRequestFromJSONTyped
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateWhitelistedContractAddressRequest = {
         
         'blockchain': json['blockchain'],
         'contractAddress': json['contractAddress'] == null ? undefined : json['contractAddress'],
@@ -106,6 +115,16 @@ export function TgvalidatordCreateWhitelistedContractAddressRequestFromJSONTyped
         'kind': json['kind'] == null ? undefined : json['kind'],
         'network': json['network'] == null ? undefined : json['network'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateWhitelistedContractAddressRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateWhitelistedContractAddressRequestToJSON(json: any): TgvalidatordCreateWhitelistedContractAddressRequest {
@@ -127,6 +146,7 @@ export function TgvalidatordCreateWhitelistedContractAddressRequestFromJSONTyped
         'tokenId': value['tokenId'],
         'kind': value['kind'],
         'network': value['network'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -37,7 +37,16 @@ export interface TgvalidatordActionSource {
      * @memberof TgvalidatordActionSource
      */
     walletID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordActionSource
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordActionSourceWireKeys: ReadonlySet<string> = new Set(['kind', 'addressID', 'walletID']);
 
 /**
  * Check if a given object implements the TgvalidatordActionSource interface.
@@ -54,12 +63,22 @@ export function TgvalidatordActionSourceFromJSONTyped(json: any, ignoreDiscrimin
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordActionSource = {
         
         'kind': json['kind'] == null ? undefined : json['kind'],
         'addressID': json['addressID'] == null ? undefined : json['addressID'],
         'walletID': json['walletID'] == null ? undefined : json['walletID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordActionSourceWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordActionSourceToJSON(json: any): TgvalidatordActionSource {
@@ -76,6 +95,7 @@ export function TgvalidatordActionSourceFromJSONTyped(json: any, ignoreDiscrimin
         'kind': value['kind'],
         'addressID': value['addressID'],
         'walletID': value['walletID'],
+        ...value['additionalProperties'],
     };
 }
 

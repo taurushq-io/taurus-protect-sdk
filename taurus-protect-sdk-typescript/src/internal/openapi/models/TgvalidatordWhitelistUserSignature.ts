@@ -37,7 +37,16 @@ export interface TgvalidatordWhitelistUserSignature {
      * @memberof TgvalidatordWhitelistUserSignature
      */
     comment?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordWhitelistUserSignature
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordWhitelistUserSignatureWireKeys: ReadonlySet<string> = new Set(['userId', 'signature', 'comment']);
 
 /**
  * Check if a given object implements the TgvalidatordWhitelistUserSignature interface.
@@ -54,12 +63,22 @@ export function TgvalidatordWhitelistUserSignatureFromJSONTyped(json: any, ignor
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordWhitelistUserSignature = {
         
         'userId': json['userId'] == null ? undefined : json['userId'],
         'signature': json['signature'] == null ? undefined : json['signature'],
         'comment': json['comment'] == null ? undefined : json['comment'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordWhitelistUserSignatureWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordWhitelistUserSignatureToJSON(json: any): TgvalidatordWhitelistUserSignature {
@@ -76,6 +95,7 @@ export function TgvalidatordWhitelistUserSignatureFromJSONTyped(json: any, ignor
         'userId': value['userId'],
         'signature': value['signature'],
         'comment': value['comment'],
+        ...value['additionalProperties'],
     };
 }
 

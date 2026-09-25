@@ -21,7 +21,10 @@ var _ MappedNullable = &ScoreFilterTRMLabsFilters{}
 type ScoreFilterTRMLabsFilters struct {
 	// Filter addresses with an TRM Labs risk score above threshold.
 	ScoreGreater *string `json:"scoreGreater,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _ScoreFilterTRMLabsFilters ScoreFilterTRMLabsFilters
 
 // NewScoreFilterTRMLabsFilters instantiates a new ScoreFilterTRMLabsFilters object
 // This constructor will assign default values to properties that have it defined,
@@ -85,7 +88,33 @@ func (o ScoreFilterTRMLabsFilters) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.ScoreGreater) {
 		toSerialize["scoreGreater"] = o.ScoreGreater
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *ScoreFilterTRMLabsFilters) UnmarshalJSON(data []byte) (err error) {
+	varScoreFilterTRMLabsFilters := _ScoreFilterTRMLabsFilters{}
+
+	err = json.Unmarshal(data, &varScoreFilterTRMLabsFilters)
+
+	if err != nil {
+		return err
+	}
+
+	*o = ScoreFilterTRMLabsFilters(varScoreFilterTRMLabsFilters)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "scoreGreater")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableScoreFilterTRMLabsFilters struct {

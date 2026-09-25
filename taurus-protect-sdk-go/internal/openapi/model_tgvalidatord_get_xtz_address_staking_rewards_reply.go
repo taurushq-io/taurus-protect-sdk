@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordGetXTZAddressStakingRewardsReply{}
 // TgvalidatordGetXTZAddressStakingRewardsReply struct for TgvalidatordGetXTZAddressStakingRewardsReply
 type TgvalidatordGetXTZAddressStakingRewardsReply struct {
 	ReceivedRewardsAmount *string `json:"receivedRewardsAmount,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetXTZAddressStakingRewardsReply TgvalidatordGetXTZAddressStakingRewardsReply
 
 // NewTgvalidatordGetXTZAddressStakingRewardsReply instantiates a new TgvalidatordGetXTZAddressStakingRewardsReply object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordGetXTZAddressStakingRewardsReply) ToMap() (map[string]interf
 	if !IsNil(o.ReceivedRewardsAmount) {
 		toSerialize["receivedRewardsAmount"] = o.ReceivedRewardsAmount
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetXTZAddressStakingRewardsReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetXTZAddressStakingRewardsReply := _TgvalidatordGetXTZAddressStakingRewardsReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetXTZAddressStakingRewardsReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetXTZAddressStakingRewardsReply(varTgvalidatordGetXTZAddressStakingRewardsReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "receivedRewardsAmount")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetXTZAddressStakingRewardsReply struct {

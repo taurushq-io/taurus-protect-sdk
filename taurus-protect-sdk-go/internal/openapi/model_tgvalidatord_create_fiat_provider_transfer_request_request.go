@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -32,6 +31,7 @@ type TgvalidatordCreateFiatProviderTransferRequestRequest struct {
 	Comment *string `json:"comment,omitempty"`
 	// Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestID will do nothing and return the originally created request. The excternalRequestID is passed to fiat providers as an idempotency key.
 	ExternalRequestID *string `json:"externalRequestID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateFiatProviderTransferRequestRequest TgvalidatordCreateFiatProviderTransferRequestRequest
@@ -255,6 +255,11 @@ func (o TgvalidatordCreateFiatProviderTransferRequestRequest) ToMap() (map[strin
 	if !IsNil(o.ExternalRequestID) {
 		toSerialize["externalRequestID"] = o.ExternalRequestID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -283,15 +288,25 @@ func (o *TgvalidatordCreateFiatProviderTransferRequestRequest) UnmarshalJSON(dat
 
 	varTgvalidatordCreateFiatProviderTransferRequestRequest := _TgvalidatordCreateFiatProviderTransferRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateFiatProviderTransferRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateFiatProviderTransferRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateFiatProviderTransferRequestRequest(varTgvalidatordCreateFiatProviderTransferRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "fromAccountID")
+		delete(additionalProperties, "toAccountID")
+		delete(additionalProperties, "toCounterpartyAccountID")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "externalRequestID")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

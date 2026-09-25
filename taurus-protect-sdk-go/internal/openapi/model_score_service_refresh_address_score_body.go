@@ -20,7 +20,10 @@ var _ MappedNullable = &ScoreServiceRefreshAddressScoreBody{}
 // ScoreServiceRefreshAddressScoreBody struct for ScoreServiceRefreshAddressScoreBody
 type ScoreServiceRefreshAddressScoreBody struct {
 	ScoreProvider *string `json:"scoreProvider,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _ScoreServiceRefreshAddressScoreBody ScoreServiceRefreshAddressScoreBody
 
 // NewScoreServiceRefreshAddressScoreBody instantiates a new ScoreServiceRefreshAddressScoreBody object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o ScoreServiceRefreshAddressScoreBody) ToMap() (map[string]interface{}, er
 	if !IsNil(o.ScoreProvider) {
 		toSerialize["scoreProvider"] = o.ScoreProvider
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *ScoreServiceRefreshAddressScoreBody) UnmarshalJSON(data []byte) (err error) {
+	varScoreServiceRefreshAddressScoreBody := _ScoreServiceRefreshAddressScoreBody{}
+
+	err = json.Unmarshal(data, &varScoreServiceRefreshAddressScoreBody)
+
+	if err != nil {
+		return err
+	}
+
+	*o = ScoreServiceRefreshAddressScoreBody(varScoreServiceRefreshAddressScoreBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "scoreProvider")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableScoreServiceRefreshAddressScoreBody struct {

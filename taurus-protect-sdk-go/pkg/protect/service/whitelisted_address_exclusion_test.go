@@ -90,52 +90,64 @@ func TestListWhitelistedAddressesErrorsWhenNoRowSurvives(t *testing.T) {
 }
 
 // The server counts rows it returned; the caller receives only those that verified, so
-// reporting the server's total lets a filtered page pass for a complete one. HasMore is
-// a separate question — whether another page exists — and is answered from the server's
-// own total, not from the reduced one.
-func TestAdjustedPaginationSubtractsExcludedRows(t *testing.T) {
-	// excludedCount covers THIS page; TotalItems is the server's global count. So the
-	// reduction is right for TotalItems (the caller cannot read the excluded rows) and
-	// wrong for HasMore (pagination position is a server-side fact). Earlier cases here
-	// asserted the coupled behaviour using an excluded count larger than the page limit,
-	// which cannot happen: you cannot exclude 30 rows from a 20-row page.
+// reporting the server's total lets a filtered page pass for a complete one. The next offset
+// and HasMore are a separate question — where the next page starts — and are answered from
+// the rows the SERVER returned and its own total, never from the reduced ones.
+func TestServerRowsPaginationSubtractsExcludedRows(t *testing.T) {
+	// excluded covers THIS page; TotalItems is the server's global count. So the reduction is
+	// right for TotalItems (the caller cannot read the excluded rows) and wrong for the next
+	// offset and HasMore (pagination position is a server-side fact).
 	cases := []struct {
-		name          string
-		total         string
-		limit, offset int64
-		excluded      int
-		wantTotal     int64
-		wantMore      bool
+		name                string
+		total               string
+		limit, offset       int64
+		served, excluded    int
+		wantTotal, wantNext int64
+		wantMore            bool
 	}{
-		{"nothing excluded", "50", 20, 0, 0, 50, true},
-		{"one excluded", "50", 20, 0, 1, 49, true},
-		{"most of a page excluded, more pages remain", "50", 20, 0, 15, 35, true},
-		{"last page with exclusions ends pagination", "50", 20, 40, 5, 45, false},
-		// The regression: a page-local exclusion count subtracted from a global total
-		// ended pagination early — 100+100 < 190 is false, yet 50 rows sit at offset 200.
-		{"mid-result page with many exclusions still pages on", "250", 100, 100, 60, 190, true},
-		{"more excluded than reported never goes negative", "20", 20, 0, 99, 0, false},
+		{"nothing excluded", "50", 20, 0, 20, 0, 50, 20, true},
+		{"one excluded", "50", 20, 0, 20, 1, 49, 20, true},
+		{"most of a page excluded, more pages remain", "50", 20, 0, 20, 15, 35, 20, true},
+		{"last page with exclusions ends pagination", "50", 20, 40, 10, 5, 45, 50, false},
+		// A page-local exclusion count subtracted from a global total ended pagination
+		// early — 100+100 < 190 is false, yet 50 rows sit at offset 200.
+		{"mid-result page with many exclusions still pages on", "250", 100, 100, 100, 60, 190, 200, true},
+		{"more excluded than reported never goes negative", "20", 20, 0, 20, 99, 0, 20, false},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			opts := &model.ListWhitelistedAddressesOptions{Limit: tc.limit, Offset: tc.offset}
-			got := adjustedPagination(&tc.total, tc.excluded, opts)
-			if got == nil {
-				t.Fatal("pagination missing")
+			window := offsetWindow{limit: tc.limit, offset: tc.offset}
+			got, err := offsetPagination(rulePlusServerRows, window, tc.served, tc.excluded,
+				offsetReply{TotalItems: &tc.total})
+			if err != nil {
+				t.Fatal(err)
 			}
 			if got.TotalItems != tc.wantTotal {
 				t.Errorf("TotalItems = %d, want %d", got.TotalItems, tc.wantTotal)
+			}
+			if got.NextOffset != tc.wantNext {
+				t.Errorf("NextOffset = %d, want %d", got.NextOffset, tc.wantNext)
 			}
 			if got.HasMore != tc.wantMore {
 				t.Errorf("HasMore = %v, want %v", got.HasMore, tc.wantMore)
 			}
 		})
 	}
+}
 
-	opts := &model.ListWhitelistedAddressesOptions{Limit: 20, Offset: 0}
-	if adjustedPagination(nil, 0, opts) != nil {
-		t.Error("a server that reports no total must not be given a fabricated one")
+// validatord omits zero values, so `{}` is a valid empty page. It must come back as a full
+// pagination value — the page window that was sent, zero total, no next page — not nil,
+// which consumers rendered as an empty object.
+func TestWhitelistedAddressesEmptyPageHasFullPagination(t *testing.T) {
+	result, err := wlaService(t, `{}`, true, nil).
+		ListWhitelistedAddresses(context.Background(), &model.ListWhitelistedAddressesOptions{Offset: 40})
+	if err != nil {
+		t.Fatalf("an empty page is not an error: %v", err)
+	}
+	want := model.Pagination{Limit: model.DefaultPageSize, Offset: 40, TotalItems: 0, NextOffset: 40, HasMore: false}
+	if result.Pagination == nil || *result.Pagination != want {
+		t.Errorf("Pagination = %+v, want %+v", result.Pagination, want)
 	}
 }
 

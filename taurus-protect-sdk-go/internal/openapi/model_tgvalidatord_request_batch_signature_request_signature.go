@@ -29,7 +29,10 @@ type TgvalidatordRequestBatchSignatureRequestSignature struct {
 	Message *string `json:"Message,omitempty"`
 	CreationDate *time.Time `json:"CreationDate,omitempty"`
 	UpdateDate *time.Time `json:"UpdateDate,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordRequestBatchSignatureRequestSignature TgvalidatordRequestBatchSignatureRequestSignature
 
 // NewTgvalidatordRequestBatchSignatureRequestSignature instantiates a new TgvalidatordRequestBatchSignatureRequestSignature object
 // This constructor will assign default values to properties that have it defined,
@@ -373,7 +376,41 @@ func (o TgvalidatordRequestBatchSignatureRequestSignature) ToMap() (map[string]i
 	if !IsNil(o.UpdateDate) {
 		toSerialize["UpdateDate"] = o.UpdateDate
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordRequestBatchSignatureRequestSignature) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordRequestBatchSignatureRequestSignature := _TgvalidatordRequestBatchSignatureRequestSignature{}
+
+	err = json.Unmarshal(data, &varTgvalidatordRequestBatchSignatureRequestSignature)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordRequestBatchSignatureRequestSignature(varTgvalidatordRequestBatchSignatureRequestSignature)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "ID")
+		delete(additionalProperties, "TenantID")
+		delete(additionalProperties, "BatchSignatureID")
+		delete(additionalProperties, "RequestID")
+		delete(additionalProperties, "MetadataHash")
+		delete(additionalProperties, "Status")
+		delete(additionalProperties, "Message")
+		delete(additionalProperties, "CreationDate")
+		delete(additionalProperties, "UpdateDate")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordRequestBatchSignatureRequestSignature struct {

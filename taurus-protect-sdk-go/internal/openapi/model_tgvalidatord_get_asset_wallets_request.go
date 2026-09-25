@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -28,6 +27,7 @@ type TgvalidatordGetAssetWalletsRequest struct {
 	WalletId *string `json:"walletId,omitempty"`
 	WalletName *string `json:"walletName,omitempty"`
 	RequestCursor *TgvalidatordRequestCursor `json:"requestCursor,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordGetAssetWalletsRequest TgvalidatordGetAssetWalletsRequest
@@ -260,6 +260,11 @@ func (o TgvalidatordGetAssetWalletsRequest) ToMap() (map[string]interface{}, err
 	if !IsNil(o.RequestCursor) {
 		toSerialize["requestCursor"] = o.RequestCursor
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -287,15 +292,25 @@ func (o *TgvalidatordGetAssetWalletsRequest) UnmarshalJSON(data []byte) (err err
 
 	varTgvalidatordGetAssetWalletsRequest := _TgvalidatordGetAssetWalletsRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordGetAssetWalletsRequest)
+	err = json.Unmarshal(data, &varTgvalidatordGetAssetWalletsRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordGetAssetWalletsRequest(varTgvalidatordGetAssetWalletsRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "asset")
+		delete(additionalProperties, "limit")
+		delete(additionalProperties, "cursor")
+		delete(additionalProperties, "walletId")
+		delete(additionalProperties, "walletName")
+		delete(additionalProperties, "requestCursor")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

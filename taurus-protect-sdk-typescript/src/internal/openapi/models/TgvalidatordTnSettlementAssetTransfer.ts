@@ -43,7 +43,16 @@ export interface TgvalidatordTnSettlementAssetTransfer {
      * @memberof TgvalidatordTnSettlementAssetTransfer
      */
     destinationSharedAddressID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTnSettlementAssetTransfer
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTnSettlementAssetTransferWireKeys: ReadonlySet<string> = new Set(['currencyID', 'amount', 'sourceSharedAddressID', 'destinationSharedAddressID']);
 
 /**
  * Check if a given object implements the TgvalidatordTnSettlementAssetTransfer interface.
@@ -60,13 +69,23 @@ export function TgvalidatordTnSettlementAssetTransferFromJSONTyped(json: any, ig
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTnSettlementAssetTransfer = {
         
         'currencyID': json['currencyID'] == null ? undefined : json['currencyID'],
         'amount': json['amount'] == null ? undefined : json['amount'],
         'sourceSharedAddressID': json['sourceSharedAddressID'] == null ? undefined : json['sourceSharedAddressID'],
         'destinationSharedAddressID': json['destinationSharedAddressID'] == null ? undefined : json['destinationSharedAddressID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTnSettlementAssetTransferWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTnSettlementAssetTransferToJSON(json: any): TgvalidatordTnSettlementAssetTransfer {
@@ -84,6 +103,7 @@ export function TgvalidatordTnSettlementAssetTransferFromJSONTyped(json: any, ig
         'amount': value['amount'],
         'sourceSharedAddressID': value['sourceSharedAddressID'],
         'destinationSharedAddressID': value['destinationSharedAddressID'],
+        ...value['additionalProperties'],
     };
 }
 

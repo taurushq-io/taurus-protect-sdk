@@ -46,7 +46,16 @@ export interface TgvalidatordGetFiatProviderCounterpartyAccountsReply {
      * @memberof TgvalidatordGetFiatProviderCounterpartyAccountsReply
      */
     cursor?: TgvalidatordResponseCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetFiatProviderCounterpartyAccountsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetFiatProviderCounterpartyAccountsReplyWireKeys: ReadonlySet<string> = new Set(['result', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetFiatProviderCounterpartyAccountsReply interface.
@@ -63,11 +72,21 @@ export function TgvalidatordGetFiatProviderCounterpartyAccountsReplyFromJSONType
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetFiatProviderCounterpartyAccountsReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordFiatProviderCounterpartyAccountFromJSON)),
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetFiatProviderCounterpartyAccountsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetFiatProviderCounterpartyAccountsReplyToJSON(json: any): TgvalidatordGetFiatProviderCounterpartyAccountsReply {
@@ -83,6 +102,7 @@ export function TgvalidatordGetFiatProviderCounterpartyAccountsReplyFromJSONType
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordFiatProviderCounterpartyAccountToJSON)),
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
+        ...value['additionalProperties'],
     };
 }
 

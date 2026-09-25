@@ -46,7 +46,16 @@ export interface TgvalidatordGetMyParticipantReply {
      * @memberof TgvalidatordGetMyParticipantReply
      */
     settings?: TgvalidatordTnParticipantSettings;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetMyParticipantReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetMyParticipantReplyWireKeys: ReadonlySet<string> = new Set(['result', 'settings']);
 
 /**
  * Check if a given object implements the TgvalidatordGetMyParticipantReply interface.
@@ -63,11 +72,21 @@ export function TgvalidatordGetMyParticipantReplyFromJSONTyped(json: any, ignore
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetMyParticipantReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordTnParticipantFromJSON(json['result']),
         'settings': json['settings'] == null ? undefined : TgvalidatordTnParticipantSettingsFromJSON(json['settings']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetMyParticipantReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetMyParticipantReplyToJSON(json: any): TgvalidatordGetMyParticipantReply {
@@ -83,6 +102,7 @@ export function TgvalidatordGetMyParticipantReplyFromJSONTyped(json: any, ignore
         
         'result': TgvalidatordTnParticipantToJSON(value['result']),
         'settings': TgvalidatordTnParticipantSettingsToJSON(value['settings']),
+        ...value['additionalProperties'],
     };
 }
 

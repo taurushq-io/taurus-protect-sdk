@@ -27,18 +27,14 @@ function sleep(ms: number): Promise<void> {
 async function listAllBusinessRules(client: ProtectClient): Promise<BusinessRule[]> {
   const allRules: BusinessRule[] = [];
   let currentPage: string | undefined;
-  let isFirst = true;
-
   do {
     const result: ListBusinessRulesResult = await client.businessRules.list({
       pageSize: 50,
-      currentPage,
-      pageRequest: isFirst ? 'FIRST' : 'NEXT',
+      cursor: currentPage,
     });
 
     allRules.push(...result.rules);
-    currentPage = result.nextCursor;
-    isFirst = false;
+    currentPage = result.pagination.hasMore ? result.pagination.nextCursor : undefined;
   } while (currentPage);
 
   return allRules;
@@ -49,13 +45,11 @@ async function listAllBusinessRules(client: ProtectClient): Promise<BusinessRule
  */
 async function findRuleById(client: ProtectClient, ruleId: string): Promise<BusinessRule | undefined> {
   let currentPage: string | undefined;
-  let isFirst = true;
 
   do {
     const result: ListBusinessRulesResult = await client.businessRules.list({
       pageSize: 50,
-      currentPage,
-      pageRequest: isFirst ? 'FIRST' : 'NEXT',
+      cursor: currentPage,
     });
 
     for (const rule of result.rules) {
@@ -64,8 +58,7 @@ async function findRuleById(client: ProtectClient, ruleId: string): Promise<Busi
       }
     }
 
-    currentPage = result.nextCursor;
-    isFirst = false;
+    currentPage = result.pagination.hasMore ? result.pagination.nextCursor : undefined;
   } while (currentPage);
 
   return undefined;

@@ -58,22 +58,62 @@ type ListFiatProviderAccountsOptions struct {
 	AccountType string
 	// SortOrder specifies the sort order (ASC or DESC). Default is DESC.
 	SortOrder string
-	// CurrentPage is the base64-encoded cursor for the current page.
-	CurrentPage string
-	// PageRequest indicates which page to request (FIRST, PREVIOUS, NEXT, LAST).
-	PageRequest string
-	// PageSize is the number of items per page.
+	// PageSize is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
 	PageSize int64
+	// Cursor is a previous page's Page.NextCursor; the SDK then requests the NEXT page.
+	Cursor string
+	// CurrentPage and PageRequest (FIRST, PREVIOUS, NEXT, LAST) page by hand; neither can be
+	// combined with Cursor.
+	CurrentPage string
+	PageRequest string
 }
 
 // ListFiatProviderAccountsResult contains the result of listing fiat provider accounts.
 type ListFiatProviderAccountsResult struct {
 	// Accounts is the list of fiat provider accounts.
 	Accounts []*FiatProviderAccount `json:"accounts"`
-	// CurrentPage is the base64-encoded cursor for the current page.
-	CurrentPage string `json:"current_page,omitempty"`
-	// HasPrevious indicates if there is a previous page.
-	HasPrevious bool `json:"has_previous"`
-	// HasNext indicates if there is a next page.
-	HasNext bool `json:"has_next"`
+	// Page continues the list: pass Page.NextCursor as the next Cursor until HasMore is false.
+	Page CursorPage `json:"page"`
+}
+
+// FiatProviderEntity is an entity registered with a fiat provider.
+type FiatProviderEntity struct {
+	// ID is the unique identifier of the entity.
+	ID string `json:"id"`
+	// Provider is the fiat provider name (e.g., "circle").
+	Provider string `json:"provider"`
+	// Label is the label of the fiat provider set in the config.
+	Label string `json:"label"`
+	// AccountIdentifier is the identifier of the entity's account at the provider.
+	AccountIdentifier string `json:"account_identifier"`
+	// Name is the entity's name.
+	Name string `json:"name"`
+	// Details carries provider-specific details.
+	Details string `json:"details,omitempty"`
+	// CreationDate is when the entity was created.
+	CreationDate time.Time `json:"creation_date"`
+	// UpdateDate is when the entity was last updated.
+	UpdateDate time.Time `json:"update_date"`
+}
+
+// ListFiatProviderEntitiesOptions contains options for listing fiat provider entities.
+type ListFiatProviderEntitiesOptions struct {
+	// Provider filters by fiat provider (e.g., "circle").
+	Provider string
+	// Label filters by the provider label set in the config.
+	Label string
+	// SortOrder specifies the sort order (ASC or DESC).
+	SortOrder string
+	// PageSize is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
+	PageSize int64
+	// Cursor is a previous page's Page.NextCursor; the SDK then requests the NEXT page.
+	Cursor string
+}
+
+// ListFiatProviderEntitiesResult is one page of fiat provider entities.
+type ListFiatProviderEntitiesResult struct {
+	// Entities is the list of entities on this page.
+	Entities []*FiatProviderEntity `json:"entities"`
+	// Page continues the list: pass Page.NextCursor as the next Cursor until HasMore is false.
+	Page CursorPage `json:"page"`
 }

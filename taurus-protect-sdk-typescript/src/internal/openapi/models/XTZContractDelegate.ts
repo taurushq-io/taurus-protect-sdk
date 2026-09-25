@@ -31,7 +31,16 @@ export interface XTZContractDelegate {
      * @memberof XTZContractDelegate
      */
     toWhitelistedAddressId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof XTZContractDelegate
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const XTZContractDelegateWireKeys: ReadonlySet<string> = new Set(['toAddressId', 'toWhitelistedAddressId']);
 
 /**
  * Check if a given object implements the XTZContractDelegate interface.
@@ -48,11 +57,21 @@ export function XTZContractDelegateFromJSONTyped(json: any, ignoreDiscriminator:
     if (json == null) {
         return json;
     }
-    return {
+    const result: XTZContractDelegate = {
         
         'toAddressId': json['toAddressId'] == null ? undefined : json['toAddressId'],
         'toWhitelistedAddressId': json['toWhitelistedAddressId'] == null ? undefined : json['toWhitelistedAddressId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!XTZContractDelegateWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function XTZContractDelegateToJSON(json: any): XTZContractDelegate {
@@ -68,6 +87,7 @@ export function XTZContractDelegateFromJSONTyped(json: any, ignoreDiscriminator:
         
         'toAddressId': value['toAddressId'],
         'toWhitelistedAddressId': value['toWhitelistedAddressId'],
+        ...value['additionalProperties'],
     };
 }
 

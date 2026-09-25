@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordERC1400UniversalTokenContractTemplate{}
 // TgvalidatordERC1400UniversalTokenContractTemplate struct for TgvalidatordERC1400UniversalTokenContractTemplate
 type TgvalidatordERC1400UniversalTokenContractTemplate struct {
 	Evm *TgvalidatordEVMContractTemplateParams `json:"evm,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordERC1400UniversalTokenContractTemplate TgvalidatordERC1400UniversalTokenContractTemplate
 
 // NewTgvalidatordERC1400UniversalTokenContractTemplate instantiates a new TgvalidatordERC1400UniversalTokenContractTemplate object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordERC1400UniversalTokenContractTemplate) ToMap() (map[string]i
 	if !IsNil(o.Evm) {
 		toSerialize["evm"] = o.Evm
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordERC1400UniversalTokenContractTemplate) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordERC1400UniversalTokenContractTemplate := _TgvalidatordERC1400UniversalTokenContractTemplate{}
+
+	err = json.Unmarshal(data, &varTgvalidatordERC1400UniversalTokenContractTemplate)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordERC1400UniversalTokenContractTemplate(varTgvalidatordERC1400UniversalTokenContractTemplate)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "evm")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordERC1400UniversalTokenContractTemplate struct {

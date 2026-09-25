@@ -101,7 +101,16 @@ export interface TgvalidatordRequestBundle {
      * @memberof TgvalidatordRequestBundle
      */
     signedRequestBundles?: Array<RequestBundleSignedRequestBundle>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordRequestBundle
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordRequestBundleWireKeys: ReadonlySet<string> = new Set(['id', 'tenantId', 'blockchain', 'details', 'status', 'creationDate', 'updateDate', 'requests', 'network', 'signedRequestBundles']);
 
 /**
  * Check if a given object implements the TgvalidatordRequestBundle interface.
@@ -118,7 +127,7 @@ export function TgvalidatordRequestBundleFromJSONTyped(json: any, ignoreDiscrimi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordRequestBundle = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'tenantId': json['tenantId'] == null ? undefined : json['tenantId'],
@@ -131,6 +140,16 @@ export function TgvalidatordRequestBundleFromJSONTyped(json: any, ignoreDiscrimi
         'network': json['network'] == null ? undefined : json['network'],
         'signedRequestBundles': json['signedRequestBundles'] == null ? undefined : ((json['signedRequestBundles'] as Array<any>).map(RequestBundleSignedRequestBundleFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordRequestBundleWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordRequestBundleToJSON(json: any): TgvalidatordRequestBundle {
@@ -154,6 +173,7 @@ export function TgvalidatordRequestBundleFromJSONTyped(json: any, ignoreDiscrimi
         'requests': value['requests'] == null ? undefined : ((value['requests'] as Array<any>).map(TgvalidatordRequestToJSON)),
         'network': value['network'],
         'signedRequestBundles': value['signedRequestBundles'] == null ? undefined : ((value['signedRequestBundles'] as Array<any>).map(RequestBundleSignedRequestBundleToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

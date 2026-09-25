@@ -8,15 +8,12 @@ import { NotFoundError, ValidationError } from '../../errors';
 import type { TaurusNetworkSettlementApi } from '../../internal/openapi/apis/TaurusNetworkSettlementApi';
 import type { TgvalidatordTnSettlement } from '../../internal/openapi/models/index';
 import { BaseService } from '../base';
-
-/**
- * Cursor-based pagination information.
- */
-export interface CursorPagination {
-  currentPage?: string;
-  hasNext: boolean;
-  hasPrevious: boolean;
-}
+import type {
+  ListSettlementsOptions,
+  ListSettlementsForApprovalOptions,
+} from '../../models/taurus-network/settlement';
+import { buildCursorPage, cursorRequest, type CursorPage } from '../../models/pagination';
+import { cursorQuery } from '../paging';
 
 /**
  * Asset transfer in a settlement.
@@ -78,29 +75,6 @@ export interface Settlement {
   clips?: SettlementClip[];
   createdAt?: Date;
   updatedAt?: Date;
-}
-
-/**
- * Options for listing settlements.
- */
-export interface ListSettlementsOptions {
-  counterParticipantId?: string;
-  statuses?: string[];
-  sortOrder?: string;
-  pageSize?: number;
-  currentPage?: string;
-  pageRequest?: string;
-}
-
-/**
- * Options for listing settlements for approval.
- */
-export interface ListSettlementsForApprovalOptions {
-  ids?: string[];
-  sortOrder?: string;
-  pageSize?: number;
-  currentPage?: string;
-  pageRequest?: string;
 }
 
 /**
@@ -235,25 +209,6 @@ function settlementFromDto(dto?: TgvalidatordTnSettlement): Settlement | undefin
 }
 
 /**
- * Extracts cursor pagination from response.
- */
-function extractCursorPagination(cursor?: {
-  currentPage?: string;
-  hasNext?: boolean;
-  hasPrevious?: boolean;
-}): CursorPagination | undefined {
-  if (!cursor) {
-    return undefined;
-  }
-
-  return {
-    currentPage: cursor.currentPage,
-    hasNext: cursor.hasNext ?? false,
-    hasPrevious: cursor.hasPrevious ?? false,
-  };
-}
-
-/**
  * Service for Taurus Network settlement operations.
  *
  * Provides methods to create, manage, and monitor settlements between
@@ -316,21 +271,21 @@ export class SettlementService extends BaseService {
   /**
    * Lists settlements with optional filtering.
    *
-   * @param options - Optional filtering and pagination options
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
    * @returns Settlements list and pagination info
    * @throws {@link APIError} If API request fails
    */
   async list(
     options?: ListSettlementsOptions
-  ): Promise<{ settlements: Settlement[]; pagination?: CursorPagination }> {
+  ): Promise<{ settlements: Settlement[]; pagination: CursorPage }> {
+    const page = cursorRequest(options);
+
     return this.execute(async () => {
       const response = await this.settlementApi.taurusNetworkServiceGetSettlements({
         counterParticipantID: options?.counterParticipantId,
         statuses: options?.statuses,
         sortOrder: options?.sortOrder,
-        cursorCurrentPage: options?.currentPage,
-        cursorPageRequest: options?.pageRequest,
-        cursorPageSize: options?.pageSize ? String(options.pageSize) : undefined,
+        ...cursorQuery(page),
       });
 
       const settlements: Settlement[] = [];
@@ -345,7 +300,7 @@ export class SettlementService extends BaseService {
 
       return {
         settlements,
-        pagination: extractCursorPagination(response.cursor),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
       };
     });
   }
@@ -353,20 +308,20 @@ export class SettlementService extends BaseService {
   /**
    * Lists settlements pending approval.
    *
-   * @param options - Optional filtering and pagination options
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
    * @returns Settlements list and pagination info
    * @throws {@link APIError} If API request fails
    */
   async listForApproval(
     options?: ListSettlementsForApprovalOptions
-  ): Promise<{ settlements: Settlement[]; pagination?: CursorPagination }> {
+  ): Promise<{ settlements: Settlement[]; pagination: CursorPage }> {
+    const page = cursorRequest(options);
+
     return this.execute(async () => {
       const response = await this.settlementApi.taurusNetworkServiceGetSettlementsForApproval({
         ids: options?.ids,
         sortOrder: options?.sortOrder,
-        cursorCurrentPage: options?.currentPage,
-        cursorPageRequest: options?.pageRequest,
-        cursorPageSize: options?.pageSize ? String(options.pageSize) : undefined,
+        ...cursorQuery(page),
       });
 
       const settlements: Settlement[] = [];
@@ -381,7 +336,7 @@ export class SettlementService extends BaseService {
 
       return {
         settlements,
-        pagination: extractCursorPagination(response.cursor),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
       };
     });
   }

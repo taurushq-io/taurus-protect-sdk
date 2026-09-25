@@ -115,7 +115,16 @@ export interface TgvalidatordXTZBaker {
      * @memberof TgvalidatordXTZBaker
      */
     edgeOfBakingOverStaking?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordXTZBaker
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordXTZBakerWireKeys: ReadonlySet<string> = new Set(['address', 'stakingBond', 'stakingBalance', 'stakingCapacity', 'availableCapacity', 'active', 'isStakingAllowed', 'totalStaked', 'externalStaked', 'overStaked', 'externalStakingCapacity', 'totalDelegated', 'externalDelegated', 'delegationCapacity', 'availableDelegationCapacity', 'edgeOfBakingOverStaking']);
 
 /**
  * Check if a given object implements the TgvalidatordXTZBaker interface.
@@ -132,7 +141,7 @@ export function TgvalidatordXTZBakerFromJSONTyped(json: any, ignoreDiscriminator
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordXTZBaker = {
         
         'address': json['address'] == null ? undefined : json['address'],
         'stakingBond': json['stakingBond'] == null ? undefined : json['stakingBond'],
@@ -151,6 +160,16 @@ export function TgvalidatordXTZBakerFromJSONTyped(json: any, ignoreDiscriminator
         'availableDelegationCapacity': json['availableDelegationCapacity'] == null ? undefined : json['availableDelegationCapacity'],
         'edgeOfBakingOverStaking': json['edgeOfBakingOverStaking'] == null ? undefined : json['edgeOfBakingOverStaking'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordXTZBakerWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordXTZBakerToJSON(json: any): TgvalidatordXTZBaker {
@@ -180,6 +199,7 @@ export function TgvalidatordXTZBakerFromJSONTyped(json: any, ignoreDiscriminator
         'delegationCapacity': value['delegationCapacity'],
         'availableDelegationCapacity': value['availableDelegationCapacity'],
         'edgeOfBakingOverStaking': value['edgeOfBakingOverStaking'],
+        ...value['additionalProperties'],
     };
 }
 

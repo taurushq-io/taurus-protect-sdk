@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -26,6 +25,7 @@ type TgvalidatordRejectRequestsRequest struct {
 	// deprecated: use the ids parameter instead 
 	RequestIds []string `json:"requestIds,omitempty"`
 	Ids []string `json:"ids"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordRejectRequestsRequest TgvalidatordRejectRequestsRequest
@@ -144,6 +144,11 @@ func (o TgvalidatordRejectRequestsRequest) ToMap() (map[string]interface{}, erro
 		toSerialize["requestIds"] = o.RequestIds
 	}
 	toSerialize["ids"] = o.Ids
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -172,15 +177,22 @@ func (o *TgvalidatordRejectRequestsRequest) UnmarshalJSON(data []byte) (err erro
 
 	varTgvalidatordRejectRequestsRequest := _TgvalidatordRejectRequestsRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordRejectRequestsRequest)
+	err = json.Unmarshal(data, &varTgvalidatordRejectRequestsRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordRejectRequestsRequest(varTgvalidatordRejectRequestsRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "requestIds")
+		delete(additionalProperties, "ids")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

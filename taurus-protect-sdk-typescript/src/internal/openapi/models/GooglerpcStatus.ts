@@ -95,7 +95,16 @@ export interface GooglerpcStatus {
      * @memberof GooglerpcStatus
      */
     details?: Array<ProtobufAny>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof GooglerpcStatus
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const GooglerpcStatusWireKeys: ReadonlySet<string> = new Set(['code', 'message', 'details']);
 
 /**
  * Check if a given object implements the GooglerpcStatus interface.
@@ -112,12 +121,22 @@ export function GooglerpcStatusFromJSONTyped(json: any, ignoreDiscriminator: boo
     if (json == null) {
         return json;
     }
-    return {
+    const result: GooglerpcStatus = {
         
         'code': json['code'] == null ? undefined : json['code'],
         'message': json['message'] == null ? undefined : json['message'],
         'details': json['details'] == null ? undefined : ((json['details'] as Array<any>).map(ProtobufAnyFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!GooglerpcStatusWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function GooglerpcStatusToJSON(json: any): GooglerpcStatus {
@@ -134,6 +153,7 @@ export function GooglerpcStatusFromJSONTyped(json: any, ignoreDiscriminator: boo
         'code': value['code'],
         'message': value['message'],
         'details': value['details'] == null ? undefined : ((value['details'] as Array<any>).map(ProtobufAnyToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

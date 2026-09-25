@@ -37,7 +37,16 @@ export interface TgvalidatordInitRemoteFeePayerReply {
      * @memberof TgvalidatordInitRemoteFeePayerReply
      */
     checksum?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordInitRemoteFeePayerReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordInitRemoteFeePayerReplyWireKeys: ReadonlySet<string> = new Set(['remoteEncrypted', 'rulesUpdated', 'checksum']);
 
 /**
  * Check if a given object implements the TgvalidatordInitRemoteFeePayerReply interface.
@@ -54,12 +63,22 @@ export function TgvalidatordInitRemoteFeePayerReplyFromJSONTyped(json: any, igno
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordInitRemoteFeePayerReply = {
         
         'remoteEncrypted': json['remoteEncrypted'] == null ? undefined : json['remoteEncrypted'],
         'rulesUpdated': json['rulesUpdated'] == null ? undefined : json['rulesUpdated'],
         'checksum': json['checksum'] == null ? undefined : json['checksum'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordInitRemoteFeePayerReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordInitRemoteFeePayerReplyToJSON(json: any): TgvalidatordInitRemoteFeePayerReply {
@@ -76,6 +95,7 @@ export function TgvalidatordInitRemoteFeePayerReplyFromJSONTyped(json: any, igno
         'remoteEncrypted': value['remoteEncrypted'],
         'rulesUpdated': value['rulesUpdated'],
         'checksum': value['checksum'],
+        ...value['additionalProperties'],
     };
 }
 

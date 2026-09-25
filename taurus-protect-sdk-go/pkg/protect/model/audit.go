@@ -44,12 +44,14 @@ type ListAuditTrailsOptions struct {
 	CreationDateFrom *time.Time
 	// CreationDateTo filters for entries created on or before this date.
 	CreationDateTo *time.Time
-	// CurrentPage is the base64-encoded cursor for the current page.
-	CurrentPage string
-	// PageRequest indicates which page to request (FIRST, PREVIOUS, NEXT, LAST).
-	PageRequest string
-	// PageSize is the number of items per page.
+	// PageSize is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
 	PageSize int64
+	// Cursor is a previous page's Page.NextCursor; the SDK then requests the NEXT page.
+	Cursor string
+	// CurrentPage and PageRequest (FIRST, PREVIOUS, NEXT, LAST) page by hand; neither can be
+	// combined with Cursor.
+	CurrentPage string
+	PageRequest string
 	// SortBy specifies the columns to sort by (e.g., ["CreationDate"]).
 	SortBy []string
 	// SortOrder specifies the sort order (ASC or DESC).
@@ -60,12 +62,8 @@ type ListAuditTrailsOptions struct {
 type ListAuditTrailsResult struct {
 	// AuditTrails is the list of audit trail entries.
 	AuditTrails []*AuditTrail `json:"audit_trails"`
-	// CurrentPage is the base64-encoded cursor for the current page.
-	CurrentPage string `json:"current_page,omitempty"`
-	// HasPrevious indicates if there is a previous page.
-	HasPrevious bool `json:"has_previous"`
-	// HasNext indicates if there is a next page.
-	HasNext bool `json:"has_next"`
+	// Page continues the list: pass Page.NextCursor as the next Cursor until HasMore is false.
+	Page CursorPage `json:"page"`
 }
 
 // ExportAuditTrailsOptions contains options for exporting audit trails.

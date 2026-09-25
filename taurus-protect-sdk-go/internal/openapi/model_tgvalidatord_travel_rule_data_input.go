@@ -25,7 +25,10 @@ type TgvalidatordTravelRuleDataInput struct {
 	BeneficiaryPersonTravelRuleData *TgvalidatordPersonTravelRuleData `json:"beneficiaryPersonTravelRuleData,omitempty"`
 	// Provider is the type of the travel rule data provider. Supported provider: 'TaurusNetwork'
 	Provider *string `json:"provider,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTravelRuleDataInput TgvalidatordTravelRuleDataInput
 
 // NewTgvalidatordTravelRuleDataInput instantiates a new TgvalidatordTravelRuleDataInput object
 // This constructor will assign default values to properties that have it defined,
@@ -229,7 +232,37 @@ func (o TgvalidatordTravelRuleDataInput) ToMap() (map[string]interface{}, error)
 	if !IsNil(o.Provider) {
 		toSerialize["provider"] = o.Provider
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTravelRuleDataInput) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTravelRuleDataInput := _TgvalidatordTravelRuleDataInput{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTravelRuleDataInput)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTravelRuleDataInput(varTgvalidatordTravelRuleDataInput)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "originatorPersonTravelRuleData")
+		delete(additionalProperties, "originatorCompanyTravelRuleData")
+		delete(additionalProperties, "beneficiaryCompanyTravelRuleData")
+		delete(additionalProperties, "beneficiaryPersonTravelRuleData")
+		delete(additionalProperties, "provider")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTravelRuleDataInput struct {

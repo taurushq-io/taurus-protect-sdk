@@ -18,7 +18,7 @@ func GroupFromDTO(dto *openapi.TgvalidatordInternalGroup) *model.Group {
 		Name:            safeString(dto.Name),
 		Email:           safeString(dto.Email),
 		Description:     safeString(dto.Description),
-		EnforcedInRules: safeBool(dto.EnforcedInRules),
+		EnforcedInRules: optionalBool(dto.EnforcedInRules),
 	}
 
 	// Convert timestamps
@@ -60,6 +60,6 @@ func GroupUserFromDTO(dto *openapi.TgvalidatordInternalGroupUser) model.GroupUse
 	return model.GroupUser{
 		ID:              safeString(dto.Id),
 		ExternalUserID:  safeString(dto.ExternalUserId),
-		EnforcedInRules: safeBool(dto.EnforcedInRules),
+		EnforcedInRules: optionalBool(dto.EnforcedInRules),
 	}
 }

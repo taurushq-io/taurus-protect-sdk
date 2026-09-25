@@ -25,7 +25,10 @@ type TgvalidatordCreateMeAttributeRequest struct {
 	Type *string `json:"type,omitempty"`
 	Subtype *string `json:"subtype,omitempty"`
 	Isfile *bool `json:"isfile,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordCreateMeAttributeRequest TgvalidatordCreateMeAttributeRequest
 
 // NewTgvalidatordCreateMeAttributeRequest instantiates a new TgvalidatordCreateMeAttributeRequest object
 // This constructor will assign default values to properties that have it defined,
@@ -264,7 +267,38 @@ func (o TgvalidatordCreateMeAttributeRequest) ToMap() (map[string]interface{}, e
 	if !IsNil(o.Isfile) {
 		toSerialize["isfile"] = o.Isfile
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordCreateMeAttributeRequest) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordCreateMeAttributeRequest := _TgvalidatordCreateMeAttributeRequest{}
+
+	err = json.Unmarshal(data, &varTgvalidatordCreateMeAttributeRequest)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordCreateMeAttributeRequest(varTgvalidatordCreateMeAttributeRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "key")
+		delete(additionalProperties, "value")
+		delete(additionalProperties, "contentType")
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "subtype")
+		delete(additionalProperties, "isfile")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordCreateMeAttributeRequest struct {

@@ -55,7 +55,16 @@ export interface TgvalidatordCreateOutgoingADAUndelegateRequestRequest {
      * @memberof TgvalidatordCreateOutgoingADAUndelegateRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingADAUndelegateRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingADAUndelegateRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'feeLimit', 'comment', 'useUnconfirmedFunds', 'transactionReference', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingADAUndelegateRequestRequest interface.
@@ -73,7 +82,7 @@ export function TgvalidatordCreateOutgoingADAUndelegateRequestRequestFromJSONTyp
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingADAUndelegateRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'feeLimit': json['feeLimit'] == null ? undefined : json['feeLimit'],
@@ -82,6 +91,16 @@ export function TgvalidatordCreateOutgoingADAUndelegateRequestRequestFromJSONTyp
         'transactionReference': json['transactionReference'] == null ? undefined : json['transactionReference'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingADAUndelegateRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingADAUndelegateRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingADAUndelegateRequestRequest {
@@ -101,6 +120,7 @@ export function TgvalidatordCreateOutgoingADAUndelegateRequestRequestFromJSONTyp
         'useUnconfirmedFunds': value['useUnconfirmedFunds'],
         'transactionReference': value['transactionReference'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

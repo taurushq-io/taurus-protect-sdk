@@ -20,8 +20,11 @@ var _ MappedNullable = &TgvalidatordApiKeyToken{}
 // TgvalidatordApiKeyToken struct for TgvalidatordApiKeyToken
 type TgvalidatordApiKeyToken struct {
 	ApiKey *TgvalidatordApiKey `json:"apiKey,omitempty"`
-	Token  *string             `json:"token,omitempty"`
+	Token *string `json:"token,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordApiKeyToken TgvalidatordApiKeyToken
 
 // NewTgvalidatordApiKeyToken instantiates a new TgvalidatordApiKeyToken object
 // This constructor will assign default values to properties that have it defined,
@@ -105,7 +108,7 @@ func (o *TgvalidatordApiKeyToken) SetToken(v string) {
 }
 
 func (o TgvalidatordApiKeyToken) MarshalJSON() ([]byte, error) {
-	toSerialize, err := o.ToMap()
+	toSerialize,err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -120,7 +123,34 @@ func (o TgvalidatordApiKeyToken) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Token) {
 		toSerialize["token"] = o.Token
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordApiKeyToken) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordApiKeyToken := _TgvalidatordApiKeyToken{}
+
+	err = json.Unmarshal(data, &varTgvalidatordApiKeyToken)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordApiKeyToken(varTgvalidatordApiKeyToken)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "apiKey")
+		delete(additionalProperties, "token")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordApiKeyToken struct {
@@ -158,3 +188,5 @@ func (v *NullableTgvalidatordApiKeyToken) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
+
+

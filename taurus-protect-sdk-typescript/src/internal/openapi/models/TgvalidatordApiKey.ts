@@ -43,7 +43,16 @@ export interface TgvalidatordApiKey {
      * @memberof TgvalidatordApiKey
      */
     creationDate?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordApiKey
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordApiKeyWireKeys: ReadonlySet<string> = new Set(['id', 'tenantId', 'expirationDate', 'creationDate']);
 
 /**
  * Check if a given object implements the TgvalidatordApiKey interface.
@@ -60,13 +69,23 @@ export function TgvalidatordApiKeyFromJSONTyped(json: any, ignoreDiscriminator: 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordApiKey = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'tenantId': json['tenantId'] == null ? undefined : json['tenantId'],
         'expirationDate': json['expirationDate'] == null ? undefined : (new Date(json['expirationDate'])),
         'creationDate': json['creationDate'] == null ? undefined : (new Date(json['creationDate'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordApiKeyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordApiKeyToJSON(json: any): TgvalidatordApiKey {
@@ -84,6 +103,7 @@ export function TgvalidatordApiKeyFromJSONTyped(json: any, ignoreDiscriminator: 
         'tenantId': value['tenantId'],
         'expirationDate': value['expirationDate'] == null ? undefined : ((value['expirationDate']).toISOString()),
         'creationDate': value['creationDate'] == null ? undefined : ((value['creationDate']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

@@ -37,7 +37,16 @@ export interface TgvalidatordTransactionFee {
      * @memberof TgvalidatordTransactionFee
      */
     amountMainUnit?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTransactionFee
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTransactionFeeWireKeys: ReadonlySet<string> = new Set(['type', 'amount', 'amountMainUnit']);
 
 /**
  * Check if a given object implements the TgvalidatordTransactionFee interface.
@@ -54,12 +63,22 @@ export function TgvalidatordTransactionFeeFromJSONTyped(json: any, ignoreDiscrim
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTransactionFee = {
         
         'type': json['type'] == null ? undefined : json['type'],
         'amount': json['amount'] == null ? undefined : json['amount'],
         'amountMainUnit': json['amountMainUnit'] == null ? undefined : json['amountMainUnit'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTransactionFeeWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTransactionFeeToJSON(json: any): TgvalidatordTransactionFee {
@@ -76,6 +95,7 @@ export function TgvalidatordTransactionFeeFromJSONTyped(json: any, ignoreDiscrim
         'type': value['type'],
         'amount': value['amount'],
         'amountMainUnit': value['amountMainUnit'],
+        ...value['additionalProperties'],
     };
 }
 

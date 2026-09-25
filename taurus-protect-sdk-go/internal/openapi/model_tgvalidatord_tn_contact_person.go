@@ -23,7 +23,10 @@ type TgvalidatordTnContactPerson struct {
 	LastName *string `json:"lastName,omitempty"`
 	PhoneNumber *string `json:"phoneNumber,omitempty"`
 	Email *string `json:"email,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTnContactPerson TgvalidatordTnContactPerson
 
 // NewTgvalidatordTnContactPerson instantiates a new TgvalidatordTnContactPerson object
 // This constructor will assign default values to properties that have it defined,
@@ -192,7 +195,36 @@ func (o TgvalidatordTnContactPerson) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Email) {
 		toSerialize["email"] = o.Email
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTnContactPerson) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTnContactPerson := _TgvalidatordTnContactPerson{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTnContactPerson)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTnContactPerson(varTgvalidatordTnContactPerson)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "firstName")
+		delete(additionalProperties, "lastName")
+		delete(additionalProperties, "phoneNumber")
+		delete(additionalProperties, "email")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTnContactPerson struct {

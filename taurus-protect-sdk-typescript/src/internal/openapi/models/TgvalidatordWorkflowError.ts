@@ -37,7 +37,16 @@ export interface TgvalidatordWorkflowError {
      * @memberof TgvalidatordWorkflowError
      */
     errorID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordWorkflowError
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordWorkflowErrorWireKeys: ReadonlySet<string> = new Set(['message', 'errorCode', 'errorID']);
 
 /**
  * Check if a given object implements the TgvalidatordWorkflowError interface.
@@ -54,12 +63,22 @@ export function TgvalidatordWorkflowErrorFromJSONTyped(json: any, ignoreDiscrimi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordWorkflowError = {
         
         'message': json['message'] == null ? undefined : json['message'],
         'errorCode': json['errorCode'] == null ? undefined : json['errorCode'],
         'errorID': json['errorID'] == null ? undefined : json['errorID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordWorkflowErrorWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordWorkflowErrorToJSON(json: any): TgvalidatordWorkflowError {
@@ -76,6 +95,7 @@ export function TgvalidatordWorkflowErrorFromJSONTyped(json: any, ignoreDiscrimi
         'message': value['message'],
         'errorCode': value['errorCode'],
         'errorID': value['errorID'],
+        ...value['additionalProperties'],
     };
 }
 

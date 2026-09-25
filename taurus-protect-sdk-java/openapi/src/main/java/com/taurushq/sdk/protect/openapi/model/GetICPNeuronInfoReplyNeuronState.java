@@ -25,21 +25,27 @@ import com.google.gson.stream.JsonWriter;
 
 /**
  * Gets or Sets GetICPNeuronInfoReplyNeuronState
+ * <p>
+ * An open set of values: a value this client was not generated with is kept as-is, so
+ * {@link #fromValue} never throws and a new server value cannot fail a whole decode.
  */
 @JsonAdapter(GetICPNeuronInfoReplyNeuronState.Adapter.class)
-public enum GetICPNeuronInfoReplyNeuronState {
+public final class GetICPNeuronInfoReplyNeuronState {
   
-  NEURON_STATE_NOT_DISSOLVING("NeuronStateNotDissolving"),
+  public static final GetICPNeuronInfoReplyNeuronState NEURON_STATE_NOT_DISSOLVING = new GetICPNeuronInfoReplyNeuronState("NeuronStateNotDissolving");
   
-  NEURON_STATE_DISSOLVING("NeuronStateDissolving"),
+  public static final GetICPNeuronInfoReplyNeuronState NEURON_STATE_DISSOLVING = new GetICPNeuronInfoReplyNeuronState("NeuronStateDissolving");
   
-  NEURON_STATE_DISSOLVED("NeuronStateDissolved"),
+  public static final GetICPNeuronInfoReplyNeuronState NEURON_STATE_DISSOLVED = new GetICPNeuronInfoReplyNeuronState("NeuronStateDissolved");
   
-  NEURON_STATE_SPAWNING("NeuronStateSpawning");
+  public static final GetICPNeuronInfoReplyNeuronState NEURON_STATE_SPAWNING = new GetICPNeuronInfoReplyNeuronState("NeuronStateSpawning");
+  
 
-  private String value;
+  private static final GetICPNeuronInfoReplyNeuronState[] knownValues = { NEURON_STATE_NOT_DISSOLVING, NEURON_STATE_DISSOLVING, NEURON_STATE_DISSOLVED, NEURON_STATE_SPAWNING };
 
-  GetICPNeuronInfoReplyNeuronState(String value) {
+  private final String value;
+
+  private GetICPNeuronInfoReplyNeuronState(String value) {
     this.value = value;
   }
 
@@ -47,18 +53,53 @@ public enum GetICPNeuronInfoReplyNeuronState {
     return value;
   }
 
+  /**
+   * Returns the values this client was generated with.
+   *
+   * @return a new array of the known values
+   */
+  public static GetICPNeuronInfoReplyNeuronState[] values() {
+    return knownValues.clone();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    return Objects.equals(value, ((GetICPNeuronInfoReplyNeuronState) o).value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(value);
+  }
+
   @Override
   public String toString() {
     return String.valueOf(value);
   }
 
+  /**
+   * Returns the known constant for a value, or a new instance carrying a value this client
+   * does not know. Never throws.
+   *
+   * @param value the wire value
+   * @return the matching instance, or null for a null value
+   */
   public static GetICPNeuronInfoReplyNeuronState fromValue(String value) {
-    for (GetICPNeuronInfoReplyNeuronState b : GetICPNeuronInfoReplyNeuronState.values()) {
+    if (value == null) {
+      return null;
+    }
+    for (GetICPNeuronInfoReplyNeuronState b : knownValues) {
       if (b.value.equals(value)) {
         return b;
       }
     }
-    throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    return new GetICPNeuronInfoReplyNeuronState(value);
   }
 
   public static class Adapter extends TypeAdapter<GetICPNeuronInfoReplyNeuronState> {

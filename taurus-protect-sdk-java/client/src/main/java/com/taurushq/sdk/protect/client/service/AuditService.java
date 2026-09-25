@@ -5,6 +5,7 @@ import com.taurushq.sdk.protect.client.mapper.AuditMapper;
 import com.taurushq.sdk.protect.client.model.ApiException;
 import com.taurushq.sdk.protect.client.model.ApiRequestCursor;
 import com.taurushq.sdk.protect.client.model.AuditTrailResult;
+import com.taurushq.sdk.protect.client.model.Pagination;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import com.taurushq.sdk.protect.openapi.api.AuditApi;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordExportAuditTrailsReply;
@@ -30,8 +31,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *     Arrays.asList("approve"),                // actions
  *     OffsetDateTime.now().minusDays(7),       // from
  *     OffsetDateTime.now(),                    // to
- *     null                                     // cursor
+ *     20,                                      // pageSize
+ *     null                                     // cursor: first page
  * );
+ * // next page: pass result.getPage().getNextCursor() while result.getPage().hasMore()
  *
  * for (AuditTrail trail : result.getAuditTrails()) {
  *     System.out.println(trail.getEntity() + ": " + trail.getAction());
@@ -63,15 +66,39 @@ public class AuditService {
     }
 
     /**
-     * Retrieves audit trails with optional filtering.
+     * Retrieves a page of audit trails with optional filtering.
      *
      * @param externalUserId filter by external user ID (optional)
      * @param entities       filter by entity types (optional)
      * @param actions        filter by action types (optional)
      * @param from           filter from date (optional)
      * @param to             filter to date (optional)
-     * @param cursor         pagination cursor (optional)
-     * @return the audit trail result with pagination
+     * @param pageSize       the page size, null or 0 for the default
+     * @param cursor         a previous page's {@code getPage().getNextCursor()}, null for the first page
+     * @return the audit trails and their page
+     * @throws ApiException             if the API call fails
+     * @throws IllegalArgumentException if the page size is out of range
+     */
+    public AuditTrailResult getAuditTrails(final String externalUserId,
+                                            final List<String> entities,
+                                            final List<String> actions,
+                                            final OffsetDateTime from,
+                                            final OffsetDateTime to,
+                                            final Integer pageSize,
+                                            final String cursor) throws ApiException {
+        return getAuditTrails(externalUserId, entities, actions, from, to, Pagination.page(pageSize, cursor));
+    }
+
+    /**
+     * Retrieves a page of audit trails with optional filtering, with a low-level request cursor.
+     *
+     * @param externalUserId filter by external user ID (optional)
+     * @param entities       filter by entity types (optional)
+     * @param actions        filter by action types (optional)
+     * @param from           filter from date (optional)
+     * @param to             filter to date (optional)
+     * @param cursor         the request cursor, null for the first page with the default size
+     * @return the audit trails and their page
      * @throws ApiException if the API call fails
      */
     public AuditTrailResult getAuditTrails(final String externalUserId,
@@ -81,15 +108,7 @@ public class AuditService {
                                             final OffsetDateTime to,
                                             final ApiRequestCursor cursor) throws ApiException {
 
-        String cursorCurrentPage = null;
-        String cursorPageRequest = null;
-        String cursorPageSize = null;
-
-        if (cursor != null) {
-            cursorCurrentPage = cursor.getCurrentPage();
-            cursorPageRequest = cursor.getPageRequest() != null ? cursor.getPageRequest().name() : null;
-            cursorPageSize = String.valueOf(cursor.getPageSize());
-        }
+        final CursorRequest page = CursorRequest.of(cursor);
 
         try {
             TgvalidatordGetAuditTrailsReply reply = auditApi.auditServiceGetAuditTrails(
@@ -98,13 +117,13 @@ public class AuditService {
                     actions,
                     from,
                     to,
-                    cursorCurrentPage,
-                    cursorPageRequest,
-                    cursorPageSize,
+                    page.currentPage(),
+                    page.pageRequest(),
+                    page.pageSizeParam(),
                     null,  // sortingSortBy
                     null   // sortingSortOrder
             );
-            return auditMapper.fromReply(reply);
+            return page.complete(auditMapper.fromReply(reply), PagedOperation.AUDIT_TRAILS);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }

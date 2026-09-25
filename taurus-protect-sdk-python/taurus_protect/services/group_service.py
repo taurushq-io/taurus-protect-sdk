@@ -5,12 +5,32 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
 from taurus_protect.mappers.user import group_from_dto, groups_from_dto
-from taurus_protect.models.pagination import Pagination
+from taurus_protect.models.pagination import (
+    PLUS_MIN_ROWS_LIMIT,
+    Pagination,
+    offset_pagination,
+    offset_query,
+    resolve_offset,
+    resolve_page_size,
+)
 from taurus_protect.models.user import Group
 from taurus_protect.services._base import BaseService
 
 if TYPE_CHECKING:
     pass  # For OpenAPI types when available
+
+
+def _with_computed_flags(group: Group) -> Group:
+    """validatord omits a false bool, so where it computed the flags an absent one is False."""
+    return group.model_copy(
+        update={
+            "enforced_in_rules": bool(group.enforced_in_rules),
+            "users": [
+                u.model_copy(update={"enforced_in_rules": bool(u.enforced_in_rules)})
+                for u in group.users
+            ],
+        }
+    )
 
 
 class GroupService(BaseService):
@@ -21,7 +41,7 @@ class GroupService(BaseService):
 
     Example:
         >>> # List groups
-        >>> groups, pagination = client.groups.list(limit=50, offset=0)
+        >>> groups, pagination = client.groups.list(limit=100, offset=0)
         >>> for group in groups:
         ...     print(f"{group.name}: {len(group.users)} users")
         >>>
@@ -81,7 +101,7 @@ class GroupService(BaseService):
 
                 raise NotFoundError(f"Group {group_id} not found")
 
-            return group
+            return _with_computed_flags(group)
         except Exception as e:
             from taurus_protect.errors import APIError, NotFoundError
 
@@ -91,46 +111,40 @@ class GroupService(BaseService):
 
     def list(
         self,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> Tuple[List[Group], Optional[Pagination]]:
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> Tuple[List[Group], Pagination]:
         """
-        List groups with pagination.
+        List groups, one page at a time.
 
         Args:
-            limit: Maximum number of groups to return (must be positive).
-            offset: Number of groups to skip (must be non-negative).
+            limit: Page size (default 20, max 100).
+            offset: Number of groups to skip; pass ``pagination.next_offset`` to continue.
 
         Returns:
-            Tuple of (groups list, pagination info).
+            Tuple of (groups, pagination). A synthetic technical group can be appended
+            beyond ``limit``; ``next_offset`` accounts for it.
 
         Raises:
             ValueError: If limit or offset are invalid.
             APIError: If API request fails.
         """
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
+        page_size = resolve_page_size(limit, "limit")
+        start = resolve_offset(offset)
 
         try:
-            resp = self._groups_api.user_service_get_groups(
-                limit=str(limit),
-                offset=str(offset),
-                ids=None,
-                external_group_ids=None,
-                query=None,
+            resp = self._groups_api.user_service_get_groups(**offset_query(page_size, start))
+
+            rows = resp.result or []
+            groups = [_with_computed_flags(g) for g in groups_from_dto(rows)]
+            pagination = offset_pagination(
+                PLUS_MIN_ROWS_LIMIT,
+                limit=page_size,
+                offset=start,
+                served_rows=len(rows),
+                total_items=resp.total_items,
+                excluded=len(rows) - len(groups),
             )
-
-            result = getattr(resp, "result", None)
-            groups = groups_from_dto(result) if result else []
-
-            pagination = self._extract_pagination(
-                total_items=getattr(resp, "total_items", None),
-                offset=offset,
-                limit=limit,
-            )
-
             return groups, pagination
         except Exception as e:
             from taurus_protect.errors import APIError

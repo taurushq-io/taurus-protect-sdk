@@ -67,7 +67,16 @@ export interface TgvalidatordAutoTransferEventHandlerAttribute {
      * @memberof TgvalidatordAutoTransferEventHandlerAttribute
      */
     subType?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordAutoTransferEventHandlerAttribute
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordAutoTransferEventHandlerAttributeWireKeys: ReadonlySet<string> = new Set(['id', 'handlerId', 'key', 'value', 'contentType', 'owner', 'type', 'subType']);
 
 /**
  * Check if a given object implements the TgvalidatordAutoTransferEventHandlerAttribute interface.
@@ -84,7 +93,7 @@ export function TgvalidatordAutoTransferEventHandlerAttributeFromJSONTyped(json:
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordAutoTransferEventHandlerAttribute = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'handlerId': json['handlerId'] == null ? undefined : json['handlerId'],
@@ -95,6 +104,16 @@ export function TgvalidatordAutoTransferEventHandlerAttributeFromJSONTyped(json:
         'type': json['type'] == null ? undefined : json['type'],
         'subType': json['subType'] == null ? undefined : json['subType'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordAutoTransferEventHandlerAttributeWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordAutoTransferEventHandlerAttributeToJSON(json: any): TgvalidatordAutoTransferEventHandlerAttribute {
@@ -116,6 +135,7 @@ export function TgvalidatordAutoTransferEventHandlerAttributeFromJSONTyped(json:
         'owner': value['owner'],
         'type': value['type'],
         'subType': value['subType'],
+        ...value['additionalProperties'],
     };
 }
 

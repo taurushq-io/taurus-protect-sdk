@@ -43,7 +43,16 @@ export interface TgvalidatordCreateOutgoingHederaUnstakingRequestRequest {
      * @memberof TgvalidatordCreateOutgoingHederaUnstakingRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingHederaUnstakingRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingHederaUnstakingRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'feeLimit', 'comment', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingHederaUnstakingRequestRequest interface.
@@ -61,13 +70,23 @@ export function TgvalidatordCreateOutgoingHederaUnstakingRequestRequestFromJSONT
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingHederaUnstakingRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'feeLimit': json['feeLimit'] == null ? undefined : json['feeLimit'],
         'comment': json['comment'] == null ? undefined : json['comment'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingHederaUnstakingRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingHederaUnstakingRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingHederaUnstakingRequestRequest {
@@ -85,6 +104,7 @@ export function TgvalidatordCreateOutgoingHederaUnstakingRequestRequestFromJSONT
         'feeLimit': value['feeLimit'],
         'comment': value['comment'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

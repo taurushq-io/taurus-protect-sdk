@@ -5,7 +5,14 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
-from taurus_protect.models.pagination import Pagination
+from taurus_protect.models.pagination import (
+    PLUS_ROWS,
+    Pagination,
+    offset_pagination,
+    offset_query,
+    resolve_offset,
+    resolve_page_size,
+)
 from taurus_protect.models.staking import FeePayer
 from taurus_protect.services._base import BaseService
 
@@ -26,7 +33,7 @@ class FeePayerService(BaseService):
 
     Example:
         >>> # List all fee payers
-        >>> fee_payers, pagination = client.fee_payers.list(limit=50)
+        >>> fee_payers, pagination = client.fee_payers.list(limit=100)
         >>> for fp in fee_payers:
         ...     print(f"{fp.id}: {fp.address} ({fp.balance})")
         >>>
@@ -48,70 +55,54 @@ class FeePayerService(BaseService):
 
     def list(
         self,
-        limit: int = 50,
-        offset: int = 0,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
         blockchain: Optional[str] = None,
         network: Optional[str] = None,
-    ) -> Tuple[List[FeePayer], Optional[Pagination]]:
+    ) -> Tuple[List[FeePayer], Pagination]:
         """
-        List fee payers with pagination.
+        List fee payers, one page at a time.
 
         Args:
-            limit: Maximum number of fee payers to return (default: 50).
-            offset: Number of fee payers to skip for pagination (default: 0).
+            limit: Page size (default 20, max 100).
+            offset: Number of fee payers to skip; pass ``pagination.next_offset``.
             blockchain: Optional filter by blockchain type.
             network: Optional filter by network identifier.
 
         Returns:
-            Tuple of (fee payers list, pagination info).
+            Tuple of (fee payers, pagination).
 
         Raises:
             ValueError: If limit or offset are invalid.
             APIError: If the API request fails.
 
         Example:
-            >>> # List all fee payers
             >>> fee_payers, pagination = client.fee_payers.list()
             >>> print(f"Total: {pagination.total_items}")
             >>>
             >>> # Filter by blockchain
             >>> fee_payers, _ = client.fee_payers.list(blockchain="SOL")
         """
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
+        page_size = resolve_page_size(limit, "limit")
+        start = resolve_offset(offset)
 
         try:
             resp = self._api.fee_payer_service_get_fee_payers(
-                limit=str(limit),
-                offset=str(offset),
-                ids=None,
                 blockchain=blockchain,
                 network=network,
+                **offset_query(page_size, start),
             )
 
-            result = getattr(resp, "result", None) or getattr(resp, "fee_payers", None)
-            if not result:
-                return [], None
-
-            fee_payers: List[FeePayer] = []
-            if isinstance(result, list):
-                for dto in result:
-                    fee_payer = self._map_fee_payer(dto)
-                    if fee_payer:
-                        fee_payers.append(fee_payer)
-            else:
-                fee_payer = self._map_fee_payer(result)
-                if fee_payer:
-                    fee_payers.append(fee_payer)
-
-            pagination = self._extract_pagination(
-                total_items=getattr(resp, "total_items", None),
-                offset=getattr(resp, "offset", None),
-                limit=limit,
+            rows = resp.result or []
+            fee_payers = [fp for dto in rows if (fp := self._map_fee_payer(dto)) is not None]
+            pagination = offset_pagination(
+                PLUS_ROWS,
+                limit=page_size,
+                offset=start,
+                served_rows=len(rows),
+                total_items=resp.total_items,
+                excluded=len(rows) - len(fee_payers),
             )
-
             return fee_payers, pagination
 
         except Exception as e:

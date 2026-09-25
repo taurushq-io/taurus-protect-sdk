@@ -7,17 +7,24 @@ import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
 import com.taurushq.sdk.protect.client.mapper.PriceMapper;
 import com.taurushq.sdk.protect.client.model.ApiException;
 import com.taurushq.sdk.protect.client.model.ConversionResult;
+import com.taurushq.sdk.protect.client.model.Pagination;
 import com.taurushq.sdk.protect.client.model.Price;
 import com.taurushq.sdk.protect.client.model.PriceHistoryPoint;
+import com.taurushq.sdk.protect.client.model.PriceResult;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import com.taurushq.sdk.protect.openapi.api.PricesApi;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordConversionReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordConversionValue;
+import com.taurushq.sdk.protect.openapi.model.TgvalidatordCurrencyFromFilter;
+import com.taurushq.sdk.protect.openapi.model.TgvalidatordCurrencyFromToFilter;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordCurrencyPrice;
+import com.taurushq.sdk.protect.openapi.model.TgvalidatordCurrencyToFilter;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetPricesHistoryReply;
-import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetPricesReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordPricesHistoryPoint;
+import com.taurushq.sdk.protect.openapi.model.TgvalidatordQueryPricesV2Reply;
+import com.taurushq.sdk.protect.openapi.model.TgvalidatordQueryPricesV2Request;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -33,12 +40,15 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * <p>
  * Example usage:
  * <pre>{@code
- * // Get all current prices
- * List<Price> prices = client.getPriceService().getPrices();
+ * // Get current prices, one page at a time
+ * PriceResult prices = client.getPriceService().getPrices(null, null, null, null, 20, null);
+ * while (prices.getPage().hasMore()) {
+ *     prices = client.getPriceService().getPrices(null, null, null, null, 20, prices.getPage().getNextCursor());
+ * }
  *
  * // Get price history for a currency pair
  * List<PriceHistoryPoint> history = client.getPriceService()
- *     .getPriceHistory("ETH", "USD", 100);
+ *     .getPriceHistory("ETH", "USD", 30);
  *
  * // Convert an amount to target currencies
  * List<ConversionResult> converted = client.getPriceService()
@@ -93,20 +103,68 @@ public class PriceService {
 
 
     /**
-     * Gets all prices.
+     * Gets the first page of prices, with the default page size.
      *
-     * @return the list of prices
+     * @return the verified prices and their page
      * @throws ApiException the api exception
      */
-    public List<Price> getPrices() throws ApiException {
-        try {
-            TgvalidatordGetPricesReply reply = pricesApi.priceServiceGetPrices();
+    public PriceResult getPrices() throws ApiException {
+        return getPrices(null, null, null, null, null, null);
+    }
 
-            List<TgvalidatordCurrencyPrice> result = reply.getResult();
-            if (result == null) {
-                return Collections.emptyList();
-            }
-            return verifiedPrices(PriceMapper.INSTANCE.fromDTO(result));
+
+    /**
+     * Gets a page of prices, each one's signature verified.
+     * <p>
+     * The currency filter: {@code fromCurrencyId} alone lists that currency's prices;
+     * {@code toCurrencyIds} alone lists the prices into those currencies; both together list
+     * the prices of {@code fromCurrencyId} into those currencies; neither lists every price.
+     *
+     * @param fromCurrencyId the source currency id, or null
+     * @param toCurrencyIds  the target currency ids, or null
+     * @param onlyPrimary    true to list only the primary price of each pair, or null
+     * @param sortOrder      "ASC" or "DESC", or null for the server default
+     * @param pageSize       the page size, null or 0 for the default
+     * @param cursor         a previous page's {@code getPage().getNextCursor()}, null for the first page
+     * @return the verified prices and their page
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if the page size is out of range
+     */
+    public PriceResult getPrices(final String fromCurrencyId, final List<String> toCurrencyIds,
+                                 final Boolean onlyPrimary, final String sortOrder,
+                                 final Integer pageSize, final String cursor) throws ApiException {
+        final CursorRequest page = CursorRequest.of(Pagination.page(pageSize, cursor));
+
+        TgvalidatordQueryPricesV2Request request = new TgvalidatordQueryPricesV2Request();
+        request.setCursor(page.toDTO());
+        request.setOnlyPrimary(onlyPrimary);
+        request.setSortOrder(sortOrder);
+        boolean hasFrom = !Strings.isNullOrEmpty(fromCurrencyId);
+        boolean hasTo = toCurrencyIds != null && !toCurrencyIds.isEmpty();
+        if (hasFrom && hasTo) {
+            TgvalidatordCurrencyFromToFilter fromTo = new TgvalidatordCurrencyFromToFilter();
+            fromTo.setCurrencyFromId(fromCurrencyId);
+            fromTo.setCurrencyToIds(new ArrayList<>(toCurrencyIds));
+            request.setFromTo(fromTo);
+        } else if (hasFrom) {
+            TgvalidatordCurrencyFromFilter from = new TgvalidatordCurrencyFromFilter();
+            from.setCurrencyFromId(fromCurrencyId);
+            request.setFrom(from);
+        } else if (hasTo) {
+            TgvalidatordCurrencyToFilter to = new TgvalidatordCurrencyToFilter();
+            to.setCurrencyToIds(new ArrayList<>(toCurrencyIds));
+            request.setTo(to);
+        }
+
+        try {
+            TgvalidatordQueryPricesV2Reply reply = pricesApi.priceServiceQueryPricesV2(request);
+
+            List<TgvalidatordCurrencyPrice> rows = reply.getResult();
+            PriceResult result = new PriceResult();
+            result.setBaseCurrency(reply.getBaseCurrency());
+            result.setPrices(rows == null || rows.isEmpty()
+                    ? Collections.emptyList() : verifiedPrices(PriceMapper.INSTANCE.fromDTO(rows)));
+            return page.complete(result, PagedOperation.PRICES, reply.getCursor(), null);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
@@ -114,24 +172,26 @@ public class PriceService {
 
 
     /**
-     * Gets price history.
+     * Gets the price history of a currency pair, newest first. This endpoint cannot page.
      *
      * @param base  the base currency
      * @param quote the quote currency
-     * @param limit the limit
+     * @param limit how many daily points, 0 for the default ({@link Pagination#DEFAULT_PAGE_SIZE}),
+     *              at most {@link Pagination#MAX_PRICE_HISTORY_LIMIT}
      * @return the list of price history points
-     * @throws ApiException the api exception
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if base or quote is empty, or limit is out of range
      */
     public List<PriceHistoryPoint> getPriceHistory(final String base, final String quote, final int limit) throws ApiException {
         checkArgument(!Strings.isNullOrEmpty(base), "base cannot be null or empty");
         checkArgument(!Strings.isNullOrEmpty(quote), "quote cannot be null or empty");
-        checkArgument(limit > 0, "limit must be positive");
+        final int size = PagedOperation.PRICE_HISTORY.resolveSize("limit", limit);
 
         try {
             TgvalidatordGetPricesHistoryReply reply = pricesApi.priceServiceGetPricesHistory(
                     base,
                     quote,
-                    String.valueOf(limit)
+                    String.valueOf(size)
             );
 
             List<TgvalidatordPricesHistoryPoint> result = reply.getResult();

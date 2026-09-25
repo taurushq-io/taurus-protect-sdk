@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, List
 
 from taurus_protect.mappers.visibility_group import (
     visibility_group_from_dto,
     visibility_groups_from_dto,
 )
-from taurus_protect.models.pagination import Pagination
 from taurus_protect.models.visibility_group import VisibilityGroup
 from taurus_protect.services._base import BaseService
 
@@ -26,7 +25,7 @@ class VisibilityGroupService(BaseService):
 
     Example:
         >>> # List visibility groups
-        >>> groups, pagination = client.visibility_groups.list()
+        >>> groups = client.visibility_groups.list()
         >>> for group in groups:
         ...     print(f"{group.name}: {group.user_count} users")
         >>>
@@ -70,7 +69,7 @@ class VisibilityGroupService(BaseService):
         try:
             # The API doesn't have a direct "get by ID" endpoint for visibility groups
             # We need to list all groups and find the matching one
-            groups, _ = self.list()
+            groups = self.list()
 
             for group in groups:
                 if group.id == group_id:
@@ -105,52 +104,20 @@ class VisibilityGroupService(BaseService):
                 raise
             raise self._handle_error(e) from e
 
-    def list(
-        self,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> Tuple[List[VisibilityGroup], Optional[Pagination]]:
+    def list(self) -> List[VisibilityGroup]:
         """
-        List visibility groups with pagination.
-
-        Note: The underlying API does not support pagination parameters.
-        The limit and offset parameters are provided for interface consistency
-        but filtering is done client-side.
-
-        Args:
-            limit: Maximum number of groups to return (must be positive).
-            offset: Number of groups to skip (must be non-negative).
+        List visibility groups: every group the endpoint returns, which does not page.
 
         Returns:
-            Tuple of (visibility groups list, pagination info).
+            Every visibility group.
 
         Raises:
-            ValueError: If limit or offset are invalid.
             APIError: If API request fails.
         """
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
-
         try:
             resp = self._visibility_groups_api.user_service_get_visibility_groups()
 
-            result = getattr(resp, "result", None)
-            all_groups = visibility_groups_from_dto(result) if result else []
-
-            # Apply client-side pagination since API doesn't support it
-            total_items = len(all_groups)
-            paginated_groups = all_groups[offset : offset + limit]
-
-            pagination = Pagination(
-                total_items=total_items,
-                offset=offset,
-                limit=limit,
-                has_more=offset + limit < total_items,
-            )
-
-            return paginated_groups, pagination
+            return visibility_groups_from_dto(resp.result or [])
         except Exception as e:
             from taurus_protect.errors import APIError
 

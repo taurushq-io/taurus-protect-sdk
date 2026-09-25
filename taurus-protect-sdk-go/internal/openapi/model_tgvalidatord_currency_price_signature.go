@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -23,6 +22,7 @@ var _ MappedNullable = &TgvalidatordCurrencyPriceSignature{}
 type TgvalidatordCurrencyPriceSignature struct {
 	UserId string `json:"userId"`
 	Signature string `json:"signature"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCurrencyPriceSignature TgvalidatordCurrencyPriceSignature
@@ -106,6 +106,11 @@ func (o TgvalidatordCurrencyPriceSignature) ToMap() (map[string]interface{}, err
 	toSerialize := map[string]interface{}{}
 	toSerialize["userId"] = o.UserId
 	toSerialize["signature"] = o.Signature
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -134,15 +139,21 @@ func (o *TgvalidatordCurrencyPriceSignature) UnmarshalJSON(data []byte) (err err
 
 	varTgvalidatordCurrencyPriceSignature := _TgvalidatordCurrencyPriceSignature{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCurrencyPriceSignature)
+	err = json.Unmarshal(data, &varTgvalidatordCurrencyPriceSignature)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCurrencyPriceSignature(varTgvalidatordCurrencyPriceSignature)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "userId")
+		delete(additionalProperties, "signature")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

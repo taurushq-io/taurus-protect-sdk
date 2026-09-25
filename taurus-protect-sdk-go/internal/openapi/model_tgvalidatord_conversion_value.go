@@ -24,7 +24,10 @@ type TgvalidatordConversionValue struct {
 	Value *string `json:"value,omitempty"`
 	MainUnitValue *string `json:"mainUnitValue,omitempty"`
 	CurrencyInfo *TgvalidatordCurrency `json:"currencyInfo,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordConversionValue TgvalidatordConversionValue
 
 // NewTgvalidatordConversionValue instantiates a new TgvalidatordConversionValue object
 // This constructor will assign default values to properties that have it defined,
@@ -193,7 +196,36 @@ func (o TgvalidatordConversionValue) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.CurrencyInfo) {
 		toSerialize["currencyInfo"] = o.CurrencyInfo
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordConversionValue) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordConversionValue := _TgvalidatordConversionValue{}
+
+	err = json.Unmarshal(data, &varTgvalidatordConversionValue)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordConversionValue(varTgvalidatordConversionValue)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "symbol")
+		delete(additionalProperties, "value")
+		delete(additionalProperties, "mainUnitValue")
+		delete(additionalProperties, "currencyInfo")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordConversionValue struct {

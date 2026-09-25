@@ -37,7 +37,16 @@ export interface TgvalidatordBlockConfirmations {
      * @memberof TgvalidatordBlockConfirmations
      */
     confirmationsThreshold?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordBlockConfirmations
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordBlockConfirmationsWireKeys: ReadonlySet<string> = new Set(['blockchain', 'network', 'confirmationsThreshold']);
 
 /**
  * Check if a given object implements the TgvalidatordBlockConfirmations interface.
@@ -54,12 +63,22 @@ export function TgvalidatordBlockConfirmationsFromJSONTyped(json: any, ignoreDis
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordBlockConfirmations = {
         
         'blockchain': json['blockchain'] == null ? undefined : json['blockchain'],
         'network': json['network'] == null ? undefined : json['network'],
         'confirmationsThreshold': json['confirmationsThreshold'] == null ? undefined : json['confirmationsThreshold'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordBlockConfirmationsWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordBlockConfirmationsToJSON(json: any): TgvalidatordBlockConfirmations {
@@ -76,6 +95,7 @@ export function TgvalidatordBlockConfirmationsFromJSONTyped(json: any, ignoreDis
         'blockchain': value['blockchain'],
         'network': value['network'],
         'confirmationsThreshold': value['confirmationsThreshold'],
+        ...value['additionalProperties'],
     };
 }
 

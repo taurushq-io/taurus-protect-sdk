@@ -27,7 +27,10 @@ type TgvalidatordAutoTransferEventHandlerAttribute struct {
 	Owner *string `json:"owner,omitempty"`
 	Type *string `json:"type,omitempty"`
 	SubType *string `json:"subType,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordAutoTransferEventHandlerAttribute TgvalidatordAutoTransferEventHandlerAttribute
 
 // NewTgvalidatordAutoTransferEventHandlerAttribute instantiates a new TgvalidatordAutoTransferEventHandlerAttribute object
 // This constructor will assign default values to properties that have it defined,
@@ -336,7 +339,40 @@ func (o TgvalidatordAutoTransferEventHandlerAttribute) ToMap() (map[string]inter
 	if !IsNil(o.SubType) {
 		toSerialize["subType"] = o.SubType
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordAutoTransferEventHandlerAttribute) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordAutoTransferEventHandlerAttribute := _TgvalidatordAutoTransferEventHandlerAttribute{}
+
+	err = json.Unmarshal(data, &varTgvalidatordAutoTransferEventHandlerAttribute)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordAutoTransferEventHandlerAttribute(varTgvalidatordAutoTransferEventHandlerAttribute)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "handlerId")
+		delete(additionalProperties, "key")
+		delete(additionalProperties, "value")
+		delete(additionalProperties, "contentType")
+		delete(additionalProperties, "owner")
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "subType")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordAutoTransferEventHandlerAttribute struct {

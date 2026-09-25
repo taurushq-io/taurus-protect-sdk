@@ -70,7 +70,16 @@ export interface TgvalidatordGetAssetWalletsRequest {
      * @memberof TgvalidatordGetAssetWalletsRequest
      */
     requestCursor?: TgvalidatordRequestCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetAssetWalletsRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetAssetWalletsRequestWireKeys: ReadonlySet<string> = new Set(['asset', 'limit', 'cursor', 'walletId', 'walletName', 'requestCursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetAssetWalletsRequest interface.
@@ -88,7 +97,7 @@ export function TgvalidatordGetAssetWalletsRequestFromJSONTyped(json: any, ignor
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetAssetWalletsRequest = {
         
         'asset': TgvalidatordAssetFromJSON(json['asset']),
         'limit': json['limit'] == null ? undefined : json['limit'],
@@ -97,6 +106,16 @@ export function TgvalidatordGetAssetWalletsRequestFromJSONTyped(json: any, ignor
         'walletName': json['walletName'] == null ? undefined : json['walletName'],
         'requestCursor': json['requestCursor'] == null ? undefined : TgvalidatordRequestCursorFromJSON(json['requestCursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetAssetWalletsRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetAssetWalletsRequestToJSON(json: any): TgvalidatordGetAssetWalletsRequest {
@@ -116,6 +135,7 @@ export function TgvalidatordGetAssetWalletsRequestFromJSONTyped(json: any, ignor
         'walletId': value['walletId'],
         'walletName': value['walletName'],
         'requestCursor': TgvalidatordRequestCursorToJSON(value['requestCursor']),
+        ...value['additionalProperties'],
     };
 }
 

@@ -26,6 +26,7 @@ if TYPE_CHECKING:
         ContractWhitelistingService,
     )
     from taurus_protect.services.currency_service import CurrencyService
+    from taurus_protect.services.earn_service import EarnService
     from taurus_protect.services.exchange_service import ExchangeService
     from taurus_protect.services.fee_payer_service import FeePayerService
     from taurus_protect.services.fee_service import FeeService
@@ -133,6 +134,7 @@ class ProtectClient:
         self._config_service: Optional["ConfigService"] = None
         self._contract_whitelisting_service: Optional["ContractWhitelistingService"] = None
         self._currency_service: Optional["CurrencyService"] = None
+        self._earn_service: Optional["EarnService"] = None
         self._exchange_service: Optional["ExchangeService"] = None
         self._fee_payer_service: Optional["FeePayerService"] = None
         self._fee_service: Optional["FeeService"] = None
@@ -458,15 +460,21 @@ class ProtectClient:
         self._check_not_closed()
         with self._lock:
             if self._asset_service is None:
-                from taurus_protect._internal.openapi import AssetsApi
+                from taurus_protect._internal.openapi import AssetsApi, AssetV2Api
                 from taurus_protect.services.asset_service import AssetService
 
                 api_client = self._get_api_client()
                 assets_api = AssetsApi(api_client)
                 # Asset addresses are the same entity as AddressService's, so they
-                # verify against the same cache.
+                # verify against the same cache; v2 holders are confirmed through the
+                # same verifying services the client hands out.
                 self._asset_service = AssetService(
-                    api_client, assets_api, self._get_rules_cache()
+                    api_client,
+                    assets_api,
+                    self._get_rules_cache(),
+                    assets_v2_api=AssetV2Api(api_client),
+                    address_service=self.addresses,
+                    whitelisted_address_service=self.whitelisted_addresses,
                 )
             return self._asset_service
 
@@ -585,6 +593,19 @@ class ProtectClient:
                 currencies_api = CurrenciesApi(api_client)
                 self._currency_service = CurrencyService(api_client, currencies_api)
             return self._currency_service
+
+    @property
+    def earn(self) -> "EarnService":
+        """Access earn reward operations."""
+        self._check_not_closed()
+        with self._lock:
+            if self._earn_service is None:
+                from taurus_protect._internal.openapi import EarnApi
+                from taurus_protect.services.earn_service import EarnService
+
+                api_client = self._get_api_client()
+                self._earn_service = EarnService(api_client, EarnApi(api_client))
+            return self._earn_service
 
     @property
     def exchanges(self) -> "ExchangeService":
@@ -719,9 +740,7 @@ class ProtectClient:
 
                 api_client = self._get_api_client()
                 prices_api = PricesApi(api_client)
-                self._price_service = PriceService(
-                    api_client, prices_api, self._get_rules_cache()
-                )
+                self._price_service = PriceService(api_client, prices_api, self._get_rules_cache())
             return self._price_service
 
     @property

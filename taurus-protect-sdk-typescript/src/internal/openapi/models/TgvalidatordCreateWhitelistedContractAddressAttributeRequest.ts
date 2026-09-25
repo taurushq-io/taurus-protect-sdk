@@ -55,7 +55,16 @@ export interface TgvalidatordCreateWhitelistedContractAddressAttributeRequest {
      * @memberof TgvalidatordCreateWhitelistedContractAddressAttributeRequest
      */
     isfile?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateWhitelistedContractAddressAttributeRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateWhitelistedContractAddressAttributeRequestWireKeys: ReadonlySet<string> = new Set(['key', 'value', 'contentType', 'type', 'subtype', 'isfile']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateWhitelistedContractAddressAttributeRequest interface.
@@ -72,7 +81,7 @@ export function TgvalidatordCreateWhitelistedContractAddressAttributeRequestFrom
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateWhitelistedContractAddressAttributeRequest = {
         
         'key': json['key'] == null ? undefined : json['key'],
         'value': json['value'] == null ? undefined : json['value'],
@@ -81,6 +90,16 @@ export function TgvalidatordCreateWhitelistedContractAddressAttributeRequestFrom
         'subtype': json['subtype'] == null ? undefined : json['subtype'],
         'isfile': json['isfile'] == null ? undefined : json['isfile'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateWhitelistedContractAddressAttributeRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateWhitelistedContractAddressAttributeRequestToJSON(json: any): TgvalidatordCreateWhitelistedContractAddressAttributeRequest {
@@ -100,6 +119,7 @@ export function TgvalidatordCreateWhitelistedContractAddressAttributeRequestFrom
         'type': value['type'],
         'subtype': value['subtype'],
         'isfile': value['isfile'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -46,7 +46,16 @@ export interface TgvalidatordGetRequestBundlesReply {
      * @memberof TgvalidatordGetRequestBundlesReply
      */
     cursor?: TgvalidatordResponseCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetRequestBundlesReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetRequestBundlesReplyWireKeys: ReadonlySet<string> = new Set(['results', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetRequestBundlesReply interface.
@@ -63,11 +72,21 @@ export function TgvalidatordGetRequestBundlesReplyFromJSONTyped(json: any, ignor
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetRequestBundlesReply = {
         
         'results': json['results'] == null ? undefined : ((json['results'] as Array<any>).map(TgvalidatordRequestBundleFromJSON)),
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetRequestBundlesReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetRequestBundlesReplyToJSON(json: any): TgvalidatordGetRequestBundlesReply {
@@ -83,6 +102,7 @@ export function TgvalidatordGetRequestBundlesReplyFromJSONTyped(json: any, ignor
         
         'results': value['results'] == null ? undefined : ((value['results'] as Array<any>).map(TgvalidatordRequestBundleToJSON)),
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
+        ...value['additionalProperties'],
     };
 }
 

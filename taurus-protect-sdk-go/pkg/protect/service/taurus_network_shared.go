@@ -25,42 +25,38 @@ func NewTaurusNetworkSharingService(client *openapi.APIClient) *TaurusNetworkSha
 
 // ListSharedAddresses retrieves a list of shared addresses with optional filtering and pagination.
 func (s *TaurusNetworkSharingService) ListSharedAddresses(ctx context.Context, opts *taurusnetwork.ListSharedAddressesOptions) (*taurusnetwork.ListSharedAddressesResult, error) {
-	req := s.api.TaurusNetworkServiceGetSharedAddresses(ctx)
+	if opts == nil {
+		opts = &taurusnetwork.ListSharedAddressesOptions{}
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, opts.CurrentPage, opts.PageRequest)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if opts.ParticipantID != "" {
-			req = req.ParticipantID(opts.ParticipantID)
-		}
-		if opts.OwnerParticipantID != "" {
-			req = req.OwnerParticipantID(opts.OwnerParticipantID)
-		}
-		if opts.TargetParticipantID != "" {
-			req = req.TargetParticipantID(opts.TargetParticipantID)
-		}
-		if opts.Blockchain != "" {
-			req = req.Blockchain(opts.Blockchain)
-		}
-		if opts.Network != "" {
-			req = req.Network(opts.Network)
-		}
-		if len(opts.IDs) > 0 {
-			req = req.Ids(opts.IDs)
-		}
-		if len(opts.Statuses) > 0 {
-			req = req.Statuses(opts.Statuses)
-		}
-		if opts.SortOrder != "" {
-			req = req.SortOrder(opts.SortOrder)
-		}
-		if opts.CurrentPage != "" {
-			req = req.CursorCurrentPage(opts.CurrentPage)
-		}
-		if opts.PageRequest != "" {
-			req = req.CursorPageRequest(opts.PageRequest)
-		}
-		if opts.PageSize > 0 {
-			req = req.CursorPageSize(fmt.Sprintf("%d", opts.PageSize))
-		}
+	req := applyCursorQuery(s.api.TaurusNetworkServiceGetSharedAddresses(ctx), window)
+	if opts.ParticipantID != "" {
+		req = req.ParticipantID(opts.ParticipantID)
+	}
+	if opts.OwnerParticipantID != "" {
+		req = req.OwnerParticipantID(opts.OwnerParticipantID)
+	}
+	if opts.TargetParticipantID != "" {
+		req = req.TargetParticipantID(opts.TargetParticipantID)
+	}
+	if opts.Blockchain != "" {
+		req = req.Blockchain(opts.Blockchain)
+	}
+	if opts.Network != "" {
+		req = req.Network(opts.Network)
+	}
+	if len(opts.IDs) > 0 {
+		req = req.Ids(opts.IDs)
+	}
+	if len(opts.Statuses) > 0 {
+		req = req.Statuses(opts.Statuses)
+	}
+	if opts.SortOrder != "" {
+		req = req.SortOrder(opts.SortOrder)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -72,60 +68,49 @@ func (s *TaurusNetworkSharingService) ListSharedAddresses(ctx context.Context, o
 		SharedAddresses: mapper.SharedAddressesFromDTO(resp.SharedAddresses),
 	}
 
-	// Parse cursor pagination info
-	if resp.Cursor != nil {
-		if resp.Cursor.CurrentPage != nil {
-			result.CurrentPage = *resp.Cursor.CurrentPage
-		}
-		if resp.Cursor.HasPrevious != nil {
-			result.HasPrevious = *resp.Cursor.HasPrevious
-		}
-		if resp.Cursor.HasNext != nil {
-			result.HasNext = *resp.Cursor.HasNext
-		}
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor})
+	if err != nil {
+		return nil, err
 	}
+	result.Page = page
 
 	return result, nil
 }
 
 // ListSharedAssets retrieves a list of shared assets with optional filtering and pagination.
 func (s *TaurusNetworkSharingService) ListSharedAssets(ctx context.Context, opts *taurusnetwork.ListSharedAssetsOptions) (*taurusnetwork.ListSharedAssetsResult, error) {
-	req := s.api.TaurusNetworkServiceGetSharedAssets(ctx)
+	if opts == nil {
+		opts = &taurusnetwork.ListSharedAssetsOptions{}
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, opts.CurrentPage, opts.PageRequest)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if opts.ParticipantID != "" {
-			req = req.ParticipantID(opts.ParticipantID)
-		}
-		if opts.OwnerParticipantID != "" {
-			req = req.OwnerParticipantID(opts.OwnerParticipantID)
-		}
-		if opts.TargetParticipantID != "" {
-			req = req.TargetParticipantID(opts.TargetParticipantID)
-		}
-		if opts.Blockchain != "" {
-			req = req.Blockchain(opts.Blockchain)
-		}
-		if opts.Network != "" {
-			req = req.Network(opts.Network)
-		}
-		if len(opts.IDs) > 0 {
-			req = req.Ids(opts.IDs)
-		}
-		if len(opts.Statuses) > 0 {
-			req = req.Statuses(opts.Statuses)
-		}
-		if opts.SortOrder != "" {
-			req = req.SortOrder(opts.SortOrder)
-		}
-		if opts.CurrentPage != "" {
-			req = req.CursorCurrentPage(opts.CurrentPage)
-		}
-		if opts.PageRequest != "" {
-			req = req.CursorPageRequest(opts.PageRequest)
-		}
-		if opts.PageSize > 0 {
-			req = req.CursorPageSize(fmt.Sprintf("%d", opts.PageSize))
-		}
+	req := applyCursorQuery(s.api.TaurusNetworkServiceGetSharedAssets(ctx), window)
+	if opts.ParticipantID != "" {
+		req = req.ParticipantID(opts.ParticipantID)
+	}
+	if opts.OwnerParticipantID != "" {
+		req = req.OwnerParticipantID(opts.OwnerParticipantID)
+	}
+	if opts.TargetParticipantID != "" {
+		req = req.TargetParticipantID(opts.TargetParticipantID)
+	}
+	if opts.Blockchain != "" {
+		req = req.Blockchain(opts.Blockchain)
+	}
+	if opts.Network != "" {
+		req = req.Network(opts.Network)
+	}
+	if len(opts.IDs) > 0 {
+		req = req.Ids(opts.IDs)
+	}
+	if len(opts.Statuses) > 0 {
+		req = req.Statuses(opts.Statuses)
+	}
+	if opts.SortOrder != "" {
+		req = req.SortOrder(opts.SortOrder)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -137,18 +122,11 @@ func (s *TaurusNetworkSharingService) ListSharedAssets(ctx context.Context, opts
 		SharedAssets: mapper.SharedAssetsFromDTO(resp.SharedAssets),
 	}
 
-	// Parse cursor pagination info
-	if resp.Cursor != nil {
-		if resp.Cursor.CurrentPage != nil {
-			result.CurrentPage = *resp.Cursor.CurrentPage
-		}
-		if resp.Cursor.HasPrevious != nil {
-			result.HasPrevious = *resp.Cursor.HasPrevious
-		}
-		if resp.Cursor.HasNext != nil {
-			result.HasNext = *resp.Cursor.HasNext
-		}
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor})
+	if err != nil {
+		return nil, err
 	}
+	result.Page = page
 
 	return result, nil
 }

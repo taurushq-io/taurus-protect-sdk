@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordScimName{}
 type TgvalidatordScimName struct {
 	FamilyName *string `json:"familyName,omitempty"`
 	GivenName *string `json:"givenName,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordScimName TgvalidatordScimName
 
 // NewTgvalidatordScimName instantiates a new TgvalidatordScimName object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordScimName) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.GivenName) {
 		toSerialize["givenName"] = o.GivenName
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordScimName) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordScimName := _TgvalidatordScimName{}
+
+	err = json.Unmarshal(data, &varTgvalidatordScimName)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordScimName(varTgvalidatordScimName)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "familyName")
+		delete(additionalProperties, "givenName")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordScimName struct {

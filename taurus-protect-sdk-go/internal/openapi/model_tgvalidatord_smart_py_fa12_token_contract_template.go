@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordSmartPyFA12TokenContractTemplate{}
 // TgvalidatordSmartPyFA12TokenContractTemplate struct for TgvalidatordSmartPyFA12TokenContractTemplate
 type TgvalidatordSmartPyFA12TokenContractTemplate struct {
 	Xtz *TgvalidatordXTZContractTemplatePrams `json:"xtz,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordSmartPyFA12TokenContractTemplate TgvalidatordSmartPyFA12TokenContractTemplate
 
 // NewTgvalidatordSmartPyFA12TokenContractTemplate instantiates a new TgvalidatordSmartPyFA12TokenContractTemplate object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordSmartPyFA12TokenContractTemplate) ToMap() (map[string]interf
 	if !IsNil(o.Xtz) {
 		toSerialize["xtz"] = o.Xtz
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordSmartPyFA12TokenContractTemplate) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordSmartPyFA12TokenContractTemplate := _TgvalidatordSmartPyFA12TokenContractTemplate{}
+
+	err = json.Unmarshal(data, &varTgvalidatordSmartPyFA12TokenContractTemplate)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordSmartPyFA12TokenContractTemplate(varTgvalidatordSmartPyFA12TokenContractTemplate)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "xtz")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordSmartPyFA12TokenContractTemplate struct {

@@ -22,7 +22,10 @@ type TgvalidatordBlockConfirmations struct {
 	Blockchain *string `json:"blockchain,omitempty"`
 	Network *string `json:"network,omitempty"`
 	ConfirmationsThreshold *string `json:"confirmationsThreshold,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordBlockConfirmations TgvalidatordBlockConfirmations
 
 // NewTgvalidatordBlockConfirmations instantiates a new TgvalidatordBlockConfirmations object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordBlockConfirmations) ToMap() (map[string]interface{}, error) 
 	if !IsNil(o.ConfirmationsThreshold) {
 		toSerialize["confirmationsThreshold"] = o.ConfirmationsThreshold
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordBlockConfirmations) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordBlockConfirmations := _TgvalidatordBlockConfirmations{}
+
+	err = json.Unmarshal(data, &varTgvalidatordBlockConfirmations)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordBlockConfirmations(varTgvalidatordBlockConfirmations)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "network")
+		delete(additionalProperties, "confirmationsThreshold")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordBlockConfirmations struct {

@@ -67,7 +67,16 @@ export interface TgvalidatordCreateOutgoingFTMWithdrawalRequestRequest {
      * @memberof TgvalidatordCreateOutgoingFTMWithdrawalRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingFTMWithdrawalRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingFTMWithdrawalRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'toValidatorAddressId', 'withdrawalId', 'feeLimit', 'gasLimit', 'comment', 'transactionReference', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingFTMWithdrawalRequestRequest interface.
@@ -87,7 +96,7 @@ export function TgvalidatordCreateOutgoingFTMWithdrawalRequestRequestFromJSONTyp
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingFTMWithdrawalRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'toValidatorAddressId': json['toValidatorAddressId'],
@@ -98,6 +107,16 @@ export function TgvalidatordCreateOutgoingFTMWithdrawalRequestRequestFromJSONTyp
         'transactionReference': json['transactionReference'] == null ? undefined : json['transactionReference'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingFTMWithdrawalRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingFTMWithdrawalRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingFTMWithdrawalRequestRequest {
@@ -119,6 +138,7 @@ export function TgvalidatordCreateOutgoingFTMWithdrawalRequestRequestFromJSONTyp
         'comment': value['comment'],
         'transactionReference': value['transactionReference'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

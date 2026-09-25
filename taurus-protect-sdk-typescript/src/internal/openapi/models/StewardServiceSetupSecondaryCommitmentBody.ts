@@ -25,7 +25,16 @@ export interface StewardServiceSetupSecondaryCommitmentBody {
      * @memberof StewardServiceSetupSecondaryCommitmentBody
      */
     enabled?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof StewardServiceSetupSecondaryCommitmentBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const StewardServiceSetupSecondaryCommitmentBodyWireKeys: ReadonlySet<string> = new Set(['enabled']);
 
 /**
  * Check if a given object implements the StewardServiceSetupSecondaryCommitmentBody interface.
@@ -42,10 +51,20 @@ export function StewardServiceSetupSecondaryCommitmentBodyFromJSONTyped(json: an
     if (json == null) {
         return json;
     }
-    return {
+    const result: StewardServiceSetupSecondaryCommitmentBody = {
         
         'enabled': json['enabled'] == null ? undefined : json['enabled'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!StewardServiceSetupSecondaryCommitmentBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function StewardServiceSetupSecondaryCommitmentBodyToJSON(json: any): StewardServiceSetupSecondaryCommitmentBody {
@@ -60,6 +79,7 @@ export function StewardServiceSetupSecondaryCommitmentBodyFromJSONTyped(json: an
     return {
         
         'enabled': value['enabled'],
+        ...value['additionalProperties'],
     };
 }
 

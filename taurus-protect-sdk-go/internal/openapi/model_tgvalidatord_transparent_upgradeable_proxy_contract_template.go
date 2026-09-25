@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordTransparentUpgradeableProxyContractTemplate{
 // TgvalidatordTransparentUpgradeableProxyContractTemplate struct for TgvalidatordTransparentUpgradeableProxyContractTemplate
 type TgvalidatordTransparentUpgradeableProxyContractTemplate struct {
 	Evm *TgvalidatordEVMContractTemplateParams `json:"evm,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTransparentUpgradeableProxyContractTemplate TgvalidatordTransparentUpgradeableProxyContractTemplate
 
 // NewTgvalidatordTransparentUpgradeableProxyContractTemplate instantiates a new TgvalidatordTransparentUpgradeableProxyContractTemplate object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordTransparentUpgradeableProxyContractTemplate) ToMap() (map[st
 	if !IsNil(o.Evm) {
 		toSerialize["evm"] = o.Evm
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTransparentUpgradeableProxyContractTemplate) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTransparentUpgradeableProxyContractTemplate := _TgvalidatordTransparentUpgradeableProxyContractTemplate{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTransparentUpgradeableProxyContractTemplate)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTransparentUpgradeableProxyContractTemplate(varTgvalidatordTransparentUpgradeableProxyContractTemplate)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "evm")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTransparentUpgradeableProxyContractTemplate struct {

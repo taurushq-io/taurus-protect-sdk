@@ -25,7 +25,10 @@ type TgvalidatordFiatProvider struct {
 	Label *string `json:"label,omitempty"`
 	// Valuation in the base currency main unit (CHF, EUR, USD etc...)
 	BaseCurrencyValuation *string `json:"baseCurrencyValuation,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordFiatProvider TgvalidatordFiatProvider
 
 // NewTgvalidatordFiatProvider instantiates a new TgvalidatordFiatProvider object
 // This constructor will assign default values to properties that have it defined,
@@ -159,7 +162,35 @@ func (o TgvalidatordFiatProvider) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.BaseCurrencyValuation) {
 		toSerialize["baseCurrencyValuation"] = o.BaseCurrencyValuation
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordFiatProvider) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordFiatProvider := _TgvalidatordFiatProvider{}
+
+	err = json.Unmarshal(data, &varTgvalidatordFiatProvider)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordFiatProvider(varTgvalidatordFiatProvider)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "provider")
+		delete(additionalProperties, "label")
+		delete(additionalProperties, "baseCurrencyValuation")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordFiatProvider struct {

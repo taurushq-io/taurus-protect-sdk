@@ -39,7 +39,16 @@ export interface TgvalidatordGroupStatus {
      * @memberof TgvalidatordGroupStatus
      */
     healths?: Array<TgvalidatordHealth>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGroupStatus
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGroupStatusWireKeys: ReadonlySet<string> = new Set(['groupStatus', 'healths']);
 
 /**
  * Check if a given object implements the TgvalidatordGroupStatus interface.
@@ -56,11 +65,21 @@ export function TgvalidatordGroupStatusFromJSONTyped(json: any, ignoreDiscrimina
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGroupStatus = {
         
         'groupStatus': json['groupStatus'] == null ? undefined : json['groupStatus'],
         'healths': json['healths'] == null ? undefined : ((json['healths'] as Array<any>).map(TgvalidatordHealthFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGroupStatusWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGroupStatusToJSON(json: any): TgvalidatordGroupStatus {
@@ -76,6 +95,7 @@ export function TgvalidatordGroupStatusFromJSONTyped(json: any, ignoreDiscrimina
         
         'groupStatus': value['groupStatus'],
         'healths': value['healths'] == null ? undefined : ((value['healths'] as Array<any>).map(TgvalidatordHealthToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

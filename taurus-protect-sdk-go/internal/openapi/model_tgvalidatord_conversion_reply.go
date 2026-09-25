@@ -24,7 +24,10 @@ type TgvalidatordConversionReply struct {
 	Result []TgvalidatordConversionValue `json:"result,omitempty"`
 	FullCurrencyFrom *TgvalidatordCurrency `json:"fullCurrencyFrom,omitempty"`
 	FullBaseCurrency *TgvalidatordCurrency `json:"fullBaseCurrency,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordConversionReply TgvalidatordConversionReply
 
 // NewTgvalidatordConversionReply instantiates a new TgvalidatordConversionReply object
 // This constructor will assign default values to properties that have it defined,
@@ -228,7 +231,37 @@ func (o TgvalidatordConversionReply) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.FullBaseCurrency) {
 		toSerialize["fullBaseCurrency"] = o.FullBaseCurrency
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordConversionReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordConversionReply := _TgvalidatordConversionReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordConversionReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordConversionReply(varTgvalidatordConversionReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "currencyFrom")
+		delete(additionalProperties, "baseCurrency")
+		delete(additionalProperties, "result")
+		delete(additionalProperties, "fullCurrencyFrom")
+		delete(additionalProperties, "fullBaseCurrency")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordConversionReply struct {

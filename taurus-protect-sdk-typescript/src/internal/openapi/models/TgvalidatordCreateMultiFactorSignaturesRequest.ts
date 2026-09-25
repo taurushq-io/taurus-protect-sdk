@@ -39,9 +39,18 @@ export interface TgvalidatordCreateMultiFactorSignaturesRequest {
      * @memberof TgvalidatordCreateMultiFactorSignaturesRequest
      */
     entityIDs: Array<string>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateMultiFactorSignaturesRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
 
 
+
+const TgvalidatordCreateMultiFactorSignaturesRequestWireKeys: ReadonlySet<string> = new Set(['entityType', 'entityIDs']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateMultiFactorSignaturesRequest interface.
@@ -60,11 +69,21 @@ export function TgvalidatordCreateMultiFactorSignaturesRequestFromJSONTyped(json
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateMultiFactorSignaturesRequest = {
         
         'entityType': TgvalidatordMultiFactorSignaturesEntityTypeFromJSON(json['entityType']),
         'entityIDs': json['entityIDs'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateMultiFactorSignaturesRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateMultiFactorSignaturesRequestToJSON(json: any): TgvalidatordCreateMultiFactorSignaturesRequest {
@@ -80,6 +99,7 @@ export function TgvalidatordCreateMultiFactorSignaturesRequestFromJSONTyped(json
         
         'entityType': TgvalidatordMultiFactorSignaturesEntityTypeToJSON(value['entityType']),
         'entityIDs': value['entityIDs'],
+        ...value['additionalProperties'],
     };
 }
 

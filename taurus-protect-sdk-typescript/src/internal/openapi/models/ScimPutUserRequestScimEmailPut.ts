@@ -31,7 +31,16 @@ export interface ScimPutUserRequestScimEmailPut {
      * @memberof ScimPutUserRequestScimEmailPut
      */
     value?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof ScimPutUserRequestScimEmailPut
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const ScimPutUserRequestScimEmailPutWireKeys: ReadonlySet<string> = new Set(['type', 'value']);
 
 /**
  * Check if a given object implements the ScimPutUserRequestScimEmailPut interface.
@@ -48,11 +57,21 @@ export function ScimPutUserRequestScimEmailPutFromJSONTyped(json: any, ignoreDis
     if (json == null) {
         return json;
     }
-    return {
+    const result: ScimPutUserRequestScimEmailPut = {
         
         'type': json['type'] == null ? undefined : json['type'],
         'value': json['value'] == null ? undefined : json['value'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!ScimPutUserRequestScimEmailPutWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function ScimPutUserRequestScimEmailPutToJSON(json: any): ScimPutUserRequestScimEmailPut {
@@ -68,6 +87,7 @@ export function ScimPutUserRequestScimEmailPutFromJSONTyped(json: any, ignoreDis
         
         'type': value['type'],
         'value': value['value'],
+        ...value['additionalProperties'],
     };
 }
 

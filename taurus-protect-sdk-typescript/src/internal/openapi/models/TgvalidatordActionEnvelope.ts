@@ -107,7 +107,16 @@ export interface TgvalidatordActionEnvelope {
      * @memberof TgvalidatordActionEnvelope
      */
     trails?: Array<TgvalidatordActionEnvelopeTrail>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordActionEnvelope
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordActionEnvelopeWireKeys: ReadonlySet<string> = new Set(['id', 'tenantId', 'label', 'action', 'status', 'creationDate', 'updateDate', 'lastcheckeddate', 'autoApprove', 'attributes', 'trails']);
 
 /**
  * Check if a given object implements the TgvalidatordActionEnvelope interface.
@@ -124,7 +133,7 @@ export function TgvalidatordActionEnvelopeFromJSONTyped(json: any, ignoreDiscrim
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordActionEnvelope = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'tenantId': json['tenantId'] == null ? undefined : json['tenantId'],
@@ -138,6 +147,16 @@ export function TgvalidatordActionEnvelopeFromJSONTyped(json: any, ignoreDiscrim
         'attributes': json['attributes'] == null ? undefined : ((json['attributes'] as Array<any>).map(TgvalidatordActionAttributeFromJSON)),
         'trails': json['trails'] == null ? undefined : ((json['trails'] as Array<any>).map(TgvalidatordActionEnvelopeTrailFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordActionEnvelopeWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordActionEnvelopeToJSON(json: any): TgvalidatordActionEnvelope {
@@ -162,6 +181,7 @@ export function TgvalidatordActionEnvelopeFromJSONTyped(json: any, ignoreDiscrim
         'autoApprove': value['autoApprove'],
         'attributes': value['attributes'] == null ? undefined : ((value['attributes'] as Array<any>).map(TgvalidatordActionAttributeToJSON)),
         'trails': value['trails'] == null ? undefined : ((value['trails'] as Array<any>).map(TgvalidatordActionEnvelopeTrailToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

@@ -371,36 +371,88 @@ except APIError as e:
 
 ## Pagination Model
 
-The SDK uses an offset-based pagination model.
+Every list method pages the same way in all four SDKs (repo-root `CLAUDE.md`,
+"Pagination (cross-SDK)"). There are two families, chosen by what the endpoint offers:
+cursor pagination wherever validatord has it, offset pagination where it does not
+(wallets, addresses, transactions, users, groups, fee payers, actions, the whitelists).
 
-### Pagination Class
+### Page size
+
+`DEFAULT_PAGE_SIZE = 20` and `MAX_PAGE_SIZE = 100` (`taurus_protect.models.pagination`,
+also exported from `taurus_protect.models`), whatever the backend's own defaults. A page
+size is always sent: unset or `0` means 20; above 100 or negative raises `ValueError`
+naming the option and the maximum, before any request. A negative offset does too.
+
+Two reads cannot page and keep a plain limit: price history (`limit` up to 365, default
+20) and the transaction export (default 20, no SDK maximum; the server always exports
+from the first matching row, so it has no offset).
+
+Endpoints the server does not page return every row they carry, as a plain list with no
+`limit`/`offset`: `jobs.list()`, `tags.list(query=..., ids=...)`,
+`visibility_groups.list()` and `staking.list_validators(...)`.
+
+### Offset lists: `Pagination`
 
 ```python
-from pydantic import BaseModel, Field
-from typing import Optional
-
 class Pagination(BaseModel):
-    """Pagination information for list responses."""
-
-    model_config = {"frozen": True}
-
-    total_items: int = Field(..., description="Total number of items available")
-    offset: int = Field(..., description="Current offset")
-    limit: int = Field(..., description="Items per page")
-    has_more: bool = Field(..., description="Whether more items exist")
+    limit: int         # the page size that was sent
+    offset: int        # the offset that was sent (never the reply's)
+    total_items: int   # the server's total, minus rows the SDK withheld
+    next_offset: int   # where the next page starts, in the server's numbering
+    has_more: bool     # next_offset > offset and next_offset < the server's total
 ```
 
-### Usage Pattern
+Never `None` on success: an empty reply (`{}`) is `total_items=0, has_more=False,
+next_offset=offset`. Always continue with `next_offset`, never `offset + limit`: each
+endpoint has its own rule (a reply offset, rows served, a synthetic row appended beyond
+the limit, skipped rows that keep their slot), and the SDK applies it.
 
 ```python
-# Services return (items, pagination) tuples
-wallets, pagination = client.wallets.list(limit=50, offset=0)
-
-if pagination:
-    print(f"Total: {pagination.total_items}")
-    print(f"Showing: {pagination.offset} to {pagination.offset + len(wallets)}")
-    print(f"Has more: {pagination.has_more}")
+offset = 0
+while True:
+    wallets, pagination = client.wallets.list(limit=100, offset=offset)
+    for wallet in wallets:
+        print(wallet.name)
+    if not pagination.has_more:
+        break
+    offset = pagination.next_offset
 ```
+
+### Cursor lists: `CursorPage`
+
+```python
+class CursorPage(BaseModel):
+    page_size: int               # the page size that was sent
+    next_cursor: str             # pass back as `cursor`; "" when has_more is False
+    has_more: bool
+    total_items: Optional[int]   # only where the endpoint reports one
+```
+
+Cursor lists take `page_size` and `cursor`. A `cursor` (a previous `next_cursor`) sends
+`currentPage=<cursor>` + `pageRequest=NEXT`; the low-level `current_page`/`page_request`
+options stay available, but combining them with `cursor` raises `ValueError`. Cursors are
+opaque base64 strings: pass them back verbatim.
+
+```python
+cursor = None
+while True:
+    requests, page = client.requests.list(page_size=100, cursor=cursor)
+    for request in requests:
+        print(request.id)
+    if not page.has_more:
+        break
+    cursor = page.next_cursor
+```
+
+Methods that return a result object carry the page on it: `result.page` for
+`BusinessRuleResult`, `ChangeResult`, `WebhookCallResult`, `GovernanceRulesHistoryResult`
+and `QueryAssetAddressesResult`; `result.pagination` for `WhitelistedAddressListResult`.
+Rows the SDK withheld because they failed verification never move the page.
+
+### Malformed replies
+
+A count that is not a canonical decimal in `[0, 2^53 - 1]`, or a cursor with
+`hasNext` but no `currentPage`, raises `APIError` (not retryable) instead of reading as 0.
 
 ---
 
@@ -448,12 +500,12 @@ The SDK uses comprehensive type annotations for IDE support and static analysis.
 ```python
 from typing import List, Optional, Tuple
 
-# Service methods return typed tuples
+# List methods return (items, page) tuples
 def list(
     self,
-    limit: int = 50,
-    offset: int = 0,
-) -> Tuple[List[Wallet], Optional[Pagination]]:
+    limit: Optional[int] = None,
+    offset: Optional[int] = None,
+) -> Tuple[List[Wallet], Pagination]:
     ...
 
 # Optional parameters

@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordContractCall{}
 type TgvalidatordContractCall struct {
 	FunctionSignature *string `json:"functionSignature,omitempty"`
 	Args []TgvalidatordContractArg `json:"args,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordContractCall TgvalidatordContractCall
 
 // NewTgvalidatordContractCall instantiates a new TgvalidatordContractCall object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordContractCall) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Args) {
 		toSerialize["args"] = o.Args
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordContractCall) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordContractCall := _TgvalidatordContractCall{}
+
+	err = json.Unmarshal(data, &varTgvalidatordContractCall)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordContractCall(varTgvalidatordContractCall)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "functionSignature")
+		delete(additionalProperties, "args")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordContractCall struct {

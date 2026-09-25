@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordXTZBlockchainInfo{}
 // TgvalidatordXTZBlockchainInfo struct for TgvalidatordXTZBlockchainInfo
 type TgvalidatordXTZBlockchainInfo struct {
 	CurrentCycle *string `json:"currentCycle,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordXTZBlockchainInfo TgvalidatordXTZBlockchainInfo
 
 // NewTgvalidatordXTZBlockchainInfo instantiates a new TgvalidatordXTZBlockchainInfo object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordXTZBlockchainInfo) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.CurrentCycle) {
 		toSerialize["currentCycle"] = o.CurrentCycle
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordXTZBlockchainInfo) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordXTZBlockchainInfo := _TgvalidatordXTZBlockchainInfo{}
+
+	err = json.Unmarshal(data, &varTgvalidatordXTZBlockchainInfo)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordXTZBlockchainInfo(varTgvalidatordXTZBlockchainInfo)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "currentCycle")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordXTZBlockchainInfo struct {

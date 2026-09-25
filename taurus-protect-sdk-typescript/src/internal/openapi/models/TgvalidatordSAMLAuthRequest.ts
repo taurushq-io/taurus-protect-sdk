@@ -37,7 +37,16 @@ export interface TgvalidatordSAMLAuthRequest {
      * @memberof TgvalidatordSAMLAuthRequest
      */
     location?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordSAMLAuthRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordSAMLAuthRequestWireKeys: ReadonlySet<string> = new Set(['index', 'signedTrackedRequest', 'location']);
 
 /**
  * Check if a given object implements the TgvalidatordSAMLAuthRequest interface.
@@ -54,12 +63,22 @@ export function TgvalidatordSAMLAuthRequestFromJSONTyped(json: any, ignoreDiscri
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordSAMLAuthRequest = {
         
         'index': json['index'] == null ? undefined : json['index'],
         'signedTrackedRequest': json['signedTrackedRequest'] == null ? undefined : json['signedTrackedRequest'],
         'location': json['location'] == null ? undefined : json['location'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordSAMLAuthRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordSAMLAuthRequestToJSON(json: any): TgvalidatordSAMLAuthRequest {
@@ -76,6 +95,7 @@ export function TgvalidatordSAMLAuthRequestFromJSONTyped(json: any, ignoreDiscri
         'index': value['index'],
         'signedTrackedRequest': value['signedTrackedRequest'],
         'location': value['location'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -25,7 +25,16 @@ export interface TgvalidatordApprovePledgeActionsReply {
      * @memberof TgvalidatordApprovePledgeActionsReply
      */
     signatures?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordApprovePledgeActionsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordApprovePledgeActionsReplyWireKeys: ReadonlySet<string> = new Set(['signatures']);
 
 /**
  * Check if a given object implements the TgvalidatordApprovePledgeActionsReply interface.
@@ -42,10 +51,20 @@ export function TgvalidatordApprovePledgeActionsReplyFromJSONTyped(json: any, ig
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordApprovePledgeActionsReply = {
         
         'signatures': json['signatures'] == null ? undefined : json['signatures'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordApprovePledgeActionsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordApprovePledgeActionsReplyToJSON(json: any): TgvalidatordApprovePledgeActionsReply {
@@ -60,6 +79,7 @@ export function TgvalidatordApprovePledgeActionsReplyFromJSONTyped(json: any, ig
     return {
         
         'signatures': value['signatures'],
+        ...value['additionalProperties'],
     };
 }
 

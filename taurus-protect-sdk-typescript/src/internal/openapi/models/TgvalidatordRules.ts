@@ -70,7 +70,16 @@ export interface TgvalidatordRules {
      * @memberof TgvalidatordRules
      */
     trails?: Array<TgvalidatordRulesTrail>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordRules
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordRulesWireKeys: ReadonlySet<string> = new Set(['rulesContainer', 'rulesSignatures', 'locked', 'creationDate', 'updateDate', 'trails']);
 
 /**
  * Check if a given object implements the TgvalidatordRules interface.
@@ -87,7 +96,7 @@ export function TgvalidatordRulesFromJSONTyped(json: any, ignoreDiscriminator: b
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordRules = {
         
         'rulesContainer': json['rulesContainer'] == null ? undefined : json['rulesContainer'],
         'rulesSignatures': json['rulesSignatures'] == null ? undefined : ((json['rulesSignatures'] as Array<any>).map(TgvalidatordRuleUserSignatureFromJSON)),
@@ -96,6 +105,16 @@ export function TgvalidatordRulesFromJSONTyped(json: any, ignoreDiscriminator: b
         'updateDate': json['updateDate'] == null ? undefined : (new Date(json['updateDate'])),
         'trails': json['trails'] == null ? undefined : ((json['trails'] as Array<any>).map(TgvalidatordRulesTrailFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordRulesWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordRulesToJSON(json: any): TgvalidatordRules {
@@ -115,6 +134,7 @@ export function TgvalidatordRulesFromJSONTyped(json: any, ignoreDiscriminator: b
         'creationDate': value['creationDate'] == null ? undefined : ((value['creationDate']).toISOString()),
         'updateDate': value['updateDate'] == null ? undefined : ((value['updateDate']).toISOString()),
         'trails': value['trails'] == null ? undefined : ((value['trails'] as Array<any>).map(TgvalidatordRulesTrailToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

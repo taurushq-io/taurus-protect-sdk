@@ -23,7 +23,10 @@ type TgvalidatordUserInfo struct {
 	ExternalUserId *string `json:"externalUserId,omitempty"`
 	Email *string `json:"email,omitempty"`
 	Deleted *bool `json:"deleted,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordUserInfo TgvalidatordUserInfo
 
 // NewTgvalidatordUserInfo instantiates a new TgvalidatordUserInfo object
 // This constructor will assign default values to properties that have it defined,
@@ -192,7 +195,36 @@ func (o TgvalidatordUserInfo) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Deleted) {
 		toSerialize["deleted"] = o.Deleted
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordUserInfo) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordUserInfo := _TgvalidatordUserInfo{}
+
+	err = json.Unmarshal(data, &varTgvalidatordUserInfo)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordUserInfo(varTgvalidatordUserInfo)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "externalUserId")
+		delete(additionalProperties, "email")
+		delete(additionalProperties, "deleted")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordUserInfo struct {

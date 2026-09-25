@@ -39,7 +39,16 @@ export interface ScimServiceScimPatchGroupBody {
      * @memberof ScimServiceScimPatchGroupBody
      */
     operations?: Array<TgvalidatordScimOperation>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof ScimServiceScimPatchGroupBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const ScimServiceScimPatchGroupBodyWireKeys: ReadonlySet<string> = new Set(['schemas', 'Operations']);
 
 /**
  * Check if a given object implements the ScimServiceScimPatchGroupBody interface.
@@ -56,11 +65,21 @@ export function ScimServiceScimPatchGroupBodyFromJSONTyped(json: any, ignoreDisc
     if (json == null) {
         return json;
     }
-    return {
+    const result: ScimServiceScimPatchGroupBody = {
         
         'schemas': json['schemas'] == null ? undefined : json['schemas'],
         'operations': json['Operations'] == null ? undefined : ((json['Operations'] as Array<any>).map(TgvalidatordScimOperationFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!ScimServiceScimPatchGroupBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function ScimServiceScimPatchGroupBodyToJSON(json: any): ScimServiceScimPatchGroupBody {
@@ -76,6 +95,7 @@ export function ScimServiceScimPatchGroupBodyFromJSONTyped(json: any, ignoreDisc
         
         'schemas': value['schemas'],
         'Operations': value['operations'] == null ? undefined : ((value['operations'] as Array<any>).map(TgvalidatordScimOperationToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

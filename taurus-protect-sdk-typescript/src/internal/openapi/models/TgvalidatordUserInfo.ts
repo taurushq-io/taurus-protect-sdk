@@ -43,7 +43,16 @@ export interface TgvalidatordUserInfo {
      * @memberof TgvalidatordUserInfo
      */
     deleted?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordUserInfo
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordUserInfoWireKeys: ReadonlySet<string> = new Set(['id', 'externalUserId', 'email', 'deleted']);
 
 /**
  * Check if a given object implements the TgvalidatordUserInfo interface.
@@ -60,13 +69,23 @@ export function TgvalidatordUserInfoFromJSONTyped(json: any, ignoreDiscriminator
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordUserInfo = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'externalUserId': json['externalUserId'] == null ? undefined : json['externalUserId'],
         'email': json['email'] == null ? undefined : json['email'],
         'deleted': json['deleted'] == null ? undefined : json['deleted'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordUserInfoWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordUserInfoToJSON(json: any): TgvalidatordUserInfo {
@@ -84,6 +103,7 @@ export function TgvalidatordUserInfoFromJSONTyped(json: any, ignoreDiscriminator
         'externalUserId': value['externalUserId'],
         'email': value['email'],
         'deleted': value['deleted'],
+        ...value['additionalProperties'],
     };
 }
 

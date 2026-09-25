@@ -34,32 +34,23 @@ var AllowedTgvalidatordChangeStatusEnumValues = []TgvalidatordChangeStatus{
 	"Canceled",
 }
 
+// UnmarshalJSON keeps a value this client does not know instead of failing the whole reply;
+// IsValid reports whether it is one of the generated constants.
 func (v *TgvalidatordChangeStatus) UnmarshalJSON(src []byte) error {
 	var value string
 	err := json.Unmarshal(src, &value)
 	if err != nil {
-		return err
+		return fmt.Errorf("decoding TgvalidatordChangeStatus: %w", err)
 	}
-	enumTypeValue := TgvalidatordChangeStatus(value)
-	for _, existing := range AllowedTgvalidatordChangeStatusEnumValues {
-		if existing == enumTypeValue {
-			*v = enumTypeValue
-			return nil
-		}
-	}
-
-	return fmt.Errorf("%+v is not a valid TgvalidatordChangeStatus", value)
+	*v = TgvalidatordChangeStatus(value)
+	return nil
 }
 
-// NewTgvalidatordChangeStatusFromValue returns a pointer to a valid TgvalidatordChangeStatus
-// for the value passed as argument, or an error if the value passed is not allowed by the enum
+// NewTgvalidatordChangeStatusFromValue returns a pointer to a TgvalidatordChangeStatus holding v, known or not.
+// The error is always nil; use IsValid to tell a generated constant from a newer server value.
 func NewTgvalidatordChangeStatusFromValue(v string) (*TgvalidatordChangeStatus, error) {
 	ev := TgvalidatordChangeStatus(v)
-	if ev.IsValid() {
-		return &ev, nil
-	} else {
-		return nil, fmt.Errorf("invalid value '%v' for TgvalidatordChangeStatus: valid values are %v", v, AllowedTgvalidatordChangeStatusEnumValues)
-	}
+	return &ev, nil
 }
 
 // IsValid return true if the value is valid for the enum, false otherwise

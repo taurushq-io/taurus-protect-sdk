@@ -39,7 +39,16 @@ export interface TgvalidatordXTZContractCall {
      * @memberof TgvalidatordXTZContractCall
      */
     arg?: TgvalidatordXTZContractArg;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordXTZContractCall
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordXTZContractCallWireKeys: ReadonlySet<string> = new Set(['entrypoint', 'arg']);
 
 /**
  * Check if a given object implements the TgvalidatordXTZContractCall interface.
@@ -56,11 +65,21 @@ export function TgvalidatordXTZContractCallFromJSONTyped(json: any, ignoreDiscri
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordXTZContractCall = {
         
         'entrypoint': json['entrypoint'] == null ? undefined : json['entrypoint'],
         'arg': json['arg'] == null ? undefined : TgvalidatordXTZContractArgFromJSON(json['arg']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordXTZContractCallWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordXTZContractCallToJSON(json: any): TgvalidatordXTZContractCall {
@@ -76,6 +95,7 @@ export function TgvalidatordXTZContractCallFromJSONTyped(json: any, ignoreDiscri
         
         'entrypoint': value['entrypoint'],
         'arg': TgvalidatordXTZContractArgToJSON(value['arg']),
+        ...value['additionalProperties'],
     };
 }
 

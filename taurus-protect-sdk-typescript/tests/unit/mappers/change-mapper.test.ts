@@ -6,7 +6,6 @@ import {
   changeFromDto,
   changesFromDto,
   createChangeRequestToDto,
-  listChangesResultFromDto,
 } from '../../../src/mappers/change';
 
 describe('changeFromDto', () => {
@@ -97,66 +96,6 @@ describe('changesFromDto', () => {
 
   it('should return empty array for undefined input', () => {
     expect(changesFromDto(undefined)).toEqual([]);
-  });
-});
-
-describe('listChangesResultFromDto', () => {
-  it('should map response with result and cursor', () => {
-    const response = {
-      result: [
-        { id: 'ch-1', action: 'CREATE' },
-        { id: 'ch-2', action: 'UPDATE' },
-      ],
-      cursor: {
-        currentPage: 'page-1',
-        hasNext: true,
-      },
-    };
-
-    const result = listChangesResultFromDto(response);
-
-    expect(result.changes).toHaveLength(2);
-    expect(result.currentPage).toBe('page-1');
-    expect(result.hasNext).toBe(true);
-  });
-
-  it('should handle response with changes key instead of result', () => {
-    const response = {
-      changes: [{ id: 'ch-1' }],
-    };
-
-    const result = listChangesResultFromDto(response);
-
-    expect(result.changes).toHaveLength(1);
-  });
-
-  it('should return default for null input', () => {
-    const result = listChangesResultFromDto(null);
-
-    expect(result.changes).toEqual([]);
-    expect(result.hasNext).toBe(false);
-  });
-
-  it('should return default for undefined input', () => {
-    const result = listChangesResultFromDto(undefined);
-
-    expect(result.changes).toEqual([]);
-    expect(result.hasNext).toBe(false);
-  });
-
-  it('should handle snake_case cursor fields', () => {
-    const response = {
-      result: [],
-      cursor: {
-        current_page: 'p2',
-        has_next: true,
-      },
-    };
-
-    const result = listChangesResultFromDto(response);
-
-    expect(result.currentPage).toBe('p2');
-    expect(result.hasNext).toBe(true);
   });
 });
 

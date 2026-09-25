@@ -39,7 +39,16 @@ export interface GenericCreateContractEVMContract {
      * @memberof GenericCreateContractEVMContract
      */
     constructor?: TgvalidatordContractCall;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof GenericCreateContractEVMContract
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const GenericCreateContractEVMContractWireKeys: ReadonlySet<string> = new Set(['bytecode', 'constructor']);
 
 /**
  * Check if a given object implements the GenericCreateContractEVMContract interface.
@@ -56,11 +65,21 @@ export function GenericCreateContractEVMContractFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: GenericCreateContractEVMContract = {
         
         'bytecode': json['bytecode'] == null ? undefined : json['bytecode'],
         'constructor': json['constructor'] == null ? undefined : TgvalidatordContractCallFromJSON(json['constructor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!GenericCreateContractEVMContractWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function GenericCreateContractEVMContractToJSON(json: any): GenericCreateContractEVMContract {
@@ -76,6 +95,7 @@ export function GenericCreateContractEVMContractFromJSONTyped(json: any, ignoreD
         
         'bytecode': value['bytecode'],
         'constructor': TgvalidatordContractCallToJSON(value['constructor']),
+        ...value['additionalProperties'],
     };
 }
 

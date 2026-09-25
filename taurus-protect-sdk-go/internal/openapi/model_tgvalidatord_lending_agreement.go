@@ -41,7 +41,10 @@ type TgvalidatordLendingAgreement struct {
 	CurrencyInfo *TgvalidatordCurrency `json:"currencyInfo,omitempty"`
 	AmountMainUnit *string `json:"amountMainUnit,omitempty"`
 	RepaymentDueDate *time.Time `json:"repaymentDueDate,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordLendingAgreement TgvalidatordLendingAgreement
 
 // NewTgvalidatordLendingAgreement instantiates a new TgvalidatordLendingAgreement object
 // This constructor will assign default values to properties that have it defined,
@@ -805,7 +808,53 @@ func (o TgvalidatordLendingAgreement) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.RepaymentDueDate) {
 		toSerialize["repaymentDueDate"] = o.RepaymentDueDate
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordLendingAgreement) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordLendingAgreement := _TgvalidatordLendingAgreement{}
+
+	err = json.Unmarshal(data, &varTgvalidatordLendingAgreement)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordLendingAgreement(varTgvalidatordLendingAgreement)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "lenderParticipantID")
+		delete(additionalProperties, "borrowerParticipantID")
+		delete(additionalProperties, "lendingOfferID")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "currencyID")
+		delete(additionalProperties, "annualYield")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "duration")
+		delete(additionalProperties, "startLoanDate")
+		delete(additionalProperties, "workflowID")
+		delete(additionalProperties, "borrowerSharedAddressID")
+		delete(additionalProperties, "lenderSharedAddressID")
+		delete(additionalProperties, "lendingAgreementCollaterals")
+		delete(additionalProperties, "lendingAgreementTransactions")
+		delete(additionalProperties, "createdAt")
+		delete(additionalProperties, "updatedAt")
+		delete(additionalProperties, "annualYieldMainUnit")
+		delete(additionalProperties, "currencyInfo")
+		delete(additionalProperties, "amountMainUnit")
+		delete(additionalProperties, "repaymentDueDate")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordLendingAgreement struct {

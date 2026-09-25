@@ -31,7 +31,16 @@ export interface UserDeviceServiceStartUserDevicePairingBody {
      * @memberof UserDeviceServiceStartUserDevicePairingBody
      */
     publicKey: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof UserDeviceServiceStartUserDevicePairingBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const UserDeviceServiceStartUserDevicePairingBodyWireKeys: ReadonlySet<string> = new Set(['nonce', 'publicKey']);
 
 /**
  * Check if a given object implements the UserDeviceServiceStartUserDevicePairingBody interface.
@@ -50,11 +59,21 @@ export function UserDeviceServiceStartUserDevicePairingBodyFromJSONTyped(json: a
     if (json == null) {
         return json;
     }
-    return {
+    const result: UserDeviceServiceStartUserDevicePairingBody = {
         
         'nonce': json['nonce'],
         'publicKey': json['publicKey'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!UserDeviceServiceStartUserDevicePairingBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function UserDeviceServiceStartUserDevicePairingBodyToJSON(json: any): UserDeviceServiceStartUserDevicePairingBody {
@@ -70,6 +89,7 @@ export function UserDeviceServiceStartUserDevicePairingBodyFromJSONTyped(json: a
         
         'nonce': value['nonce'],
         'publicKey': value['publicKey'],
+        ...value['additionalProperties'],
     };
 }
 

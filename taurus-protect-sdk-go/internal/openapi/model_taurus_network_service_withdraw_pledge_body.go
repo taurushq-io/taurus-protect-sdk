@@ -27,7 +27,10 @@ type TaurusNetworkServiceWithdrawPledgeBody struct {
 	DestinationInternalAddressID *string `json:"destinationInternalAddressID,omitempty"`
 	// Identifier for the withdrawal in the user's system. This must be unique. Attempting to create a withdrawal with an existing externalReferenceID will do nothing and return the originally existing withdrawal
 	ExternalReferenceID *string `json:"externalReferenceID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TaurusNetworkServiceWithdrawPledgeBody TaurusNetworkServiceWithdrawPledgeBody
 
 // NewTaurusNetworkServiceWithdrawPledgeBody instantiates a new TaurusNetworkServiceWithdrawPledgeBody object
 // This constructor will assign default values to properties that have it defined,
@@ -196,7 +199,36 @@ func (o TaurusNetworkServiceWithdrawPledgeBody) ToMap() (map[string]interface{},
 	if !IsNil(o.ExternalReferenceID) {
 		toSerialize["externalReferenceID"] = o.ExternalReferenceID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TaurusNetworkServiceWithdrawPledgeBody) UnmarshalJSON(data []byte) (err error) {
+	varTaurusNetworkServiceWithdrawPledgeBody := _TaurusNetworkServiceWithdrawPledgeBody{}
+
+	err = json.Unmarshal(data, &varTaurusNetworkServiceWithdrawPledgeBody)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TaurusNetworkServiceWithdrawPledgeBody(varTaurusNetworkServiceWithdrawPledgeBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "destinationSharedAddressID")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "destinationInternalAddressID")
+		delete(additionalProperties, "externalReferenceID")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTaurusNetworkServiceWithdrawPledgeBody struct {

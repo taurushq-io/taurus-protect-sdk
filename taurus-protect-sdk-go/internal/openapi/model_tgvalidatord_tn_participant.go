@@ -47,7 +47,10 @@ type TgvalidatordTnParticipant struct {
 	Status *string `json:"status,omitempty"`
 	TnLendingOffers []TgvalidatordTnLendingOffer `json:"tnLendingOffers,omitempty"`
 	DefaultSharedAddresses *TgvalidatordDefaultSharedAddresses `json:"defaultSharedAddresses,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTnParticipant TgvalidatordTnParticipant
 
 // NewTgvalidatordTnParticipant instantiates a new TgvalidatordTnParticipant object
 // This constructor will assign default values to properties that have it defined,
@@ -881,7 +884,55 @@ func (o TgvalidatordTnParticipant) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.DefaultSharedAddresses) {
 		toSerialize["defaultSharedAddresses"] = o.DefaultSharedAddresses
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTnParticipant) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTnParticipant := _TgvalidatordTnParticipant{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTnParticipant)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTnParticipant(varTgvalidatordTnParticipant)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "legalAddress")
+		delete(additionalProperties, "country")
+		delete(additionalProperties, "logoBase64")
+		delete(additionalProperties, "publicKey")
+		delete(additionalProperties, "shield")
+		delete(additionalProperties, "originRegistrationDate")
+		delete(additionalProperties, "originDeletionDate")
+		delete(additionalProperties, "createdAt")
+		delete(additionalProperties, "updatedAt")
+		delete(additionalProperties, "details")
+		delete(additionalProperties, "blockConfirmations")
+		delete(additionalProperties, "ownedSharedAddressesCount")
+		delete(additionalProperties, "targetedSharedAddressesCount")
+		delete(additionalProperties, "outgoingTotalPledgesValuationBaseCurrency")
+		delete(additionalProperties, "incomingTotalPledgesValuationBaseCurrency")
+		delete(additionalProperties, "publicSubname")
+		delete(additionalProperties, "legalEntityIdentifier")
+		delete(additionalProperties, "attributes")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "tnLendingOffers")
+		delete(additionalProperties, "defaultSharedAddresses")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTnParticipant struct {

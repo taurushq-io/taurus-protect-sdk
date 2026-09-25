@@ -33,7 +33,16 @@ export interface TgvalidatordCreateWalletReply {
      * @memberof TgvalidatordCreateWalletReply
      */
     result?: TgvalidatordWallet;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateWalletReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateWalletReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateWalletReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordCreateWalletReplyFromJSONTyped(json: any, ignoreDisc
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateWalletReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordWalletFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateWalletReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateWalletReplyToJSON(json: any): TgvalidatordCreateWalletReply {
@@ -68,6 +87,7 @@ export function TgvalidatordCreateWalletReplyFromJSONTyped(json: any, ignoreDisc
     return {
         
         'result': TgvalidatordWalletToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

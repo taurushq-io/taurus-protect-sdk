@@ -31,7 +31,16 @@ export interface TgvalidatordComputeAddressesSignatureRequest {
      * @memberof TgvalidatordComputeAddressesSignatureRequest
      */
     addressId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordComputeAddressesSignatureRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordComputeAddressesSignatureRequestWireKeys: ReadonlySet<string> = new Set(['walletId', 'addressId']);
 
 /**
  * Check if a given object implements the TgvalidatordComputeAddressesSignatureRequest interface.
@@ -48,11 +57,21 @@ export function TgvalidatordComputeAddressesSignatureRequestFromJSONTyped(json: 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordComputeAddressesSignatureRequest = {
         
         'walletId': json['walletId'] == null ? undefined : json['walletId'],
         'addressId': json['addressId'] == null ? undefined : json['addressId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordComputeAddressesSignatureRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordComputeAddressesSignatureRequestToJSON(json: any): TgvalidatordComputeAddressesSignatureRequest {
@@ -68,6 +87,7 @@ export function TgvalidatordComputeAddressesSignatureRequestFromJSONTyped(json: 
         
         'walletId': value['walletId'],
         'addressId': value['addressId'],
+        ...value['additionalProperties'],
     };
 }
 

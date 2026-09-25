@@ -22,7 +22,10 @@ type TgvalidatordDefaultSharedAddress struct {
 	Blockchain *string `json:"blockchain,omitempty"`
 	Network *string `json:"network,omitempty"`
 	SharedAddressID *string `json:"sharedAddressID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordDefaultSharedAddress TgvalidatordDefaultSharedAddress
 
 // NewTgvalidatordDefaultSharedAddress instantiates a new TgvalidatordDefaultSharedAddress object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordDefaultSharedAddress) ToMap() (map[string]interface{}, error
 	if !IsNil(o.SharedAddressID) {
 		toSerialize["sharedAddressID"] = o.SharedAddressID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordDefaultSharedAddress) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordDefaultSharedAddress := _TgvalidatordDefaultSharedAddress{}
+
+	err = json.Unmarshal(data, &varTgvalidatordDefaultSharedAddress)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordDefaultSharedAddress(varTgvalidatordDefaultSharedAddress)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "network")
+		delete(additionalProperties, "sharedAddressID")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordDefaultSharedAddress struct {

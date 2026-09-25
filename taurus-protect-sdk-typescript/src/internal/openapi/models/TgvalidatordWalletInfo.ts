@@ -72,7 +72,7 @@ export interface TgvalidatordWalletInfo {
      */
     name?: string;
     /**
-     * 
+     * Deprecated: Do not use
      * @type {string}
      * @memberof TgvalidatordWalletInfo
      */
@@ -167,7 +167,16 @@ export interface TgvalidatordWalletInfo {
      * @memberof TgvalidatordWalletInfo
      */
     externalWalletId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordWalletInfo
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordWalletInfoWireKeys: ReadonlySet<string> = new Set(['id', 'balance', 'currency', 'coin', 'name', 'container', 'seed', 'accountPath', 'isOmnibus', 'creationDate', 'updateDate', 'customerId', 'comment', 'disabled', 'blockchain', 'addressesCount', 'currencyInfo', 'attributes', 'network', 'visibilityGroupID', 'externalWalletId']);
 
 /**
  * Check if a given object implements the TgvalidatordWalletInfo interface.
@@ -184,7 +193,7 @@ export function TgvalidatordWalletInfoFromJSONTyped(json: any, ignoreDiscriminat
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordWalletInfo = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'balance': json['balance'] == null ? undefined : TgvalidatordBalanceFromJSON(json['balance']),
@@ -208,6 +217,16 @@ export function TgvalidatordWalletInfoFromJSONTyped(json: any, ignoreDiscriminat
         'visibilityGroupID': json['visibilityGroupID'] == null ? undefined : json['visibilityGroupID'],
         'externalWalletId': json['externalWalletId'] == null ? undefined : json['externalWalletId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordWalletInfoWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordWalletInfoToJSON(json: any): TgvalidatordWalletInfo {
@@ -242,6 +261,7 @@ export function TgvalidatordWalletInfoFromJSONTyped(json: any, ignoreDiscriminat
         'network': value['network'],
         'visibilityGroupID': value['visibilityGroupID'],
         'externalWalletId': value['externalWalletId'],
+        ...value['additionalProperties'],
     };
 }
 

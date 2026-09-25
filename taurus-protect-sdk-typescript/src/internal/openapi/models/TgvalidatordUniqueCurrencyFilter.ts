@@ -43,7 +43,16 @@ export interface TgvalidatordUniqueCurrencyFilter {
      * @memberof TgvalidatordUniqueCurrencyFilter
      */
     tokenID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordUniqueCurrencyFilter
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordUniqueCurrencyFilterWireKeys: ReadonlySet<string> = new Set(['blockchain', 'network', 'tokenContractAddress', 'tokenID']);
 
 /**
  * Check if a given object implements the TgvalidatordUniqueCurrencyFilter interface.
@@ -62,13 +71,23 @@ export function TgvalidatordUniqueCurrencyFilterFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordUniqueCurrencyFilter = {
         
         'blockchain': json['blockchain'],
         'network': json['network'],
         'tokenContractAddress': json['tokenContractAddress'] == null ? undefined : json['tokenContractAddress'],
         'tokenID': json['tokenID'] == null ? undefined : json['tokenID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordUniqueCurrencyFilterWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordUniqueCurrencyFilterToJSON(json: any): TgvalidatordUniqueCurrencyFilter {
@@ -86,6 +105,7 @@ export function TgvalidatordUniqueCurrencyFilterFromJSONTyped(json: any, ignoreD
         'network': value['network'],
         'tokenContractAddress': value['tokenContractAddress'],
         'tokenID': value['tokenID'],
+        ...value['additionalProperties'],
     };
 }
 

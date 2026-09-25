@@ -29,7 +29,7 @@ type TgvalidatordCurrency struct {
 	Blockchain *string `json:"blockchain,omitempty"`
 	// Indicates if the currency is a token (e.g., ERC-20).
 	IsToken *bool `json:"isToken,omitempty"`
-	// Indicates if the token is an ERC-20 token.
+	// DEPRECATED: use tokenInfo.tokenType == ERC20 instead.
 	IsERC20 *bool `json:"isERC20,omitempty"`
 	// Number of decimal places the currency uses (e.g. 18 for ETH).
 	Decimals *string `json:"decimals,omitempty"`
@@ -43,9 +43,9 @@ type TgvalidatordCurrency struct {
 	IsAccountBased *bool `json:"isAccountBased,omitempty"`
 	// Indicates if the currency is a fiat currency (e.g. CHF, EUR, USD).
 	IsFiat *bool `json:"isFiat,omitempty"`
-	// Indicates if the currency is based on FA12 standard (used in Tezos).
+	// DEPRECATED: use tokenInfo.tokenType == FA12 instead.
 	IsFA12 *bool `json:"isFA12,omitempty"`
-	// Indicates if the currency is based on FA20 standard (used in Tezos).
+	// DEPRECATED: use tokenInfo.tokenType == FA2 instead.
 	IsFA20 *bool `json:"isFA20,omitempty"`
 	// Indicates if the currency represents a Non-Fungible Token (NFT).
 	IsNFT *bool `json:"isNFT,omitempty"`
@@ -65,7 +65,11 @@ type TgvalidatordCurrency struct {
 	TokenID *string `json:"tokenID,omitempty"`
 	// Currency logo in Data URI scheme. Base 64 encoded. (e.g. data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==).
 	Logo *string `json:"logo,omitempty"`
+	TokenInfo *TgvalidatordTokenInfo `json:"tokenInfo,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordCurrency TgvalidatordCurrency
 
 // NewTgvalidatordCurrency instantiates a new TgvalidatordCurrency object
 // This constructor will assign default values to properties that have it defined,
@@ -820,6 +824,38 @@ func (o *TgvalidatordCurrency) SetLogo(v string) {
 	o.Logo = &v
 }
 
+// GetTokenInfo returns the TokenInfo field value if set, zero value otherwise.
+func (o *TgvalidatordCurrency) GetTokenInfo() TgvalidatordTokenInfo {
+	if o == nil || IsNil(o.TokenInfo) {
+		var ret TgvalidatordTokenInfo
+		return ret
+	}
+	return *o.TokenInfo
+}
+
+// GetTokenInfoOk returns a tuple with the TokenInfo field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *TgvalidatordCurrency) GetTokenInfoOk() (*TgvalidatordTokenInfo, bool) {
+	if o == nil || IsNil(o.TokenInfo) {
+		return nil, false
+	}
+	return o.TokenInfo, true
+}
+
+// HasTokenInfo returns a boolean if a field has been set.
+func (o *TgvalidatordCurrency) HasTokenInfo() bool {
+	if o != nil && !IsNil(o.TokenInfo) {
+		return true
+	}
+
+	return false
+}
+
+// SetTokenInfo gets a reference to the given TgvalidatordTokenInfo and assigns it to the TokenInfo field.
+func (o *TgvalidatordCurrency) SetTokenInfo(v TgvalidatordTokenInfo) {
+	o.TokenInfo = &v
+}
+
 func (o TgvalidatordCurrency) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -899,7 +935,59 @@ func (o TgvalidatordCurrency) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Logo) {
 		toSerialize["logo"] = o.Logo
 	}
+	if !IsNil(o.TokenInfo) {
+		toSerialize["tokenInfo"] = o.TokenInfo
+	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordCurrency) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordCurrency := _TgvalidatordCurrency{}
+
+	err = json.Unmarshal(data, &varTgvalidatordCurrency)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordCurrency(varTgvalidatordCurrency)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "symbol")
+		delete(additionalProperties, "coinTypeIndex")
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "isToken")
+		delete(additionalProperties, "isERC20")
+		delete(additionalProperties, "decimals")
+		delete(additionalProperties, "contractAddress")
+		delete(additionalProperties, "hasStaking")
+		delete(additionalProperties, "isUTXOBased")
+		delete(additionalProperties, "isAccountBased")
+		delete(additionalProperties, "isFiat")
+		delete(additionalProperties, "isFA12")
+		delete(additionalProperties, "isFA20")
+		delete(additionalProperties, "isNFT")
+		delete(additionalProperties, "enabled")
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "displayName")
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "wlcaId")
+		delete(additionalProperties, "network")
+		delete(additionalProperties, "tokenID")
+		delete(additionalProperties, "logo")
+		delete(additionalProperties, "tokenInfo")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordCurrency struct {

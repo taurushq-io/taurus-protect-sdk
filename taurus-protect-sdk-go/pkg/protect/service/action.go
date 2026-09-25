@@ -2,8 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
-	"strconv"
 
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/internal/openapi"
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/mapper"
@@ -36,20 +34,20 @@ func (s *ActionService) GetAction(ctx context.Context, id string) (*model.Action
 	return mapper.ActionFromDTO(resp.Action), nil
 }
 
-// ListActions retrieves a list of actions with optional filtering and pagination.
+// ListActions retrieves one page of actions. Result.Pagination is never nil; continue with its
+// NextOffset until HasMore is false.
 func (s *ActionService) ListActions(ctx context.Context, opts *model.ListActionsOptions) (*model.ListActionsResult, error) {
-	req := s.api.ActionServiceGetActions(ctx)
+	if opts == nil {
+		opts = &model.ListActionsOptions{}
+	}
+	window, err := resolveOffsetWindow(opts.Limit, opts.Offset)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if opts.Limit > 0 {
-			req = req.Limit(fmt.Sprintf("%d", opts.Limit))
-		}
-		if opts.Offset > 0 {
-			req = req.Offset(fmt.Sprintf("%d", opts.Offset))
-		}
-		if len(opts.IDs) > 0 {
-			req = req.Ids(opts.IDs)
-		}
+	req := applyOffsetWindow(s.api.ActionServiceGetActions(ctx), window)
+	if len(opts.IDs) > 0 {
+		req = req.Ids(opts.IDs)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -57,16 +55,13 @@ func (s *ActionService) ListActions(ctx context.Context, opts *model.ListActions
 		return nil, s.errMapper.MapError(err, httpResp)
 	}
 
-	result := &model.ListActionsResult{
-		Actions: mapper.ActionsFromDTO(resp.Result),
+	pagination, err := offsetPagination(rulePlusRows, window, len(resp.Result), 0,
+		offsetReply{TotalItems: resp.TotalItems})
+	if err != nil {
+		return nil, err
 	}
-
-	// Parse total items
-	if resp.TotalItems != nil {
-		if total, parseErr := strconv.ParseInt(*resp.TotalItems, 10, 64); parseErr == nil {
-			result.TotalItems = total
-		}
-	}
-
-	return result, nil
+	return &model.ListActionsResult{
+		Actions:    mapper.ActionsFromDTO(resp.Result),
+		Pagination: pagination,
+	}, nil
 }

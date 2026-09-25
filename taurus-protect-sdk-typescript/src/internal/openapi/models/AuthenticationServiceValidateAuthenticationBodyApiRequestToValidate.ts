@@ -79,7 +79,16 @@ export interface AuthenticationServiceValidateAuthenticationBodyApiRequestToVali
      * @memberof AuthenticationServiceValidateAuthenticationBodyApiRequestToValidate
      */
     signature?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof AuthenticationServiceValidateAuthenticationBodyApiRequestToValidate
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const AuthenticationServiceValidateAuthenticationBodyApiRequestToValidateWireKeys: ReadonlySet<string> = new Set(['prefix', 'nonce', 'timestamp', 'method', 'host', 'path', 'query', 'contentType', 'body', 'signature']);
 
 /**
  * Check if a given object implements the AuthenticationServiceValidateAuthenticationBodyApiRequestToValidate interface.
@@ -96,7 +105,7 @@ export function AuthenticationServiceValidateAuthenticationBodyApiRequestToValid
     if (json == null) {
         return json;
     }
-    return {
+    const result: AuthenticationServiceValidateAuthenticationBodyApiRequestToValidate = {
         
         'prefix': json['prefix'] == null ? undefined : json['prefix'],
         'nonce': json['nonce'] == null ? undefined : json['nonce'],
@@ -109,6 +118,16 @@ export function AuthenticationServiceValidateAuthenticationBodyApiRequestToValid
         'body': json['body'] == null ? undefined : json['body'],
         'signature': json['signature'] == null ? undefined : json['signature'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!AuthenticationServiceValidateAuthenticationBodyApiRequestToValidateWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function AuthenticationServiceValidateAuthenticationBodyApiRequestToValidateToJSON(json: any): AuthenticationServiceValidateAuthenticationBodyApiRequestToValidate {
@@ -132,6 +151,7 @@ export function AuthenticationServiceValidateAuthenticationBodyApiRequestToValid
         'contentType': value['contentType'],
         'body': value['body'],
         'signature': value['signature'],
+        ...value['additionalProperties'],
     };
 }
 

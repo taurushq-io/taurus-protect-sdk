@@ -50,6 +50,7 @@ public interface WebhookCallsMapper {
      */
     @Mapping(target = "calls", source = "calls")
     @Mapping(target = "cursor", source = "cursor")
+    @Mapping(target = "page", ignore = true)
     WebhookCallResult fromReply(TgvalidatordGetWebhookCallsReply reply);
 
     /**

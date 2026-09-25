@@ -33,7 +33,16 @@ export interface TgvalidatordGetAsyncWhitelistedAddressApprovalsReply {
      * @memberof TgvalidatordGetAsyncWhitelistedAddressApprovalsReply
      */
     result?: Array<TgvalidatordWhitelistedAddressBatchSignature>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetAsyncWhitelistedAddressApprovalsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetAsyncWhitelistedAddressApprovalsReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetAsyncWhitelistedAddressApprovalsReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetAsyncWhitelistedAddressApprovalsReplyFromJSONType
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetAsyncWhitelistedAddressApprovalsReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordWhitelistedAddressBatchSignatureFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetAsyncWhitelistedAddressApprovalsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetAsyncWhitelistedAddressApprovalsReplyToJSON(json: any): TgvalidatordGetAsyncWhitelistedAddressApprovalsReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetAsyncWhitelistedAddressApprovalsReplyFromJSONType
     return {
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordWhitelistedAddressBatchSignatureToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

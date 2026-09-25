@@ -37,7 +37,16 @@ export interface TgvalidatordCreateWebhookRequest {
      * @memberof TgvalidatordCreateWebhookRequest
      */
     secret?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateWebhookRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateWebhookRequestWireKeys: ReadonlySet<string> = new Set(['type', 'url', 'secret']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateWebhookRequest interface.
@@ -54,12 +63,22 @@ export function TgvalidatordCreateWebhookRequestFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateWebhookRequest = {
         
         'type': json['type'] == null ? undefined : json['type'],
         'url': json['url'] == null ? undefined : json['url'],
         'secret': json['secret'] == null ? undefined : json['secret'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateWebhookRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateWebhookRequestToJSON(json: any): TgvalidatordCreateWebhookRequest {
@@ -76,6 +95,7 @@ export function TgvalidatordCreateWebhookRequestFromJSONTyped(json: any, ignoreD
         'type': value['type'],
         'url': value['url'],
         'secret': value['secret'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordGetOutgoingAirGapRequest{}
 type TgvalidatordGetOutgoingAirGapRequest struct {
 	Requests *TgvalidatordGetOutgoingAirGapRequestRequests `json:"requests,omitempty"`
 	Addresses *GetOutgoingAirGapRequestAddresses `json:"addresses,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetOutgoingAirGapRequest TgvalidatordGetOutgoingAirGapRequest
 
 // NewTgvalidatordGetOutgoingAirGapRequest instantiates a new TgvalidatordGetOutgoingAirGapRequest object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordGetOutgoingAirGapRequest) ToMap() (map[string]interface{}, e
 	if !IsNil(o.Addresses) {
 		toSerialize["addresses"] = o.Addresses
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetOutgoingAirGapRequest) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetOutgoingAirGapRequest := _TgvalidatordGetOutgoingAirGapRequest{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetOutgoingAirGapRequest)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetOutgoingAirGapRequest(varTgvalidatordGetOutgoingAirGapRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "requests")
+		delete(additionalProperties, "addresses")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetOutgoingAirGapRequest struct {

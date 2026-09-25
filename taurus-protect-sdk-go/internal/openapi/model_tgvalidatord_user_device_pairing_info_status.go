@@ -32,32 +32,23 @@ var AllowedTgvalidatordUserDevicePairingInfoStatusEnumValues = []TgvalidatordUse
 	"APPROVED",
 }
 
+// UnmarshalJSON keeps a value this client does not know instead of failing the whole reply;
+// IsValid reports whether it is one of the generated constants.
 func (v *TgvalidatordUserDevicePairingInfoStatus) UnmarshalJSON(src []byte) error {
 	var value string
 	err := json.Unmarshal(src, &value)
 	if err != nil {
-		return err
+		return fmt.Errorf("decoding TgvalidatordUserDevicePairingInfoStatus: %w", err)
 	}
-	enumTypeValue := TgvalidatordUserDevicePairingInfoStatus(value)
-	for _, existing := range AllowedTgvalidatordUserDevicePairingInfoStatusEnumValues {
-		if existing == enumTypeValue {
-			*v = enumTypeValue
-			return nil
-		}
-	}
-
-	return fmt.Errorf("%+v is not a valid TgvalidatordUserDevicePairingInfoStatus", value)
+	*v = TgvalidatordUserDevicePairingInfoStatus(value)
+	return nil
 }
 
-// NewTgvalidatordUserDevicePairingInfoStatusFromValue returns a pointer to a valid TgvalidatordUserDevicePairingInfoStatus
-// for the value passed as argument, or an error if the value passed is not allowed by the enum
+// NewTgvalidatordUserDevicePairingInfoStatusFromValue returns a pointer to a TgvalidatordUserDevicePairingInfoStatus holding v, known or not.
+// The error is always nil; use IsValid to tell a generated constant from a newer server value.
 func NewTgvalidatordUserDevicePairingInfoStatusFromValue(v string) (*TgvalidatordUserDevicePairingInfoStatus, error) {
 	ev := TgvalidatordUserDevicePairingInfoStatus(v)
-	if ev.IsValid() {
-		return &ev, nil
-	} else {
-		return nil, fmt.Errorf("invalid value '%v' for TgvalidatordUserDevicePairingInfoStatus: valid values are %v", v, AllowedTgvalidatordUserDevicePairingInfoStatusEnumValues)
-	}
+	return &ev, nil
 }
 
 // IsValid return true if the value is valid for the enum, false otherwise

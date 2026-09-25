@@ -161,7 +161,16 @@ export interface TgvalidatordCreateOutgoingRequestRequest {
      * @memberof TgvalidatordCreateOutgoingRequestRequest
      */
     feePayerAddressId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingRequestRequestWireKeys: ReadonlySet<string> = new Set(['amount', 'feeLimit', 'fromWalletId', 'fromAddressId', 'toAddressId', 'toWhitelistedAddressId', 'gasLimit', 'comment', 'useUnconfirmedFunds', 'feePaidByReceiver', 'transactionComment', 'useAllFunds', 'feePayerId', 'extendedAmount', 'transactionReference', 'externalRequestId', 'destinationAddressMemo', 'opts', 'travelRuleDataInput', 'feePayerAddressId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingRequestRequest interface.
@@ -179,7 +188,7 @@ export function TgvalidatordCreateOutgoingRequestRequestFromJSONTyped(json: any,
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingRequestRequest = {
         
         'amount': json['amount'],
         'feeLimit': json['feeLimit'] == null ? undefined : json['feeLimit'],
@@ -202,6 +211,16 @@ export function TgvalidatordCreateOutgoingRequestRequestFromJSONTyped(json: any,
         'travelRuleDataInput': json['travelRuleDataInput'] == null ? undefined : TgvalidatordTravelRuleDataInputFromJSON(json['travelRuleDataInput']),
         'feePayerAddressId': json['feePayerAddressId'] == null ? undefined : json['feePayerAddressId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingRequestRequest {
@@ -235,6 +254,7 @@ export function TgvalidatordCreateOutgoingRequestRequestFromJSONTyped(json: any,
         'opts': TgvalidatordBlockchainOptsToJSON(value['opts']),
         'travelRuleDataInput': TgvalidatordTravelRuleDataInputToJSON(value['travelRuleDataInput']),
         'feePayerAddressId': value['feePayerAddressId'],
+        ...value['additionalProperties'],
     };
 }
 

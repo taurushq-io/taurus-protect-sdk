@@ -85,7 +85,16 @@ export interface TgvalidatordCreateOutgoingXLMPathPaymentStrictSendRequestReques
      * @memberof TgvalidatordCreateOutgoingXLMPathPaymentStrictSendRequestRequest
      */
     destinationAddressMemo?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingXLMPathPaymentStrictSendRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingXLMPathPaymentStrictSendRequestRequestWireKeys: ReadonlySet<string> = new Set(['amount', 'minDestinationAmount', 'feeLimit', 'fromAddressId', 'toAddressId', 'toWhitelistedAddressId', 'destinationAssetID', 'destinationAssetIssuer', 'comment', 'externalRequestId', 'destinationAddressMemo']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingXLMPathPaymentStrictSendRequestRequest interface.
@@ -104,7 +113,7 @@ export function TgvalidatordCreateOutgoingXLMPathPaymentStrictSendRequestRequest
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingXLMPathPaymentStrictSendRequestRequest = {
         
         'amount': json['amount'],
         'minDestinationAmount': json['minDestinationAmount'] == null ? undefined : json['minDestinationAmount'],
@@ -118,6 +127,16 @@ export function TgvalidatordCreateOutgoingXLMPathPaymentStrictSendRequestRequest
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
         'destinationAddressMemo': json['destinationAddressMemo'] == null ? undefined : json['destinationAddressMemo'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingXLMPathPaymentStrictSendRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingXLMPathPaymentStrictSendRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingXLMPathPaymentStrictSendRequestRequest {
@@ -142,6 +161,7 @@ export function TgvalidatordCreateOutgoingXLMPathPaymentStrictSendRequestRequest
         'comment': value['comment'],
         'externalRequestId': value['externalRequestId'],
         'destinationAddressMemo': value['destinationAddressMemo'],
+        ...value['additionalProperties'],
     };
 }
 

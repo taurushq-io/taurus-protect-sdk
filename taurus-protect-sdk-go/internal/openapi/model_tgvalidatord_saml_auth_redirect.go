@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordSAMLAuthRedirect{}
 type TgvalidatordSAMLAuthRedirect struct {
 	Token *string `json:"token,omitempty"`
 	Location *string `json:"location,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordSAMLAuthRedirect TgvalidatordSAMLAuthRedirect
 
 // NewTgvalidatordSAMLAuthRedirect instantiates a new TgvalidatordSAMLAuthRedirect object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordSAMLAuthRedirect) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Location) {
 		toSerialize["location"] = o.Location
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordSAMLAuthRedirect) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordSAMLAuthRedirect := _TgvalidatordSAMLAuthRedirect{}
+
+	err = json.Unmarshal(data, &varTgvalidatordSAMLAuthRedirect)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordSAMLAuthRedirect(varTgvalidatordSAMLAuthRedirect)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "token")
+		delete(additionalProperties, "location")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordSAMLAuthRedirect struct {

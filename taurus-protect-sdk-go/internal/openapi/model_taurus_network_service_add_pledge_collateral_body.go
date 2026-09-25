@@ -21,7 +21,10 @@ var _ MappedNullable = &TaurusNetworkServiceAddPledgeCollateralBody{}
 type TaurusNetworkServiceAddPledgeCollateralBody struct {
 	// numeric; Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)
 	Amount *string `json:"amount,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TaurusNetworkServiceAddPledgeCollateralBody TaurusNetworkServiceAddPledgeCollateralBody
 
 // NewTaurusNetworkServiceAddPledgeCollateralBody instantiates a new TaurusNetworkServiceAddPledgeCollateralBody object
 // This constructor will assign default values to properties that have it defined,
@@ -85,7 +88,33 @@ func (o TaurusNetworkServiceAddPledgeCollateralBody) ToMap() (map[string]interfa
 	if !IsNil(o.Amount) {
 		toSerialize["amount"] = o.Amount
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TaurusNetworkServiceAddPledgeCollateralBody) UnmarshalJSON(data []byte) (err error) {
+	varTaurusNetworkServiceAddPledgeCollateralBody := _TaurusNetworkServiceAddPledgeCollateralBody{}
+
+	err = json.Unmarshal(data, &varTaurusNetworkServiceAddPledgeCollateralBody)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TaurusNetworkServiceAddPledgeCollateralBody(varTaurusNetworkServiceAddPledgeCollateralBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "amount")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTaurusNetworkServiceAddPledgeCollateralBody struct {

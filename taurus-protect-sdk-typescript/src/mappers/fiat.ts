@@ -2,15 +2,13 @@
  * Fiat provider mapper functions for converting OpenAPI DTOs to domain models.
  */
 
+import type { TgvalidatordFiatProviderEntity } from '../internal/openapi/models/TgvalidatordFiatProviderEntity';
 import type {
   FiatProvider,
   FiatProviderAccount,
   FiatProviderCounterpartyAccount,
+  FiatProviderEntity,
   FiatProviderOperation,
-  FiatProviderAccountResult,
-  FiatProviderCounterpartyAccountResult,
-  FiatProviderOperationResult,
-  FiatResponseCursor,
 } from '../models/fiat';
 import { currencyFromDto } from './currency';
 import { safeDate, safeMap, safeString } from './base';
@@ -155,70 +153,31 @@ export function fiatProviderOperationsFromDto(
 }
 
 /**
- * Maps a response cursor DTO to a FiatResponseCursor domain model.
+ * Maps a fiat provider entity row to a FiatProviderEntity domain model.
  */
-export function fiatResponseCursorFromDto(
-  dto: unknown
-): FiatResponseCursor | undefined {
+export function fiatProviderEntityFromDto(
+  dto: TgvalidatordFiatProviderEntity | null | undefined
+): FiatProviderEntity | undefined {
   if (!dto || typeof dto !== 'object') {
     return undefined;
   }
-
-  const d = dto as Record<string, unknown>;
   return {
-    currentPage: safeString(d.currentPage),
-    nextPage: safeString(d.nextPage),
-    hasMore: Boolean(d.hasMore ?? d.nextPage),
+    id: dto.id,
+    provider: dto.provider,
+    label: dto.label,
+    accountIdentifier: dto.accountIdentifier,
+    name: dto.name,
+    details: dto.details,
+    creationDate: dto.creationDate,
+    updateDate: dto.updateDate,
   };
 }
 
 /**
- * Maps a fiat provider accounts reply to a FiatProviderAccountResult.
+ * Maps an array of fiat provider entity rows to FiatProviderEntity domain models.
  */
-export function fiatProviderAccountResultFromDto(
-  dto: unknown
-): FiatProviderAccountResult {
-  if (!dto || typeof dto !== 'object') {
-    return { accounts: [] };
-  }
-
-  const d = dto as Record<string, unknown>;
-  return {
-    accounts: fiatProviderAccountsFromDto(d.result as unknown[]),
-    cursor: fiatResponseCursorFromDto(d.cursor),
-  };
-}
-
-/**
- * Maps a fiat provider counterparty accounts reply to a FiatProviderCounterpartyAccountResult.
- */
-export function fiatProviderCounterpartyAccountResultFromDto(
-  dto: unknown
-): FiatProviderCounterpartyAccountResult {
-  if (!dto || typeof dto !== 'object') {
-    return { accounts: [] };
-  }
-
-  const d = dto as Record<string, unknown>;
-  return {
-    accounts: fiatProviderCounterpartyAccountsFromDto(d.result as unknown[]),
-    cursor: fiatResponseCursorFromDto(d.cursor),
-  };
-}
-
-/**
- * Maps a fiat provider operations reply to a FiatProviderOperationResult.
- */
-export function fiatProviderOperationResultFromDto(
-  dto: unknown
-): FiatProviderOperationResult {
-  if (!dto || typeof dto !== 'object') {
-    return { operations: [] };
-  }
-
-  const d = dto as Record<string, unknown>;
-  return {
-    operations: fiatProviderOperationsFromDto(d.result as unknown[]),
-    cursor: fiatResponseCursorFromDto(d.cursor),
-  };
+export function fiatProviderEntitiesFromDto(
+  dtos: TgvalidatordFiatProviderEntity[] | null | undefined
+): FiatProviderEntity[] {
+  return safeMap(dtos, fiatProviderEntityFromDto);
 }

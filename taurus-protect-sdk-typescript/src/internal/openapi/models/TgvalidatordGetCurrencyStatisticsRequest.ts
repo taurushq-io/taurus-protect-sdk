@@ -33,7 +33,16 @@ export interface TgvalidatordGetCurrencyStatisticsRequest {
      * @memberof TgvalidatordGetCurrencyStatisticsRequest
      */
     currencies?: Array<TgvalidatordCurrencyFilter>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetCurrencyStatisticsRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetCurrencyStatisticsRequestWireKeys: ReadonlySet<string> = new Set(['currencies']);
 
 /**
  * Check if a given object implements the TgvalidatordGetCurrencyStatisticsRequest interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetCurrencyStatisticsRequestFromJSONTyped(json: any,
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetCurrencyStatisticsRequest = {
         
         'currencies': json['currencies'] == null ? undefined : ((json['currencies'] as Array<any>).map(TgvalidatordCurrencyFilterFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetCurrencyStatisticsRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetCurrencyStatisticsRequestToJSON(json: any): TgvalidatordGetCurrencyStatisticsRequest {
@@ -68,6 +87,7 @@ export function TgvalidatordGetCurrencyStatisticsRequestFromJSONTyped(json: any,
     return {
         
         'currencies': value['currencies'] == null ? undefined : ((value['currencies'] as Array<any>).map(TgvalidatordCurrencyFilterToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

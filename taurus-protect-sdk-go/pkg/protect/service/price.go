@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/internal/openapi"
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/cache"
@@ -53,24 +54,58 @@ func (s *PriceService) verifyPrices(ctx context.Context, prices []*model.Price) 
 	return helper.VerifyPrices(prices, rulesContainer)
 }
 
-// GetPrices retrieves all available currency prices.
-func (s *PriceService) GetPrices(ctx context.Context) (*model.GetPricesResult, error) {
-	resp, httpResp, err := s.api.PriceServiceGetPrices(ctx).Execute()
+// ListPrices retrieves one page of currency prices (PriceService_QueryPricesV2), each verified
+// against the PRICEUPDATER keys of the rules container. Continue with Page.NextCursor until
+// Page.HasMore is false.
+func (s *PriceService) ListPrices(ctx context.Context, opts *model.ListPricesOptions) (*model.ListPricesResult, error) {
+	if opts == nil {
+		opts = &model.ListPricesOptions{}
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, "", "")
+	if err != nil {
+		return nil, err
+	}
+
+	body := openapi.TgvalidatordQueryPricesV2Request{Cursor: window.body()}
+	if opts.OnlyPrimary {
+		onlyPrimary := true
+		body.OnlyPrimary = &onlyPrimary
+	}
+	if opts.SortOrder != "" {
+		body.SortOrder = &opts.SortOrder
+	}
+	// The currency filter is a oneof: from, fromTo or to.
+	switch {
+	case opts.FromCurrencyID != "" && len(opts.ToCurrencyIDs) > 0:
+		body.FromTo = &openapi.TgvalidatordCurrencyFromToFilter{
+			CurrencyFromId: &opts.FromCurrencyID,
+			CurrencyToIds:  opts.ToCurrencyIDs,
+		}
+	case opts.FromCurrencyID != "":
+		body.From = &openapi.TgvalidatordCurrencyFromFilter{CurrencyFromId: &opts.FromCurrencyID}
+	case len(opts.ToCurrencyIDs) > 0:
+		body.To = &openapi.TgvalidatordCurrencyToFilter{CurrencyToIds: opts.ToCurrencyIDs}
+	}
+
+	resp, httpResp, err := s.api.PriceServiceQueryPricesV2(ctx).Body(body).Execute()
 	if err != nil {
 		return nil, s.errMapper.MapError(err, httpResp)
 	}
 
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor})
+	if err != nil {
+		return nil, err
+	}
 	prices := mapper.PricesFromDTO(resp.Result)
 	if err := s.verifyPrices(ctx, prices); err != nil {
 		return nil, err
 	}
 
-	result := &model.GetPricesResult{
+	return &model.ListPricesResult{
 		BaseCurrency: safeString(resp.BaseCurrency),
 		Prices:       prices,
-	}
-
-	return result, nil
+		Page:         page,
+	}, nil
 }
 
 // Convert converts an amount from one currency to other currencies.
@@ -115,11 +150,12 @@ func (s *PriceService) GetPriceHistory(ctx context.Context, opts *model.GetPrice
 		return nil, fmt.Errorf("quote currency is required")
 	}
 
-	req := s.api.PriceServiceGetPricesHistory(ctx, opts.Base, opts.Quote)
-
-	if opts.Limit > 0 {
-		req = req.Limit(fmt.Sprintf("%d", opts.Limit))
+	// Price history cannot page: Limit is the number of newest daily points, up to a year.
+	limit, err := resolveSize("Limit", opts.Limit, model.MaxPriceHistoryLimit)
+	if err != nil {
+		return nil, err
 	}
+	req := s.api.PriceServiceGetPricesHistory(ctx, opts.Base, opts.Quote).Limit(strconv.FormatInt(limit, 10))
 
 	resp, httpResp, err := req.Execute()
 	if err != nil {
@@ -140,13 +176,14 @@ func (s *PriceService) ExportPriceHistory(ctx context.Context, opts *model.Expor
 		return nil, fmt.Errorf("options cannot be nil")
 	}
 
-	req := s.api.PriceServiceExportPricesHistory(ctx)
-
+	// The export cannot page and has no SDK maximum; the server bounds it.
+	limit, err := resolveSize("Limit", opts.Limit, 0)
+	if err != nil {
+		return nil, err
+	}
+	req := s.api.PriceServiceExportPricesHistory(ctx).Limit(strconv.FormatInt(limit, 10))
 	if len(opts.CurrencyPairs) > 0 {
 		req = req.CurrencyPairs(opts.CurrencyPairs)
-	}
-	if opts.Limit > 0 {
-		req = req.Limit(fmt.Sprintf("%d", opts.Limit))
 	}
 	if opts.Format != "" {
 		req = req.Format(opts.Format)

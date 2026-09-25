@@ -21,7 +21,10 @@ var _ MappedNullable = &InternalUserKeyContainer{}
 type InternalUserKeyContainer struct {
 	Value *string `json:"value,omitempty"`
 	CanBeStored *bool `json:"canBeStored,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _InternalUserKeyContainer InternalUserKeyContainer
 
 // NewInternalUserKeyContainer instantiates a new InternalUserKeyContainer object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o InternalUserKeyContainer) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.CanBeStored) {
 		toSerialize["canBeStored"] = o.CanBeStored
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *InternalUserKeyContainer) UnmarshalJSON(data []byte) (err error) {
+	varInternalUserKeyContainer := _InternalUserKeyContainer{}
+
+	err = json.Unmarshal(data, &varInternalUserKeyContainer)
+
+	if err != nil {
+		return err
+	}
+
+	*o = InternalUserKeyContainer(varInternalUserKeyContainer)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "value")
+		delete(additionalProperties, "canBeStored")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableInternalUserKeyContainer struct {

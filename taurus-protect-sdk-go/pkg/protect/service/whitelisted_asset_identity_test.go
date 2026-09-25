@@ -7,43 +7,62 @@ import (
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/model"
 )
 
-func TestAssetPagination(t *testing.T) {
+// The contracts list's next page starts at offset + limit: validatord skips rows it cannot
+// decode without giving up their SQL slot, so a short page is not the end of the list.
+func TestWhitelistedAssetPagination(t *testing.T) {
 	total := "250"
+	page := func(t *testing.T, total *string, served int, limit, offset int64) *model.Pagination {
+		t.Helper()
+		p, err := offsetPagination(rulePlusLimit, offsetWindow{limit: limit, offset: offset}, served, 0,
+			offsetReply{TotalItems: total})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return p
+	}
 
 	t.Run("more rows remain", func(t *testing.T) {
-		p := assetPagination(&total, 100, 0)
-		if p == nil || !p.HasMore || p.TotalItems != 250 {
-			t.Errorf("got %+v, want HasMore with TotalItems 250", p)
+		p := page(t, &total, 100, 100, 0)
+		if !p.HasMore || p.TotalItems != 250 || p.NextOffset != 100 {
+			t.Errorf("got %+v, want HasMore, TotalItems 250 and NextOffset 100", p)
+		}
+	})
+
+	t.Run("a short page is not the end", func(t *testing.T) {
+		p := page(t, &total, 97, 100, 0)
+		if !p.HasMore || p.NextOffset != 100 {
+			t.Errorf("got %+v, want HasMore with NextOffset 100: skipped rows keep their slot", p)
 		}
 	})
 
 	t.Run("last page", func(t *testing.T) {
-		p := assetPagination(&total, 100, 200)
-		if p == nil || p.HasMore {
+		p := page(t, &total, 50, 100, 200)
+		if p.HasMore {
 			t.Errorf("got %+v, want HasMore false", p)
 		}
 	})
 
-	t.Run("absent total yields no pagination", func(t *testing.T) {
-		if p := assetPagination(nil, 100, 0); p != nil {
-			t.Errorf("got %+v, want nil", p)
+	t.Run("an empty reply is a full empty page", func(t *testing.T) {
+		p := page(t, nil, 0, 100, 0)
+		want := model.Pagination{Limit: 100, Offset: 0, TotalItems: 0, NextOffset: 100, HasMore: false}
+		if *p != want {
+			t.Errorf("got %+v, want %+v", p, want)
 		}
 	})
 
 	t.Run("offset+limit cannot wrap into a false HasMore", func(t *testing.T) {
-		// The unsafe form (offset+limit < total) overflows to a negative here and
-		// reports another page that does not exist.
-		p := assetPagination(&total, 1, math.MaxInt64)
-		if p == nil || p.HasMore {
-			t.Errorf("got %+v, want HasMore false", p)
+		// The unsafe form (offset+limit) overflows to a negative here.
+		p := page(t, &total, 0, 1, math.MaxInt64)
+		if p.HasMore || p.NextOffset != math.MaxInt64 {
+			t.Errorf("got %+v, want HasMore false with a saturated NextOffset", p)
 		}
 	})
 
-	t.Run("unparseable total leaves the window without a count", func(t *testing.T) {
+	t.Run("an unparseable total is an error, not a zero count", func(t *testing.T) {
 		bad := "not-a-number"
-		p := assetPagination(&bad, 100, 0)
-		if p == nil || p.TotalItems != 0 || p.HasMore {
-			t.Errorf("got %+v, want a zero count and no HasMore", p)
+		if _, err := offsetPagination(rulePlusLimit, offsetWindow{limit: 100}, 0, 0,
+			offsetReply{TotalItems: &bad}); err == nil {
+			t.Error("a count silently read as 0 ends a walk early; it must be an error")
 		}
 	})
 }

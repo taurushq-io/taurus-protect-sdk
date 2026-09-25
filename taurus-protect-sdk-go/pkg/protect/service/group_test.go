@@ -231,15 +231,14 @@ func TestListGroupsOptions_Filters(t *testing.T) {
 func TestListGroupsResult_Fields(t *testing.T) {
 	result := &model.ListGroupsResult{
 		Groups:     nil,
-		TotalItems: 100,
-		Offset:     25,
+		Pagination: &model.Pagination{TotalItems: 100, Offset: 25},
 	}
 
-	if result.TotalItems != 100 {
-		t.Errorf("TotalItems = %v, want 100", result.TotalItems)
+	if result.Pagination.TotalItems != 100 {
+		t.Errorf("TotalItems = %v, want 100", result.Pagination.TotalItems)
 	}
-	if result.Offset != 25 {
-		t.Errorf("Offset = %v, want 25", result.Offset)
+	if result.Pagination.Offset != 25 {
+		t.Errorf("Offset = %v, want 25", result.Pagination.Offset)
 	}
 	if result.Groups != nil {
 		t.Errorf("Groups should be nil, got %v", result.Groups)

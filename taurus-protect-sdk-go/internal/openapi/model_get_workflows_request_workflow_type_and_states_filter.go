@@ -23,7 +23,10 @@ type GetWorkflowsRequestWorkflowTypeAndStatesFilter struct {
 	WorkflowType *string `json:"workflowType,omitempty"`
 	// Filters workflows by state, applicable only when a specific workflow type is set
 	States []string `json:"states,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _GetWorkflowsRequestWorkflowTypeAndStatesFilter GetWorkflowsRequestWorkflowTypeAndStatesFilter
 
 // NewGetWorkflowsRequestWorkflowTypeAndStatesFilter instantiates a new GetWorkflowsRequestWorkflowTypeAndStatesFilter object
 // This constructor will assign default values to properties that have it defined,
@@ -122,7 +125,34 @@ func (o GetWorkflowsRequestWorkflowTypeAndStatesFilter) ToMap() (map[string]inte
 	if !IsNil(o.States) {
 		toSerialize["states"] = o.States
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *GetWorkflowsRequestWorkflowTypeAndStatesFilter) UnmarshalJSON(data []byte) (err error) {
+	varGetWorkflowsRequestWorkflowTypeAndStatesFilter := _GetWorkflowsRequestWorkflowTypeAndStatesFilter{}
+
+	err = json.Unmarshal(data, &varGetWorkflowsRequestWorkflowTypeAndStatesFilter)
+
+	if err != nil {
+		return err
+	}
+
+	*o = GetWorkflowsRequestWorkflowTypeAndStatesFilter(varGetWorkflowsRequestWorkflowTypeAndStatesFilter)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "workflowType")
+		delete(additionalProperties, "states")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableGetWorkflowsRequestWorkflowTypeAndStatesFilter struct {

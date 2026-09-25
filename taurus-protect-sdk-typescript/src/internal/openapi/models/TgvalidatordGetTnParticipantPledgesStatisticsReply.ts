@@ -33,7 +33,16 @@ export interface TgvalidatordGetTnParticipantPledgesStatisticsReply {
      * @memberof TgvalidatordGetTnParticipantPledgesStatisticsReply
      */
     result?: TgvalidatordTnPledgeStatisticsTnParticipant;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetTnParticipantPledgesStatisticsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetTnParticipantPledgesStatisticsReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetTnParticipantPledgesStatisticsReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetTnParticipantPledgesStatisticsReplyFromJSONTyped(
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetTnParticipantPledgesStatisticsReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordTnPledgeStatisticsTnParticipantFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetTnParticipantPledgesStatisticsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetTnParticipantPledgesStatisticsReplyToJSON(json: any): TgvalidatordGetTnParticipantPledgesStatisticsReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetTnParticipantPledgesStatisticsReplyFromJSONTyped(
     return {
         
         'result': TgvalidatordTnPledgeStatisticsTnParticipantToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

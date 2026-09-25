@@ -49,7 +49,16 @@ export interface TgvalidatordActionAttribute {
      * @memberof TgvalidatordActionAttribute
      */
     contentType?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordActionAttribute
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordActionAttributeWireKeys: ReadonlySet<string> = new Set(['id', 'tenantId', 'key', 'value', 'contentType']);
 
 /**
  * Check if a given object implements the TgvalidatordActionAttribute interface.
@@ -66,7 +75,7 @@ export function TgvalidatordActionAttributeFromJSONTyped(json: any, ignoreDiscri
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordActionAttribute = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'tenantId': json['tenantId'] == null ? undefined : json['tenantId'],
@@ -74,6 +83,16 @@ export function TgvalidatordActionAttributeFromJSONTyped(json: any, ignoreDiscri
         'value': json['value'] == null ? undefined : json['value'],
         'contentType': json['contentType'] == null ? undefined : json['contentType'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordActionAttributeWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordActionAttributeToJSON(json: any): TgvalidatordActionAttribute {
@@ -92,6 +111,7 @@ export function TgvalidatordActionAttributeFromJSONTyped(json: any, ignoreDiscri
         'key': value['key'],
         'value': value['value'],
         'contentType': value['contentType'],
+        ...value['additionalProperties'],
     };
 }
 

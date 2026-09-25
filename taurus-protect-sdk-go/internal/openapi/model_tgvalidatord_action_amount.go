@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordActionAmount{}
 type TgvalidatordActionAmount struct {
 	Kind *string `json:"kind,omitempty"`
 	CryptoAmount *string `json:"cryptoAmount,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordActionAmount TgvalidatordActionAmount
 
 // NewTgvalidatordActionAmount instantiates a new TgvalidatordActionAmount object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordActionAmount) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.CryptoAmount) {
 		toSerialize["cryptoAmount"] = o.CryptoAmount
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordActionAmount) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordActionAmount := _TgvalidatordActionAmount{}
+
+	err = json.Unmarshal(data, &varTgvalidatordActionAmount)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordActionAmount(varTgvalidatordActionAmount)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "kind")
+		delete(additionalProperties, "cryptoAmount")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordActionAmount struct {

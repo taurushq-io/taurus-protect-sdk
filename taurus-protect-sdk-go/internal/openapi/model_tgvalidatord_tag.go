@@ -24,7 +24,10 @@ type TgvalidatordTag struct {
 	Value *string `json:"value,omitempty"`
 	CreationDate *time.Time `json:"creationDate,omitempty"`
 	Color *string `json:"color,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTag TgvalidatordTag
 
 // NewTgvalidatordTag instantiates a new TgvalidatordTag object
 // This constructor will assign default values to properties that have it defined,
@@ -193,7 +196,36 @@ func (o TgvalidatordTag) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Color) {
 		toSerialize["color"] = o.Color
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTag) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTag := _TgvalidatordTag{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTag)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTag(varTgvalidatordTag)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "value")
+		delete(additionalProperties, "creationDate")
+		delete(additionalProperties, "color")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTag struct {

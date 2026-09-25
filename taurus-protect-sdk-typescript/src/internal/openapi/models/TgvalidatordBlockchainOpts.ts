@@ -33,7 +33,16 @@ export interface TgvalidatordBlockchainOpts {
      * @memberof TgvalidatordBlockchainOpts
      */
     xlm?: TgvalidatordXLMOpts;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordBlockchainOpts
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordBlockchainOptsWireKeys: ReadonlySet<string> = new Set(['xlm']);
 
 /**
  * Check if a given object implements the TgvalidatordBlockchainOpts interface.
@@ -50,10 +59,20 @@ export function TgvalidatordBlockchainOptsFromJSONTyped(json: any, ignoreDiscrim
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordBlockchainOpts = {
         
         'xlm': json['xlm'] == null ? undefined : TgvalidatordXLMOptsFromJSON(json['xlm']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordBlockchainOptsWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordBlockchainOptsToJSON(json: any): TgvalidatordBlockchainOpts {
@@ -68,6 +87,7 @@ export function TgvalidatordBlockchainOptsFromJSONTyped(json: any, ignoreDiscrim
     return {
         
         'xlm': TgvalidatordXLMOptsToJSON(value['xlm']),
+        ...value['additionalProperties'],
     };
 }
 

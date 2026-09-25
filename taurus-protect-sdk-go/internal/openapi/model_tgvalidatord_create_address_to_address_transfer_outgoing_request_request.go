@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -51,6 +50,7 @@ type TgvalidatordCreateAddressToAddressTransferOutgoingRequestRequest struct {
 	// A memo can be specified if the destination is a whitelisted address on a blockchain supporting memos.
 	DestinationAddressMemo *string `json:"destinationAddressMemo,omitempty"`
 	Opts *TgvalidatordBlockchainOpts `json:"opts,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateAddressToAddressTransferOutgoingRequestRequest TgvalidatordCreateAddressToAddressTransferOutgoingRequestRequest
@@ -659,6 +659,11 @@ func (o TgvalidatordCreateAddressToAddressTransferOutgoingRequestRequest) ToMap(
 	if !IsNil(o.Opts) {
 		toSerialize["opts"] = o.Opts
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -687,15 +692,36 @@ func (o *TgvalidatordCreateAddressToAddressTransferOutgoingRequestRequest) Unmar
 
 	varTgvalidatordCreateAddressToAddressTransferOutgoingRequestRequest := _TgvalidatordCreateAddressToAddressTransferOutgoingRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateAddressToAddressTransferOutgoingRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateAddressToAddressTransferOutgoingRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateAddressToAddressTransferOutgoingRequestRequest(varTgvalidatordCreateAddressToAddressTransferOutgoingRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "currency")
+		delete(additionalProperties, "fromAddress")
+		delete(additionalProperties, "toAddress")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "gasLimit")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "useUnconfirmedFunds")
+		delete(additionalProperties, "feePaidByReceiver")
+		delete(additionalProperties, "transactionComment")
+		delete(additionalProperties, "useAllFunds")
+		delete(additionalProperties, "feePayerId")
+		delete(additionalProperties, "extendedAmount")
+		delete(additionalProperties, "transactionReference")
+		delete(additionalProperties, "externalRequestId")
+		delete(additionalProperties, "destinationAddressMemo")
+		delete(additionalProperties, "opts")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

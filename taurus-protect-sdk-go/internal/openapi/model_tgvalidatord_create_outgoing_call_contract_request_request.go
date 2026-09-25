@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -37,6 +36,7 @@ type TgvalidatordCreateOutgoingCallContractRequestRequest struct {
 	TransactionReference *string `json:"transactionReference,omitempty"`
 	// Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingCallContractRequestRequest TgvalidatordCreateOutgoingCallContractRequestRequest
@@ -496,6 +496,11 @@ func (o TgvalidatordCreateOutgoingCallContractRequestRequest) ToMap() (map[strin
 	if !IsNil(o.ExternalRequestId) {
 		toSerialize["externalRequestId"] = o.ExternalRequestId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -525,15 +530,32 @@ func (o *TgvalidatordCreateOutgoingCallContractRequestRequest) UnmarshalJSON(dat
 
 	varTgvalidatordCreateOutgoingCallContractRequestRequest := _TgvalidatordCreateOutgoingCallContractRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingCallContractRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingCallContractRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingCallContractRequestRequest(varTgvalidatordCreateOutgoingCallContractRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "toWhitelistedAddressId")
+		delete(additionalProperties, "method")
+		delete(additionalProperties, "gasLimit")
+		delete(additionalProperties, "gasPriceLimit")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "contractType")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "feePayerId")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "call")
+		delete(additionalProperties, "transactionReference")
+		delete(additionalProperties, "externalRequestId")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

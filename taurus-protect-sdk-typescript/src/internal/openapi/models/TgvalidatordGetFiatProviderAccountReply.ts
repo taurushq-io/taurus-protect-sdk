@@ -33,7 +33,16 @@ export interface TgvalidatordGetFiatProviderAccountReply {
      * @memberof TgvalidatordGetFiatProviderAccountReply
      */
     result?: TgvalidatordFiatProviderAccount;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetFiatProviderAccountReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetFiatProviderAccountReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetFiatProviderAccountReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetFiatProviderAccountReplyFromJSONTyped(json: any, 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetFiatProviderAccountReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordFiatProviderAccountFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetFiatProviderAccountReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetFiatProviderAccountReplyToJSON(json: any): TgvalidatordGetFiatProviderAccountReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetFiatProviderAccountReplyFromJSONTyped(json: any, 
     return {
         
         'result': TgvalidatordFiatProviderAccountToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

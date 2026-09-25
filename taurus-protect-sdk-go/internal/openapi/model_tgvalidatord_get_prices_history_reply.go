@@ -22,7 +22,10 @@ type TgvalidatordGetPricesHistoryReply struct {
 	Result []TgvalidatordPricesHistoryPoint `json:"result,omitempty"`
 	// Period between the points of the history. See https://golang.org/pkg/time/#Duration.String for the format.
 	Period *string `json:"period,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetPricesHistoryReply TgvalidatordGetPricesHistoryReply
 
 // NewTgvalidatordGetPricesHistoryReply instantiates a new TgvalidatordGetPricesHistoryReply object
 // This constructor will assign default values to properties that have it defined,
@@ -121,7 +124,34 @@ func (o TgvalidatordGetPricesHistoryReply) ToMap() (map[string]interface{}, erro
 	if !IsNil(o.Period) {
 		toSerialize["period"] = o.Period
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetPricesHistoryReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetPricesHistoryReply := _TgvalidatordGetPricesHistoryReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetPricesHistoryReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetPricesHistoryReply(varTgvalidatordGetPricesHistoryReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "result")
+		delete(additionalProperties, "period")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetPricesHistoryReply struct {

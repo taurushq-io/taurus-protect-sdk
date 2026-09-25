@@ -31,7 +31,10 @@ type RequestSignedRequest struct {
 	BroadcastDate *time.Time `json:"broadcastDate,omitempty"`
 	ConfirmationDate *time.Time `json:"confirmationDate,omitempty"`
 	Attributes []TgvalidatordSignedRequestAttribute `json:"attributes,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _RequestSignedRequest RequestSignedRequest
 
 // NewRequestSignedRequest instantiates a new RequestSignedRequest object
 // This constructor will assign default values to properties that have it defined,
@@ -445,7 +448,43 @@ func (o RequestSignedRequest) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Attributes) {
 		toSerialize["attributes"] = o.Attributes
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *RequestSignedRequest) UnmarshalJSON(data []byte) (err error) {
+	varRequestSignedRequest := _RequestSignedRequest{}
+
+	err = json.Unmarshal(data, &varRequestSignedRequest)
+
+	if err != nil {
+		return err
+	}
+
+	*o = RequestSignedRequest(varRequestSignedRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "signedRequest")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "hash")
+		delete(additionalProperties, "block")
+		delete(additionalProperties, "details")
+		delete(additionalProperties, "creationDate")
+		delete(additionalProperties, "updateDate")
+		delete(additionalProperties, "broadcastDate")
+		delete(additionalProperties, "confirmationDate")
+		delete(additionalProperties, "attributes")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableRequestSignedRequest struct {

@@ -82,6 +82,17 @@ describe('userFromDto', () => {
   });
 });
 
+describe('userFromDto memberships', () => {
+  it('should read group IDs from membership objects, as validatord sends them', () => {
+    const result = userFromDto({
+      id: '8',
+      groups: [{ id: '2', externalGroupId: 'team1', enforcedInRules: true }],
+    });
+    expect(result!.groupIds).toEqual(['2']);
+    expect(result!.groups).toEqual([{ id: '2', externalGroupId: 'team1', enforcedInRules: true }]);
+  });
+});
+
 describe('usersFromDto', () => {
   it('should map array of DTOs', () => {
     const dtos = [

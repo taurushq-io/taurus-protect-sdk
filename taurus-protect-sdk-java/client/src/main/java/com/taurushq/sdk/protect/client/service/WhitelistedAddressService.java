@@ -21,6 +21,7 @@ import com.taurushq.sdk.protect.client.model.ApiException;
 import com.taurushq.sdk.protect.client.model.ContainerIntegrityException;
 import com.taurushq.sdk.protect.client.model.ExcludedWhitelistedAddress;
 import com.taurushq.sdk.protect.client.model.IntegrityException;
+import com.taurushq.sdk.protect.client.model.Pagination;
 import com.taurushq.sdk.protect.client.model.RuleUserSignature;
 import com.taurushq.sdk.protect.client.model.SignedWhitelistedAddressEnvelope;
 import com.taurushq.sdk.protect.client.model.WhitelistException;
@@ -702,103 +703,82 @@ public class WhitelistedAddressService {
     }
 
     /**
-     * Gets a list of whitelisted address envelopes with pagination.
+     * Gets a page of whitelisted addresses, verified.
      * Uses normalized rules containers by default for better performance.
      *
-     * @param limit  the maximum number of results (max 100)
-     * @param offset the offset for pagination
-     * @return the list of signed whitelisted address envelopes
+     * @param limit  the page size, 0 for the default ({@link Pagination#DEFAULT_PAGE_SIZE})
+     * @param offset the offset, 0 for the first page
+     * @return the verified envelopes, the rows withheld, and the page's pagination
      * @throws ApiException       if the API call fails
      * @throws WhitelistException if verification fails
      */
-    public List<SignedWhitelistedAddressEnvelope> getWhitelistedAddresses(
-            int limit, int offset) throws ApiException, WhitelistException {
+    public WhitelistedAddressListResult getWhitelistedAddresses(
+            int limit, long offset) throws ApiException, WhitelistException {
         return getWhitelistedAddresses(limit, offset, null, null, true);
     }
 
     /**
-     * Gets a list of whitelisted address envelopes filtered by blockchain.
+     * Gets a page of whitelisted addresses filtered by blockchain, verified.
      * Uses normalized rules containers by default for better performance.
      *
-     * @param limit      the maximum number of results (max 100)
-     * @param offset     the offset for pagination
+     * @param limit      the page size, 0 for the default
+     * @param offset     the offset, 0 for the first page
      * @param blockchain filter by blockchain (e.g., "ETH", "BTC")
-     * @return the list of signed whitelisted address envelopes
+     * @return the verified envelopes, the rows withheld, and the page's pagination
      * @throws ApiException       if the API call fails
      * @throws WhitelistException if verification fails
      */
-    public List<SignedWhitelistedAddressEnvelope> getWhitelistedAddresses(
-            int limit, int offset, String blockchain) throws ApiException, WhitelistException {
+    public WhitelistedAddressListResult getWhitelistedAddresses(
+            int limit, long offset, String blockchain) throws ApiException, WhitelistException {
         return getWhitelistedAddresses(limit, offset, blockchain, null, true);
     }
 
     /**
-     * Gets a list of whitelisted address envelopes filtered by blockchain and network.
+     * Gets a page of whitelisted addresses filtered by blockchain and network, verified.
      * Uses normalized rules containers by default for better performance.
      *
-     * @param limit      the maximum number of results (max 100)
-     * @param offset     the offset for pagination
+     * @param limit      the page size, 0 for the default
+     * @param offset     the offset, 0 for the first page
      * @param blockchain filter by blockchain (e.g., "ETH", "BTC")
      * @param network    filter by network (e.g., "mainnet", "testnet")
-     * @return the list of signed whitelisted address envelopes
+     * @return the verified envelopes, the rows withheld, and the page's pagination
      * @throws ApiException       if the API call fails
      * @throws WhitelistException if verification fails
      */
-    public List<SignedWhitelistedAddressEnvelope> getWhitelistedAddresses(
-            int limit, int offset, String blockchain, String network)
+    public WhitelistedAddressListResult getWhitelistedAddresses(
+            int limit, long offset, String blockchain, String network)
             throws ApiException, WhitelistException {
         return getWhitelistedAddresses(limit, offset, blockchain, network, true);
     }
 
     /**
-     * Gets a list of whitelisted address envelopes filtered by blockchain and network.
+     * Gets a page of whitelisted addresses filtered by blockchain and network, verified.
+     * <p>
+     * Rows that fail verification are withheld and reported in
+     * {@link WhitelistedAddressListResult#getExcludedUnverified()} rather than failing the
+     * call; the page total is reduced by them.
      *
-     * @param limit                      the maximum number of results (max 100)
-     * @param offset                     the offset for pagination
+     * @param limit                      the page size, 0 for the default
+     * @param offset                     the offset, 0 for the first page
      * @param blockchain                 filter by blockchain (e.g., "ETH", "BTC")
      * @param network                    filter by network (e.g., "mainnet", "testnet")
      * @param rulesContainerNormalized   if true, caches rules containers by hash to avoid
      *                                   redundant verification of identical containers
-     * @return the list of signed whitelisted address envelopes
+     * @return the verified envelopes, the rows withheld, and the page's pagination
      * @throws ApiException       if the API call fails
      * @throws WhitelistException if verification fails
      */
-    public List<SignedWhitelistedAddressEnvelope> getWhitelistedAddresses(
-            int limit, int offset, String blockchain, String network,
-            boolean rulesContainerNormalized) throws ApiException, WhitelistException {
-        return getWhitelistedAddressesWithExclusions(
-                limit, offset, blockchain, network, rulesContainerNormalized).getEnvelopes();
-    }
-
-    /**
-     * Same query as {@link #getWhitelistedAddresses(int, int, String, String, boolean)},
-     * but also returns the rows that were dropped for failing verification.
-     * <p>
-     * An overload rather than a changed return type, so existing callers keep compiling.
-     * Prefer this one: excluded rows are otherwise only written to the SDK's logger,
-     * which a caller cannot read, and a filtered page is then indistinguishable from a
-     * complete one.
-     *
-     * @param limit                    the maximum number of results (max 100)
-     * @param offset                   the offset for pagination
-     * @param blockchain               filter by blockchain (e.g., "ETH", "BTC")
-     * @param network                  filter by network (e.g., "mainnet", "testnet")
-     * @param rulesContainerNormalized if true, caches rules containers by hash
-     * @return the verified envelopes plus the rows excluded for failing verification
-     * @throws ApiException       if the API call fails
-     * @throws WhitelistException if verification fails
-     */
-    public WhitelistedAddressListResult getWhitelistedAddressesWithExclusions(
-            int limit, int offset, String blockchain, String network,
+    public WhitelistedAddressListResult getWhitelistedAddresses(
+            int limit, long offset, String blockchain, String network,
             boolean rulesContainerNormalized) throws ApiException, WhitelistException {
         return listVerified(limit, offset, blockchain, network, rulesContainerNormalized,
                 null, null);
     }
 
     /**
-     * The one call into the normalized list endpoint, so every reader of it — the public
-     * page, and the approval re-read — goes through the same row-to-container label
-     * verification and the same lenient per-row exclusion.
+     * One verified page of the normalized list endpoint: the public page's reader, with the
+     * same lenient per-row exclusion as every list path. The by-id re-read goes through
+     * {@link #verifiedEnvelopesById}; both fetch through {@link #fetchPage}.
      *
      * <p>Seven parameters, one under {@code ParameterNumber max}: an eighth filter needs an
      * options object, not another positional argument.
@@ -816,14 +796,99 @@ public class WhitelistedAddressService {
      * @throws WhitelistException if verification fails
      */
     private WhitelistedAddressListResult listVerified(
-            final int limit, final int offset, final String blockchain, final String network,
+            final int limit, final long offset, final String blockchain, final String network,
+            final boolean rulesContainerNormalized, final List<String> ids,
+            final Boolean includeForApproval) throws ApiException, WhitelistException {
+        final int size = PagedOperation.WHITELISTED_ADDRESSES.resolveSize("limit", limit);
+        final long from = Pagination.resolveOffset("offset", offset);
+        FetchedPage page = fetchPage(size, from, blockchain, network, rulesContainerNormalized,
+                ids, includeForApproval);
+
+        // rows -> verify -+- ok    -> returned
+        //                  +- fails -> excluded + logged, list survives
+        //
+        // One unverifiable row used to fail the whole call, which took down the
+        // whitelist for every consumer -- and listing is how an operator would
+        // find the bad row, so the failure hid its own cause. Excluding stays
+        // fail-closed: an omitted destination cannot be selected.
+        return verifiedAddresses(page.rows, page.containers,
+                PagedOperation.WHITELISTED_ADDRESSES, size, from, page.totalItems);
+    }
+
+    /**
+     * Re-reads whitelisted addresses by id through the verifying normalized list, at most
+     * {@link Pagination#MAX_PAGE_SIZE} ids per request.
+     *
+     * <p>Lenient per row, like every list path, but WITHOUT the none-survived abort: the
+     * caller judges the rows it asked for, so a request whose rows all fail reports them in
+     * {@code failures} instead. A rules container this SDK cannot interpret, or whose label
+     * does not match its bytes, still fails the call.
+     *
+     * @param ids                the ids, in the order to request them
+     * @param includeForApproval include rows still pending approval, or null for the
+     *                           default list
+     * @param failures           receives every returned row that did not verify
+     * @return the verified envelopes by id
+     * @throws ApiException       if a request fails
+     * @throws WhitelistException if a response-level rules container fails verification
+     */
+    Map<String, SignedWhitelistedAddressEnvelope> verifiedEnvelopesById(
+            final List<String> ids, final Boolean includeForApproval,
+            final List<ExcludedWhitelistedAddress> failures) throws ApiException, WhitelistException {
+        Map<String, SignedWhitelistedAddressEnvelope> byId = new HashMap<>();
+        for (int from = 0; from < ids.size(); from += Pagination.MAX_PAGE_SIZE) {
+            List<String> chunk = ids.subList(from, Math.min(ids.size(), from + Pagination.MAX_PAGE_SIZE));
+            FetchedPage page = fetchPage(chunk.size(), 0, null, null, true, chunk, includeForApproval);
+            for (SignedWhitelistedAddressEnvelope envelope
+                    : verifyRows(page.rows, page.containers, failures)) {
+                byId.put(String.valueOf(envelope.getId()), envelope);
+            }
+        }
+        return byId;
+    }
+
+    /**
+     * One page of the normalized list: its rows, the response-level containers they may
+     * reference (label recomputed, SuperAdmin-verified), and the server total.
+     */
+    private static final class FetchedPage {
+        private final List<TgvalidatordSignedWhitelistedAddressEnvelope> rows;
+        private final Map<String, DecodedRulesContainer> containers;
+        private final String totalItems;
+
+        FetchedPage(final List<TgvalidatordSignedWhitelistedAddressEnvelope> rows,
+                    final Map<String, DecodedRulesContainer> containers, final String totalItems) {
+            this.rows = rows;
+            this.containers = containers;
+            this.totalItems = totalItems;
+        }
+    }
+
+    /**
+     * The one call into the normalized list endpoint, so every reader of it — the public
+     * page, the approval re-read and the asset-holders re-read — goes through the same
+     * row-to-container label verification.
+     *
+     * @param size                     the page size to send
+     * @param from                     the offset, 0 for none
+     * @param blockchain               filter by blockchain, or null
+     * @param network                  filter by network, or null
+     * @param rulesContainerNormalized whether containers arrive response-level
+     * @param ids                      filter by specific ids, or null
+     * @param includeForApproval       include rows still pending approval, or null
+     * @return the rows and their verified containers
+     * @throws ApiException       if the API call fails
+     * @throws WhitelistException if a response-level container fails verification
+     */
+    private FetchedPage fetchPage(
+            final int size, final long from, final String blockchain, final String network,
             final boolean rulesContainerNormalized, final List<String> ids,
             final Boolean includeForApproval) throws ApiException, WhitelistException {
         try {
             TgvalidatordGetSignedWhitelistedAddressEnvelopesReply reply =
                     whitelistedAddressService.whitelistServiceGetWhitelistedAddresses(
-                            String.valueOf(limit),
-                            String.valueOf(offset),
+                            String.valueOf(size),
+                            from == 0 ? null : String.valueOf(from),
                             null,       // exchangeAccountId
                             null,       // addressType
                             null,       // query
@@ -849,9 +914,8 @@ public class WhitelistedAddressService {
                             null, null, null, null, null, null, null, null,
                             null, null, null, null);
 
-            if (reply.getResult() == null) {
-                return new WhitelistedAddressListResult(new ArrayList<>(), new ArrayList<>());
-            }
+            List<TgvalidatordSignedWhitelistedAddressEnvelope> rows = reply.getResult() == null
+                    ? Collections.emptyList() : reply.getResult();
 
             Map<String, DecodedRulesContainer> rulesContainerCache = new HashMap<>();
 
@@ -891,17 +955,7 @@ public class WhitelistedAddressService {
                     rulesContainerCache.put(hashContainer.getHash(), decoded);
                 }
             }
-
-            // rows -> verify -+- ok    -> returned
-            //                  +- fails -> excluded + logged, list survives
-            //
-            // One unverifiable row used to fail the whole call, which took down the
-            // whitelist for every consumer -- and listing is how an operator would
-            // find the bad row, so the failure hid its own cause. Excluding stays
-            // fail-closed: an omitted destination cannot be selected.
-            return verifiedAddresses(
-                    reply.getResult(), rulesContainerCache, reply.getTotalItems());
-
+            return new FetchedPage(rows, rulesContainerCache, reply.getTotalItems());
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
@@ -909,15 +963,15 @@ public class WhitelistedAddressService {
 
     /**
      * Gets a page of whitelisted addresses awaiting approval, verified exactly as
-     * {@link #getWhitelistedAddressesWithExclusions} is.
+     * {@link #getWhitelistedAddresses(int, long, String, String, boolean)} is.
      *
      * <p>Both this endpoint and {@link #approveWhitelistedAddresses} are generated in
      * all four SDK clients and were wrapped by none of them, so the rows an approver
      * reads before whitelisting a destination were not reachable through the SDK at all
      * — verified or not.
      *
-     * @param limit                      the maximum number of results
-     * @param offset                     the offset for pagination
+     * @param limit                      the page size, 0 for the default
+     * @param offset                     the offset, 0 for the first page
      * @param ids                        filter by specific ids, or null
      * @param includeAlreadySignedByUser include rows the caller has already signed,
      *                                   which is how an approver tells "waiting for me"
@@ -927,14 +981,16 @@ public class WhitelistedAddressService {
      * @throws WhitelistException if no row survived verification
      */
     public WhitelistedAddressListResult getWhitelistedAddressesForApproval(
-            final int limit, final int offset, final List<String> ids,
+            final int limit, final long offset, final List<String> ids,
             final Boolean includeAlreadySignedByUser)
             throws ApiException, WhitelistException {
+        final int size = PagedOperation.WHITELISTED_ADDRESSES_FOR_APPROVAL.resolveSize("limit", limit);
+        final long from = Pagination.resolveOffset("offset", offset);
         try {
             TgvalidatordGetSignedWhitelistedAddressEnvelopesReply reply =
                     whitelistedAddressService.whitelistServiceGetWhitelistedAddressesForApproval(
-                            String.valueOf(limit),
-                            String.valueOf(offset),
+                            String.valueOf(size),
+                            from == 0 ? null : String.valueOf(from),
                             ids,
                             null,       // blockchain
                             null,       // addressType
@@ -942,14 +998,13 @@ public class WhitelistedAddressService {
                             null,       // network
                             includeAlreadySignedByUser);
 
-            if (reply.getResult() == null) {
-                return new WhitelistedAddressListResult(new ArrayList<>(), new ArrayList<>());
-            }
+            List<TgvalidatordSignedWhitelistedAddressEnvelope> rows = reply.getResult() == null
+                    ? Collections.emptyList() : reply.getResult();
 
             // This endpoint has no normalized-container mode, so the per-row containers
             // are used and the cache starts empty.
-            return verifiedAddresses(
-                    reply.getResult(), new HashMap<>(), reply.getTotalItems());
+            return verifiedAddresses(rows, new HashMap<>(),
+                    PagedOperation.WHITELISTED_ADDRESSES_FOR_APPROVAL, size, from, reply.getTotalItems());
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
@@ -1026,21 +1081,21 @@ public class WhitelistedAddressService {
         List<String> idStrings =
                 sorted.stream().map(String::valueOf).collect(Collectors.toList());
 
-        // ONE id-filtered page through the verifying NORMALIZED path, not one GET per id.
+        // Id-filtered pages through the verifying NORMALIZED path, not one GET per id, in
+        // chunks of at most MAX_PAGE_SIZE ids so no read asks for an oversized page.
         // includeForApproval is required: the rows being approved are pending, so the
         // default list omits them.
-        Map<String, SignedWhitelistedAddressEnvelope> byId = new HashMap<>();
-        for (SignedWhitelistedAddressEnvelope envelope
-                : listVerified(idStrings.size(), 0, null, null, true, idStrings, Boolean.TRUE)
-                        .getEnvelopes()) {
-            if (envelope != null) {
-                byId.put(String.valueOf(envelope.getId()), envelope);
-            }
+        List<ExcludedWhitelistedAddress> failures = new ArrayList<>();
+        Map<String, SignedWhitelistedAddressEnvelope> byId =
+                verifiedEnvelopesById(idStrings, Boolean.TRUE, failures);
+        Map<String, String> failureReasons = new HashMap<>();
+        for (ExcludedWhitelistedAddress failure : failures) {
+            failureReasons.put(failure.getId(), failure.getReason());
         }
 
         List<String> hashes = new ArrayList<>(idStrings.size());
         for (Long id : sorted) {
-            hashes.add(pinnedHashOf(selection, byId, id));
+            hashes.add(pinnedHashOf(selection, byId, failureReasons, id));
         }
 
         String toSign = GSON.toJson(hashes);
@@ -1077,22 +1132,26 @@ public class WhitelistedAddressService {
      * variant would be rejected server-side. Verification must clear the row first — that
      * is what the re-read is for — but the value signed is the row's current hash.
      *
-     * @param selection the reviewed pin
-     * @param byId      the verified re-read, keyed by id string
-     * @param id        the row id
+     * @param selection      the reviewed pin
+     * @param byId           the verified re-read, keyed by id string
+     * @param failureReasons why each re-read row that failed verification did, by id string
+     * @param id             the row id
      * @return the current metadata hash of a row that matches its pin
      * @throws IntegrityException if the row is absent, has no hash, was not reviewed, or
      *                            changed since review
      */
     private static String pinnedHashOf(final WhitelistedAddressApproval selection,
                                        final Map<String, SignedWhitelistedAddressEnvelope> byId,
+                                       final Map<String, String> failureReasons,
                                        final long id) {
         SignedWhitelistedAddressEnvelope envelope = byId.get(String.valueOf(id));
         if (envelope == null) {
             // Excluded, or simply absent. Either way a page that omits a row must not
             // become an approval of fewer rows than the caller asked for.
-            throw new IntegrityException(String.format(
-                    "refusing to sign: address %d was not returned by the verified read", id));
+            String reason = failureReasons.get(String.valueOf(id));
+            throw new IntegrityException(reason == null
+                    ? String.format("refusing to sign: address %d was not returned by the verified read", id)
+                    : String.format("refusing to sign: address %d failed verification: %s", id, reason));
         }
         if (envelope.getMetadata() == null
                 || Strings.isNullOrEmpty(envelope.getMetadata().getHash())) {
@@ -1131,7 +1190,7 @@ public class WhitelistedAddressService {
      * <p>LENIENT per row, but rows-returned-but-none-surviving aborts the whole call: it
      * is systemic, and an empty list would look identical to an empty whitelist.
      *
-     * <p>Shared by {@code getWhitelistedAddressesWithExclusions} and
+     * <p>Shared by {@code getWhitelistedAddresses} and
      * {@code getWhitelistedAddressesForApproval}. The for-approval endpoint had no
      * verified reader at all, and duplicating this loop into a second one is precisely
      * how the list paths drifted from {@code getWhitelistedAddress} in the first place.
@@ -1140,19 +1199,55 @@ public class WhitelistedAddressService {
      *
      * @param rows               the DTO rows
      * @param rulesContainerCache pre-verified containers by hash, may be empty
-     * @return the verified envelopes and the withheld rows
+     * @param op                 the list operation, which decides the next-offset rule
+     * @param limit              the page size sent
+     * @param offset             the offset sent
+     * @param serverTotalItems   the reply's total as received
+     * @return the verified envelopes, the withheld rows, and the page's pagination
      * @throws WhitelistException if no row survived
      */
     WhitelistedAddressListResult verifiedAddresses(
             final List<TgvalidatordSignedWhitelistedAddressEnvelope> rows,
             final Map<String, DecodedRulesContainer> rulesContainerCache,
+            final PagedOperation op, final int limit, final long offset,
             final String serverTotalItems)
             throws WhitelistException {
-        List<SignedWhitelistedAddressEnvelope> envelopes = new ArrayList<>();
-        int rowCount = rows.size();
-        String firstFailure = null;
         List<ExcludedWhitelistedAddress> excluded = new ArrayList<>();
+        List<SignedWhitelistedAddressEnvelope> envelopes = verifyRows(rows, rulesContainerCache, excluded);
+        int rowCount = rows.size();
 
+        // Rows came back but none survived: a systemic failure, not an empty
+        // whitelist, and returning an empty list would look identical to one.
+        if (rowCount > 0 && envelopes.isEmpty()) {
+            String firstFailure = excluded.isEmpty() ? null : excluded.get(0).getReason();
+            throw new IntegrityException(String.format(
+                    "all %d whitelisted address(es) failed verification; first failure: %s",
+                    rowCount, firstFailure == null ? "unknown" : firstFailure));
+        }
+        // nextOffset counts the rows the SERVER returned, excluded ones included, so the
+        // walk stays in the server's row space; only the total is reduced.
+        return new WhitelistedAddressListResult(envelopes, excluded,
+                op.offsetPage(limit, offset, rowCount, excluded.size(), serverTotalItems, null));
+    }
+
+    /**
+     * Verifies rows one by one, keeping the survivors and reporting the rest in
+     * {@code excluded}.
+     *
+     * <p>A rules container this SDK cannot interpret invalidates every row judged against
+     * it, so that one propagates instead of being reported per row.
+     *
+     * @param rows                the DTO rows
+     * @param rulesContainerCache pre-verified containers by hash, may be empty
+     * @param excluded            receives every row that failed verification
+     * @return the verified envelopes
+     * @throws ContainerIntegrityException if a row's rules container cannot be interpreted
+     */
+    private List<SignedWhitelistedAddressEnvelope> verifyRows(
+            final List<TgvalidatordSignedWhitelistedAddressEnvelope> rows,
+            final Map<String, DecodedRulesContainer> rulesContainerCache,
+            final List<ExcludedWhitelistedAddress> excluded) {
+        List<SignedWhitelistedAddressEnvelope> envelopes = new ArrayList<>();
         for (TgvalidatordSignedWhitelistedAddressEnvelope dto : rows) {
             try {
                 SignedWhitelistedAddressEnvelope envelope =
@@ -1186,9 +1281,6 @@ public class WhitelistedAddressService {
                 // says was fixed. Anything that is NOT one of these two is a defect in
                 // this SDK and still propagates, rather than being reported to the caller
                 // as "this address failed verification".
-                if (firstFailure == null) {
-                    firstFailure = e.getMessage();
-                }
                 excluded.add(new ExcludedWhitelistedAddress(dto.getId(), e.getMessage()));
                 if (LOGGER.isLoggable(java.util.logging.Level.WARNING)) {
                     LOGGER.warning("whitelisted address excluded: verification failed (id="
@@ -1196,16 +1288,7 @@ public class WhitelistedAddressService {
                 }
             }
         }
-
-        // Rows came back but none survived: a systemic failure, not an empty
-        // whitelist, and returning an empty list would look identical to one.
-        if (rowCount > 0 && envelopes.isEmpty()) {
-            throw new IntegrityException(String.format(
-                    "all %d whitelisted address(es) failed verification; first failure: %s",
-                    rowCount, firstFailure == null ? "unknown" : firstFailure));
-        }
-        return new WhitelistedAddressListResult(
-                envelopes, excluded, reduceTotal(serverTotalItems, excluded.size()));
+        return envelopes;
     }
 
     /**
@@ -1238,32 +1321,6 @@ public class WhitelistedAddressService {
         } catch (NoSuchAlgorithmException e) {
             // SHA-256 is mandatory in every JRE; if it is absent nothing here can work.
             throw new IllegalStateException("SHA-256 is unavailable", e);
-        }
-    }
-
-    /**
-     * Reduces the server's page total by the number of rows withheld.
-     *
-     * <p>The server counts rows it returned; the caller receives only those that
-     * verified, so reporting the raw total makes pagination promise rows that can never
-     * be read. Floored at zero, and a total the server did not send or that does not
-     * parse stays absent rather than becoming a guess. The wire type is a uint64 the
-     * generated client surfaces as a String, hence the re-stringify — Go and TypeScript
-     * do the same arithmetic on a numeric field.
-     *
-     * @param serverTotalItems the total as reported, may be null
-     * @param excludedCount    how many rows were withheld
-     * @return the adjusted total, or null when there is nothing dependable to report
-     */
-    private static String reduceTotal(final String serverTotalItems, final int excludedCount) {
-        if (serverTotalItems == null || serverTotalItems.isEmpty()) {
-            return null;
-        }
-        try {
-            long total = Long.parseLong(serverTotalItems.trim());
-            return String.valueOf(Math.max(0L, total - excludedCount));
-        } catch (NumberFormatException e) {
-            return null;
         }
     }
 

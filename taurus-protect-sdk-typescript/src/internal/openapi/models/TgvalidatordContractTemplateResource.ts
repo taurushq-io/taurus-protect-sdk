@@ -137,9 +137,18 @@ export interface TgvalidatordContractTemplateResource {
      * @memberof TgvalidatordContractTemplateResource
      */
     contractTemplate?: TgvalidatordBlockchainContractTemplate;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordContractTemplateResource
+     */
+    additionalProperties?: { [key: string]: any };
 }
 
 
+
+const TgvalidatordContractTemplateResourceWireKeys: ReadonlySet<string> = new Set(['id', 'tenantID', 'version', 'createdAt', 'updatedAt', 'blockchain', 'name', 'contractTemplateType', 'contractVersion', 'deploymentData', 'author', 'description', 'attributes', 'provided', 'audited', 'contractTemplate']);
 
 /**
  * Check if a given object implements the TgvalidatordContractTemplateResource interface.
@@ -156,7 +165,7 @@ export function TgvalidatordContractTemplateResourceFromJSONTyped(json: any, ign
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordContractTemplateResource = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'tenantID': json['tenantID'] == null ? undefined : json['tenantID'],
@@ -175,6 +184,16 @@ export function TgvalidatordContractTemplateResourceFromJSONTyped(json: any, ign
         'audited': json['audited'] == null ? undefined : json['audited'],
         'contractTemplate': json['contractTemplate'] == null ? undefined : TgvalidatordBlockchainContractTemplateFromJSON(json['contractTemplate']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordContractTemplateResourceWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordContractTemplateResourceToJSON(json: any): TgvalidatordContractTemplateResource {
@@ -204,6 +223,7 @@ export function TgvalidatordContractTemplateResourceFromJSONTyped(json: any, ign
         'provided': value['provided'],
         'audited': value['audited'],
         'contractTemplate': TgvalidatordBlockchainContractTemplateToJSON(value['contractTemplate']),
+        ...value['additionalProperties'],
     };
 }
 

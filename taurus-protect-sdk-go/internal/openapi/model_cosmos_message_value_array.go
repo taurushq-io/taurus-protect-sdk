@@ -21,7 +21,10 @@ var _ MappedNullable = &CosmosMessageValueArray{}
 type CosmosMessageValueArray struct {
 	Kind *string `json:"kind,omitempty"`
 	Elems []CosmosMessageValueValue `json:"elems,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _CosmosMessageValueArray CosmosMessageValueArray
 
 // NewCosmosMessageValueArray instantiates a new CosmosMessageValueArray object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o CosmosMessageValueArray) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Elems) {
 		toSerialize["elems"] = o.Elems
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *CosmosMessageValueArray) UnmarshalJSON(data []byte) (err error) {
+	varCosmosMessageValueArray := _CosmosMessageValueArray{}
+
+	err = json.Unmarshal(data, &varCosmosMessageValueArray)
+
+	if err != nil {
+		return err
+	}
+
+	*o = CosmosMessageValueArray(varCosmosMessageValueArray)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "kind")
+		delete(additionalProperties, "elems")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableCosmosMessageValueArray struct {

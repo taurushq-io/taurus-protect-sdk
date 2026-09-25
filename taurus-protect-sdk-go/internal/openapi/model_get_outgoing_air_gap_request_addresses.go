@@ -21,7 +21,10 @@ var _ MappedNullable = &GetOutgoingAirGapRequestAddresses{}
 type GetOutgoingAirGapRequestAddresses struct {
 	// uint64; the list of addresses to be signed by the cold HSM.
 	Ids []string `json:"ids,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _GetOutgoingAirGapRequestAddresses GetOutgoingAirGapRequestAddresses
 
 // NewGetOutgoingAirGapRequestAddresses instantiates a new GetOutgoingAirGapRequestAddresses object
 // This constructor will assign default values to properties that have it defined,
@@ -85,7 +88,33 @@ func (o GetOutgoingAirGapRequestAddresses) ToMap() (map[string]interface{}, erro
 	if !IsNil(o.Ids) {
 		toSerialize["ids"] = o.Ids
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *GetOutgoingAirGapRequestAddresses) UnmarshalJSON(data []byte) (err error) {
+	varGetOutgoingAirGapRequestAddresses := _GetOutgoingAirGapRequestAddresses{}
+
+	err = json.Unmarshal(data, &varGetOutgoingAirGapRequestAddresses)
+
+	if err != nil {
+		return err
+	}
+
+	*o = GetOutgoingAirGapRequestAddresses(varGetOutgoingAirGapRequestAddresses)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "ids")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableGetOutgoingAirGapRequestAddresses struct {

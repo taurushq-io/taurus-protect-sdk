@@ -31,7 +31,16 @@ export interface TgvalidatordInitializeTenantRequest {
      * @memberof TgvalidatordInitializeTenantRequest
      */
     type?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordInitializeTenantRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordInitializeTenantRequestWireKeys: ReadonlySet<string> = new Set(['tenantId', 'type']);
 
 /**
  * Check if a given object implements the TgvalidatordInitializeTenantRequest interface.
@@ -48,11 +57,21 @@ export function TgvalidatordInitializeTenantRequestFromJSONTyped(json: any, igno
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordInitializeTenantRequest = {
         
         'tenantId': json['tenantId'] == null ? undefined : json['tenantId'],
         'type': json['type'] == null ? undefined : json['type'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordInitializeTenantRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordInitializeTenantRequestToJSON(json: any): TgvalidatordInitializeTenantRequest {
@@ -68,6 +87,7 @@ export function TgvalidatordInitializeTenantRequestFromJSONTyped(json: any, igno
         
         'tenantId': value['tenantId'],
         'type': value['type'],
+        ...value['additionalProperties'],
     };
 }
 

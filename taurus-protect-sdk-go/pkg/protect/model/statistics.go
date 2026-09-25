@@ -42,24 +42,22 @@ type ListTagStatisticsOptions struct {
 	SortBy string
 	// SortOrder specifies the sort order (ASC or DESC).
 	SortOrder string
-	// CurrentPage is the base64-encoded cursor for the current page.
-	CurrentPage string
-	// PageRequest indicates which page to request (FIRST, PREVIOUS, NEXT, LAST).
-	PageRequest string
-	// PageSize is the number of items per page.
+	// PageSize is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
 	PageSize int64
+	// Cursor is a previous page's Page.NextCursor; the SDK then requests the NEXT page.
+	Cursor string
+	// CurrentPage and PageRequest (FIRST, PREVIOUS, NEXT, LAST) page by hand; neither can be
+	// combined with Cursor.
+	CurrentPage string
+	PageRequest string
 }
 
 // ListTagStatisticsResult contains the result of listing tag statistics.
 type ListTagStatisticsResult struct {
 	// TagStatistics is the list of tag statistics entries.
 	TagStatistics []*TagStatistics `json:"tag_statistics"`
-	// CurrentPage is the base64-encoded cursor for the current page.
-	CurrentPage string `json:"current_page,omitempty"`
-	// HasPrevious indicates if there is a previous page.
-	HasPrevious bool `json:"has_previous"`
-	// HasNext indicates if there is a next page.
-	HasNext bool `json:"has_next"`
+	// Page continues the list: pass Page.NextCursor as the next Cursor until HasMore is false.
+	Page CursorPage `json:"page"`
 }
 
 // GetPortfolioStatisticsHistoryOptions contains options for getting portfolio statistics history.
@@ -70,26 +68,22 @@ type GetPortfolioStatisticsHistoryOptions struct {
 	From *time.Time
 	// To is the end time for the history range.
 	To *time.Time
-	// Limit is the maximum number of history points to return.
-	Limit int64
 	// SortOrder specifies the sort order based on timestamp (ASC or DESC).
 	SortOrder string
-	// CurrentPage is the base64-encoded cursor for the current page.
-	CurrentPage string
-	// PageRequest indicates which page to request (FIRST, PREVIOUS, NEXT, LAST).
-	PageRequest string
-	// PageSize is the number of items per page.
+	// PageSize is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
 	PageSize int64
+	// Cursor is a previous page's Page.NextCursor; the SDK then requests the NEXT page.
+	Cursor string
+	// CurrentPage and PageRequest (FIRST, PREVIOUS, NEXT, LAST) page by hand; neither can be
+	// combined with Cursor.
+	CurrentPage string
+	PageRequest string
 }
 
 // GetPortfolioStatisticsHistoryResult contains the result of getting portfolio statistics history.
 type GetPortfolioStatisticsHistoryResult struct {
 	// HistoryPoints is the list of historical statistics points.
 	HistoryPoints []*PortfolioStatisticsHistoryPoint `json:"history_points"`
-	// CurrentPage is the base64-encoded cursor for the current page.
-	CurrentPage string `json:"current_page,omitempty"`
-	// HasPrevious indicates if there is a previous page.
-	HasPrevious bool `json:"has_previous"`
-	// HasNext indicates if there is a next page.
-	HasNext bool `json:"has_next"`
+	// Page continues the list: pass Page.NextCursor as the next Cursor until HasMore is false.
+	Page CursorPage `json:"page"`
 }

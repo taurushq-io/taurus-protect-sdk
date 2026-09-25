@@ -23,7 +23,10 @@ type TgvalidatordXTZEntrypoint struct {
 	Type *TgvalidatordXTZContractArg `json:"type,omitempty"`
 	Schema *TgvalidatordXTZPrimSchema `json:"schema,omitempty"`
 	LegacyView *bool `json:"legacyView,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordXTZEntrypoint TgvalidatordXTZEntrypoint
 
 // NewTgvalidatordXTZEntrypoint instantiates a new TgvalidatordXTZEntrypoint object
 // This constructor will assign default values to properties that have it defined,
@@ -192,7 +195,36 @@ func (o TgvalidatordXTZEntrypoint) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.LegacyView) {
 		toSerialize["legacyView"] = o.LegacyView
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordXTZEntrypoint) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordXTZEntrypoint := _TgvalidatordXTZEntrypoint{}
+
+	err = json.Unmarshal(data, &varTgvalidatordXTZEntrypoint)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordXTZEntrypoint(varTgvalidatordXTZEntrypoint)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "schema")
+		delete(additionalProperties, "legacyView")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordXTZEntrypoint struct {

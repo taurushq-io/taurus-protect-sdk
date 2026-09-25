@@ -67,7 +67,10 @@ type TgvalidatordAddress struct {
 	ExternalAddressId *string `json:"externalAddressId,omitempty"`
 	// Status of address creation. Creating status is used for asynchronous address creation. Value is one of `created`, `creating, `signed`, `observed`, or `confirmed`.
 	Status *string `json:"status,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordAddress TgvalidatordAddress
 
 // NewTgvalidatordAddress instantiates a new TgvalidatordAddress object
 // This constructor will assign default values to properties that have it defined,
@@ -971,7 +974,57 @@ func (o TgvalidatordAddress) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Status) {
 		toSerialize["status"] = o.Status
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordAddress) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordAddress := _TgvalidatordAddress{}
+
+	err = json.Unmarshal(data, &varTgvalidatordAddress)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordAddress(varTgvalidatordAddress)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "walletId")
+		delete(additionalProperties, "seed")
+		delete(additionalProperties, "currency")
+		delete(additionalProperties, "addressPath")
+		delete(additionalProperties, "addressIndex")
+		delete(additionalProperties, "address")
+		delete(additionalProperties, "alternateAddress")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "label")
+		delete(additionalProperties, "customerId")
+		delete(additionalProperties, "nonce")
+		delete(additionalProperties, "balance")
+		delete(additionalProperties, "signature")
+		delete(additionalProperties, "scores")
+		delete(additionalProperties, "attributes")
+		delete(additionalProperties, "linkedWhitelistedAddressIds")
+		delete(additionalProperties, "creationDate")
+		delete(additionalProperties, "updateDate")
+		delete(additionalProperties, "walletInfo")
+		delete(additionalProperties, "disabled")
+		delete(additionalProperties, "currencyInfo")
+		delete(additionalProperties, "canUseAllFunds")
+		delete(additionalProperties, "externalAddressId")
+		delete(additionalProperties, "status")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordAddress struct {

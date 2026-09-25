@@ -15,7 +15,6 @@ import type {
   TgvalidatordGetNEARValidatorInfoReply,
   TgvalidatordStakeAccount,
   TgvalidatordGetXTZAddressStakingRewardsReply,
-  TgvalidatordResponseCursor,
 } from '../internal/openapi/models';
 import type {
   ADAStakePoolInfo,
@@ -26,13 +25,14 @@ import type {
   StakeAccount,
   StakeAccountResult,
   StakeAccountType,
-  StakeCursor,
   SolanaStakeAccountState,
   ListStakeAccountsOptions,
   XTZStakingRewards,
   GetXTZStakingRewardsOptions,
 } from '../models/staking';
+import { buildCursorPage, cursorRequest } from '../models/pagination';
 import { BaseService } from './base';
+import { cursorQuery } from './paging';
 
 /**
  * Service for retrieving staking information across multiple blockchain networks.
@@ -258,8 +258,9 @@ export class StakingService extends BaseService {
    * Returns a paginated list of stake accounts that can be filtered by address,
    * account type, or account address.
    *
-   * @param options - Optional filtering and pagination options
-   * @returns A paginated result containing stake accounts
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
+   * @returns The page of stake accounts and its cursor pagination
+   * @throws {@link ValidationError} If the page size or cursor options are invalid
    * @throws {@link APIError} If API request fails
    *
    * @example
@@ -274,31 +275,27 @@ export class StakingService extends BaseService {
    * }
    *
    * // Paginate through results
-   * if (result.cursor?.hasNext) {
+   * if (result.pagination.hasMore) {
    *   const nextPage = await stakingService.getStakeAccounts({
-   *     cursorCurrentPage: result.cursor.currentPage,
-   *     cursorPageRequest: 'NEXT',
+   *     cursor: result.pagination.nextCursor,
    *   });
    * }
    * ```
    */
   async getStakeAccounts(options?: ListStakeAccountsOptions): Promise<StakeAccountResult> {
+    const page = cursorRequest(options);
+
     return this.execute(async () => {
       const reply = await this.stakingApi.stakingServiceGetStakeAccounts({
         addressId: options?.addressId,
         accountType: options?.accountType as StakingServiceGetStakeAccountsAccountTypeEnum,
         accountAddress: options?.accountAddress,
-        cursorCurrentPage: options?.cursorCurrentPage,
-        cursorPageRequest: options?.cursorPageRequest,
-        cursorPageSize: options?.cursorPageSize?.toString(),
+        ...cursorQuery(page),
       });
 
-      const stakeAccounts = (reply.stakeAccounts ?? []).map((sa) => this.mapStakeAccount(sa));
-      const cursor = this.mapCursor(reply.cursor);
-
       return {
-        stakeAccounts,
-        cursor,
+        stakeAccounts: (reply.stakeAccounts ?? []).map((sa) => this.mapStakeAccount(sa)),
+        pagination: buildCursorPage(page.pageSize, reply.cursor),
       };
     });
   }
@@ -439,18 +436,6 @@ export class StakingService extends BaseService {
             allowMerge: dto.solanaStakeAccount.allowMerge,
           }
         : undefined,
-    };
-  }
-
-  private mapCursor(cursor?: TgvalidatordResponseCursor): StakeCursor | undefined {
-    if (!cursor) {
-      return undefined;
-    }
-
-    return {
-      currentPage: cursor.currentPage,
-      hasNext: cursor.hasNext,
-      hasPrevious: cursor.hasPrevious,
     };
   }
 

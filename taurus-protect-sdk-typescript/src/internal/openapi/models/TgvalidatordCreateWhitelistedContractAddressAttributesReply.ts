@@ -33,7 +33,16 @@ export interface TgvalidatordCreateWhitelistedContractAddressAttributesReply {
      * @memberof TgvalidatordCreateWhitelistedContractAddressAttributesReply
      */
     result?: Array<TgvalidatordWhitelistedContractAddressAttribute>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateWhitelistedContractAddressAttributesReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateWhitelistedContractAddressAttributesReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateWhitelistedContractAddressAttributesReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordCreateWhitelistedContractAddressAttributesReplyFromJ
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateWhitelistedContractAddressAttributesReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordWhitelistedContractAddressAttributeFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateWhitelistedContractAddressAttributesReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateWhitelistedContractAddressAttributesReplyToJSON(json: any): TgvalidatordCreateWhitelistedContractAddressAttributesReply {
@@ -68,6 +87,7 @@ export function TgvalidatordCreateWhitelistedContractAddressAttributesReplyFromJ
     return {
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordWhitelistedContractAddressAttributeToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

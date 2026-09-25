@@ -448,6 +448,13 @@
             "in": "query",
             "required": false,
             "type": "string"
+          },
+          {
+            "name": "includeDisabledAddresses",
+            "description": "One of [exclude, include, only] depending on whether you want to include disabled addresses (or you want only those). Filtering will be performed after pagination: `totalItems` won't represent the number of addresses with this filter but can be used in combination with `offset`.",
+            "in": "query",
+            "required": false,
+            "type": "string"
           }
         ],
         "tags": [
@@ -3940,6 +3947,85 @@
         ]
       }
     },
+    "/api/rest/v1/earn/rewards": {
+      "get": {
+        "summary": "List rewards",
+        "description": "This endpoint returns all earning rewards",
+        "operationId": "EarnService_GetRewards",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/tgvalidatordGetEarnRewardsReply"
+            }
+          },
+          "400": {
+            "description": "Bad Request: indicates that the server cannot or will not process the request due to something that is perceived to be a client error (for example, malformed request syntax, invalid request message framing, or deceptive request routing)",
+            "schema": {}
+          },
+          "401": {
+            "description": "Unauthorized: indicates that the client request has not been completed because it lacks valid authentication credentials for the requested resource",
+            "schema": {}
+          },
+          "403": {
+            "description": "Forbidden: indicates that the server understands the request but refuses to authorize it",
+            "schema": {}
+          },
+          "404": {
+            "description": "Not Found: indicates that the server cannot find the requested resource",
+            "schema": {}
+          },
+          "500": {
+            "description": "Internal Server Error: indicates that the server encountered an unexpected condition that prevented it from fulfilling the request",
+            "schema": {}
+          },
+          "503": {
+            "description": "Service Unavailable: indicates that the server is not ready to handle the request.",
+            "schema": {}
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "recipientAddressId",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "cursor.currentPage",
+            "description": "Base64-encoded string representing the current window of data",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "cursor.pageRequest",
+            "description": "The page to request, w.r.t the current page.\nCan be one of `FIRST`, `PREVIOUS`, `NEXT`, `LAST`",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "cursor.pageSize",
+            "description": "The size of the page requested. The handling service should impose a hard limit on this",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          }
+        ],
+        "tags": [
+          "Earn"
+        ]
+      }
+    },
     "/api/rest/v1/eth/{network}/erc/contract/{contract}/token/{token}/metadata": {
       "get": {
         "summary": "Use '/api/rest/v1/evm/{network}/erc/contract/{contract}/token/{token}/metadata' instead",
@@ -5192,6 +5278,99 @@
             "in": "path",
             "required": true,
             "type": "string"
+          }
+        ],
+        "tags": [
+          "Fiat"
+        ]
+      }
+    },
+    "/api/rest/v1/fiat_providers/entities": {
+      "get": {
+        "summary": "List fiat provider entities",
+        "description": "This endpoint returns a list of fiat provider account entities (Circle wallets / Paxos profiles), optionally filtered by provider and label",
+        "operationId": "FiatProviderService_GetFiatProviderEntities",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/tgvalidatordGetFiatProviderEntitiesReply"
+            }
+          },
+          "400": {
+            "description": "Bad Request: indicates that the server cannot or will not process the request due to something that is perceived to be a client error (for example, malformed request syntax, invalid request message framing, or deceptive request routing)",
+            "schema": {}
+          },
+          "401": {
+            "description": "Unauthorized: indicates that the client request has not been completed because it lacks valid authentication credentials for the requested resource",
+            "schema": {}
+          },
+          "403": {
+            "description": "Forbidden: indicates that the server understands the request but refuses to authorize it",
+            "schema": {}
+          },
+          "404": {
+            "description": "Not Found: indicates that the server cannot find the requested resource",
+            "schema": {}
+          },
+          "500": {
+            "description": "Internal Server Error: indicates that the server encountered an unexpected condition that prevented it from fulfilling the request",
+            "schema": {}
+          },
+          "503": {
+            "description": "Service Unavailable: indicates that the server is not ready to handle the request.",
+            "schema": {}
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "provider",
+            "description": "Optional. Filter entities by fiat provider. Example: 'circle'",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "label",
+            "description": "Optional. Filter entities by the label of the fiat provider set in the config",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "sortOrder",
+            "description": "Set this parameter to ASC to get the id sorted in ASC order or DESC to get them in descending order. By default, the order is DESC.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "cursor.currentPage",
+            "description": "Base64-encoded string representing the current window of data",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "cursor.pageRequest",
+            "description": "The page to request, w.r.t the current page.\nCan be one of `FIRST`, `PREVIOUS`, `NEXT`, `LAST`",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "cursor.pageSize",
+            "description": "The size of the page requested. The handling service should impose a hard limit on this",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
           }
         ],
         "tags": [
@@ -23938,6 +24117,239 @@
         ]
       }
     },
+    "/api/rest/v2/assets/query": {
+      "post": {
+        "summary": "List assets",
+        "description": "Returns a paginated list of assets with optional filtering on symbol, contract address, label, or currency name.",
+        "operationId": "AssetServiceV2_QueryAssetsV2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/tgvalidatordGetAssetsReplyV2"
+            }
+          },
+          "400": {
+            "description": "Bad Request: indicates that the server cannot or will not process the request due to something that is perceived to be a client error (for example, malformed request syntax, invalid request message framing, or deceptive request routing)",
+            "schema": {}
+          },
+          "401": {
+            "description": "Unauthorized: indicates that the client request has not been completed because it lacks valid authentication credentials for the requested resource",
+            "schema": {}
+          },
+          "403": {
+            "description": "Forbidden: indicates that the server understands the request but refuses to authorize it",
+            "schema": {}
+          },
+          "404": {
+            "description": "Not Found: indicates that the server cannot find the requested resource",
+            "schema": {}
+          },
+          "500": {
+            "description": "Internal Server Error: indicates that the server encountered an unexpected condition that prevented it from fulfilling the request",
+            "schema": {}
+          },
+          "503": {
+            "description": "Service Unavailable: indicates that the server is not ready to handle the request.",
+            "schema": {}
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/tgvalidatordGetAssetsRequestV2"
+            }
+          }
+        ],
+        "tags": [
+          "AssetV2"
+        ]
+      }
+    },
+    "/api/rest/v2/assets/{assetID}/addresses/query": {
+      "post": {
+        "summary": "List addresses for an asset",
+        "description": "Returns the addresses known for the asset with their per-address state (KYC/credential grant, balance), optionally filtered by KYC status.",
+        "operationId": "AssetServiceV2_QueryAssetAddressesV2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/tgvalidatordQueryAssetAddressesReplyV2"
+            }
+          },
+          "400": {
+            "description": "Bad Request: indicates that the server cannot or will not process the request due to something that is perceived to be a client error (for example, malformed request syntax, invalid request message framing, or deceptive request routing)",
+            "schema": {}
+          },
+          "401": {
+            "description": "Unauthorized: indicates that the client request has not been completed because it lacks valid authentication credentials for the requested resource",
+            "schema": {}
+          },
+          "403": {
+            "description": "Forbidden: indicates that the server understands the request but refuses to authorize it",
+            "schema": {}
+          },
+          "404": {
+            "description": "Not Found: indicates that the server cannot find the requested resource",
+            "schema": {}
+          },
+          "500": {
+            "description": "Internal Server Error: indicates that the server encountered an unexpected condition that prevented it from fulfilling the request",
+            "schema": {}
+          },
+          "503": {
+            "description": "Service Unavailable: indicates that the server is not ready to handle the request.",
+            "schema": {}
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "assetID",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/AssetServiceV2QueryAssetAddressesV2Body"
+            }
+          }
+        ],
+        "tags": [
+          "AssetV2"
+        ]
+      }
+    },
+    "/api/rest/v2/assets/{assetID}/operations": {
+      "get": {
+        "summary": "List operations for an asset",
+        "description": "Returns the history of lifecycle operations for the asset (creation, mints, burns, KYC changes, pause/unpause, ...).",
+        "operationId": "AssetServiceV2_ListAssetOperationsV2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/tgvalidatordListAssetOperationsReplyV2"
+            }
+          },
+          "400": {
+            "description": "Bad Request: indicates that the server cannot or will not process the request due to something that is perceived to be a client error (for example, malformed request syntax, invalid request message framing, or deceptive request routing)",
+            "schema": {}
+          },
+          "401": {
+            "description": "Unauthorized: indicates that the client request has not been completed because it lacks valid authentication credentials for the requested resource",
+            "schema": {}
+          },
+          "403": {
+            "description": "Forbidden: indicates that the server understands the request but refuses to authorize it",
+            "schema": {}
+          },
+          "404": {
+            "description": "Not Found: indicates that the server cannot find the requested resource",
+            "schema": {}
+          },
+          "500": {
+            "description": "Internal Server Error: indicates that the server encountered an unexpected condition that prevented it from fulfilling the request",
+            "schema": {}
+          },
+          "503": {
+            "description": "Service Unavailable: indicates that the server is not ready to handle the request.",
+            "schema": {}
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "assetID",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "cursor.currentPage",
+            "description": "Base64-encoded string representing the current window of data",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "cursor.pageRequest",
+            "description": "The page to request, w.r.t the current page.\nCan be one of `FIRST`, `PREVIOUS`, `NEXT`, `LAST`",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "cursor.pageSize",
+            "description": "The size of the page requested. The handling service should impose a hard limit on this",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "uint64"
+          },
+          {
+            "name": "type",
+            "description": "Optional filter — when set, return only operations of this type.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "ASSET_OPERATION_TYPE_V2_CREATE",
+              "ASSET_OPERATION_TYPE_V2_UPDATE",
+              "ASSET_OPERATION_TYPE_V2_IMPORT",
+              "ASSET_OPERATION_TYPE_V2_MINT",
+              "ASSET_OPERATION_TYPE_V2_BURN",
+              "ASSET_OPERATION_TYPE_V2_PAUSE",
+              "ASSET_OPERATION_TYPE_V2_UNPAUSE",
+              "ASSET_OPERATION_TYPE_V2_PAUSE_ACCOUNT",
+              "ASSET_OPERATION_TYPE_V2_UNPAUSE_ACCOUNT",
+              "ASSET_OPERATION_TYPE_V2_SET_KYC"
+            ]
+          },
+          {
+            "name": "status",
+            "description": "Optional filter — when set, return only operations in this status.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "ASSET_OPERATION_STATUS_V2_PENDING",
+              "ASSET_OPERATION_STATUS_V2_PAUSED",
+              "ASSET_OPERATION_STATUS_V2_COMPLETED",
+              "ASSET_OPERATION_STATUS_V2_FAILED",
+              "ASSET_OPERATION_STATUS_V2_CANCELED"
+            ]
+          }
+        ],
+        "tags": [
+          "AssetV2"
+        ]
+      }
+    },
     "/api/rest/v2/businessrules": {
       "get": {
         "summary": "List business rules",
@@ -24146,6 +24558,64 @@
         },
         "tags": [
           "Fee"
+        ]
+      }
+    },
+    "/api/rest/v2/prices/query": {
+      "post": {
+        "summary": "List prices",
+        "description": "This endpoint returns a list of prices",
+        "operationId": "PriceService_QueryPricesV2",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/tgvalidatordQueryPricesV2Reply"
+            }
+          },
+          "400": {
+            "description": "Bad Request: indicates that the server cannot or will not process the request due to something that is perceived to be a client error (for example, malformed request syntax, invalid request message framing, or deceptive request routing)",
+            "schema": {}
+          },
+          "401": {
+            "description": "Unauthorized: indicates that the client request has not been completed because it lacks valid authentication credentials for the requested resource",
+            "schema": {}
+          },
+          "403": {
+            "description": "Forbidden: indicates that the server understands the request but refuses to authorize it",
+            "schema": {}
+          },
+          "404": {
+            "description": "Not Found: indicates that the server cannot find the requested resource",
+            "schema": {}
+          },
+          "500": {
+            "description": "Internal Server Error: indicates that the server encountered an unexpected condition that prevented it from fulfilling the request",
+            "schema": {}
+          },
+          "503": {
+            "description": "Service Unavailable: indicates that the server is not ready to handle the request.",
+            "schema": {}
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/tgvalidatordQueryPricesV2Request"
+            }
+          }
+        ],
+        "tags": [
+          "Prices"
         ]
       }
     },
@@ -24679,6 +25149,22 @@
         "HMAC",
         "ECDSA"
       ]
+    },
+    "AssetServiceV2QueryAssetAddressesV2Body": {
+      "type": "object",
+      "properties": {
+        "cursor": {
+          "$ref": "#/definitions/tgvalidatordRequestCursor"
+        },
+        "addressType": {
+          "$ref": "#/definitions/tgvalidatordAddressTypeV2",
+          "description": "Optional filter — when set, return only addresses of this type."
+        },
+        "kycStatus": {
+          "$ref": "#/definitions/tgvalidatordKYCStatusV2",
+          "description": "Optional filter — when set, return only addresses in this KYC status."
+        }
+      }
     },
     "Asset_Unknown": {
       "type": "object",
@@ -26638,6 +27124,31 @@
         }
       }
     },
+    "tgvalidatordAddressTargetV2": {
+      "type": "object",
+      "properties": {
+        "addressID": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Internal address identifier."
+        },
+        "whitelistedAddressID": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Whitelisted address identifier."
+        }
+      },
+      "description": "AddressTargetV2 names an address as either an internal address (managed by\nthe platform) or a whitelisted external address. Exactly one variant must\nbe set. Replaces v1's paired uint64 fields where mutual exclusion was a\nruntime invariant."
+    },
+    "tgvalidatordAddressTypeV2": {
+      "type": "string",
+      "enum": [
+        "ADDRESS_TYPE_V2_INTERNAL",
+        "ADDRESS_TYPE_V2_WHITELISTED",
+        "ADDRESS_TYPE_V2_EXTERNAL"
+      ],
+      "description": "AddressTypeV2 classifies an address relative to the platform."
+    },
     "tgvalidatordAggregatedStatsData": {
       "type": "object",
       "properties": {
@@ -26998,7 +27509,50 @@
         "currency"
       ]
     },
+    "tgvalidatordAssetAddressV2": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string",
+          "description": "The on-chain address."
+        },
+        "kycStatus": {
+          "$ref": "#/definitions/tgvalidatordKYCStatusV2",
+          "description": "KYC/credential grant status of the address. Unspecified if never set."
+        },
+        "balance": {
+          "type": "string",
+          "description": "The address's balance of the token, as a decimal string."
+        },
+        "addressType": {
+          "$ref": "#/definitions/tgvalidatordAddressTypeV2",
+          "description": "Classification of the address: internal, whitelisted or external. Precedence summary of the ids below; an address can be both internal and whitelisted."
+        },
+        "addressID": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Platform id of the managed asset address for this asset's currency, if any. Zero when the address is not a managed asset address. This is the id to pass as an address target (e.g. to grant/revoke KYC)."
+        },
+        "whitelistedAddressID": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Platform id of the whitelisted address, if any. Zero when the address is not whitelisted. Usable as a KYC target. May be set together with addressID."
+        }
+      },
+      "description": "AssetAddressV2 is the per-address state for an asset on the read side: the\naddress plus its KYC/credential grant status, token balance and classification."
+    },
     "tgvalidatordAssetAttribute": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "tgvalidatordAssetAttributeV2": {
       "type": "object",
       "properties": {
         "key": {
@@ -27092,6 +27646,133 @@
         "HolderTypeExternal"
       ]
     },
+    "tgvalidatordAssetOperationBlockingReasonV2": {
+      "type": "string",
+      "enum": [
+        "ASSET_OPERATION_BLOCKING_REASON_V2_UNKNOWN",
+        "ASSET_OPERATION_BLOCKING_REASON_V2_MISSING_GOVERNANCE_RULE",
+        "ASSET_OPERATION_BLOCKING_REASON_V2_MANUAL_PAUSE",
+        "ASSET_OPERATION_BLOCKING_REASON_V2_AWAITING_REQUEST_APPROVAL",
+        "ASSET_OPERATION_BLOCKING_REASON_V2_AWAITING_WHITELIST_APPROVAL",
+        "ASSET_OPERATION_BLOCKING_REASON_V2_AWAITING_CURRENCY_PRICE",
+        "ASSET_OPERATION_BLOCKING_REASON_V2_AWAITING_MANUAL_WHITELIST",
+        "ASSET_OPERATION_BLOCKING_REASON_V2_WHITELIST_PARAMS_CONFLICT"
+      ],
+      "description": "AssetOperationBlockingReasonV2 is the machine-readable cause when an\noperation is in the PAUSED non-terminal status. Distinct from\nFailureReason: a paused operation is alive and resumable once the\nblocker is cleared. Two-tier same as FailureReason: UNSPECIFIED means\nnot paused; UNKNOWN is the catch-all for paused-with-no-typed-code;\nspecific reasons grow as concrete cases land.\n\n - ASSET_OPERATION_BLOCKING_REASON_V2_UNKNOWN: Paused, but no typed code is available.\n - ASSET_OPERATION_BLOCKING_REASON_V2_MISSING_GOVERNANCE_RULE: Governance rule missing to complete the operations.\n - ASSET_OPERATION_BLOCKING_REASON_V2_MANUAL_PAUSE: Operation has been manually paused.\n - ASSET_OPERATION_BLOCKING_REASON_V2_AWAITING_REQUEST_APPROVAL: Awaiting human approval on a deployment / mint / burn / etc. request\n(the HandleRequestWorkflow's PENDING state).\n - ASSET_OPERATION_BLOCKING_REASON_V2_AWAITING_WHITELIST_APPROVAL: Awaiting approval of a whitelisted-address record for the asset.\n - ASSET_OPERATION_BLOCKING_REASON_V2_AWAITING_CURRENCY_PRICE: Operation blocked because no price is set for the asset's currency.\n - ASSET_OPERATION_BLOCKING_REASON_V2_AWAITING_MANUAL_WHITELIST: The auto-generated whitelist proposal was rejected by an approver;\nthe asset is on-chain but the workflow waits for someone to\nmanually create + approve a whitelist (which resumes the flow).\n - ASSET_OPERATION_BLOCKING_REASON_V2_WHITELIST_PARAMS_CONFLICT: The automatic whitelist was rejected for invalid parameters (most\ncommonly the name/symbol is already whitelisted for another token)\nwhile the asset is on-chain. An operator must whitelist the token\nmanually with different parameters (e.g. a different symbol), which\nthen resumes the flow."
+    },
+    "tgvalidatordAssetOperationFailureReasonV2": {
+      "type": "string",
+      "enum": [
+        "ASSET_OPERATION_FAILURE_REASON_V2_UNKNOWN",
+        "ASSET_OPERATION_FAILURE_REASON_V2_INTERNAL_ERROR",
+        "ASSET_OPERATION_FAILURE_REASON_V2_REQUEST_REJECTED",
+        "ASSET_OPERATION_FAILURE_REASON_V2_REQUEST_FAILED",
+        "ASSET_OPERATION_FAILURE_REASON_V2_SOURCE_ADDRESS_ON_INVALID_CURRENCY",
+        "ASSET_OPERATION_FAILURE_REASON_V2_SOURCE_ADDRESS_NOT_ASSET_ISSUER",
+        "ASSET_OPERATION_FAILURE_REASON_V2_DESTINATION_ADDRESS_ON_INVALID_CURRENCY",
+        "ASSET_OPERATION_FAILURE_REASON_V2_DESTINATION_ADDRESS_INVALID",
+        "ASSET_OPERATION_FAILURE_REASON_V2_NOT_ENOUGH_FUNDS",
+        "ASSET_OPERATION_FAILURE_REASON_V2_NOT_ENOUGH_FUNDS_FOR_FEES",
+        "ASSET_OPERATION_FAILURE_REASON_V2_FORBIDDEN_BY_BUSINESS_RULE",
+        "ASSET_OPERATION_FAILURE_REASON_V2_INVALID_PARAMETERS"
+      ],
+      "description": "AssetOperationFailureReasonV2 is the machine-readable cause when an\noperation reaches the FAILED terminal status. Free-form failure messages\nare not surfaced on the wire; consumers should switch on this enum.\nTwo-tier: UNSPECIFIED means not failed; UNKNOWN is the catch-all for\nfailed-with-no-typed-code; specific reasons grow as concrete cases are\nwired through from the underlying workflows.\n\n - ASSET_OPERATION_FAILURE_REASON_V2_UNKNOWN: Failed, but no typed code is available\n - ASSET_OPERATION_FAILURE_REASON_V2_INTERNAL_ERROR: Specific: a system/internal error occurred.\n - ASSET_OPERATION_FAILURE_REASON_V2_REQUEST_REJECTED: The underlying approval request was rejected by an approver.\n - ASSET_OPERATION_FAILURE_REASON_V2_REQUEST_FAILED: The underlying request terminated in failure for some non-rejection\nreason (expired, timed out, on-chain failure, ...).\n - ASSET_OPERATION_FAILURE_REASON_V2_SOURCE_ADDRESS_ON_INVALID_CURRENCY: The source address passed to the operation is registered for a different\ncurrency than the asset. One must retry with the address tied to the\nasset's currency.\n - ASSET_OPERATION_FAILURE_REASON_V2_SOURCE_ADDRESS_NOT_ASSET_ISSUER: The source address isn't the asset's on-chain issuer (the per-chain name\nvaries. Only the issuer can mint or burn the asset.\n - ASSET_OPERATION_FAILURE_REASON_V2_DESTINATION_ADDRESS_ON_INVALID_CURRENCY: The destination is an internal address registered for a different\ncurrency than the asset. Symmetric with the source variant — retry\nwith the address tied to the asset's currency.\n - ASSET_OPERATION_FAILURE_REASON_V2_DESTINATION_ADDRESS_INVALID: The destination is otherwise unusable: a WLA on the wrong chain or\nnetwork, malformed on-chain address, no destination provided, or a\nchain-specific invariant violated. Retry with a destination that\nmatches the asset's chain and the operation's constraints.\n - ASSET_OPERATION_FAILURE_REASON_V2_NOT_ENOUGH_FUNDS: The source address doesn't hold enough of the asset itself for the\noperation (e.g. trying to burn more than the source holds).\n - ASSET_OPERATION_FAILURE_REASON_V2_NOT_ENOUGH_FUNDS_FOR_FEES: The source has enough of the asset but not enough of the chain's\nnative fee currency to broadcast. Top up the fee currency.\n - ASSET_OPERATION_FAILURE_REASON_V2_FORBIDDEN_BY_BUSINESS_RULE: A governance/business rule forbade the request (amount over a limit,\ncurrency disabled, outside business hours/days, ...). The request is\nwell-formed but policy forbids it.\n - ASSET_OPERATION_FAILURE_REASON_V2_INVALID_PARAMETERS: Request parameters were rejected at creation (zero amount, a currency\nthat doesn't support the operation, malformed source/destination\nselection, ...). A general parameter validation failure."
+    },
+    "tgvalidatordAssetOperationStatusV2": {
+      "type": "string",
+      "enum": [
+        "ASSET_OPERATION_STATUS_V2_PENDING",
+        "ASSET_OPERATION_STATUS_V2_PAUSED",
+        "ASSET_OPERATION_STATUS_V2_COMPLETED",
+        "ASSET_OPERATION_STATUS_V2_FAILED",
+        "ASSET_OPERATION_STATUS_V2_CANCELED"
+      ],
+      "description": "AssetOperationStatusV2 is the consumer-facing lifecycle status of an\noperation. Two non-terminal values:\n  - PENDING:  system is making progress automatically; consumer should wait.\n  - PAUSED:   action required from the operation initiator (or an operator)\n              before progress can resume — see AssetOperationV2.blockingReason\n              for the machine-readable cause.\nThree terminal values: COMPLETED, FAILED, CANCELED."
+    },
+    "tgvalidatordAssetOperationTypeV2": {
+      "type": "string",
+      "enum": [
+        "ASSET_OPERATION_TYPE_V2_CREATE",
+        "ASSET_OPERATION_TYPE_V2_UPDATE",
+        "ASSET_OPERATION_TYPE_V2_IMPORT",
+        "ASSET_OPERATION_TYPE_V2_MINT",
+        "ASSET_OPERATION_TYPE_V2_BURN",
+        "ASSET_OPERATION_TYPE_V2_PAUSE",
+        "ASSET_OPERATION_TYPE_V2_UNPAUSE",
+        "ASSET_OPERATION_TYPE_V2_PAUSE_ACCOUNT",
+        "ASSET_OPERATION_TYPE_V2_UNPAUSE_ACCOUNT",
+        "ASSET_OPERATION_TYPE_V2_SET_KYC"
+      ]
+    },
+    "tgvalidatordAssetOperationV2": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "assetID": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/definitions/tgvalidatordAssetOperationTypeV2"
+        },
+        "status": {
+          "$ref": "#/definitions/tgvalidatordAssetOperationStatusV2"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "initiatedByAddressID": {
+          "type": "string",
+          "format": "uint64",
+          "description": "Internal address that initiated this operation."
+        },
+        "failureReason": {
+          "$ref": "#/definitions/tgvalidatordAssetOperationFailureReasonV2",
+          "description": "Machine-readable failure cause. UNSPECIFIED unless status is FAILED."
+        },
+        "blockingReason": {
+          "$ref": "#/definitions/tgvalidatordAssetOperationBlockingReasonV2",
+          "description": "Machine-readable blocking cause. UNSPECIFIED unless status is PAUSED."
+        },
+        "create": {
+          "$ref": "#/definitions/tgvalidatordCreateOperationDetailsV2"
+        },
+        "update": {
+          "$ref": "#/definitions/tgvalidatordUpdateOperationDetailsV2"
+        },
+        "import": {
+          "$ref": "#/definitions/tgvalidatordImportOperationDetailsV2"
+        },
+        "mint": {
+          "$ref": "#/definitions/tgvalidatordMintOperationDetailsV2"
+        },
+        "burn": {
+          "$ref": "#/definitions/tgvalidatordBurnOperationDetailsV2"
+        },
+        "pause": {
+          "$ref": "#/definitions/tgvalidatordPauseOperationDetailsV2"
+        },
+        "unpause": {
+          "$ref": "#/definitions/tgvalidatordUnpauseOperationDetailsV2"
+        },
+        "pauseAccount": {
+          "$ref": "#/definitions/tgvalidatordPauseAccountOperationDetailsV2"
+        },
+        "unpauseAccount": {
+          "$ref": "#/definitions/tgvalidatordUnpauseAccountOperationDetailsV2"
+        },
+        "setKyc": {
+          "$ref": "#/definitions/tgvalidatordSetKYCOperationDetailsV2"
+        }
+      },
+      "description": "AssetOperationV2 is a record of a, asset lifecycle change."
+    },
     "tgvalidatordAssetParams": {
       "type": "object",
       "properties": {
@@ -27102,6 +27783,15 @@
           "$ref": "#/definitions/tgvalidatordSolanaNativeTokenParams"
         }
       }
+    },
+    "tgvalidatordAssetParamsV2": {
+      "type": "object",
+      "properties": {
+        "cantonNativeTokenParams": {
+          "$ref": "#/definitions/tgvalidatordCantonNativeTokenParamsV2"
+        }
+      },
+      "description": "AssetParamsV2 carries blockchain-specific params for asset creation.\nExactly one branch must be set."
     },
     "tgvalidatordAssetResource": {
       "type": "object",
@@ -27151,6 +27841,85 @@
           "$ref": "#/definitions/tgvalidatordBlockchainAsset"
         }
       }
+    },
+    "tgvalidatordAssetResourceV2": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "tenantID": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "version": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "label": {
+          "type": "string"
+        },
+        "assetType": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/definitions/tgvalidatordAssetViewStatusV2",
+          "description": "Asset lifecycle status as exposed to consumers."
+        },
+        "blockchain": {
+          "type": "string"
+        },
+        "network": {
+          "type": "string"
+        },
+        "currencyID": {
+          "type": "string",
+          "description": "Internal currency identifier this asset is registered under."
+        },
+        "name": {
+          "type": "string",
+          "description": "Public summary fields. Always present, regardless of chain."
+        },
+        "symbol": {
+          "type": "string"
+        },
+        "decimals": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "contractAddress": {
+          "type": "string",
+          "description": "On-chain contract or token identifier when applicable. Empty for chains where the concept doesn't exist."
+        },
+        "attributes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/tgvalidatordAssetAttributeV2"
+          }
+        },
+        "blockchainAsset": {
+          "$ref": "#/definitions/tgvalidatordBlockchainAssetV2"
+        }
+      },
+      "description": "-----------------------------------------------------------------------------\nAssetResourceV2 — the asset projection returned by GetAssetV2/GetAssetsV2.\n-----------------------------------------------------------------------------\nCarries the common metadata plus the blockchain-specific state via\nBlockchainAssetV2 (mirroring v1's per-chain shape)."
+    },
+    "tgvalidatordAssetViewStatusV2": {
+      "type": "string",
+      "enum": [
+        "ASSET_VIEW_STATUS_V2_PENDING",
+        "ASSET_VIEW_STATUS_V2_ACTIVE",
+        "ASSET_VIEW_STATUS_V2_FAILED"
+      ],
+      "description": "AssetViewStatusV2 is the high-level rollup status surfaced on\nAssetResourceV2."
     },
     "tgvalidatordAsset_NFT": {
       "type": "object",
@@ -27363,6 +28132,14 @@
         }
       }
     },
+    "tgvalidatordBlockchainAssetV2": {
+      "type": "object",
+      "properties": {
+        "cantonNativeTokenAsset": {
+          "$ref": "#/definitions/tgvalidatordCantonNativeTokenAssetV2"
+        }
+      }
+    },
     "tgvalidatordBlockchainContractTemplate": {
       "type": "object",
       "properties": {
@@ -27518,6 +28295,24 @@
         }
       }
     },
+    "tgvalidatordBurnOperationDetailsV2": {
+      "type": "object",
+      "properties": {
+        "destination": {
+          "$ref": "#/definitions/tgvalidatordAddressTargetV2"
+        },
+        "amount": {
+          "type": "string"
+        },
+        "nftTokenIDs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uint64"
+          }
+        }
+      }
+    },
     "tgvalidatordBusinessRule": {
       "type": "object",
       "properties": {
@@ -27620,6 +28415,71 @@
     },
     "tgvalidatordCancelLendingAgreementReply": {
       "type": "object"
+    },
+    "tgvalidatordCantonInstrumentConfigurationV2": {
+      "type": "object",
+      "properties": {
+        "cid": {
+          "type": "string",
+          "description": "Contract id of the active instrument-configuration contract."
+        },
+        "requireCredentials": {
+          "type": "boolean",
+          "description": "Whether holders must present a credential to hold the instrument."
+        },
+        "paused": {
+          "type": "boolean",
+          "description": "Whether transfers of the instrument are paused."
+        },
+        "operator": {
+          "type": "string",
+          "description": "Canton operator party of the instrument."
+        }
+      },
+      "description": "CantonInstrumentConfigurationV2 mirrors the on-chain instrument-configuration\ncontract captured on the asset."
+    },
+    "tgvalidatordCantonNativeTokenAssetV2": {
+      "type": "object",
+      "properties": {
+        "instrumentID": {
+          "type": "string",
+          "description": "Identifies the Canton token. Is used as the tokenID in the WLA."
+        },
+        "configuration": {
+          "$ref": "#/definitions/tgvalidatordCantonInstrumentConfigurationV2",
+          "description": "On-chain instrument configuration, captured from the instrument-configuration contract. Not set until it has been observed on-chain."
+        }
+      },
+      "description": "CantonNativeTokenAssetV2 mirrors the public surface of a Canton native\ntoken. The on-chain issuer (\"instrument admin\" in Canton vocabulary)\nis surfaced at the top level via AssetResourceV2.contractAddress."
+    },
+    "tgvalidatordCantonNativeTokenImportParamsV2": {
+      "type": "object"
+    },
+    "tgvalidatordCantonNativeTokenParamsV2": {
+      "type": "object",
+      "properties": {
+        "instrumentID": {
+          "type": "string",
+          "description": "Unique on-chain identifier for the token. Used internally as the tokenID for asset whitelisting."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name used internally for asset whitelisting."
+        },
+        "symbol": {
+          "type": "string",
+          "description": "Symbol used internally for asset whitelisting, usually the same as the instrumentID."
+        }
+      }
+    },
+    "tgvalidatordCantonUpdateNativeTokenParamsV2": {
+      "type": "object",
+      "properties": {
+        "requireCredentials": {
+          "type": "boolean",
+          "description": "Whether holders must present a credential to hold the instrument. Archives and recreates the instrument configuration with the corresponding holder requirement."
+        }
+      }
     },
     "tgvalidatordChange": {
       "type": "object",
@@ -28629,6 +29489,35 @@
         "entityType",
         "entityIDs"
       ]
+    },
+    "tgvalidatordCreateOperationDetailsV2": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "price": {
+          "type": "string"
+        },
+        "decimals": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "params": {
+          "$ref": "#/definitions/tgvalidatordAssetParamsV2",
+          "description": "Original asset-creation params the user submitted, as a typed\noneof matching CreateAssetRequestV2.params. Immutable audit of\nwhat was requested — distinct from AssetResourceV2 fields which\nreflect the asset's *current* state (sourced from the asset\nresource once it settles, otherwise from these params)."
+        },
+        "blockchain": {
+          "type": "string",
+          "description": "Blockchain/network/assetType the asset is being created on.\nFrozen at request time; carried on the op row so consumers can\nsee the deployment target without joining AssetResourceV2."
+        },
+        "network": {
+          "type": "string"
+        },
+        "assetType": {
+          "type": "string"
+        }
+      }
     },
     "tgvalidatordCreateOutgoingADADelegateRequestRequest": {
       "type": "object",
@@ -31778,7 +32667,7 @@
         },
         "isERC20": {
           "type": "boolean",
-          "description": "Indicates if the token is an ERC-20 token."
+          "description": "DEPRECATED: use tokenInfo.tokenType == ERC20 instead."
         },
         "decimals": {
           "type": "string",
@@ -31807,11 +32696,11 @@
         },
         "isFA12": {
           "type": "boolean",
-          "description": "Indicates if the currency is based on FA12 standard (used in Tezos)."
+          "description": "DEPRECATED: use tokenInfo.tokenType == FA12 instead."
         },
         "isFA20": {
           "type": "boolean",
-          "description": "Indicates if the currency is based on FA20 standard (used in Tezos)."
+          "description": "DEPRECATED: use tokenInfo.tokenType == FA2 instead."
         },
         "isNFT": {
           "type": "boolean",
@@ -31849,6 +32738,10 @@
         "logo": {
           "type": "string",
           "description": "Currency logo in Data URI scheme. Base 64 encoded. (e.g. data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAFCAYAAACNbyblAAAAHElEQVQI12P4//8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==)."
+        },
+        "tokenInfo": {
+          "$ref": "#/definitions/tgvalidatordTokenInfo",
+          "description": "Token-specific details. Present only when the currency is a token."
         }
       }
     },
@@ -31887,6 +32780,28 @@
         },
         "id": {
           "type": "string"
+        }
+      }
+    },
+    "tgvalidatordCurrencyFromFilter": {
+      "type": "object",
+      "properties": {
+        "currencyFromId": {
+          "type": "string"
+        }
+      }
+    },
+    "tgvalidatordCurrencyFromToFilter": {
+      "type": "object",
+      "properties": {
+        "currencyFromId": {
+          "type": "string"
+        },
+        "currencyToIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -31935,6 +32850,16 @@
         },
         "currencyToInfo": {
           "$ref": "#/definitions/tgvalidatordCurrency"
+        },
+        "id": {
+          "type": "string"
+        },
+        "isPrimary": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "description": "Deviation status of the price, only valid when isPrimary is true"
         }
       }
     },
@@ -32006,6 +32931,17 @@
         },
         "currencyInfo": {
           "$ref": "#/definitions/tgvalidatordCurrency"
+        }
+      }
+    },
+    "tgvalidatordCurrencyToFilter": {
+      "type": "object",
+      "properties": {
+        "currencyToIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       }
     },
@@ -32233,6 +33169,48 @@
           "type": "boolean"
         }
       }
+    },
+    "tgvalidatordEarnReward": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "recipientAddressId": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "recipientAddress": {
+          "type": "string"
+        },
+        "rewardType": {
+          "$ref": "#/definitions/tgvalidatordEarnRewardType"
+        },
+        "merklTokenReward": {
+          "$ref": "#/definitions/tgvalidatordMerklTokenReward"
+        }
+      }
+    },
+    "tgvalidatordEarnRewardToken": {
+      "type": "object",
+      "properties": {
+        "address": {
+          "type": "string"
+        },
+        "symbol": {
+          "type": "string"
+        },
+        "assetId": {
+          "type": "string",
+          "format": "uint64"
+        }
+      }
+    },
+    "tgvalidatordEarnRewardType": {
+      "type": "string",
+      "enum": [
+        "RewardTypeMerklToken"
+      ]
     },
     "tgvalidatordEnableTotpRequest": {
       "type": "object",
@@ -32636,6 +33614,37 @@
         }
       }
     },
+    "tgvalidatordFiatProviderEntity": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "provider": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "accountIdentifier": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "details": {
+          "type": "string"
+        },
+        "creationDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updateDate": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
     "tgvalidatordFiatProviderOperation": {
       "type": "object",
       "properties": {
@@ -32911,6 +33920,11 @@
         "totalItems": {
           "type": "string",
           "format": "uint64"
+        },
+        "offset": {
+          "type": "string",
+          "format": "uint64",
+          "description": "The offset to get the next page. Note: the value is not always the same as the number of elements returned."
         }
       }
     },
@@ -33176,6 +34190,47 @@
         },
         "cursor": {
           "$ref": "#/definitions/tgvalidatordResponseCursor"
+        }
+      }
+    },
+    "tgvalidatordGetAssetsReplyV2": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/tgvalidatordAssetResourceV2"
+          }
+        },
+        "cursor": {
+          "$ref": "#/definitions/tgvalidatordResponseCursor"
+        }
+      }
+    },
+    "tgvalidatordGetAssetsRequestV2": {
+      "type": "object",
+      "properties": {
+        "cursor": {
+          "$ref": "#/definitions/tgvalidatordRequestCursor"
+        },
+        "blockchain": {
+          "type": "string"
+        },
+        "network": {
+          "type": "string"
+        },
+        "symbol": {
+          "type": "string"
+        },
+        "contractAddress": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "currencyName": {
+          "type": "string"
         }
       }
     },
@@ -33556,6 +34611,21 @@
         }
       }
     },
+    "tgvalidatordGetEarnRewardsReply": {
+      "type": "object",
+      "properties": {
+        "rewards": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/tgvalidatordEarnReward"
+          }
+        },
+        "cursor": {
+          "$ref": "#/definitions/tgvalidatordResponseCursor"
+        }
+      }
+    },
     "tgvalidatordGetExchangeCounterpartiesReply": {
       "type": "object",
       "properties": {
@@ -33727,6 +34797,21 @@
           "items": {
             "type": "object",
             "$ref": "#/definitions/tgvalidatordFiatProviderCounterpartyAccount"
+          }
+        },
+        "cursor": {
+          "$ref": "#/definitions/tgvalidatordResponseCursor"
+        }
+      }
+    },
+    "tgvalidatordGetFiatProviderEntitiesReply": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/tgvalidatordFiatProviderEntity"
           }
         },
         "cursor": {
@@ -35456,6 +36541,43 @@
         }
       }
     },
+    "tgvalidatordImportAssetParamsV2": {
+      "type": "object",
+      "properties": {
+        "cantonNativeTokenImportParams": {
+          "$ref": "#/definitions/tgvalidatordCantonNativeTokenImportParamsV2",
+          "title": "empty for now"
+        }
+      },
+      "description": "ImportAssetParamsV2 mirrors AssetParamsV2's shape for importing an\nexisting on-chain asset."
+    },
+    "tgvalidatordImportOperationDetailsV2": {
+      "type": "object",
+      "properties": {
+        "blockchain": {
+          "type": "string"
+        },
+        "network": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "price": {
+          "type": "string"
+        },
+        "decimals": {
+          "type": "string",
+          "format": "uint64"
+        },
+        "address": {
+          "type": "string"
+        },
+        "params": {
+          "$ref": "#/definitions/tgvalidatordImportAssetParamsV2"
+        }
+      }
+    },
     "tgvalidatordInitRemoteFeePayerReply": {
       "type": "object",
       "properties": {
@@ -35887,6 +37009,13 @@
         }
       }
     },
+    "tgvalidatordKYCStatusV2": {
+      "type": "string",
+      "enum": [
+        "KYC_STATUS_V2_APPROVED",
+        "KYC_STATUS_V2_REVOKED"
+      ]
+    },
     "tgvalidatordKeyValue": {
       "type": "object",
       "properties": {
@@ -36202,6 +37331,38 @@
         }
       }
     },
+    "tgvalidatordListAssetOperationsReplyV2": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/tgvalidatordAssetOperationV2"
+          }
+        },
+        "cursor": {
+          "$ref": "#/definitions/tgvalidatordResponseCursor"
+        }
+      }
+    },
+    "tgvalidatordMerklTokenReward": {
+      "type": "object",
+      "properties": {
+        "amount": {
+          "type": "string"
+        },
+        "claimed": {
+          "type": "string"
+        },
+        "pending": {
+          "type": "string"
+        },
+        "token": {
+          "$ref": "#/definitions/tgvalidatordEarnRewardToken"
+        }
+      }
+    },
     "tgvalidatordMetadata": {
       "type": "object",
       "properties": {
@@ -36211,6 +37372,24 @@
         "payload": {},
         "payloadAsString": {
           "type": "string"
+        }
+      }
+    },
+    "tgvalidatordMintOperationDetailsV2": {
+      "type": "object",
+      "properties": {
+        "destination": {
+          "$ref": "#/definitions/tgvalidatordAddressTargetV2"
+        },
+        "amount": {
+          "type": "string"
+        },
+        "nftMetadata": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          }
         }
       }
     },
@@ -36332,6 +37511,17 @@
           "type": "string"
         }
       }
+    },
+    "tgvalidatordPauseAccountOperationDetailsV2": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "$ref": "#/definitions/tgvalidatordAddressTargetV2"
+        }
+      }
+    },
+    "tgvalidatordPauseOperationDetailsV2": {
+      "type": "object"
     },
     "tgvalidatordPersonTravelRuleData": {
       "type": "object",
@@ -36537,6 +37727,64 @@
         "Pallas"
       ],
       "title": "_X because with grpc gateway 0 field of enum are not returned in JSON\n can use \"runtime.WithMarshalerOption(runtime.MIMEWildcard, \u0026runtime.JSONPb{OrigName: true, EmitDefaults: true})\"\n but this will break other endpoints (e.g. without this option empty repeated message are display as null, with they are returned as empty array)"
+    },
+    "tgvalidatordQueryAssetAddressesReplyV2": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/tgvalidatordAssetAddressV2"
+          }
+        },
+        "cursor": {
+          "$ref": "#/definitions/tgvalidatordResponseCursor"
+        }
+      }
+    },
+    "tgvalidatordQueryPricesV2Reply": {
+      "type": "object",
+      "properties": {
+        "baseCurrency": {
+          "type": "string"
+        },
+        "result": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/tgvalidatordCurrencyPrice"
+          }
+        },
+        "cursor": {
+          "$ref": "#/definitions/tgvalidatordResponseCursor"
+        }
+      }
+    },
+    "tgvalidatordQueryPricesV2Request": {
+      "type": "object",
+      "properties": {
+        "onlyPrimary": {
+          "type": "boolean"
+        },
+        "sortOrder": {
+          "type": "string",
+          "description": "Set this parameter to ASC to get the id sorted in ASC order or DESC to get them in descending order. By default, the order is DESC."
+        },
+        "cursor": {
+          "$ref": "#/definitions/tgvalidatordRequestCursor",
+          "description": "The pagination cursor. Note that the default page size is 300 and the maximum allowed is 1000."
+        },
+        "from": {
+          "$ref": "#/definitions/tgvalidatordCurrencyFromFilter"
+        },
+        "fromTo": {
+          "$ref": "#/definitions/tgvalidatordCurrencyFromToFilter"
+        },
+        "to": {
+          "$ref": "#/definitions/tgvalidatordCurrencyToFilter"
+        }
+      }
     },
     "tgvalidatordRefreshScoreReply": {
       "type": "object",
@@ -37815,6 +39063,17 @@
         "updateDate": {
           "type": "string",
           "format": "date-time"
+        }
+      }
+    },
+    "tgvalidatordSetKYCOperationDetailsV2": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "$ref": "#/definitions/tgvalidatordAddressTargetV2"
+        },
+        "status": {
+          "$ref": "#/definitions/tgvalidatordKYCStatusV2"
         }
       }
     },
@@ -39397,6 +40656,42 @@
         }
       }
     },
+    "tgvalidatordTokenInfo": {
+      "type": "object",
+      "properties": {
+        "tokenType": {
+          "$ref": "#/definitions/tgvalidatordTokenType",
+          "description": "Token standard (e.g. ERC20, CW20, FA2)."
+        }
+      },
+      "description": "Token-specific details for a Currency. Present only when the currency is a token."
+    },
+    "tgvalidatordTokenType": {
+      "type": "string",
+      "enum": [
+        "TOKEN_TYPE_ERC20",
+        "TOKEN_TYPE_ERC721",
+        "TOKEN_TYPE_ERC1155",
+        "TOKEN_TYPE_CRYPTO_PUNKS",
+        "TOKEN_TYPE_FA2",
+        "TOKEN_TYPE_FA12",
+        "TOKEN_TYPE_ASA",
+        "TOKEN_TYPE_COSMOS_BANK",
+        "TOKEN_TYPE_CW20",
+        "TOKEN_TYPE_XLM_ASSET",
+        "TOKEN_TYPE_SOL_TOKEN",
+        "TOKEN_TYPE_SOL_TOKEN_2022",
+        "TOKEN_TYPE_ICRC1",
+        "TOKEN_TYPE_HEDERA_TOKEN",
+        "TOKEN_TYPE_HEDERA_NFT",
+        "TOKEN_TYPE_CANTON_UTILITY",
+        "TOKEN_TYPE_TRC20",
+        "TOKEN_TYPE_CIP56",
+        "TOKEN_TYPE_XRP_ASSET",
+        "TOKEN_TYPE_SEP41"
+      ],
+      "description": "Token standard of a currency; set only when it is a token.\nReplaces isERC20 (6), isFA12 (15), isFA20 (16)."
+    },
     "tgvalidatordTrail": {
       "type": "object",
       "properties": {
@@ -39804,6 +41099,17 @@
         "network"
       ]
     },
+    "tgvalidatordUnpauseAccountOperationDetailsV2": {
+      "type": "object",
+      "properties": {
+        "target": {
+          "$ref": "#/definitions/tgvalidatordAddressTargetV2"
+        }
+      }
+    },
+    "tgvalidatordUnpauseOperationDetailsV2": {
+      "type": "object"
+    },
     "tgvalidatordUnpledgeReply": {
       "type": "object",
       "properties": {
@@ -39816,8 +41122,35 @@
     "tgvalidatordUnshareWhitelistedAssetReply": {
       "type": "object"
     },
+    "tgvalidatordUpdateAssetParamsV2": {
+      "type": "object",
+      "properties": {
+        "cantonUpdateNativeTokenParams": {
+          "$ref": "#/definitions/tgvalidatordCantonUpdateNativeTokenParamsV2"
+        }
+      },
+      "description": "UpdateAssetParamsV2 mirrors AssetParamsV2's shape so callers learn one\npattern. Branches for chains that don't support update today are empty\nmessages; populating them later is non-breaking.\nUpdateAssetParamsV2 is the per-chain on-chain update payload — the typed\nchange applied to the token."
+    },
     "tgvalidatordUpdateLendingAgreementReply": {
       "type": "object"
+    },
+    "tgvalidatordUpdateOperationDetailsV2": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string",
+          "description": "The off-chain label the operation requested."
+        },
+        "price": {
+          "type": "string",
+          "description": "The price the operation requested."
+        },
+        "params": {
+          "$ref": "#/definitions/tgvalidatordUpdateAssetParamsV2",
+          "description": "The on-chain change the operation requested."
+        }
+      },
+      "description": "UpdateOperationDetailsV2 records what an update operation *requested* — the\noff-chain label/price and the on-chain params. This is the immutable audit\nof the requested change, distinct from the asset's realized state on the\nAssetView (which reflects the on-chain result once the operation completes)."
     },
     "tgvalidatordUpdatePasswordRequest": {
       "type": "object",
@@ -40092,7 +41425,8 @@
           "type": "string"
         },
         "container": {
-          "type": "string"
+          "type": "string",
+          "description": "Deprecated: Do not use"
         },
         "seed": {
           "type": "string"

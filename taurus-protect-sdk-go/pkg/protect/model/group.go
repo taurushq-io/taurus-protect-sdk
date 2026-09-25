@@ -16,8 +16,9 @@ type Group struct {
 	Email string `json:"email,omitempty"`
 	// Description is a description of the group.
 	Description string `json:"description,omitempty"`
-	// EnforcedInRules indicates if the group is enforced in rules.
-	EnforcedInRules bool `json:"enforced_in_rules"`
+	// EnforcedInRules reports whether the enforced governance rules list the group; nil when the
+	// endpoint does not compute it.
+	EnforcedInRules *bool `json:"enforced_in_rules"`
 	// Users is the list of users in the group.
 	Users []GroupUser `json:"users,omitempty"`
 	// CreatedAt is when the group was created.
@@ -32,15 +33,16 @@ type GroupUser struct {
 	ID string `json:"id"`
 	// ExternalUserID is the external identifier for the user.
 	ExternalUserID string `json:"external_user_id,omitempty"`
-	// EnforcedInRules indicates if the user is enforced in rules.
-	EnforcedInRules bool `json:"enforced_in_rules"`
+	// EnforcedInRules reports whether the enforced governance rules list the user; nil when the
+	// endpoint does not compute it.
+	EnforcedInRules *bool `json:"enforced_in_rules"`
 }
 
 // ListGroupsOptions contains options for listing groups.
 type ListGroupsOptions struct {
-	// Limit is the maximum number of groups to return.
+	// Limit is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
 	Limit int64
-	// Offset is the number of groups to skip.
+	// Offset is the number of groups to skip; continue with Pagination.NextOffset.
 	Offset int64
 	// IDs filters by group IDs.
 	IDs []string
@@ -54,8 +56,7 @@ type ListGroupsOptions struct {
 type ListGroupsResult struct {
 	// Groups is the list of groups.
 	Groups []*Group `json:"groups"`
-	// TotalItems is the total number of groups matching the filter.
-	TotalItems int64 `json:"total_items"`
-	// Offset is the offset used for pagination.
-	Offset int64 `json:"offset"`
+	// Pagination is never nil; continue with its NextOffset until HasMore is false. A
+	// technical group may be appended beyond Limit; NextOffset accounts for it.
+	Pagination *Pagination `json:"pagination"`
 }

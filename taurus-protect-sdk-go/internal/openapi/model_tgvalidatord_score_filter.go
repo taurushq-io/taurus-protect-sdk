@@ -26,7 +26,10 @@ type TgvalidatordScoreFilter struct {
 	ChainalysisFilters *ScoreFilterChainalysisFilters `json:"chainalysisFilters,omitempty"`
 	EllipticFilters *ScoreFilterEllipticFilters `json:"ellipticFilters,omitempty"`
 	TrmlabsFilters *ScoreFilterTRMLabsFilters `json:"trmlabsFilters,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordScoreFilter TgvalidatordScoreFilter
 
 // NewTgvalidatordScoreFilter instantiates a new TgvalidatordScoreFilter object
 // This constructor will assign default values to properties that have it defined,
@@ -265,7 +268,38 @@ func (o TgvalidatordScoreFilter) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.TrmlabsFilters) {
 		toSerialize["trmlabsFilters"] = o.TrmlabsFilters
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordScoreFilter) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordScoreFilter := _TgvalidatordScoreFilter{}
+
+	err = json.Unmarshal(data, &varTgvalidatordScoreFilter)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordScoreFilter(varTgvalidatordScoreFilter)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "scoreProvider")
+		delete(additionalProperties, "scorechainFilters")
+		delete(additionalProperties, "coinfirmFilters")
+		delete(additionalProperties, "chainalysisFilters")
+		delete(additionalProperties, "ellipticFilters")
+		delete(additionalProperties, "trmlabsFilters")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordScoreFilter struct {

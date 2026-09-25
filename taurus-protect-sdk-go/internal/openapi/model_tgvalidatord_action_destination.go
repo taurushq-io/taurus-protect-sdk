@@ -23,7 +23,10 @@ type TgvalidatordActionDestination struct {
 	AddressID *string `json:"addressID,omitempty"`
 	WhitelistedAddressID *string `json:"whitelistedAddressID,omitempty"`
 	WalletID *string `json:"walletID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordActionDestination TgvalidatordActionDestination
 
 // NewTgvalidatordActionDestination instantiates a new TgvalidatordActionDestination object
 // This constructor will assign default values to properties that have it defined,
@@ -192,7 +195,36 @@ func (o TgvalidatordActionDestination) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.WalletID) {
 		toSerialize["walletID"] = o.WalletID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordActionDestination) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordActionDestination := _TgvalidatordActionDestination{}
+
+	err = json.Unmarshal(data, &varTgvalidatordActionDestination)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordActionDestination(varTgvalidatordActionDestination)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "kind")
+		delete(additionalProperties, "addressID")
+		delete(additionalProperties, "whitelistedAddressID")
+		delete(additionalProperties, "walletID")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordActionDestination struct {

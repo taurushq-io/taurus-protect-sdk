@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -31,6 +30,7 @@ type TgvalidatordApproveWhitelistedAddressRequest struct {
 	Ids []string `json:"ids"`
 	// For large numbers of approvals, will store them and process them in background
 	Async *bool `json:"async,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordApproveWhitelistedAddressRequest TgvalidatordApproveWhitelistedAddressRequest
@@ -210,6 +210,11 @@ func (o TgvalidatordApproveWhitelistedAddressRequest) ToMap() (map[string]interf
 	if !IsNil(o.Async) {
 		toSerialize["async"] = o.Async
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -239,15 +244,24 @@ func (o *TgvalidatordApproveWhitelistedAddressRequest) UnmarshalJSON(data []byte
 
 	varTgvalidatordApproveWhitelistedAddressRequest := _TgvalidatordApproveWhitelistedAddressRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordApproveWhitelistedAddressRequest)
+	err = json.Unmarshal(data, &varTgvalidatordApproveWhitelistedAddressRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordApproveWhitelistedAddressRequest(varTgvalidatordApproveWhitelistedAddressRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "signature")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "whitelistedAddressIds")
+		delete(additionalProperties, "ids")
+		delete(additionalProperties, "async")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

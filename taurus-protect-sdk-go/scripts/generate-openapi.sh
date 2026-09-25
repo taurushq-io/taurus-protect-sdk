@@ -52,15 +52,24 @@ mkdir -p .codegen internal/openapi
 # across 38 files), so a server could turn any routine read into a process-killing nil-pointer
 # panic. Patching internal/openapi/client.go by hand is not enough: this script `rm -rf`s that
 # directory above, so the fix has to live in the template to survive regeneration.
+#
+# model_enum.mustache is overridden so an enum value this client does not know keeps its raw
+# string instead of failing the whole reply — the contract all four SDKs share and
+# scripts/resources/decode-tolerance-vectors.json gates.
 TEMPLATE_DIR="$RESOURCES_DIR/templates/go"
 
-# Generate Go client with enumClassPrefix to avoid const conflicts
+# Generate Go client with enumClassPrefix to avoid const conflicts.
+# disallowAdditionalPropertiesIfNotPresent=false (the flag the Java, Python and TypeScript scripts
+# also pass) keeps fields this client does not know in each model's AdditionalProperties. Without
+# it, every model with a required property decodes with DisallowUnknownFields, which also applies
+# to the structs nested under it, so one new server field fails the whole reply.
 java -jar "$GENERATOR_JAR" generate -g go -i "$SPEC_FILE" -o .codegen \
     -t "$TEMPLATE_DIR" \
     --skip-validate-spec \
     --additional-properties=packageName=openapi \
     --additional-properties=isGoSubmodule=true \
-    --additional-properties=enumClassPrefix=true
+    --additional-properties=enumClassPrefix=true \
+    --additional-properties=disallowAdditionalPropertiesIfNotPresent=false
 
 # Copy generated files to internal/openapi
 cp -R .codegen/*.go internal/openapi/ 2>/dev/null || true
@@ -113,7 +122,12 @@ src = re.sub(r'\tif !IsNil\(o\.Payload\) \{\n\t\ttoSerialize\["payload"\] = o\.P
 
 if src == before:
     sys.exit("ERROR: post-generation patch matched nothing in " + path)
-if re.search(r'\bo\.Payload\b|\bPayload\s+map\[string\]|"payload"', src):
+# The generated UnmarshalJSON deletes every known key from AdditionalProperties. The payload
+# line must survive: with the field gone, it is what keeps the raw payload out of that map.
+keep = re.compile(r'^[ \t]*delete\(additionalProperties, "payload"\)\n', re.M)
+if len(keep.findall(src)) != 1:
+    sys.exit("ERROR: expected exactly one delete(additionalProperties, \"payload\") in " + path)
+if re.search(r'\bo\.Payload\b|\bPayload\s+map\[string\]|"payload"', keep.sub('', src)):
     sys.exit("ERROR: payload references remain in " + path + " after patching")
 if "PayloadAsString" not in src:
     sys.exit("ERROR: patch removed PayloadAsString from " + path)
@@ -127,6 +141,25 @@ if ! patch_metadata_payload; then
     echo "" >&2
     echo "Generation ABORTED: the payload patch did not apply." >&2
     echo "Leaving it unapplied would restore a decode failure on every requests read." >&2
+    exit 1
+fi
+
+# Fail loudly if strict decoding came back: a generator upgrade that renames model_enum.mustache,
+# or drops the flag above, would otherwise make one new server field or enum value fail every
+# reply that carries it, with nothing downstream saying why.
+assert_tolerant_decoding() {
+    local strict
+    strict=$(grep -l -E 'DisallowUnknownFields\(\)|is not a valid' internal/openapi/model_*.go || true)
+    if [[ -n "$strict" ]]; then
+        echo "ERROR: strict decoding generated in:" >&2
+        echo "$strict" >&2
+        return 1
+    fi
+}
+
+if ! assert_tolerant_decoding; then
+    echo "" >&2
+    echo "Generation ABORTED: unknown fields or enum values would fail decoding." >&2
     exit 1
 fi
 

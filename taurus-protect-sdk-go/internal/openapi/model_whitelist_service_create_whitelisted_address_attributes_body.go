@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -22,6 +21,7 @@ var _ MappedNullable = &WhitelistServiceCreateWhitelistedAddressAttributesBody{}
 // WhitelistServiceCreateWhitelistedAddressAttributesBody struct for WhitelistServiceCreateWhitelistedAddressAttributesBody
 type WhitelistServiceCreateWhitelistedAddressAttributesBody struct {
 	Attributes []TgvalidatordCreateWhitelistedAddressAttributeRequest `json:"attributes"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _WhitelistServiceCreateWhitelistedAddressAttributesBody WhitelistServiceCreateWhitelistedAddressAttributesBody
@@ -79,6 +79,11 @@ func (o WhitelistServiceCreateWhitelistedAddressAttributesBody) MarshalJSON() ([
 func (o WhitelistServiceCreateWhitelistedAddressAttributesBody) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["attributes"] = o.Attributes
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -106,15 +111,20 @@ func (o *WhitelistServiceCreateWhitelistedAddressAttributesBody) UnmarshalJSON(d
 
 	varWhitelistServiceCreateWhitelistedAddressAttributesBody := _WhitelistServiceCreateWhitelistedAddressAttributesBody{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varWhitelistServiceCreateWhitelistedAddressAttributesBody)
+	err = json.Unmarshal(data, &varWhitelistServiceCreateWhitelistedAddressAttributesBody)
 
 	if err != nil {
 		return err
 	}
 
 	*o = WhitelistServiceCreateWhitelistedAddressAttributesBody(varWhitelistServiceCreateWhitelistedAddressAttributesBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "attributes")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

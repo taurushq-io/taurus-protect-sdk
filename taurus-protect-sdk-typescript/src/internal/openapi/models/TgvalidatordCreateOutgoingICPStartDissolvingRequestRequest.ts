@@ -37,7 +37,16 @@ export interface TgvalidatordCreateOutgoingICPStartDissolvingRequestRequest {
      * @memberof TgvalidatordCreateOutgoingICPStartDissolvingRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingICPStartDissolvingRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingICPStartDissolvingRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'comment', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingICPStartDissolvingRequestRequest interface.
@@ -55,12 +64,22 @@ export function TgvalidatordCreateOutgoingICPStartDissolvingRequestRequestFromJS
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingICPStartDissolvingRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'comment': json['comment'] == null ? undefined : json['comment'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingICPStartDissolvingRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingICPStartDissolvingRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingICPStartDissolvingRequestRequest {
@@ -77,6 +96,7 @@ export function TgvalidatordCreateOutgoingICPStartDissolvingRequestRequestFromJS
         'fromAddressId': value['fromAddressId'],
         'comment': value['comment'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -77,6 +77,7 @@ type Client struct {
 	assets               *service.AssetService
 	actions              *service.ActionService
 	blockchains          *service.BlockchainService
+	earn                 *service.EarnService
 	exchanges            *service.ExchangeService
 	fiat                 *service.FiatService
 	feePayers            *service.FeePayerService
@@ -680,10 +681,15 @@ func (c *Client) Assets() *service.AssetService {
 	}
 	c.mu.RUnlock()
 
+	// The asset holders list is confirmed through these verified readers. Resolved before
+	// taking the lock: each accessor takes it itself, and the mutex is not reentrant.
+	addresses := c.Addresses()
+	whitelisted := c.WhitelistedAddresses()
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.assets == nil {
-		c.assets = service.NewAssetService(c.apiClient, c.rulesCache)
+		c.assets = service.NewAssetService(c.apiClient, c.rulesCache, addresses, whitelisted)
 	}
 	return c.assets
 }
@@ -754,6 +760,23 @@ func (c *Client) Fiat() *service.FiatService {
 		c.fiat = service.NewFiatService(c.apiClient)
 	}
 	return c.fiat
+}
+
+// Earn returns the Earn service for reading rewards.
+func (c *Client) Earn() *service.EarnService {
+	c.mu.RLock()
+	if c.earn != nil {
+		c.mu.RUnlock()
+		return c.earn
+	}
+	c.mu.RUnlock()
+
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.earn == nil {
+		c.earn = service.NewEarnService(c.apiClient)
+	}
+	return c.earn
 }
 
 // FeePayers returns the fee payer service for managing fee payers.

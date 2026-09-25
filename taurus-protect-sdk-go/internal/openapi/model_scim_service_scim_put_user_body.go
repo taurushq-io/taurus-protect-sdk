@@ -26,7 +26,10 @@ type ScimServiceScimPutUserBody struct {
 	Active *bool `json:"active,omitempty"`
 	Roles []string `json:"roles,omitempty"`
 	UserName *string `json:"userName,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _ScimServiceScimPutUserBody ScimServiceScimPutUserBody
 
 // NewScimServiceScimPutUserBody instantiates a new ScimServiceScimPutUserBody object
 // This constructor will assign default values to properties that have it defined,
@@ -300,7 +303,39 @@ func (o ScimServiceScimPutUserBody) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.UserName) {
 		toSerialize["userName"] = o.UserName
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *ScimServiceScimPutUserBody) UnmarshalJSON(data []byte) (err error) {
+	varScimServiceScimPutUserBody := _ScimServiceScimPutUserBody{}
+
+	err = json.Unmarshal(data, &varScimServiceScimPutUserBody)
+
+	if err != nil {
+		return err
+	}
+
+	*o = ScimServiceScimPutUserBody(varScimServiceScimPutUserBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "schemas")
+		delete(additionalProperties, "externalId")
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "emails")
+		delete(additionalProperties, "active")
+		delete(additionalProperties, "roles")
+		delete(additionalProperties, "userName")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableScimServiceScimPutUserBody struct {

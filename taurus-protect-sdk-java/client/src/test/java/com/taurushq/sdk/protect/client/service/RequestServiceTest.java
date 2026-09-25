@@ -7,6 +7,8 @@ import com.taurushq.sdk.protect.client.model.IntegrityException;
 import com.taurushq.sdk.protect.client.model.PageRequest;
 import com.taurushq.sdk.protect.client.model.Request;
 import com.taurushq.sdk.protect.client.model.RequestMetadata;
+import com.taurushq.sdk.protect.client.model.RequestResult;
+import com.taurushq.sdk.protect.client.testutil.StubTransport;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import com.taurushq.sdk.protect.openapi.auth.CryptoTPV1;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +23,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class RequestServiceTest {
@@ -264,17 +268,23 @@ class RequestServiceTest {
     // --- getRequests validation ---
 
     @Test
-    void getRequests_throwsOnNullCursor() {
-        assertThrows(NullPointerException.class, () ->
-                requestService.getRequests(null, null, null, null, null));
+    void getRequests_nullCursorAsksForTheFirstPageWithTheDefaultSize() throws Exception {
+        // It used to throw NullPointerException; an unset cursor is the first page.
+        StubTransport stub = StubTransport.replying("{}");
+        RequestResult result = new RequestService(stub.client(), new ApiExceptionMapper())
+                .getRequests(null, null, null, null, (ApiRequestCursor) null);
+        assertEquals(Collections.singletonList(Arrays.asList("cursor.pageSize", "20")), stub.only().query());
+        assertFalse(result.getPage().hasMore());
     }
 
     // --- getRequestsForApproval validation ---
 
     @Test
-    void getRequestsForApproval_throwsOnNullCursor() {
-        assertThrows(NullPointerException.class, () ->
-                requestService.getRequestsForApproval(null));
+    void getRequestsForApproval_nullCursorAsksForTheFirstPageWithTheDefaultSize() throws Exception {
+        StubTransport stub = StubTransport.replying("{}");
+        new RequestService(stub.client(), new ApiExceptionMapper())
+                .getRequestsForApproval((ApiRequestCursor) null);
+        assertEquals(Collections.singletonList(Arrays.asList("cursor.pageSize", "20")), stub.only().query());
     }
 
     // --- rejectRequests validation ---

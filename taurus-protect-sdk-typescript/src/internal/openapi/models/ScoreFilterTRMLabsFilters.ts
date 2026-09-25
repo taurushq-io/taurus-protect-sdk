@@ -25,7 +25,16 @@ export interface ScoreFilterTRMLabsFilters {
      * @memberof ScoreFilterTRMLabsFilters
      */
     scoreGreater?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof ScoreFilterTRMLabsFilters
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const ScoreFilterTRMLabsFiltersWireKeys: ReadonlySet<string> = new Set(['scoreGreater']);
 
 /**
  * Check if a given object implements the ScoreFilterTRMLabsFilters interface.
@@ -42,10 +51,20 @@ export function ScoreFilterTRMLabsFiltersFromJSONTyped(json: any, ignoreDiscrimi
     if (json == null) {
         return json;
     }
-    return {
+    const result: ScoreFilterTRMLabsFilters = {
         
         'scoreGreater': json['scoreGreater'] == null ? undefined : json['scoreGreater'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!ScoreFilterTRMLabsFiltersWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function ScoreFilterTRMLabsFiltersToJSON(json: any): ScoreFilterTRMLabsFilters {
@@ -60,6 +79,7 @@ export function ScoreFilterTRMLabsFiltersFromJSONTyped(json: any, ignoreDiscrimi
     return {
         
         'scoreGreater': value['scoreGreater'],
+        ...value['additionalProperties'],
     };
 }
 

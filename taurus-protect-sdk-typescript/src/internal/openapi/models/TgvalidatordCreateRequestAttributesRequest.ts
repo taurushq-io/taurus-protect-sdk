@@ -39,7 +39,16 @@ export interface TgvalidatordCreateRequestAttributesRequest {
      * @memberof TgvalidatordCreateRequestAttributesRequest
      */
     attributes: Array<TgvalidatordCreateRequestAttributeRequest>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateRequestAttributesRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateRequestAttributesRequestWireKeys: ReadonlySet<string> = new Set(['requestId', 'attributes']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateRequestAttributesRequest interface.
@@ -58,11 +67,21 @@ export function TgvalidatordCreateRequestAttributesRequestFromJSONTyped(json: an
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateRequestAttributesRequest = {
         
         'requestId': json['requestId'],
         'attributes': ((json['attributes'] as Array<any>).map(TgvalidatordCreateRequestAttributeRequestFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateRequestAttributesRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateRequestAttributesRequestToJSON(json: any): TgvalidatordCreateRequestAttributesRequest {
@@ -78,6 +97,7 @@ export function TgvalidatordCreateRequestAttributesRequestFromJSONTyped(json: an
         
         'requestId': value['requestId'],
         'attributes': ((value['attributes'] as Array<any>).map(TgvalidatordCreateRequestAttributeRequestToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

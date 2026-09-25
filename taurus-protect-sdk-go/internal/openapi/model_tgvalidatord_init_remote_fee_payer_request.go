@@ -30,7 +30,10 @@ type TgvalidatordInitRemoteFeePayerRequest struct {
 	CreatorId *string `json:"creatorId,omitempty"`
 	FeePayerAddressId *string `json:"feePayerAddressId,omitempty"`
 	DomainSeparator *string `json:"domainSeparator,omitempty" validate:"regexp=^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=)?$"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordInitRemoteFeePayerRequest TgvalidatordInitRemoteFeePayerRequest
 
 // NewTgvalidatordInitRemoteFeePayerRequest instantiates a new TgvalidatordInitRemoteFeePayerRequest object
 // This constructor will assign default values to properties that have it defined,
@@ -444,7 +447,43 @@ func (o TgvalidatordInitRemoteFeePayerRequest) ToMap() (map[string]interface{}, 
 	if !IsNil(o.DomainSeparator) {
 		toSerialize["domainSeparator"] = o.DomainSeparator
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordInitRemoteFeePayerRequest) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordInitRemoteFeePayerRequest := _TgvalidatordInitRemoteFeePayerRequest{}
+
+	err = json.Unmarshal(data, &varTgvalidatordInitRemoteFeePayerRequest)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordInitRemoteFeePayerRequest(varTgvalidatordInitRemoteFeePayerRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "tenantId")
+		delete(additionalProperties, "url")
+		delete(additionalProperties, "email")
+		delete(additionalProperties, "externalGroupId")
+		delete(additionalProperties, "password")
+		delete(additionalProperties, "userKey")
+		delete(additionalProperties, "encryptionKey")
+		delete(additionalProperties, "forwarderId")
+		delete(additionalProperties, "creatorId")
+		delete(additionalProperties, "feePayerAddressId")
+		delete(additionalProperties, "domainSeparator")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordInitRemoteFeePayerRequest struct {

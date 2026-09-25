@@ -20,6 +20,7 @@ import type {
   TgvalidatordGetFiatProviderAccountsReply,
   TgvalidatordGetFiatProviderCounterpartyAccountReply,
   TgvalidatordGetFiatProviderCounterpartyAccountsReply,
+  TgvalidatordGetFiatProviderEntitiesReply,
   TgvalidatordGetFiatProviderOperationReply,
   TgvalidatordGetFiatProviderOperationsReply,
   TgvalidatordGetFiatProvidersReply,
@@ -35,6 +36,8 @@ import {
     TgvalidatordGetFiatProviderCounterpartyAccountReplyToJSON,
     TgvalidatordGetFiatProviderCounterpartyAccountsReplyFromJSON,
     TgvalidatordGetFiatProviderCounterpartyAccountsReplyToJSON,
+    TgvalidatordGetFiatProviderEntitiesReplyFromJSON,
+    TgvalidatordGetFiatProviderEntitiesReplyToJSON,
     TgvalidatordGetFiatProviderOperationReplyFromJSON,
     TgvalidatordGetFiatProviderOperationReplyToJSON,
     TgvalidatordGetFiatProviderOperationsReplyFromJSON,
@@ -65,6 +68,15 @@ export interface FiatProviderServiceGetFiatProviderCounterpartyAccountsRequest {
     provider: string;
     label: string;
     counterpartyID?: string;
+    sortOrder?: string;
+    cursorCurrentPage?: string;
+    cursorPageRequest?: string;
+    cursorPageSize?: string;
+}
+
+export interface FiatProviderServiceGetFiatProviderEntitiesRequest {
+    provider?: string;
+    label?: string;
     sortOrder?: string;
     cursorCurrentPage?: string;
     cursorPageRequest?: string;
@@ -166,6 +178,27 @@ export interface FiatApiInterface {
      * List fiat providers counterparty accounts
      */
     fiatProviderServiceGetFiatProviderCounterpartyAccounts(requestParameters: FiatProviderServiceGetFiatProviderCounterpartyAccountsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TgvalidatordGetFiatProviderCounterpartyAccountsReply>;
+
+    /**
+     * This endpoint returns a list of fiat provider account entities (Circle wallets / Paxos profiles), optionally filtered by provider and label
+     * @summary List fiat provider entities
+     * @param {string} [provider] Optional. Filter entities by fiat provider. Example: \&#39;circle\&#39;
+     * @param {string} [label] Optional. Filter entities by the label of the fiat provider set in the config
+     * @param {string} [sortOrder] Set this parameter to ASC to get the id sorted in ASC order or DESC to get them in descending order. By default, the order is DESC.
+     * @param {string} [cursorCurrentPage] Base64-encoded string representing the current window of data
+     * @param {string} [cursorPageRequest] The page to request, w.r.t the current page. Can be one of &#x60;FIRST&#x60;, &#x60;PREVIOUS&#x60;, &#x60;NEXT&#x60;, &#x60;LAST&#x60;
+     * @param {string} [cursorPageSize] The size of the page requested. The handling service should impose a hard limit on this
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof FiatApiInterface
+     */
+    fiatProviderServiceGetFiatProviderEntitiesRaw(requestParameters: FiatProviderServiceGetFiatProviderEntitiesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TgvalidatordGetFiatProviderEntitiesReply>>;
+
+    /**
+     * This endpoint returns a list of fiat provider account entities (Circle wallets / Paxos profiles), optionally filtered by provider and label
+     * List fiat provider entities
+     */
+    fiatProviderServiceGetFiatProviderEntities(requestParameters: FiatProviderServiceGetFiatProviderEntitiesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TgvalidatordGetFiatProviderEntitiesReply>;
 
     /**
      * This endpoint returns a fiat provider operation
@@ -449,6 +482,62 @@ export class FiatApi extends runtime.BaseAPI implements FiatApiInterface {
      */
     async fiatProviderServiceGetFiatProviderCounterpartyAccounts(requestParameters: FiatProviderServiceGetFiatProviderCounterpartyAccountsRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TgvalidatordGetFiatProviderCounterpartyAccountsReply> {
         const response = await this.fiatProviderServiceGetFiatProviderCounterpartyAccountsRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * This endpoint returns a list of fiat provider account entities (Circle wallets / Paxos profiles), optionally filtered by provider and label
+     * List fiat provider entities
+     */
+    async fiatProviderServiceGetFiatProviderEntitiesRaw(requestParameters: FiatProviderServiceGetFiatProviderEntitiesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TgvalidatordGetFiatProviderEntitiesReply>> {
+        const queryParameters: any = {};
+
+        if (requestParameters['provider'] != null) {
+            queryParameters['provider'] = requestParameters['provider'];
+        }
+
+        if (requestParameters['label'] != null) {
+            queryParameters['label'] = requestParameters['label'];
+        }
+
+        if (requestParameters['sortOrder'] != null) {
+            queryParameters['sortOrder'] = requestParameters['sortOrder'];
+        }
+
+        if (requestParameters['cursorCurrentPage'] != null) {
+            queryParameters['cursor.currentPage'] = requestParameters['cursorCurrentPage'];
+        }
+
+        if (requestParameters['cursorPageRequest'] != null) {
+            queryParameters['cursor.pageRequest'] = requestParameters['cursorPageRequest'];
+        }
+
+        if (requestParameters['cursorPageSize'] != null) {
+            queryParameters['cursor.pageSize'] = requestParameters['cursorPageSize'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.apiKey) {
+            headerParameters["Authorization"] = await this.configuration.apiKey("Authorization"); // ApiKeyTPV1 authentication
+        }
+
+        const response = await this.request({
+            path: `/api/rest/v1/fiat_providers/entities`,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => TgvalidatordGetFiatProviderEntitiesReplyFromJSON(jsonValue));
+    }
+
+    /**
+     * This endpoint returns a list of fiat provider account entities (Circle wallets / Paxos profiles), optionally filtered by provider and label
+     * List fiat provider entities
+     */
+    async fiatProviderServiceGetFiatProviderEntities(requestParameters: FiatProviderServiceGetFiatProviderEntitiesRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TgvalidatordGetFiatProviderEntitiesReply> {
+        const response = await this.fiatProviderServiceGetFiatProviderEntitiesRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

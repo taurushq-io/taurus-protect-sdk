@@ -31,7 +31,16 @@ export interface StewardServiceCreateApiKeyBody {
      * @memberof StewardServiceCreateApiKeyBody
      */
     roles?: Array<string>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof StewardServiceCreateApiKeyBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const StewardServiceCreateApiKeyBodyWireKeys: ReadonlySet<string> = new Set(['expiration', 'roles']);
 
 /**
  * Check if a given object implements the StewardServiceCreateApiKeyBody interface.
@@ -48,11 +57,21 @@ export function StewardServiceCreateApiKeyBodyFromJSONTyped(json: any, ignoreDis
     if (json == null) {
         return json;
     }
-    return {
+    const result: StewardServiceCreateApiKeyBody = {
         
         'expiration': json['expiration'] == null ? undefined : (new Date(json['expiration'])),
         'roles': json['roles'] == null ? undefined : json['roles'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!StewardServiceCreateApiKeyBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function StewardServiceCreateApiKeyBodyToJSON(json: any): StewardServiceCreateApiKeyBody {
@@ -68,6 +87,7 @@ export function StewardServiceCreateApiKeyBodyFromJSONTyped(json: any, ignoreDis
         
         'expiration': value['expiration'] == null ? undefined : ((value['expiration']).toISOString()),
         'roles': value['roles'],
+        ...value['additionalProperties'],
     };
 }
 

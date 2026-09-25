@@ -392,10 +392,13 @@ type CreateOutgoingRequest struct {
 }
 
 // ListRequestsOptions contains options for listing requests.
+//
+// ListRequestsForApproval accepts IDs, Types and Currency only: the approval queue cannot apply
+// Statuses, FromDate, ToDate or ExternalRequestIDs, so setting one of them is an error there.
 type ListRequestsOptions struct {
-	// PageSize is the maximum number of requests per page.
-	PageSize int
-	// Cursor is the base64-encoded cursor for the current page (from RequestResult.NextCursor).
+	// PageSize is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
+	PageSize int64
+	// Cursor is a previous page's Page.NextCursor.
 	Cursor string
 	// Statuses filters by request status. The endpoint takes a list; a single
 	// status is a list of one.
@@ -418,10 +421,8 @@ type ListRequestsOptions struct {
 type RequestResult struct {
 	// Requests is the list of requests in the current page.
 	Requests []*Request
-	// NextCursor is the cursor to use for fetching the next page. Empty if no more pages.
-	NextCursor string
-	// HasNext indicates whether more pages are available.
-	HasNext bool
+	// Page continues the list: pass Page.NextCursor as the next Cursor until HasMore is false.
+	Page CursorPage
 	// ExcludedUnverified names requests dropped from Requests because their
 	// metadata failed integrity verification. A shortened list must never be
 	// mistaken for a complete one, so the omission is reported rather than silent.

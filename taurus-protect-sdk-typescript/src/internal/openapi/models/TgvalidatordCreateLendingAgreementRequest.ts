@@ -75,7 +75,16 @@ export interface TgvalidatordCreateLendingAgreementRequest {
      * @memberof TgvalidatordCreateLendingAgreementRequest
      */
     borrowerSharedAddressID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateLendingAgreementRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateLendingAgreementRequestWireKeys: ReadonlySet<string> = new Set(['lendingOfferID', 'lenderParticipantID', 'annualPercentageYield', 'currencyID', 'amount', 'duration', 'collaterals', 'borrowerSharedAddressID']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateLendingAgreementRequest interface.
@@ -92,7 +101,7 @@ export function TgvalidatordCreateLendingAgreementRequestFromJSONTyped(json: any
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateLendingAgreementRequest = {
         
         'lendingOfferID': json['lendingOfferID'] == null ? undefined : json['lendingOfferID'],
         'lenderParticipantID': json['lenderParticipantID'] == null ? undefined : json['lenderParticipantID'],
@@ -103,6 +112,16 @@ export function TgvalidatordCreateLendingAgreementRequestFromJSONTyped(json: any
         'collaterals': json['collaterals'] == null ? undefined : ((json['collaterals'] as Array<any>).map(CreateLendingAgreementRequestLoanCollateralRequestFromJSON)),
         'borrowerSharedAddressID': json['borrowerSharedAddressID'] == null ? undefined : json['borrowerSharedAddressID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateLendingAgreementRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateLendingAgreementRequestToJSON(json: any): TgvalidatordCreateLendingAgreementRequest {
@@ -124,6 +143,7 @@ export function TgvalidatordCreateLendingAgreementRequestFromJSONTyped(json: any
         'duration': value['duration'],
         'collaterals': value['collaterals'] == null ? undefined : ((value['collaterals'] as Array<any>).map(CreateLendingAgreementRequestLoanCollateralRequestToJSON)),
         'borrowerSharedAddressID': value['borrowerSharedAddressID'],
+        ...value['additionalProperties'],
     };
 }
 

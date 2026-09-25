@@ -70,7 +70,16 @@ export interface TgvalidatordCreateSettlementRequest {
      * @memberof TgvalidatordCreateSettlementRequest
      */
     startExecutionDate?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateSettlementRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateSettlementRequestWireKeys: ReadonlySet<string> = new Set(['targetParticipantID', 'firstLegParticipantID', 'firstLegAssets', 'secondLegAssets', 'clips', 'startExecutionDate']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateSettlementRequest interface.
@@ -91,7 +100,7 @@ export function TgvalidatordCreateSettlementRequestFromJSONTyped(json: any, igno
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateSettlementRequest = {
         
         'targetParticipantID': json['targetParticipantID'],
         'firstLegParticipantID': json['firstLegParticipantID'],
@@ -100,6 +109,16 @@ export function TgvalidatordCreateSettlementRequestFromJSONTyped(json: any, igno
         'clips': json['clips'] == null ? undefined : ((json['clips'] as Array<any>).map(CreateSettlementRequestClipRequestFromJSON)),
         'startExecutionDate': json['startExecutionDate'] == null ? undefined : (new Date(json['startExecutionDate'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateSettlementRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateSettlementRequestToJSON(json: any): TgvalidatordCreateSettlementRequest {
@@ -119,6 +138,7 @@ export function TgvalidatordCreateSettlementRequestFromJSONTyped(json: any, igno
         'secondLegAssets': ((value['secondLegAssets'] as Array<any>).map(TgvalidatordTnSettlementAssetTransferToJSON)),
         'clips': value['clips'] == null ? undefined : ((value['clips'] as Array<any>).map(CreateSettlementRequestClipRequestToJSON)),
         'startExecutionDate': value['startExecutionDate'] == null ? undefined : ((value['startExecutionDate']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

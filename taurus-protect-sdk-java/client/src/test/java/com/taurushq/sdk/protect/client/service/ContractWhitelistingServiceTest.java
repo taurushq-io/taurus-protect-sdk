@@ -193,19 +193,6 @@ class ContractWhitelistingServiceTest {
                         "123", "USDC", "", 6));
     }
 
-    // deleteWhitelistedContract tests
-    @Test
-    void deleteWhitelistedContract_throwsOnNullId() {
-        assertThrows(IllegalArgumentException.class, () ->
-                contractWhitelistingService.deleteWhitelistedContract(null, "comment"));
-    }
-
-    @Test
-    void deleteWhitelistedContract_throwsOnEmptyId() {
-        assertThrows(IllegalArgumentException.class, () ->
-                contractWhitelistingService.deleteWhitelistedContract("", "comment"));
-    }
-
     // createAttribute tests
     @Test
     void createAttribute_throwsOnNullContractId() {

@@ -16,7 +16,7 @@
  * const request = await requestService.get(123);
  *
  * // List requests pending approval
- * const { requests, cursor } = await requestService.listForApproval({ limit: 50 });
+ * const { requests, pagination } = await requestService.listForApproval({ pageSize: 50 });
  *
  * // Approve requests with ECDSA signature
  * const signedCount = await requestService.approveRequests(requests, privateKey);
@@ -35,21 +35,22 @@ import type {
   CreateExternalTransferFromWalletOptions,
   CreateIncomingRequestOptions,
 } from "../models/request";
-import type { CursorPagination } from "../models/pagination";
+import { buildCursorPage, cursorRequest, type CursorPage } from "../models/pagination";
 import { BaseService } from "./base";
-import { IntegrityError, NotFoundError, ServerError } from "../errors";
+import { cursorQuery } from "./paging";
+import { IntegrityError, NotFoundError, ServerError, ValidationError } from "../errors";
 import { calculateHexHash, constantTimeCompare, signData } from "../crypto";
 import { requestFromDto } from "../mappers/request";
 import type { TgvalidatordRequest } from "../internal/openapi/models/TgvalidatordRequest";
 
 /**
- * Result of a list operation with cursor-based pagination.
+ * A page of requests.
  */
 export interface ListRequestsResult {
-  /** The requests in this page */
+  /** The verified requests of this page; rows that failed verification are left out */
   requests: Request[];
-  /** Cursor for pagination */
-  cursor: CursorPagination;
+  /** Cursor pagination: continue with `cursor: pagination.nextCursor` while `hasMore` */
+  pagination: CursorPage;
 }
 
 /**
@@ -103,7 +104,7 @@ export class RequestService extends BaseService {
    */
   async get(requestId: number): Promise<Request> {
     if (requestId <= 0) {
-      throw new Error("requestId must be positive");
+      throw new ValidationError("requestId must be positive");
     }
 
     return this.execute(async () => {
@@ -129,31 +130,31 @@ export class RequestService extends BaseService {
    * Every row's metadata hash is verified. A row that fails is excluded from the
    * result and warned about rather than failing the whole call.
    *
-   * @param options - List options including filters and pagination
-   * @returns Object containing requests array and cursor pagination
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
+   * @returns The page of verified requests and its cursor pagination
+   * @throws {ValidationError} If the page size or cursor options are invalid
    * @throws {APIError} If API request fails
    *
    * @example
    * ```typescript
-   * const result = await requestService.list({
-   *   limit: 50,
-   *   statuses: [RequestStatus.PENDING_APPROVAL],
-   *   fromDate: new Date('2024-01-01'),
-   * });
-   * console.log(`Found ${result.requests.length} requests`);
+   * let cursor: string | undefined;
+   * do {
+   *   const page = await requestService.list({
+   *     statuses: [RequestStatus.PENDING],
+   *     fromDate: new Date('2024-01-01'),
+   *     cursor,
+   *   });
+   *   page.requests.forEach((r) => console.log(r.id, r.status));
+   *   cursor = page.pagination.hasMore ? page.pagination.nextCursor : undefined;
+   * } while (cursor);
    * ```
    */
   async list(options: ListRequestsOptions = {}): Promise<ListRequestsResult> {
-    const limit = options.limit ?? 50;
-    if (limit <= 0) {
-      throw new Error("limit must be positive");
-    }
+    const page = cursorRequest(options);
 
     return this.execute(async () => {
       const response = await this.requestsApi.requestServiceGetRequestsV2({
-        cursorPageSize: String(limit),
-        cursorCurrentPage: options.currentPage,
-        cursorPageRequest: options.pageRequest,
+        ...cursorQuery(page),
         from: options.fromDate,
         to: options.toDate,
         currencyID: options.currencyId,
@@ -164,15 +165,9 @@ export class RequestService extends BaseService {
         externalRequestIDs: options.externalRequestIds,
       });
 
-      const requests = this.verifiedRequests(response.result);
-      const cursor = response.cursor;
-
       return {
-        requests,
-        cursor: {
-          nextCursor: cursor?.currentPage,
-          hasMore: cursor?.currentPage !== undefined,
-        },
+        requests: this.verifiedRequests(response.result),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
       };
     });
   }
@@ -183,47 +178,51 @@ export class RequestService extends BaseService {
    * Every row's metadata hash is verified. A row that fails is excluded from the
    * result and warned about rather than failing the whole call.
    *
-   * @param options - List options including filters and pagination
-   * @returns Object containing requests array and cursor pagination
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
+   * @returns The page of verified requests and its cursor pagination
+   * @throws {ValidationError} If the page size or cursor options are invalid, or a status
+   *   filter is passed (the approval queue has none)
    * @throws {APIError} If API request fails
    *
    * @example
    * ```typescript
-   * const result = await requestService.listForApproval({ limit: 50 });
+   * const result = await requestService.listForApproval({ pageSize: 50 });
    * console.log(`${result.requests.length} requests pending approval`);
    * ```
    */
   async listForApproval(
     options: ListRequestsForApprovalOptions = {}
   ): Promise<ListRequestsResult> {
-    const limit = options.limit ?? 50;
-    if (limit <= 0) {
-      throw new Error("limit must be positive");
+    // Not part of the options type; rejected by name for untyped callers rather than
+    // silently dropped, since the endpoint has no status filter to send it to.
+    if ((options as { statuses?: unknown }).statuses !== undefined) {
+      throw new ValidationError(
+        "statuses cannot be applied to the approval queue: it lists pending requests only"
+      );
     }
+    // validatord's approval paginator drops externalRequestIDs, so sending it would return an
+    // unfiltered queue that reads as filtered.
+    if ((options as { externalRequestIds?: unknown }).externalRequestIds !== undefined) {
+      throw new ValidationError(
+        "externalRequestIds cannot be applied to the approval queue: the server ignores it there"
+      );
+    }
+    const page = cursorRequest(options);
 
     return this.execute(async () => {
       const response =
         await this.requestsApi.requestServiceGetRequestsForApprovalV2({
-          cursorPageSize: String(limit),
-          cursorCurrentPage: options.currentPage,
-          cursorPageRequest: options.pageRequest,
+          ...cursorQuery(page),
           currencyID: options.currencyId,
           types: options.types,
           excludeTypes: options.excludeTypes,
           ids: options.ids?.map(String),
           sortOrder: options.sortOrder,
-          externalRequestIDs: options.externalRequestIds,
         });
 
-      const requests = this.verifiedRequests(response.result);
-      const cursor = response.cursor;
-
       return {
-        requests,
-        cursor: {
-          nextCursor: cursor?.currentPage,
-          hasMore: cursor?.currentPage !== undefined,
-        },
+        requests: this.verifiedRequests(response.result),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
       };
     });
   }
@@ -237,7 +236,7 @@ export class RequestService extends BaseService {
    * @param privateKey - ECDSA private key for signing (P-256)
    * @param comment - Optional approval comment
    * @returns Number of requests successfully signed (0 or 1)
-   * @throws {Error} If request is invalid
+   * @throws {ValidationError} If request is invalid
    * @throws {APIError} If API request fails
    *
    * @example
@@ -267,7 +266,7 @@ export class RequestService extends BaseService {
    * @param privateKey - ECDSA private key for signing (P-256)
    * @param comment - Optional approval comment
    * @returns Number of requests successfully signed
-   * @throws {Error} If requests list is empty or invalid
+   * @throws {ValidationError} If requests list is empty or invalid
    * @throws {APIError} If API request fails
    *
    * @example
@@ -290,21 +289,21 @@ export class RequestService extends BaseService {
     comment: string = "approving via taurus-protect-sdk-typescript"
   ): Promise<number> {
     if (!requests || requests.length === 0) {
-      throw new Error("requests list cannot be empty");
+      throw new ValidationError("requests list cannot be empty");
     }
     if (!privateKey) {
-      throw new Error("privateKey cannot be null or undefined");
+      throw new ValidationError("privateKey cannot be null or undefined");
     }
 
     // Validate all requests have metadata with hash
     for (const request of requests) {
       if (!request.metadata) {
-        throw new Error(
+        throw new ValidationError(
           `Request ${request.id} metadata cannot be null or undefined`
         );
       }
       if (!request.metadata.hash) {
-        throw new Error(
+        throw new ValidationError(
           `Request ${request.id} metadata hash cannot be null or empty`
         );
       }
@@ -361,7 +360,7 @@ export class RequestService extends BaseService {
    *
    * @param requestId - The request ID to reject
    * @param comment - Rejection comment (required)
-   * @throws {Error} If comment is empty
+   * @throws {ValidationError} If comment is empty
    * @throws {APIError} If API request fails
    *
    * @example
@@ -378,7 +377,7 @@ export class RequestService extends BaseService {
    *
    * @param requestIds - List of request IDs to reject
    * @param comment - Rejection comment (required)
-   * @throws {Error} If requestIds is empty or comment is empty
+   * @throws {ValidationError} If requestIds is empty or comment is empty
    * @throws {APIError} If API request fails
    *
    * @example
@@ -388,10 +387,10 @@ export class RequestService extends BaseService {
    */
   async rejectRequests(requestIds: number[], comment: string): Promise<void> {
     if (!requestIds || requestIds.length === 0) {
-      throw new Error("requestIds list cannot be empty");
+      throw new ValidationError("requestIds list cannot be empty");
     }
     if (!comment || comment.trim().length === 0) {
-      throw new Error("comment is required and cannot be empty");
+      throw new ValidationError("comment is required and cannot be empty");
     }
 
     return this.execute(async () => {
@@ -411,7 +410,7 @@ export class RequestService extends BaseService {
    *
    * @param options - Transfer options
    * @returns The created request
-   * @throws {Error} If arguments are invalid
+   * @throws {ValidationError} If arguments are invalid
    * @throws {APIError} If API request fails
    *
    * @example
@@ -428,18 +427,18 @@ export class RequestService extends BaseService {
     options: CreateInternalTransferOptions
   ): Promise<Request> {
     if (options.fromAddressId <= 0) {
-      throw new Error("fromAddressId must be positive");
+      throw new ValidationError("fromAddressId must be positive");
     }
     if (options.toAddressId <= 0) {
-      throw new Error("toAddressId must be positive");
+      throw new ValidationError("toAddressId must be positive");
     }
     if (!options.amount || options.amount.trim().length === 0) {
-      throw new Error("amount is required");
+      throw new ValidationError("amount is required");
     }
     // Validate amount is a positive number
     const amountNum = parseFloat(options.amount);
     if (isNaN(amountNum) || amountNum <= 0) {
-      throw new Error("amount must be a positive number");
+      throw new ValidationError("amount must be a positive number");
     }
 
     return this.execute(async () => {
@@ -473,7 +472,7 @@ export class RequestService extends BaseService {
    *
    * @param options - Transfer options
    * @returns The created request
-   * @throws {Error} If arguments are invalid
+   * @throws {ValidationError} If arguments are invalid
    * @throws {APIError} If API request fails
    *
    * @example
@@ -490,18 +489,18 @@ export class RequestService extends BaseService {
     options: CreateExternalTransferOptions
   ): Promise<Request> {
     if (options.fromAddressId <= 0) {
-      throw new Error("fromAddressId must be positive");
+      throw new ValidationError("fromAddressId must be positive");
     }
     if (options.toWhitelistedAddressId <= 0) {
-      throw new Error("toWhitelistedAddressId must be positive");
+      throw new ValidationError("toWhitelistedAddressId must be positive");
     }
     if (!options.amount || options.amount.trim().length === 0) {
-      throw new Error("amount is required");
+      throw new ValidationError("amount is required");
     }
     // Validate amount is a positive number
     const amountNum = parseFloat(options.amount);
     if (isNaN(amountNum) || amountNum <= 0) {
-      throw new Error("amount must be a positive number");
+      throw new ValidationError("amount must be a positive number");
     }
 
     return this.execute(async () => {
@@ -536,7 +535,7 @@ export class RequestService extends BaseService {
    *
    * @param options - Transfer options
    * @returns The created request
-   * @throws {Error} If arguments are invalid
+   * @throws {ValidationError} If arguments are invalid
    * @throws {APIError} If API request fails
    *
    * @example
@@ -553,18 +552,18 @@ export class RequestService extends BaseService {
     options: CreateInternalTransferFromWalletOptions
   ): Promise<Request> {
     if (options.fromWalletId <= 0) {
-      throw new Error("fromWalletId must be positive");
+      throw new ValidationError("fromWalletId must be positive");
     }
     if (options.toAddressId <= 0) {
-      throw new Error("toAddressId must be positive");
+      throw new ValidationError("toAddressId must be positive");
     }
     if (!options.amount || options.amount.trim().length === 0) {
-      throw new Error("amount is required");
+      throw new ValidationError("amount is required");
     }
     // Validate amount is a positive number
     const amountNum = parseFloat(options.amount);
     if (isNaN(amountNum) || amountNum <= 0) {
-      throw new Error("amount must be a positive number");
+      throw new ValidationError("amount must be a positive number");
     }
 
     return this.execute(async () => {
@@ -598,7 +597,7 @@ export class RequestService extends BaseService {
    *
    * @param options - Transfer options
    * @returns The created request
-   * @throws {Error} If arguments are invalid
+   * @throws {ValidationError} If arguments are invalid
    * @throws {APIError} If API request fails
    *
    * @example
@@ -615,18 +614,18 @@ export class RequestService extends BaseService {
     options: CreateExternalTransferFromWalletOptions
   ): Promise<Request> {
     if (options.fromWalletId <= 0) {
-      throw new Error("fromWalletId must be positive");
+      throw new ValidationError("fromWalletId must be positive");
     }
     if (options.toWhitelistedAddressId <= 0) {
-      throw new Error("toWhitelistedAddressId must be positive");
+      throw new ValidationError("toWhitelistedAddressId must be positive");
     }
     if (!options.amount || options.amount.trim().length === 0) {
-      throw new Error("amount is required");
+      throw new ValidationError("amount is required");
     }
     // Validate amount is a positive number
     const amountNum = parseFloat(options.amount);
     if (isNaN(amountNum) || amountNum <= 0) {
-      throw new Error("amount must be a positive number");
+      throw new ValidationError("amount must be a positive number");
     }
 
     return this.execute(async () => {
@@ -663,7 +662,7 @@ export class RequestService extends BaseService {
    * @param addressId - The address ID of the pending transaction
    * @param nonce - The nonce of the transaction to cancel
    * @returns The created cancel request
-   * @throws {Error} If arguments are invalid
+   * @throws {ValidationError} If arguments are invalid
    * @throws {APIError} If API request fails
    *
    * @example
@@ -677,11 +676,11 @@ export class RequestService extends BaseService {
     nonce: bigint | number
   ): Promise<Request> {
     if (addressId <= 0) {
-      throw new Error("addressId must be positive");
+      throw new ValidationError("addressId must be positive");
     }
     const nonceValue = BigInt(nonce);
     if (nonceValue < 0n) {
-      throw new Error("nonce cannot be negative");
+      throw new ValidationError("nonce cannot be negative");
     }
 
     return this.execute(async () => {
@@ -712,7 +711,7 @@ export class RequestService extends BaseService {
    *
    * @param options - Incoming request options
    * @returns The created request
-   * @throws {Error} If arguments are invalid
+   * @throws {ValidationError} If arguments are invalid
    * @throws {APIError} If API request fails
    *
    * @example
@@ -729,18 +728,18 @@ export class RequestService extends BaseService {
     options: CreateIncomingRequestOptions
   ): Promise<Request> {
     if (options.fromExchangeId <= 0) {
-      throw new Error("fromExchangeId must be positive");
+      throw new ValidationError("fromExchangeId must be positive");
     }
     if (options.toAddressId <= 0) {
-      throw new Error("toAddressId must be positive");
+      throw new ValidationError("toAddressId must be positive");
     }
     if (!options.amount || options.amount.trim().length === 0) {
-      throw new Error("amount is required");
+      throw new ValidationError("amount is required");
     }
     // Validate amount is a positive number
     const amountNum = parseFloat(options.amount);
     if (isNaN(amountNum) || amountNum <= 0) {
-      throw new Error("amount must be a positive number");
+      throw new ValidationError("amount must be a positive number");
     }
 
     return this.execute(async () => {

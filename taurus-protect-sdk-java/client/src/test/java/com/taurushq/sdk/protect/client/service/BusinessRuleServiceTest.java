@@ -1,10 +1,16 @@
 package com.taurushq.sdk.protect.client.service;
 
 import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
+import com.taurushq.sdk.protect.client.model.ApiRequestCursor;
+import com.taurushq.sdk.protect.client.testutil.StubTransport;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+import java.util.Collections;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class BusinessRuleServiceTest {
@@ -33,9 +39,11 @@ class BusinessRuleServiceTest {
     }
 
     @Test
-    void getBusinessRules_throwsOnNullCursor() {
-        assertThrows(NullPointerException.class, () ->
-                businessRuleService.getBusinessRules(null));
+    void getBusinessRules_nullCursorAsksForTheFirstPageWithTheDefaultSize() throws Exception {
+        // It used to throw NullPointerException; an unset cursor is the first page.
+        StubTransport stub = StubTransport.replying("{}");
+        new BusinessRuleService(stub.client(), apiExceptionMapper).getBusinessRules((ApiRequestCursor) null);
+        assertEquals(Collections.singletonList(Arrays.asList("cursor.pageSize", "20")), stub.only().query());
     }
 
     @Test

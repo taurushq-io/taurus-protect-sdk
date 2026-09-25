@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordOIDCSession{}
 // TgvalidatordOIDCSession struct for TgvalidatordOIDCSession
 type TgvalidatordOIDCSession struct {
 	Token *string `json:"token,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordOIDCSession TgvalidatordOIDCSession
 
 // NewTgvalidatordOIDCSession instantiates a new TgvalidatordOIDCSession object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordOIDCSession) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Token) {
 		toSerialize["token"] = o.Token
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordOIDCSession) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordOIDCSession := _TgvalidatordOIDCSession{}
+
+	err = json.Unmarshal(data, &varTgvalidatordOIDCSession)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordOIDCSession(varTgvalidatordOIDCSession)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "token")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordOIDCSession struct {

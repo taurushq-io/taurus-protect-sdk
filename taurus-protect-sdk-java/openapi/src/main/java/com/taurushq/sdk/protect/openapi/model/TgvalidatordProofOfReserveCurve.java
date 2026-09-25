@@ -25,21 +25,27 @@ import com.google.gson.stream.JsonWriter;
 
 /**
  * Gets or Sets tgvalidatordProofOfReserveCurve
+ * <p>
+ * An open set of values: a value this client was not generated with is kept as-is, so
+ * {@link #fromValue} never throws and a new server value cannot fail a whole decode.
  */
 @JsonAdapter(TgvalidatordProofOfReserveCurve.Adapter.class)
-public enum TgvalidatordProofOfReserveCurve {
+public final class TgvalidatordProofOfReserveCurve {
   
-  SECP256K1("Secp256k1"),
+  public static final TgvalidatordProofOfReserveCurve SECP256K1 = new TgvalidatordProofOfReserveCurve("Secp256k1");
   
-  ED25519("Ed25519"),
+  public static final TgvalidatordProofOfReserveCurve ED25519 = new TgvalidatordProofOfReserveCurve("Ed25519");
   
-  SECP256R1("Secp256r1"),
+  public static final TgvalidatordProofOfReserveCurve SECP256R1 = new TgvalidatordProofOfReserveCurve("Secp256r1");
   
-  PALLAS("Pallas");
+  public static final TgvalidatordProofOfReserveCurve PALLAS = new TgvalidatordProofOfReserveCurve("Pallas");
+  
 
-  private String value;
+  private static final TgvalidatordProofOfReserveCurve[] knownValues = { SECP256K1, ED25519, SECP256R1, PALLAS };
 
-  TgvalidatordProofOfReserveCurve(String value) {
+  private final String value;
+
+  private TgvalidatordProofOfReserveCurve(String value) {
     this.value = value;
   }
 
@@ -47,18 +53,53 @@ public enum TgvalidatordProofOfReserveCurve {
     return value;
   }
 
+  /**
+   * Returns the values this client was generated with.
+   *
+   * @return a new array of the known values
+   */
+  public static TgvalidatordProofOfReserveCurve[] values() {
+    return knownValues.clone();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    return Objects.equals(value, ((TgvalidatordProofOfReserveCurve) o).value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(value);
+  }
+
   @Override
   public String toString() {
     return String.valueOf(value);
   }
 
+  /**
+   * Returns the known constant for a value, or a new instance carrying a value this client
+   * does not know. Never throws.
+   *
+   * @param value the wire value
+   * @return the matching instance, or null for a null value
+   */
   public static TgvalidatordProofOfReserveCurve fromValue(String value) {
-    for (TgvalidatordProofOfReserveCurve b : TgvalidatordProofOfReserveCurve.values()) {
+    if (value == null) {
+      return null;
+    }
+    for (TgvalidatordProofOfReserveCurve b : knownValues) {
       if (b.value.equals(value)) {
         return b;
       }
     }
-    throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    return new TgvalidatordProofOfReserveCurve(value);
   }
 
   public static class Adapter extends TypeAdapter<TgvalidatordProofOfReserveCurve> {

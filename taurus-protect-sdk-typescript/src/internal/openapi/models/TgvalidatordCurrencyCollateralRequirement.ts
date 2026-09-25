@@ -63,7 +63,16 @@ export interface TgvalidatordCurrencyCollateralRequirement {
      * @memberof TgvalidatordCurrencyCollateralRequirement
      */
     currencyInfo?: TgvalidatordCurrency;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCurrencyCollateralRequirement
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCurrencyCollateralRequirementWireKeys: ReadonlySet<string> = new Set(['blockchain', 'network', 'arg1', 'arg2', 'ratio', 'currencyInfo']);
 
 /**
  * Check if a given object implements the TgvalidatordCurrencyCollateralRequirement interface.
@@ -80,7 +89,7 @@ export function TgvalidatordCurrencyCollateralRequirementFromJSONTyped(json: any
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCurrencyCollateralRequirement = {
         
         'blockchain': json['blockchain'] == null ? undefined : json['blockchain'],
         'network': json['network'] == null ? undefined : json['network'],
@@ -89,6 +98,16 @@ export function TgvalidatordCurrencyCollateralRequirementFromJSONTyped(json: any
         'ratio': json['ratio'] == null ? undefined : json['ratio'],
         'currencyInfo': json['currencyInfo'] == null ? undefined : TgvalidatordCurrencyFromJSON(json['currencyInfo']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCurrencyCollateralRequirementWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCurrencyCollateralRequirementToJSON(json: any): TgvalidatordCurrencyCollateralRequirement {
@@ -108,6 +127,7 @@ export function TgvalidatordCurrencyCollateralRequirementFromJSONTyped(json: any
         'arg2': value['arg2'],
         'ratio': value['ratio'],
         'currencyInfo': TgvalidatordCurrencyToJSON(value['currencyInfo']),
+        ...value['additionalProperties'],
     };
 }
 

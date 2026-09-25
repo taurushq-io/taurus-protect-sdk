@@ -58,7 +58,16 @@ export interface TgvalidatordRequestBundleDetails {
      * @memberof TgvalidatordRequestBundleDetails
      */
     destination?: TgvalidatordRequestBundleDetailsDestination;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordRequestBundleDetails
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordRequestBundleDetailsWireKeys: ReadonlySet<string> = new Set(['error', 'amount', 'source', 'destination']);
 
 /**
  * Check if a given object implements the TgvalidatordRequestBundleDetails interface.
@@ -75,13 +84,23 @@ export function TgvalidatordRequestBundleDetailsFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordRequestBundleDetails = {
         
         'error': json['error'] == null ? undefined : json['error'],
         'amount': json['amount'] == null ? undefined : json['amount'],
         'source': json['source'] == null ? undefined : TgvalidatordRequestBundleDetailsSourceFromJSON(json['source']),
         'destination': json['destination'] == null ? undefined : TgvalidatordRequestBundleDetailsDestinationFromJSON(json['destination']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordRequestBundleDetailsWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordRequestBundleDetailsToJSON(json: any): TgvalidatordRequestBundleDetails {
@@ -99,6 +118,7 @@ export function TgvalidatordRequestBundleDetailsFromJSONTyped(json: any, ignoreD
         'amount': value['amount'],
         'source': TgvalidatordRequestBundleDetailsSourceToJSON(value['source']),
         'destination': TgvalidatordRequestBundleDetailsDestinationToJSON(value['destination']),
+        ...value['additionalProperties'],
     };
 }
 

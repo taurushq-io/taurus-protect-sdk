@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
 
+from taurus_protect._internal.openapi import TransactionsApi
 from taurus_protect.errors import NotFoundError
+from taurus_protect.models.pagination import Pagination
+from taurus_protect.models.transaction import TransactionExport
 from taurus_protect.services.transaction_service import TransactionService
+from tests.unit.transport_stub import StubTransport, api_client
 
 
 class TestGet:
@@ -16,9 +21,7 @@ class TestGet:
     def _make_service(self) -> tuple:
         api_client = MagicMock()
         transactions_api = MagicMock()
-        service = TransactionService(
-            api_client=api_client, transactions_api=transactions_api
-        )
+        service = TransactionService(api_client=api_client, transactions_api=transactions_api)
         return service, transactions_api
 
     def test_get_returns_transaction(self) -> None:
@@ -60,9 +63,7 @@ class TestGetByHash:
     def _make_service(self) -> tuple:
         api_client = MagicMock()
         transactions_api = MagicMock()
-        service = TransactionService(
-            api_client=api_client, transactions_api=transactions_api
-        )
+        service = TransactionService(api_client=api_client, transactions_api=transactions_api)
         return service, transactions_api
 
     def test_get_by_hash_raises_for_empty_hash(self) -> None:
@@ -99,151 +100,121 @@ class TestGetByHash:
 
 
 class TestList:
-    """Tests for TransactionService.list()."""
+    """TransactionService.list over the real generated client (next offset = offset + rows)."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        transactions_api = MagicMock()
-        service = TransactionService(
-            api_client=api_client, transactions_api=transactions_api
+    def _service(self) -> TransactionService:
+        ac = api_client()
+        return TransactionService(ac, TransactionsApi(ac))
+
+    def test_walk_ends_on_a_trailing_empty_page(self) -> None:
+        """The total can be an upper bound: an empty page with no progress ends the walk."""
+        rows = [{"id": str(i)} for i in range(2)]
+        with StubTransport(
+            {"result": rows, "totalItems": "5"},
+            {"totalItems": "5"},
+        ) as transport:
+            transactions, pagination = self._service().list(limit=2)
+            assert len(transactions) == 2
+            assert pagination == Pagination(
+                limit=2, offset=0, total_items=5, next_offset=2, has_more=True
+            )
+            transactions, pagination = self._service().list(limit=2, offset=2)
+
+        assert transactions == []
+        assert pagination == Pagination(
+            limit=2, offset=2, total_items=5, next_offset=2, has_more=False
         )
-        return service, transactions_api
+        assert transport.requests[1].query == [("limit", "2"), ("offset", "2")]
 
-    def test_list_returns_transactions_and_pagination(self) -> None:
-        service, api = self._make_service()
+    def test_filters_reach_the_wire(self) -> None:
+        start = datetime(2026, 1, 2, 3, 4, 5, tzinfo=timezone.utc)
+        with StubTransport() as transport:
+            self._service().list(
+                from_date=start,
+                to_date=start,
+                currency="ETH",
+                direction="incoming",
+                blockchain="ETH",
+                network="mainnet",
+            )
 
-        reply = MagicMock()
-        reply.result = [MagicMock()]
-        reply.total_items = "10"
-        api.transaction_service_get_transactions.return_value = reply
+        query = dict(transport.last.query)
+        assert query["currency"] == "ETH"
+        assert query["direction"] == "incoming"
+        assert query["blockchain"] == "ETH"
+        assert query["network"] == "mainnet"
+        assert query["from"].startswith("2026-01-02T03:04:05")
+        assert query["to"].startswith("2026-01-02T03:04:05")
+        assert query["limit"] == "20"
 
-        with patch(
-            "taurus_protect.services.transaction_service.map_transactions",
-            return_value=[MagicMock()],
-        ):
-            transactions, pagination = service.list(limit=50)
+    @pytest.mark.parametrize("kwargs,name", [({"limit": 101}, "limit"), ({"offset": -1}, "offset")])
+    def test_invalid_page_window_sends_nothing(self, kwargs: dict, name: str) -> None:
+        with StubTransport() as transport:
+            with pytest.raises(ValueError, match=name):
+                self._service().list(**kwargs)
 
-        assert len(transactions) == 1
-
-    def test_list_forwards_blockchain_and_network_filters(self) -> None:
-        """The API accepts blockchain and network on GetTransactions, and the Go and TS
-        SDKs expose both. This SDK hardcoded them to None, so the filters were
-        unreachable and a caller silently got every chain back."""
-        service, api = self._make_service()
-
-        reply = MagicMock()
-        reply.result = []
-        reply.total_items = "0"
-        api.transaction_service_get_transactions.return_value = reply
-
-        with patch(
-            "taurus_protect.services.transaction_service.map_transactions",
-            return_value=[],
-        ):
-            service.list(blockchain="ETH", network="mainnet")
-
-        kwargs = api.transaction_service_get_transactions.call_args.kwargs
-        assert kwargs["blockchain"] == "ETH"
-        assert kwargs["network"] == "mainnet"
-
-    def test_export_csv_forwards_blockchain_and_network_filters(self) -> None:
-        service, api = self._make_service()
-        reply = MagicMock()
-        reply.result = "id,amount\n"
-        api.transaction_service_export_transactions.return_value = reply
-
-        service.export_csv(blockchain="ETH", network="mainnet")
-
-        kwargs = api.transaction_service_export_transactions.call_args.kwargs
-        assert kwargs["blockchain"] == "ETH"
-        assert kwargs["network"] == "mainnet"
-
-    def test_list_raises_for_invalid_limit(self) -> None:
-        service, _ = self._make_service()
-
-        with pytest.raises(ValueError, match="limit must be positive"):
-            service.list(limit=0)
-
-    def test_list_raises_for_negative_offset(self) -> None:
-        service, _ = self._make_service()
-
-        with pytest.raises(ValueError, match="offset cannot be negative"):
-            service.list(offset=-1)
+        assert transport.requests == []
 
 
 class TestListByAddress:
     """Tests for TransactionService.list_by_address()."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        transactions_api = MagicMock()
-        service = TransactionService(
-            api_client=api_client, transactions_api=transactions_api
-        )
-        return service, transactions_api
+    def _service(self) -> TransactionService:
+        ac = api_client()
+        return TransactionService(ac, TransactionsApi(ac))
 
     def test_list_by_address_raises_for_empty_address(self) -> None:
-        service, _ = self._make_service()
-
         with pytest.raises(ValueError, match="address"):
-            service.list_by_address("")
+            self._service().list_by_address("")
 
-    def test_list_by_address_returns_transactions(self) -> None:
-        service, api = self._make_service()
+    def test_address_and_page_window_reach_the_wire(self) -> None:
+        with StubTransport({"result": [{"id": "1"}], "totalItems": "1"}) as transport:
+            transactions, pagination = self._service().list_by_address("0xabc123", offset=40)
 
-        reply = MagicMock()
-        reply.result = [MagicMock()]
-        reply.total_items = "1"
-        api.transaction_service_get_transactions.return_value = reply
-
-        with patch(
-            "taurus_protect.services.transaction_service.map_transactions",
-            return_value=[MagicMock()],
-        ):
-            transactions, _ = service.list_by_address("0xabc123")
-
-        assert len(transactions) == 1
+        assert [t.id for t in transactions] == ["1"]
+        assert pagination.next_offset == 41 and pagination.has_more is False
+        assert transport.last.query == [("address", "0xabc123"), ("limit", "20"), ("offset", "40")]
 
 
-class TestExportCsv:
-    """Tests for TransactionService.export_csv()."""
+class TestExport:
+    """The export cannot page: the server always exports from the first matching row."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        transactions_api = MagicMock()
-        service = TransactionService(
-            api_client=api_client, transactions_api=transactions_api
+    def _service(self) -> TransactionService:
+        ac = api_client()
+        return TransactionService(ac, TransactionsApi(ac))
+
+    def test_returns_the_text_and_the_server_total(self) -> None:
+        with StubTransport({"result": "id,amount\n1,5\n", "totalItems": "40"}) as transport:
+            export = self._service().export(limit=5000, blockchain="ETH", network="mainnet")
+
+        assert export == TransactionExport(content="id,amount\n1,5\n", total_items=40)
+        assert transport.last.path == "/api/rest/v1/transactions/export"
+        assert transport.last.query == sorted(
+            [("limit", "5000"), ("blockchain", "ETH"), ("network", "mainnet")]
         )
-        return service, transactions_api
 
-    def test_export_csv_returns_string(self) -> None:
-        service, api = self._make_service()
+    def test_empty_reply(self) -> None:
+        with StubTransport({}) as transport:
+            export = self._service().export()
 
-        reply = MagicMock()
-        reply.result = "col1,col2\nval1,val2"
-        api.transaction_service_export_transactions.return_value = reply
+        assert export == TransactionExport(content="", total_items=0)
+        assert transport.last.query == [("limit", "20")], "format only when the caller passes it"
 
-        result = service.export_csv()
-        assert result == "col1,col2\nval1,val2"
+    def test_export_csv_asks_for_csv(self) -> None:
+        with StubTransport() as transport:
+            self._service().export_csv(currency="ETH")
 
-    def test_export_csv_returns_empty_when_no_result(self) -> None:
-        service, api = self._make_service()
+        assert transport.last.query == sorted(
+            [("currency", "ETH"), ("format", "csv"), ("limit", "20")]
+        )
 
-        reply = MagicMock()
-        reply.result = None
-        api.transaction_service_export_transactions.return_value = reply
+    def test_there_is_no_offset(self) -> None:
+        with pytest.raises(TypeError, match="offset"):
+            self._service().export(offset=20)  # type: ignore[call-arg]
 
-        result = service.export_csv()
-        assert result == ""
+    def test_negative_limit_sends_nothing(self) -> None:
+        with StubTransport() as transport:
+            with pytest.raises(ValueError, match="limit"):
+                self._service().export_csv(limit=-1)
 
-    def test_export_csv_raises_for_invalid_limit(self) -> None:
-        service, _ = self._make_service()
-
-        with pytest.raises(ValueError, match="limit must be positive"):
-            service.export_csv(limit=0)
-
-    def test_export_csv_raises_for_negative_offset(self) -> None:
-        service, _ = self._make_service()
-
-        with pytest.raises(ValueError, match="offset cannot be negative"):
-            service.export_csv(offset=-1)
+        assert transport.requests == []

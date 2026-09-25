@@ -64,10 +64,10 @@ config outside the package cannot load them even with `--resolve-plugins-relativ
 - BaseService pattern with `execute()` for error handling
 - Internal errors throw `ServerError` (not generic `Error`) for `instanceof APIError` catching
 
-### Available APIs (61 total)
+### Available APIs (63 total)
 
 **Core**: `walletsApi`, `addressesApi`, `requestsApi`, `transactionsApi`, `balancesApi`, `currenciesApi`
-(59 are public accessors — `governanceRulesApi` and `addressWhitelistingApi` are deliberately private; see below)
+(61 are public accessors — `governanceRulesApi` and `addressWhitelistingApi` are deliberately private; see below)
 
 **Blockchain Requests**: `requestsADAApi`, `requestsALGOApi`, `requestsContractsApi`, `requestsCosmosApi`, `requestsDOTApi`, `requestsFTMApi`, `requestsHederaApi`, `requestsICPApi`, `requestsMinaApi`, `requestsNEARApi`, `requestsSOLApi`, `requestsXLMApi`, `requestsXTZApi`
 
@@ -75,18 +75,18 @@ config outside the package cannot load them even with `--resolve-plugins-relativ
 
 **Administrative**: `usersApi`, `groupsApi`, `restrictedVisibilityGroupsApi`, `configApi`, `webhooksApi`, `webhookCallsApi`, `tagsApi`
 
-**Specialized**: `assetsApi`, `actionsApi`, `blockchainApi`, `exchangeApi`, `fiatApi`, `feePayersApi`, `healthApi`, `jobsApi`, `scoresApi`, `statisticsApi`, `tokenMetadataApi`, `userDeviceApi`
+**Specialized**: `assetsApi`, `assetV2Api`, `earnApi`, `actionsApi`, `blockchainApi`, `exchangeApi`, `fiatApi`, `feePayersApi`, `healthApi`, `jobsApi`, `scoresApi`, `statisticsApi`, `tokenMetadataApi`, `userDeviceApi`
 
 **Taurus Network**: `client.taurusNetwork.{lendingApi, participantApi, pledgeApi, settlementApi, sharedAddressAssetApi}`
 
-### High-Level Service Accessors (43 services: 38 core + 5 TaurusNetwork)
+### High-Level Service Accessors (44 services: 39 core + 5 TaurusNetwork)
 
 **Core** (8): `wallets`, `addresses`, `requests`, `transactions`, `balances`, `currencies`, `health`, `jobs`
 **Administrative** (7): `users`, `groups`, `visibilityGroups`, `tags`, `webhooks`, `webhookCalls`, `audits`
 **Security** (4): `governanceRules`, `whitelistedAddresses`, `whitelistedAssets`, `contractWhitelisting` (**writes only** — reads live on `whitelistedAssets`, the verified reader of the same endpoint)
 **Advanced** (9): `staking`, `reservations`, `multiFactorSignature`, `businessRules`, `airGap`, `configService`, `assets`, `changes`, `statistics`
 **Blockchain & Pricing** (6): `blockchains`, `exchanges`, `prices`, `fees`, `feePayers`, `fiatAccounts`
-**Specialized** (4): `scores`, `tokenMetadata`, `userDevices`, `actions`
+**Specialized** (5): `scores`, `tokenMetadata`, `userDevices`, `actions`, `earn`
 **TaurusNetwork** (5): `client.taurusNetwork.{participants, pledges, lending, settlements, sharing}`
 
 ### TaurusNetwork Models Structure
@@ -98,6 +98,13 @@ In `src/models/taurus-network/`: participant.ts (7), pledge.ts (25), lending.ts 
 ### OpenAPI Generator
 
 Uses `openapi-generator-cli` JAR (7.9.0) with `-g typescript-fetch`. Types prefixed with `Tgvalidatord`. **Java 11+ required.**
+
+Models keep fields this client does not know (`scripts/resources/templates/typescript-fetch/modelGeneric*.mustache`,
+passed with `-t`): `FromJSONTyped` copies every key that is not one of the model's wire names into
+`additionalProperties`, attached only when non-empty (existing `toEqual` fixtures are unaffected), and
+`ToJSONTyped` spreads it after the known fields. The script aborts if a model with fields lacks the capture.
+Enums are plain casts, so an unknown value passes through raw; `instanceOfX` is the known-value check.
+Cross-SDK contract: repo-root `CLAUDE.md`.
 
 ### Protobuf Generator
 
@@ -175,14 +182,14 @@ load-bearing**: TypeScript `private` is erased at runtime, so keeping the old na
 `"addressWhitelistingApi" in client` true and make the reachability test vacuous — the same
 reason `governanceRulesApi` became `governanceApi`. Guarded by "whitelisted-address low-level
 API is not publicly reachable" in `tests/unit/client/protect-client.test.ts`; the api-getter
-count there is now **54**, and `apiGetters` omits both.
+count there is now **56** (with `assetV2Api` and `earnApi`), and `apiGetters` omits both.
 
 **`governanceRulesApi` is NOT public — do not re-add it.** It is now the private
 `governanceApi()`. The raw API's `ruleServiceGetRules` returns an unverified DTO and
 `ruleServiceUpdateRulesProposal` accepts an arbitrary base64 blob, so exposing it made client-side
 verification opt-out in this SDK alone (Go's generated client is unreachable under `internal/`).
 Guarded by "governance low-level API is not publicly reachable" in
-`tests/unit/client/protect-client.test.ts`. That file also asserts the api-getter **count** (now 54,
+`tests/unit/client/protect-client.test.ts`. That file also asserts the api-getter **count** (now 56,
 with `apiGetters` omitting governance AND address-whitelisting) — update both if the surface changes.
 
 **`close()` must empty `authMiddleware`.** The api secret is captured inside the auth-middleware
@@ -259,6 +266,17 @@ Verification is **not optional**: `get`, `list` and `getEnvelope` all run the fu
 both services. `WhitelistedAssetService` used to build a verifier and then never call it on
 those paths — do not reintroduce a read path that skips `verify()`.
 
+**AssetService.queryAssetAddresses** (the v2 asset holders; contract in the repo-root
+`CLAUDE.md` Cross-SDK Security Rules) completes its unsigned rows through
+`AddressService._verifiedByIds` (GetAddresses + `addressIds`, ≤ 50) and
+`WhitelistedAddressService._verifiedByIds` (`ids`, ≤ 100). Both run their service's own per-row
+check (`verifiedAddress` / the 6-step `verifiedRow`) through `verifyRowsById`
+(`src/services/row-level-error.ts`), which absorbs only what `rethrowIfNotRowLevel` allows. The
+`_` prefix keeps them off the API surface (the extractor skips it). The readers reach
+`AssetService` as lazy `AssetHolderReaders`, because `client.addresses` refuses to build without
+SuperAdmin keys. A rules container without an HSM key is a `ContainerIntegrityError` in
+`verifyAddressSignature`, so it aborts the page instead of excluding every internal row.
+
 **GovernanceRuleService** — accepts `KeyObject[]` (not PEM strings):
 ```typescript
 const govService = new GovernanceRuleService(governanceRulesApi, {
@@ -273,7 +291,7 @@ const govService = new GovernanceRuleService(governanceRulesApi, {
 
 ### There is NO network-stub library — prototype-spy the generated APIs
 
-No nock, no msw, no fetch mock anywhere in `tests/unit`. Two patterns exist instead:
+No nock, no msw, no fetch-mocking library in `tests/unit`. Three patterns exist instead:
 
 - **Service tests** inject hand-rolled mocks (`{...} as unknown as jest.Mocked<XApi>`),
   as in `tests/unit/services/address-service.test.ts`.
@@ -285,6 +303,11 @@ No nock, no msw, no fetch mock anywhere in `tests/unit`. Two patterns exist inst
   injected-mock service test passed throughout. `as never` satisfies
   `mockResolvedValue` without building a full generated reply type; eslint only runs on
   `src`, but ts-jest still typechecks tests, so the cast is required.
+- **Wire-level tests** use `RecordingTransport` from `tests/unit/pagination/harness.ts`: a
+  `fetchApi` stand-in passed through the generated `Configuration` that records each request
+  (method, path, query, parsed body) and answers canned JSON. It is the only pattern under which
+  the generated `FromJSON`/`ToJSON` run — both patterns above mock above the deserializer, so they
+  cannot test decoding or what goes on the wire (`tests/unit/decode-tolerance-vectors.test.ts`).
 
 Use a **wire-valid** container (`rulesContainerToBase64(createEmptyRulesContainer())`)
 when testing that verification runs — a malformed one throws from the decoder instead,
@@ -482,6 +505,58 @@ as **"Test suite failed to run"** and a DROPPED test count rather than a red tes
 trap this file already documents for `tsc` not covering `tests/`. `governance-rule-proposal.test.ts`
 needed a `verifyingConfig()` helper for exactly this reason (proposal paths never verify,
 so any P-256 public key is a valid fixture there).
+
+## Pagination (this SDK)
+
+The cross-SDK contract is the repo-root `CLAUDE.md` § "Pagination (cross-SDK)". TypeScript:
+
+- **One module decides, one module spells.** `src/models/pagination.ts` holds the constants
+  (`DEFAULT_PAGE_SIZE` 20, `MAX_PAGE_SIZE` 100, `MAX_PRICE_HISTORY_LIMIT` 365), the result types
+  (`Pagination`, `CursorPage`, `PaginatedResult<T>`), the option bases (`OffsetPageOptions`,
+  `CursorPageOptions`, `CursorNavigationOptions`) and every rule: `resolvePageSize` /
+  `resolveOffset` / `offsetRequest` / `cursorRequest` / `tokenRequest` on the way out,
+  `buildOffsetPagination` (the five next-offset rules) / `buildCursorPage` (cursor object OR token)
+  / `parseReplyCount` on the way back. `src/services/paging.ts` only spells a resolved request in
+  generated parameter names (`cursorQuery`, `requestCursorQuery`, `offsetQuery`) and walks pages for
+  the get-by-scan helpers (`scanPages`); it is not exported. A list method never computes a next
+  offset, a `hasMore` or a default page size itself.
+- **Result shapes.** Offset lists return `PaginatedResult<T>` (or a result with `items` +
+  `pagination: Pagination`); cursor lists keep their rows key (`requests`, `changes`, `rules`,
+  `items`, …) next to `pagination: CursorPage`. `pagination` is never undefined on success.
+- **`PaginationError`** (`src/errors.ts`) is the typed error for an unreadable count / reply offset
+  or a `hasNext` without `currentPage`. It extends plain `Error` and is in `isPassThroughSdkError`,
+  so it is not relabelled a retryable `ServerError(500)`.
+- **Cursor options.** `cursor` sends `currentPage=<cursor>` + `pageRequest=NEXT` + the page size;
+  combining it with `currentPage` or `pageRequest` is a `ValidationError` before any request.
+  `requests.listForApproval` rejects a `statuses` option by name (the queue has no status filter).
+- **Exempt from the 100 cap**: `prices.getHistory` (`limit` ≤ 365) and `transactions.exportTransactions`
+  (limit-only, no maximum, no offset — validatord ignores the export offset; the result is
+  `{data, totalItems}`).
+- **An unpaged endpoint returns every row.** `tags.list` takes `ids` / `query` only and returns
+  every tag the reply carries; `limit` / `offset` are rejected by name. Never cut an unpaged reply
+  client-side: with no pagination on the result, a cut list reads as complete.
+- **Reply fields the old code read wrong, now read through the generated types** (each was masked by
+  an above-the-deserializer mock): NFT collections `balances` (not `collections`), audit `result`
+  with the actor in the nested `user`, jobs `jobs`/`job`/`status`, fee payer `feepayer`, base
+  currency `result` is the currency's ID STRING (resolved through `list`), health `groups` +
+  `clusterStatus`, and asset-balance rows are `{asset: {currency, currencyInfo, nft}, balance:
+  {totalConfirmed}}`.
+
+### Transport-level tests (`tests/unit/pagination/`)
+
+- `harness.ts` — `RecordingTransport` (a `fetchApi` that records method/path/raw query/decoded
+  query/JSON body and answers canned replies) and `pagedServices(transport)`, which builds every
+  paged service on the REAL generated `*Api`, so request serialization and reply deserializers run.
+- `list-adapters.ts` — the operationId → method table (canonical snake_case option → TS field)
+  shared by the loaders; `NOT_WRAPPED` names the operations only Go wraps.
+- Loaders: `pagination-vectors.test.ts` and `list-request-vectors.test.ts` (vectors loaded inside
+  `it()`, tuple asserts, counts pinned), plus `offset-replies`, `cursor-replies` and
+  `approval-rereads`. Expected next offsets come from an independent restatement of the rule table.
+- **The first run is slow**: importing the harness pulls in the whole generated client, which
+  ts-jest transforms once (several minutes under load, cached afterwards).
+- Rows that need signatures (WLA/WCA) are driven by stubbing the service's private
+  `verifier.verify`, as `whitelisted-address-container-abort.test.ts` does; the transport and the
+  deserializers stay real.
 
 ## Lessons Learned (Non-Security)
 

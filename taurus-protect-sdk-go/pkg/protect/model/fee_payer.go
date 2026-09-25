@@ -78,9 +78,9 @@ type ETHRemoteConfig struct {
 
 // ListFeePayersOptions contains options for listing fee payers.
 type ListFeePayersOptions struct {
-	// Limit is the maximum number of results to return.
+	// Limit is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
 	Limit int64
-	// Offset is the number of results to skip.
+	// Offset is the number of fee payers to skip; continue with Pagination.NextOffset.
 	Offset int64
 	// IDs filters by specific fee payer IDs.
 	IDs []string
@@ -94,8 +94,8 @@ type ListFeePayersOptions struct {
 type ListFeePayersResult struct {
 	// FeePayers is the list of fee payers.
 	FeePayers []*FeePayer `json:"fee_payers"`
-	// TotalItems is the total number of items available.
-	TotalItems int64 `json:"total_items"`
+	// Pagination is never nil; continue with its NextOffset until HasMore is false.
+	Pagination *Pagination `json:"pagination"`
 }
 
 // ChecksumRequest contains the request data for computing a checksum.

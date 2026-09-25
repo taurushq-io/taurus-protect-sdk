@@ -32,32 +32,23 @@ var AllowedTgvalidatordMultiFactorSignaturesEntityTypeEnumValues = []Tgvalidator
 	"WHITELISTED_CONTRACT",
 }
 
+// UnmarshalJSON keeps a value this client does not know instead of failing the whole reply;
+// IsValid reports whether it is one of the generated constants.
 func (v *TgvalidatordMultiFactorSignaturesEntityType) UnmarshalJSON(src []byte) error {
 	var value string
 	err := json.Unmarshal(src, &value)
 	if err != nil {
-		return err
+		return fmt.Errorf("decoding TgvalidatordMultiFactorSignaturesEntityType: %w", err)
 	}
-	enumTypeValue := TgvalidatordMultiFactorSignaturesEntityType(value)
-	for _, existing := range AllowedTgvalidatordMultiFactorSignaturesEntityTypeEnumValues {
-		if existing == enumTypeValue {
-			*v = enumTypeValue
-			return nil
-		}
-	}
-
-	return fmt.Errorf("%+v is not a valid TgvalidatordMultiFactorSignaturesEntityType", value)
+	*v = TgvalidatordMultiFactorSignaturesEntityType(value)
+	return nil
 }
 
-// NewTgvalidatordMultiFactorSignaturesEntityTypeFromValue returns a pointer to a valid TgvalidatordMultiFactorSignaturesEntityType
-// for the value passed as argument, or an error if the value passed is not allowed by the enum
+// NewTgvalidatordMultiFactorSignaturesEntityTypeFromValue returns a pointer to a TgvalidatordMultiFactorSignaturesEntityType holding v, known or not.
+// The error is always nil; use IsValid to tell a generated constant from a newer server value.
 func NewTgvalidatordMultiFactorSignaturesEntityTypeFromValue(v string) (*TgvalidatordMultiFactorSignaturesEntityType, error) {
 	ev := TgvalidatordMultiFactorSignaturesEntityType(v)
-	if ev.IsValid() {
-		return &ev, nil
-	} else {
-		return nil, fmt.Errorf("invalid value '%v' for TgvalidatordMultiFactorSignaturesEntityType: valid values are %v", v, AllowedTgvalidatordMultiFactorSignaturesEntityTypeEnumValues)
-	}
+	return &ev, nil
 }
 
 // IsValid return true if the value is valid for the enum, false otherwise

@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -23,6 +22,7 @@ var _ MappedNullable = &TgvalidatordCosmosMessageCall{}
 type TgvalidatordCosmosMessageCall struct {
 	Url string `json:"url"`
 	Message []TgvalidatordCosmosMessageValue `json:"message,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCosmosMessageCall TgvalidatordCosmosMessageCall
@@ -115,6 +115,11 @@ func (o TgvalidatordCosmosMessageCall) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Message) {
 		toSerialize["message"] = o.Message
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -142,15 +147,21 @@ func (o *TgvalidatordCosmosMessageCall) UnmarshalJSON(data []byte) (err error) {
 
 	varTgvalidatordCosmosMessageCall := _TgvalidatordCosmosMessageCall{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCosmosMessageCall)
+	err = json.Unmarshal(data, &varTgvalidatordCosmosMessageCall)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCosmosMessageCall(varTgvalidatordCosmosMessageCall)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "url")
+		delete(additionalProperties, "message")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

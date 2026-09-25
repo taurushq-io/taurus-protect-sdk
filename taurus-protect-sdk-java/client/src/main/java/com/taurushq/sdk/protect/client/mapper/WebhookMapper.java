@@ -56,6 +56,7 @@ public interface WebhookMapper {
      */
     @Mapping(target = "webhooks", source = "webhooks")
     @Mapping(target = "cursor", source = "cursor")
+    @Mapping(target = "page", ignore = true)
     WebhookResult fromReply(TgvalidatordGetWebhooksReply reply);
 
     /**

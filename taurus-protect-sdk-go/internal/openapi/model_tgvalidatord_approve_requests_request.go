@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -31,6 +30,7 @@ type TgvalidatordApproveRequestsRequest struct {
 	Ids []string `json:"ids"`
 	// Process the requests asynchronously (in the background). Use for large numbers of approvals
 	Async *bool `json:"async,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordApproveRequestsRequest TgvalidatordApproveRequestsRequest
@@ -210,6 +210,11 @@ func (o TgvalidatordApproveRequestsRequest) ToMap() (map[string]interface{}, err
 	if !IsNil(o.Async) {
 		toSerialize["async"] = o.Async
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -239,15 +244,24 @@ func (o *TgvalidatordApproveRequestsRequest) UnmarshalJSON(data []byte) (err err
 
 	varTgvalidatordApproveRequestsRequest := _TgvalidatordApproveRequestsRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordApproveRequestsRequest)
+	err = json.Unmarshal(data, &varTgvalidatordApproveRequestsRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordApproveRequestsRequest(varTgvalidatordApproveRequestsRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "signature")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "requestIds")
+		delete(additionalProperties, "ids")
+		delete(additionalProperties, "async")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

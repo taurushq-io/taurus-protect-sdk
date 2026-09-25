@@ -13,7 +13,6 @@ package openapi
 import (
 	"encoding/json"
 	"time"
-	"bytes"
 	"fmt"
 )
 
@@ -29,6 +28,7 @@ type TgvalidatordGetCurrencyStatisticsHistoryRequest struct {
 	Limit string `json:"limit"`
 	// Set this parameter to ASC to get the stats history point sorted in ascending order or DESC to get them in descending order (based on timestamp).
 	SortOrder *string `json:"sortOrder,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordGetCurrencyStatisticsHistoryRequest TgvalidatordGetCurrencyStatisticsHistoryRequest
@@ -252,6 +252,11 @@ func (o TgvalidatordGetCurrencyStatisticsHistoryRequest) ToMap() (map[string]int
 	if !IsNil(o.SortOrder) {
 		toSerialize["sortOrder"] = o.SortOrder
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -280,15 +285,25 @@ func (o *TgvalidatordGetCurrencyStatisticsHistoryRequest) UnmarshalJSON(data []b
 
 	varTgvalidatordGetCurrencyStatisticsHistoryRequest := _TgvalidatordGetCurrencyStatisticsHistoryRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordGetCurrencyStatisticsHistoryRequest)
+	err = json.Unmarshal(data, &varTgvalidatordGetCurrencyStatisticsHistoryRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordGetCurrencyStatisticsHistoryRequest(varTgvalidatordGetCurrencyStatisticsHistoryRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "currencies")
+		delete(additionalProperties, "intervalHours")
+		delete(additionalProperties, "from")
+		delete(additionalProperties, "to")
+		delete(additionalProperties, "limit")
+		delete(additionalProperties, "sortOrder")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

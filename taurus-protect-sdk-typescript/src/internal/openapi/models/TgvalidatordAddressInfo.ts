@@ -93,7 +93,16 @@ export interface TgvalidatordAddressInfo {
      * @memberof TgvalidatordAddressInfo
      */
     scores?: Array<TgvalidatordTransactionScore>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordAddressInfo
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordAddressInfoWireKeys: ReadonlySet<string> = new Set(['address', 'label', 'container', 'customerId', 'amount', 'amountMainUnit', 'type', 'idx', 'internalAddressId', 'whitelistedAddressId', 'scores']);
 
 /**
  * Check if a given object implements the TgvalidatordAddressInfo interface.
@@ -110,7 +119,7 @@ export function TgvalidatordAddressInfoFromJSONTyped(json: any, ignoreDiscrimina
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordAddressInfo = {
         
         'address': json['address'] == null ? undefined : json['address'],
         'label': json['label'] == null ? undefined : json['label'],
@@ -124,6 +133,16 @@ export function TgvalidatordAddressInfoFromJSONTyped(json: any, ignoreDiscrimina
         'whitelistedAddressId': json['whitelistedAddressId'] == null ? undefined : json['whitelistedAddressId'],
         'scores': json['scores'] == null ? undefined : ((json['scores'] as Array<any>).map(TgvalidatordTransactionScoreFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordAddressInfoWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordAddressInfoToJSON(json: any): TgvalidatordAddressInfo {
@@ -148,6 +167,7 @@ export function TgvalidatordAddressInfoFromJSONTyped(json: any, ignoreDiscrimina
         'internalAddressId': value['internalAddressId'],
         'whitelistedAddressId': value['whitelistedAddressId'],
         'scores': value['scores'] == null ? undefined : ((value['scores'] as Array<any>).map(TgvalidatordTransactionScoreToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

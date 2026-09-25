@@ -23,7 +23,10 @@ type TgvalidatordResponseCursor struct {
 	// Hints for UI to display whether a previous and/or next page of data are available.
 	HasPrevious *bool `json:"hasPrevious,omitempty"`
 	HasNext *bool `json:"hasNext,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordResponseCursor TgvalidatordResponseCursor
 
 // NewTgvalidatordResponseCursor instantiates a new TgvalidatordResponseCursor object
 // This constructor will assign default values to properties that have it defined,
@@ -157,7 +160,35 @@ func (o TgvalidatordResponseCursor) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.HasNext) {
 		toSerialize["hasNext"] = o.HasNext
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordResponseCursor) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordResponseCursor := _TgvalidatordResponseCursor{}
+
+	err = json.Unmarshal(data, &varTgvalidatordResponseCursor)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordResponseCursor(varTgvalidatordResponseCursor)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "currentPage")
+		delete(additionalProperties, "hasPrevious")
+		delete(additionalProperties, "hasNext")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordResponseCursor struct {

@@ -33,7 +33,16 @@ export interface TgvalidatordSmartPyFA2NFTContractTemplate {
      * @memberof TgvalidatordSmartPyFA2NFTContractTemplate
      */
     xtz?: TgvalidatordXTZContractTemplatePrams;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordSmartPyFA2NFTContractTemplate
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordSmartPyFA2NFTContractTemplateWireKeys: ReadonlySet<string> = new Set(['xtz']);
 
 /**
  * Check if a given object implements the TgvalidatordSmartPyFA2NFTContractTemplate interface.
@@ -50,10 +59,20 @@ export function TgvalidatordSmartPyFA2NFTContractTemplateFromJSONTyped(json: any
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordSmartPyFA2NFTContractTemplate = {
         
         'xtz': json['xtz'] == null ? undefined : TgvalidatordXTZContractTemplatePramsFromJSON(json['xtz']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordSmartPyFA2NFTContractTemplateWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordSmartPyFA2NFTContractTemplateToJSON(json: any): TgvalidatordSmartPyFA2NFTContractTemplate {
@@ -68,6 +87,7 @@ export function TgvalidatordSmartPyFA2NFTContractTemplateFromJSONTyped(json: any
     return {
         
         'xtz': TgvalidatordXTZContractTemplatePramsToJSON(value['xtz']),
+        ...value['additionalProperties'],
     };
 }
 

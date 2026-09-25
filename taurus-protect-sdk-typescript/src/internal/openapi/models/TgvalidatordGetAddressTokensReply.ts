@@ -51,7 +51,16 @@ export interface TgvalidatordGetAddressTokensReply {
      * @memberof TgvalidatordGetAddressTokensReply
      */
     totalAssetBalance?: TgvalidatordAssetBalance;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetAddressTokensReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetAddressTokensReplyWireKeys: ReadonlySet<string> = new Set(['balances', 'total', 'next', 'totalAssetBalance']);
 
 /**
  * Check if a given object implements the TgvalidatordGetAddressTokensReply interface.
@@ -68,13 +77,23 @@ export function TgvalidatordGetAddressTokensReplyFromJSONTyped(json: any, ignore
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetAddressTokensReply = {
         
         'balances': json['balances'] == null ? undefined : ((json['balances'] as Array<any>).map(TgvalidatordAssetBalanceFromJSON)),
         'total': json['total'] == null ? undefined : json['total'],
         'next': json['next'] == null ? undefined : json['next'],
         'totalAssetBalance': json['totalAssetBalance'] == null ? undefined : TgvalidatordAssetBalanceFromJSON(json['totalAssetBalance']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetAddressTokensReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetAddressTokensReplyToJSON(json: any): TgvalidatordGetAddressTokensReply {
@@ -92,6 +111,7 @@ export function TgvalidatordGetAddressTokensReplyFromJSONTyped(json: any, ignore
         'total': value['total'],
         'next': value['next'],
         'totalAssetBalance': TgvalidatordAssetBalanceToJSON(value['totalAssetBalance']),
+        ...value['additionalProperties'],
     };
 }
 

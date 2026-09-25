@@ -33,7 +33,16 @@ export interface TgvalidatordGetHealthChecksInGroupReply {
      * @memberof TgvalidatordGetHealthChecksInGroupReply
      */
     healths?: Array<TgvalidatordHealth>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetHealthChecksInGroupReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetHealthChecksInGroupReplyWireKeys: ReadonlySet<string> = new Set(['healths']);
 
 /**
  * Check if a given object implements the TgvalidatordGetHealthChecksInGroupReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetHealthChecksInGroupReplyFromJSONTyped(json: any, 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetHealthChecksInGroupReply = {
         
         'healths': json['healths'] == null ? undefined : ((json['healths'] as Array<any>).map(TgvalidatordHealthFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetHealthChecksInGroupReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetHealthChecksInGroupReplyToJSON(json: any): TgvalidatordGetHealthChecksInGroupReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetHealthChecksInGroupReplyFromJSONTyped(json: any, 
     return {
         
         'healths': value['healths'] == null ? undefined : ((value['healths'] as Array<any>).map(TgvalidatordHealthToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

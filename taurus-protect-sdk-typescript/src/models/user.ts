@@ -2,6 +2,8 @@
  * User and Group models for Taurus-PROTECT SDK.
  */
 
+import type { OffsetPageOptions } from './pagination';
+
 /**
  * User status enum.
  */
@@ -54,6 +56,30 @@ export interface User {
   readonly attributes?: UserAttribute[];
   /** Group IDs the user belongs to */
   readonly groupIds?: string[];
+  /** Groups the user belongs to */
+  readonly groups?: UserGroup[];
+  /**
+   * Whether the user is in the enforced governance rules. `undefined` where the endpoint
+   * does not compute it (`users.get`, `visibilityGroups.getUsersByVisibilityGroup`).
+   */
+  readonly enforcedInRules?: boolean;
+  /**
+   * Whether the user's public key is the one in the enforced governance rules. Only
+   * `users.getCurrentUser` computes it; `undefined` elsewhere.
+   */
+  readonly publicKeyEnforcedInRules?: boolean;
+}
+
+/**
+ * A group the user belongs to.
+ */
+export interface UserGroup {
+  /** Group identifier */
+  readonly id?: string;
+  /** External group identifier */
+  readonly externalGroupId?: string;
+  /** Whether the group is in the enforced governance rules; `undefined` where not computed */
+  readonly enforcedInRules?: boolean;
 }
 
 /**
@@ -82,10 +108,26 @@ export interface Group {
   readonly description?: string;
   /** User IDs in the group */
   readonly userIds?: string[];
+  /** Users in the group */
+  readonly users?: GroupUser[];
+  /** Whether the group is in the enforced governance rules */
+  readonly enforcedInRules?: boolean;
   /** Group creation date */
   readonly createdAt?: Date;
   /** Last modification date */
   readonly updatedAt?: Date;
+}
+
+/**
+ * A user within a group.
+ */
+export interface GroupUser {
+  /** User identifier */
+  readonly id?: string;
+  /** External user identifier */
+  readonly externalUserId?: string;
+  /** Whether the user is in the enforced governance rules */
+  readonly enforcedInRules?: boolean;
 }
 
 /**
@@ -103,15 +145,14 @@ export interface Tag {
 }
 
 /**
- * Options for listing users.
+ * Options for listing users. An offset list: `limit` 1-100 (default 20) and `offset`
+ * (a previous page's `pagination.nextOffset`).
  */
-export interface ListUsersOptions {
-  /** Maximum number of users to return */
-  limit?: number;
-  /** Number of users to skip */
-  offset?: number;
+export interface ListUsersOptions extends OffsetPageOptions {
   /** Filter by user IDs */
   ids?: string[];
+  /** Filter by external user IDs */
+  externalUserIds?: string[];
   /** Filter by emails */
   emails?: string[];
   /** Search query */
@@ -129,13 +170,10 @@ export interface ListUsersOptions {
 }
 
 /**
- * Options for listing groups.
+ * Options for listing groups. An offset list: `limit` 1-100 (default 20) and `offset`
+ * (a previous page's `pagination.nextOffset`).
  */
-export interface ListGroupsOptions {
-  /** Maximum number of groups to return */
-  limit?: number;
-  /** Number of groups to skip */
-  offset?: number;
+export interface ListGroupsOptions extends OffsetPageOptions {
   /** Filter by group IDs */
   ids?: string[];
   /** Search query */
@@ -143,13 +181,12 @@ export interface ListGroupsOptions {
 }
 
 /**
- * Options for listing tags.
+ * Options for listing tags. The tags endpoint is not paged, so `list` returns every tag
+ * that matches.
  */
 export interface ListTagsOptions {
-  /** Maximum number of tags to return */
-  limit?: number;
-  /** Number of tags to skip */
-  offset?: number;
+  /** Filter by tag IDs */
+  ids?: string[];
   /** Search query */
   query?: string;
 }

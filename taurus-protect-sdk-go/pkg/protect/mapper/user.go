@@ -23,8 +23,8 @@ func UserFromDTO(dto *openapi.TgvalidatordInternalUser) *model.User {
 		PublicKey:                safeString(dto.PublicKey),
 		PasswordChanged:          safeBool(dto.PasswordChanged),
 		TotpEnabled:              safeBool(dto.TotpEnabled),
-		EnforcedInRules:          safeBool(dto.EnforcedInRules),
-		PublicKeyEnforcedInRules: safeBool(dto.PublicKeyEnforcedInRules),
+		EnforcedInRules:          optionalBool(dto.EnforcedInRules),
+		PublicKeyEnforcedInRules: optionalBool(dto.PublicKeyEnforcedInRules),
 	}
 
 	// Copy roles
@@ -83,7 +83,7 @@ func UserGroupFromDTO(dto *openapi.TgvalidatordInternalUserGroup) model.UserGrou
 	return model.UserGroup{
 		ID:              safeString(dto.Id),
 		ExternalGroupID: safeString(dto.ExternalGroupId),
-		EnforcedInRules: safeBool(dto.EnforcedInRules),
+		EnforcedInRules: optionalBool(dto.EnforcedInRules),
 	}
 }
 

@@ -34,7 +34,10 @@ type TgvalidatordLendingAgreementCollateral struct {
 	CurrencyInfo *TgvalidatordCurrency `json:"currencyInfo,omitempty"`
 	AmountMainUnit *string `json:"amountMainUnit,omitempty"`
 	PledgeActionID *string `json:"pledgeActionID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordLendingAgreementCollateral TgvalidatordLendingAgreementCollateral
 
 // NewTgvalidatordLendingAgreementCollateral instantiates a new TgvalidatordLendingAgreementCollateral object
 // This constructor will assign default values to properties that have it defined,
@@ -553,7 +556,46 @@ func (o TgvalidatordLendingAgreementCollateral) ToMap() (map[string]interface{},
 	if !IsNil(o.PledgeActionID) {
 		toSerialize["pledgeActionID"] = o.PledgeActionID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordLendingAgreementCollateral) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordLendingAgreementCollateral := _TgvalidatordLendingAgreementCollateral{}
+
+	err = json.Unmarshal(data, &varTgvalidatordLendingAgreementCollateral)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordLendingAgreementCollateral(varTgvalidatordLendingAgreementCollateral)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "lenderParticipantID")
+		delete(additionalProperties, "borrowerParticipantID")
+		delete(additionalProperties, "lendingAgreementID")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "currencyID")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "pledgeID")
+		delete(additionalProperties, "sharedAddressID")
+		delete(additionalProperties, "createdAt")
+		delete(additionalProperties, "updatedAt")
+		delete(additionalProperties, "currencyInfo")
+		delete(additionalProperties, "amountMainUnit")
+		delete(additionalProperties, "pledgeActionID")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordLendingAgreementCollateral struct {

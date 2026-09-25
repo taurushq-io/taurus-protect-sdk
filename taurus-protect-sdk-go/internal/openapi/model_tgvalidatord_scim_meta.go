@@ -24,7 +24,10 @@ type TgvalidatordScimMeta struct {
 	ResourceType *string `json:"resourceType,omitempty"`
 	Location *string `json:"location,omitempty"`
 	Version *int64 `json:"version,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordScimMeta TgvalidatordScimMeta
 
 // NewTgvalidatordScimMeta instantiates a new TgvalidatordScimMeta object
 // This constructor will assign default values to properties that have it defined,
@@ -228,7 +231,37 @@ func (o TgvalidatordScimMeta) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Version) {
 		toSerialize["version"] = o.Version
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordScimMeta) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordScimMeta := _TgvalidatordScimMeta{}
+
+	err = json.Unmarshal(data, &varTgvalidatordScimMeta)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordScimMeta(varTgvalidatordScimMeta)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "created")
+		delete(additionalProperties, "lastModified")
+		delete(additionalProperties, "resourceType")
+		delete(additionalProperties, "location")
+		delete(additionalProperties, "version")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordScimMeta struct {

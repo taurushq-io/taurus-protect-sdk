@@ -7,6 +7,7 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 from taurus_protect.models.currency import Currency
+from taurus_protect.models.pagination import CursorPage
 
 
 class BusinessRule(BaseModel):
@@ -22,7 +23,9 @@ class BusinessRule(BaseModel):
     rule_group: Optional[str] = Field(default=None, description="Rule group/category")
     rule_description: Optional[str] = Field(default=None, description="Human-readable description")
     rule_validation: Optional[str] = Field(default=None, description="Validation pattern")
-    entity_type: Optional[str] = Field(default=None, description="Entity type (global, currency, wallet, address)")
+    entity_type: Optional[str] = Field(
+        default=None, description="Entity type (global, currency, wallet, address)"
+    )
     entity_id: Optional[str] = Field(default=None, description="Entity ID")
     currency_info: Optional[Currency] = Field(default=None, description="Currency metadata")
 
@@ -30,10 +33,13 @@ class BusinessRule(BaseModel):
 
 
 class BusinessRuleResult(BaseModel):
-    """Result of listing business rules with cursor pagination."""
+    """
+    One page of business rules.
+
+    Continue with ``cursor=result.page.next_cursor`` while ``result.page.has_more``.
+    """
 
     rules: List[BusinessRule] = Field(default_factory=list)
-    current_page: Optional[str] = Field(default=None)
-    has_next: bool = Field(default=False)
+    page: CursorPage = Field(default_factory=CursorPage)
 
     model_config = {"frozen": True}

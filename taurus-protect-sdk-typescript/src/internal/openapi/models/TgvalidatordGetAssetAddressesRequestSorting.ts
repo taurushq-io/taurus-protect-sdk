@@ -33,9 +33,18 @@ export interface TgvalidatordGetAssetAddressesRequestSorting {
      * @memberof TgvalidatordGetAssetAddressesRequestSorting
      */
     sortOrder?: TgvalidatordGetAssetAddressesRequestSortingSortOrder;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetAssetAddressesRequestSorting
+     */
+    additionalProperties?: { [key: string]: any };
 }
 
 
+
+const TgvalidatordGetAssetAddressesRequestSortingWireKeys: ReadonlySet<string> = new Set(['sortOrder']);
 
 /**
  * Check if a given object implements the TgvalidatordGetAssetAddressesRequestSorting interface.
@@ -52,10 +61,20 @@ export function TgvalidatordGetAssetAddressesRequestSortingFromJSONTyped(json: a
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetAssetAddressesRequestSorting = {
         
         'sortOrder': json['sortOrder'] == null ? undefined : TgvalidatordGetAssetAddressesRequestSortingSortOrderFromJSON(json['sortOrder']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetAssetAddressesRequestSortingWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetAssetAddressesRequestSortingToJSON(json: any): TgvalidatordGetAssetAddressesRequestSorting {
@@ -70,6 +89,7 @@ export function TgvalidatordGetAssetAddressesRequestSortingFromJSONTyped(json: a
     return {
         
         'sortOrder': TgvalidatordGetAssetAddressesRequestSortingSortOrderToJSON(value['sortOrder']),
+        ...value['additionalProperties'],
     };
 }
 

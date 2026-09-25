@@ -31,7 +31,16 @@ export interface InternalUserKeyContainer {
      * @memberof InternalUserKeyContainer
      */
     canBeStored?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof InternalUserKeyContainer
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const InternalUserKeyContainerWireKeys: ReadonlySet<string> = new Set(['value', 'canBeStored']);
 
 /**
  * Check if a given object implements the InternalUserKeyContainer interface.
@@ -48,11 +57,21 @@ export function InternalUserKeyContainerFromJSONTyped(json: any, ignoreDiscrimin
     if (json == null) {
         return json;
     }
-    return {
+    const result: InternalUserKeyContainer = {
         
         'value': json['value'] == null ? undefined : json['value'],
         'canBeStored': json['canBeStored'] == null ? undefined : json['canBeStored'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!InternalUserKeyContainerWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function InternalUserKeyContainerToJSON(json: any): InternalUserKeyContainer {
@@ -68,6 +87,7 @@ export function InternalUserKeyContainerFromJSONTyped(json: any, ignoreDiscrimin
         
         'value': value['value'],
         'canBeStored': value['canBeStored'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -101,9 +101,18 @@ export interface TgvalidatordProofOfReserve {
      * @memberof TgvalidatordProofOfReserve
      */
     stakeChallengeResponse?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordProofOfReserve
+     */
+    additionalProperties?: { [key: string]: any };
 }
 
 
+
+const TgvalidatordProofOfReserveWireKeys: ReadonlySet<string> = new Set(['curve', 'cipher', 'path', 'address', 'publicKey', 'challenge', 'challengeResponse', 'type', 'stakePublicKey', 'stakeChallengeResponse']);
 
 /**
  * Check if a given object implements the TgvalidatordProofOfReserve interface.
@@ -120,7 +129,7 @@ export function TgvalidatordProofOfReserveFromJSONTyped(json: any, ignoreDiscrim
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordProofOfReserve = {
         
         'curve': json['curve'] == null ? undefined : TgvalidatordProofOfReserveCurveFromJSON(json['curve']),
         'cipher': json['cipher'] == null ? undefined : TgvalidatordProofOfReserveCipherFromJSON(json['cipher']),
@@ -133,6 +142,16 @@ export function TgvalidatordProofOfReserveFromJSONTyped(json: any, ignoreDiscrim
         'stakePublicKey': json['stakePublicKey'] == null ? undefined : json['stakePublicKey'],
         'stakeChallengeResponse': json['stakeChallengeResponse'] == null ? undefined : json['stakeChallengeResponse'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordProofOfReserveWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordProofOfReserveToJSON(json: any): TgvalidatordProofOfReserve {
@@ -156,6 +175,7 @@ export function TgvalidatordProofOfReserveFromJSONTyped(json: any, ignoreDiscrim
         'type': ProofOfReserveReserveTypeToJSON(value['type']),
         'stakePublicKey': value['stakePublicKey'],
         'stakeChallengeResponse': value['stakeChallengeResponse'],
+        ...value['additionalProperties'],
     };
 }
 

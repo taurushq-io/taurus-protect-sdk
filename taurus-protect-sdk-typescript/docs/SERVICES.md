@@ -4,9 +4,9 @@ This document provides comprehensive documentation for the Taurus-PROTECT TypeSc
 
 ## Service Overview
 
-The SDK provides 43 high-level services (38 on `ProtectClient` plus 5 on the `taurusNetwork` namespace), each with domain models and validation. Low-level OpenAPI access remains available for every feature alongside the high-level services.
+The SDK provides 44 high-level services (39 on `ProtectClient` plus 5 on the `taurusNetwork` namespace), each with domain models and validation. Low-level OpenAPI access remains available for every feature alongside the high-level services.
 
-### High-Level Services (26)
+### High-Level Services (27)
 
 | Service | Access | Purpose |
 |---------|--------|---------|
@@ -36,12 +36,13 @@ The SDK provides 43 high-level services (38 on `ProtectClient` plus 5 on the `ta
 | [JobService](#jobservice) | `client.jobs` | Background job management |
 | [StatisticsService](#statisticsservice) | `client.statistics` | Platform statistics |
 | [TokenMetadataService](#tokenmetadataservice) | `client.tokenMetadata` | Token metadata information |
+| [EarnService](#earnservice) | `client.earn` | Rewards earned by addresses |
 
 ### Low-Level API Access
 
 Every feature also has a low-level OpenAPI-generated API on the client (`client.<name>Api`),
 useful for endpoints or parameters the high-level service does not surface. There is no
-longer any feature reachable *only* through a low-level API — all 43 services have
+longer any feature reachable *only* through a low-level API — all 44 services have
 high-level getters.
 
 ### TaurusNetwork APIs
@@ -91,28 +92,33 @@ console.log(`Wallet: ${wallet.name}, Balance: ${wallet.balance}`);
 
 #### list
 
-Lists wallets with pagination.
+Lists a page of wallets (offset pagination).
 
 ```typescript
-list(options?: ListWalletsOptions): Promise<ListWalletsResult>
+list(options?: ListWalletsOptions): Promise<PaginatedResult<Wallet>>
 ```
 
 **Parameters:**
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| options.limit | number | Maximum results per page (optional) |
-| options.offset | number | Pagination offset (optional) |
+| options.limit | number | Page size, 1-100 (default 20; always sent) |
+| options.offset | number | Rows to skip: a previous page's `pagination.nextOffset` (optional) |
 | options.name | string | Filter by name (optional) |
 | options.query | string | Search query (optional) |
+| options.excludeDisabled | boolean | Hide every disabled wallet (optional) |
 
-**Returns:** `ListWalletsResult` - Wallets list with pagination
+**Returns:** `PaginatedResult<Wallet>` - `items` plus `pagination {limit, offset, totalItems, nextOffset, hasMore}`
+
+**Throws:** `ValidationError` if limit is above 100 or negative, or offset is negative
 
 **Example:**
 ```typescript
-const result = await client.wallets.list({ limit: 50, offset: 0 });
-console.log(`Total wallets: ${result.totalItems}`);
-for (const wallet of result.wallets) {
-  console.log(`${wallet.name}: ${wallet.blockchain}/${wallet.network}`);
+let offset = 0;
+for (;;) {
+  const page = await client.wallets.list({ limit: 100, offset });
+  page.items.forEach((w) => console.log(`${w.name}: ${w.blockchain}/${w.network}`));
+  if (!page.pagination.hasMore) break;
+  offset = page.pagination.nextOffset;
 }
 ```
 
@@ -173,10 +179,21 @@ Gets historical balance data for a wallet.
 getBalanceHistory(walletId: number, intervalHours: number): Promise<BalanceHistoryPoint[]>
 ```
 
+#### getWalletTokens
+
+Lists a page of the tokens a wallet holds (a token list: `pageSize` 1-100, default 20, and
+the `cursor` of a previous page).
+
+```typescript
+getWalletTokens(walletId: number, options?: ListWalletTokensOptions): Promise<ListWalletTokensResult>
+```
+
+**Returns:** `ListWalletTokensResult` - `items` plus `pagination {pageSize, nextCursor, hasMore, totalItems}`
+
 ### Key Models
 
 - `Wallet` - id, name, blockchain, network, balance, isOmnibus, customerId, attributes
-- `ListWalletsResult` - wallets list with totalItems and pagination
+- `PaginatedResult<Wallet>` - `items` plus offset `Pagination`
 - `BalanceHistoryPoint` - timestamp, balance values
 
 ---
@@ -215,28 +232,34 @@ console.log(`Balance: ${address.balance}`);
 
 #### list
 
-Lists addresses for a wallet with **signature verification**.
+Lists a page of a wallet's addresses with **signature verification** (offset pagination).
 
 ```typescript
-list(walletId: number, limit?: number, offset?: number): Promise<Address[]>
+list(walletId: number, options?: Omit<ListAddressesOptions, "walletId">): Promise<PaginatedResult<Address>>
 ```
 
 #### listWithOptions
 
-Lists addresses with advanced filtering options.
+Lists a page of addresses with the full filter set, with **signature verification**.
 
 ```typescript
-listWithOptions(options?: ListAddressesOptions): Promise<ListAddressesResult>
+listWithOptions(options?: ListAddressesOptions): Promise<PaginatedResult<Address>>
 ```
 
 **Parameters:**
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| options.walletId | number | Parent wallet ID (optional) |
-| options.limit | number | Maximum results (optional) |
-| options.offset | number | Pagination offset (optional) |
-| options.address | string | Filter by address (optional) |
-| options.label | string | Filter by label (optional) |
+| options.walletId | string | Parent wallet ID (optional) |
+| options.limit | number | Page size, 1-100 (default 20; always sent) |
+| options.offset | number | A previous page's `pagination.nextOffset` (optional) |
+| options.query | string | Search query (optional) |
+| options.blockchain / options.network | string | Chain filters (optional) |
+| options.addressIds / options.addresses | string[] | Id (≤ 50) or address (≤ 100) filters (optional) |
+| options.tagIds | string[] | Tag filter (optional) |
+| options.onlyPositiveBalance | boolean | Keep funded addresses only (optional) |
+| options.balanceAbove / options.balanceBelow | string | Balance bounds (optional) |
+| options.sortBy / options.sortOrder | string | Ordering (optional) |
+| options.excludeDisabled | boolean | Leave disabled addresses out (`includeDisabledAddresses=exclude`) |
 
 #### create / createAddress
 
@@ -299,7 +322,7 @@ getProofOfReserve(addressId: number, challenge: string): Promise<ProofOfReserve>
 ### Key Models
 
 - `Address` - id, address, walletId, label, customerId, balance, attributes
-- `ListAddressesResult` - addresses list with pagination
+- `PaginatedResult<Address>` - `items` plus offset `Pagination`
 - `ProofOfReserve` - cryptographic proof data
 
 ---
@@ -326,27 +349,31 @@ get(id: number): Promise<Request>
 
 #### list
 
-Lists requests with filtering.
+Lists a page of requests with filtering (cursor pagination; every row hash-verified).
 
 ```typescript
-list(options?: ListRequestsOptions): Promise<RequestResult>
+list(options?: ListRequestsOptions): Promise<ListRequestsResult>
 ```
 
 **Parameters:**
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| options.from | Date | Start date (optional) |
-| options.to | Date | End date (optional) |
+| options.fromDate / options.toDate | Date | Date range (optional) |
 | options.currencyId | string | Currency filter (optional) |
 | options.statuses | RequestStatus[] | Status filter (optional) |
-| options.cursor | RequestCursor | Pagination cursor (optional) |
+| options.pageSize | number | Page size, 1-100 (default 20; always sent) |
+| options.cursor | string | A previous page's `pagination.nextCursor` (optional) |
+| options.currentPage / options.pageRequest | string | Low-level navigation; cannot be combined with `cursor` |
+
+**Returns:** `ListRequestsResult` - `requests` plus `pagination {pageSize, nextCursor, hasMore}`
 
 #### listForApproval
 
-Gets requests pending approval for the current user.
+Lists a page of the requests pending approval for the current user. Same paging as `list`;
+there is no status filter, and passing one is a `ValidationError`.
 
 ```typescript
-listForApproval(cursor?: RequestCursor): Promise<RequestResult>
+listForApproval(options?: ListRequestsForApprovalOptions): Promise<ListRequestsResult>
 ```
 
 #### approveRequest / approveRequests
@@ -487,50 +514,64 @@ getByHash(hash: string): Promise<Transaction>
 
 #### list
 
-Lists transactions with filtering.
+Lists a page of transactions with filtering (offset pagination).
 
 ```typescript
-list(options?: ListTransactionsOptions): Promise<TransactionResult>
+list(options?: ListTransactionsOptions): Promise<PaginatedResult<Transaction>>
 ```
 
 **Parameters:**
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| options.from | Date | Start date (optional) |
-| options.to | Date | End date (optional) |
-| options.currencyId | string | Currency filter (optional) |
+| options.fromDate / options.toDate | Date | Date range (optional) |
+| options.currency | string | Currency filter (optional) |
 | options.direction | string | "incoming" or "outgoing" (optional) |
-| options.limit | number | Maximum results (optional) |
-| options.offset | number | Pagination offset (optional) |
+| options.limit | number | Page size, 1-100 (default 20; always sent) |
+| options.offset | number | A previous page's `pagination.nextOffset` (optional) |
 
 #### listByRequest
 
-Lists transactions for a specific request.
+Lists a page of the transactions of a request.
 
 ```typescript
-listByRequest(requestId: number): Promise<Transaction[]>
+listByRequest(requestId: string, options?: OffsetPageOptions): Promise<PaginatedResult<Transaction>>
 ```
 
 #### listByAddress
 
-Lists transactions for a specific address.
+Lists a page of the transactions of an address.
 
 ```typescript
-listByAddress(address: string, limit?: number, offset?: number): Promise<Transaction[]>
+listByAddress(address: string, options?: OffsetPageOptions): Promise<PaginatedResult<Transaction>>
 ```
+
+#### exportTransactions
+
+Exports transactions as JSON or CSV text. The export cannot page — the server always
+exports from the first matching row — so it takes a `limit` (default 20, no SDK maximum)
+and no offset; compare `totalItems` with the rows exported to spot a truncated export.
+
+```typescript
+exportTransactions(options?: ExportTransactionsOptions): Promise<ExportTransactionsResult>
+```
+
+**Returns:** `ExportTransactionsResult` - `data` (the export text) and `totalItems` (matching transactions)
 
 **Example:**
 ```typescript
-const transactions = await client.transactions.list({
-  from: new Date('2024-01-01'),
-  to: new Date('2024-12-31'),
-  currencyId: 'ETH',
+const page = await client.transactions.list({
+  fromDate: new Date('2024-01-01'),
+  toDate: new Date('2024-12-31'),
+  currency: 'ETH',
   direction: 'outgoing',
   limit: 100,
 });
 
-for (const tx of transactions.transactions) {
-  console.log(`${tx.hash}: ${tx.value} ${tx.currency}`);
+for (const tx of page.items) {
+  console.log(`${tx.hash}: ${tx.amount} ${tx.currency}`);
+}
+if (page.pagination.hasMore) {
+  await client.transactions.list({ limit: 100, offset: page.pagination.nextOffset });
 }
 ```
 
@@ -550,47 +591,45 @@ for (const tx of transactions.transactions) {
 
 #### list
 
-Lists balances with pagination.
+Lists a page of tenant balances (cursor pagination through `requestCursor`; the legacy
+`limit`/`cursor` parameters are never sent).
 
 ```typescript
-list(options?: ListBalancesOptions): Promise<BalanceResult>
+list(options?: ListBalancesOptions): Promise<ListBalancesResult>
 ```
 
 **Parameters:**
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| options.currencyId | string | Filter by currency (optional) |
-| options.pageSize | number | Page size (optional) |
-| options.currentPage | string | Current page cursor (optional) |
+| options.currency | string | Filter by currency ID or symbol (optional) |
+| options.tokenId | string | Filter by token ID (optional) |
+| options.pageSize | number | Page size, 1-100 (default 20; always sent) |
+| options.cursor | string | A previous page's `pagination.nextCursor` (optional) |
 
 **Example:**
 ```typescript
-let result = await client.balances.list({ pageSize: 100 });
+let cursor: string | undefined;
 do {
-  for (const balance of result.balances) {
-    console.log(`${balance.asset}: ${balance.balance}`);
+  const page = await client.balances.list({ pageSize: 100, cursor });
+  for (const balance of page.items) {
+    console.log(`${balance.currency}: ${balance.balance}`);
   }
-  if (result.pagination?.hasNext) {
-    result = await client.balances.list({
-      pageSize: 100,
-      currentPage: result.pagination.currentPage,
-    });
-  }
-} while (result.pagination?.hasNext);
+  cursor = page.pagination.hasMore ? page.pagination.nextCursor : undefined;
+} while (cursor);
 ```
 
 #### listNFTCollections
 
-Lists NFT collection balances.
+Lists a page of NFT collection balances; blockchain and network are optional filters.
 
 ```typescript
-listNFTCollections(options?: ListNFTCollectionBalancesOptions): Promise<NFTCollectionBalanceResult>
+listNFTCollections(options?: ListNFTCollectionBalancesOptions): Promise<ListNFTCollectionBalancesResult>
 ```
 
 ### Key Models
 
-- `BalanceResult` - balances list with cursor pagination
-- `AssetBalance` - asset info with available/pending balances
+- `ListBalancesResult` - `items` plus `pagination: CursorPage` (with `totalItems`)
+- `AssetBalance` - currency, blockchain, network, contract address, token ID, confirmed balance
 - `NFTCollectionBalance` - NFT collection balance information
 
 ---
@@ -663,10 +702,12 @@ getRulesProposal(): Promise<GovernanceRules | null>
 
 #### getRulesHistory
 
-Gets historical governance rules.
+Gets a page of historical governance rules (a token list: `pageSize` 1-100, default 20,
+and the `cursor` of a previous page). Unverifiable rulesets are withheld in
+`excludedUnverified` and reduce `pagination.totalItems`.
 
 ```typescript
-getRulesHistory(options?: GovernanceRulesHistoryOptions): Promise<GovernanceRulesHistoryResult>
+getRulesHistory(options?: ListGovernanceRulesHistoryOptions): Promise<GovernanceRulesHistoryResult>
 ```
 
 #### getDecodedRulesContainer
@@ -782,7 +823,10 @@ getEnvelope(id: number): Promise<SignedWhitelistedAddressEnvelope>
 
 #### list
 
-Lists whitelisted addresses with filtering.
+Lists a page of whitelisted addresses with filtering (offset pagination: `limit` 1-100,
+default 20, and `offset`). Unverifiable rows are withheld in `excludedUnverified`; they
+reduce `pagination.totalItems` but never shift `nextOffset`, which counts every row the
+server returned.
 
 ```typescript
 list(options?: ListWhitelistedAddressesOptions): Promise<ListWhitelistedAddressesResult>
@@ -844,9 +888,11 @@ getEnvelope(id: string): Promise<SignedWhitelistedAssetEnvelope>
 
 #### list
 
-Lists whitelisted assets with filtering. Verification is **lenient** here: an unverifiable
-row is excluded and named on `excludedUnverified` rather than failing the call, but a page
-where rows came back and none survived throws `IntegrityError`.
+Lists a page of whitelisted assets with filtering (offset pagination: `limit` 1-100,
+default 20, and `offset`; `nextOffset` advances by the page size because a skipped contract
+row keeps its slot). Verification is **lenient** here: an unverifiable row is excluded and
+named on `excludedUnverified` rather than failing the call, but a page where rows came back
+and none survived throws `IntegrityError`.
 
 ```typescript
 list(options?: ListWhitelistedAssetsOptions): Promise<ListWhitelistedAssetsResult>
@@ -898,10 +944,11 @@ check(): Promise<HealthStatus>
 
 #### getGlobalStatus
 
-Gets detailed health status with all components.
+Gets the cluster status: `healthy` when the cluster is `up`, otherwise the reported
+`degraded` / `down` status with a count of working components.
 
 ```typescript
-getGlobalStatus(): Promise<GlobalHealthStatus>
+getGlobalStatus(): Promise<HealthStatus>
 ```
 
 **Example:**
@@ -909,15 +956,13 @@ getGlobalStatus(): Promise<GlobalHealthStatus>
 const health = await client.health.check();
 console.log(`Status: ${health.status}`);
 
-const globalHealth = await client.health.getGlobalStatus();
-for (const [name, group] of Object.entries(globalHealth.groups || {})) {
-  console.log(`${name}: ${group.status}`);
-}
+const global = await client.health.getGlobalStatus();
+console.log(`Cluster: ${global.status} ${global.message ?? ''}`);
 ```
 
 ### Key Models
 
-- `HealthStatus` - status, version
+- `HealthStatus` - status (`healthy`, `unhealthy`, or the cluster status), message
 - `GlobalHealthStatus` - groups with component statuses
 
 ---
@@ -933,8 +978,11 @@ for (const [name, group] of Object.entries(globalHealth.groups || {})) {
 ```typescript
 get(userId: string): Promise<User>
 getCurrentUser(): Promise<User>
-list(options?: ListUsersOptions): Promise<ListUsersResult>
+list(options?: ListUsersOptions): Promise<PaginatedResult<User>>
 ```
+
+`list` is an offset list (`limit` 1-100, default 20). The server may append a synthetic
+daemon user beyond `limit`, so `nextOffset` advances by at most `limit`.
 
 **Example:**
 ```typescript
@@ -942,16 +990,22 @@ list(options?: ListUsersOptions): Promise<ListUsersResult>
 const me = await client.users.getCurrentUser();
 console.log(`Logged in as: ${me.email}`);
 
-// List all users
-const result = await client.users.list({ limit: 100 });
-for (const user of result.users) {
+// List users, first page
+const page = await client.users.list({ limit: 100 });
+for (const user of page.items) {
   console.log(`${user.firstName} ${user.lastName}: ${user.email}`);
+}
+if (page.pagination.hasMore) {
+  await client.users.list({ limit: 100, offset: page.pagination.nextOffset });
 }
 ```
 
 ### Key Models
 
-- `User` - id, email, firstName, lastName, roles, attributes
+- `User` - id, email, firstName, lastName, roles, attributes, groups
+- Rules flags: `enforcedInRules` (user and each of its `groups`) is `true`/`false` from
+  `getCurrentUser` and `list`, `undefined` from `get`; `publicKeyEnforcedInRules` comes only from
+  `getCurrentUser` and is `undefined` elsewhere.
 
 ---
 
@@ -965,12 +1019,13 @@ for (const user of result.users) {
 
 ```typescript
 get(groupId: string): Promise<Group>
-list(options?: ListGroupsOptions): Promise<ListGroupsResult>
+list(options?: ListGroupsOptions): Promise<PaginatedResult<Group>>
 ```
 
 ### Key Models
 
-- `Group` - id, name, members, threshold
+- `Group` - id, name, members, threshold, users
+- Rules flags: `enforcedInRules` (group and each of its `users`) is `true`/`false` from `get` and `list`.
 
 ---
 
@@ -1028,15 +1083,16 @@ console.log(`Created webhook: ${webhook.id}`);
 
 #### list
 
-Lists webhooks with filtering.
+Lists a page of webhooks (cursor pagination: `pageSize` 1-100, default 20, and `cursor`).
 
 ```typescript
-list(options?: ListWebhooksOptions): Promise<WebhookResult>
+list(options?: ListWebhooksOptions): Promise<ListWebhooksResult>
 ```
 
 #### get
 
-Gets a webhook by ID.
+Gets a webhook by ID. There is no single-webhook endpoint, so this walks the list page by
+page (100 per page) until the id shows up.
 
 ```typescript
 get(webhookId: string): Promise<Webhook>
@@ -1068,8 +1124,10 @@ delete(webhookId: string): Promise<void>
 
 ```typescript
 list(options?: ListWebhookCallsOptions): Promise<WebhookCallResult>
-get(webhookCallId: string): Promise<WebhookCall>
+get(callId: string): Promise<WebhookCall>
 ```
+
+`list` is a cursor list (`pageSize` 1-100, default 20, `cursor`); `get` walks the pages.
 
 ### Key Models
 
@@ -1086,22 +1144,27 @@ get(webhookCallId: string): Promise<WebhookCall>
 ### Methods
 
 ```typescript
-list(options?: ListAuditTrailsOptions): Promise<AuditTrailResult>
+list(options?: ListAuditTrailsOptions): Promise<ListAuditTrailsResult>
+exportAuditTrails(options?: { entities?: string[]; actions?: string[]; format?: string }): Promise<string>
 ```
 
 **Example:**
 ```typescript
-const result = await client.audits.list({
-  entity: 'REQUEST',
-  action: 'APPROVE',
-  from: new Date('2024-01-01'),
-  to: new Date(),
-  pageSize: 100,
-});
-
-for (const audit of result.audits) {
-  console.log(`${audit.entity} ${audit.action} by ${audit.user?.email}`);
-}
+let cursor: string | undefined;
+do {
+  const page = await client.audits.list({
+    entities: ['REQUEST'],
+    actions: ['APPROVE'],
+    creationDateFrom: new Date('2024-01-01'),
+    creationDateTo: new Date(),
+    pageSize: 100,
+    cursor,
+  });
+  for (const audit of page.items) {
+    console.log(`${audit.entity} ${audit.action} by ${audit.userEmail}`);
+  }
+  cursor = page.pagination.hasMore ? page.pagination.nextCursor : undefined;
+} while (cursor);
 ```
 
 ### Key Models
@@ -1119,27 +1182,31 @@ for (const audit of result.audits) {
 ### Methods
 
 ```typescript
-list(): Promise<Tag[]>
+list(options?: ListTagsOptions): Promise<Tag[]>
 get(tagId: string): Promise<Tag>
 create(request: CreateTagRequest): Promise<Tag>
 delete(tagId: string): Promise<void>
 ```
 
+The tags endpoint is not paged, so `list` returns **every** tag the reply carries, filtered
+only by the optional `ids` and `query`. It takes no `limit` or `offset`; passing either is a
+`ValidationError`.
+
 **Example:**
 ```typescript
 // Create a tag
-const tag = await client.tags.create({ value: 'high-priority' });
+const tag = await client.tags.create({ name: 'high-priority', color: '#FF0000' });
 
-// List all tags
+// List every tag
 const tags = await client.tags.list();
 for (const t of tags) {
-  console.log(`Tag: ${t.value}`);
+  console.log(`Tag: ${t.name}`);
 }
 ```
 
 ### Key Models
 
-- `Tag` - id, value
+- `Tag` - id, name, color, createdAt
 
 ---
 
@@ -1199,10 +1266,11 @@ getNEARValidatorInfo(network: string, validatorAddress: string): Promise<NEARVal
 
 #### getStakeAccounts
 
-Lists stake accounts with pagination.
+Lists a page of stake accounts (cursor pagination: `pageSize` 1-100, default 20, and
+`cursor`; `currentPage`/`pageRequest` stay as low-level options).
 
 ```typescript
-getStakeAccounts(options: GetStakeAccountsOptions): Promise<StakeAccountResult>
+getStakeAccounts(options?: ListStakeAccountsOptions): Promise<StakeAccountResult>
 ```
 
 #### getXTZStakingRewards
@@ -1314,9 +1382,11 @@ deleteAttribute(contractId: string, attributeId: string): Promise<void>
 ### Methods
 
 ```typescript
-list(options?: ListBusinessRulesOptions): Promise<BusinessRuleResult>
-get(id: string): Promise<BusinessRule>
+list(options?: ListBusinessRulesOptions): Promise<ListBusinessRulesResult>
+get(ruleId: string): Promise<BusinessRule>
 ```
+
+`list` is a cursor list: `rules` plus `pagination {pageSize, nextCursor, hasMore}`.
 
 ### Key Models
 
@@ -1333,9 +1403,9 @@ get(id: string): Promise<BusinessRule>
 ### Methods
 
 ```typescript
-get(id: number): Promise<Change>
-list(options?: ListChangesOptions): Promise<ChangeResult>
-listForApproval(options?: ListChangesOptions): Promise<ChangeResult>
+get(id: string): Promise<Change>
+list(options?: ListChangesOptions): Promise<ListChangesResult>
+listForApproval(options?: ListChangesForApprovalOptions): Promise<ListChangesResult>
 approve(id: number, comment?: string): Promise<void>
 approveMany(ids: number[], comment?: string): Promise<void>
 reject(id: number, comment: string): Promise<void>
@@ -1376,15 +1446,22 @@ await client.changes.approve(changeId, 'Approved via SDK');
 ### Methods
 
 ```typescript
-list(): Promise<Price[]>
-getHistory(base: string, quote: string, limit?: number): Promise<PriceHistoryPoint[]>
-convert(currency: string, amount: string, targetCurrencyIds: string[]): Promise<ConversionResult[]>
+list(options?: ListPricesOptions): Promise<ListPricesResult>
+getHistory(options: GetPriceHistoryOptions): Promise<PriceHistoryPoint[]>
+convert(options: ConvertOptions): Promise<ConversionResult[]>
 ```
+
+`list` is served by `QueryPricesV2`, a cursor list (`pageSize` 1-100, default 20, `cursor`),
+with `onlyPrimary`, `sortOrder` and a currency filter: `fromCurrencyId` alone, `toCurrencyIds`
+alone, or both. `getHistory` cannot page: `limit` (1-365, default 20) daily points.
 
 **Example:**
 ```typescript
-// Get all prices
-const prices = await client.prices.list();
+// First page of the primary prices
+const page = await client.prices.list({ onlyPrimary: true });
+for (const price of page.items) {
+  console.log(`${price.currencyFrom}/${price.currencyTo}: ${price.rate}`);
+}
 
 // Convert 1 ETH to USD
 const conversions = await client.prices.convert('ETH', '1000000000000000000', ['USD']);
@@ -1411,13 +1488,14 @@ for (const result of conversions) {
 ### Methods
 
 ```typescript
-getFees(currency: string): Promise<Fee[]>
-getFeesV2(currency: string): Promise<FeeV2[]>
+getFeesV2(): Promise<FeeV2[]>
 ```
+
+Served by the v2 fees endpoint; the deprecated v1 key-value endpoint is not wrapped.
 
 ### Key Models
 
-- `Fee` - currency, feeType, amount, unit
+- `FeeV2` - currencyId, value, denom, currencyInfo, updateDate
 
 ---
 
@@ -1473,10 +1551,12 @@ submitIncomingAirGap(payload: string): Promise<void>
 ### Methods
 
 ```typescript
-list(options?: ListReservationsOptions): Promise<ReservationResult>
-get(reservationId: string): Promise<Reservation>
-getUtxo(reservationId: string): Promise<ReservationUtxo[]>
+list(options?: ListReservationsOptions): Promise<ListReservationsResult>
+get(id: string): Promise<Reservation>
+getUtxo(id: string): Promise<ReservationUtxo>
 ```
+
+`list` is a cursor list: `items` plus `pagination {pageSize, nextCursor, hasMore}`.
 
 ### Key Models
 
@@ -1598,9 +1678,32 @@ console.log(`MFA mandatory: ${config.mfaMandatory}`);
 ### Methods
 
 ```typescript
-getAssetAddresses(currencyId: string, options?: GetAssetAddressesOptions): Promise<AssetAddressResult>
-getAssetWallets(currencyId: string, options?: GetAssetWalletsOptions): Promise<AssetWalletResult>
+getAssetAddresses(options: GetAssetAddressesOptions): Promise<ListAssetAddressesResult>
+getAssetWallets(options: GetAssetWalletsOptions): Promise<ListAssetWalletsResult>
+queryAssets(options?: QueryAssetsOptions): Promise<ListAssetsV2Result>
+queryAssetAddresses(assetId: string, options?: QueryAssetAddressesOptions): Promise<ListAssetAddressesV2Result>
+listAssetOperations(assetId: string, options?: ListAssetOperationsOptions): Promise<ListAssetOperationsResult>
 ```
+
+All five are cursor lists (`pageSize` 1-100, default 20, `cursor`). `getAssetAddresses` and
+`getAssetWallets` page through `requestCursor` only and report the server's `totalItems`.
+`queryAssets`, `queryAssetAddresses` and `listAssetOperations` read the v2 asset registry.
+
+> **`queryAssetAddresses` returns an address only after the SDK verified it.** The holder
+> rows carry no signature, so each page is completed through the verified readers:
+>
+> | Holder type | Re-read through | Kept when |
+> |---|---|---|
+> | `ADDRESS_TYPE_V2_INTERNAL` (needs `addressId`) | the managed-address list by id (HSM signature, 50 ids per request) | a verified address with that id has the same address string |
+> | `ADDRESS_TYPE_V2_WHITELISTED` (needs `whitelistedAddressId`) | the whitelisted-address list by id (6-step verification, 100 ids per request) | a verified entry with that id has the same address string |
+> | anything else (`EXTERNAL`, unknown, empty) | nothing — no extra request | always, as on-chain data |
+>
+> A kept internal or whitelisted row carries `verified: true` and the verified reader's
+> address; every other row carries `verified: false` and is never a Taurus-PROTECT address.
+> A row that fails is left out and reported in `excludedUnverified` (`{id, reason}`, `id` =
+> the address ID / whitelisted address ID, else the address). An API error or an unusable
+> rules container aborts the call, as does a page whose rows all failed. Exclusions never
+> move the cursor.
 
 ---
 
@@ -1613,9 +1716,11 @@ getAssetWallets(currencyId: string, options?: GetAssetWalletsOptions): Promise<A
 ### Methods
 
 ```typescript
-list(options?: ListActionsOptions): Promise<ActionResult>
-get(actionId: string): Promise<Action>
+list(options?: ListActionsOptions): Promise<PaginatedResult<ActionEnvelope>>
+get(actionId: string): Promise<ActionEnvelope>
 ```
+
+`list` is an offset list (`limit` 1-100, default 20, `offset`) carrying the server total.
 
 ---
 
@@ -1655,8 +1760,8 @@ for (const bc of blockchains) {
 ### Methods
 
 ```typescript
-list(): Promise<Exchange[]>
-get(exchangeId: string): Promise<Exchange>
+list(options?: ListExchangesOptions): Promise<ListExchangesResult>
+get(id: string): Promise<Exchange>
 getCounterparties(exchangeId: string): Promise<Counterparty[]>
 getWithdrawalFee(exchangeId: string, options: GetWithdrawalFeeOptions): Promise<WithdrawalFee>
 export(exchangeId: string, options: ExportExchangeOptions): Promise<string>
@@ -1678,19 +1783,24 @@ export(exchangeId: string, options: ExportExchangeOptions): Promise<string>
 
 ```typescript
 getFiatProviders(): Promise<FiatProvider[]>
-getFiatProviderAccount(providerId: string, accountId: string): Promise<FiatProviderAccount>
-getFiatProviderAccounts(providerId: string): Promise<FiatProviderAccount[]>
-getFiatProviderCounterpartyAccount(providerId: string, accountId: string): Promise<FiatProviderCounterpartyAccount>
-getFiatProviderCounterpartyAccounts(providerId: string): Promise<FiatProviderCounterpartyAccount[]>
-getFiatProviderOperation(providerId: string, operationId: string): Promise<FiatProviderOperation>
-getFiatProviderOperations(providerId: string, options?: GetFiatProviderOperationsOptions): Promise<FiatProviderOperation[]>
+getFiatProviderAccount(id: string): Promise<FiatProviderAccount>
+getFiatProviderAccounts(options: ListFiatProviderAccountsOptions): Promise<FiatProviderAccountResult>
+getFiatProviderCounterpartyAccount(id: string): Promise<FiatProviderCounterpartyAccount>
+getFiatProviderCounterpartyAccounts(options: ListFiatProviderCounterpartyAccountsOptions): Promise<FiatProviderCounterpartyAccountResult>
+getFiatProviderOperation(id: string): Promise<FiatProviderOperation>
+getFiatProviderOperations(options?: ListFiatProviderOperationsOptions): Promise<FiatProviderOperationResult>
+listFiatProviderEntities(options?: ListFiatProviderEntitiesOptions): Promise<ListFiatProviderEntitiesResult>
 ```
+
+The four lists are cursor lists (`pageSize` 1-100, default 20, `cursor`); the accounts lists
+require `provider` and `label`.
 
 ### Key Models
 
 - `FiatProvider` - id, name, status
 - `FiatProviderAccount` - account details
 - `FiatProviderOperation` - operation details
+- `FiatProviderEntity` - id, provider, label, accountIdentifier, name, details
 
 ---
 
@@ -1703,9 +1813,11 @@ getFiatProviderOperations(providerId: string, options?: GetFiatProviderOperation
 ### Methods
 
 ```typescript
-list(blockchain?: string, network?: string): Promise<FeePayer[]>
-get(feePayerId: string): Promise<FeePayer>
+list(options?: ListFeePayersOptions): Promise<PaginatedResult<FeePayer>>
+get(id: string): Promise<FeePayer>
 ```
+
+`list` is an offset list (`limit` 1-100, default 20, `offset`) carrying the server total.
 
 ### Key Models
 
@@ -1767,15 +1879,10 @@ console.log(`Addresses: ${stats.addressesCount}`);
 
 ### Methods
 
-#### getERCTokenMetadata (deprecated)
-
-```typescript
-getERCTokenMetadata(options: GetERCTokenMetadataOptions): Promise<TokenMetadata>
-```
-
 #### getEVMERCTokenMetadata
 
-Preferred method for ERC token metadata on EVM chains.
+ERC token metadata on EVM chains (the deprecated `GetERCTokenMetadata` endpoint is not
+wrapped).
 
 ```typescript
 getEVMERCTokenMetadata(options: GetEVMERCTokenMetadataOptions): Promise<TokenMetadata>
@@ -1891,6 +1998,35 @@ if (info.apiKey) {
 
 - `UserDevicePairing` - pairingId
 - `UserDevicePairingInfo` - status, apiKey
+
+---
+
+## EarnService
+
+**Purpose:** Lists the rewards earned by addresses (e.g. Merkl token incentives).
+
+**Location:** `src/services/earn-service.ts`
+
+### Methods
+
+```typescript
+listRewards(options?: ListEarnRewardsOptions): Promise<ListEarnRewardsResult>
+```
+
+A cursor list (`pageSize` 1-100, default 20, `cursor`), optionally filtered by
+`recipientAddressId`.
+
+**Example:**
+```typescript
+const page = await client.earn.listRewards({ recipientAddressId: '42' });
+for (const reward of page.items) {
+  console.log(reward.rewardType, reward.merklTokenReward?.amount);
+}
+```
+
+### Key Models
+
+- `EarnReward` - id, recipientAddressId, recipientAddress, rewardType, merklTokenReward
 
 ---
 
@@ -2382,42 +2518,48 @@ try {
 
 ## Pagination Patterns
 
+Every list follows the cross-SDK contract (see `docs/CONCEPTS.md` → Pagination): the page
+size is always sent (default `DEFAULT_PAGE_SIZE` 20, at most `MAX_PAGE_SIZE` 100, otherwise
+`ValidationError` before any request), and the pagination value is present on every
+successful page, the empty one included. Stop on `hasMore`, never on a short page.
+
 ### Cursor-Based Pagination
 
-Used by: BalanceService, BusinessRuleService, RequestService, TaurusNetwork services
+Used by every list validatord offers a cursor for: requests, changes, audit trails, business
+rules, stake accounts, balances, NFT collections, exchanges, fiat, prices, reservations,
+webhooks, webhook calls, the v2 asset registry, asset holders, earn rewards, Taurus-NETWORK,
+and (with a token) wallet tokens and governance-rules history.
 
 ```typescript
-let result = await service.list({ pageSize: 100 });
-const allItems = [...result.items];
-
-while (result.pagination?.hasNext) {
-  result = await service.list({
-    pageSize: 100,
-    currentPage: result.pagination.currentPage,
-    pageRequest: 'NEXT',
-  });
-  allItems.push(...result.items);
-}
+let cursor: string | undefined;
+do {
+  const page = await client.requests.list({ pageSize: 100, cursor });
+  handle(page.requests);
+  cursor = page.pagination.hasMore ? page.pagination.nextCursor : undefined;
+} while (cursor);
 ```
+
+`cursor` sends `currentPage=<cursor>` + `pageRequest=NEXT` + the page size; combining it with
+the low-level `currentPage` or `pageRequest` is a `ValidationError`.
 
 ### Offset-Based Pagination
 
-Used by: WalletService, AddressService, TransactionService, UserService
+Used by: WalletService, AddressService, TransactionService, UserService, GroupService,
+FeePayerService, ActionService, WhitelistedAddressService, WhitelistedAssetService
 
 ```typescript
-const limit = 100;
 let offset = 0;
-const allItems: Item[] = [];
-
-let result;
-do {
-  result = await service.list({ limit, offset });
-  allItems.push(...result.items);
-  offset += limit;
-} while (result.items.length === limit);
+for (;;) {
+  const page = await client.wallets.list({ limit: 100, offset });
+  handle(page.items);
+  if (!page.pagination.hasMore) break;
+  offset = page.pagination.nextOffset;
+}
 ```
 
----
+`nextOffset` follows each endpoint's rule, so it is not always `offset + items.length`: rows
+withheld as unverifiable, a synthetic row the server appends, or a contract row the server
+skips would all make that sum wrong.
 
 ## Related Documentation
 
@@ -2434,14 +2576,12 @@ Generated from the typescript source by `scripts/api-surface/docs.py`; regenerat
 `./build.sh docs`. Every method below exists in the SDK, and `./build.sh docs --check`
 fails if this list drifts or if the prose above documents a method that does not.
 
-43 services, 209 public methods.
+44 services, 210 public methods.
 
 ### ActionService
 
 - `get(actionId: string): Promise<ActionEnvelope>` — Retrieves a specific action by its ID.
-- `list(): Promise<ActionEnvelope[]>` — Lists all actions.
-- `list(options: ListActionsOptions): Promise<ActionEnvelope[]>` — Lists actions with optional filters.
-- `list(options?: ListActionsOptions): Promise<ActionEnvelope[]>`
+- `list(options?: ListActionsOptions): Promise<PaginatedResult<ActionEnvelope>>` — Lists a page of actions.
 
 ### AddressService
 
@@ -2451,8 +2591,8 @@ fails if this list drifts or if the prose above documents a method that does not
 - `deleteAttribute(addressId: number, attributeId: number): Promise<void>` — Deletes an attribute from an address.
 - `get(addressId: number): Promise<Address>` — Gets an address by ID with mandatory signature verification.
 - `getProofOfReserve(addressId: number, challenge?: string): Promise<TgvalidatordGetAddressProofOfReserveReply["result"]>` — Gets the proof of reserve for an address.
-- `list(walletId: number, options?: Omit<ListAddressesOptions, "walletId">): Promise<{ items: Address[]; pagination: Pagination | undefined; }>` — Lists addresses for a wallet with mandatory signature verification.
-- `listWithOptions(options?: ListAddressesOptions): Promise<{ items: Address[]; pagination: Pagination | undefined; }>` — Lists addresses with full filtering options.
+- `list(walletId: number, options?: Omit<ListAddressesOptions, "walletId">): Promise<PaginatedResult<Address>>` — Lists addresses for a wallet with mandatory signature verification.
+- `listWithOptions(options?: ListAddressesOptions): Promise<PaginatedResult<Address>>` — Lists addresses with full filtering options, with mandatory signature verification.
 
 ### AirGapService
 
@@ -2462,18 +2602,21 @@ fails if this list drifts or if the prose above documents a method that does not
 
 ### AssetService
 
-- `getAssetAddresses(options: GetAssetAddressesOptions): Promise<Address[]>` — Retrieves addresses that hold a specific asset.
-- `getAssetWallets(options: GetAssetWalletsOptions): Promise<Wallet[]>` — Retrieves wallets that hold a specific asset.
+- `getAssetAddresses(options: GetAssetAddressesOptions): Promise<ListAssetAddressesResult>` — Retrieves a page of the addresses that hold a specific asset, each signature-verified.
+- `getAssetWallets(options: GetAssetWalletsOptions): Promise<ListAssetWalletsResult>` — Retrieves a page of the wallets that hold a specific asset.
+- `listAssetOperations(assetId: string, options?: ListAssetOperationsOptions): Promise<ListAssetOperationsResult>` — Lists a page of the lifecycle operations of a v2 asset.
+- `queryAssetAddresses(assetId: string, options?: QueryAssetAddressesOptions): Promise<ListAssetAddressesV2Result>` — Queries a page of the holders of a v2 asset, verifying internal and whitelisted ones.
+- `queryAssets(options?: QueryAssetsOptions): Promise<ListAssetsV2Result>` — Queries a page of the v2 asset registry.
 
 ### AuditService
 
 - `exportAuditTrails(options?: { externalUserId?: string; entities?: string[]; actions?: string[]; creationDateFrom?: Date; creationDateTo?: Date; format?: string; }): Promise<string>` — Export audit trails to a formatted string (CSV or JSON).
-- `list(options?: ListAuditTrailsOptions): Promise<AuditTrail[]>` — Lists audit trails with optional filtering.
+- `list(options?: ListAuditTrailsOptions): Promise<ListAuditTrailsResult>` — Lists a page of audit trails with optional filtering.
 
 ### BalanceService
 
-- `list(options?: ListBalancesOptions): Promise<AssetBalance[]>` — Lists asset balances for the tenant.
-- `listNFTCollections(options: ListNFTCollectionBalancesOptions): Promise<NFTCollectionBalance[]>` — Lists NFT collection balances for the tenant.
+- `list(options?: ListBalancesOptions): Promise<ListBalancesResult>` — Lists a page of asset balances for the tenant.
+- `listNFTCollections(options?: ListNFTCollectionBalancesOptions): Promise<ListNFTCollectionBalancesResult>` — Lists a page of NFT collection balances for the tenant.
 
 ### BlockchainService
 
@@ -2518,47 +2661,51 @@ fails if this list drifts or if the prose above documents a method that does not
 - `getByBlockchain(options: GetCurrencyByBlockchainOptions): Promise<Currency>` — Gets a currency by blockchain and network.
 - `list(options?: ListCurrenciesOptions): Promise<Currency[]>` — Lists all currencies.
 
+### EarnService
+
+- `listRewards(options?: ListEarnRewardsOptions): Promise<ListEarnRewardsResult>` — Lists a page of rewards.
+
 ### ExchangeService
 
 - `export(format?: string): Promise<string>` — Exports all exchange accounts to a specified format.
 - `get(id: string): Promise<Exchange>` — Gets an exchange account by ID.
 - `getCounterparties(): Promise<ExchangeCounterparty[]>` — Gets all exchange counterparties.
 - `getWithdrawalFee(exchangeId: string, options?: GetWithdrawalFeeOptions): Promise<ExchangeWithdrawalFee | undefined>` — Gets the withdrawal fee for a transfer from an exchange.
-- `list(options?: ListExchangesOptions): Promise<ListExchangesResult>` — Lists exchange accounts.
+- `list(options?: ListExchangesOptions): Promise<ListExchangesResult>` — Lists a page of exchange accounts.
 
 ### FeePayerService
 
 - `get(id: string): Promise<FeePayer>` — Gets a fee payer by ID.
-- `list(options?: ListFeePayersOptions): Promise<FeePayer[]>` — Lists fee payers with optional filtering.
+- `list(options?: ListFeePayersOptions): Promise<PaginatedResult<FeePayer>>` — Lists a page of fee payers with optional filtering.
 
 ### FeeService
 
-- `getFees(): Promise<Fee[]>` — Retrieves current network fees for all supported blockchains (v1 API).
 - `getFeesV2(): Promise<FeeV2[]>` — Retrieves current native currency fees for all supported blockchains (v2 API).
 
 ### FiatService
 
 - `getFiatProviderAccount(id: string): Promise<FiatProviderAccount>` — Retrieves a fiat provider account by ID.
-- `getFiatProviderAccounts(options: ListFiatProviderAccountsOptions): Promise<FiatProviderAccountResult>` — Retrieves fiat provider accounts with optional filtering.
+- `getFiatProviderAccounts(options: ListFiatProviderAccountsOptions): Promise<FiatProviderAccountResult>` — Retrieves a page of fiat provider accounts.
 - `getFiatProviderCounterpartyAccount(id: string): Promise<FiatProviderCounterpartyAccount>` — Retrieves a fiat provider counterparty account by ID.
-- `getFiatProviderCounterpartyAccounts(options: ListFiatProviderCounterpartyAccountsOptions): Promise<FiatProviderCounterpartyAccountResult>` — Retrieves fiat provider counterparty accounts with optional filtering.
+- `getFiatProviderCounterpartyAccounts(options: ListFiatProviderCounterpartyAccountsOptions): Promise<FiatProviderCounterpartyAccountResult>` — Retrieves a page of fiat provider counterparty accounts.
 - `getFiatProviderOperation(id: string): Promise<FiatProviderOperation>` — Retrieves a fiat provider operation by ID.
-- `getFiatProviderOperations(options?: ListFiatProviderOperationsOptions): Promise<FiatProviderOperationResult>` — Retrieves fiat provider operations with optional filtering.
+- `getFiatProviderOperations(options?: ListFiatProviderOperationsOptions): Promise<FiatProviderOperationResult>` — Retrieves a page of fiat provider operations.
 - `getFiatProviders(): Promise<FiatProvider[]>` — Retrieves all configured fiat providers.
+- `listFiatProviderEntities(options?: ListFiatProviderEntitiesOptions): Promise<ListFiatProviderEntitiesResult>` — Lists a page of fiat provider entities.
 
 ### GovernanceRuleService
 
-- `approveRulesProposal(privateKey: KeyObject, comment: string, expectedContainerHash: string): Promise<void>`
-- `decodeProposalForReview(rules: GovernanceRules): DecodedRulesContainer`
+- `approveRulesProposal(privateKey: KeyObject, comment: string, expectedContainerHash: string): Promise<void>` — Signs the pending proposal's rules container with a SuperAdmin private key
+- `decodeProposalForReview(rules: GovernanceRules): DecodedRulesContainer` — Decodes a PENDING rules proposal so a SuperAdmin can inspect it before approving.
 - `getDecodedRulesContainer(): Promise<DecodedRulesContainer>` — Gets the decoded rules container from the current governance rules.
 - `getPublicKeys(): Promise<SuperAdminPublicKey[]>` — Gets the SuperAdmin public keys the server has configured.
 - `getRules(): Promise<GovernanceRules | undefined>` — Gets the currently enforced governance rules.
 - `getRulesById(rulesId: string): Promise<GovernanceRules | undefined>` — Gets a governance ruleset by its ID.
 - `getRulesHistory(options?: ListGovernanceRulesHistoryOptions): Promise<GovernanceRulesHistoryResult>` — Gets the history of governance rules.
 - `getRulesProposal(): Promise<GovernanceRules | undefined>` — Gets the proposed governance rules.
-- `proposalContainerHash(rules: GovernanceRules): string`
+- `proposalContainerHash(rules: GovernanceRules): string` — Returns the canonical SHA-256 hex digest of a ruleset's decoded rules container.
 - `rejectRulesProposal(comment: string): Promise<void>` — Rejects the pending rules proposal with a comment (SuperAdmin only).
-- `updateRulesProposal(container: DecodedRulesContainer): Promise<void>`
+- `updateRulesProposal(container: DecodedRulesContainer): Promise<void>` — Submits a rules container as a governance proposal (SuperAdmin only).
 - `verifyGovernanceRules(rules: GovernanceRules): GovernanceRules` — Verifies that governance rules have enough valid SuperAdmin signatures.
 
 ### GroupService
@@ -2588,17 +2735,17 @@ fails if this list drifts or if the prose above documents a method that does not
 - `getLendingAgreement(lendingAgreementId: string): Promise<LendingAgreement>` — Gets a lending agreement by ID.
 - `getLendingOffer(offerId: string): Promise<LendingOffer>` — Gets a lending offer by ID.
 - `listLendingAgreementAttachments(lendingAgreementId: string): Promise<LendingAgreementAttachment[]>` — Lists attachments for a lending agreement.
-- `listLendingAgreements(options?: ListLendingAgreementsOptions): Promise<{ agreements: LendingAgreement[]; pagination?: CursorPagination; }>` — Lists lending agreements.
-- `listLendingAgreementsForApproval(options?: ListLendingAgreementsOptions): Promise<{ agreements: LendingAgreement[]; pagination?: CursorPagination; }>` — Lists lending agreements pending approval.
-- `listLendingOffers(options?: ListLendingOffersOptions): Promise<{ offers: LendingOffer[]; pagination?: CursorPagination; }>` — Lists lending offers.
+- `listLendingAgreements(options?: ListLendingAgreementsOptions): Promise<{ agreements: LendingAgreement[]; pagination: CursorPage; }>` — Lists lending agreements.
+- `listLendingAgreementsForApproval(options?: ListLendingAgreementsForApprovalOptions): Promise<{ agreements: LendingAgreement[]; pagination: CursorPage; }>` — Lists lending agreements pending approval.
+- `listLendingOffers(options?: ListLendingOffersOptions): Promise<{ offers: LendingOffer[]; pagination: CursorPage; }>` — Lists lending offers.
 - `repayLendingAgreement(lendingAgreementId: string, request: RepayLendingAgreementRequest): Promise<void>` — Records repayment for a lending agreement.
 - `updateLendingAgreement(lendingAgreementId: string, request: UpdateLendingAgreementRequest): Promise<void>` — Updates a lending agreement.
 
 ### MultiFactorSignatureService
 
-- `approve(request: ApproveMultiFactorSignatureRequest): Promise<void>`
+- `approve(request: ApproveMultiFactorSignatureRequest): Promise<void>` — Approve a multi-factor signature.
 - `create(request: CreateMultiFactorSignatureRequest): Promise<string>` — Create a multi-factor signature batch.
-- `get(id: string): Promise<MultiFactorSignatureInfo>`
+- `get(id: string): Promise<MultiFactorSignatureInfo>` — Get multi-factor signature entity info by ID.
 - `reject(request: RejectMultiFactorSignatureRequest): Promise<void>` — Reject a multi-factor signature.
 
 ### ParticipantService
@@ -2616,10 +2763,10 @@ fails if this list drifts or if the prose above documents a method that does not
 - `createPledge(request: CreatePledgeRequest): Promise<CreatePledgeResult>` — Creates a new pledge.
 - `get(pledgeId: string): Promise<Pledge>` — Gets a pledge by ID.
 - `initiateWithdrawPledge(pledgeId: string, request: InitiateWithdrawPledgeRequest): Promise<WithdrawPledgeResult>` — Initiates withdrawal from a pledge (pledgor operation).
-- `list(options?: ListPledgesOptions): Promise<{ pledges: Pledge[]; pagination?: CursorPagination; }>` — Lists pledges with optional filtering.
-- `listPledgeActions(options?: ListPledgeActionsOptions): Promise<{ actions: PledgeAction[]; pagination?: CursorPagination; }>` — Lists pledge actions with optional filtering.
-- `listPledgeActionsForApproval(options?: ListPledgeActionsOptions): Promise<{ actions: PledgeAction[]; pagination?: CursorPagination; }>` — Lists pledge actions pending approval.
-- `listPledgeWithdrawals(options?: ListPledgeWithdrawalsOptions): Promise<{ withdrawals: PledgeWithdrawal[]; pagination?: CursorPagination; }>` — Lists pledge withdrawals with optional filtering.
+- `list(options?: ListPledgesOptions): Promise<{ pledges: Pledge[]; pagination: CursorPage; }>` — Lists pledges with optional filtering.
+- `listPledgeActions(options?: ListPledgeActionsOptions): Promise<{ actions: PledgeAction[]; pagination: CursorPage; }>` — Lists pledge actions with optional filtering.
+- `listPledgeActionsForApproval(options?: ListPledgeActionsForApprovalOptions): Promise<{ actions: PledgeAction[]; pagination: CursorPage; }>` — Lists pledge actions pending approval.
+- `listPledgeWithdrawals(options?: ListPledgeWithdrawalsOptions): Promise<{ withdrawals: PledgeWithdrawal[]; pagination: CursorPage; }>` — Lists pledge withdrawals with optional filtering.
 - `rejectPledge(pledgeId: string, request: RejectPledgeRequest): Promise<void>` — Rejects a pledge.
 - `rejectPledgeActions(request: RejectPledgeActionsRequest): Promise<void>` — Rejects multiple pledge actions.
 - `unpledge(pledgeId: string): Promise<UnpledgeResult>` — Unpledges all funds from a pledge.
@@ -2630,7 +2777,7 @@ fails if this list drifts or if the prose above documents a method that does not
 
 - `convert(options: ConvertOptions): Promise<ConversionResult[]>` — Converts an amount from one currency to target currencies.
 - `getHistory(options: GetPriceHistoryOptions): Promise<PriceHistoryPoint[]>` — Gets price history for a currency pair.
-- `list(): Promise<Price[]>` — Lists all current prices.
+- `list(options?: ListPricesOptions): Promise<ListPricesResult>` — Lists a page of current prices, each verified against its signature.
 
 ### RequestService
 
@@ -2652,7 +2799,7 @@ fails if this list drifts or if the prose above documents a method that does not
 
 - `get(id: string): Promise<Reservation>` — Gets a reservation by ID.
 - `getUtxo(id: string): Promise<ReservationUtxo>` — Gets the UTXO details for a reservation.
-- `list(options?: ListReservationsOptions): Promise<Reservation[]>` — Lists all reservations with optional filtering.
+- `list(options?: ListReservationsOptions): Promise<ListReservationsResult>` — Lists a page of reservations with optional filtering.
 
 ### ScoreService
 
@@ -2664,14 +2811,14 @@ fails if this list drifts or if the prose above documents a method that does not
 - `cancel(settlementId: string): Promise<void>` — Cancels a settlement.
 - `create(request: CreateSettlementRequest): Promise<string>` — Creates a new settlement.
 - `get(settlementId: string): Promise<Settlement>` — Gets a settlement by ID.
-- `list(options?: ListSettlementsOptions): Promise<{ settlements: Settlement[]; pagination?: CursorPagination; }>` — Lists settlements with optional filtering.
-- `listForApproval(options?: ListSettlementsForApprovalOptions): Promise<{ settlements: Settlement[]; pagination?: CursorPagination; }>` — Lists settlements pending approval.
+- `list(options?: ListSettlementsOptions): Promise<{ settlements: Settlement[]; pagination: CursorPage; }>` — Lists settlements with optional filtering.
+- `listForApproval(options?: ListSettlementsForApprovalOptions): Promise<{ settlements: Settlement[]; pagination: CursorPage; }>` — Lists settlements pending approval.
 - `replace(settlementId: string, request: ReplaceSettlementRequest): Promise<void>` — Replaces (updates) a settlement.
 
 ### SharingService
 
-- `listSharedAddresses(options?: ListSharedAddressesOptions): Promise<{ sharedAddresses: SharedAddress[]; pagination?: CursorPagination; }>` — Lists shared addresses with optional filtering.
-- `listSharedAssets(options?: ListSharedAssetsOptions): Promise<{ sharedAssets: SharedAsset[]; pagination?: CursorPagination; }>` — Lists shared assets with optional filtering.
+- `listSharedAddresses(options?: ListSharedAddressesOptions): Promise<{ sharedAddresses: SharedAddress[]; pagination: CursorPage; }>` — Lists shared addresses with optional filtering.
+- `listSharedAssets(options?: ListSharedAssetsOptions): Promise<{ sharedAssets: SharedAsset[]; pagination: CursorPage; }>` — Lists shared assets with optional filtering.
 - `shareAddress(request: ShareAddressRequest): Promise<void>` — Shares an internal address with a Taurus Network participant.
 - `shareWhitelistedAsset(request: ShareWhitelistedAssetRequest): Promise<void>` — Shares a whitelisted asset with a Taurus Network participant.
 - `unshareAddress(sharedAddressId: string): Promise<void>` — Unshares an address from a Taurus Network participant.
@@ -2696,23 +2843,22 @@ fails if this list drifts or if the prose above documents a method that does not
 - `create(request: CreateTagRequest): Promise<Tag>` — Creates a new tag.
 - `delete(tagId: string): Promise<void>` — Deletes a tag.
 - `get(tagId: string): Promise<Tag>` — Gets a tag by ID.
-- `list(options?: ListTagsOptions): Promise<Tag[]>` — Lists tags.
+- `list(options?: ListTagsOptions): Promise<Tag[]>` — Lists every tag, optionally filtered by id or query.
 
 ### TokenMetadataService
 
 - `getCryptoPunkMetadata(options: GetCryptoPunkMetadataOptions): Promise<CryptoPunkMetadata>` — Retrieves CryptoPunk metadata.
-- `getERCTokenMetadata(options: GetERCTokenMetadataOptions): Promise<TokenMetadata>` — Retrieves ERC token metadata (ERC-20, ERC-721, ERC-1155).
 - `getEVMERCTokenMetadata(options: GetEVMERCTokenMetadataOptions): Promise<TokenMetadata>` — Retrieves ERC token metadata for EVM-compatible chains.
 - `getFATokenMetadata(options: GetFATokenMetadataOptions): Promise<TokenMetadata>` — Retrieves FA token metadata (Tezos FA1.2/FA2 standards).
 
 ### TransactionService
 
-- `exportTransactions(options?: { fromDate?: Date; toDate?: Date; currency?: string; direction?: string; limit?: number; offset?: number; format?: string; blockchain?: string; network?: string; }): Promise<string>` — Export transactions to a formatted string (CSV or JSON).
+- `exportTransactions(options?: ExportTransactionsOptions): Promise<ExportTransactionsResult>` — Exports transactions as a formatted string (JSON or CSV).
 - `get(transactionId: string): Promise<Transaction>` — Gets a transaction by ID.
 - `getByHash(txHash: string): Promise<Transaction>` — Gets a transaction by its blockchain hash.
 - `list(options?: ListTransactionsOptions): Promise<PaginatedResult<Transaction>>` — Lists transactions with pagination and optional filtering.
-- `listByAddress(address: string, options?: { limit?: number; offset?: number; }): Promise<PaginatedResult<Transaction>>` — Lists transactions for a specific blockchain address.
-- `listByRequest(requestId: string, options?: { limit?: number; offset?: number; }): Promise<PaginatedResult<Transaction>>` — Lists transactions associated with a specific request ID.
+- `listByAddress(address: string, options?: OffsetPageOptions): Promise<PaginatedResult<Transaction>>` — Lists transactions for a specific blockchain address.
+- `listByRequest(requestId: string, options?: OffsetPageOptions): Promise<PaginatedResult<Transaction>>` — Lists transactions associated with a specific request ID.
 
 ### UserDeviceService
 
@@ -2739,7 +2885,7 @@ fails if this list drifts or if the prose above documents a method that does not
 - `deleteAttribute(walletId: number, attributeId: string): Promise<void>` — Deletes an attribute from a wallet.
 - `get(walletId: number): Promise<Wallet>` — Gets a wallet by ID.
 - `getBalanceHistory(walletId: number, intervalHours: number): Promise<BalanceHistoryPoint[]>` — Gets the balance history for a wallet.
-- `getWalletTokens(walletId: number, limit?: number): Promise<AssetBalance[]>` — Gets the list of tokens (asset balances) for a wallet.
+- `getWalletTokens(walletId: number, options?: ListWalletTokensOptions): Promise<ListWalletTokensResult>` — Gets a page of the tokens (asset balances) a wallet holds.
 - `list(options?: ListWalletsOptions): Promise<PaginatedResult<Wallet>>` — Lists wallets with pagination and optional filtering.
 
 ### WebhookCallService
@@ -2752,26 +2898,26 @@ fails if this list drifts or if the prose above documents a method that does not
 - `create(request: CreateWebhookRequest): Promise<Webhook>` — Creates a new webhook.
 - `delete(webhookId: string): Promise<void>` — Deletes a webhook.
 - `get(webhookId: string): Promise<Webhook>` — Gets a webhook by ID.
-- `list(options?: ListWebhooksOptions): Promise<Webhook[]>` — Lists webhooks.
+- `list(options?: ListWebhooksOptions): Promise<ListWebhooksResult>` — Lists a page of webhooks.
 
 ### WhitelistedAddressService
 
-- `approve(selection: WhitelistedAddressApproval, privateKey: KeyObject, comment: string): Promise<void>`
+- `approve(selection: WhitelistedAddressApproval, privateKey: KeyObject, comment: string): Promise<void>` — Signs and submits an approval for the whitelisted addresses an approver REVIEWED,
 - `get(addressId: string): Promise<WhitelistedAddress>` — Gets a whitelisted address by ID with mandatory verification.
 - `getEnvelope(addressId: string): Promise<Verified<SignedWhitelistedAddressEnvelope>>` — Gets the signed envelope for a whitelisted address, after verifying it.
 - `getWithVerification(addressId: string): Promise<WhitelistedAddressVerificationResult>` — Gets a whitelisted address by ID with full verification.
 - `list(options?: ListWhitelistedAddressesOptions): Promise<ListWhitelistedAddressesResult>` — Lists whitelisted addresses with mandatory verification.
-- `listForApproval(options?: ListWhitelistedAddressesForApprovalOptions): Promise<ListWhitelistedAddressesResult>`
+- `listForApproval(options?: ListWhitelistedAddressesForApprovalOptions): Promise<ListWhitelistedAddressesResult>` — Lists whitelisted addresses awaiting approval, verified exactly as {@link list} is.
 - `withVerification(api: AddressWhitelistingApi, config: WhitelistedAddressServiceConfig): WhitelistedAddressService` — Creates a WhitelistedAddressService with verification enabled.
 
 ### WhitelistedAssetService
 
-- `approve(selection: WhitelistedAssetApproval, privateKey: KeyObject, comment: string): Promise<void>`
-- `get(assetId: number): Promise<WhitelistedAsset>`
+- `approve(selection: WhitelistedAssetApproval, privateKey: KeyObject, comment: string): Promise<void>` — Signs and submits an approval for the whitelisted assets an approver REVIEWED,
+- `get(assetId: number): Promise<WhitelistedAsset>` — Gets a whitelisted asset by ID, running the full 5-step verification.
 - `getEnvelope(assetId: number): Promise<Verified<SignedWhitelistedAssetEnvelope>>` — Gets the signed envelope for a whitelisted asset, after verifying it.
 - `getWithVerification(assetId: number): Promise<WhitelistedAssetVerificationResult>` — Gets a whitelisted asset by ID with full verification.
 - `list(options?: ListWhitelistedAssetsOptions): Promise<ListWhitelistedAssetsResult>` — Lists whitelisted assets.
-- `listForApproval(options?: ListWhitelistedAssetsForApprovalOptions): Promise<ListWhitelistedAssetsResult>`
+- `listForApproval(options?: ListWhitelistedAssetsForApprovalOptions): Promise<ListWhitelistedAssetsResult>` — Lists whitelisted assets awaiting approval, verified exactly as {@link list}.
 - `withVerification(api: ContractWhitelistingApi, config: WhitelistedAssetServiceConfig): WhitelistedAssetService` — Creates a WhitelistedAssetService with verification enabled.
 
 <!-- END GENERATED METHOD INDEX -->

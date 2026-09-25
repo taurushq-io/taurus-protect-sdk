@@ -25,7 +25,16 @@ export interface TgvalidatordAuthenticationReply {
      * @memberof TgvalidatordAuthenticationReply
      */
     result?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordAuthenticationReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordAuthenticationReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordAuthenticationReply interface.
@@ -42,10 +51,20 @@ export function TgvalidatordAuthenticationReplyFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordAuthenticationReply = {
         
         'result': json['result'] == null ? undefined : json['result'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordAuthenticationReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordAuthenticationReplyToJSON(json: any): TgvalidatordAuthenticationReply {
@@ -60,6 +79,7 @@ export function TgvalidatordAuthenticationReplyFromJSONTyped(json: any, ignoreDi
     return {
         
         'result': value['result'],
+        ...value['additionalProperties'],
     };
 }
 

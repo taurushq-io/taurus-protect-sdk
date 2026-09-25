@@ -55,7 +55,16 @@ export interface TgvalidatordCreateOutgoingDOTUnbondRequestRequest {
      * @memberof TgvalidatordCreateOutgoingDOTUnbondRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingDOTUnbondRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingDOTUnbondRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'amount', 'feeLimit', 'comment', 'transactionReference', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingDOTUnbondRequestRequest interface.
@@ -74,7 +83,7 @@ export function TgvalidatordCreateOutgoingDOTUnbondRequestRequestFromJSONTyped(j
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingDOTUnbondRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'amount': json['amount'],
@@ -83,6 +92,16 @@ export function TgvalidatordCreateOutgoingDOTUnbondRequestRequestFromJSONTyped(j
         'transactionReference': json['transactionReference'] == null ? undefined : json['transactionReference'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingDOTUnbondRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingDOTUnbondRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingDOTUnbondRequestRequest {
@@ -102,6 +121,7 @@ export function TgvalidatordCreateOutgoingDOTUnbondRequestRequestFromJSONTyped(j
         'comment': value['comment'],
         'transactionReference': value['transactionReference'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

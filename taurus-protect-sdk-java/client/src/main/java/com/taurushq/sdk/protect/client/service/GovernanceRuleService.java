@@ -7,6 +7,7 @@ import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
 import com.taurushq.sdk.protect.client.mapper.GovernanceRulesMapper;
 import com.taurushq.sdk.protect.client.mapper.RulesContainerMapper;
 import com.taurushq.sdk.protect.client.model.ApiException;
+import com.taurushq.sdk.protect.client.model.CursorPage;
 import com.taurushq.sdk.protect.client.model.ExcludedRuleset;
 import com.taurushq.sdk.protect.client.model.GovernanceRules;
 import com.taurushq.sdk.protect.client.model.GovernanceRulesHistoryResult;
@@ -124,20 +125,28 @@ public class GovernanceRuleService {
     }
 
     /**
-     * Gets governance rules history with cursor-based pagination.
+     * Gets a page of the governance rules history.
+     * <p>
+     * Every historical ruleset is verified; entries whose SuperAdmin signatures do not verify
+     * are withheld and named in {@link GovernanceRulesHistoryResult#getExcludedUnverified()},
+     * and the page total is reduced by them.
      *
-     * @param pageSize the page size
-     * @param cursor   the cursor from previous response (null for first page)
-     * @return the governance rules history result with rules and pagination cursor
-     * @throws ApiException the api exception
+     * @param pageSize the page size, null or 0 for the default
+     * @param cursor   a previous page's {@code getPage().getNextCursor()}, null for the first page
+     * @return the verified rulesets and their page
+     * @throws ApiException             the api exception
+     * @throws IllegalArgumentException if the page size is out of range or the cursor is not
+     *                                  a cursor this list returned
      */
-    public GovernanceRulesHistoryResult getRulesHistory(final int pageSize, final byte[] cursor) throws ApiException {
-        checkArgument(pageSize > 0, "pageSize must be positive");
+    public GovernanceRulesHistoryResult getRulesHistory(final Integer pageSize, final String cursor)
+            throws ApiException {
+        final int size = PagedOperation.RULES_HISTORY.resolveSize("pageSize", pageSize);
+        final byte[] token = CursorRequest.hasToken(cursor) ? CursorRequest.tokenBytes(cursor) : null;
 
         try {
             TgvalidatordGetRulesHistoryReply reply = governanceRulesApi.ruleServiceGetRulesHistory(
-                    String.valueOf(pageSize),
-                    cursor
+                    String.valueOf(size),
+                    token
             );
 
             GovernanceRulesHistoryResult result = new GovernanceRulesHistoryResult();
@@ -159,10 +168,12 @@ public class GovernanceRuleService {
             result.setRules(verifiedHistoryEntries(entries, excluded));
             result.setExcludedUnverified(excluded);
 
-            result.setCursor(reply.getCursor());
-            // Reduced by the exclusions: the server counts rows it returned, the caller
-            // receives only those that verified.
-            result.setTotalItems(reducedTotal(reply.getTotalItems(), excluded.size()));
+            // The total is reduced by the exclusions: the server counts rows it returned,
+            // the caller receives only those that verified. The next cursor is the server's.
+            CursorPage page = PagedOperation.RULES_HISTORY.tokenPage(
+                    size, CursorRequest.tokenText(reply.getCursor()), reply.getTotalItems());
+            result.setPage(new CursorPage(page.getPageSize(), page.getNextCursor(), page.hasMore(),
+                    Math.max(0L, page.getTotalItems() - excluded.size())));
 
             return result;
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
@@ -171,13 +182,13 @@ public class GovernanceRuleService {
     }
 
     /**
-     * Gets governance rules history (first page).
+     * Gets the first page of the governance rules history.
      *
-     * @param pageSize the page size
-     * @return the governance rules history result with rules and pagination cursor
+     * @param pageSize the page size, null or 0 for the default
+     * @return the verified rulesets and their page
      * @throws ApiException the api exception
      */
-    public GovernanceRulesHistoryResult getRulesHistory(final int pageSize) throws ApiException {
+    public GovernanceRulesHistoryResult getRulesHistory(final Integer pageSize) throws ApiException {
         return getRulesHistory(pageSize, null);
     }
 
@@ -261,25 +272,6 @@ public class GovernanceRuleService {
             }
         }
         return kept;
-    }
-
-    /**
-     * Reduces a server-reported total by the number of excluded rows. A non-numeric
-     * total is the server's to explain, so it passes through rather than inventing one.
-     *
-     * @param total      the server-reported total, may be null
-     * @param excluded   how many rows were withheld
-     * @return the reduced total, or the original when it is absent or non-numeric
-     */
-    private static String reducedTotal(final String total, final int excluded) {
-        if (total == null || excluded == 0) {
-            return total;
-        }
-        try {
-            return String.valueOf(Math.max(0, Long.parseLong(total) - excluded));
-        } catch (NumberFormatException e) {
-            return total;
-        }
     }
 
     /**

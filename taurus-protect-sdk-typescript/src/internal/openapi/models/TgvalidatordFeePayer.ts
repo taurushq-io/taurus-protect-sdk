@@ -39,7 +39,16 @@ export interface TgvalidatordFeePayer {
      * @memberof TgvalidatordFeePayer
      */
     eth?: FeePayerETH;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordFeePayer
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordFeePayerWireKeys: ReadonlySet<string> = new Set(['blockchain', 'eth']);
 
 /**
  * Check if a given object implements the TgvalidatordFeePayer interface.
@@ -56,11 +65,21 @@ export function TgvalidatordFeePayerFromJSONTyped(json: any, ignoreDiscriminator
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordFeePayer = {
         
         'blockchain': json['blockchain'] == null ? undefined : json['blockchain'],
         'eth': json['eth'] == null ? undefined : FeePayerETHFromJSON(json['eth']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordFeePayerWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordFeePayerToJSON(json: any): TgvalidatordFeePayer {
@@ -76,6 +95,7 @@ export function TgvalidatordFeePayerFromJSONTyped(json: any, ignoreDiscriminator
         
         'blockchain': value['blockchain'],
         'eth': FeePayerETHToJSON(value['eth']),
+        ...value['additionalProperties'],
     };
 }
 

@@ -22,7 +22,10 @@ type TgvalidatordWhitelistUserSignature struct {
 	UserId *string `json:"userId,omitempty"`
 	Signature *string `json:"signature,omitempty" validate:"regexp=^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=)?$"`
 	Comment *string `json:"comment,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordWhitelistUserSignature TgvalidatordWhitelistUserSignature
 
 // NewTgvalidatordWhitelistUserSignature instantiates a new TgvalidatordWhitelistUserSignature object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordWhitelistUserSignature) ToMap() (map[string]interface{}, err
 	if !IsNil(o.Comment) {
 		toSerialize["comment"] = o.Comment
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordWhitelistUserSignature) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordWhitelistUserSignature := _TgvalidatordWhitelistUserSignature{}
+
+	err = json.Unmarshal(data, &varTgvalidatordWhitelistUserSignature)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordWhitelistUserSignature(varTgvalidatordWhitelistUserSignature)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "userId")
+		delete(additionalProperties, "signature")
+		delete(additionalProperties, "comment")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordWhitelistUserSignature struct {

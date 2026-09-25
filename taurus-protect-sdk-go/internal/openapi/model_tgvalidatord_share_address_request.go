@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -27,6 +26,7 @@ type TgvalidatordShareAddressRequest struct {
 	AddressID string `json:"addressID"`
 	// Optional key-value attributes to attach to the shared address. The key-values will be shared with the target participant.
 	KeyValueAttributes []TgvalidatordKeyValue `json:"keyValueAttributes,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordShareAddressRequest TgvalidatordShareAddressRequest
@@ -145,6 +145,11 @@ func (o TgvalidatordShareAddressRequest) ToMap() (map[string]interface{}, error)
 	if !IsNil(o.KeyValueAttributes) {
 		toSerialize["keyValueAttributes"] = o.KeyValueAttributes
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -173,15 +178,22 @@ func (o *TgvalidatordShareAddressRequest) UnmarshalJSON(data []byte) (err error)
 
 	varTgvalidatordShareAddressRequest := _TgvalidatordShareAddressRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordShareAddressRequest)
+	err = json.Unmarshal(data, &varTgvalidatordShareAddressRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordShareAddressRequest(varTgvalidatordShareAddressRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "toParticipantID")
+		delete(additionalProperties, "addressID")
+		delete(additionalProperties, "keyValueAttributes")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

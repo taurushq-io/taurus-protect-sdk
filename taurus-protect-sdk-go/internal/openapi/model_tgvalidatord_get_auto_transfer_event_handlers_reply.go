@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordGetAutoTransferEventHandlersReply{}
 type TgvalidatordGetAutoTransferEventHandlersReply struct {
 	Cursor *TgvalidatordResponseCursor `json:"cursor,omitempty"`
 	Handlers []TgvalidatordAutoTransferEventHandler `json:"handlers,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetAutoTransferEventHandlersReply TgvalidatordGetAutoTransferEventHandlersReply
 
 // NewTgvalidatordGetAutoTransferEventHandlersReply instantiates a new TgvalidatordGetAutoTransferEventHandlersReply object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordGetAutoTransferEventHandlersReply) ToMap() (map[string]inter
 	if !IsNil(o.Handlers) {
 		toSerialize["handlers"] = o.Handlers
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetAutoTransferEventHandlersReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetAutoTransferEventHandlersReply := _TgvalidatordGetAutoTransferEventHandlersReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetAutoTransferEventHandlersReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetAutoTransferEventHandlersReply(varTgvalidatordGetAutoTransferEventHandlersReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "cursor")
+		delete(additionalProperties, "handlers")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetAutoTransferEventHandlersReply struct {

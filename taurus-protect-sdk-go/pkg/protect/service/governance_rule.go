@@ -226,15 +226,17 @@ func (s *GovernanceRuleService) GetRulesByID(ctx context.Context, id string) (*m
 
 // GetRulesHistory retrieves the history of governance rules with pagination.
 func (s *GovernanceRuleService) GetRulesHistory(ctx context.Context, opts *model.ListRulesHistoryOptions) (*model.GovernanceRulesHistoryResult, error) {
-	req := s.api.RuleServiceGetRulesHistory(ctx)
+	if opts == nil {
+		opts = &model.ListRulesHistoryOptions{}
+	}
+	pageSize, err := resolvePageSize("PageSize", opts.PageSize)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if opts.Limit > 0 {
-			req = req.Limit(fmt.Sprintf("%d", opts.Limit))
-		}
-		if opts.Cursor != "" {
-			req = req.Cursor(opts.Cursor)
-		}
+	req := s.api.RuleServiceGetRulesHistory(ctx).Limit(strconv.FormatInt(pageSize, 10))
+	if opts.Cursor != "" {
+		req = req.Cursor(opts.Cursor)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -264,25 +266,21 @@ func (s *GovernanceRuleService) GetRulesHistory(ctx context.Context, opts *model
 		kept = append(kept, rules)
 	}
 
-	result := &model.GovernanceRulesHistoryResult{
+	// The total is reduced by the exclusions: the server counts rows it returned, the caller
+	// receives only those that verified, so the server total would promise a page that can
+	// never be fully read.
+	page, err := cursorPage(pageSize, cursorReply{
+		TokenOnly: true, Token: resp.Cursor, HasTotal: true, Total: resp.TotalItems, Excluded: len(excluded),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &model.GovernanceRulesHistoryResult{
 		Rules:              kept,
 		ExcludedUnverified: excluded,
-	}
-
-	if resp.TotalItems != nil {
-		if total, parseErr := strconv.ParseInt(*resp.TotalItems, 10, 64); parseErr == nil {
-			// Reduced by the exclusions: the server counts rows it returned, the caller
-			// receives only those that verified, so the server total would promise a
-			// page that can never be fully read.
-			result.TotalItems = total - int64(len(excluded))
-		}
-	}
-
-	if resp.Cursor != nil {
-		result.Cursor = *resp.Cursor
-	}
-
-	return result, nil
+		Page:               page,
+	}, nil
 }
 
 // GetRulesProposal retrieves the proposed governance rules.

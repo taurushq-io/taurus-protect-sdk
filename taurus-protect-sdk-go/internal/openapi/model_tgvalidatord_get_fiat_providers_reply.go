@@ -22,7 +22,10 @@ type TgvalidatordGetFiatProvidersReply struct {
 	// Total valuation of all fiat providers in the base currency main unit (CHF, EUR, USD etc...)
 	FiatProvidersTotalValuation *string `json:"fiatProvidersTotalValuation,omitempty"`
 	FiatProviders []TgvalidatordFiatProvider `json:"fiatProviders,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetFiatProvidersReply TgvalidatordGetFiatProvidersReply
 
 // NewTgvalidatordGetFiatProvidersReply instantiates a new TgvalidatordGetFiatProvidersReply object
 // This constructor will assign default values to properties that have it defined,
@@ -121,7 +124,34 @@ func (o TgvalidatordGetFiatProvidersReply) ToMap() (map[string]interface{}, erro
 	if !IsNil(o.FiatProviders) {
 		toSerialize["fiatProviders"] = o.FiatProviders
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetFiatProvidersReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetFiatProvidersReply := _TgvalidatordGetFiatProvidersReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetFiatProvidersReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetFiatProvidersReply(varTgvalidatordGetFiatProvidersReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "fiatProvidersTotalValuation")
+		delete(additionalProperties, "fiatProviders")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetFiatProvidersReply struct {

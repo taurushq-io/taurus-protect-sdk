@@ -25,49 +25,55 @@ import com.google.gson.stream.JsonWriter;
 
 /**
  * Gets or Sets tgvalidatordContractTemplateType
+ * <p>
+ * An open set of values: a value this client was not generated with is kept as-is, so
+ * {@link #fromValue} never throws and a new server value cannot fail a whole decode.
  */
 @JsonAdapter(TgvalidatordContractTemplateType.Adapter.class)
-public enum TgvalidatordContractTemplateType {
+public final class TgvalidatordContractTemplateType {
   
-  CUSTOM_EVM("CustomEVM"),
+  public static final TgvalidatordContractTemplateType CUSTOM_EVM = new TgvalidatordContractTemplateType("CustomEVM");
   
-  CMTA20_TOKEN("CMTA20Token"),
+  public static final TgvalidatordContractTemplateType CMTA20_TOKEN = new TgvalidatordContractTemplateType("CMTA20Token");
   
-  CMTA20_RULE_ENGINE("CMTA20RuleEngine"),
+  public static final TgvalidatordContractTemplateType CMTA20_RULE_ENGINE = new TgvalidatordContractTemplateType("CMTA20RuleEngine");
   
-  CMTA20_KYC_RULE("CMTA20KycRule"),
+  public static final TgvalidatordContractTemplateType CMTA20_KYC_RULE = new TgvalidatordContractTemplateType("CMTA20KycRule");
   
-  ERC1400_UNIVERSAL_TOKEN("ERC1400UniversalToken"),
+  public static final TgvalidatordContractTemplateType ERC1400_UNIVERSAL_TOKEN = new TgvalidatordContractTemplateType("ERC1400UniversalToken");
   
-  ERC2771_PROXY_ADMIN("ERC2771ProxyAdmin"),
+  public static final TgvalidatordContractTemplateType ERC2771_PROXY_ADMIN = new TgvalidatordContractTemplateType("ERC2771ProxyAdmin");
   
-  TRANSPARENT_UPGRADEABLE_PROXY("TransparentUpgradeableProxy"),
+  public static final TgvalidatordContractTemplateType TRANSPARENT_UPGRADEABLE_PROXY = new TgvalidatordContractTemplateType("TransparentUpgradeableProxy");
   
-  CMTAT_TOKEN("CMTATToken"),
+  public static final TgvalidatordContractTemplateType CMTAT_TOKEN = new TgvalidatordContractTemplateType("CMTATToken");
   
-  CMTAT_STANDALONE("CMTATStandalone"),
+  public static final TgvalidatordContractTemplateType CMTAT_STANDALONE = new TgvalidatordContractTemplateType("CMTATStandalone");
   
-  CMTAT_UPGRADEABLE("CMTATUpgradeable"),
+  public static final TgvalidatordContractTemplateType CMTAT_UPGRADEABLE = new TgvalidatordContractTemplateType("CMTATUpgradeable");
   
-  TERC1155_A("TERC1155A"),
+  public static final TgvalidatordContractTemplateType TERC1155_A = new TgvalidatordContractTemplateType("TERC1155A");
   
-  TERC20_STANDALONE("TERC20Standalone"),
+  public static final TgvalidatordContractTemplateType TERC20_STANDALONE = new TgvalidatordContractTemplateType("TERC20Standalone");
   
-  TERC20_UPGRADEABLE("TERC20Upgradeable"),
+  public static final TgvalidatordContractTemplateType TERC20_UPGRADEABLE = new TgvalidatordContractTemplateType("TERC20Upgradeable");
   
-  TERC721_STANDALONE("TERC721Standalone"),
+  public static final TgvalidatordContractTemplateType TERC721_STANDALONE = new TgvalidatordContractTemplateType("TERC721Standalone");
   
-  TERC721_UPGRADEABLE("TERC721Upgradeable"),
+  public static final TgvalidatordContractTemplateType TERC721_UPGRADEABLE = new TgvalidatordContractTemplateType("TERC721Upgradeable");
   
-  CUSTOM_XTZ("CustomXTZ"),
+  public static final TgvalidatordContractTemplateType CUSTOM_XTZ = new TgvalidatordContractTemplateType("CustomXTZ");
   
-  SMART_PY_FA12_TOKEN("SmartPyFA12Token"),
+  public static final TgvalidatordContractTemplateType SMART_PY_FA12_TOKEN = new TgvalidatordContractTemplateType("SmartPyFA12Token");
   
-  SMART_PY_FA2_NFT("SmartPyFA2NFT");
+  public static final TgvalidatordContractTemplateType SMART_PY_FA2_NFT = new TgvalidatordContractTemplateType("SmartPyFA2NFT");
+  
 
-  private String value;
+  private static final TgvalidatordContractTemplateType[] knownValues = { CUSTOM_EVM, CMTA20_TOKEN, CMTA20_RULE_ENGINE, CMTA20_KYC_RULE, ERC1400_UNIVERSAL_TOKEN, ERC2771_PROXY_ADMIN, TRANSPARENT_UPGRADEABLE_PROXY, CMTAT_TOKEN, CMTAT_STANDALONE, CMTAT_UPGRADEABLE, TERC1155_A, TERC20_STANDALONE, TERC20_UPGRADEABLE, TERC721_STANDALONE, TERC721_UPGRADEABLE, CUSTOM_XTZ, SMART_PY_FA12_TOKEN, SMART_PY_FA2_NFT };
 
-  TgvalidatordContractTemplateType(String value) {
+  private final String value;
+
+  private TgvalidatordContractTemplateType(String value) {
     this.value = value;
   }
 
@@ -75,18 +81,53 @@ public enum TgvalidatordContractTemplateType {
     return value;
   }
 
+  /**
+   * Returns the values this client was generated with.
+   *
+   * @return a new array of the known values
+   */
+  public static TgvalidatordContractTemplateType[] values() {
+    return knownValues.clone();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    return Objects.equals(value, ((TgvalidatordContractTemplateType) o).value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(value);
+  }
+
   @Override
   public String toString() {
     return String.valueOf(value);
   }
 
+  /**
+   * Returns the known constant for a value, or a new instance carrying a value this client
+   * does not know. Never throws.
+   *
+   * @param value the wire value
+   * @return the matching instance, or null for a null value
+   */
   public static TgvalidatordContractTemplateType fromValue(String value) {
-    for (TgvalidatordContractTemplateType b : TgvalidatordContractTemplateType.values()) {
+    if (value == null) {
+      return null;
+    }
+    for (TgvalidatordContractTemplateType b : knownValues) {
       if (b.value.equals(value)) {
         return b;
       }
     }
-    throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    return new TgvalidatordContractTemplateType(value);
   }
 
   public static class Adapter extends TypeAdapter<TgvalidatordContractTemplateType> {

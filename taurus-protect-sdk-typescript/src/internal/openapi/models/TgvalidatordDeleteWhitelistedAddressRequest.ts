@@ -31,7 +31,16 @@ export interface TgvalidatordDeleteWhitelistedAddressRequest {
      * @memberof TgvalidatordDeleteWhitelistedAddressRequest
      */
     comment?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordDeleteWhitelistedAddressRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordDeleteWhitelistedAddressRequestWireKeys: ReadonlySet<string> = new Set(['id', 'comment']);
 
 /**
  * Check if a given object implements the TgvalidatordDeleteWhitelistedAddressRequest interface.
@@ -49,11 +58,21 @@ export function TgvalidatordDeleteWhitelistedAddressRequestFromJSONTyped(json: a
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordDeleteWhitelistedAddressRequest = {
         
         'id': json['id'],
         'comment': json['comment'] == null ? undefined : json['comment'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordDeleteWhitelistedAddressRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordDeleteWhitelistedAddressRequestToJSON(json: any): TgvalidatordDeleteWhitelistedAddressRequest {
@@ -69,6 +88,7 @@ export function TgvalidatordDeleteWhitelistedAddressRequestFromJSONTyped(json: a
         
         'id': value['id'],
         'comment': value['comment'],
+        ...value['additionalProperties'],
     };
 }
 

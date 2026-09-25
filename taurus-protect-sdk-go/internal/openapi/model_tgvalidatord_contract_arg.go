@@ -22,7 +22,10 @@ type TgvalidatordContractArg struct {
 	Name *string `json:"name,omitempty"`
 	Type *string `json:"type,omitempty"`
 	Value *TgvalidatordContractArgValue `json:"value,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordContractArg TgvalidatordContractArg
 
 // NewTgvalidatordContractArg instantiates a new TgvalidatordContractArg object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordContractArg) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Value) {
 		toSerialize["value"] = o.Value
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordContractArg) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordContractArg := _TgvalidatordContractArg{}
+
+	err = json.Unmarshal(data, &varTgvalidatordContractArg)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordContractArg(varTgvalidatordContractArg)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "value")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordContractArg struct {

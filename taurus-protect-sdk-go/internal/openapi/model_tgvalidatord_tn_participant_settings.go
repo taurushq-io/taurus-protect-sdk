@@ -24,7 +24,10 @@ type TgvalidatordTnParticipantSettings struct {
 	Status *string `json:"status,omitempty"`
 	InteractingAllowedParticipants []TgvalidatordTnAllowedParticipant `json:"interactingAllowedParticipants,omitempty"`
 	TermsAndConditionsAcceptedAt *time.Time `json:"termsAndConditionsAcceptedAt,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTnParticipantSettings TgvalidatordTnParticipantSettings
 
 // NewTgvalidatordTnParticipantSettings instantiates a new TgvalidatordTnParticipantSettings object
 // This constructor will assign default values to properties that have it defined,
@@ -193,7 +196,36 @@ func (o TgvalidatordTnParticipantSettings) ToMap() (map[string]interface{}, erro
 	if !IsNil(o.TermsAndConditionsAcceptedAt) {
 		toSerialize["termsAndConditionsAcceptedAt"] = o.TermsAndConditionsAcceptedAt
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTnParticipantSettings) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTnParticipantSettings := _TgvalidatordTnParticipantSettings{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTnParticipantSettings)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTnParticipantSettings(varTgvalidatordTnParticipantSettings)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "interactingAllowedCountries")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "interactingAllowedParticipants")
+		delete(additionalProperties, "termsAndConditionsAcceptedAt")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTnParticipantSettings struct {

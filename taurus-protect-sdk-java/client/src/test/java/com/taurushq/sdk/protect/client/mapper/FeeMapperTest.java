@@ -1,9 +1,11 @@
 package com.taurushq.sdk.protect.client.mapper;
 
 import com.taurushq.sdk.protect.client.model.Fee;
-import com.taurushq.sdk.protect.openapi.model.TgvalidatordKeyValue;
+import com.taurushq.sdk.protect.openapi.model.TgvalidatordCurrency;
+import com.taurushq.sdk.protect.openapi.model.TgvalidatordFee;
 import org.junit.jupiter.api.Test;
 
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -15,26 +17,43 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class FeeMapperTest {
 
+    private static TgvalidatordFee fee(final String currencyId, final String value) {
+        TgvalidatordFee dto = new TgvalidatordFee();
+        dto.setCurrencyId(currencyId);
+        dto.setValue(value);
+        return dto;
+    }
+
     @Test
     void fromDTO_mapsAllFields() {
-        TgvalidatordKeyValue dto = new TgvalidatordKeyValue();
-        dto.setKey("ETH_gas_price");
-        dto.setValue("50000000000");
+        OffsetDateTime updated = OffsetDateTime.parse("2026-09-24T10:00:00Z");
+        TgvalidatordCurrency currency = new TgvalidatordCurrency();
+        currency.setId("ETH");
+        currency.setSymbol("ETH");
+        TgvalidatordFee dto = fee("ETH", "50000000000");
+        dto.setDenom("wei");
+        dto.setCurrencyInfo(currency);
+        dto.setUpdateDate(updated);
 
         Fee fee = FeeMapper.INSTANCE.fromDTO(dto);
 
-        assertEquals("ETH_gas_price", fee.getKey());
+        assertEquals("ETH", fee.getCurrencyId());
         assertEquals("50000000000", fee.getValue());
+        assertEquals("wei", fee.getDenom());
+        assertEquals(updated, fee.getUpdateDate());
+        assertNotNull(fee.getCurrencyInfo());
+        assertEquals("ETH", fee.getCurrencyInfo().getSymbol());
     }
 
     @Test
     void fromDTO_handlesNullFields() {
-        TgvalidatordKeyValue dto = new TgvalidatordKeyValue();
+        Fee fee = FeeMapper.INSTANCE.fromDTO(new TgvalidatordFee());
 
-        Fee fee = FeeMapper.INSTANCE.fromDTO(dto);
-
-        assertNull(fee.getKey());
+        assertNull(fee.getCurrencyId());
         assertNull(fee.getValue());
+        assertNull(fee.getDenom());
+        assertNull(fee.getCurrencyInfo());
+        assertNull(fee.getUpdateDate());
     }
 
     @Test
@@ -45,23 +64,16 @@ class FeeMapperTest {
 
     @Test
     void fromDTOList_mapsList() {
-        TgvalidatordKeyValue dto1 = new TgvalidatordKeyValue();
-        dto1.setKey("ETH_gas_price");
-        dto1.setValue("50000000000");
-
-        TgvalidatordKeyValue dto2 = new TgvalidatordKeyValue();
-        dto2.setKey("BTC_sat_per_byte");
-        dto2.setValue("25");
-
-        List<Fee> fees = FeeMapper.INSTANCE.fromDTOList(Arrays.asList(dto1, dto2));
+        List<Fee> fees = FeeMapper.INSTANCE.fromDTOList(
+                Arrays.asList(fee("ETH", "50000000000"), fee("BTC", "25")));
 
         assertNotNull(fees);
         assertEquals(2, fees.size());
 
-        assertEquals("ETH_gas_price", fees.get(0).getKey());
+        assertEquals("ETH", fees.get(0).getCurrencyId());
         assertEquals("50000000000", fees.get(0).getValue());
 
-        assertEquals("BTC_sat_per_byte", fees.get(1).getKey());
+        assertEquals("BTC", fees.get(1).getCurrencyId());
         assertEquals("25", fees.get(1).getValue());
     }
 
@@ -80,23 +92,12 @@ class FeeMapperTest {
 
     @Test
     void fromDTOList_mapsMultipleFees() {
-        TgvalidatordKeyValue eth = new TgvalidatordKeyValue();
-        eth.setKey("ETH");
-        eth.setValue("21000");
-
-        TgvalidatordKeyValue btc = new TgvalidatordKeyValue();
-        btc.setKey("BTC");
-        btc.setValue("10");
-
-        TgvalidatordKeyValue sol = new TgvalidatordKeyValue();
-        sol.setKey("SOL");
-        sol.setValue("5000");
-
-        List<Fee> fees = FeeMapper.INSTANCE.fromDTOList(Arrays.asList(eth, btc, sol));
+        List<Fee> fees = FeeMapper.INSTANCE.fromDTOList(
+                Arrays.asList(fee("ETH", "21000"), fee("BTC", "10"), fee("SOL", "5000")));
 
         assertEquals(3, fees.size());
-        assertEquals("ETH", fees.get(0).getKey());
-        assertEquals("BTC", fees.get(1).getKey());
-        assertEquals("SOL", fees.get(2).getKey());
+        assertEquals("ETH", fees.get(0).getCurrencyId());
+        assertEquals("BTC", fees.get(1).getCurrencyId());
+        assertEquals("SOL", fees.get(2).getCurrencyId());
     }
 }

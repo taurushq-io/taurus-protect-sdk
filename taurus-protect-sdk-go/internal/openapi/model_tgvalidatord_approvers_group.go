@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordApproversGroup{}
 type TgvalidatordApproversGroup struct {
 	ExternalGroupID *string `json:"externalGroupID,omitempty"`
 	MinimumSignatures *int64 `json:"minimumSignatures,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordApproversGroup TgvalidatordApproversGroup
 
 // NewTgvalidatordApproversGroup instantiates a new TgvalidatordApproversGroup object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordApproversGroup) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.MinimumSignatures) {
 		toSerialize["minimumSignatures"] = o.MinimumSignatures
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordApproversGroup) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordApproversGroup := _TgvalidatordApproversGroup{}
+
+	err = json.Unmarshal(data, &varTgvalidatordApproversGroup)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordApproversGroup(varTgvalidatordApproversGroup)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "externalGroupID")
+		delete(additionalProperties, "minimumSignatures")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordApproversGroup struct {

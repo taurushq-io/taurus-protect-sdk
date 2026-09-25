@@ -23,7 +23,10 @@ type TgvalidatordGetOutgoingAirGapRequestRequests struct {
 	Ids []string `json:"ids,omitempty"`
 	// The signature of the requests, in the form base64(ecdsa_sign(sha256([hex(sha256(req1_metadata)),hex(sha256(req2_metadata)),...hex(sha256(reqN_metadata))])))
 	Signature *string `json:"signature,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetOutgoingAirGapRequestRequests TgvalidatordGetOutgoingAirGapRequestRequests
 
 // NewTgvalidatordGetOutgoingAirGapRequestRequests instantiates a new TgvalidatordGetOutgoingAirGapRequestRequests object
 // This constructor will assign default values to properties that have it defined,
@@ -122,7 +125,34 @@ func (o TgvalidatordGetOutgoingAirGapRequestRequests) ToMap() (map[string]interf
 	if !IsNil(o.Signature) {
 		toSerialize["signature"] = o.Signature
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetOutgoingAirGapRequestRequests) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetOutgoingAirGapRequestRequests := _TgvalidatordGetOutgoingAirGapRequestRequests{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetOutgoingAirGapRequestRequests)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetOutgoingAirGapRequestRequests(varTgvalidatordGetOutgoingAirGapRequestRequests)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "ids")
+		delete(additionalProperties, "signature")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetOutgoingAirGapRequestRequests struct {

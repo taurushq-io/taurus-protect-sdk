@@ -19,6 +19,8 @@ GENERATOR_JAR="$REPO_ROOT/scripts/resources/jars/openapi-generator-cli-7.9.0.jar
 OPENAPI_SPEC="$REPO_ROOT/scripts/resources/swagger/apis.swagger.json"
 OUTPUT_DIR="$PROJECT_ROOT/taurus_protect/_internal/openapi"
 TEMP_DIR="$PROJECT_ROOT/.codegen"
+# Vendored template overrides; see scripts/resources/templates/python/README.md.
+TEMPLATE_DIR="$REPO_ROOT/scripts/resources/templates/python"
 
 # Java configuration - use Java 11+ if available
 # Check for Java 22 in user library first (common location for homebrew/manual installs)
@@ -59,6 +61,10 @@ check_files() {
     if [[ ! -f "$OPENAPI_SPEC" ]]; then
         error "OpenAPI spec not found at: $OPENAPI_SPEC"
     fi
+
+    if [[ ! -f "$TEMPLATE_DIR/model_enum.mustache" ]]; then
+        error "Enum template override not found at: $TEMPLATE_DIR/model_enum.mustache"
+    fi
 }
 
 generate() {
@@ -73,6 +79,7 @@ generate() {
         -g python \
         -i "$OPENAPI_SPEC" \
         -o "$TEMP_DIR" \
+        -t "$TEMPLATE_DIR" \
         --skip-validate-spec \
         --additional-properties=packageName=taurus_protect._internal.openapi \
         --additional-properties=projectName=taurus-protect-openapi \
@@ -113,8 +120,22 @@ generate() {
     # Fix Pydantic v2 compatibility issues
     # The generated code uses strict=True on Union types with None which doesn't work
     info "Fixing Pydantic v2 compatibility issues..."
-    find "$OUTPUT_DIR/models" -name "*.py" -exec sed -i '' \
-        's/Optional\[Union\[Annotated\[bytes, Field(strict=True)\], Annotated\[str, Field(strict=True)\]\]\]/Optional[Union[bytes, str]]/g' {} \;
+    # perl, not `sed -i ''`: that form is BSD-only, and GNU sed reads '' as the script and silently
+    # skips the fix on Linux.
+    find "$OUTPUT_DIR/models" -name "*.py" -exec perl -pi -e \
+        's/Optional\[Union\[Annotated\[bytes, Field\(strict=True\)\], Annotated\[str, Field\(strict=True\)\]\]\]/Optional[Union[bytes, str]]/g' {} +
+
+    # Fail loud if the enum override stopped applying: without _missing_, one enum value
+    # the server adds fails the whole reply.
+    local enums missing
+    enums=$(grep -l -E '^class [A-Za-z0-9_]+\([a-z]+, Enum\):' "$OUTPUT_DIR/models/"*.py || true)
+    if [[ -z "$enums" ]]; then
+        error "No generated enum modules found in $OUTPUT_DIR/models"
+    fi
+    missing=$(grep -L "def _missing_" $enums || true)
+    if [[ -n "$missing" ]]; then
+        error "Enum modules generated without _missing_ (template override not applied): $missing"
+    fi
 
     # Clean up
     rm -rf "$TEMP_DIR"

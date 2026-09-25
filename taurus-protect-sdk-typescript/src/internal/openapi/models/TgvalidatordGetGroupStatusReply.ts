@@ -33,7 +33,16 @@ export interface TgvalidatordGetGroupStatusReply {
      * @memberof TgvalidatordGetGroupStatusReply
      */
     status?: TgvalidatordGroupStatus;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetGroupStatusReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetGroupStatusReplyWireKeys: ReadonlySet<string> = new Set(['status']);
 
 /**
  * Check if a given object implements the TgvalidatordGetGroupStatusReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetGroupStatusReplyFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetGroupStatusReply = {
         
         'status': json['status'] == null ? undefined : TgvalidatordGroupStatusFromJSON(json['status']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetGroupStatusReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetGroupStatusReplyToJSON(json: any): TgvalidatordGetGroupStatusReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetGroupStatusReplyFromJSONTyped(json: any, ignoreDi
     return {
         
         'status': TgvalidatordGroupStatusToJSON(value['status']),
+        ...value['additionalProperties'],
     };
 }
 

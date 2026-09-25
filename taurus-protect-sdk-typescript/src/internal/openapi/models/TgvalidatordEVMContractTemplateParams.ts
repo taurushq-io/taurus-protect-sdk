@@ -37,7 +37,16 @@ export interface TgvalidatordEVMContractTemplateParams {
      * @memberof TgvalidatordEVMContractTemplateParams
      */
     feepayerSupport?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordEVMContractTemplateParams
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordEVMContractTemplateParamsWireKeys: ReadonlySet<string> = new Set(['abi', 'upgradeable', 'feepayerSupport']);
 
 /**
  * Check if a given object implements the TgvalidatordEVMContractTemplateParams interface.
@@ -54,12 +63,22 @@ export function TgvalidatordEVMContractTemplateParamsFromJSONTyped(json: any, ig
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordEVMContractTemplateParams = {
         
         'abi': json['abi'] == null ? undefined : json['abi'],
         'upgradeable': json['upgradeable'] == null ? undefined : json['upgradeable'],
         'feepayerSupport': json['feepayerSupport'] == null ? undefined : json['feepayerSupport'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordEVMContractTemplateParamsWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordEVMContractTemplateParamsToJSON(json: any): TgvalidatordEVMContractTemplateParams {
@@ -76,6 +95,7 @@ export function TgvalidatordEVMContractTemplateParamsFromJSONTyped(json: any, ig
         'abi': value['abi'],
         'upgradeable': value['upgradeable'],
         'feepayerSupport': value['feepayerSupport'],
+        ...value['additionalProperties'],
     };
 }
 

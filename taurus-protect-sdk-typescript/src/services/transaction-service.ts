@@ -7,9 +7,22 @@
 import { NotFoundError, ValidationError } from "../errors";
 import type { TransactionsApi } from "../internal/openapi/apis/TransactionsApi";
 import { transactionsFromDto } from "../mappers/transaction";
-import type { Pagination, PaginatedResult } from "../models/pagination";
-import type { ListTransactionsOptions, Transaction } from "../models/transaction";
+import {
+  buildOffsetPagination,
+  offsetRequest,
+  parseReplyCount,
+  resolvePageSize,
+  type OffsetPageOptions,
+  type PaginatedResult,
+} from "../models/pagination";
+import type {
+  ExportTransactionsOptions,
+  ExportTransactionsResult,
+  ListTransactionsOptions,
+  Transaction,
+} from "../models/transaction";
 import { BaseService } from "./base";
+import { offsetQuery } from "./paging";
 
 /**
  * Service for retrieving and filtering blockchain transactions.
@@ -146,23 +159,14 @@ export class TransactionService extends BaseService {
   async list(
     options?: ListTransactionsOptions
   ): Promise<PaginatedResult<Transaction>> {
-    const limit = options?.limit ?? 50;
-    const offset = options?.offset ?? 0;
-
-    if (limit <= 0) {
-      throw new ValidationError("limit must be positive");
-    }
-    if (offset < 0) {
-      throw new ValidationError("offset cannot be negative");
-    }
+    const page = offsetRequest(options);
 
     return this.execute(async () => {
       const response = await this.transactionsApi.transactionServiceGetTransactions({
         currency: options?.currency,
         direction: options?.direction,
         query: options?.query,
-        limit: String(limit),
-        offset: offset > 0 ? String(offset) : undefined,
+        ...offsetQuery(page),
         from: options?.fromDate,
         to: options?.toDate,
         type: options?.type,
@@ -180,17 +184,10 @@ export class TransactionService extends BaseService {
         customerId: options?.customerId,
       });
 
-      const transactions = transactionsFromDto(response.result);
-
-      const pagination: Pagination = {
-        totalItems: parseInt(response.totalItems ?? "0", 10),
-        offset,
-        limit,
-      };
-
+      const rows = response.result ?? [];
       return {
-        items: transactions,
-        pagination,
+        items: transactionsFromDto(rows),
+        pagination: buildOffsetPagination("plus_rows", page, response, rows.length),
       };
     });
   }
@@ -214,42 +211,25 @@ export class TransactionService extends BaseService {
    */
   async listByRequest(
     requestId: string,
-    options?: { limit?: number; offset?: number }
+    options?: OffsetPageOptions
   ): Promise<PaginatedResult<Transaction>> {
     if (!requestId || requestId.trim() === "") {
       throw new ValidationError("requestId is required");
     }
-
-    const limit = options?.limit ?? 50;
-    const offset = options?.offset ?? 0;
-
-    if (limit <= 0) {
-      throw new ValidationError("limit must be positive");
-    }
-    if (offset < 0) {
-      throw new ValidationError("offset cannot be negative");
-    }
+    const page = offsetRequest(options);
 
     return this.execute(async () => {
       // Note: The API doesn't have a direct requestId filter, so we use transactionIds
       // which maps to the internal transaction IDs associated with requests
       const response = await this.transactionsApi.transactionServiceGetTransactions({
         transactionIds: [requestId],
-        limit: String(limit),
-        offset: offset > 0 ? String(offset) : undefined,
+        ...offsetQuery(page),
       });
 
-      const transactions = transactionsFromDto(response.result);
-
-      const pagination: Pagination = {
-        totalItems: parseInt(response.totalItems ?? "0", 10),
-        offset,
-        limit,
-      };
-
+      const rows = response.result ?? [];
       return {
-        items: transactions,
-        pagination,
+        items: transactionsFromDto(rows),
+        pagination: buildOffsetPagination("plus_rows", page, response, rows.length),
       };
     });
   }
@@ -273,88 +253,74 @@ export class TransactionService extends BaseService {
    */
   async listByAddress(
     address: string,
-    options?: { limit?: number; offset?: number }
+    options?: OffsetPageOptions
   ): Promise<PaginatedResult<Transaction>> {
     if (!address || address.trim() === "") {
       throw new ValidationError("address is required");
     }
-
-    const limit = options?.limit ?? 50;
-    const offset = options?.offset ?? 0;
-
-    if (limit <= 0) {
-      throw new ValidationError("limit must be positive");
-    }
-    if (offset < 0) {
-      throw new ValidationError("offset cannot be negative");
-    }
+    const page = offsetRequest(options);
 
     return this.execute(async () => {
       const response = await this.transactionsApi.transactionServiceGetTransactions({
         address,
-        limit: String(limit),
-        offset: offset > 0 ? String(offset) : undefined,
+        ...offsetQuery(page),
       });
 
-      const transactions = transactionsFromDto(response.result);
-
-      const pagination: Pagination = {
-        totalItems: parseInt(response.totalItems ?? "0", 10),
-        offset,
-        limit,
-      };
-
+      const rows = response.result ?? [];
       return {
-        items: transactions,
-        pagination,
+        items: transactionsFromDto(rows),
+        pagination: buildOffsetPagination("plus_rows", page, response, rows.length),
       };
     });
   }
 
   /**
-   * Export transactions to a formatted string (CSV or JSON).
+   * Exports transactions as a formatted string (JSON or CSV).
    *
-   * @param options - Optional filtering options
-   * @returns The exported data as a string
+   * The export cannot page — the server always starts at the first matching row — so it
+   * takes a `limit` (default 20, no SDK maximum) and no offset. The result's `totalItems`
+   * tells a truncated export apart from a complete one.
+   *
+   * @param options - Filters, format and `limit`
+   * @returns The export payload and the server's total
+   * @throws {@link ValidationError} If the limit is negative
+   * @throws {@link PaginationError} If the reply's total is not a canonical count
    * @throws {@link APIError} If API request fails
    *
    * @example
    * ```typescript
-   * // Export all transactions as CSV (default)
-   * const csvData = await transactionService.exportTransactions();
-   *
-   * // Export with filters
-   * const filtered = await transactionService.exportTransactions({
+   * const exported = await transactionService.exportTransactions({
    *   currency: 'ETH',
    *   fromDate: new Date('2024-01-01'),
-   *   format: 'json',
+   *   format: 'csv',
+   *   limit: 1000,
    * });
+   * console.log(exported.data);
+   * console.log(`${exported.totalItems} transactions match`);
    * ```
    */
-  async exportTransactions(options?: {
-    fromDate?: Date;
-    toDate?: Date;
-    currency?: string;
-    direction?: string;
-    limit?: number;
-    offset?: number;
-    format?: string;
-    blockchain?: string;
-    network?: string;
-  }): Promise<string> {
+  async exportTransactions(
+    options?: ExportTransactionsOptions
+  ): Promise<ExportTransactionsResult> {
+    const limit = resolvePageSize(options?.limit, "limit", "export");
+
     return this.execute(async () => {
       const response = await this.transactionsApi.transactionServiceExportTransactions({
         from: options?.fromDate,
         to: options?.toDate,
         currency: options?.currency,
         direction: options?.direction,
-        limit: options?.limit?.toString(),
-        offset: options?.offset?.toString(),
+        limit: String(limit),
         format: options?.format,
         blockchain: options?.blockchain,
         network: options?.network,
+        query: options?.query,
+        address: options?.address,
       });
-      return response.result ?? '';
+      return {
+        data: response.result ?? "",
+        totalItems: parseReplyCount(response.totalItems, "totalItems"),
+      };
     });
   }
 }

@@ -22,7 +22,10 @@ type TgvalidatordInternalGroupUser struct {
 	Id *string `json:"id,omitempty"`
 	ExternalUserId *string `json:"externalUserId,omitempty"`
 	EnforcedInRules *bool `json:"enforcedInRules,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordInternalGroupUser TgvalidatordInternalGroupUser
 
 // NewTgvalidatordInternalGroupUser instantiates a new TgvalidatordInternalGroupUser object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordInternalGroupUser) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.EnforcedInRules) {
 		toSerialize["enforcedInRules"] = o.EnforcedInRules
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordInternalGroupUser) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordInternalGroupUser := _TgvalidatordInternalGroupUser{}
+
+	err = json.Unmarshal(data, &varTgvalidatordInternalGroupUser)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordInternalGroupUser(varTgvalidatordInternalGroupUser)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "externalUserId")
+		delete(additionalProperties, "enforcedInRules")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordInternalGroupUser struct {

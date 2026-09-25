@@ -20,7 +20,10 @@ var _ MappedNullable = &ScimServiceProviderConfigChangePassword{}
 // ScimServiceProviderConfigChangePassword struct for ScimServiceProviderConfigChangePassword
 type ScimServiceProviderConfigChangePassword struct {
 	Supported *bool `json:"supported,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _ScimServiceProviderConfigChangePassword ScimServiceProviderConfigChangePassword
 
 // NewScimServiceProviderConfigChangePassword instantiates a new ScimServiceProviderConfigChangePassword object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o ScimServiceProviderConfigChangePassword) ToMap() (map[string]interface{}
 	if !IsNil(o.Supported) {
 		toSerialize["supported"] = o.Supported
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *ScimServiceProviderConfigChangePassword) UnmarshalJSON(data []byte) (err error) {
+	varScimServiceProviderConfigChangePassword := _ScimServiceProviderConfigChangePassword{}
+
+	err = json.Unmarshal(data, &varScimServiceProviderConfigChangePassword)
+
+	if err != nil {
+		return err
+	}
+
+	*o = ScimServiceProviderConfigChangePassword(varScimServiceProviderConfigChangePassword)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "supported")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableScimServiceProviderConfigChangePassword struct {

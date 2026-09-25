@@ -54,6 +54,7 @@ from taurus_protect.models.taurus_network.pledge import (
 from taurus_protect.models.taurus_network.settlement import (
     AcceptSettlementRequest,
     CreateSettlementRequest,
+    ListSettlementsForApprovalOptions,
     ListSettlementsOptions,
     RejectSettlementRequest,
     Settlement,
@@ -134,6 +135,7 @@ __all__ = [
     # Settlement models
     "AcceptSettlementRequest",
     "CreateSettlementRequest",
+    "ListSettlementsForApprovalOptions",
     "ListSettlementsOptions",
     "RejectSettlementRequest",
     "Settlement",

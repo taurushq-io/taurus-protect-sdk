@@ -66,6 +66,27 @@ describe('groupFromDto', () => {
     const result = groupFromDto(dto);
     expect(result).toBeDefined();
     expect(result!.userIds).toEqual(['u-100', 'u-200']);
+    // Bare IDs carry no memberships.
+    expect(result!.users).toBeUndefined();
+  });
+
+  it('should map users as memberships with their rules flag', () => {
+    const dto = {
+      id: 'grp-5',
+      enforcedInRules: true,
+      users: [
+        { id: 'u-1', externalUserId: 'a@example.com', enforcedInRules: true },
+        { id: 'u-2', externalUserId: 'b@example.com' },
+      ],
+    };
+
+    const result = groupFromDto(dto);
+    expect(result!.enforcedInRules).toBe(true);
+    expect(result!.userIds).toEqual(['u-1', 'u-2']);
+    expect(result!.users).toEqual([
+      { id: 'u-1', externalUserId: 'a@example.com', enforcedInRules: true },
+      { id: 'u-2', externalUserId: 'b@example.com', enforcedInRules: undefined },
+    ]);
   });
 
   it('should return undefined for null input', () => {

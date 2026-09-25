@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -36,6 +35,7 @@ type TgvalidatordCreateOutgoingXLMBuyOfferRequestRequest struct {
 	OfferID *string `json:"offerID,omitempty"`
 	// Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingXLMBuyOfferRequestRequest TgvalidatordCreateOutgoingXLMBuyOfferRequestRequest
@@ -364,6 +364,11 @@ func (o TgvalidatordCreateOutgoingXLMBuyOfferRequestRequest) ToMap() (map[string
 	if !IsNil(o.ExternalRequestId) {
 		toSerialize["externalRequestId"] = o.ExternalRequestId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -392,15 +397,28 @@ func (o *TgvalidatordCreateOutgoingXLMBuyOfferRequestRequest) UnmarshalJSON(data
 
 	varTgvalidatordCreateOutgoingXLMBuyOfferRequestRequest := _TgvalidatordCreateOutgoingXLMBuyOfferRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingXLMBuyOfferRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingXLMBuyOfferRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingXLMBuyOfferRequestRequest(varTgvalidatordCreateOutgoingXLMBuyOfferRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "buyingAssetID")
+		delete(additionalProperties, "buyingAssetIssuer")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "price")
+		delete(additionalProperties, "offerID")
+		delete(additionalProperties, "externalRequestId")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

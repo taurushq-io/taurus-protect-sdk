@@ -45,7 +45,16 @@ export interface CreateSettlementRequestClipRequest {
      * @memberof CreateSettlementRequestClipRequest
      */
     secondLegAssets?: Array<TgvalidatordTnSettlementAssetTransfer>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof CreateSettlementRequestClipRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const CreateSettlementRequestClipRequestWireKeys: ReadonlySet<string> = new Set(['index', 'firstLegAssets', 'secondLegAssets']);
 
 /**
  * Check if a given object implements the CreateSettlementRequestClipRequest interface.
@@ -62,12 +71,22 @@ export function CreateSettlementRequestClipRequestFromJSONTyped(json: any, ignor
     if (json == null) {
         return json;
     }
-    return {
+    const result: CreateSettlementRequestClipRequest = {
         
         'index': json['index'] == null ? undefined : json['index'],
         'firstLegAssets': json['firstLegAssets'] == null ? undefined : ((json['firstLegAssets'] as Array<any>).map(TgvalidatordTnSettlementAssetTransferFromJSON)),
         'secondLegAssets': json['secondLegAssets'] == null ? undefined : ((json['secondLegAssets'] as Array<any>).map(TgvalidatordTnSettlementAssetTransferFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!CreateSettlementRequestClipRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function CreateSettlementRequestClipRequestToJSON(json: any): CreateSettlementRequestClipRequest {
@@ -84,6 +103,7 @@ export function CreateSettlementRequestClipRequestFromJSONTyped(json: any, ignor
         'index': value['index'],
         'firstLegAssets': value['firstLegAssets'] == null ? undefined : ((value['firstLegAssets'] as Array<any>).map(TgvalidatordTnSettlementAssetTransferToJSON)),
         'secondLegAssets': value['secondLegAssets'] == null ? undefined : ((value['secondLegAssets'] as Array<any>).map(TgvalidatordTnSettlementAssetTransferToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

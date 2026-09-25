@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordScimRole{}
 // TgvalidatordScimRole struct for TgvalidatordScimRole
 type TgvalidatordScimRole struct {
 	Value *string `json:"value,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordScimRole TgvalidatordScimRole
 
 // NewTgvalidatordScimRole instantiates a new TgvalidatordScimRole object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordScimRole) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Value) {
 		toSerialize["value"] = o.Value
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordScimRole) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordScimRole := _TgvalidatordScimRole{}
+
+	err = json.Unmarshal(data, &varTgvalidatordScimRole)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordScimRole(varTgvalidatordScimRole)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "value")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordScimRole struct {

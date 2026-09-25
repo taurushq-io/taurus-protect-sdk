@@ -33,7 +33,10 @@ type TgvalidatordRequestTrail struct {
 	Date *time.Time `json:"date,omitempty"`
 	// The status of the request at the time of the event. One of the following: `CREATED`, `APPROVING`, `APPROVED`, `HSM_SIGNED`, `HSM_READY`, `BROADCASTING`, `BROADCASTED`, `CONFIRMED`, `REJECTED`
 	RequestStatus *string `json:"requestStatus,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordRequestTrail TgvalidatordRequestTrail
 
 // NewTgvalidatordRequestTrail instantiates a new TgvalidatordRequestTrail object
 // This constructor will assign default values to properties that have it defined,
@@ -307,7 +310,39 @@ func (o TgvalidatordRequestTrail) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.RequestStatus) {
 		toSerialize["requestStatus"] = o.RequestStatus
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordRequestTrail) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordRequestTrail := _TgvalidatordRequestTrail{}
+
+	err = json.Unmarshal(data, &varTgvalidatordRequestTrail)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordRequestTrail(varTgvalidatordRequestTrail)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "userId")
+		delete(additionalProperties, "externalUserId")
+		delete(additionalProperties, "action")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "date")
+		delete(additionalProperties, "requestStatus")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordRequestTrail struct {

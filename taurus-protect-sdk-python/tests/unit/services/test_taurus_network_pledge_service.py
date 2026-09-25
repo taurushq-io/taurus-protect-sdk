@@ -6,7 +6,15 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from taurus_protect._internal.openapi import TaurusNetworkPledgeApi
+from taurus_protect.models.pagination import CursorPage
+from taurus_protect.models.taurus_network.pledge import (
+    ListPledgeActionsOptions,
+    ListPledgesOptions,
+    ListPledgeWithdrawalsOptions,
+)
 from taurus_protect.services.taurus_network.pledge_service import PledgeService
+from tests.unit.transport_stub import StubTransport, api_client
 
 
 class TestGetPledge:
@@ -36,25 +44,43 @@ class TestGetPledge:
 
 
 class TestListPledges:
-    """Tests for PledgeService.list_pledges()."""
+    """list_pledges reads ``pledges`` and sends only real filters (it misused direction as sort)."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        pledge_api = MagicMock()
-        service = PledgeService(api_client=api_client, pledge_api=pledge_api)
-        return service, pledge_api
+    def _service(self) -> PledgeService:
+        ac = api_client()
+        return PledgeService(ac, TaurusNetworkPledgeApi(ac))
 
-    def test_returns_empty_when_no_results(self) -> None:
-        service, api = self._make_service()
-        resp = MagicMock()
-        resp.result = None
-        resp.total_items = None
-        resp.offset = None
-        api.taurus_network_service_get_pledges.return_value = resp
+    def test_rows_page_and_filters(self) -> None:
+        reply = {"pledges": [{"id": "p1"}], "cursor": {"currentPage": "n", "hasNext": True}}
+        options = ListPledgesOptions(
+            owner_participant_id="o",
+            target_participant_id="t",
+            shared_address_ids=["sa"],
+            currency_id="c",
+            statuses=["ACTIVE"],
+            sort_order="ASC",
+            attribute_filters_json="[]",
+            attribute_filters_operator="AND",
+            page_size=5,
+        )
+        with StubTransport(reply) as transport:
+            pledges, page = self._service().list_pledges(options)
 
-        pledges, pagination = service.list_pledges()
-
-        assert pledges == []
+        assert [p.id for p in pledges] == ["p1"]
+        assert page == CursorPage(page_size=5, next_cursor="n", has_more=True)
+        assert transport.last.query == sorted(
+            [
+                ("ownerParticipantID", "o"),
+                ("targetParticipantID", "t"),
+                ("sharedAddressIDs", "sa"),
+                ("currencyID", "c"),
+                ("statuses", "ACTIVE"),
+                ("sortOrder", "ASC"),
+                ("attributeFiltersJson", "[]"),
+                ("attributeFiltersOperator", "AND"),
+                ("cursor.pageSize", "5"),
+            ]
+        )
 
 
 class TestCreatePledge:
@@ -113,9 +139,7 @@ class TestApprovePledgeActions:
         action.id = "a-1"
         action.metadata = None
         with pytest.raises(ValueError, match="action metadata cannot be None"):
-            service.approve_pledge_actions(
-                actions=[action], private_key=MagicMock()
-            )
+            service.approve_pledge_actions(actions=[action], private_key=MagicMock())
 
     def test_raises_on_empty_hash(self) -> None:
         service, _ = self._make_service()
@@ -124,9 +148,7 @@ class TestApprovePledgeActions:
         action.metadata = MagicMock()
         action.metadata.hash = ""
         with pytest.raises(ValueError, match="action metadata hash cannot be empty"):
-            service.approve_pledge_actions(
-                actions=[action], private_key=MagicMock()
-            )
+            service.approve_pledge_actions(actions=[action], private_key=MagicMock())
 
 
 class TestApprovePledgeActionsVerification:
@@ -205,7 +227,6 @@ class TestApprovePledgeActionsVerification:
             service.approve_pledge_actions(actions=[ok, bad], private_key=MagicMock())
         api.taurus_network_service_approve_pledge_actions.assert_not_called()
 
-
     def test_signs_compact_json_matching_the_other_sdks(self) -> None:
         """The signed bytes are compact JSON, as in Go/Java/TS and every whitelist path.
 
@@ -243,89 +264,61 @@ class TestPledgeActionReadVerification:
     action can reach ``approve_pledge_actions`` decoded from a queue or cache rather than
     from this SDK. What the read-path check buys is that the payload an integrator
     DISPLAYS for review is one the hash commits to.
+
+    Rows are real generated replies: the hash commits to ``payloadAsString``.
     """
 
-    def _make_service(self, rows: list) -> tuple:
-        pledge_api = MagicMock()
-        reply = MagicMock()
-        reply.result = rows
-        reply.total_items = str(len(rows))
-        reply.offset = "0"
-        pledge_api.taurus_network_service_get_pledge_actions.return_value = reply
-        pledge_api.taurus_network_service_get_pledge_actions_for_approval.return_value = reply
-        service = PledgeService(api_client=MagicMock(), pledge_api=pledge_api)
-        return service, pledge_api
+    def _service(self) -> PledgeService:
+        ac = api_client()
+        return PledgeService(ac, TaurusNetworkPledgeApi(ac))
 
     @staticmethod
-    def _mapped(action_id: str, payload: str, hash_value: str) -> MagicMock:
-        action = MagicMock()
-        action.id = action_id
-        action.metadata = MagicMock()
-        action.metadata.payload = payload
-        action.metadata.hash = hash_value
-        return action
+    def _reply(payload: str, hash_value: str) -> dict:
+        row = {
+            "id": "a-1",
+            "metadata": {
+                "hash": hash_value,
+                "payload": {"amount": "x"},
+                "payloadAsString": payload,
+            },
+        }
+        return {"result": [row]}
 
     def test_a_tampered_payload_is_refused_on_both_list_paths(self) -> None:
         from taurus_protect.crypto.hashing import calculate_hex_hash
         from taurus_protect.errors import IntegrityError
 
         # The hash of a benign top-up, delivered with the payload of something else.
-        tampered = self._mapped(
-            "a-1", '{"amount":"999"}', calculate_hex_hash('{"amount":"1"}')
-        )
-        service, _ = self._make_service([MagicMock()])
-
-        with patch(
-            "taurus_protect.services.taurus_network.pledge_service.pledge_actions_from_dto",
-            return_value=[tampered],
-        ):
+        reply = self._reply('{"amount":"999"}', calculate_hex_hash('{"amount":"1"}'))
+        with StubTransport(reply, reply):
             with pytest.raises(IntegrityError, match="hash verification failed"):
-                service.list_pledge_actions()
+                self._service().list_pledge_actions()
             with pytest.raises(IntegrityError, match="hash verification failed"):
-                service.list_pledge_actions_for_approval()
+                self._service().list_pledge_actions_for_approval()
 
     def test_a_matching_payload_passes(self) -> None:
         from taurus_protect.crypto.hashing import calculate_hex_hash
 
         payload = '{"amount":"1"}'
-        good = self._mapped("a-1", payload, calculate_hex_hash(payload))
-        service, _ = self._make_service([MagicMock()])
-
-        with patch(
-            "taurus_protect.services.taurus_network.pledge_service.pledge_actions_from_dto",
-            return_value=[good],
-        ):
-            actions, _pagination = service.list_pledge_actions()
+        with StubTransport(self._reply(payload, calculate_hex_hash(payload))):
+            actions, _page = self._service().list_pledge_actions()
 
         assert [a.id for a in actions] == ["a-1"]
+        assert actions[0].metadata.payload == payload
 
     def test_an_action_with_no_metadata_is_not_an_error(self) -> None:
         """An early-status action has nothing to read, so absence is not tampering."""
-        bare = MagicMock()
-        bare.id = "a-1"
-        bare.metadata = None
-        service, _ = self._make_service([MagicMock()])
-
-        with patch(
-            "taurus_protect.services.taurus_network.pledge_service.pledge_actions_from_dto",
-            return_value=[bare],
-        ):
-            actions, _pagination = service.list_pledge_actions()
+        with StubTransport({"result": [{"id": "a-1"}]}):
+            actions, _page = self._service().list_pledge_actions()
 
         assert [a.id for a in actions] == ["a-1"]
 
     def test_a_hash_with_no_payload_is_refused(self) -> None:
         from taurus_protect.errors import IntegrityError
 
-        orphan = self._mapped("a-1", "", "abc123")
-        service, _ = self._make_service([MagicMock()])
-
-        with patch(
-            "taurus_protect.services.taurus_network.pledge_service.pledge_actions_from_dto",
-            return_value=[orphan],
-        ):
+        with StubTransport({"result": [{"id": "a-1", "metadata": {"hash": "abc123"}}]}):
             with pytest.raises(IntegrityError, match="nothing to verify it against"):
-                service.list_pledge_actions()
+                self._service().list_pledge_actions()
 
     def test_the_integrity_error_is_not_remapped_to_a_retryable_server_error(self) -> None:
         """T7: the funnel must not turn a tampered response into "retry me".
@@ -338,19 +331,32 @@ class TestPledgeActionReadVerification:
         from taurus_protect.crypto.hashing import calculate_hex_hash
         from taurus_protect.errors import IntegrityError, ServerError
 
-        tampered = self._mapped(
-            "a-1", '{"amount":"999"}', calculate_hex_hash('{"amount":"1"}')
-        )
-        service, _ = self._make_service([MagicMock()])
-
-        with patch(
-            "taurus_protect.services.taurus_network.pledge_service.pledge_actions_from_dto",
-            return_value=[tampered],
-        ):
+        reply = self._reply('{"amount":"999"}', calculate_hex_hash('{"amount":"1"}'))
+        with StubTransport(reply):
             with pytest.raises(IntegrityError) as exc_info:
-                service.list_pledge_actions()
+                self._service().list_pledge_actions()
 
         assert not isinstance(exc_info.value, ServerError)
+
+    def test_each_list_refuses_the_other_lists_filter(self) -> None:
+        with StubTransport() as transport:
+            with pytest.raises(ValueError, match="types"):
+                self._service().list_pledge_actions(ListPledgeActionsOptions(types=["WITHDRAW"]))
+            with pytest.raises(ValueError, match="pledge_id"):
+                self._service().list_pledge_actions_for_approval(
+                    ListPledgeActionsOptions(pledge_id="p")
+                )
+            self._service().list_pledge_actions(ListPledgeActionsOptions(pledge_id="p", ids=["1"]))
+            self._service().list_pledge_actions_for_approval(
+                ListPledgeActionsOptions(types=["W"], ids=["1"])
+            )
+
+        assert transport.requests[0].query == sorted(
+            [("pledgeID", "p"), ("ids", "1"), ("cursor.pageSize", "20")]
+        )
+        assert transport.requests[1].query == sorted(
+            [("types", "W"), ("ids", "1"), ("cursor.pageSize", "20")]
+        )
 
 
 class TestRejectPledgeActions:
@@ -435,22 +441,28 @@ class TestRejectPledge:
 
 
 class TestListPledgeWithdrawals:
-    """Tests for PledgeService.list_pledge_withdrawals()."""
+    """list_pledge_withdrawals reads ``withdrawals`` and sends valid arguments."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        pledge_api = MagicMock()
-        service = PledgeService(api_client=api_client, pledge_api=pledge_api)
-        return service, pledge_api
+    def _service(self) -> PledgeService:
+        ac = api_client()
+        return PledgeService(ac, TaurusNetworkPledgeApi(ac))
 
-    def test_returns_empty_when_no_results(self) -> None:
-        service, api = self._make_service()
-        resp = MagicMock()
-        resp.result = None
-        resp.total_items = None
-        resp.offset = None
-        api.taurus_network_service_get_pledges_withdrawals.return_value = resp
+    def test_rows_page_and_filters(self) -> None:
+        reply = {"withdrawals": [{"id": "w1"}], "cursor": {"currentPage": "n"}}
+        with StubTransport(reply) as transport:
+            withdrawals, page = self._service().list_pledge_withdrawals(
+                ListPledgeWithdrawalsOptions(
+                    pledge_id="p", withdrawal_status="PENDING", sort_order="ASC"
+                )
+            )
 
-        withdrawals, pagination = service.list_pledge_withdrawals()
-
-        assert withdrawals == []
+        assert [w.id for w in withdrawals] == ["w1"]
+        assert page == CursorPage(page_size=20)
+        assert transport.last.query == sorted(
+            [
+                ("pledgeID", "p"),
+                ("withdrawalStatus", "PENDING"),
+                ("sortOrder", "ASC"),
+                ("cursor.pageSize", "20"),
+            ]
+        )

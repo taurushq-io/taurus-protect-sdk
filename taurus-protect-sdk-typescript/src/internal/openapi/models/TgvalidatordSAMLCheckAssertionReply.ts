@@ -33,7 +33,16 @@ export interface TgvalidatordSAMLCheckAssertionReply {
      * @memberof TgvalidatordSAMLCheckAssertionReply
      */
     result?: TgvalidatordSAMLAuthRedirect;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordSAMLCheckAssertionReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordSAMLCheckAssertionReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordSAMLCheckAssertionReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordSAMLCheckAssertionReplyFromJSONTyped(json: any, igno
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordSAMLCheckAssertionReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordSAMLAuthRedirectFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordSAMLCheckAssertionReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordSAMLCheckAssertionReplyToJSON(json: any): TgvalidatordSAMLCheckAssertionReply {
@@ -68,6 +87,7 @@ export function TgvalidatordSAMLCheckAssertionReplyFromJSONTyped(json: any, igno
     return {
         
         'result': TgvalidatordSAMLAuthRedirectToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

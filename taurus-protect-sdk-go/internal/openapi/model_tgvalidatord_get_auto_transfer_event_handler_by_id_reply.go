@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordGetAutoTransferEventHandlerByIdReply{}
 // TgvalidatordGetAutoTransferEventHandlerByIdReply struct for TgvalidatordGetAutoTransferEventHandlerByIdReply
 type TgvalidatordGetAutoTransferEventHandlerByIdReply struct {
 	Handler *TgvalidatordAutoTransferEventHandler `json:"handler,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetAutoTransferEventHandlerByIdReply TgvalidatordGetAutoTransferEventHandlerByIdReply
 
 // NewTgvalidatordGetAutoTransferEventHandlerByIdReply instantiates a new TgvalidatordGetAutoTransferEventHandlerByIdReply object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordGetAutoTransferEventHandlerByIdReply) ToMap() (map[string]in
 	if !IsNil(o.Handler) {
 		toSerialize["handler"] = o.Handler
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetAutoTransferEventHandlerByIdReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetAutoTransferEventHandlerByIdReply := _TgvalidatordGetAutoTransferEventHandlerByIdReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetAutoTransferEventHandlerByIdReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetAutoTransferEventHandlerByIdReply(varTgvalidatordGetAutoTransferEventHandlerByIdReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "handler")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetAutoTransferEventHandlerByIdReply struct {

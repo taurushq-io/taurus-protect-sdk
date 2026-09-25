@@ -79,7 +79,16 @@ export interface TgvalidatordCreateOutgoingXLMSellOfferRequestRequest {
      * @memberof TgvalidatordCreateOutgoingXLMSellOfferRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingXLMSellOfferRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingXLMSellOfferRequestRequestWireKeys: ReadonlySet<string> = new Set(['amount', 'feeLimit', 'fromAddressId', 'buyingAssetID', 'buyingAssetIssuer', 'comment', 'price', 'offerID', 'isPassive', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingXLMSellOfferRequestRequest interface.
@@ -98,7 +107,7 @@ export function TgvalidatordCreateOutgoingXLMSellOfferRequestRequestFromJSONType
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingXLMSellOfferRequestRequest = {
         
         'amount': json['amount'] == null ? undefined : json['amount'],
         'feeLimit': json['feeLimit'] == null ? undefined : json['feeLimit'],
@@ -111,6 +120,16 @@ export function TgvalidatordCreateOutgoingXLMSellOfferRequestRequestFromJSONType
         'isPassive': json['isPassive'] == null ? undefined : json['isPassive'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingXLMSellOfferRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingXLMSellOfferRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingXLMSellOfferRequestRequest {
@@ -134,6 +153,7 @@ export function TgvalidatordCreateOutgoingXLMSellOfferRequestRequestFromJSONType
         'offerID': value['offerID'],
         'isPassive': value['isPassive'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

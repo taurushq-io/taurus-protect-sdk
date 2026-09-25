@@ -25,7 +25,16 @@ export interface TgvalidatordGetBaseCurrencyReply {
      * @memberof TgvalidatordGetBaseCurrencyReply
      */
     result?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetBaseCurrencyReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetBaseCurrencyReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetBaseCurrencyReply interface.
@@ -42,10 +51,20 @@ export function TgvalidatordGetBaseCurrencyReplyFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetBaseCurrencyReply = {
         
         'result': json['result'] == null ? undefined : json['result'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetBaseCurrencyReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetBaseCurrencyReplyToJSON(json: any): TgvalidatordGetBaseCurrencyReply {
@@ -60,6 +79,7 @@ export function TgvalidatordGetBaseCurrencyReplyFromJSONTyped(json: any, ignoreD
     return {
         
         'result': value['result'],
+        ...value['additionalProperties'],
     };
 }
 

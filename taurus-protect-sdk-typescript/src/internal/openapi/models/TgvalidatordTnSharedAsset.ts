@@ -147,7 +147,16 @@ export interface TgvalidatordTnSharedAsset {
      * @memberof TgvalidatordTnSharedAsset
      */
     trails?: Array<TgvalidatordTnSharedAssetTrail>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTnSharedAsset
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTnSharedAssetWireKeys: ReadonlySet<string> = new Set(['id', 'wlContractAddressID', 'ownerParticipantId', 'targetParticipantId', 'blockchain', 'network', 'name', 'symbol', 'decimals', 'contractAddress', 'tokenId', 'kind', 'originCreationDate', 'originDeletionDate', 'createdAt', 'updatedAt', 'targetAcceptedAt', 'targetRejectedAt', 'status', 'trails']);
 
 /**
  * Check if a given object implements the TgvalidatordTnSharedAsset interface.
@@ -164,7 +173,7 @@ export function TgvalidatordTnSharedAssetFromJSONTyped(json: any, ignoreDiscrimi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTnSharedAsset = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'wlContractAddressID': json['wlContractAddressID'] == null ? undefined : json['wlContractAddressID'],
@@ -187,6 +196,16 @@ export function TgvalidatordTnSharedAssetFromJSONTyped(json: any, ignoreDiscrimi
         'status': json['status'] == null ? undefined : json['status'],
         'trails': json['trails'] == null ? undefined : ((json['trails'] as Array<any>).map(TgvalidatordTnSharedAssetTrailFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTnSharedAssetWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTnSharedAssetToJSON(json: any): TgvalidatordTnSharedAsset {
@@ -220,6 +239,7 @@ export function TgvalidatordTnSharedAssetFromJSONTyped(json: any, ignoreDiscrimi
         'targetRejectedAt': value['targetRejectedAt'] == null ? undefined : ((value['targetRejectedAt']).toISOString()),
         'status': value['status'],
         'trails': value['trails'] == null ? undefined : ((value['trails'] as Array<any>).map(TgvalidatordTnSharedAssetTrailToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

@@ -41,27 +41,23 @@ func (s *TaurusNetworkSettlementService) GetSettlement(ctx context.Context, sett
 
 // ListSettlements retrieves a list of settlements with optional filtering and pagination.
 func (s *TaurusNetworkSettlementService) ListSettlements(ctx context.Context, opts *taurusnetwork.ListSettlementsOptions) (*taurusnetwork.ListSettlementsResult, error) {
-	req := s.api.TaurusNetworkServiceGetSettlements(ctx)
+	if opts == nil {
+		opts = &taurusnetwork.ListSettlementsOptions{}
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, opts.CurrentPage, opts.PageRequest)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if opts.CounterParticipantID != "" {
-			req = req.CounterParticipantID(opts.CounterParticipantID)
-		}
-		if len(opts.Statuses) > 0 {
-			req = req.Statuses(opts.Statuses)
-		}
-		if opts.SortOrder != "" {
-			req = req.SortOrder(opts.SortOrder)
-		}
-		if opts.CurrentPage != "" {
-			req = req.CursorCurrentPage(opts.CurrentPage)
-		}
-		if opts.PageRequest != "" {
-			req = req.CursorPageRequest(opts.PageRequest)
-		}
-		if opts.PageSize > 0 {
-			req = req.CursorPageSize(fmt.Sprintf("%d", opts.PageSize))
-		}
+	req := applyCursorQuery(s.api.TaurusNetworkServiceGetSettlements(ctx), window)
+	if opts.CounterParticipantID != "" {
+		req = req.CounterParticipantID(opts.CounterParticipantID)
+	}
+	if len(opts.Statuses) > 0 {
+		req = req.Statuses(opts.Statuses)
+	}
+	if opts.SortOrder != "" {
+		req = req.SortOrder(opts.SortOrder)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -73,18 +69,11 @@ func (s *TaurusNetworkSettlementService) ListSettlements(ctx context.Context, op
 		Settlements: mapper.SettlementsFromDTO(resp.Result),
 	}
 
-	// Parse cursor pagination info
-	if resp.Cursor != nil {
-		if resp.Cursor.CurrentPage != nil {
-			result.CurrentPage = *resp.Cursor.CurrentPage
-		}
-		if resp.Cursor.HasPrevious != nil {
-			result.HasPrevious = *resp.Cursor.HasPrevious
-		}
-		if resp.Cursor.HasNext != nil {
-			result.HasNext = *resp.Cursor.HasNext
-		}
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor})
+	if err != nil {
+		return nil, err
 	}
+	result.Page = page
 
 	return result, nil
 }
@@ -92,24 +81,20 @@ func (s *TaurusNetworkSettlementService) ListSettlements(ctx context.Context, op
 // ListSettlementsForApproval retrieves a list of settlements pending approval.
 // Required role: RequestApprover.
 func (s *TaurusNetworkSettlementService) ListSettlementsForApproval(ctx context.Context, opts *taurusnetwork.ListSettlementsForApprovalOptions) (*taurusnetwork.ListSettlementsForApprovalResult, error) {
-	req := s.api.TaurusNetworkServiceGetSettlementsForApproval(ctx)
+	if opts == nil {
+		opts = &taurusnetwork.ListSettlementsForApprovalOptions{}
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, opts.CurrentPage, opts.PageRequest)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if len(opts.IDs) > 0 {
-			req = req.Ids(opts.IDs)
-		}
-		if opts.SortOrder != "" {
-			req = req.SortOrder(opts.SortOrder)
-		}
-		if opts.CurrentPage != "" {
-			req = req.CursorCurrentPage(opts.CurrentPage)
-		}
-		if opts.PageRequest != "" {
-			req = req.CursorPageRequest(opts.PageRequest)
-		}
-		if opts.PageSize > 0 {
-			req = req.CursorPageSize(fmt.Sprintf("%d", opts.PageSize))
-		}
+	req := applyCursorQuery(s.api.TaurusNetworkServiceGetSettlementsForApproval(ctx), window)
+	if len(opts.IDs) > 0 {
+		req = req.Ids(opts.IDs)
+	}
+	if opts.SortOrder != "" {
+		req = req.SortOrder(opts.SortOrder)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -121,18 +106,11 @@ func (s *TaurusNetworkSettlementService) ListSettlementsForApproval(ctx context.
 		Settlements: mapper.SettlementsFromDTO(resp.Result),
 	}
 
-	// Parse cursor pagination info
-	if resp.Cursor != nil {
-		if resp.Cursor.CurrentPage != nil {
-			result.CurrentPage = *resp.Cursor.CurrentPage
-		}
-		if resp.Cursor.HasPrevious != nil {
-			result.HasPrevious = *resp.Cursor.HasPrevious
-		}
-		if resp.Cursor.HasNext != nil {
-			result.HasNext = *resp.Cursor.HasNext
-		}
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor})
+	if err != nil {
+		return nil, err
 	}
+	result.Page = page
 
 	return result, nil
 }

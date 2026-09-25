@@ -25,7 +25,16 @@ export interface TgvalidatordIDResult {
      * @memberof TgvalidatordIDResult
      */
     id?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordIDResult
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordIDResultWireKeys: ReadonlySet<string> = new Set(['id']);
 
 /**
  * Check if a given object implements the TgvalidatordIDResult interface.
@@ -42,10 +51,20 @@ export function TgvalidatordIDResultFromJSONTyped(json: any, ignoreDiscriminator
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordIDResult = {
         
         'id': json['id'] == null ? undefined : json['id'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordIDResultWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordIDResultToJSON(json: any): TgvalidatordIDResult {
@@ -60,6 +79,7 @@ export function TgvalidatordIDResultFromJSONTyped(json: any, ignoreDiscriminator
     return {
         
         'id': value['id'],
+        ...value['additionalProperties'],
     };
 }
 

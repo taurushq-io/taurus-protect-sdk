@@ -79,7 +79,16 @@ export interface InternalUserAttribute {
      * @memberof InternalUserAttribute
      */
     updateDate?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof InternalUserAttribute
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const InternalUserAttributeWireKeys: ReadonlySet<string> = new Set(['key', 'value', 'id', 'contentType', 'owner', 'type', 'subType', 'isFile', 'creationDate', 'updateDate']);
 
 /**
  * Check if a given object implements the InternalUserAttribute interface.
@@ -96,7 +105,7 @@ export function InternalUserAttributeFromJSONTyped(json: any, ignoreDiscriminato
     if (json == null) {
         return json;
     }
-    return {
+    const result: InternalUserAttribute = {
         
         'key': json['key'] == null ? undefined : json['key'],
         'value': json['value'] == null ? undefined : json['value'],
@@ -109,6 +118,16 @@ export function InternalUserAttributeFromJSONTyped(json: any, ignoreDiscriminato
         'creationDate': json['creationDate'] == null ? undefined : (new Date(json['creationDate'])),
         'updateDate': json['updateDate'] == null ? undefined : (new Date(json['updateDate'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!InternalUserAttributeWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function InternalUserAttributeToJSON(json: any): InternalUserAttribute {
@@ -132,6 +151,7 @@ export function InternalUserAttributeFromJSONTyped(json: any, ignoreDiscriminato
         'isFile': value['isFile'],
         'creationDate': value['creationDate'] == null ? undefined : ((value['creationDate']).toISOString()),
         'updateDate': value['updateDate'] == null ? undefined : ((value['updateDate']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

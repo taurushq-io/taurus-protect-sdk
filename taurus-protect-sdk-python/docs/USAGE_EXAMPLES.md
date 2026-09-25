@@ -105,8 +105,8 @@ finally:
 
 ```python
 with ProtectClient.create(host, credentials) as client:
-    # Simple listing
-    wallets, pagination = client.wallets.list(limit=50, offset=0)
+    # One page (default 20, max 100); continue with offset=pagination.next_offset
+    wallets, pagination = client.wallets.list(limit=50)
 
     for wallet in wallets:
         print(f"Wallet {wallet.id}: {wallet.name}")
@@ -133,10 +133,11 @@ from taurus_protect.models import ListWalletsOptions
 with ProtectClient.create(host, credentials) as client:
     options = ListWalletsOptions(
         currency="ETH",
-        exclude_disabled=True,
+        exclude_disabled=True,  # hide every disabled wallet
         query="customer",  # Search term
+        tag_ids=["tag-1"],
+        only_positive_balance=True,
         limit=100,
-        offset=0,
     )
     wallets, pagination = client.wallets.list_with_options(options)
 ```
@@ -197,10 +198,15 @@ with ProtectClient.create(host, credentials) as client:
 
 ```python
 with ProtectClient.create(host, credentials) as client:
-    # Get all token balances for a wallet
-    tokens = client.wallets.get_tokens(wallet_id=123, limit=100)
-    for token in tokens:
-        print(f"{token.currency}: {token.total_confirmed}")
+    # Walk every token balance of a wallet
+    cursor = None
+    while True:
+        tokens, page = client.wallets.get_tokens(wallet_id=123, page_size=100, cursor=cursor)
+        for token in tokens:
+            print(f"{token.currency}: {token.total_confirmed}")
+        if not page.has_more:
+            break
+        cursor = page.next_cursor
 ```
 
 ---
@@ -215,7 +221,7 @@ with ProtectClient.create(host, credentials) as client:
     addresses, pagination = client.addresses.list(
         wallet_id=123,
         limit=50,
-        offset=0,
+        exclude_disabled=True,  # includeDisabledAddresses=exclude
     )
 
     for addr in addresses:
@@ -313,7 +319,7 @@ with ProtectClient.create(host, credentials) as client:
     print(f"Created request {request.id}, status: {request.status}")
 
     # Step 2: Get requests pending approval
-    pending_requests, _ = client.requests.get_for_approval(limit=10)
+    pending_requests, _ = client.requests.get_for_approval(page_size=10)
     print(f"Found {len(pending_requests)} request(s) pending approval")
 
     # Step 3: Approve with ECDSA signature
@@ -391,19 +397,19 @@ with ProtectClient.create(host, credentials) as client:
     # Get only approved requests (ready for broadcast)
     approved, _ = client.requests.list(
         statuses=[RequestStatus.APPROVED, RequestStatus.BROADCAST],
-        limit=50,
+        page_size=50,
     )
 
     # Get failed or rejected requests
     failed, _ = client.requests.list(
         statuses=[RequestStatus.FAILED, RequestStatus.REJECTED],
-        limit=50,
+        page_size=50,
     )
 
     # Get pending requests awaiting approval
     pending, _ = client.requests.list(
         statuses=[RequestStatus.PENDING],
-        limit=50,
+        page_size=50,
     )
 ```
 
@@ -418,10 +424,7 @@ from datetime import datetime, timedelta
 
 with ProtectClient.create(host, credentials) as client:
     # Get recent transactions
-    transactions, pagination = client.transactions.list(
-        limit=100,
-        offset=0,
-    )
+    transactions, pagination = client.transactions.list(limit=100)
 
     for tx in transactions:
         print(f"TX {tx.hash}")
@@ -439,7 +442,8 @@ with ProtectClient.create(host, credentials) as client:
 
 ```python
 with ProtectClient.create(host, credentials) as client:
-    balances, _ = client.balances.list()
+    balances, page = client.balances.list(page_size=100)
+    print(f"{page.total_items} balances in total")
     for balance in balances:
         print(f"{balance.currency}: {balance.total_confirmed}")
 ```
@@ -452,8 +456,8 @@ with ProtectClient.create(host, credentials) as client:
 
 ```python
 with ProtectClient.create(host, credentials) as client:
-    addresses, pagination = client.whitelisted_addresses.list(limit=50)
-    for addr in addresses:
+    result = client.whitelisted_addresses.list(limit=50)
+    for addr in result.addresses:
         print(f"Whitelisted: {addr.name}")
         print(f"  Address: {addr.address}")
         print(f"  Blockchain: {addr.blockchain}/{addr.network}")
@@ -513,7 +517,8 @@ with ProtectClient.create(host, credentials) as client:
     # List pledges
     options = ListPledgesOptions(
         statuses=["ACTIVE"],
-        direction="OUTGOING",
+        owner_participant_id="participant-123",
+        page_size=50,
     )
     pledges, _ = client.taurus_network.pledges.list_pledges(opts=options)
 
@@ -552,29 +557,29 @@ with ProtectClient.create(host, credentials) as client:
 
 ## Pagination Patterns
 
-### Iterate Through All Pages
+Offset lists return a `Pagination`; continue with `offset=pagination.next_offset` while
+`pagination.has_more`. Cursor lists return a `CursorPage`; continue with
+`cursor=page.next_cursor` while `page.has_more`. Never compute the next page yourself:
+each endpoint has its own rule and the SDK applies it. Page sizes default to 20 and may
+not exceed 100.
+
+### Iterate Through All Pages (offset list)
 
 ```python
 from typing import List
 from taurus_protect.models import Wallet
 
 def get_all_wallets(client) -> List[Wallet]:
-    """Fetch all wallets using pagination."""
-    all_wallets = []
+    """Fetch all wallets, one page at a time."""
+    all_wallets: List[Wallet] = []
     offset = 0
-    limit = 100
 
     while True:
-        wallets, pagination = client.wallets.list(limit=limit, offset=offset)
+        wallets, pagination = client.wallets.list(limit=100, offset=offset)
         all_wallets.extend(wallets)
-
-        # Check if we've fetched all items
-        if pagination is None:
+        if not pagination.has_more:
             break
-        if offset + limit >= pagination.total_items:
-            break
-
-        offset += limit
+        offset = pagination.next_offset
 
     return all_wallets
 
@@ -584,32 +589,31 @@ with ProtectClient.create(host, credentials) as client:
     print(f"Total wallets: {len(wallets)}")
 ```
 
-### Generator Pattern for Memory Efficiency
+### Iterate Through All Pages (cursor list)
 
 ```python
 from typing import Iterator
-from taurus_protect.models import Wallet
+from taurus_protect.models import Request
 
-def iter_wallets(client, page_size: int = 100) -> Iterator[Wallet]:
-    """Iterate through wallets without loading all into memory."""
-    offset = 0
+def iter_requests(client, page_size: int = 100) -> Iterator[Request]:
+    """Iterate through requests without loading all into memory."""
+    cursor = None
 
     while True:
-        wallets, pagination = client.wallets.list(limit=page_size, offset=offset)
-
-        for wallet in wallets:
-            yield wallet
-
-        if pagination is None or offset + page_size >= pagination.total_items:
+        requests, page = client.requests.list(page_size=page_size, cursor=cursor)
+        yield from requests
+        if not page.has_more:
             break
-
-        offset += page_size
+        cursor = page.next_cursor
 
 # Usage
 with ProtectClient.create(host, credentials) as client:
-    for wallet in iter_wallets(client):
-        print(f"Processing wallet: {wallet.name}")
+    for request in iter_requests(client):
+        print(f"Processing request: {request.id}")
 ```
+
+Result objects carry the page too: `client.business_rules.list(...).page`,
+`client.changes.list(...).page`, `client.governance_rules.get_rules_history(...).page`.
 
 ---
 

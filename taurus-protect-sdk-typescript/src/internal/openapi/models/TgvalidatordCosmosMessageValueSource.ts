@@ -25,7 +25,16 @@ export interface TgvalidatordCosmosMessageValueSource {
      * @memberof TgvalidatordCosmosMessageValueSource
      */
     addressId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCosmosMessageValueSource
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCosmosMessageValueSourceWireKeys: ReadonlySet<string> = new Set(['addressId']);
 
 /**
  * Check if a given object implements the TgvalidatordCosmosMessageValueSource interface.
@@ -42,10 +51,20 @@ export function TgvalidatordCosmosMessageValueSourceFromJSONTyped(json: any, ign
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCosmosMessageValueSource = {
         
         'addressId': json['addressId'] == null ? undefined : json['addressId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCosmosMessageValueSourceWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCosmosMessageValueSourceToJSON(json: any): TgvalidatordCosmosMessageValueSource {
@@ -60,6 +79,7 @@ export function TgvalidatordCosmosMessageValueSourceFromJSONTyped(json: any, ign
     return {
         
         'addressId': value['addressId'],
+        ...value['additionalProperties'],
     };
 }
 

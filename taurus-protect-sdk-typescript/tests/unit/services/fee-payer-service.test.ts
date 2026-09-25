@@ -32,8 +32,30 @@ describe('FeePayerService', () => {
       } as never);
 
       const feePayers = await service.list();
-      expect(feePayers).toBeDefined();
-      expect(feePayers.length).toBeGreaterThanOrEqual(0);
+      expect(feePayers.items.map((f) => f.id)).toEqual(['fp-1', 'fp-2']);
+      expect(feePayers.pagination).toEqual({
+        limit: 20,
+        offset: 0,
+        totalItems: 0,
+        nextOffset: 2,
+        hasMore: false,
+      });
+    });
+
+    it('should carry the server total, which the old list dropped', async () => {
+      mockApi.feePayerServiceGetFeePayers.mockResolvedValue({
+        result: [{ id: 'fp-1' }],
+        totalItems: '7',
+      } as never);
+
+      const page = await service.list({ limit: 1, offset: 2 });
+      expect(page.pagination).toEqual({
+        limit: 1,
+        offset: 2,
+        totalItems: 7,
+        nextOffset: 3,
+        hasMore: true,
+      });
     });
 
     it('should pass filter options to API', async () => {
@@ -64,7 +86,7 @@ describe('FeePayerService', () => {
       } as never);
 
       const feePayers = await service.list();
-      expect(feePayers).toHaveLength(0);
+      expect(feePayers.items).toHaveLength(0);
     });
 
     it('should work without options', async () => {
@@ -90,16 +112,15 @@ describe('FeePayerService', () => {
     it('should throw NotFoundError when fee payer is not found', async () => {
       mockApi.feePayerServiceGetFeePayer.mockResolvedValue({
         feepayer: undefined,
-        feePayer: undefined,
-        result: undefined,
       } as never);
 
       await expect(service.get('nonexistent')).rejects.toThrow(NotFoundError);
     });
 
     it('should return fee payer for valid id', async () => {
+      // The generated reply names the field `feepayer`, all lower case.
       mockApi.feePayerServiceGetFeePayer.mockResolvedValue({
-        feePayer: {
+        feepayer: {
           id: 'fp-123',
           name: 'Main Fee Payer',
           blockchain: 'ETH',
@@ -108,7 +129,7 @@ describe('FeePayerService', () => {
       } as never);
 
       const feePayer = await service.get('fp-123');
-      expect(feePayer).toBeDefined();
+      expect(feePayer.id).toBe('fp-123');
       expect(mockApi.feePayerServiceGetFeePayer).toHaveBeenCalledWith({ id: 'fp-123' });
     });
   });

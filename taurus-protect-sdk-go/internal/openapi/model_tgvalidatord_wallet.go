@@ -41,7 +41,10 @@ type TgvalidatordWallet struct {
 	CurrencyInfo *TgvalidatordCurrency `json:"currencyInfo,omitempty"`
 	// An optional external identifier for the wallet.
 	ExternalWalletId *string `json:"externalWalletId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordWallet TgvalidatordWallet
 
 // NewTgvalidatordWallet instantiates a new TgvalidatordWallet object
 // This constructor will assign default values to properties that have it defined,
@@ -770,7 +773,52 @@ func (o TgvalidatordWallet) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.ExternalWalletId) {
 		toSerialize["externalWalletId"] = o.ExternalWalletId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordWallet) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordWallet := _TgvalidatordWallet{}
+
+	err = json.Unmarshal(data, &varTgvalidatordWallet)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordWallet(varTgvalidatordWallet)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "balance")
+		delete(additionalProperties, "currency")
+		delete(additionalProperties, "coin")
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "container")
+		delete(additionalProperties, "seed")
+		delete(additionalProperties, "accountPath")
+		delete(additionalProperties, "addresses")
+		delete(additionalProperties, "isOmnibus")
+		delete(additionalProperties, "creationDate")
+		delete(additionalProperties, "updateDate")
+		delete(additionalProperties, "customerId")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "disabled")
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "addressesCount")
+		delete(additionalProperties, "attributes")
+		delete(additionalProperties, "currencyInfo")
+		delete(additionalProperties, "externalWalletId")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordWallet struct {

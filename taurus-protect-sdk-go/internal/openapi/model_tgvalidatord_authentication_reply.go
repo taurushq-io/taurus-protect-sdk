@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordAuthenticationReply{}
 // TgvalidatordAuthenticationReply struct for TgvalidatordAuthenticationReply
 type TgvalidatordAuthenticationReply struct {
 	Result *string `json:"result,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordAuthenticationReply TgvalidatordAuthenticationReply
 
 // NewTgvalidatordAuthenticationReply instantiates a new TgvalidatordAuthenticationReply object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordAuthenticationReply) ToMap() (map[string]interface{}, error)
 	if !IsNil(o.Result) {
 		toSerialize["result"] = o.Result
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordAuthenticationReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordAuthenticationReply := _TgvalidatordAuthenticationReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordAuthenticationReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordAuthenticationReply(varTgvalidatordAuthenticationReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "result")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordAuthenticationReply struct {

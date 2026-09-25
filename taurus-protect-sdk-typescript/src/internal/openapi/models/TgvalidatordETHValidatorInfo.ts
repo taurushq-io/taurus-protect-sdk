@@ -61,7 +61,16 @@ export interface TgvalidatordETHValidatorInfo {
      * @memberof TgvalidatordETHValidatorInfo
      */
     addressID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordETHValidatorInfo
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordETHValidatorInfoWireKeys: ReadonlySet<string> = new Set(['id', 'pubkey', 'status', 'balance', 'network', 'provider', 'addressID']);
 
 /**
  * Check if a given object implements the TgvalidatordETHValidatorInfo interface.
@@ -78,7 +87,7 @@ export function TgvalidatordETHValidatorInfoFromJSONTyped(json: any, ignoreDiscr
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordETHValidatorInfo = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'pubkey': json['pubkey'] == null ? undefined : json['pubkey'],
@@ -88,6 +97,16 @@ export function TgvalidatordETHValidatorInfoFromJSONTyped(json: any, ignoreDiscr
         'provider': json['provider'] == null ? undefined : json['provider'],
         'addressID': json['addressID'] == null ? undefined : json['addressID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordETHValidatorInfoWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordETHValidatorInfoToJSON(json: any): TgvalidatordETHValidatorInfo {
@@ -108,6 +127,7 @@ export function TgvalidatordETHValidatorInfoFromJSONTyped(json: any, ignoreDiscr
         'network': value['network'],
         'provider': value['provider'],
         'addressID': value['addressID'],
+        ...value['additionalProperties'],
     };
 }
 

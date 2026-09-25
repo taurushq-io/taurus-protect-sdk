@@ -1,0 +1,145 @@
+[
+  {
+    "name": "balances_unknown_fields_and_token_type",
+    "description": "GetBalances reply with a field the client does not know at every nesting level and a token type it has never seen: the shape that broke Go on INT when validatord added currency.tokenInfo. Unknown values use only strings, booleans, arrays and objects so that every JSON library re-serializes them byte-identically.",
+    "kind": "model",
+    "model": "tgvalidatordGetBalancesReply",
+    "wire": {
+      "balances": [
+        {
+          "asset": {
+            "currency": "USDC",
+            "currencyInfo": {
+              "id": "currency-1",
+              "symbol": "USDC",
+              "decimals": "6",
+              "isToken": true,
+              "tokenInfo": {
+                "tokenType": "TOKEN_TYPE_FUTURE_STANDARD",
+                "futureTokenInfoField": "t"
+              },
+              "futureCurrencyField": {"nested": ["x", "y"], "flag": true}
+            },
+            "futureAssetField": "a"
+          },
+          "balance": {
+            "totalConfirmed": "100",
+            "futureBalanceField": true
+          },
+          "futureAssetBalanceField": ["b"]
+        }
+      ],
+      "total": "1",
+      "futureRootField": "r"
+    },
+    "expected": {
+      "lossless": true,
+      "rootAdditionalProperties": {"futureRootField": "r"}
+    }
+  },
+  {
+    "name": "stake_account_unknown_type_and_state",
+    "description": "Stake account whose account type and Solana state are both values the client does not know, plus unknown fields on both objects.",
+    "kind": "model",
+    "model": "tgvalidatordStakeAccount",
+    "wire": {
+      "id": "7",
+      "accountAddress": "stake-account-1",
+      "accountType": "StakeAccountTypeFuture",
+      "solanaStakeAccount": {
+        "state": "cooling",
+        "validatorAddress": "validator-1",
+        "futureSolanaField": ["a", "b"]
+      },
+      "futureStakeField": {"k": "v", "on": false}
+    },
+    "expected": {
+      "lossless": true,
+      "rootAdditionalProperties": {"futureStakeField": {"k": "v", "on": false}}
+    }
+  },
+  {
+    "name": "mfs_entities_info_unknown_kind",
+    "description": "Multi-factor signature entities info with an entity type the client does not know and one unknown field. All three required properties are present.",
+    "kind": "model",
+    "model": "tgvalidatordGetMultiFactorSignatureEntitiesInfoReply",
+    "wire": {
+      "id": "42",
+      "payloadToSign": ["cGF5bG9hZA=="],
+      "entityType": "FUTURE_KIND",
+      "futureMfsField": "f"
+    },
+    "expected": {
+      "lossless": true,
+      "rootAdditionalProperties": {"futureMfsField": "f"}
+    }
+  },
+  {
+    "name": "token_type_unknown_value",
+    "description": "An enum value the client does not know decodes to the raw string, and is not one of the generated constants.",
+    "kind": "enum",
+    "enum": "tgvalidatordTokenType",
+    "wire": "TOKEN_TYPE_FUTURE_STANDARD",
+    "expected": {"value": "TOKEN_TYPE_FUTURE_STANDARD", "known": false}
+  },
+  {
+    "name": "token_type_known_value",
+    "description": "A known enum value still decodes to the generated constant itself.",
+    "kind": "enum",
+    "enum": "tgvalidatordTokenType",
+    "wire": "TOKEN_TYPE_ERC20",
+    "expected": {"value": "TOKEN_TYPE_ERC20", "known": true}
+  },
+  {
+    "name": "mfs_entity_type_unknown_value",
+    "description": "An unknown multi-factor signature entity type decodes to the raw string.",
+    "kind": "enum",
+    "enum": "tgvalidatordMultiFactorSignaturesEntityType",
+    "wire": "FUTURE_KIND",
+    "expected": {"value": "FUTURE_KIND", "known": false}
+  },
+  {
+    "name": "stake_account_type_known_value",
+    "description": "A known stake account type still decodes to the generated constant itself.",
+    "kind": "enum",
+    "enum": "tgvalidatordStakeAccountType",
+    "wire": "StakeAccountTypeSolana",
+    "expected": {"value": "StakeAccountTypeSolana", "known": true}
+  },
+  {
+    "name": "mfs_get_info_unknown_kind",
+    "description": "GetMultiFactorSignatureEntitiesInfo: an entity type the SDK does not know reaches the domain model as the raw wire string. It is never mapped to a known kind (the old TypeScript default was REQUEST) and never fails the call.",
+    "kind": "service",
+    "operation": "getMultiFactorSignatureInfo",
+    "request": {"id": "42"},
+    "reply": {"id": "42", "payloadToSign": ["cGF5bG9hZA=="], "entityType": "FUTURE_KIND"},
+    "expected": {"entityType": "FUTURE_KIND"}
+  },
+  {
+    "name": "mfs_create_unknown_kind_sent_verbatim",
+    "description": "CreateMultiFactorSignatureBatch: a caller-supplied entity type the SDK does not know is sent verbatim. There is no client-side rejection and no substitution.",
+    "kind": "service",
+    "operation": "createMultiFactorSignatures",
+    "request": {"entityIds": ["1"], "entityType": "FUTURE_KIND"},
+    "reply": {"id": "99"},
+    "expected": {"requestBody": {"entityType": "FUTURE_KIND", "entityIDs": ["1"]}}
+  },
+  {
+    "name": "asset_holders_unknown_type",
+    "description": "QueryAssetAddressesV2: a caller-supplied address-type filter the SDK does not know is sent verbatim, and a holder row of an unknown type comes back unverified. Only INTERNAL and WHITELISTED rows are confirmed through a verified reader, so this reply needs no other call.",
+    "kind": "service",
+    "operation": "queryAssetAddresses",
+    "request": {"assetId": "asset-1", "addressType": "ADDRESS_TYPE_V2_FUTURE"},
+    "reply": {
+      "result": [
+        {"address": "holder-1", "addressType": "ADDRESS_TYPE_V2_FUTURE", "balance": "5", "futureRowField": "x"}
+      ],
+      "cursor": {"hasNext": false}
+    },
+    "expected": {
+      "requestBody": {"addressType": "ADDRESS_TYPE_V2_FUTURE"},
+      "rows": [{"address": "holder-1", "addressType": "ADDRESS_TYPE_V2_FUTURE", "verified": false}],
+      "excludedCount": 0
+    }
+  }
+]

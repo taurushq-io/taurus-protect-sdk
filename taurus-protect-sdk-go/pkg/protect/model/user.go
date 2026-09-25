@@ -32,10 +32,12 @@ type User struct {
 	PasswordChanged bool `json:"password_changed"`
 	// TotpEnabled indicates if TOTP is enabled for the user.
 	TotpEnabled bool `json:"totp_enabled"`
-	// EnforcedInRules indicates if the user is enforced in rules.
-	EnforcedInRules bool `json:"enforced_in_rules"`
-	// PublicKeyEnforcedInRules indicates if the user's public key is enforced in rules.
-	PublicKeyEnforcedInRules bool `json:"public_key_enforced_in_rules"`
+	// EnforcedInRules reports whether the enforced governance rules list the user. Nil when the
+	// endpoint does not compute it: GetUser and the visibility-group reads.
+	EnforcedInRules *bool `json:"enforced_in_rules"`
+	// PublicKeyEnforcedInRules reports whether PublicKey is the key the enforced rules hold for
+	// the user. Only GetMe computes it; nil elsewhere.
+	PublicKeyEnforcedInRules *bool `json:"public_key_enforced_in_rules"`
 	// CreatedAt is when the user was created.
 	CreatedAt time.Time `json:"created_at"`
 	// UpdatedAt is when the user was last updated.
@@ -50,8 +52,9 @@ type UserGroup struct {
 	ID string `json:"id"`
 	// ExternalGroupID is an optional external identifier.
 	ExternalGroupID string `json:"external_group_id,omitempty"`
-	// EnforcedInRules indicates if this group membership is enforced in rules.
-	EnforcedInRules bool `json:"enforced_in_rules"`
+	// EnforcedInRules reports whether the enforced governance rules list this group; nil when
+	// the endpoint does not compute it.
+	EnforcedInRules *bool `json:"enforced_in_rules"`
 }
 
 // UserAttribute represents a custom attribute on a user.
@@ -80,9 +83,9 @@ type UserAttribute struct {
 
 // ListUsersOptions contains options for listing users.
 type ListUsersOptions struct {
-	// Limit is the maximum number of users to return.
+	// Limit is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
 	Limit int64
-	// Offset is the number of users to skip.
+	// Offset is the number of users to skip; continue with Pagination.NextOffset.
 	Offset int64
 	// IDs filters by specific user IDs.
 	IDs []string
@@ -108,8 +111,7 @@ type ListUsersOptions struct {
 type ListUsersResult struct {
 	// Users is the list of users.
 	Users []*User `json:"users"`
-	// TotalItems is the total number of users matching the filter.
-	TotalItems int64 `json:"total_items"`
-	// Offset is the number of users skipped.
-	Offset int64 `json:"offset"`
+	// Pagination is never nil; continue with its NextOffset until HasMore is false. A
+	// synthetic daemon user may be appended beyond Limit; NextOffset accounts for it.
+	Pagination *Pagination `json:"pagination"`
 }

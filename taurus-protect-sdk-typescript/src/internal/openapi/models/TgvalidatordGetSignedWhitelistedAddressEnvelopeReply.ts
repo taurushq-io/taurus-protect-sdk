@@ -33,7 +33,16 @@ export interface TgvalidatordGetSignedWhitelistedAddressEnvelopeReply {
      * @memberof TgvalidatordGetSignedWhitelistedAddressEnvelopeReply
      */
     result?: TgvalidatordSignedWhitelistedAddressEnvelope;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetSignedWhitelistedAddressEnvelopeReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetSignedWhitelistedAddressEnvelopeReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetSignedWhitelistedAddressEnvelopeReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetSignedWhitelistedAddressEnvelopeReplyFromJSONType
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetSignedWhitelistedAddressEnvelopeReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordSignedWhitelistedAddressEnvelopeFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetSignedWhitelistedAddressEnvelopeReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetSignedWhitelistedAddressEnvelopeReplyToJSON(json: any): TgvalidatordGetSignedWhitelistedAddressEnvelopeReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetSignedWhitelistedAddressEnvelopeReplyFromJSONType
     return {
         
         'result': TgvalidatordSignedWhitelistedAddressEnvelopeToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

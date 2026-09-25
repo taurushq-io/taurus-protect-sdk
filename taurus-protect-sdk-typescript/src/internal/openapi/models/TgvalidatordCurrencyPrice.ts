@@ -106,7 +106,34 @@ export interface TgvalidatordCurrencyPrice {
      * @memberof TgvalidatordCurrencyPrice
      */
     currencyToInfo?: TgvalidatordCurrency;
+    /**
+     * 
+     * @type {string}
+     * @memberof TgvalidatordCurrencyPrice
+     */
+    id?: string;
+    /**
+     * 
+     * @type {boolean}
+     * @memberof TgvalidatordCurrencyPrice
+     */
+    isPrimary?: boolean;
+    /**
+     * Deviation status of the price, only valid when isPrimary is true
+     * @type {string}
+     * @memberof TgvalidatordCurrencyPrice
+     */
+    status?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCurrencyPrice
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCurrencyPriceWireKeys: ReadonlySet<string> = new Set(['blockchain', 'currencyFrom', 'currencyTo', 'decimals', 'rate', 'signatures', 'changePercent24Hour', 'source', 'creationDate', 'updateDate', 'currencyFromInfo', 'currencyToInfo', 'id', 'isPrimary', 'status']);
 
 /**
  * Check if a given object implements the TgvalidatordCurrencyPrice interface.
@@ -123,7 +150,7 @@ export function TgvalidatordCurrencyPriceFromJSONTyped(json: any, ignoreDiscrimi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCurrencyPrice = {
         
         'blockchain': json['blockchain'] == null ? undefined : json['blockchain'],
         'currencyFrom': json['currencyFrom'] == null ? undefined : json['currencyFrom'],
@@ -137,7 +164,20 @@ export function TgvalidatordCurrencyPriceFromJSONTyped(json: any, ignoreDiscrimi
         'updateDate': json['updateDate'] == null ? undefined : (new Date(json['updateDate'])),
         'currencyFromInfo': json['currencyFromInfo'] == null ? undefined : TgvalidatordCurrencyFromJSON(json['currencyFromInfo']),
         'currencyToInfo': json['currencyToInfo'] == null ? undefined : TgvalidatordCurrencyFromJSON(json['currencyToInfo']),
+        'id': json['id'] == null ? undefined : json['id'],
+        'isPrimary': json['isPrimary'] == null ? undefined : json['isPrimary'],
+        'status': json['status'] == null ? undefined : json['status'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCurrencyPriceWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCurrencyPriceToJSON(json: any): TgvalidatordCurrencyPrice {
@@ -163,6 +203,10 @@ export function TgvalidatordCurrencyPriceFromJSONTyped(json: any, ignoreDiscrimi
         'updateDate': value['updateDate'] == null ? undefined : ((value['updateDate']).toISOString()),
         'currencyFromInfo': TgvalidatordCurrencyToJSON(value['currencyFromInfo']),
         'currencyToInfo': TgvalidatordCurrencyToJSON(value['currencyToInfo']),
+        'id': value['id'],
+        'isPrimary': value['isPrimary'],
+        'status': value['status'],
+        ...value['additionalProperties'],
     };
 }
 

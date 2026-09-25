@@ -19,9 +19,12 @@ var _ MappedNullable = &TgvalidatordMetadata{}
 
 // TgvalidatordMetadata struct for TgvalidatordMetadata
 type TgvalidatordMetadata struct {
-	Hash            *string `json:"hash,omitempty"`
+	Hash *string `json:"hash,omitempty"`
 	PayloadAsString *string `json:"payloadAsString,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordMetadata TgvalidatordMetadata
 
 // NewTgvalidatordMetadata instantiates a new TgvalidatordMetadata object
 // This constructor will assign default values to properties that have it defined,
@@ -72,6 +75,10 @@ func (o *TgvalidatordMetadata) SetHash(v string) {
 	o.Hash = &v
 }
 
+
+
+
+
 // GetPayloadAsString returns the PayloadAsString field value if set, zero value otherwise.
 func (o *TgvalidatordMetadata) GetPayloadAsString() string {
 	if o == nil || IsNil(o.PayloadAsString) {
@@ -105,7 +112,7 @@ func (o *TgvalidatordMetadata) SetPayloadAsString(v string) {
 }
 
 func (o TgvalidatordMetadata) MarshalJSON() ([]byte, error) {
-	toSerialize, err := o.ToMap()
+	toSerialize,err := o.ToMap()
 	if err != nil {
 		return []byte{}, err
 	}
@@ -120,7 +127,35 @@ func (o TgvalidatordMetadata) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.PayloadAsString) {
 		toSerialize["payloadAsString"] = o.PayloadAsString
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordMetadata) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordMetadata := _TgvalidatordMetadata{}
+
+	err = json.Unmarshal(data, &varTgvalidatordMetadata)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordMetadata(varTgvalidatordMetadata)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "hash")
+		delete(additionalProperties, "payload")
+		delete(additionalProperties, "payloadAsString")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordMetadata struct {
@@ -158,3 +193,5 @@ func (v *NullableTgvalidatordMetadata) UnmarshalJSON(src []byte) error {
 	v.isSet = true
 	return json.Unmarshal(src, &v.value)
 }
+
+

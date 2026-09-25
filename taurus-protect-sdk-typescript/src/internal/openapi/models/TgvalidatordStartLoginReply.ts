@@ -33,9 +33,18 @@ export interface TgvalidatordStartLoginReply {
      * @memberof TgvalidatordStartLoginReply
      */
     result?: SecurityDomainMode;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordStartLoginReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
 
 
+
+const TgvalidatordStartLoginReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordStartLoginReply interface.
@@ -52,10 +61,20 @@ export function TgvalidatordStartLoginReplyFromJSONTyped(json: any, ignoreDiscri
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordStartLoginReply = {
         
         'result': json['result'] == null ? undefined : SecurityDomainModeFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordStartLoginReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordStartLoginReplyToJSON(json: any): TgvalidatordStartLoginReply {
@@ -70,6 +89,7 @@ export function TgvalidatordStartLoginReplyFromJSONTyped(json: any, ignoreDiscri
     return {
         
         'result': SecurityDomainModeToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

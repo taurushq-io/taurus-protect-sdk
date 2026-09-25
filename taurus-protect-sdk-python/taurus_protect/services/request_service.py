@@ -15,11 +15,10 @@ from taurus_protect.crypto.hashing import calculate_hex_hash
 from taurus_protect.crypto.signing import sign_data
 from taurus_protect.errors import APIError, IntegrityError
 from taurus_protect.mappers.request import request_from_dto
-from taurus_protect.models.pagination import Pagination
+from taurus_protect.models.pagination import CursorPage, cursor_page, cursor_request
 from taurus_protect.models.request import (
     CreateExternalTransferRequest,
     CreateInternalTransferRequest,
-    ListRequestsOptions,
     Request,
     RequestStatus,
 )
@@ -31,6 +30,7 @@ if TYPE_CHECKING:
 
 # Module logger: the Python idiom. Metadata only -- id and reason, never the payload.
 _LOGGER = logging.getLogger(__name__)
+
 
 class RequestService(BaseService):
     """
@@ -56,7 +56,7 @@ class RequestService(BaseService):
         >>> signed_count = client.requests.approve_requests([request], private_key)
         >>>
         >>> # Get requests pending approval
-        >>> requests, cursor = client.requests.get_for_approval(limit=50)
+        >>> requests, page = client.requests.get_for_approval(page_size=100)
     """
 
     def __init__(self, api_client: Any, requests_api: Any) -> None:
@@ -122,62 +122,64 @@ class RequestService(BaseService):
 
     def list(
         self,
-        limit: int = 50,
-        offset: int = 0,
+        page_size: Optional[int] = None,
+        cursor: Optional[str] = None,
         from_date: Optional[datetime] = None,
         to_date: Optional[datetime] = None,
         currency_id: Optional[str] = None,
         statuses: Optional[List[RequestStatus]] = None,
-    ) -> Tuple[List[Request], Optional[Pagination]]:
+        *,
+        types: Optional[List[str]] = None,
+        ids: Optional[List[str]] = None,
+        external_request_ids: Optional[List[str]] = None,
+        sort_order: Optional[str] = None,
+        current_page: Optional[str] = None,
+        page_request: Optional[str] = None,
+    ) -> Tuple[List[Request], CursorPage]:
         """
-        List requests with filtering and pagination.
+        List requests with filtering, one page at a time.
 
         Args:
-            limit: Maximum number of requests to return.
-            offset: Number of requests to skip.
+            page_size: Page size (default 20, max 100).
+            cursor: ``page.next_cursor`` from the previous page, to continue.
             from_date: Filter requests created after this date.
             to_date: Filter requests created before this date.
             currency_id: Filter by currency ID.
             statuses: Filter by request statuses.
+            types: Filter by request types.
+            ids: Filter by request IDs.
+            external_request_ids: Filter by external request IDs.
+            sort_order: ASC or DESC.
+            current_page: Low-level page token; not with ``cursor``.
+            page_request: Low-level page direction (FIRST, PREVIOUS, NEXT, LAST).
 
         Returns:
-            Tuple of (requests list, pagination info).
+            Tuple of (verified requests, page). Rows whose metadata fails verification
+            are withheld and logged.
 
         Raises:
-            ValueError: If limit or offset are invalid.
+            ValueError: If the page size is invalid or cursor options conflict.
             APIError: If API request fails.
         """
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
+        req = cursor_request(
+            page_size, cursor, current_page=current_page, page_request=page_request
+        )
 
         try:
-            status_strings = [s.value for s in statuses] if statuses else None
-            currencies = [currency_id] if currency_id else None
-
-            # Use non-V2 endpoint which supports offset-based pagination
-            resp = self._requests_api.request_service_get_requests(
-                limit=str(limit),
-                offset=str(offset),
+            resp = self._requests_api.request_service_get_requests_v2(
                 var_from=from_date,
                 to=to_date,
-                currencies=currencies,
-                statuses=status_strings,
-                types=None,
-                ids=None,
+                currency_id=currency_id,
+                statuses=[s.value for s in statuses] if statuses else None,
+                types=types,
+                ids=ids,
+                external_request_ids=external_request_ids,
+                sort_order=sort_order,
+                **req.query_params(),
             )
 
-            result = getattr(resp, "result", None)
-            requests = self._verified_requests(result)
-
-            # Extract pagination from total_items
-            total_items = getattr(resp, "total_items", None)
-            pagination = None
-            if total_items is not None:
-                pagination = self._extract_pagination(total_items, offset, limit)
-
-            return requests, pagination
+            requests = self._verified_requests(resp.result)
+            return requests, cursor_page(req.page_size, resp.cursor)
         except Exception as e:
 
             # See get(): IntegrityError is not an APIError, so omitting it here turns a
@@ -188,51 +190,57 @@ class RequestService(BaseService):
 
     def get_for_approval(
         self,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> Tuple[List[Request], Optional[Pagination]]:
+        page_size: Optional[int] = None,
+        cursor: Optional[str] = None,
+        *,
+        currency_id: Optional[str] = None,
+        types: Optional[List[str]] = None,
+        exclude_types: Optional[List[str]] = None,
+        ids: Optional[List[str]] = None,
+        sort_order: Optional[str] = None,
+        current_page: Optional[str] = None,
+        page_request: Optional[str] = None,
+    ) -> Tuple[List[Request], CursorPage]:
         """
-        Get requests pending approval.
+        List requests pending the caller's approval, one page at a time.
+
+        The approval queue has no status filter (every row is awaiting approval) and no
+        ``external_request_ids`` filter: validatord's approval paginator drops it before the query.
 
         Args:
-            limit: Maximum number of requests to return.
-            offset: Number of requests to skip.
+            page_size: Page size (default 20, max 100).
+            cursor: ``page.next_cursor`` from the previous page, to continue.
+            currency_id: Filter by currency ID.
+            types: Only these request types.
+            exclude_types: Leave out these request types.
+            ids: Filter by request IDs.
+            sort_order: ASC or DESC.
+            current_page: Low-level page token; not with ``cursor``.
+            page_request: Low-level page direction (FIRST, PREVIOUS, NEXT, LAST).
 
         Returns:
-            Tuple of (requests list, pagination info).
+            Tuple of (verified requests, page).
 
         Raises:
-            ValueError: If limit or offset are invalid.
+            ValueError: If the page size is invalid or cursor options conflict.
             APIError: If API request fails.
         """
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
+        req = cursor_request(
+            page_size, cursor, current_page=current_page, page_request=page_request
+        )
 
         try:
             resp = self._requests_api.request_service_get_requests_for_approval_v2(
-                currency_id=None,
-                types=None,
-                ids=None,
-                cursor_current_page=None,
-                cursor_page_request=str(offset // limit) if limit > 0 else None,
-                cursor_page_size=str(limit),
-                sort_order=None,
-                exclude_types=None,
-                statuses=None,
+                currency_id=currency_id,
+                types=types,
+                exclude_types=exclude_types,
+                ids=ids,
+                sort_order=sort_order,
+                **req.query_params(),
             )
 
-            result = getattr(resp, "result", None)
-            requests = self._verified_requests(result)
-
-            cursor = getattr(resp, "cursor", None)
-            pagination = None
-            if cursor is not None:
-                total = getattr(cursor, "total_items", None)
-                pagination = self._extract_pagination(total, offset, limit)
-
-            return requests, pagination
+            requests = self._verified_requests(resp.result)
+            return requests, cursor_page(req.page_size, resp.cursor)
         except Exception as e:
 
             # See get(): IntegrityError is not an APIError, so omitting it here turns a

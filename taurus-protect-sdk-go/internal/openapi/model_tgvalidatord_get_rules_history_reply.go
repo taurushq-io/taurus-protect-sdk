@@ -22,7 +22,10 @@ type TgvalidatordGetRulesHistoryReply struct {
 	Result []TgvalidatordRules `json:"result,omitempty"`
 	TotalItems *string `json:"totalItems,omitempty"`
 	Cursor *string `json:"cursor,omitempty" validate:"regexp=^(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\\/]{3}=)?$"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetRulesHistoryReply TgvalidatordGetRulesHistoryReply
 
 // NewTgvalidatordGetRulesHistoryReply instantiates a new TgvalidatordGetRulesHistoryReply object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordGetRulesHistoryReply) ToMap() (map[string]interface{}, error
 	if !IsNil(o.Cursor) {
 		toSerialize["cursor"] = o.Cursor
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetRulesHistoryReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetRulesHistoryReply := _TgvalidatordGetRulesHistoryReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetRulesHistoryReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetRulesHistoryReply(varTgvalidatordGetRulesHistoryReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "result")
+		delete(additionalProperties, "totalItems")
+		delete(additionalProperties, "cursor")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetRulesHistoryReply struct {

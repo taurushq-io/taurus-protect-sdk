@@ -66,7 +66,7 @@ This SDK provides a Python client for the Taurus-PROTECT API, mirroring the Java
 - HTTP client is urllib3 (via OpenAPI-generated rest.py)
 - TPV1-HMAC-SHA256 authentication handled automatically by `AuthenticatedRESTClient` transport
 
-### Available Services (38 + TaurusNetwork namespace)
+### Available Services (39 + TaurusNetwork namespace)
 
 The ProtectClient provides lazy-initialized properties for all services:
 
@@ -78,7 +78,7 @@ The ProtectClient provides lazy-initialized properties for all services:
 
 **Administrative**: `users`, `groups`, `visibility_groups`, `config`, `webhooks`, `webhook_calls`, `tags`
 
-**Specialized**: `assets`, `actions`, `blockchains`, `exchanges`, `fiat`, `fee_payers`, `health`, `jobs`, `scores`, `statistics`, `token_metadata`, `user_devices`
+**Specialized**: `assets`, `actions`, `blockchains`, `earn`, `exchanges`, `fiat`, `fee_payers`, `health`, `jobs`, `scores`, `statistics`, `token_metadata`, `user_devices`
 
 **Taurus Network** (namespace pattern):
 ```python
@@ -123,11 +123,18 @@ Optional[Union[Annotated[bytes, Field(strict=True)], Annotated[str, Field(strict
 ```
 This causes `RuntimeError: Unable to apply constraint 'strict' to schema of type 'none'` with Pydantic v2. The `generate-openapi.sh` script includes a post-processing step that fixes this by replacing with `Optional[Union[bytes, str]]`.
 
+**Generated enums keep unknown values** (`scripts/resources/templates/python/model_enum.mustache`, passed with
+`-t`): `_missing_` returns a pseudo-member named `UNKNOWN` whose `.value` is the raw string, so `X(value)`
+never raises — never validate caller input with it. `str()`/f-strings show `X.UNKNOWN`; read `.value`.
+`X("NEW") in X` is True for a pseudo-member, so test known-ness by identity (`any(v is m for m in X)`).
+The script aborts if a generated enum lacks `_missing_`. Verified on Python 3.12 + pydantic 2.13.4 only.
+Cross-SDK contract: repo-root `CLAUDE.md`.
+
 ### OpenAPI Type Naming Conventions
 
 - Response types use `result` field (not `wallet`, `wallets`, etc.)
 - Create operations often return only an ID, not the full object
-- Pagination uses `total_items` and `offset` strings
+- Counts (`total_items`, reply `offset`, `total`) are strings on the generated models; parse them only through `parse_count`
 - API request builders use `body=` parameter for POST/PUT requests
 - API method names follow pattern: `{service}_service_{operation}` (e.g., `wallet_service_get_wallet_v2`, `request_service_approve_requests`)
 
@@ -143,13 +150,13 @@ Each service follows this pattern:
 1. Wrap OpenAPI API service
 2. Use error mapping for converting OpenAPI errors to domain errors
 3. Use mapper functions to convert DTOs to domain models
-4. Return pagination info when available
+4. Build the page with the ONE builder of its family in `models/pagination.py` (`offset_pagination` / `cursor_page`); it is never None on success
 
 ### TaurusNetwork Service Pattern
 
 TaurusNetwork services have additional patterns:
 - Located in `services/taurus_network/` subdirectory
-- Use **cursor-based pagination** (not offset-based) via `CursorPagination` dataclass
+- Use **cursor-based pagination**: options inherit `CursorListOptions` (`models/pagination.py`), results carry a `CursorPage`
 - Services receive both `api_client` and specific API instance in `__init__`
 - Some services (lending, settlement, sharing) define their own dataclass models inline for simplicity
 
@@ -273,15 +280,13 @@ uv pip install --offline --python .venv/bin/python -e ".[dev]"
 Run tests via `.venv/bin/python -m pytest` afterwards rather than `build.sh unit`, which re-probes pip. Note
 `conftest.py` imports `cryptography`, so pytest alone is not enough — install the `[dev]` extra, not just pytest.
 
-### `generate-openapi.sh` Pydantic-fix sed is macOS-only
+### `generate-openapi.sh` Pydantic fix: keep it portable
 
-Line 116 of `scripts/generate-openapi.sh` uses `sed -i '' 's/.../.../' file` (BSD sed). On Linux GNU sed treats the `''` as the input file path and prints `sed: can't read s/...` for every model file. The script **continues anyway** and reports success, but the Pydantic v2 fix never lands and the SDK fails at runtime with `RuntimeError: Unable to apply constraint 'strict' to schema of type 'none'`.
-
-Workaround on Linux until the script is fixed: re-run the Pydantic patch manually after the script:
-```bash
-find taurus_protect/_internal/openapi/models -name "*.py" -exec sed -i \
-  's/Optional\[Union\[Annotated\[bytes, Field(strict=True)\], Annotated\[str, Field(strict=True)\]\]\]/Optional[Union[bytes, str]]/g' {} \;
-```
+The step that rewrites `Optional[Union[Annotated[bytes, Field(strict=True)], …]]` to
+`Optional[Union[bytes, str]]` runs `perl -pi -e` now. It was `sed -i ''` (BSD sed): GNU sed reads the `''`
+as the script path, prints `can't read s/...` per model file, and the script still reported success —
+leaving the SDK failing at runtime with `RuntimeError: Unable to apply constraint 'strict' to schema of
+type 'none'`. Do not switch it back to an in-place `sed`.
 
 ### Python SDK with older pip
 
@@ -298,6 +303,53 @@ For best development experience (live code changes without reinstall), upgrade p
 ```bash
 pip3 install --upgrade pip
 ```
+
+## Pagination — facts from the 2026-09-24 pass
+
+The contract is the repo-root `CLAUDE.md` → "Pagination (cross-SDK)". Python specifics:
+
+- **Everything is in `taurus_protect/models/pagination.py`**: the constants, `Pagination`,
+  `CursorPage`, `CursorListOptions`, and the only builders — `resolve_page_size`,
+  `resolve_offset`, `offset_query`, `parse_count`, `offset_pagination(rule, ...)`,
+  `cursor_request(...)` / `CursorRequest.query_params(prefix)`, `cursor_page(...)`. A service
+  never computes `has_more` or a next page itself; `BaseService._request_cursor_body` turns a
+  `CursorRequest` into the generated body cursor.
+- **Tests stub the transport, not the API**: `tests/unit/transport_stub.py` patches
+  `RESTClientObject.request` (`StubTransport(reply, reply, ...)` is strict: one request too many
+  fails). `tests/unit/services/list_adapters.py` maps every paged operationId to its Python
+  method; `test_list_request_vectors.py` and `test_list_walks.py` run off it, and
+  `tests/unit/models/test_pagination_vectors.py` runs the builders. The two vector loaders
+  pin their counts (53/277 and 53/26/12/14/4); a regenerated file fails them until bumped.
+- **Wire names are not the snake_case you would guess**: `tagIDs`, `entityIDs`, `eventID`,
+  `webhookID`, `currencyID`, `externalRequestIDs`, `attributeFiltersJson`,
+  `currencyIDs.currencyIDs` (lending offers). Read the generated `_serialize` before asserting
+  a query in a test.
+- **Offset 0 is not sent** (`offset_query`); the vectors' defaults expect only the page size.
+- **`payloadAsString` is what a metadata hash commits to**; `payload` is its parsed JSON (a
+  dict). The pledge-action mapper read `payload`, so every real row with metadata failed
+  pydantic validation and the read-path hash check never saw the signed string.
+- Removed because they could never succeed: `ContractWhitelistingService.delete` (deprecated
+  endpoint), `ReservationService.cancel` (no endpoint), `FiatService.list` (invalid arguments;
+  replaced by `list_fiat_provider_accounts`). `PriceService.get_current` is keyword-only, so an
+  old positional `get_current("BTC")` fails loudly instead of rebinding.
+- The transaction export cannot page (validatord ignores its offset): `export`/`export_csv`
+  take a limit only (no SDK maximum) and return `TransactionExport(content, total_items)`.
+- An endpoint the server does not page returns EVERY row: `JobService.list()`,
+  `TagService.list(*, query, ids)`, `VisibilityGroupService.list()` and
+  `StakingService.list_validators(blockchain, network, *, ids)` take no `limit`/`offset` and
+  return a bare list, as in Go and Java. A client-side cut made a longer list read as complete
+  (and `VisibilityGroupService.get`, which scans `list()`, missed every group past it).
+- **`AssetService.query_asset_addresses` confirms its unsigned rows through two by-id readers**:
+  `AddressService._verified_addresses_by_id` (GetAddresses + `addressIds`, ≤ 50, every row
+  through `_verified_address`) and `WhitelistedAddressService._verified_envelopes_by_id`
+  (≤ 100, through `_verified_addresses`; `approve` shares it). Both are lenient per row and
+  raise on call-level failures; a container with no HSMSLOT key aborts before any request.
+  `AssetService` takes both services as mandatory keyword arguments; the client passes the
+  instances it hands out. validatord sends `"0"` for a missing platform id.
+- **An address type outside the generated `TgvalidatordAddressTypeV2`'s three names**
+  (including validatord's `ADDRESS_TYPE_V2_UNSPECIFIED`) decodes with its raw value — every
+  generated enum carries a `_missing_` from `scripts/resources/templates/python/model_enum.mustache`
+  — and such a row comes back `verified=False`, like EXTERNAL. It no longer fails the whole page.
 
 ## Verification surface added in the 2026-09-04 pass
 
@@ -373,10 +425,11 @@ Python-specific, and each of these cost real time:
   bare mock answers any attribute, so a service calling nothing that exists reports green. The
   test also pins that the four phantom operations are absent, so the challenge-shaped API
   cannot come back from memory.
-- **The MFA entity kind is refused, never defaulted.** `_entity_type_from_dto` raises
-  `IntegrityError` on an unknown or missing kind, because the kind decides which verifying
-  reader a caller must check `payload_to_sign` against — defaulting it would say a payload
-  covers a REQUEST when the server said something else.
+- **The MFA entity kind is never defaulted.** `_entity_type_from_dto` keeps an unknown kind
+  with its raw `value` (none of the three members; a missing one stays `None`), because the
+  kind decides which verifying reader a caller must check `payload_to_sign` against —
+  defaulting it would say a payload covers a REQUEST when the server said something else.
+  `_entity_type_to_dto` sends a caller's kind verbatim; validatord rejects an unknown one.
 - **Pledge read paths verify now** (`_verify_pledge_action_metadata`, module-level, called from
   both list paths). Approval verifies **again** in the same call, deliberately: an action can
   reach `approve_pledge_actions` decoded from a queue or cache rather than from this SDK.

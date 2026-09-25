@@ -97,7 +97,16 @@ export interface TgvalidatordLightAddressInfo {
      * @memberof TgvalidatordLightAddressInfo
      */
     externalAddressId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordLightAddressInfo
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordLightAddressInfoWireKeys: ReadonlySet<string> = new Set(['id', 'walletId', 'address', 'customerId', 'network', 'label', 'comment', 'addressPath', 'status', 'currencyId', 'creationDate', 'updateDate', 'externalAddressId']);
 
 /**
  * Check if a given object implements the TgvalidatordLightAddressInfo interface.
@@ -114,7 +123,7 @@ export function TgvalidatordLightAddressInfoFromJSONTyped(json: any, ignoreDiscr
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordLightAddressInfo = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'walletId': json['walletId'] == null ? undefined : json['walletId'],
@@ -130,6 +139,16 @@ export function TgvalidatordLightAddressInfoFromJSONTyped(json: any, ignoreDiscr
         'updateDate': json['updateDate'] == null ? undefined : (new Date(json['updateDate'])),
         'externalAddressId': json['externalAddressId'] == null ? undefined : json['externalAddressId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordLightAddressInfoWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordLightAddressInfoToJSON(json: any): TgvalidatordLightAddressInfo {
@@ -156,6 +175,7 @@ export function TgvalidatordLightAddressInfoFromJSONTyped(json: any, ignoreDiscr
         'creationDate': value['creationDate'] == null ? undefined : ((value['creationDate']).toISOString()),
         'updateDate': value['updateDate'] == null ? undefined : ((value['updateDate']).toISOString()),
         'externalAddressId': value['externalAddressId'],
+        ...value['additionalProperties'],
     };
 }
 

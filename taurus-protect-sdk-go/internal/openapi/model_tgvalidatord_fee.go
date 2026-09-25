@@ -25,7 +25,10 @@ type TgvalidatordFee struct {
 	Denom *string `json:"denom,omitempty"`
 	CurrencyInfo *TgvalidatordCurrency `json:"currencyInfo,omitempty"`
 	UpdateDate *time.Time `json:"updateDate,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordFee TgvalidatordFee
 
 // NewTgvalidatordFee instantiates a new TgvalidatordFee object
 // This constructor will assign default values to properties that have it defined,
@@ -229,7 +232,37 @@ func (o TgvalidatordFee) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.UpdateDate) {
 		toSerialize["updateDate"] = o.UpdateDate
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordFee) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordFee := _TgvalidatordFee{}
+
+	err = json.Unmarshal(data, &varTgvalidatordFee)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordFee(varTgvalidatordFee)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "currencyId")
+		delete(additionalProperties, "value")
+		delete(additionalProperties, "denom")
+		delete(additionalProperties, "currencyInfo")
+		delete(additionalProperties, "updateDate")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordFee struct {

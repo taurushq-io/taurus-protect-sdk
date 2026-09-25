@@ -7,7 +7,10 @@
  */
 
 import type { KeyObject } from "crypto";
-import type { AddressWhitelistingApi } from "../internal/openapi";
+import type {
+  AddressWhitelistingApi,
+  TgvalidatordSignedWhitelistedAddressEnvelope,
+} from "../internal/openapi";
 import { signData } from "../crypto/signing";
 import {
   ContainerIntegrityError,
@@ -33,9 +36,20 @@ import type {
   InternalAddress,
   InternalWallet,
 } from "../models/whitelisted-address";
-import type { Pagination } from "../models/pagination";
+import {
+  MAX_PAGE_SIZE,
+  buildOffsetPagination,
+  offsetRequest,
+  type OffsetPageOptions,
+  type Pagination,
+} from "../models/pagination";
 import { BaseService } from "./base";
-import { rethrowIfNotRowLevel } from "./row-level-error";
+import { offsetQuery } from "./paging";
+import {
+  rethrowIfNotRowLevel,
+  verifyRowsById,
+  type VerifiedLookup,
+} from "./row-level-error";
 
 /**
  * Options for listing whitelisted addresses.
@@ -46,11 +60,7 @@ import { rethrowIfNotRowLevel } from "./row-level-error";
  * The approval queue is a different ENDPOINT, not a status filter on the general list:
  * it is scoped to what the calling user may act on, which no filter reproduces.
  */
-export interface ListWhitelistedAddressesForApprovalOptions {
-  /** Maximum number of rows to return. */
-  readonly limit?: number;
-  /** Number of rows to skip. */
-  readonly offset?: number;
+export interface ListWhitelistedAddressesForApprovalOptions extends OffsetPageOptions {
   /** Filter by specific whitelisted address IDs. */
   readonly ids?: string[];
   /** Filter by blockchain symbol. */
@@ -68,13 +78,9 @@ export interface ListWhitelistedAddressesForApprovalOptions {
   readonly includeAlreadySignedByUser?: boolean;
 }
 
-export interface ListWhitelistedAddressesOptions {
+export interface ListWhitelistedAddressesOptions extends OffsetPageOptions {
   /** Filter by specific whitelisted address IDs. */
   readonly ids?: string[];
-  /** Maximum number of items to return (max 100). */
-  limit?: number;
-  /** Offset for pagination. */
-  offset?: number;
   /** Search query. */
   query?: string;
   /** Filter by blockchain. */
@@ -107,8 +113,12 @@ export interface ExcludedWhitelistedAddress {
 export interface ListWhitelistedAddressesResult {
   /** List of verified whitelisted addresses. */
   items: WhitelistedAddress[];
-  /** Pagination information. */
-  pagination: Pagination | undefined;
+  /**
+   * Offset pagination. `totalItems` excludes the rows withheld as unverifiable;
+   * `nextOffset` and `hasMore` follow the rows the server returned, so a withheld row
+   * never shifts the next page.
+   */
+  pagination: Pagination;
   /**
    * Rows that failed verification and are absent from `items`.
    *
@@ -157,7 +167,7 @@ export interface ListWhitelistedAddressesResult {
  */
 function buildAddressListResult(
   items: WhitelistedAddress[],
-  pagination: Pagination | undefined,
+  pagination: Pagination,
   excludedUnverified: ExcludedWhitelistedAddress[],
   pinnedHashes: ReadonlyMap<string, string>
 ): ListWhitelistedAddressesResult {
@@ -412,20 +422,11 @@ export class WhitelistedAddressService extends BaseService {
   async list(
     options?: ListWhitelistedAddressesOptions
   ): Promise<ListWhitelistedAddressesResult> {
-    const limit = options?.limit ?? 50;
-    const offset = options?.offset ?? 0;
-
-    if (limit <= 0) {
-      throw new ValidationError("limit must be positive");
-    }
-    if (offset < 0) {
-      throw new ValidationError("offset cannot be negative");
-    }
+    const page = offsetRequest(options);
 
     return this.execute(async () => {
       const response = await this.api.whitelistServiceGetWhitelistedAddresses({
-        limit: String(limit),
-        offset: String(offset),
+        ...offsetQuery(page),
         query: options?.query,
         blockchain: options?.blockchain,
         network: options?.network,
@@ -459,20 +460,7 @@ export class WhitelistedAddressService extends BaseService {
       for (const dto of rows) {
         const dtoId = dto.id ?? "";
         try {
-          const envelope = this.mapDtoToEnvelope(dto, dtoId);
-
-          // Look up cached rules container by hash
-          const cached = envelope.rulesContainerHash
-            ? rulesContainerCache.get(envelope.rulesContainerHash)
-            : undefined;
-
-          const result = this.verifier.verify(
-            envelope,
-            this.rulesContainerDecoder,
-            this.userSignaturesDecoder,
-            cached
-          );
-          items.push(this.withEnvelopeFields(result.verifiedWhitelistedAddress, dto));
+          items.push(this.verifiedRow(dto, rulesContainerCache));
           pinnedHashes.set(dtoId, dto.metadata?.hash ?? "");
         } catch (error: unknown) {
           rethrowIfNotRowLevel(error);
@@ -492,22 +480,15 @@ export class WhitelistedAddressService extends BaseService {
         );
       }
 
-      // Extract pagination, minus the rows the caller never receives.
-      //
-      // The server counts rows it returned; excluded rows are not among the items.
-      // Reporting the server's total lets a filtered page pass for a complete one.
-      const reportedTotal = response.totalItems
-        ? parseInt(response.totalItems, 10)
-        : undefined;
-      // isNaN guard as in listForApproval: without it a non-numeric totalItems yields
-      // Math.max(0, NaN - n) === NaN, which is !== undefined, so NaN reaches the caller.
-      const totalItems =
-        reportedTotal === undefined || isNaN(reportedTotal)
-          ? undefined
-          : Math.max(0, reportedTotal - excludedUnverified.length);
-      const pagination: Pagination | undefined = totalItems !== undefined
-        ? { totalItems, offset, limit }
-        : undefined;
+      // Excluded rows reduce the total the caller is told about, never the next offset:
+      // the server counted them, and the next page starts after them.
+      const pagination = buildOffsetPagination(
+        "plus_server_rows",
+        page,
+        response,
+        rows.length,
+        excludedUnverified.length
+      );
 
       return buildAddressListResult(
         items,
@@ -516,6 +497,67 @@ export class WhitelistedAddressService extends BaseService {
         pinnedHashes
       );
     });
+  }
+
+  /**
+   * Re-reads whitelisted addresses by id for a caller that completes unsigned rows (the
+   * v2 asset-holders list) and must drop a bad row rather than fail its page.
+   *
+   * The request is `list`'s (`ids`, one page the size of `ids`, normalized containers)
+   * and every row goes through the same 6-step check. A row that fails it lands in
+   * `failed`; an API error, a container that cannot be verified or interpreted, or
+   * anything else that is not a per-row failure aborts the read. Unlike `list`, a read
+   * where no row survives is not an error here: the caller reports each row.
+   *
+   * Not part of the public surface.
+   *
+   * @internal
+   * @param ids - At most 100 whitelisted address ids
+   * @returns The verified addresses and the failed rows, by whitelisted address id
+   * @throws ValidationError if more ids are passed than one page holds
+   */
+  async _verifiedByIds(ids: readonly string[]): Promise<VerifiedLookup<WhitelistedAddress>> {
+    if (ids.length === 0) {
+      return { verified: new Map(), failed: new Map() };
+    }
+    const page = offsetRequest({ limit: ids.length });
+
+    return this.execute(async () => {
+      const response = await this.api.whitelistServiceGetWhitelistedAddresses({
+        ...offsetQuery(page),
+        rulesContainerNormalized: true,
+        ids: [...ids],
+      });
+      // Container-level: verified before, and outside, the per-row check.
+      const rulesContainerCache = this.buildRulesContainerCache(response);
+
+      return verifyRowsById(
+        response.result ?? [],
+        (dto) => dto.id ?? "",
+        (dto) => this.verifiedRow(dto, rulesContainerCache)
+      );
+    });
+  }
+
+  /**
+   * The per-row check of `list`: the 6-step verification of the row's envelope, against
+   * its normalized container when the reply carries one, plus the envelope fields.
+   */
+  private verifiedRow(
+    dto: TgvalidatordSignedWhitelistedAddressEnvelope,
+    rulesContainerCache: ReadonlyMap<string, DecodedRulesContainer>
+  ): WhitelistedAddress {
+    const envelope = this.mapDtoToEnvelope(dto, dto.id ?? "");
+    const cached = envelope.rulesContainerHash
+      ? rulesContainerCache.get(envelope.rulesContainerHash)
+      : undefined;
+    const result = this.verifier.verify(
+      envelope,
+      this.rulesContainerDecoder,
+      this.userSignaturesDecoder,
+      cached
+    );
+    return this.withEnvelopeFields(result.verifiedWhitelistedAddress, dto);
   }
 
   /**
@@ -539,21 +581,12 @@ export class WhitelistedAddressService extends BaseService {
   async listForApproval(
     options?: ListWhitelistedAddressesForApprovalOptions
   ): Promise<ListWhitelistedAddressesResult> {
-    const limit = options?.limit ?? 50;
-    const offset = options?.offset ?? 0;
-
-    if (limit <= 0) {
-      throw new ValidationError("limit must be positive");
-    }
-    if (offset < 0) {
-      throw new ValidationError("offset cannot be negative");
-    }
+    const page = offsetRequest(options);
 
     return this.execute(async () => {
       const response =
         await this.api.whitelistServiceGetWhitelistedAddressesForApproval({
-          limit: String(limit),
-          offset: String(offset),
+          ...offsetQuery(page),
           ids: options?.ids,
           blockchain: options?.blockchain,
           network: options?.network,
@@ -597,19 +630,15 @@ export class WhitelistedAddressService extends BaseService {
         );
       }
 
-      const reportedTotal = response.totalItems
-        ? parseInt(response.totalItems, 10)
-        : undefined;
-      const totalItems =
-        reportedTotal === undefined || isNaN(reportedTotal)
-          ? undefined
-          : Math.max(0, reportedTotal - excludedUnverified.length);
-
       return buildAddressListResult(
         items,
-        // TypeScript's Pagination is {totalItems, offset, limit} — it has no `hasMore`,
-        // unlike Go's. Keep the shape per SDK rather than inventing a field here.
-        totalItems !== undefined ? { limit, offset, totalItems } : undefined,
+        buildOffsetPagination(
+          "plus_server_rows",
+          page,
+          response,
+          rows.length,
+          excludedUnverified.length
+        ),
         excludedUnverified,
         pinnedHashes
       );
@@ -626,7 +655,7 @@ export class WhitelistedAddressService extends BaseService {
    * verifying path and every re-read hash must equal its pin, or the call aborts and
    * NOTHING is signed.
    *
-   *   selection -> sort numerically -> ONE filtered verified page -> completeness check
+   *   selection -> sort numerically -> filtered verified pages (100 ids each) -> completeness check
    *                                                                        |
    *                                                        pin == re-read hash ?
    *                                                                        |
@@ -760,16 +789,30 @@ export class WhitelistedAddressService extends BaseService {
   private async hashesToSignByID(
     ids: string[]
   ): Promise<Map<string, string>> {
+    const byID = new Map<string, string>();
+    // One id-filtered page per MAX_PAGE_SIZE ids: an approval batch can be larger than
+    // a page may be, and a page that silently holds fewer rows than were asked for is
+    // exactly what the caller's completeness check exists to catch.
+    for (let start = 0; start < ids.length; start += MAX_PAGE_SIZE) {
+      const chunk = ids.slice(start, start + MAX_PAGE_SIZE);
+      await this.collectHashesToSign(chunk, byID);
+    }
+    return byID;
+  }
+
+  /** Re-reads one id-filtered page for {@link hashesToSignByID}. */
+  private async collectHashesToSign(
+    ids: string[],
+    byID: Map<string, string>
+  ): Promise<void> {
     const response = await this.api.whitelistServiceGetWhitelistedAddresses({
       limit: String(ids.length),
-      offset: "0",
       rulesContainerNormalized: true,
       includeForApproval: true,
       ids,
     });
 
     const cache = this.buildRulesContainerCache(response);
-    const byID = new Map<string, string>();
     for (const dto of response.result ?? []) {
       try {
         // Verification must clear the row before its hash is signed. It also proves
@@ -794,7 +837,6 @@ export class WhitelistedAddressService extends BaseService {
         continue;
       }
     }
-    return byID;
   }
 
   private withEnvelopeFields(

@@ -33,7 +33,16 @@ export interface TgvalidatordTransparentUpgradeableProxyContractTemplate {
      * @memberof TgvalidatordTransparentUpgradeableProxyContractTemplate
      */
     evm?: TgvalidatordEVMContractTemplateParams;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTransparentUpgradeableProxyContractTemplate
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTransparentUpgradeableProxyContractTemplateWireKeys: ReadonlySet<string> = new Set(['evm']);
 
 /**
  * Check if a given object implements the TgvalidatordTransparentUpgradeableProxyContractTemplate interface.
@@ -50,10 +59,20 @@ export function TgvalidatordTransparentUpgradeableProxyContractTemplateFromJSONT
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTransparentUpgradeableProxyContractTemplate = {
         
         'evm': json['evm'] == null ? undefined : TgvalidatordEVMContractTemplateParamsFromJSON(json['evm']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTransparentUpgradeableProxyContractTemplateWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTransparentUpgradeableProxyContractTemplateToJSON(json: any): TgvalidatordTransparentUpgradeableProxyContractTemplate {
@@ -68,6 +87,7 @@ export function TgvalidatordTransparentUpgradeableProxyContractTemplateFromJSONT
     return {
         
         'evm': TgvalidatordEVMContractTemplateParamsToJSON(value['evm']),
+        ...value['additionalProperties'],
     };
 }
 

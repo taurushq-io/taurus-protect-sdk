@@ -25,19 +25,25 @@ import com.google.gson.stream.JsonWriter;
 
 /**
  * Gets or Sets SecurityDomainMode
+ * <p>
+ * An open set of values: a value this client was not generated with is kept as-is, so
+ * {@link #fromValue} never throws and a new server value cannot fail a whole decode.
  */
 @JsonAdapter(SecurityDomainMode.Adapter.class)
-public enum SecurityDomainMode {
+public final class SecurityDomainMode {
   
-  BASIC("Basic"),
+  public static final SecurityDomainMode BASIC = new SecurityDomainMode("Basic");
   
-  OIDC("OIDC"),
+  public static final SecurityDomainMode OIDC = new SecurityDomainMode("OIDC");
   
-  SAML("SAML");
+  public static final SecurityDomainMode SAML = new SecurityDomainMode("SAML");
+  
 
-  private String value;
+  private static final SecurityDomainMode[] knownValues = { BASIC, OIDC, SAML };
 
-  SecurityDomainMode(String value) {
+  private final String value;
+
+  private SecurityDomainMode(String value) {
     this.value = value;
   }
 
@@ -45,18 +51,53 @@ public enum SecurityDomainMode {
     return value;
   }
 
+  /**
+   * Returns the values this client was generated with.
+   *
+   * @return a new array of the known values
+   */
+  public static SecurityDomainMode[] values() {
+    return knownValues.clone();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    return Objects.equals(value, ((SecurityDomainMode) o).value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(value);
+  }
+
   @Override
   public String toString() {
     return String.valueOf(value);
   }
 
+  /**
+   * Returns the known constant for a value, or a new instance carrying a value this client
+   * does not know. Never throws.
+   *
+   * @param value the wire value
+   * @return the matching instance, or null for a null value
+   */
   public static SecurityDomainMode fromValue(String value) {
-    for (SecurityDomainMode b : SecurityDomainMode.values()) {
+    if (value == null) {
+      return null;
+    }
+    for (SecurityDomainMode b : knownValues) {
       if (b.value.equals(value)) {
         return b;
       }
     }
-    throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    return new SecurityDomainMode(value);
   }
 
   public static class Adapter extends TypeAdapter<SecurityDomainMode> {

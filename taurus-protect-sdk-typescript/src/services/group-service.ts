@@ -7,9 +7,29 @@
 import { NotFoundError, ValidationError } from '../errors';
 import type { GroupsApi } from '../internal/openapi/apis/GroupsApi';
 import { groupFromDto, groupsFromDto } from '../mappers/user';
-import type { Pagination, PaginatedResult } from '../models/pagination';
+import {
+  buildOffsetPagination,
+  offsetRequest,
+  type PaginatedResult,
+} from '../models/pagination';
 import type { Group, ListGroupsOptions } from '../models/user';
 import { BaseService } from './base';
+import { offsetQuery } from './paging';
+
+/**
+ * GetGroups computes enforcedInRules for each group and its users, and validatord omits a
+ * false bool, so absent means false.
+ */
+function withComputedRulesFlags(group: Group): Group {
+  return {
+    ...group,
+    enforcedInRules: group.enforcedInRules ?? false,
+    users: group.users?.map((user) => ({
+      ...user,
+      enforcedInRules: user.enforcedInRules ?? false,
+    })),
+  };
+}
 
 /**
  * Service for group management operations.
@@ -71,8 +91,7 @@ export class GroupService extends BaseService {
         ids: [groupId],
       });
 
-      const resp = response as Record<string, unknown>;
-      const result = resp.result as unknown[];
+      const result = response.result;
 
       if (!result || result.length === 0) {
         throw new NotFoundError(`Group ${groupId} not found`);
@@ -83,7 +102,7 @@ export class GroupService extends BaseService {
         throw new NotFoundError(`Group ${groupId} not found`);
       }
 
-      return group;
+      return withComputedRulesFlags(group);
     });
   }
 
@@ -106,37 +125,20 @@ export class GroupService extends BaseService {
    * ```
    */
   async list(options?: ListGroupsOptions): Promise<PaginatedResult<Group>> {
-    const limit = options?.limit ?? 50;
-    const offset = options?.offset ?? 0;
-
-    if (limit <= 0) {
-      throw new ValidationError('limit must be positive');
-    }
-    if (offset < 0) {
-      throw new ValidationError('offset cannot be negative');
-    }
+    const page = offsetRequest(options);
 
     return this.execute(async () => {
       const response = await this.groupsApi.userServiceGetGroups({
-        limit: String(limit),
-        offset: String(offset),
+        ...offsetQuery(page),
         ids: options?.ids,
         query: options?.query,
       });
 
-      const resp = response as Record<string, unknown>;
-      const result = resp.result;
-      const groups = groupsFromDto(result as unknown[]);
-
-      const pagination: Pagination = {
-        totalItems: parseInt((resp.totalItems ?? resp.total_items ?? '0') as string, 10),
-        offset,
-        limit,
-      };
-
+      const rows = response.result ?? [];
       return {
-        items: groups,
-        pagination,
+        items: groupsFromDto(rows).map(withComputedRulesFlags),
+        // The server may append a synthetic technical group beyond `limit`.
+        pagination: buildOffsetPagination('plus_min_rows_limit', page, response, rows.length),
       };
     });
   }

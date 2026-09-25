@@ -39,7 +39,16 @@ export interface TgvalidatordSignedProofOfOwnershipPayload {
      * @memberof TgvalidatordSignedProofOfOwnershipPayload
      */
     ownerParticipantSignature?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordSignedProofOfOwnershipPayload
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordSignedProofOfOwnershipPayloadWireKeys: ReadonlySet<string> = new Set(['payload', 'ownerParticipantSignature']);
 
 /**
  * Check if a given object implements the TgvalidatordSignedProofOfOwnershipPayload interface.
@@ -56,11 +65,21 @@ export function TgvalidatordSignedProofOfOwnershipPayloadFromJSONTyped(json: any
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordSignedProofOfOwnershipPayload = {
         
         'payload': json['payload'] == null ? undefined : TgvalidatordProofOfOwnershipPayloadFromJSON(json['payload']),
         'ownerParticipantSignature': json['ownerParticipantSignature'] == null ? undefined : json['ownerParticipantSignature'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordSignedProofOfOwnershipPayloadWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordSignedProofOfOwnershipPayloadToJSON(json: any): TgvalidatordSignedProofOfOwnershipPayload {
@@ -76,6 +95,7 @@ export function TgvalidatordSignedProofOfOwnershipPayloadFromJSONTyped(json: any
         
         'payload': TgvalidatordProofOfOwnershipPayloadToJSON(value['payload']),
         'ownerParticipantSignature': value['ownerParticipantSignature'],
+        ...value['additionalProperties'],
     };
 }
 

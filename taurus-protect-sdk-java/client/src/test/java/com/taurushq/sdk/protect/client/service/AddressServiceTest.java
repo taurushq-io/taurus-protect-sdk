@@ -6,6 +6,7 @@ import com.taurushq.sdk.protect.client.model.Address;
 import com.taurushq.sdk.protect.client.model.IntegrityException;
 import com.taurushq.sdk.protect.client.model.rulescontainer.DecodedRulesContainer;
 import com.taurushq.sdk.protect.client.model.rulescontainer.RuleUser;
+import com.taurushq.sdk.protect.client.testutil.StubTransport;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import com.taurushq.sdk.protect.openapi.auth.CryptoTPV1;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -104,9 +105,13 @@ class AddressServiceTest {
     }
 
     @Test
-    void getAddresses_throwsOnZeroLimit() {
-        assertThrows(IllegalArgumentException.class, () ->
-                addressService.getAddresses(1, 0, 0));
+    void getAddresses_zeroLimitSendsTheDefault() throws Exception {
+        // 0 used to be rejected; it now means "unset", and a page size is always sent.
+        StubTransport stub = StubTransport.replying("{}");
+        ServicesUnderTest services = new ServicesUnderTest(stub);
+        services.addresses().getAddresses(1, 0, 0);
+        assertEquals("20", stub.only().param("limit"));
+        assertEquals("1", stub.only().param("walletId"));
     }
 
     @Test

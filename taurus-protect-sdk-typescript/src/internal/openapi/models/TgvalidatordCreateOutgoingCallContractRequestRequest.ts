@@ -112,7 +112,16 @@ export interface TgvalidatordCreateOutgoingCallContractRequestRequest {
      * @memberof TgvalidatordCreateOutgoingCallContractRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingCallContractRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingCallContractRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'toWhitelistedAddressId', 'method', 'gasLimit', 'gasPriceLimit', 'comment', 'contractType', 'amount', 'feePayerId', 'feeLimit', 'call', 'transactionReference', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingCallContractRequestRequest interface.
@@ -132,7 +141,7 @@ export function TgvalidatordCreateOutgoingCallContractRequestRequestFromJSONType
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingCallContractRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'toWhitelistedAddressId': json['toWhitelistedAddressId'],
@@ -148,6 +157,16 @@ export function TgvalidatordCreateOutgoingCallContractRequestRequestFromJSONType
         'transactionReference': json['transactionReference'] == null ? undefined : json['transactionReference'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingCallContractRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingCallContractRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingCallContractRequestRequest {
@@ -174,6 +193,7 @@ export function TgvalidatordCreateOutgoingCallContractRequestRequestFromJSONType
         'call': TgvalidatordGenericContractCallToJSON(value['call']),
         'transactionReference': value['transactionReference'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

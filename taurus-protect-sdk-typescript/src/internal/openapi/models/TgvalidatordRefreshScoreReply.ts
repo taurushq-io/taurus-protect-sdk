@@ -33,7 +33,16 @@ export interface TgvalidatordRefreshScoreReply {
      * @memberof TgvalidatordRefreshScoreReply
      */
     scores?: Array<TgvalidatordScore>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordRefreshScoreReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordRefreshScoreReplyWireKeys: ReadonlySet<string> = new Set(['scores']);
 
 /**
  * Check if a given object implements the TgvalidatordRefreshScoreReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordRefreshScoreReplyFromJSONTyped(json: any, ignoreDisc
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordRefreshScoreReply = {
         
         'scores': json['scores'] == null ? undefined : ((json['scores'] as Array<any>).map(TgvalidatordScoreFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordRefreshScoreReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordRefreshScoreReplyToJSON(json: any): TgvalidatordRefreshScoreReply {
@@ -68,6 +87,7 @@ export function TgvalidatordRefreshScoreReplyFromJSONTyped(json: any, ignoreDisc
     return {
         
         'scores': value['scores'] == null ? undefined : ((value['scores'] as Array<any>).map(TgvalidatordScoreToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

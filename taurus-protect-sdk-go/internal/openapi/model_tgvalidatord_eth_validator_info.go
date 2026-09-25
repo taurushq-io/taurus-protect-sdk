@@ -26,7 +26,10 @@ type TgvalidatordETHValidatorInfo struct {
 	Network *string `json:"network,omitempty"`
 	Provider *string `json:"provider,omitempty"`
 	AddressID *string `json:"addressID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordETHValidatorInfo TgvalidatordETHValidatorInfo
 
 // NewTgvalidatordETHValidatorInfo instantiates a new TgvalidatordETHValidatorInfo object
 // This constructor will assign default values to properties that have it defined,
@@ -300,7 +303,39 @@ func (o TgvalidatordETHValidatorInfo) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.AddressID) {
 		toSerialize["addressID"] = o.AddressID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordETHValidatorInfo) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordETHValidatorInfo := _TgvalidatordETHValidatorInfo{}
+
+	err = json.Unmarshal(data, &varTgvalidatordETHValidatorInfo)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordETHValidatorInfo(varTgvalidatordETHValidatorInfo)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "pubkey")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "balance")
+		delete(additionalProperties, "network")
+		delete(additionalProperties, "provider")
+		delete(additionalProperties, "addressID")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordETHValidatorInfo struct {

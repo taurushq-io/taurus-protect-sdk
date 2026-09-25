@@ -80,13 +80,14 @@ type CreateAddressRequest struct {
 type ListAddressesOptions struct {
 	// WalletID filters by wallet ID.
 	WalletID string
-	// Limit is the maximum number of addresses to return.
+	// Limit is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
 	Limit int64
-	// Offset is the number of addresses to skip.
+	// Offset is the number of addresses to skip; continue with Pagination.NextOffset.
 	Offset int64
 	// Query searches address labels or addresses.
 	Query string
-	// ExcludeDisabled excludes disabled addresses from results.
+	// ExcludeDisabled hides disabled addresses (includeDisabledAddresses=exclude). By default
+	// the server includes them.
 	ExcludeDisabled bool
 	// AddressIDs filters to specific Taurus address IDs.
 	AddressIDs []string

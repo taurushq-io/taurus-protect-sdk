@@ -55,7 +55,16 @@ export interface TgvalidatordJobStatus {
      * @memberof TgvalidatordJobStatus
      */
     status?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordJobStatus
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordJobStatusWireKeys: ReadonlySet<string> = new Set(['id', 'startedAt', 'updatedAt', 'timeoutAt', 'message', 'status']);
 
 /**
  * Check if a given object implements the TgvalidatordJobStatus interface.
@@ -72,7 +81,7 @@ export function TgvalidatordJobStatusFromJSONTyped(json: any, ignoreDiscriminato
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordJobStatus = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'startedAt': json['startedAt'] == null ? undefined : (new Date(json['startedAt'])),
@@ -81,6 +90,16 @@ export function TgvalidatordJobStatusFromJSONTyped(json: any, ignoreDiscriminato
         'message': json['message'] == null ? undefined : json['message'],
         'status': json['status'] == null ? undefined : json['status'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordJobStatusWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordJobStatusToJSON(json: any): TgvalidatordJobStatus {
@@ -100,6 +119,7 @@ export function TgvalidatordJobStatusFromJSONTyped(json: any, ignoreDiscriminato
         'timeoutAt': value['timeoutAt'] == null ? undefined : ((value['timeoutAt']).toISOString()),
         'message': value['message'],
         'status': value['status'],
+        ...value['additionalProperties'],
     };
 }
 

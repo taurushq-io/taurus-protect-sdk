@@ -8,65 +8,71 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests for {@link WhitelistedAssetResult}.
+ * Tests for {@link WhitelistedAssetResult} and the next-offset rule of its endpoint: skipped
+ * rows keep their SQL slot, so the next page starts at offset + limit.
  */
 class WhitelistedAssetResultTest {
+
+    private static OffsetPagination page(final int limit, final long offset, final int rows, final String total) {
+        return OffsetPagination.of(OffsetRule.PLUS_LIMIT, limit, offset, rows, 0, total, null);
+    }
 
     @Test
     @DisplayName("hasMore is true while rows remain beyond the page")
     void hasMoreWhenRowsRemain() {
-        WhitelistedAssetResult result = new WhitelistedAssetResult();
-        result.setTotalItems(250L);
+        assertTrue(page(100, 0, 100, "250").hasMore());
+        assertTrue(page(100, 100, 100, "250").hasMore());
+    }
 
-        assertTrue(result.hasMore(0, 100));
-        assertTrue(result.hasMore(100, 100));
+    @Test
+    @DisplayName("a short page is not the end: skipped rows keep their slot")
+    void shortPageIsNotTheEnd() {
+        OffsetPagination p = page(100, 0, 97, "250");
+        assertTrue(p.hasMore());
+        assertEquals(100L, p.getNextOffset());
     }
 
     @Test
     @DisplayName("hasMore is false on the last page")
     void hasMoreOnLastPage() {
-        WhitelistedAssetResult result = new WhitelistedAssetResult();
-        result.setTotalItems(250L);
-
-        assertFalse(result.hasMore(200, 100));
-        assertFalse(result.hasMore(250, 100));
+        assertFalse(page(100, 200, 50, "250").hasMore());
+        assertFalse(page(100, 250, 0, "250").hasMore());
     }
 
     @Test
     @DisplayName("offset plus page size cannot wrap into a false hasMore")
     void hasMoreDoesNotOverflow() {
-        // The unsafe form, (currentOffset + pageSize) < totalItems, overflows to a
-        // negative here and promises a page that does not exist.
-        WhitelistedAssetResult result = new WhitelistedAssetResult();
-        result.setTotalItems(250L);
-
-        assertFalse(result.hasMore(Integer.MAX_VALUE, 1));
-        assertFalse(result.hasMore(Integer.MAX_VALUE, Integer.MAX_VALUE));
+        // The next offset is computed in long arithmetic: an int sum here would wrap to a
+        // negative and promise a page that does not exist.
+        assertFalse(page(1, Integer.MAX_VALUE, 0, "250").hasMore());
+        assertFalse(page(100, Integer.MAX_VALUE, 0, "250").hasMore());
     }
 
     @Test
-    @DisplayName("assets and totalItems round-trip")
+    @DisplayName("assets and pagination round-trip")
     void accessorsRoundTrip() {
         List<SignedWhitelistedAssetEnvelope> assets = new ArrayList<>();
         assets.add(new SignedWhitelistedAssetEnvelope());
+        OffsetPagination pagination = page(20, 0, 1, "1");
 
         WhitelistedAssetResult result = new WhitelistedAssetResult();
         result.setAssets(assets);
-        result.setTotalItems(1L);
+        result.setPagination(pagination);
 
         assertEquals(1, result.getAssets().size());
-        assertEquals(1L, result.getTotalItems());
+        assertSame(pagination, result.getPagination());
+        assertEquals(1L, result.getPagination().getTotalItems());
     }
 
     @Test
     @DisplayName("an empty page reports no more results")
     void emptyPageHasNoMore() {
-        WhitelistedAssetResult result = new WhitelistedAssetResult();
-        result.setTotalItems(0L);
-
-        assertFalse(result.hasMore(0, 50));
+        OffsetPagination p = page(50, 0, 0, null);
+        assertFalse(p.hasMore());
+        assertEquals(0L, p.getTotalItems());
     }
 }

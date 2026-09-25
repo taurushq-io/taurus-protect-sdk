@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordGetERCTokenMetadataReply{}
 // TgvalidatordGetERCTokenMetadataReply struct for TgvalidatordGetERCTokenMetadataReply
 type TgvalidatordGetERCTokenMetadataReply struct {
 	Result *TgvalidatordERCTokenMetadata `json:"result,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetERCTokenMetadataReply TgvalidatordGetERCTokenMetadataReply
 
 // NewTgvalidatordGetERCTokenMetadataReply instantiates a new TgvalidatordGetERCTokenMetadataReply object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordGetERCTokenMetadataReply) ToMap() (map[string]interface{}, e
 	if !IsNil(o.Result) {
 		toSerialize["result"] = o.Result
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetERCTokenMetadataReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetERCTokenMetadataReply := _TgvalidatordGetERCTokenMetadataReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetERCTokenMetadataReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetERCTokenMetadataReply(varTgvalidatordGetERCTokenMetadataReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "result")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetERCTokenMetadataReply struct {

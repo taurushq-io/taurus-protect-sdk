@@ -6,58 +6,50 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from taurus_protect._internal.openapi import FeePayersApi
+from taurus_protect.models.pagination import Pagination
 from taurus_protect.services.fee_payer_service import FeePayerService
+from tests.unit.transport_stub import StubTransport, api_client
 
 
 class TestFeePayerServiceList:
-    """Tests for FeePayerService.list()."""
+    """FeePayerService.list over the real generated client."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        fee_payers_api = MagicMock()
-        service = FeePayerService(
-            api_client=api_client, fee_payers_api=fee_payers_api
-        )
-        return service, fee_payers_api
+    def _service(self) -> FeePayerService:
+        ac = api_client()
+        return FeePayerService(ac, FeePayersApi(ac))
 
-    def test_raises_on_invalid_limit(self) -> None:
-        service, _ = self._make_service()
-        with pytest.raises(ValueError, match="limit must be positive"):
-            service.list(limit=0)
-
-    def test_raises_on_negative_offset(self) -> None:
-        service, _ = self._make_service()
-        with pytest.raises(ValueError, match="offset cannot be negative"):
-            service.list(offset=-1)
-
-    def test_returns_empty_when_no_results(self) -> None:
-        service, api = self._make_service()
-        resp = MagicMock()
-        resp.result = None
-        resp.fee_payers = None
-        api.fee_payer_service_get_fee_payers.return_value = resp
-
-        fee_payers, pagination = service.list()
+    def test_empty_page_still_carries_pagination(self) -> None:
+        """An empty page used to return None pagination."""
+        with StubTransport({}):
+            fee_payers, pagination = self._service().list()
 
         assert fee_payers == []
-        assert pagination is None
+        assert pagination == Pagination(limit=20, offset=0)
 
-    def test_passes_blockchain_filter(self) -> None:
-        service, api = self._make_service()
-        resp = MagicMock()
-        resp.result = None
-        resp.fee_payers = None
-        api.fee_payer_service_get_fee_payers.return_value = resp
+    def test_filters_and_page_window_reach_the_wire(self) -> None:
+        with StubTransport(
+            {"result": [{"id": "fp1", "blockchain": "SOL"}], "totalItems": "31"}
+        ) as transport:
+            fee_payers, pagination = self._service().list(
+                limit=10, offset=30, blockchain="SOL", network="mainnet"
+            )
 
-        service.list(blockchain="SOL", network="mainnet")
-
-        api.fee_payer_service_get_fee_payers.assert_called_once_with(
-            limit="50",
-            offset="0",
-            ids=None,
-            blockchain="SOL",
-            network="mainnet",
+        assert [fp.id for fp in fee_payers] == ["fp1"]
+        assert pagination == Pagination(
+            limit=10, offset=30, total_items=31, next_offset=31, has_more=False
         )
+        assert transport.last.query == sorted(
+            [("limit", "10"), ("offset", "30"), ("blockchain", "SOL"), ("network", "mainnet")]
+        )
+
+    @pytest.mark.parametrize("kwargs,name", [({"limit": 101}, "limit"), ({"offset": -1}, "offset")])
+    def test_invalid_page_window_sends_nothing(self, kwargs: dict, name: str) -> None:
+        with StubTransport() as transport:
+            with pytest.raises(ValueError, match=name):
+                self._service().list(**kwargs)
+
+        assert transport.requests == []
 
 
 class TestFeePayerServiceGet:
@@ -66,9 +58,7 @@ class TestFeePayerServiceGet:
     def _make_service(self) -> tuple:
         api_client = MagicMock()
         fee_payers_api = MagicMock()
-        service = FeePayerService(
-            api_client=api_client, fee_payers_api=fee_payers_api
-        )
+        service = FeePayerService(api_client=api_client, fee_payers_api=fee_payers_api)
         return service, fee_payers_api
 
     def test_raises_on_empty_id(self) -> None:

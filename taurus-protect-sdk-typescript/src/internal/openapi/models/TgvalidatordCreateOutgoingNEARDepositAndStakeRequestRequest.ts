@@ -55,7 +55,16 @@ export interface TgvalidatordCreateOutgoingNEARDepositAndStakeRequestRequest {
      * @memberof TgvalidatordCreateOutgoingNEARDepositAndStakeRequestRequest
      */
     transactionReference?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingNEARDepositAndStakeRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingNEARDepositAndStakeRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'toValidatorAddressId', 'amount', 'feeLimit', 'comment', 'transactionReference']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingNEARDepositAndStakeRequestRequest interface.
@@ -75,7 +84,7 @@ export function TgvalidatordCreateOutgoingNEARDepositAndStakeRequestRequestFromJ
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingNEARDepositAndStakeRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'toValidatorAddressId': json['toValidatorAddressId'],
@@ -84,6 +93,16 @@ export function TgvalidatordCreateOutgoingNEARDepositAndStakeRequestRequestFromJ
         'comment': json['comment'] == null ? undefined : json['comment'],
         'transactionReference': json['transactionReference'] == null ? undefined : json['transactionReference'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingNEARDepositAndStakeRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingNEARDepositAndStakeRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingNEARDepositAndStakeRequestRequest {
@@ -103,6 +122,7 @@ export function TgvalidatordCreateOutgoingNEARDepositAndStakeRequestRequestFromJ
         'feeLimit': value['feeLimit'],
         'comment': value['comment'],
         'transactionReference': value['transactionReference'],
+        ...value['additionalProperties'],
     };
 }
 

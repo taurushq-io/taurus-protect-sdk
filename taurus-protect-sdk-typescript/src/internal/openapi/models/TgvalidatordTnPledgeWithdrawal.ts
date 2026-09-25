@@ -105,7 +105,16 @@ export interface TgvalidatordTnPledgeWithdrawal {
      * @memberof TgvalidatordTnPledgeWithdrawal
      */
     externalReferenceID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTnPledgeWithdrawal
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTnPledgeWithdrawalWireKeys: ReadonlySet<string> = new Set(['id', 'pledgeID', 'destinationSharedAddressID', 'amount', 'status', 'txHash', 'txID', 'requestID', 'txBlockNumber', 'trails', 'createdAt', 'initiatorParticipantID', 'externalReferenceID']);
 
 /**
  * Check if a given object implements the TgvalidatordTnPledgeWithdrawal interface.
@@ -122,7 +131,7 @@ export function TgvalidatordTnPledgeWithdrawalFromJSONTyped(json: any, ignoreDis
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTnPledgeWithdrawal = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'pledgeID': json['pledgeID'] == null ? undefined : json['pledgeID'],
@@ -138,6 +147,16 @@ export function TgvalidatordTnPledgeWithdrawalFromJSONTyped(json: any, ignoreDis
         'initiatorParticipantID': json['initiatorParticipantID'] == null ? undefined : json['initiatorParticipantID'],
         'externalReferenceID': json['externalReferenceID'] == null ? undefined : json['externalReferenceID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTnPledgeWithdrawalWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTnPledgeWithdrawalToJSON(json: any): TgvalidatordTnPledgeWithdrawal {
@@ -164,6 +183,7 @@ export function TgvalidatordTnPledgeWithdrawalFromJSONTyped(json: any, ignoreDis
         'createdAt': value['createdAt'] == null ? undefined : ((value['createdAt']).toISOString()),
         'initiatorParticipantID': value['initiatorParticipantID'],
         'externalReferenceID': value['externalReferenceID'],
+        ...value['additionalProperties'],
     };
 }
 

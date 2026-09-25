@@ -9,68 +9,26 @@ import java.util.List;
  * to support cursor-based navigation.
  *
  * @see StakeAccount
- * @see ApiResponseCursor
  */
-public class StakeAccountResult {
+public class StakeAccountResult extends CursorPagedResult {
 
     private List<StakeAccount> stakeAccounts;
-    private ApiResponseCursor cursor;
 
     /**
-     * Gets the list of stake accounts.
+     * Gets the stake accounts of this page.
      *
-     * @return the stake accounts
+     * @return the stakeAccounts
      */
     public List<StakeAccount> getStakeAccounts() {
         return stakeAccounts;
     }
 
     /**
-     * Sets the list of stake accounts.
+     * Sets the stake accounts of this page.
      *
-     * @param stakeAccounts the stake accounts
+     * @param stakeAccounts the stakeAccounts
      */
-    public void setStakeAccounts(List<StakeAccount> stakeAccounts) {
+    public void setStakeAccounts(final List<StakeAccount> stakeAccounts) {
         this.stakeAccounts = stakeAccounts;
-    }
-
-    /**
-     * Gets the pagination cursor.
-     *
-     * @return the cursor
-     */
-    public ApiResponseCursor getCursor() {
-        return cursor;
-    }
-
-    /**
-     * Sets the pagination cursor.
-     *
-     * @param cursor the cursor
-     */
-    public void setCursor(ApiResponseCursor cursor) {
-        this.cursor = cursor;
-    }
-
-    /**
-     * Checks if there are more results available.
-     *
-     * @return true if more results exist
-     */
-    public boolean hasNext() {
-        return cursor != null && cursor.hasNext();
-    }
-
-    /**
-     * Creates a cursor for fetching the next page.
-     *
-     * @param pageSize the page size for the next request
-     * @return a cursor for the next page, or null if no more pages
-     */
-    public ApiRequestCursor nextCursor(int pageSize) {
-        if (!hasNext()) {
-            return null;
-        }
-        return new ApiRequestCursor(cursor.getCurrentPage(), PageRequest.NEXT, pageSize);
     }
 }

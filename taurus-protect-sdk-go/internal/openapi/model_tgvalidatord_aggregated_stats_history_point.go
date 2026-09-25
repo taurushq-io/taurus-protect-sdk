@@ -22,7 +22,10 @@ var _ MappedNullable = &TgvalidatordAggregatedStatsHistoryPoint{}
 type TgvalidatordAggregatedStatsHistoryPoint struct {
 	PointDate *time.Time `json:"pointDate,omitempty"`
 	StatsData *TgvalidatordAggregatedStatsData `json:"statsData,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordAggregatedStatsHistoryPoint TgvalidatordAggregatedStatsHistoryPoint
 
 // NewTgvalidatordAggregatedStatsHistoryPoint instantiates a new TgvalidatordAggregatedStatsHistoryPoint object
 // This constructor will assign default values to properties that have it defined,
@@ -121,7 +124,34 @@ func (o TgvalidatordAggregatedStatsHistoryPoint) ToMap() (map[string]interface{}
 	if !IsNil(o.StatsData) {
 		toSerialize["statsData"] = o.StatsData
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordAggregatedStatsHistoryPoint) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordAggregatedStatsHistoryPoint := _TgvalidatordAggregatedStatsHistoryPoint{}
+
+	err = json.Unmarshal(data, &varTgvalidatordAggregatedStatsHistoryPoint)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordAggregatedStatsHistoryPoint(varTgvalidatordAggregatedStatsHistoryPoint)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "pointDate")
+		delete(additionalProperties, "statsData")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordAggregatedStatsHistoryPoint struct {

@@ -22,7 +22,10 @@ type TgvalidatordHashRulesContainer struct {
 	Hash *string `json:"hash,omitempty"`
 	RulesContainer *string `json:"rulesContainer,omitempty"`
 	RulesSignatures *string `json:"rulesSignatures,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordHashRulesContainer TgvalidatordHashRulesContainer
 
 // NewTgvalidatordHashRulesContainer instantiates a new TgvalidatordHashRulesContainer object
 // This constructor will assign default values to properties that have it defined,
@@ -156,7 +159,35 @@ func (o TgvalidatordHashRulesContainer) ToMap() (map[string]interface{}, error) 
 	if !IsNil(o.RulesSignatures) {
 		toSerialize["rulesSignatures"] = o.RulesSignatures
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordHashRulesContainer) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordHashRulesContainer := _TgvalidatordHashRulesContainer{}
+
+	err = json.Unmarshal(data, &varTgvalidatordHashRulesContainer)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordHashRulesContainer(varTgvalidatordHashRulesContainer)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "hash")
+		delete(additionalProperties, "rulesContainer")
+		delete(additionalProperties, "rulesSignatures")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordHashRulesContainer struct {

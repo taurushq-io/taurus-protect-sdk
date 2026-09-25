@@ -25,7 +25,16 @@ export interface TgvalidatordApproveMultiFactorSignatureReply {
      * @memberof TgvalidatordApproveMultiFactorSignatureReply
      */
     signatures: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordApproveMultiFactorSignatureReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordApproveMultiFactorSignatureReplyWireKeys: ReadonlySet<string> = new Set(['signatures']);
 
 /**
  * Check if a given object implements the TgvalidatordApproveMultiFactorSignatureReply interface.
@@ -43,10 +52,20 @@ export function TgvalidatordApproveMultiFactorSignatureReplyFromJSONTyped(json: 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordApproveMultiFactorSignatureReply = {
         
         'signatures': json['signatures'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordApproveMultiFactorSignatureReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordApproveMultiFactorSignatureReplyToJSON(json: any): TgvalidatordApproveMultiFactorSignatureReply {
@@ -61,6 +80,7 @@ export function TgvalidatordApproveMultiFactorSignatureReplyFromJSONTyped(json: 
     return {
         
         'signatures': value['signatures'],
+        ...value['additionalProperties'],
     };
 }
 

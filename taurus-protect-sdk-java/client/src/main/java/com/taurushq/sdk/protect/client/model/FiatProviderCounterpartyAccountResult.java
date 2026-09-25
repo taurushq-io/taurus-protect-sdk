@@ -7,24 +7,25 @@ import java.util.List;
  *
  * @see FiatService
  */
-public class FiatProviderCounterpartyAccountResult {
+public class FiatProviderCounterpartyAccountResult extends CursorPagedResult {
 
     private List<FiatProviderCounterpartyAccount> accounts;
-    private ApiResponseCursor cursor;
 
+    /**
+     * Gets the fiat provider counterparty accounts of this page.
+     *
+     * @return the accounts
+     */
     public List<FiatProviderCounterpartyAccount> getAccounts() {
         return accounts;
     }
 
+    /**
+     * Sets the fiat provider counterparty accounts of this page.
+     *
+     * @param accounts the accounts
+     */
     public void setAccounts(final List<FiatProviderCounterpartyAccount> accounts) {
         this.accounts = accounts;
-    }
-
-    public ApiResponseCursor getCursor() {
-        return cursor;
-    }
-
-    public void setCursor(final ApiResponseCursor cursor) {
-        this.cursor = cursor;
     }
 }

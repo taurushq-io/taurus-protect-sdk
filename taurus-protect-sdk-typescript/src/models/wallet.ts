@@ -3,6 +3,7 @@
  */
 
 import type { Currency } from './currency';
+import type { OffsetPageOptions } from './pagination';
 
 /**
  * Wallet status enum.
@@ -162,13 +163,10 @@ export interface CreateWalletRequest {
 }
 
 /**
- * Options for listing wallets.
+ * Options for listing wallets. An offset list: `limit` 1-100 (default 20) and
+ * `offset` (a previous page's `pagination.nextOffset`).
  */
-export interface ListWalletsOptions {
-  /** Maximum number of wallets to return (default: 50) */
-  readonly limit?: number;
-  /** Number of wallets to skip for pagination (default: 0) */
-  readonly offset?: number;
+export interface ListWalletsOptions extends OffsetPageOptions {
   /** Filter by currency ID or symbol */
   readonly currency?: string;
   /** Filter by currencies (array of IDs or symbols) */

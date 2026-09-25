@@ -23,7 +23,10 @@ type TgvalidatordTnParticipantDetails struct {
 	AttributesSpecifications []TgvalidatordTnParticipantAttributeSpecification `json:"attributesSpecifications,omitempty"`
 	// List of supported blockchains and networks for the participant. This is used to determine which blockchains and networks the participant can interact with.
 	SupportedBlockchains []TgvalidatordBlockchainEntity `json:"supportedBlockchains,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTnParticipantDetails TgvalidatordTnParticipantDetails
 
 // NewTgvalidatordTnParticipantDetails instantiates a new TgvalidatordTnParticipantDetails object
 // This constructor will assign default values to properties that have it defined,
@@ -157,7 +160,35 @@ func (o TgvalidatordTnParticipantDetails) ToMap() (map[string]interface{}, error
 	if !IsNil(o.SupportedBlockchains) {
 		toSerialize["supportedBlockchains"] = o.SupportedBlockchains
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTnParticipantDetails) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTnParticipantDetails := _TgvalidatordTnParticipantDetails{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTnParticipantDetails)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTnParticipantDetails(varTgvalidatordTnParticipantDetails)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "contactPersons")
+		delete(additionalProperties, "attributesSpecifications")
+		delete(additionalProperties, "supportedBlockchains")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTnParticipantDetails struct {

@@ -17,14 +17,15 @@ from taurus_protect.errors import APIError, IntegrityError, WhitelistError
 from taurus_protect.helpers.signature_verifier import verify_governance_rules
 from taurus_protect.mappers.governance_rules import rules_container_from_base64
 from taurus_protect.models.governance_rules import (
-    ExcludedRuleset,
     DecodedRulesContainer,
+    ExcludedRuleset,
     GovernanceRules,
     GovernanceRulesHistoryResult,
     RuleUser,
     RuleUserSignature,
     SuperAdminPublicKey,
 )
+from taurus_protect.models.pagination import cursor_page, resolve_page_size
 from taurus_protect.services._base import BaseService
 
 if TYPE_CHECKING:
@@ -406,29 +407,29 @@ class GovernanceRuleService(BaseService):
             raise self._handle_error(e) from e
 
     def get_rules_history(
-        self, page_size: int = 50, cursor: Optional[str] = None
+        self, page_size: Optional[int] = None, cursor: Optional[str] = None
     ) -> GovernanceRulesHistoryResult:
         """
-        Get the history of governance rules with cursor-based pagination.
+        Get the history of governance rules, one page at a time.
 
         Args:
-            page_size: Maximum number of rules to return per page (default 50).
-            cursor: Opaque pagination cursor from a previous call (None for first page).
+            page_size: Page size (default 20, max 100).
+            cursor: ``result.page.next_cursor`` from the previous page, to continue.
 
         Returns:
-            A GovernanceRulesHistoryResult with rules, cursor, and total_items.
+            A GovernanceRulesHistoryResult with the verified rules, the entries withheld,
+            and the page (its total reduced by the exclusions).
 
         Raises:
             APIError: If the API call fails.
-            ValueError: If page_size is not positive.
+            ValueError: If page_size is invalid.
         """
-        if page_size <= 0:
-            raise ValueError("page_size must be positive")
+        size = resolve_page_size(page_size)
 
         try:
             reply = self._api.rule_service_get_rules_history(
-                limit=str(page_size),
-                cursor=cursor,
+                limit=str(size),
+                cursor=cursor or None,
             )
 
             # Every historical ruleset is a past ENFORCED document, so each is verified.
@@ -452,31 +453,18 @@ class GovernanceRuleService(BaseService):
                             ExcludedRuleset(creation_date=entry.creation_date, reason=exc.message)
                         )
 
-            # Extract cursor (may be bytes or str from OpenAPI)
-            raw_cursor = getattr(reply, "cursor", None)
-            next_cursor: Optional[str] = None
-            if raw_cursor:
-                next_cursor = (
-                    raw_cursor.decode("utf-8") if isinstance(raw_cursor, bytes) else raw_cursor
-                )
-
             # Reduced by the exclusions: the server counts rows it returned, the caller
             # receives only those that verified.
-            # total_items is a STRING on this model (Go carries an int64), so the
-            # reduced value is re-stringified rather than changing the public type.
-            total = getattr(reply, "total_items", None) or None
-            if total is not None and excluded:
-                try:
-                    total = str(max(0, int(total) - len(excluded)))
-                except ValueError:
-                    # A non-numeric total is the server's to explain; pass it through
-                    # rather than inventing a count.
-                    pass
-
+            page = cursor_page(
+                size,
+                token=reply.cursor,
+                total=reply.total_items,
+                has_total=True,
+                excluded=len(excluded),
+            )
             return GovernanceRulesHistoryResult(
                 rules=rules_list,
-                cursor=next_cursor,
-                total_items=total,
+                page=page,
                 excluded_unverified=excluded,
             )
         except Exception as e:

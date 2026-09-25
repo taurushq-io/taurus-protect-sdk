@@ -31,7 +31,16 @@ export interface TgvalidatordScimName {
      * @memberof TgvalidatordScimName
      */
     givenName?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordScimName
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordScimNameWireKeys: ReadonlySet<string> = new Set(['familyName', 'givenName']);
 
 /**
  * Check if a given object implements the TgvalidatordScimName interface.
@@ -48,11 +57,21 @@ export function TgvalidatordScimNameFromJSONTyped(json: any, ignoreDiscriminator
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordScimName = {
         
         'familyName': json['familyName'] == null ? undefined : json['familyName'],
         'givenName': json['givenName'] == null ? undefined : json['givenName'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordScimNameWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordScimNameToJSON(json: any): TgvalidatordScimName {
@@ -68,6 +87,7 @@ export function TgvalidatordScimNameFromJSONTyped(json: any, ignoreDiscriminator
         
         'familyName': value['familyName'],
         'givenName': value['givenName'],
+        ...value['additionalProperties'],
     };
 }
 

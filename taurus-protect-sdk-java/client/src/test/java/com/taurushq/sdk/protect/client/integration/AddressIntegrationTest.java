@@ -3,6 +3,7 @@ package com.taurushq.sdk.protect.client.integration;
 import com.taurushq.sdk.protect.client.ProtectClient;
 import com.taurushq.sdk.protect.client.testutil.TestHelper;
 import com.taurushq.sdk.protect.client.model.Address;
+import com.taurushq.sdk.protect.client.model.AddressResult;
 import com.taurushq.sdk.protect.client.model.ApiException;
 import com.taurushq.sdk.protect.client.model.Wallet;
 import org.junit.jupiter.api.AfterAll;
@@ -39,14 +40,14 @@ class AddressIntegrationTest {
     @Test
     void getAddress() throws ApiException {
         // Get first wallet to find an address
-        List<Wallet> wallets = client.getWalletService().getWallets(1, 0);
+        List<Wallet> wallets = client.getWalletService().getWallets(1, 0).getWallets();
         if (wallets.isEmpty()) {
             System.out.println("No wallets available for testing");
             return;
         }
 
         // Get addresses from the wallet
-        List<Address> addresses = client.getAddressService().getAddresses(wallets.get(0).getId(), 1, 0);
+        List<Address> addresses = client.getAddressService().getAddresses(wallets.get(0).getId(), 1, 0).getAddresses();
         if (addresses.isEmpty()) {
             System.out.println("No addresses available for testing");
             return;
@@ -68,14 +69,14 @@ class AddressIntegrationTest {
     @Test
     void listAddresses() throws ApiException {
         // Get first wallet
-        List<Wallet> wallets = client.getWalletService().getWallets(1, 0);
+        List<Wallet> wallets = client.getWalletService().getWallets(1, 0).getWallets();
         if (wallets.isEmpty()) {
             System.out.println("No wallets available for testing");
             return;
         }
 
         long walletId = wallets.get(0).getId();
-        List<Address> addresses = client.getAddressService().getAddresses(walletId, 10, 0);
+        List<Address> addresses = client.getAddressService().getAddresses(walletId, 10, 0).getAddresses();
 
         System.out.println("Found " + addresses.size() + " addresses for wallet " + walletId);
         for (Address a : addresses) {
@@ -88,7 +89,7 @@ class AddressIntegrationTest {
     @Test
     void paginateAddresses() throws ApiException {
         // Get first wallet
-        List<Wallet> wallets = client.getWalletService().getWallets(1, 0);
+        List<Wallet> wallets = client.getWalletService().getWallets(1, 0).getWallets();
         if (wallets.isEmpty()) {
             System.out.println("No wallets available for testing");
             return;
@@ -96,15 +97,15 @@ class AddressIntegrationTest {
 
         long walletId = wallets.get(0).getId();
         int limit = 10;
-        int offset = 0;
+        long offset = 0;
         List<Address> allAddresses = new ArrayList<>();
 
-        List<Address> addresses;
+        AddressResult page;
         do {
-            addresses = client.getAddressService().getAddresses(walletId, limit, offset);
-            allAddresses.addAll(addresses);
-            offset += limit;
-        } while (!addresses.isEmpty() && allAddresses.size() < 100);
+            page = client.getAddressService().getAddresses(walletId, limit, offset);
+            allAddresses.addAll(page.getAddresses());
+            offset = page.getPagination().getNextOffset();
+        } while (page.getPagination().hasMore() && allAddresses.size() < 100);
 
         System.out.println("Found " + allAddresses.size() + " total addresses for wallet " + walletId);
 

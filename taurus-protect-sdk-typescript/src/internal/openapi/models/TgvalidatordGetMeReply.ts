@@ -33,7 +33,16 @@ export interface TgvalidatordGetMeReply {
      * @memberof TgvalidatordGetMeReply
      */
     result?: TgvalidatordInternalUser;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetMeReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetMeReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetMeReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetMeReplyFromJSONTyped(json: any, ignoreDiscriminat
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetMeReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordInternalUserFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetMeReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetMeReplyToJSON(json: any): TgvalidatordGetMeReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetMeReplyFromJSONTyped(json: any, ignoreDiscriminat
     return {
         
         'result': TgvalidatordInternalUserToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

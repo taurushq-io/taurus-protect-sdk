@@ -15,6 +15,7 @@ import com.taurushq.sdk.protect.client.service.ChangeService;
 import com.taurushq.sdk.protect.client.service.ConfigService;
 import com.taurushq.sdk.protect.client.service.ContractWhitelistingService;
 import com.taurushq.sdk.protect.client.service.CurrencyService;
+import com.taurushq.sdk.protect.client.service.EarnService;
 import com.taurushq.sdk.protect.client.service.ExchangeService;
 import com.taurushq.sdk.protect.client.service.FeePayerService;
 import com.taurushq.sdk.protect.client.service.FeeService;
@@ -124,6 +125,7 @@ public final class ProtectClient implements AutoCloseable {
     private final WebhookCallsService webhookCallsService;
     private final FiatService fiatService;
     private final AirGapService airGapService;
+    private final EarnService earnService;
     private final TaurusNetworkClient taurusNetworkClient;
 
 
@@ -189,6 +191,7 @@ public final class ProtectClient implements AutoCloseable {
         this.webhookCallsService = new WebhookCallsService(openApiClient, apiExceptionMapper);
         this.fiatService = new FiatService(openApiClient, apiExceptionMapper);
         this.airGapService = new AirGapService(openApiClient, apiExceptionMapper);
+        this.earnService = new EarnService(openApiClient, apiExceptionMapper);
         this.taurusNetworkClient = new TaurusNetworkClient(
                 new TaurusNetworkParticipantService(openApiClient, apiExceptionMapper),
                 new TaurusNetworkPledgeService(openApiClient, apiExceptionMapper),
@@ -204,8 +207,10 @@ public final class ProtectClient implements AutoCloseable {
         this.addressService = new AddressService(openApiClient, apiExceptionMapper, rulesContainerCache);
         // Prices verify against the PRICEUPDATER keys in the same container.
         this.priceService = new PriceService(openApiClient, apiExceptionMapper, rulesContainerCache);
-        // Asset addresses are the same entity, so they verify against the same cache.
-        this.assetService = new AssetService(openApiClient, apiExceptionMapper, rulesContainerCache);
+        // Asset addresses are the same entity, so they verify against the same cache; the
+        // unsigned v2 asset holders are confirmed through the two verified readers.
+        this.assetService = new AssetService(openApiClient, apiExceptionMapper, rulesContainerCache,
+                addressService, whitelistedAddressService);
     }
 
     /**
@@ -719,6 +724,15 @@ public final class ProtectClient implements AutoCloseable {
      */
     public AirGapService getAirGapService() {
         return airGapService;
+    }
+
+    /**
+     * Gets the earn service for listing the rewards addresses earn.
+     *
+     * @return the earn service
+     */
+    public EarnService getEarnService() {
+        return earnService;
     }
 
     /**

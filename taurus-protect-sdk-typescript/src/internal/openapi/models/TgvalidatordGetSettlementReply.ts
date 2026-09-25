@@ -33,7 +33,16 @@ export interface TgvalidatordGetSettlementReply {
      * @memberof TgvalidatordGetSettlementReply
      */
     result?: TgvalidatordTnSettlement;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetSettlementReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetSettlementReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetSettlementReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetSettlementReplyFromJSONTyped(json: any, ignoreDis
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetSettlementReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordTnSettlementFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetSettlementReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetSettlementReplyToJSON(json: any): TgvalidatordGetSettlementReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetSettlementReplyFromJSONTyped(json: any, ignoreDis
     return {
         
         'result': TgvalidatordTnSettlementToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

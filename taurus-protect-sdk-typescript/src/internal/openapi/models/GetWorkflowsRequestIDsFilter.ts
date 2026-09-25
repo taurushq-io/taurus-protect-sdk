@@ -25,7 +25,16 @@ export interface GetWorkflowsRequestIDsFilter {
      * @memberof GetWorkflowsRequestIDsFilter
      */
     values?: Array<string>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof GetWorkflowsRequestIDsFilter
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const GetWorkflowsRequestIDsFilterWireKeys: ReadonlySet<string> = new Set(['values']);
 
 /**
  * Check if a given object implements the GetWorkflowsRequestIDsFilter interface.
@@ -42,10 +51,20 @@ export function GetWorkflowsRequestIDsFilterFromJSONTyped(json: any, ignoreDiscr
     if (json == null) {
         return json;
     }
-    return {
+    const result: GetWorkflowsRequestIDsFilter = {
         
         'values': json['values'] == null ? undefined : json['values'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!GetWorkflowsRequestIDsFilterWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function GetWorkflowsRequestIDsFilterToJSON(json: any): GetWorkflowsRequestIDsFilter {
@@ -60,6 +79,7 @@ export function GetWorkflowsRequestIDsFilterFromJSONTyped(json: any, ignoreDiscr
     return {
         
         'values': value['values'],
+        ...value['additionalProperties'],
     };
 }
 

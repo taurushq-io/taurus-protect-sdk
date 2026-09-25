@@ -36,4 +36,14 @@ class GetICPNeuronInfoReplyNeuronState(str, Enum):
         """Create an instance of GetICPNeuronInfoReplyNeuronState from a JSON string"""
         return cls(json.loads(json_str))
 
+    @classmethod
+    def _missing_(cls, value):
+        """Keep a value this client does not know, raw, rather than failing the decode."""
+        if not isinstance(value, str):
+            return None
+        member = str.__new__(cls, value)
+        member._name_ = "UNKNOWN"
+        member._value_ = value
+        return member
+
 

@@ -2,8 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
-	"strconv"
 
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/internal/openapi"
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/mapper"
@@ -24,26 +22,26 @@ func NewFeePayerService(client *openapi.APIClient) *FeePayerService {
 	}
 }
 
-// ListFeePayers retrieves a list of fee payers with optional filtering.
+// ListFeePayers retrieves one page of fee payers. Result.Pagination is never nil; continue with
+// its NextOffset until HasMore is false.
 func (s *FeePayerService) ListFeePayers(ctx context.Context, opts *model.ListFeePayersOptions) (*model.ListFeePayersResult, error) {
-	req := s.api.FeePayerServiceGetFeePayers(ctx)
+	if opts == nil {
+		opts = &model.ListFeePayersOptions{}
+	}
+	window, err := resolveOffsetWindow(opts.Limit, opts.Offset)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if opts.Limit > 0 {
-			req = req.Limit(fmt.Sprintf("%d", opts.Limit))
-		}
-		if opts.Offset > 0 {
-			req = req.Offset(fmt.Sprintf("%d", opts.Offset))
-		}
-		if len(opts.IDs) > 0 {
-			req = req.Ids(opts.IDs)
-		}
-		if opts.Blockchain != "" {
-			req = req.Blockchain(opts.Blockchain)
-		}
-		if opts.Network != "" {
-			req = req.Network(opts.Network)
-		}
+	req := applyOffsetWindow(s.api.FeePayerServiceGetFeePayers(ctx), window)
+	if len(opts.IDs) > 0 {
+		req = req.Ids(opts.IDs)
+	}
+	if opts.Blockchain != "" {
+		req = req.Blockchain(opts.Blockchain)
+	}
+	if opts.Network != "" {
+		req = req.Network(opts.Network)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -51,18 +49,15 @@ func (s *FeePayerService) ListFeePayers(ctx context.Context, opts *model.ListFee
 		return nil, s.errMapper.MapError(err, httpResp)
 	}
 
-	result := &model.ListFeePayersResult{
-		FeePayers: mapper.FeePayersFromDTO(resp.Result),
+	pagination, err := offsetPagination(rulePlusRows, window, len(resp.Result), 0,
+		offsetReply{TotalItems: resp.TotalItems})
+	if err != nil {
+		return nil, err
 	}
-
-	// Parse total items
-	if resp.TotalItems != nil {
-		if total, parseErr := strconv.ParseInt(*resp.TotalItems, 10, 64); parseErr == nil {
-			result.TotalItems = total
-		}
-	}
-
-	return result, nil
+	return &model.ListFeePayersResult{
+		FeePayers:  mapper.FeePayersFromDTO(resp.Result),
+		Pagination: pagination,
+	}, nil
 }
 
 // GetFeePayer retrieves a single fee payer by ID.

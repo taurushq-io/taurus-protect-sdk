@@ -37,7 +37,16 @@ export interface TgvalidatordRequestBundleDetailsSource {
      * @memberof TgvalidatordRequestBundleDetailsSource
      */
     fromAddressId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordRequestBundleDetailsSource
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordRequestBundleDetailsSourceWireKeys: ReadonlySet<string> = new Set(['totalSources', 'fromWalletId', 'fromAddressId']);
 
 /**
  * Check if a given object implements the TgvalidatordRequestBundleDetailsSource interface.
@@ -54,12 +63,22 @@ export function TgvalidatordRequestBundleDetailsSourceFromJSONTyped(json: any, i
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordRequestBundleDetailsSource = {
         
         'totalSources': json['totalSources'] == null ? undefined : json['totalSources'],
         'fromWalletId': json['fromWalletId'] == null ? undefined : json['fromWalletId'],
         'fromAddressId': json['fromAddressId'] == null ? undefined : json['fromAddressId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordRequestBundleDetailsSourceWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordRequestBundleDetailsSourceToJSON(json: any): TgvalidatordRequestBundleDetailsSource {
@@ -76,6 +95,7 @@ export function TgvalidatordRequestBundleDetailsSourceFromJSONTyped(json: any, i
         'totalSources': value['totalSources'],
         'fromWalletId': value['fromWalletId'],
         'fromAddressId': value['fromAddressId'],
+        ...value['additionalProperties'],
     };
 }
 

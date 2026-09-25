@@ -55,7 +55,16 @@ export interface TgvalidatordCreateOutgoingALGOASAOptInRequestRequest {
      * @memberof TgvalidatordCreateOutgoingALGOASAOptInRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingALGOASAOptInRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingALGOASAOptInRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'assetId', 'feeLimit', 'comment', 'transactionReference', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingALGOASAOptInRequestRequest interface.
@@ -72,7 +81,7 @@ export function TgvalidatordCreateOutgoingALGOASAOptInRequestRequestFromJSONType
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingALGOASAOptInRequestRequest = {
         
         'fromAddressId': json['fromAddressId'] == null ? undefined : json['fromAddressId'],
         'assetId': json['assetId'] == null ? undefined : json['assetId'],
@@ -81,6 +90,16 @@ export function TgvalidatordCreateOutgoingALGOASAOptInRequestRequestFromJSONType
         'transactionReference': json['transactionReference'] == null ? undefined : json['transactionReference'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingALGOASAOptInRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingALGOASAOptInRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingALGOASAOptInRequestRequest {
@@ -100,6 +119,7 @@ export function TgvalidatordCreateOutgoingALGOASAOptInRequestRequestFromJSONType
         'comment': value['comment'],
         'transactionReference': value['transactionReference'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

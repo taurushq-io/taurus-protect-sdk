@@ -33,7 +33,16 @@ export interface TgvalidatordUpdateWhitelistedContractAddressReply {
      * @memberof TgvalidatordUpdateWhitelistedContractAddressReply
      */
     result?: TgvalidatordUpdateWhitelistedContractAddressResult;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordUpdateWhitelistedContractAddressReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordUpdateWhitelistedContractAddressReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordUpdateWhitelistedContractAddressReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordUpdateWhitelistedContractAddressReplyFromJSONTyped(j
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordUpdateWhitelistedContractAddressReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordUpdateWhitelistedContractAddressResultFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordUpdateWhitelistedContractAddressReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordUpdateWhitelistedContractAddressReplyToJSON(json: any): TgvalidatordUpdateWhitelistedContractAddressReply {
@@ -68,6 +87,7 @@ export function TgvalidatordUpdateWhitelistedContractAddressReplyFromJSONTyped(j
     return {
         
         'result': TgvalidatordUpdateWhitelistedContractAddressResultToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

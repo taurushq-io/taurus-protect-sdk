@@ -105,7 +105,16 @@ export interface TgvalidatordLendingAgreementTransaction {
      * @memberof TgvalidatordLendingAgreementTransaction
      */
     updatedAt?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordLendingAgreementTransaction
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordLendingAgreementTransactionWireKeys: ReadonlySet<string> = new Set(['id', 'lendingAgreementID', 'amount', 'currencyID', 'requestID', 'transactionID', 'transactionHash', 'transactionBlockNumber', 'type', 'amountMainUnit', 'currencyInfo', 'createdAt', 'updatedAt']);
 
 /**
  * Check if a given object implements the TgvalidatordLendingAgreementTransaction interface.
@@ -122,7 +131,7 @@ export function TgvalidatordLendingAgreementTransactionFromJSONTyped(json: any, 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordLendingAgreementTransaction = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'lendingAgreementID': json['lendingAgreementID'] == null ? undefined : json['lendingAgreementID'],
@@ -138,6 +147,16 @@ export function TgvalidatordLendingAgreementTransactionFromJSONTyped(json: any, 
         'createdAt': json['createdAt'] == null ? undefined : (new Date(json['createdAt'])),
         'updatedAt': json['updatedAt'] == null ? undefined : (new Date(json['updatedAt'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordLendingAgreementTransactionWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordLendingAgreementTransactionToJSON(json: any): TgvalidatordLendingAgreementTransaction {
@@ -164,6 +183,7 @@ export function TgvalidatordLendingAgreementTransactionFromJSONTyped(json: any, 
         'currencyInfo': TgvalidatordCurrencyToJSON(value['currencyInfo']),
         'createdAt': value['createdAt'] == null ? undefined : ((value['createdAt']).toISOString()),
         'updatedAt': value['updatedAt'] == null ? undefined : ((value['updatedAt']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

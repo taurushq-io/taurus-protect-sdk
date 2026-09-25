@@ -43,7 +43,16 @@ export interface TaurusNetworkServiceWithdrawPledgeBody {
      * @memberof TaurusNetworkServiceWithdrawPledgeBody
      */
     externalReferenceID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TaurusNetworkServiceWithdrawPledgeBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TaurusNetworkServiceWithdrawPledgeBodyWireKeys: ReadonlySet<string> = new Set(['destinationSharedAddressID', 'amount', 'destinationInternalAddressID', 'externalReferenceID']);
 
 /**
  * Check if a given object implements the TaurusNetworkServiceWithdrawPledgeBody interface.
@@ -60,13 +69,23 @@ export function TaurusNetworkServiceWithdrawPledgeBodyFromJSONTyped(json: any, i
     if (json == null) {
         return json;
     }
-    return {
+    const result: TaurusNetworkServiceWithdrawPledgeBody = {
         
         'destinationSharedAddressID': json['destinationSharedAddressID'] == null ? undefined : json['destinationSharedAddressID'],
         'amount': json['amount'] == null ? undefined : json['amount'],
         'destinationInternalAddressID': json['destinationInternalAddressID'] == null ? undefined : json['destinationInternalAddressID'],
         'externalReferenceID': json['externalReferenceID'] == null ? undefined : json['externalReferenceID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TaurusNetworkServiceWithdrawPledgeBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TaurusNetworkServiceWithdrawPledgeBodyToJSON(json: any): TaurusNetworkServiceWithdrawPledgeBody {
@@ -84,6 +103,7 @@ export function TaurusNetworkServiceWithdrawPledgeBodyFromJSONTyped(json: any, i
         'amount': value['amount'],
         'destinationInternalAddressID': value['destinationInternalAddressID'],
         'externalReferenceID': value['externalReferenceID'],
+        ...value['additionalProperties'],
     };
 }
 

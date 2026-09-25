@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordApproveChangesRequest{}
 type TgvalidatordApproveChangesRequest struct {
 	// list of ids of changes to be approved. List of changes for approval can be retrieved with this [endpoint](https://docs.taurushq.com/protect-capital/reference/changeservice_getchangesforapproval).
 	Ids []string `json:"ids,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordApproveChangesRequest TgvalidatordApproveChangesRequest
 
 // NewTgvalidatordApproveChangesRequest instantiates a new TgvalidatordApproveChangesRequest object
 // This constructor will assign default values to properties that have it defined,
@@ -85,7 +88,33 @@ func (o TgvalidatordApproveChangesRequest) ToMap() (map[string]interface{}, erro
 	if !IsNil(o.Ids) {
 		toSerialize["ids"] = o.Ids
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordApproveChangesRequest) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordApproveChangesRequest := _TgvalidatordApproveChangesRequest{}
+
+	err = json.Unmarshal(data, &varTgvalidatordApproveChangesRequest)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordApproveChangesRequest(varTgvalidatordApproveChangesRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "ids")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordApproveChangesRequest struct {

@@ -37,7 +37,16 @@ export interface TgvalidatordBTCSignMessageReply {
      * @memberof TgvalidatordBTCSignMessageReply
      */
     signature?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordBTCSignMessageReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordBTCSignMessageReplyWireKeys: ReadonlySet<string> = new Set(['address', 'message', 'signature']);
 
 /**
  * Check if a given object implements the TgvalidatordBTCSignMessageReply interface.
@@ -54,12 +63,22 @@ export function TgvalidatordBTCSignMessageReplyFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordBTCSignMessageReply = {
         
         'address': json['address'] == null ? undefined : json['address'],
         'message': json['message'] == null ? undefined : json['message'],
         'signature': json['signature'] == null ? undefined : json['signature'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordBTCSignMessageReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordBTCSignMessageReplyToJSON(json: any): TgvalidatordBTCSignMessageReply {
@@ -76,6 +95,7 @@ export function TgvalidatordBTCSignMessageReplyFromJSONTyped(json: any, ignoreDi
         'address': value['address'],
         'message': value['message'],
         'signature': value['signature'],
+        ...value['additionalProperties'],
     };
 }
 

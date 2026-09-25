@@ -8,6 +8,7 @@ import {
   APIError,
   ConfigurationError,
   IntegrityError,
+  PaginationError,
   RequestMetadataError,
   ServerError,
   WhitelistError,
@@ -74,6 +75,8 @@ async function readErrorBody(response: Response): Promise<ErrorBody | undefined>
  * - `RequestMetadataError` (and its `UnverifiedMetadataError` subclass) — metadata
  *   could not be read, or was read before verification cleared it.
  * - `ConfigurationError` — this SDK is misconfigured; retrying cannot fix it.
+ * - `PaginationError` — the reply's paging fields cannot be interpreted; the same
+ *   reply fails the same way on every retry.
  *
  * Relabelling any of them as a 5xx is wrong in two directions. It tells the caller to
  * retry a response the adversary controls, and it disguises a governance
@@ -93,7 +96,8 @@ function isPassThroughSdkError(error: unknown): boolean {
     error instanceof IntegrityError ||
     error instanceof WhitelistError ||
     error instanceof RequestMetadataError ||
-    error instanceof ConfigurationError
+    error instanceof ConfigurationError ||
+    error instanceof PaginationError
   );
 }
 

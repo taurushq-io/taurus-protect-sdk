@@ -52,7 +52,16 @@ export interface TgvalidatordGetSignedWhitelistedAddressEnvelopesReply {
      * @memberof TgvalidatordGetSignedWhitelistedAddressEnvelopesReply
      */
     rulesContainers?: Array<TgvalidatordHashRulesContainer>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetSignedWhitelistedAddressEnvelopesReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetSignedWhitelistedAddressEnvelopesReplyWireKeys: ReadonlySet<string> = new Set(['result', 'totalItems', 'rulesContainers']);
 
 /**
  * Check if a given object implements the TgvalidatordGetSignedWhitelistedAddressEnvelopesReply interface.
@@ -69,12 +78,22 @@ export function TgvalidatordGetSignedWhitelistedAddressEnvelopesReplyFromJSONTyp
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetSignedWhitelistedAddressEnvelopesReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordSignedWhitelistedAddressEnvelopeFromJSON)),
         'totalItems': json['totalItems'] == null ? undefined : json['totalItems'],
         'rulesContainers': json['rulesContainers'] == null ? undefined : ((json['rulesContainers'] as Array<any>).map(TgvalidatordHashRulesContainerFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetSignedWhitelistedAddressEnvelopesReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetSignedWhitelistedAddressEnvelopesReplyToJSON(json: any): TgvalidatordGetSignedWhitelistedAddressEnvelopesReply {
@@ -91,6 +110,7 @@ export function TgvalidatordGetSignedWhitelistedAddressEnvelopesReplyFromJSONTyp
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordSignedWhitelistedAddressEnvelopeToJSON)),
         'totalItems': value['totalItems'],
         'rulesContainers': value['rulesContainers'] == null ? undefined : ((value['rulesContainers'] as Array<any>).map(TgvalidatordHashRulesContainerToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

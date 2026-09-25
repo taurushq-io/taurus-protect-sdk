@@ -11,7 +11,7 @@ A Go SDK for interacting with the Taurus-PROTECT API, providing secure cryptocur
 | [Key Concepts](docs/CONCEPTS.md) | Go model types, exceptions, and domain concepts |
 | [SDK Overview](docs/SDK_OVERVIEW.md) | Architecture, packages, and design patterns |
 | [Authentication](docs/AUTHENTICATION.md) | TPV1 authentication and cryptographic operations |
-| [Services Reference](docs/SERVICES.md) | Complete API documentation for all 43 services |
+| [Services Reference](docs/SERVICES.md) | Complete API documentation for all 44 services |
 | [Usage Examples](docs/USAGE_EXAMPLES.md) | Go code examples and common patterns |
 | [Whitelisted Address Verification](docs/WHITELISTED_ADDRESS_VERIFICATION.md) | 6-step verification flow |
 
@@ -78,9 +78,9 @@ See [Authentication](docs/AUTHENTICATION.md) for more initialization options.
 
 ## Services
 
-The SDK provides 43 services organized into core services and the TaurusNetwork namespace.
+The SDK provides 44 services organized into core services and the TaurusNetwork namespace.
 
-### Core Services (38 services)
+### Core Services (39 services)
 
 | Service | Access | Purpose |
 |---------|--------|---------|
@@ -96,7 +96,7 @@ The SDK provides 43 services organized into core services and the TaurusNetwork 
 | `AuditService` | `client.Audits()` | Audit log queries |
 | `ChangeService` | `client.Changes()` | Configuration change tracking |
 | `FeeService` | `client.Fees()` | Transaction fee information |
-| `PriceService` | `client.Prices()` | Price data and history |
+| `PriceService` | `client.Prices()` | Verified prices, history and conversion |
 | `AirGapService` | `client.AirGap()` | Air-gap signing operations |
 | `StakingService` | `client.Staking()` | Multi-chain staking information |
 | `WhitelistedContractService` | `client.WhitelistedContracts()` | Smart contract whitelisting |
@@ -110,11 +110,12 @@ The SDK provides 43 services organized into core services and the TaurusNetwork 
 | `WebhookService` | `client.Webhooks()` | Webhook management |
 | `WebhookCallService` | `client.WebhookCalls()` | Webhook call history |
 | `TagService` | `client.Tags()` | Tag management |
-| `AssetService` | `client.Assets()` | Asset information |
+| `AssetService` | `client.Assets()` | Asset balances and the v2 asset registry |
 | `ActionService` | `client.Actions()` | Action management |
 | `BlockchainService` | `client.Blockchains()` | Blockchain information |
 | `ExchangeService` | `client.Exchanges()` | Exchange integration |
-| `FiatService` | `client.Fiat()` | Fiat currency operations |
+| `FiatService` | `client.Fiat()` | Fiat providers, accounts and entities |
+| `EarnService` | `client.Earn()` | Earn rewards |
 | `FeePayerService` | `client.FeePayers()` | Fee payer management |
 | `HealthService` | `client.Health()` | API health checks |
 | `JobService` | `client.Jobs()` | Background job management |
@@ -142,22 +143,30 @@ See [Services Reference](docs/SERVICES.md) for complete API documentation.
 ```go
 ctx := context.Background()
 
-// List wallets with pagination
-wallets, pagination, err := client.Wallets().ListWallets(ctx, &model.ListWalletsOptions{
-    Limit: 50,
-})
-if err != nil {
-    return err
-}
-
-for _, wallet := range wallets {
-    fmt.Printf("%s: %s (%s/%s)\n", wallet.Name, wallet.Currency, wallet.Blockchain, wallet.Network)
-}
-
-if pagination != nil {
-    fmt.Printf("Total wallets: %d\n", pagination.TotalItems)
+// Walk every wallet, 50 at a time. Pagination is never nil on success.
+opts := &model.ListWalletsOptions{Limit: 50}
+for {
+    wallets, pagination, err := client.Wallets().ListWallets(ctx, opts)
+    if err != nil {
+        return err
+    }
+    for _, wallet := range wallets {
+        fmt.Printf("%s: %s (%s/%s)\n", wallet.Name, wallet.Currency, wallet.Blockchain, wallet.Network)
+    }
+    if !pagination.HasMore {
+        fmt.Printf("Total wallets: %d\n", pagination.TotalItems)
+        break
+    }
+    opts.Offset = pagination.NextOffset
 }
 ```
+
+Every list method pages this way. Offset lists (wallets, addresses, transactions, users,
+groups, fee payers, actions, whitelists) return a `*model.Pagination` — continue with its
+`NextOffset`; every other list returns a `model.CursorPage` in its result's `Page` field —
+continue with its `NextCursor`; stop when `HasMore` is false. A page size of 0 selects
+`model.DefaultPageSize` (20); above `model.MaxPageSize` (100) is an error. See
+[docs/CONCEPTS.md](docs/CONCEPTS.md#pagination).
 
 ### Create a Wallet
 
@@ -215,7 +224,7 @@ if err != nil {
 fmt.Printf("Participant: %s\n", me.Participant.Name)
 
 // List pledges
-pledges, cursor, err := client.TaurusNetwork().Pledges().ListPledges(ctx, &taurusnetwork.ListPledgesOptions{
+pledges, page, err := client.TaurusNetwork().Pledges().ListPledges(ctx, &taurusnetwork.ListPledgesOptions{
     PageSize: 10,
 })
 if err != nil {
@@ -223,6 +232,9 @@ if err != nil {
 }
 for _, pledge := range pledges {
     fmt.Printf("Pledge %s: %s\n", pledge.ID, pledge.Status)
+}
+if page.HasMore {
+    // Pass page.NextCursor as ListPledgesOptions.Cursor for the next page.
 }
 
 // List shared addresses

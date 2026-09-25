@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -23,6 +22,7 @@ var _ MappedNullable = &TgvalidatordCreateRequestAttributesRequest{}
 type TgvalidatordCreateRequestAttributesRequest struct {
 	RequestId string `json:"requestId"`
 	Attributes []TgvalidatordCreateRequestAttributeRequest `json:"attributes"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateRequestAttributesRequest TgvalidatordCreateRequestAttributesRequest
@@ -106,6 +106,11 @@ func (o TgvalidatordCreateRequestAttributesRequest) ToMap() (map[string]interfac
 	toSerialize := map[string]interface{}{}
 	toSerialize["requestId"] = o.RequestId
 	toSerialize["attributes"] = o.Attributes
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -134,15 +139,21 @@ func (o *TgvalidatordCreateRequestAttributesRequest) UnmarshalJSON(data []byte) 
 
 	varTgvalidatordCreateRequestAttributesRequest := _TgvalidatordCreateRequestAttributesRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateRequestAttributesRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateRequestAttributesRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateRequestAttributesRequest(varTgvalidatordCreateRequestAttributesRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "requestId")
+		delete(additionalProperties, "attributes")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

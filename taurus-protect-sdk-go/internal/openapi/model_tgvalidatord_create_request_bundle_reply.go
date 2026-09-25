@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordCreateRequestBundleReply{}
 // TgvalidatordCreateRequestBundleReply struct for TgvalidatordCreateRequestBundleReply
 type TgvalidatordCreateRequestBundleReply struct {
 	Result *TgvalidatordRequestBundle `json:"result,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordCreateRequestBundleReply TgvalidatordCreateRequestBundleReply
 
 // NewTgvalidatordCreateRequestBundleReply instantiates a new TgvalidatordCreateRequestBundleReply object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordCreateRequestBundleReply) ToMap() (map[string]interface{}, e
 	if !IsNil(o.Result) {
 		toSerialize["result"] = o.Result
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordCreateRequestBundleReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordCreateRequestBundleReply := _TgvalidatordCreateRequestBundleReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordCreateRequestBundleReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordCreateRequestBundleReply(varTgvalidatordCreateRequestBundleReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "result")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordCreateRequestBundleReply struct {

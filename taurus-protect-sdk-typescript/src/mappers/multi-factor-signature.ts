@@ -4,27 +4,21 @@
 
 import type { TgvalidatordGetMultiFactorSignatureEntitiesInfoReply } from '../internal/openapi/models/TgvalidatordGetMultiFactorSignatureEntitiesInfoReply';
 import type { TgvalidatordMultiFactorSignaturesEntityType } from '../internal/openapi/models/TgvalidatordMultiFactorSignaturesEntityType';
-import {
+import type {
   MultiFactorSignatureEntityType,
-  type MultiFactorSignatureInfo,
+  MultiFactorSignatureInfo,
 } from '../models/multi-factor-signature';
 
 /**
  * Map entity type from DTO.
+ *
+ * The wire value is passed through verbatim, like in every other SDK: a kind this client does
+ * not know stays that raw string instead of being read as a known kind.
  */
 export function multiFactorSignatureEntityTypeFromDto(
   dto: TgvalidatordMultiFactorSignaturesEntityType | undefined | null
-): MultiFactorSignatureEntityType {
-  switch (dto) {
-    case 'REQUEST':
-      return MultiFactorSignatureEntityType.REQUEST;
-    case 'WHITELISTED_ADDRESS':
-      return MultiFactorSignatureEntityType.WHITELISTED_ADDRESS;
-    case 'WHITELISTED_CONTRACT':
-      return MultiFactorSignatureEntityType.WHITELISTED_CONTRACT;
-    default:
-      return MultiFactorSignatureEntityType.REQUEST;
-  }
+): MultiFactorSignatureEntityType | undefined {
+  return dto == null ? undefined : (dto as MultiFactorSignatureEntityType);
 }
 
 /**

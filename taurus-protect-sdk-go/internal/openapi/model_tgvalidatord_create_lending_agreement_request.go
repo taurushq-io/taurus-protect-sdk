@@ -33,7 +33,10 @@ type TgvalidatordCreateLendingAgreementRequest struct {
 	Collaterals []CreateLendingAgreementRequestLoanCollateralRequest `json:"collaterals,omitempty"`
 	// The shared address ID representing the address owned by the borrower where the lender will sent the funds to. Unless it is updated, it will also be the addres used for repayment.
 	BorrowerSharedAddressID *string `json:"borrowerSharedAddressID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordCreateLendingAgreementRequest TgvalidatordCreateLendingAgreementRequest
 
 // NewTgvalidatordCreateLendingAgreementRequest instantiates a new TgvalidatordCreateLendingAgreementRequest object
 // This constructor will assign default values to properties that have it defined,
@@ -342,7 +345,40 @@ func (o TgvalidatordCreateLendingAgreementRequest) ToMap() (map[string]interface
 	if !IsNil(o.BorrowerSharedAddressID) {
 		toSerialize["borrowerSharedAddressID"] = o.BorrowerSharedAddressID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordCreateLendingAgreementRequest) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordCreateLendingAgreementRequest := _TgvalidatordCreateLendingAgreementRequest{}
+
+	err = json.Unmarshal(data, &varTgvalidatordCreateLendingAgreementRequest)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordCreateLendingAgreementRequest(varTgvalidatordCreateLendingAgreementRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "lendingOfferID")
+		delete(additionalProperties, "lenderParticipantID")
+		delete(additionalProperties, "annualPercentageYield")
+		delete(additionalProperties, "currencyID")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "duration")
+		delete(additionalProperties, "collaterals")
+		delete(additionalProperties, "borrowerSharedAddressID")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordCreateLendingAgreementRequest struct {

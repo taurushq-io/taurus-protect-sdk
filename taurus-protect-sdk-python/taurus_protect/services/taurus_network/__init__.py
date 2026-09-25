@@ -27,7 +27,6 @@ from taurus_protect.services.taurus_network.pledge_service import (
 )
 from taurus_protect.services.taurus_network.settlement_service import (
     CreateSettlementRequest,
-    CursorPagination,
     ListSettlementsForApprovalOptions,
     ListSettlementsOptions,
     Settlement,
@@ -72,7 +71,6 @@ __all__ = [
     "PledgeService",
     # Settlement
     "CreateSettlementRequest",
-    "CursorPagination",
     "ListSettlementsForApprovalOptions",
     "ListSettlementsOptions",
     "Settlement",

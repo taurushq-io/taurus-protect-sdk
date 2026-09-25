@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -29,6 +28,7 @@ type TgvalidatordUniqueCurrencyFilter struct {
 	TokenContractAddress *string `json:"tokenContractAddress,omitempty"`
 	// For some blockchains (ex. ALGO, XTZ) a tokenContractAddress might contain multiple assets. The tokenID is used to differentiate between those assets. If not set, the currency returned won't have any tokenID defined.
 	TokenID *string `json:"tokenID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordUniqueCurrencyFilter TgvalidatordUniqueCurrencyFilter
@@ -182,6 +182,11 @@ func (o TgvalidatordUniqueCurrencyFilter) ToMap() (map[string]interface{}, error
 	if !IsNil(o.TokenID) {
 		toSerialize["tokenID"] = o.TokenID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -210,15 +215,23 @@ func (o *TgvalidatordUniqueCurrencyFilter) UnmarshalJSON(data []byte) (err error
 
 	varTgvalidatordUniqueCurrencyFilter := _TgvalidatordUniqueCurrencyFilter{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordUniqueCurrencyFilter)
+	err = json.Unmarshal(data, &varTgvalidatordUniqueCurrencyFilter)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordUniqueCurrencyFilter(varTgvalidatordUniqueCurrencyFilter)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "network")
+		delete(additionalProperties, "tokenContractAddress")
+		delete(additionalProperties, "tokenID")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

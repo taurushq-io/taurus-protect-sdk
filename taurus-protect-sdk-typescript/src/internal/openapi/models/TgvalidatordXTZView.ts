@@ -64,7 +64,16 @@ export interface TgvalidatordXTZView {
      * @memberof TgvalidatordXTZView
      */
     returnSchema?: TgvalidatordXTZPrimSchema;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordXTZView
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordXTZViewWireKeys: ReadonlySet<string> = new Set(['name', 'argType', 'argSchema', 'returnType', 'returnSchema']);
 
 /**
  * Check if a given object implements the TgvalidatordXTZView interface.
@@ -81,7 +90,7 @@ export function TgvalidatordXTZViewFromJSONTyped(json: any, ignoreDiscriminator:
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordXTZView = {
         
         'name': json['name'] == null ? undefined : json['name'],
         'argType': json['argType'] == null ? undefined : TgvalidatordXTZContractArgFromJSON(json['argType']),
@@ -89,6 +98,16 @@ export function TgvalidatordXTZViewFromJSONTyped(json: any, ignoreDiscriminator:
         'returnType': json['returnType'] == null ? undefined : TgvalidatordXTZContractArgFromJSON(json['returnType']),
         'returnSchema': json['returnSchema'] == null ? undefined : TgvalidatordXTZPrimSchemaFromJSON(json['returnSchema']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordXTZViewWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordXTZViewToJSON(json: any): TgvalidatordXTZView {
@@ -107,6 +126,7 @@ export function TgvalidatordXTZViewFromJSONTyped(json: any, ignoreDiscriminator:
         'argSchema': TgvalidatordXTZPrimSchemaToJSON(value['argSchema']),
         'returnType': TgvalidatordXTZContractArgToJSON(value['returnType']),
         'returnSchema': TgvalidatordXTZPrimSchemaToJSON(value['returnSchema']),
+        ...value['additionalProperties'],
     };
 }
 

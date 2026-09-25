@@ -49,7 +49,7 @@ class UserIntegrationTest {
 
     @Test
     void listUsers() throws ApiException {
-        List<User> users = client.getUserService().getUsers(10, 0);
+        List<User> users = client.getUserService().getUsers(10, 0).getUsers();
 
         System.out.println("Found " + users.size() + " users");
         for (User u : users) {

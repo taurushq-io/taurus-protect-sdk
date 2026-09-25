@@ -5,39 +5,31 @@
  * wallets and addresses.
  */
 
-import { ValidationError } from '../errors';
 import type { BalancesApi } from '../internal/openapi/apis/BalancesApi';
 import { assetBalancesFromDto, nftCollectionBalancesFromDto } from '../mappers/balance';
 import type {
-  AssetBalance,
   ListBalancesOptions,
+  ListBalancesResult,
   ListNFTCollectionBalancesOptions,
-  NFTCollectionBalance,
+  ListNFTCollectionBalancesResult,
 } from '../models/balance';
+import { buildCursorPage, cursorRequest } from '../models/pagination';
 import { BaseService } from './base';
+import { cursorQuery, requestCursorQuery } from './paging';
 
 /**
- * Service for retrieving balance information.
+ * Service for balance operations.
  *
- * Provides methods to list balances for all assets and NFT collections
- * across the tenant.
+ * Both lists are cursor lists: pass `pagination.nextCursor` back as `cursor` while
+ * `pagination.hasMore` is true.
  *
  * @example
  * ```typescript
- * // List all balances
- * const balances = await balanceService.list();
- * for (const balance of balances) {
+ * const page = await balanceService.list({ currency: 'ETH' });
+ * for (const balance of page.items) {
  *   console.log(`${balance.currency}: ${balance.balance}`);
  * }
- *
- * // List balances for a specific currency
- * const ethBalances = await balanceService.list({ currency: 'ETH' });
- *
- * // List NFT collection balances
- * const nftBalances = await balanceService.listNFTCollections({
- *   blockchain: 'ETH',
- *   network: 'mainnet',
- * });
+ * console.log(`${page.pagination.totalItems} balances in total`);
  * ```
  */
 export class BalanceService extends BaseService {
@@ -54,93 +46,82 @@ export class BalanceService extends BaseService {
   }
 
   /**
-   * Lists asset balances for the tenant.
+   * Lists a page of asset balances for the tenant.
    *
    * Each asset is identified by a full triplet of attributes (blockchain,
-   * contract address, and token ID).
+   * contract address, and token ID). Paged through `requestCursor` only; the legacy
+   * `limit` / bytes `cursor` parameters are never sent.
    *
-   * @param options - Optional filtering options
-   * @returns Array of asset balances
-   * @throws {@link ValidationError} If limit is invalid
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
+   * @returns The page of balances and its pagination, including the server's total
+   * @throws {@link ValidationError} If the page size or cursor options are invalid
    * @throws {@link APIError} If API request fails
    *
    * @example
    * ```typescript
-   * // List all balances
-   * const balances = await balanceService.list();
-   *
-   * // List balances for a specific currency
-   * const ethBalances = await balanceService.list({ currency: 'ETH', limit: 100 });
+   * let cursor: string | undefined;
+   * do {
+   *   const page = await balanceService.list({ pageSize: 100, cursor });
+   *   page.items.forEach((b) => console.log(b.currency, b.balance));
+   *   cursor = page.pagination.hasMore ? page.pagination.nextCursor : undefined;
+   * } while (cursor);
    * ```
    */
-  async list(options?: ListBalancesOptions): Promise<AssetBalance[]> {
-    const limit = options?.limit ?? 50;
-
-    if (limit <= 0) {
-      throw new ValidationError('limit must be positive');
-    }
+  async list(options?: ListBalancesOptions): Promise<ListBalancesResult> {
+    const page = cursorRequest(options);
 
     return this.execute(async () => {
       const response = await this.balancesApi.walletServiceGetBalances({
         currency: options?.currency,
-        limit: String(limit),
-        requestCursorPageSize: String(limit),
+        tokenId: options?.tokenId,
+        ...requestCursorQuery(page),
       });
 
-      const result =
-        (response as Record<string, unknown>).balances ??
-        (response as Record<string, unknown>).result;
-      return assetBalancesFromDto(result as unknown[]);
+      return {
+        items: assetBalancesFromDto(response.balances),
+        pagination: buildCursorPage(page.pageSize, response.cursor, { total: response.total }),
+      };
     });
   }
 
   /**
-   * Lists NFT collection balances for the tenant.
+   * Lists a page of NFT collection balances for the tenant.
    *
-   * @param options - Filtering options (blockchain and network are required)
-   * @returns Array of NFT collection balances
-   * @throws {@link ValidationError} If required arguments are missing or invalid
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
+   * @returns The page of NFT collection balances and its pagination
+   * @throws {@link ValidationError} If the page size or cursor options are invalid
    * @throws {@link APIError} If API request fails
    *
    * @example
    * ```typescript
-   * const nftBalances = await balanceService.listNFTCollections({
+   * const page = await balanceService.listNFTCollections({
    *   blockchain: 'ETH',
    *   network: 'mainnet',
    *   onlyPositiveBalance: true,
    * });
-   * for (const collection of nftBalances) {
+   * for (const collection of page.items) {
    *   console.log(`${collection.name}: ${collection.count} NFTs`);
    * }
    * ```
    */
   async listNFTCollections(
-    options: ListNFTCollectionBalancesOptions
-  ): Promise<NFTCollectionBalance[]> {
-    if (!options.blockchain || options.blockchain.trim() === '') {
-      throw new ValidationError('blockchain is required');
-    }
-    if (!options.network || options.network.trim() === '') {
-      throw new ValidationError('network is required');
-    }
-
-    const limit = options?.limit ?? 50;
-    if (limit <= 0) {
-      throw new ValidationError('limit must be positive');
-    }
+    options?: ListNFTCollectionBalancesOptions
+  ): Promise<ListNFTCollectionBalancesResult> {
+    const page = cursorRequest(options);
 
     return this.execute(async () => {
       const response = await this.balancesApi.walletServiceGetNFTCollectionBalances({
-        blockchain: options.blockchain,
-        network: options.network,
-        cursorPageSize: String(limit),
-        onlyPositiveBalance: options.onlyPositiveBalance,
+        blockchain: options?.blockchain,
+        network: options?.network,
+        query: options?.query,
+        onlyPositiveBalance: options?.onlyPositiveBalance,
+        ...cursorQuery(page),
       });
 
-      const result =
-        (response as Record<string, unknown>).collections ??
-        (response as Record<string, unknown>).result;
-      return nftCollectionBalancesFromDto(result as unknown[]);
+      return {
+        items: nftCollectionBalancesFromDto(response.balances),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
+      };
     });
   }
 }

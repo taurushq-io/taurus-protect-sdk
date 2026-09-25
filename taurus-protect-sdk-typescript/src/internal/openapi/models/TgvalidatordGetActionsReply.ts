@@ -39,7 +39,16 @@ export interface TgvalidatordGetActionsReply {
      * @memberof TgvalidatordGetActionsReply
      */
     totalItems?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetActionsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetActionsReplyWireKeys: ReadonlySet<string> = new Set(['result', 'totalItems']);
 
 /**
  * Check if a given object implements the TgvalidatordGetActionsReply interface.
@@ -56,11 +65,21 @@ export function TgvalidatordGetActionsReplyFromJSONTyped(json: any, ignoreDiscri
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetActionsReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordActionEnvelopeFromJSON)),
         'totalItems': json['totalItems'] == null ? undefined : json['totalItems'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetActionsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetActionsReplyToJSON(json: any): TgvalidatordGetActionsReply {
@@ -76,6 +95,7 @@ export function TgvalidatordGetActionsReplyFromJSONTyped(json: any, ignoreDiscri
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordActionEnvelopeToJSON)),
         'totalItems': value['totalItems'],
+        ...value['additionalProperties'],
     };
 }
 

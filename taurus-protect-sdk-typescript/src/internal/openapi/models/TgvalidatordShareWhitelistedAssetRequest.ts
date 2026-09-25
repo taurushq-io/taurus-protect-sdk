@@ -31,7 +31,16 @@ export interface TgvalidatordShareWhitelistedAssetRequest {
      * @memberof TgvalidatordShareWhitelistedAssetRequest
      */
     whitelistedContractID: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordShareWhitelistedAssetRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordShareWhitelistedAssetRequestWireKeys: ReadonlySet<string> = new Set(['toParticipantID', 'whitelistedContractID']);
 
 /**
  * Check if a given object implements the TgvalidatordShareWhitelistedAssetRequest interface.
@@ -50,11 +59,21 @@ export function TgvalidatordShareWhitelistedAssetRequestFromJSONTyped(json: any,
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordShareWhitelistedAssetRequest = {
         
         'toParticipantID': json['toParticipantID'],
         'whitelistedContractID': json['whitelistedContractID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordShareWhitelistedAssetRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordShareWhitelistedAssetRequestToJSON(json: any): TgvalidatordShareWhitelistedAssetRequest {
@@ -70,6 +89,7 @@ export function TgvalidatordShareWhitelistedAssetRequestFromJSONTyped(json: any,
         
         'toParticipantID': value['toParticipantID'],
         'whitelistedContractID': value['whitelistedContractID'],
+        ...value['additionalProperties'],
     };
 }
 

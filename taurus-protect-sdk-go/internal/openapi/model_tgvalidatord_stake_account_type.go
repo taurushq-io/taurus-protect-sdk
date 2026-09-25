@@ -28,32 +28,23 @@ var AllowedTgvalidatordStakeAccountTypeEnumValues = []TgvalidatordStakeAccountTy
 	"StakeAccountTypeSolana",
 }
 
+// UnmarshalJSON keeps a value this client does not know instead of failing the whole reply;
+// IsValid reports whether it is one of the generated constants.
 func (v *TgvalidatordStakeAccountType) UnmarshalJSON(src []byte) error {
 	var value string
 	err := json.Unmarshal(src, &value)
 	if err != nil {
-		return err
+		return fmt.Errorf("decoding TgvalidatordStakeAccountType: %w", err)
 	}
-	enumTypeValue := TgvalidatordStakeAccountType(value)
-	for _, existing := range AllowedTgvalidatordStakeAccountTypeEnumValues {
-		if existing == enumTypeValue {
-			*v = enumTypeValue
-			return nil
-		}
-	}
-
-	return fmt.Errorf("%+v is not a valid TgvalidatordStakeAccountType", value)
+	*v = TgvalidatordStakeAccountType(value)
+	return nil
 }
 
-// NewTgvalidatordStakeAccountTypeFromValue returns a pointer to a valid TgvalidatordStakeAccountType
-// for the value passed as argument, or an error if the value passed is not allowed by the enum
+// NewTgvalidatordStakeAccountTypeFromValue returns a pointer to a TgvalidatordStakeAccountType holding v, known or not.
+// The error is always nil; use IsValid to tell a generated constant from a newer server value.
 func NewTgvalidatordStakeAccountTypeFromValue(v string) (*TgvalidatordStakeAccountType, error) {
 	ev := TgvalidatordStakeAccountType(v)
-	if ev.IsValid() {
-		return &ev, nil
-	} else {
-		return nil, fmt.Errorf("invalid value '%v' for TgvalidatordStakeAccountType: valid values are %v", v, AllowedTgvalidatordStakeAccountTypeEnumValues)
-	}
+	return &ev, nil
 }
 
 // IsValid return true if the value is valid for the enum, false otherwise

@@ -31,7 +31,16 @@ export interface TgvalidatordCurrencyPriceSignature {
      * @memberof TgvalidatordCurrencyPriceSignature
      */
     signature: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCurrencyPriceSignature
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCurrencyPriceSignatureWireKeys: ReadonlySet<string> = new Set(['userId', 'signature']);
 
 /**
  * Check if a given object implements the TgvalidatordCurrencyPriceSignature interface.
@@ -50,11 +59,21 @@ export function TgvalidatordCurrencyPriceSignatureFromJSONTyped(json: any, ignor
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCurrencyPriceSignature = {
         
         'userId': json['userId'],
         'signature': json['signature'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCurrencyPriceSignatureWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCurrencyPriceSignatureToJSON(json: any): TgvalidatordCurrencyPriceSignature {
@@ -70,6 +89,7 @@ export function TgvalidatordCurrencyPriceSignatureFromJSONTyped(json: any, ignor
         
         'userId': value['userId'],
         'signature': value['signature'],
+        ...value['additionalProperties'],
     };
 }
 

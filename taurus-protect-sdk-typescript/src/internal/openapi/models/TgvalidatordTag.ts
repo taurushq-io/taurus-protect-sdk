@@ -43,7 +43,16 @@ export interface TgvalidatordTag {
      * @memberof TgvalidatordTag
      */
     color?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTag
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTagWireKeys: ReadonlySet<string> = new Set(['id', 'value', 'creationDate', 'color']);
 
 /**
  * Check if a given object implements the TgvalidatordTag interface.
@@ -60,13 +69,23 @@ export function TgvalidatordTagFromJSONTyped(json: any, ignoreDiscriminator: boo
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTag = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'value': json['value'] == null ? undefined : json['value'],
         'creationDate': json['creationDate'] == null ? undefined : (new Date(json['creationDate'])),
         'color': json['color'] == null ? undefined : json['color'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTagWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTagToJSON(json: any): TgvalidatordTag {
@@ -84,6 +103,7 @@ export function TgvalidatordTagFromJSONTyped(json: any, ignoreDiscriminator: boo
         'value': value['value'],
         'creationDate': value['creationDate'] == null ? undefined : ((value['creationDate']).toISOString()),
         'color': value['color'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -33,7 +33,16 @@ export interface TgvalidatordCustomXTZContractTemplate {
      * @memberof TgvalidatordCustomXTZContractTemplate
      */
     xtz?: TgvalidatordXTZContractTemplatePrams;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCustomXTZContractTemplate
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCustomXTZContractTemplateWireKeys: ReadonlySet<string> = new Set(['xtz']);
 
 /**
  * Check if a given object implements the TgvalidatordCustomXTZContractTemplate interface.
@@ -50,10 +59,20 @@ export function TgvalidatordCustomXTZContractTemplateFromJSONTyped(json: any, ig
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCustomXTZContractTemplate = {
         
         'xtz': json['xtz'] == null ? undefined : TgvalidatordXTZContractTemplatePramsFromJSON(json['xtz']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCustomXTZContractTemplateWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCustomXTZContractTemplateToJSON(json: any): TgvalidatordCustomXTZContractTemplate {
@@ -68,6 +87,7 @@ export function TgvalidatordCustomXTZContractTemplateFromJSONTyped(json: any, ig
     return {
         
         'xtz': TgvalidatordXTZContractTemplatePramsToJSON(value['xtz']),
+        ...value['additionalProperties'],
     };
 }
 

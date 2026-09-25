@@ -27,7 +27,10 @@ type TgvalidatordFeePayerEnvelope struct {
 	FeePayer *TgvalidatordFeePayer `json:"feePayer,omitempty"`
 	CreationDate *time.Time `json:"creationDate,omitempty"`
 	Network *string `json:"network,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordFeePayerEnvelope TgvalidatordFeePayerEnvelope
 
 // NewTgvalidatordFeePayerEnvelope instantiates a new TgvalidatordFeePayerEnvelope object
 // This constructor will assign default values to properties that have it defined,
@@ -301,7 +304,39 @@ func (o TgvalidatordFeePayerEnvelope) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Network) {
 		toSerialize["network"] = o.Network
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordFeePayerEnvelope) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordFeePayerEnvelope := _TgvalidatordFeePayerEnvelope{}
+
+	err = json.Unmarshal(data, &varTgvalidatordFeePayerEnvelope)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordFeePayerEnvelope(varTgvalidatordFeePayerEnvelope)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "tenantId")
+		delete(additionalProperties, "blockchain")
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "feePayer")
+		delete(additionalProperties, "creationDate")
+		delete(additionalProperties, "network")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordFeePayerEnvelope struct {

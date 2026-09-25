@@ -44,7 +44,10 @@ type TgvalidatordLightAddressInfo struct {
 	UpdateDate *time.Time `json:"updateDate,omitempty"`
 	// An optional external identifier for the address.
 	ExternalAddressId *string `json:"externalAddressId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordLightAddressInfo TgvalidatordLightAddressInfo
 
 // NewTgvalidatordLightAddressInfo instantiates a new TgvalidatordLightAddressInfo object
 // This constructor will assign default values to properties that have it defined,
@@ -528,7 +531,45 @@ func (o TgvalidatordLightAddressInfo) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.ExternalAddressId) {
 		toSerialize["externalAddressId"] = o.ExternalAddressId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordLightAddressInfo) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordLightAddressInfo := _TgvalidatordLightAddressInfo{}
+
+	err = json.Unmarshal(data, &varTgvalidatordLightAddressInfo)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordLightAddressInfo(varTgvalidatordLightAddressInfo)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "walletId")
+		delete(additionalProperties, "address")
+		delete(additionalProperties, "customerId")
+		delete(additionalProperties, "network")
+		delete(additionalProperties, "label")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "addressPath")
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "currencyId")
+		delete(additionalProperties, "creationDate")
+		delete(additionalProperties, "updateDate")
+		delete(additionalProperties, "externalAddressId")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordLightAddressInfo struct {

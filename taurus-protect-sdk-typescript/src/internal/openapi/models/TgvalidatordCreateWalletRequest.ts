@@ -79,7 +79,16 @@ export interface TgvalidatordCreateWalletRequest {
      * @memberof TgvalidatordCreateWalletRequest
      */
     externalWalletId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateWalletRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateWalletRequestWireKeys: ReadonlySet<string> = new Set(['currency', 'name', 'container', 'isOmnibus', 'comment', 'customerId', 'blockchain', 'network', 'visibilityGroupID', 'externalWalletId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateWalletRequest interface.
@@ -97,7 +106,7 @@ export function TgvalidatordCreateWalletRequestFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateWalletRequest = {
         
         'currency': json['currency'] == null ? undefined : json['currency'],
         'name': json['name'],
@@ -110,6 +119,16 @@ export function TgvalidatordCreateWalletRequestFromJSONTyped(json: any, ignoreDi
         'visibilityGroupID': json['visibilityGroupID'] == null ? undefined : json['visibilityGroupID'],
         'externalWalletId': json['externalWalletId'] == null ? undefined : json['externalWalletId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateWalletRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateWalletRequestToJSON(json: any): TgvalidatordCreateWalletRequest {
@@ -133,6 +152,7 @@ export function TgvalidatordCreateWalletRequestFromJSONTyped(json: any, ignoreDi
         'network': value['network'],
         'visibilityGroupID': value['visibilityGroupID'],
         'externalWalletId': value['externalWalletId'],
+        ...value['additionalProperties'],
     };
 }
 

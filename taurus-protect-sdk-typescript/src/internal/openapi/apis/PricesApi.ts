@@ -20,6 +20,8 @@ import type {
   TgvalidatordExportPricesHistoryReply,
   TgvalidatordGetPricesHistoryReply,
   TgvalidatordGetPricesReply,
+  TgvalidatordQueryPricesV2Reply,
+  TgvalidatordQueryPricesV2Request,
   TgvalidatordUpdatePricesRequest,
 } from '../models/index';
 import {
@@ -33,6 +35,10 @@ import {
     TgvalidatordGetPricesHistoryReplyToJSON,
     TgvalidatordGetPricesReplyFromJSON,
     TgvalidatordGetPricesReplyToJSON,
+    TgvalidatordQueryPricesV2ReplyFromJSON,
+    TgvalidatordQueryPricesV2ReplyToJSON,
+    TgvalidatordQueryPricesV2RequestFromJSON,
+    TgvalidatordQueryPricesV2RequestToJSON,
     TgvalidatordUpdatePricesRequestFromJSON,
     TgvalidatordUpdatePricesRequestToJSON,
 } from '../models/index';
@@ -54,6 +60,10 @@ export interface PriceServiceGetPricesHistoryRequest {
     base: string;
     quote: string;
     limit?: string;
+}
+
+export interface PriceServiceQueryPricesV2Request {
+    body: TgvalidatordQueryPricesV2Request;
 }
 
 export interface PriceServiceUpdatePricesRequest {
@@ -136,6 +146,22 @@ export interface PricesApiInterface {
      * List prices history
      */
     priceServiceGetPricesHistory(requestParameters: PriceServiceGetPricesHistoryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TgvalidatordGetPricesHistoryReply>;
+
+    /**
+     * This endpoint returns a list of prices
+     * @summary List prices
+     * @param {TgvalidatordQueryPricesV2Request} body 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof PricesApiInterface
+     */
+    priceServiceQueryPricesV2Raw(requestParameters: PriceServiceQueryPricesV2Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TgvalidatordQueryPricesV2Reply>>;
+
+    /**
+     * This endpoint returns a list of prices
+     * List prices
+     */
+    priceServiceQueryPricesV2(requestParameters: PriceServiceQueryPricesV2Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TgvalidatordQueryPricesV2Reply>;
 
     /**
      * This endpoint updates a price.  Required role: **PriceUpdater**.
@@ -341,6 +367,48 @@ export class PricesApi extends runtime.BaseAPI implements PricesApiInterface {
      */
     async priceServiceGetPricesHistory(requestParameters: PriceServiceGetPricesHistoryRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TgvalidatordGetPricesHistoryReply> {
         const response = await this.priceServiceGetPricesHistoryRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * This endpoint returns a list of prices
+     * List prices
+     */
+    async priceServiceQueryPricesV2Raw(requestParameters: PriceServiceQueryPricesV2Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<TgvalidatordQueryPricesV2Reply>> {
+        if (requestParameters['body'] == null) {
+            throw new runtime.RequiredError(
+                'body',
+                'Required parameter "body" was null or undefined when calling priceServiceQueryPricesV2().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        headerParameters['Content-Type'] = 'application/json';
+
+        if (this.configuration && this.configuration.apiKey) {
+            headerParameters["Authorization"] = await this.configuration.apiKey("Authorization"); // ApiKeyTPV1 authentication
+        }
+
+        const response = await this.request({
+            path: `/api/rest/v2/prices/query`,
+            method: 'POST',
+            headers: headerParameters,
+            query: queryParameters,
+            body: TgvalidatordQueryPricesV2RequestToJSON(requestParameters['body']),
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => TgvalidatordQueryPricesV2ReplyFromJSON(jsonValue));
+    }
+
+    /**
+     * This endpoint returns a list of prices
+     * List prices
+     */
+    async priceServiceQueryPricesV2(requestParameters: PriceServiceQueryPricesV2Request, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<TgvalidatordQueryPricesV2Reply> {
+        const response = await this.priceServiceQueryPricesV2Raw(requestParameters, initOverrides);
         return await response.value();
     }
 

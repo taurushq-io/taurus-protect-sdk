@@ -3,6 +3,7 @@
  */
 
 import type { Currency } from './currency';
+import type { CursorNavigationOptions, CursorPage, CursorPageOptions } from './pagination';
 
 /**
  * Represents a fiat currency provider in the Taurus-PROTECT system.
@@ -119,101 +120,119 @@ export interface FiatProviderOperation {
 }
 
 /**
- * Response cursor for paginated fiat provider results.
+ * A fiat provider entity (a legal entity a provider holds accounts for).
  */
-export interface FiatResponseCursor {
-  /** Current page token */
-  readonly currentPage?: string;
-  /** Next page token */
-  readonly nextPage?: string;
-  /** Whether there are more pages */
-  readonly hasMore: boolean;
+export interface FiatProviderEntity {
+  /** Unique identifier */
+  readonly id?: string;
+  /** Fiat provider name */
+  readonly provider?: string;
+  /** Provider label */
+  readonly label?: string;
+  /** Account identifier at the provider */
+  readonly accountIdentifier?: string;
+  /** Entity name */
+  readonly name?: string;
+  /** Entity details, as the provider reports them */
+  readonly details?: string;
+  /** Creation date */
+  readonly creationDate?: Date;
+  /** Last update date */
+  readonly updateDate?: Date;
 }
 
 /**
- * Paginated result for fiat provider accounts.
+ * A page of fiat provider accounts.
  */
 export interface FiatProviderAccountResult {
   /** The fiat provider accounts */
   readonly accounts: FiatProviderAccount[];
-  /** Pagination cursor */
-  readonly cursor?: FiatResponseCursor;
+  /** Cursor pagination: continue with `cursor: pagination.nextCursor` while `hasMore` */
+  readonly pagination: CursorPage;
 }
 
 /**
- * Paginated result for fiat provider counterparty accounts.
+ * A page of fiat provider counterparty accounts.
  */
 export interface FiatProviderCounterpartyAccountResult {
   /** The fiat provider counterparty accounts */
   readonly accounts: FiatProviderCounterpartyAccount[];
-  /** Pagination cursor */
-  readonly cursor?: FiatResponseCursor;
+  /** Cursor pagination: continue with `cursor: pagination.nextCursor` while `hasMore` */
+  readonly pagination: CursorPage;
 }
 
 /**
- * Paginated result for fiat provider operations.
+ * A page of fiat provider operations.
  */
 export interface FiatProviderOperationResult {
   /** The fiat provider operations */
   readonly operations: FiatProviderOperation[];
-  /** Pagination cursor */
-  readonly cursor?: FiatResponseCursor;
+  /** Cursor pagination: continue with `cursor: pagination.nextCursor` while `hasMore` */
+  readonly pagination: CursorPage;
 }
 
 /**
- * Options for listing fiat provider accounts.
+ * A page of fiat provider entities.
  */
-export interface ListFiatProviderAccountsOptions {
-  /** Filter by provider */
-  provider: string;
-  /** Filter by label */
-  label: string;
+export interface ListFiatProviderEntitiesResult {
+  /** The fiat provider entities */
+  readonly items: FiatProviderEntity[];
+  /** Cursor pagination: continue with `cursor: pagination.nextCursor` while `hasMore` */
+  readonly pagination: CursorPage;
+}
+
+/**
+ * Options for listing fiat provider accounts. A cursor list: `pageSize` 1-100
+ * (default 20) and the `cursor` of a previous page.
+ */
+export interface ListFiatProviderAccountsOptions extends CursorNavigationOptions {
+  /** Fiat provider (required) */
+  readonly provider: string;
+  /** Provider label (required) */
+  readonly label: string;
   /** Filter by account type (e.g., 'wallet', 'bank') */
-  accountType?: string;
+  readonly accountType?: string;
   /** Sort order for results ('ASC' or 'DESC') */
-  sortOrder?: string;
-  /** Pagination cursor */
-  cursor?: FiatRequestCursor;
+  readonly sortOrder?: string;
 }
 
 /**
- * Options for listing fiat provider counterparty accounts.
+ * Options for listing fiat provider counterparty accounts. A cursor list: `pageSize`
+ * 1-100 (default 20) and the `cursor` of a previous page.
  */
-export interface ListFiatProviderCounterpartyAccountsOptions {
-  /** Filter by provider */
-  provider: string;
-  /** Filter by label */
-  label: string;
+export interface ListFiatProviderCounterpartyAccountsOptions extends CursorNavigationOptions {
+  /** Fiat provider (required) */
+  readonly provider: string;
+  /** Provider label (required) */
+  readonly label: string;
   /** Filter by counterparty ID */
-  counterpartyId?: string;
+  readonly counterpartyId?: string;
   /** Sort order for results ('ASC' or 'DESC') */
-  sortOrder?: string;
-  /** Pagination cursor */
-  cursor?: FiatRequestCursor;
+  readonly sortOrder?: string;
 }
 
 /**
- * Options for listing fiat provider operations.
+ * Options for listing fiat provider operations. A cursor list: `pageSize` 1-100
+ * (default 20) and the `cursor` of a previous page.
  */
-export interface ListFiatProviderOperationsOptions {
+export interface ListFiatProviderOperationsOptions extends CursorNavigationOptions {
   /** Filter by provider */
-  provider?: string;
+  readonly provider?: string;
   /** Filter by label */
-  label?: string;
+  readonly label?: string;
   /** Sort order for results ('ASC' or 'DESC') */
-  sortOrder?: string;
-  /** Pagination cursor */
-  cursor?: FiatRequestCursor;
+  readonly sortOrder?: string;
 }
 
 /**
- * Request cursor for paginating fiat provider results.
+ * Options for listing fiat provider entities. A cursor list: `pageSize` 1-100
+ * (default 20) and the `cursor` of a previous page.
  */
-export interface FiatRequestCursor {
-  /** Current page token */
-  currentPage?: string;
-  /** Page request type ('FIRST', 'PREVIOUS', 'NEXT', 'LAST') */
-  pageRequest?: 'FIRST' | 'PREVIOUS' | 'NEXT' | 'LAST';
-  /** Number of items per page */
-  pageSize?: number;
+export interface ListFiatProviderEntitiesOptions extends CursorPageOptions {
+  /** Filter by provider */
+  readonly provider?: string;
+  /** Filter by label */
+  readonly label?: string;
+  /** Sort order for results ('ASC' or 'DESC') */
+  readonly sortOrder?: string;
 }

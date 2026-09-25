@@ -193,7 +193,16 @@ export interface TgvalidatordTnParticipant {
      * @memberof TgvalidatordTnParticipant
      */
     defaultSharedAddresses?: TgvalidatordDefaultSharedAddresses;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTnParticipant
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTnParticipantWireKeys: ReadonlySet<string> = new Set(['id', 'name', 'legalAddress', 'country', 'logoBase64', 'publicKey', 'shield', 'originRegistrationDate', 'originDeletionDate', 'createdAt', 'updatedAt', 'details', 'blockConfirmations', 'ownedSharedAddressesCount', 'targetedSharedAddressesCount', 'outgoingTotalPledgesValuationBaseCurrency', 'incomingTotalPledgesValuationBaseCurrency', 'publicSubname', 'legalEntityIdentifier', 'attributes', 'status', 'tnLendingOffers', 'defaultSharedAddresses']);
 
 /**
  * Check if a given object implements the TgvalidatordTnParticipant interface.
@@ -210,7 +219,7 @@ export function TgvalidatordTnParticipantFromJSONTyped(json: any, ignoreDiscrimi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTnParticipant = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'name': json['name'] == null ? undefined : json['name'],
@@ -236,6 +245,16 @@ export function TgvalidatordTnParticipantFromJSONTyped(json: any, ignoreDiscrimi
         'tnLendingOffers': json['tnLendingOffers'] == null ? undefined : ((json['tnLendingOffers'] as Array<any>).map(TgvalidatordTnLendingOfferFromJSON)),
         'defaultSharedAddresses': json['defaultSharedAddresses'] == null ? undefined : TgvalidatordDefaultSharedAddressesFromJSON(json['defaultSharedAddresses']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTnParticipantWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTnParticipantToJSON(json: any): TgvalidatordTnParticipant {
@@ -272,6 +291,7 @@ export function TgvalidatordTnParticipantFromJSONTyped(json: any, ignoreDiscrimi
         'status': value['status'],
         'tnLendingOffers': value['tnLendingOffers'] == null ? undefined : ((value['tnLendingOffers'] as Array<any>).map(TgvalidatordTnLendingOfferToJSON)),
         'defaultSharedAddresses': TgvalidatordDefaultSharedAddressesToJSON(value['defaultSharedAddresses']),
+        ...value['additionalProperties'],
     };
 }
 

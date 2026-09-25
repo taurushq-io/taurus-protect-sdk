@@ -6,6 +6,7 @@ import com.taurushq.sdk.protect.client.mapper.StakingMapper;
 import com.taurushq.sdk.protect.client.model.ADAStakePoolInfo;
 import com.taurushq.sdk.protect.client.model.ApiException;
 import com.taurushq.sdk.protect.client.model.ApiRequestCursor;
+import com.taurushq.sdk.protect.client.model.Pagination;
 import com.taurushq.sdk.protect.client.model.ETHValidatorInfo;
 import com.taurushq.sdk.protect.client.model.FTMValidatorInfo;
 import com.taurushq.sdk.protect.client.model.ICPNeuronInfo;
@@ -213,42 +214,49 @@ public class StakingService {
     }
 
     /**
-     * Retrieves stake accounts with optional filtering.
-     * <p>
-     * Returns a paginated list of stake accounts that can be filtered by address,
-     * account type, or account address.
+     * Retrieves a page of stake accounts with optional filtering.
      *
      * @param addressId      filter by associated address ID (optional)
      * @param accountType    filter by account type (optional)
      * @param accountAddress filter by on-chain account address (optional)
-     * @param cursor         pagination cursor (optional, null for first page)
-     * @return a paginated result containing stake accounts
+     * @param pageSize       the page size, null or 0 for the default
+     * @param cursor         a previous page's {@code getPage().getNextCursor()}, null for the first page
+     * @return the stake accounts and their page
+     * @throws ApiException             if the API call fails
+     * @throws IllegalArgumentException if the page size is out of range
+     */
+    public StakeAccountResult getStakeAccounts(final String addressId, final String accountType,
+                                               final String accountAddress, final Integer pageSize,
+                                               final String cursor) throws ApiException {
+        return getStakeAccounts(addressId, accountType, accountAddress, Pagination.page(pageSize, cursor));
+    }
+
+    /**
+     * Retrieves a page of stake accounts with optional filtering, with a low-level request cursor.
+     *
+     * @param addressId      filter by associated address ID (optional)
+     * @param accountType    filter by account type (optional)
+     * @param accountAddress filter by on-chain account address (optional)
+     * @param cursor         the request cursor, null for the first page with the default size
+     * @return the stake accounts and their page
      * @throws ApiException if the API call fails
      */
     public StakeAccountResult getStakeAccounts(final String addressId, final String accountType,
                                                final String accountAddress, final ApiRequestCursor cursor)
             throws ApiException {
 
-        String cursorCurrentPage = null;
-        String cursorPageRequest = null;
-        String cursorPageSize = null;
-
-        if (cursor != null) {
-            cursorCurrentPage = cursor.getCurrentPage();
-            cursorPageRequest = cursor.getPageRequest() != null ? cursor.getPageRequest().name() : null;
-            cursorPageSize = String.valueOf(cursor.getPageSize());
-        }
+        final CursorRequest page = CursorRequest.of(cursor);
 
         try {
             TgvalidatordGetStakeAccountsReply reply = stakingApi.stakingServiceGetStakeAccounts(
                     addressId,
                     accountType,
                     accountAddress,
-                    cursorCurrentPage,
-                    cursorPageRequest,
-                    cursorPageSize
+                    page.currentPage(),
+                    page.pageRequest(),
+                    page.pageSizeParam()
             );
-            return stakingMapper.fromStakeAccountsReply(reply);
+            return page.complete(stakingMapper.fromStakeAccountsReply(reply), PagedOperation.STAKE_ACCOUNTS);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }

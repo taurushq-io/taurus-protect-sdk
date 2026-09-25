@@ -6,6 +6,8 @@
  * blockchains like Ethereum.
  */
 
+import type { OffsetPageOptions } from './pagination';
+
 /**
  * Represents a fee payer configuration in the Taurus-PROTECT system.
  *
@@ -96,13 +98,10 @@ export interface FeePayerEthRemote {
 }
 
 /**
- * Options for listing fee payers.
+ * Options for listing fee payers. An offset list: `limit` 1-100 (default 20) and
+ * `offset` (a previous page's `pagination.nextOffset`).
  */
-export interface ListFeePayersOptions {
-  /** Maximum number of results to return */
-  limit?: number;
-  /** Number of results to skip for pagination */
-  offset?: number;
+export interface ListFeePayersOptions extends OffsetPageOptions {
   /** List of specific IDs to filter by */
   ids?: string[];
   /** Blockchain to filter by */

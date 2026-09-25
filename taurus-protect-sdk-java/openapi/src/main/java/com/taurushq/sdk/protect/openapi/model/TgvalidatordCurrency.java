@@ -19,6 +19,7 @@ import com.google.gson.annotations.JsonAdapter;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import com.taurushq.sdk.protect.openapi.model.TgvalidatordTokenInfo;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -48,7 +49,7 @@ import com.taurushq.sdk.protect.openapi.JSON;
 /**
  * TgvalidatordCurrency
  */
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2026-04-30T08:14:18.502158138Z[GMT]", comments = "Generator version: 7.9.0")
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", date = "2026-09-24T07:59:44.783733678Z[GMT]", comments = "Generator version: 7.9.0")
 public class TgvalidatordCurrency {
   public static final String SERIALIZED_NAME_NAME = "name";
   @SerializedName(SERIALIZED_NAME_NAME)
@@ -141,6 +142,10 @@ public class TgvalidatordCurrency {
   public static final String SERIALIZED_NAME_LOGO = "logo";
   @SerializedName(SERIALIZED_NAME_LOGO)
   private String logo;
+
+  public static final String SERIALIZED_NAME_TOKEN_INFO = "tokenInfo";
+  @SerializedName(SERIALIZED_NAME_TOKEN_INFO)
+  private TgvalidatordTokenInfo tokenInfo;
 
   public TgvalidatordCurrency() {
   }
@@ -246,7 +251,7 @@ public class TgvalidatordCurrency {
   }
 
   /**
-   * Indicates if the token is an ERC-20 token.
+   * DEPRECATED: use tokenInfo.tokenType &#x3D;&#x3D; ERC20 instead.
    * @return isERC20
    */
   @javax.annotation.Nullable
@@ -379,7 +384,7 @@ public class TgvalidatordCurrency {
   }
 
   /**
-   * Indicates if the currency is based on FA12 standard (used in Tezos).
+   * DEPRECATED: use tokenInfo.tokenType &#x3D;&#x3D; FA12 instead.
    * @return isFA12
    */
   @javax.annotation.Nullable
@@ -398,7 +403,7 @@ public class TgvalidatordCurrency {
   }
 
   /**
-   * Indicates if the currency is based on FA20 standard (used in Tezos).
+   * DEPRECATED: use tokenInfo.tokenType &#x3D;&#x3D; FA2 instead.
    * @return isFA20
    */
   @javax.annotation.Nullable
@@ -581,6 +586,25 @@ public class TgvalidatordCurrency {
     this.logo = logo;
   }
 
+
+  public TgvalidatordCurrency tokenInfo(TgvalidatordTokenInfo tokenInfo) {
+    this.tokenInfo = tokenInfo;
+    return this;
+  }
+
+  /**
+   * Get tokenInfo
+   * @return tokenInfo
+   */
+  @javax.annotation.Nullable
+  public TgvalidatordTokenInfo getTokenInfo() {
+    return tokenInfo;
+  }
+
+  public void setTokenInfo(TgvalidatordTokenInfo tokenInfo) {
+    this.tokenInfo = tokenInfo;
+  }
+
   /**
    * A container for additional, undeclared properties.
    * This is a holder for any undeclared properties as specified with
@@ -658,13 +682,14 @@ public class TgvalidatordCurrency {
         Objects.equals(this.wlcaId, tgvalidatordCurrency.wlcaId) &&
         Objects.equals(this.network, tgvalidatordCurrency.network) &&
         Objects.equals(this.tokenID, tgvalidatordCurrency.tokenID) &&
-        Objects.equals(this.logo, tgvalidatordCurrency.logo)&&
+        Objects.equals(this.logo, tgvalidatordCurrency.logo) &&
+        Objects.equals(this.tokenInfo, tgvalidatordCurrency.tokenInfo)&&
         Objects.equals(this.additionalProperties, tgvalidatordCurrency.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, symbol, coinTypeIndex, blockchain, isToken, isERC20, decimals, contractAddress, hasStaking, isUTXOBased, isAccountBased, isFiat, isFA12, isFA20, isNFT, enabled, id, displayName, type, wlcaId, network, tokenID, logo, additionalProperties);
+    return Objects.hash(name, symbol, coinTypeIndex, blockchain, isToken, isERC20, decimals, contractAddress, hasStaking, isUTXOBased, isAccountBased, isFiat, isFA12, isFA20, isNFT, enabled, id, displayName, type, wlcaId, network, tokenID, logo, tokenInfo, additionalProperties);
   }
 
   @Override
@@ -694,6 +719,7 @@ public class TgvalidatordCurrency {
     sb.append("    network: ").append(toIndentedString(network)).append("\n");
     sb.append("    tokenID: ").append(toIndentedString(tokenID)).append("\n");
     sb.append("    logo: ").append(toIndentedString(logo)).append("\n");
+    sb.append("    tokenInfo: ").append(toIndentedString(tokenInfo)).append("\n");
     sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -740,6 +766,7 @@ public class TgvalidatordCurrency {
     openapiFields.add("network");
     openapiFields.add("tokenID");
     openapiFields.add("logo");
+    openapiFields.add("tokenInfo");
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>();
@@ -796,6 +823,10 @@ public class TgvalidatordCurrency {
       }
       if ((jsonObj.get("logo") != null && !jsonObj.get("logo").isJsonNull()) && !jsonObj.get("logo").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format("Expected the field `logo` to be a primitive type in the JSON string but got `%s`", jsonObj.get("logo").toString()));
+      }
+      // validate the optional field `tokenInfo`
+      if (jsonObj.get("tokenInfo") != null && !jsonObj.get("tokenInfo").isJsonNull()) {
+        TgvalidatordTokenInfo.validateJsonElement(jsonObj.get("tokenInfo"));
       }
   }
 

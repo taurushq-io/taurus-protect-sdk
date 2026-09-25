@@ -6,6 +6,8 @@
  * notifications can be executed automatically.
  */
 
+import type { OffsetPageOptions } from './pagination';
+
 /**
  * Represents an action envelope containing an automated action configuration
  * with its metadata and execution history.
@@ -216,13 +218,10 @@ export interface ActionTrail {
 }
 
 /**
- * Options for listing actions.
+ * Options for listing actions. An offset list: `limit` 1-100 (default 20) and `offset`
+ * (a previous page's `pagination.nextOffset`).
  */
-export interface ListActionsOptions {
-  /** Maximum number of actions to return */
-  limit?: string;
-  /** Offset for pagination */
-  offset?: string;
+export interface ListActionsOptions extends OffsetPageOptions {
   /** Filter by specific action IDs */
   ids?: string[];
 }

@@ -2,6 +2,7 @@ package com.taurushq.sdk.protect.client.service;
 
 import com.taurushq.sdk.protect.client.cache.RulesContainerCache;
 import com.taurushq.sdk.protect.client.mapper.ApiExceptionMapper;
+import com.taurushq.sdk.protect.client.testutil.StubTransport;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Arrays;
 import java.util.Collections;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class PriceServiceTest {
@@ -61,9 +63,19 @@ class PriceServiceTest {
     }
 
     @Test
-    void getPriceHistory_throwsOnZeroLimit() {
+    void getPriceHistory_zeroLimitSendsTheDefault() throws Exception {
+        StubTransport stub = StubTransport.replying("{}");
+        new ServicesUnderTest(stub).prices().getPriceHistory("ETH", "USD", 0);
+        assertEquals("20", stub.only().param("limit"));
+    }
+
+    @Test
+    void getPriceHistory_acceptsAYearAndRejectsMore() throws Exception {
+        StubTransport stub = StubTransport.replying("{}");
+        new ServicesUnderTest(stub).prices().getPriceHistory("ETH", "USD", 365);
+        assertEquals("365", stub.only().param("limit"));
         assertThrows(IllegalArgumentException.class, () ->
-                priceService.getPriceHistory("ETH", "USD", 0));
+                priceService.getPriceHistory("ETH", "USD", 366));
     }
 
     @Test

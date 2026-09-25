@@ -24,7 +24,10 @@ type TgvalidatordActionAttribute struct {
 	Key *string `json:"key,omitempty"`
 	Value *string `json:"value,omitempty"`
 	ContentType *string `json:"contentType,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordActionAttribute TgvalidatordActionAttribute
 
 // NewTgvalidatordActionAttribute instantiates a new TgvalidatordActionAttribute object
 // This constructor will assign default values to properties that have it defined,
@@ -228,7 +231,37 @@ func (o TgvalidatordActionAttribute) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.ContentType) {
 		toSerialize["contentType"] = o.ContentType
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordActionAttribute) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordActionAttribute := _TgvalidatordActionAttribute{}
+
+	err = json.Unmarshal(data, &varTgvalidatordActionAttribute)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordActionAttribute(varTgvalidatordActionAttribute)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "tenantId")
+		delete(additionalProperties, "key")
+		delete(additionalProperties, "value")
+		delete(additionalProperties, "contentType")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordActionAttribute struct {

@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, PrivateAttr, field_validator
 
+from taurus_protect.models.pagination import CursorPage
 from taurus_protect.models.rule_cell import RuleCell
 
 if TYPE_CHECKING:
@@ -709,9 +710,10 @@ class GovernanceRulesHistoryResult(BaseModel):
         "fail when nothing survives: a SuperAdmin key rotation makes every pre-rotation "
         "ruleset unverifiable, and aborting would deny the whole audit trail.",
     )
-    cursor: Optional[str] = Field(default=None, description="Cursor for fetching the next page")
-    total_items: Optional[str] = Field(
-        default=None, description="Total number of items available, reduced by the exclusions"
+    page: CursorPage = Field(
+        default_factory=CursorPage,
+        description="Page window: next_cursor continues the walk; total_items is reduced by "
+        "the exclusions",
     )
 
     model_config = {"frozen": True}

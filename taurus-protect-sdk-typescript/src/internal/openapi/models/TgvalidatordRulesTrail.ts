@@ -55,7 +55,16 @@ export interface TgvalidatordRulesTrail {
      * @memberof TgvalidatordRulesTrail
      */
     date?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordRulesTrail
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordRulesTrailWireKeys: ReadonlySet<string> = new Set(['id', 'userId', 'externalUserId', 'action', 'comment', 'date']);
 
 /**
  * Check if a given object implements the TgvalidatordRulesTrail interface.
@@ -72,7 +81,7 @@ export function TgvalidatordRulesTrailFromJSONTyped(json: any, ignoreDiscriminat
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordRulesTrail = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'userId': json['userId'] == null ? undefined : json['userId'],
@@ -81,6 +90,16 @@ export function TgvalidatordRulesTrailFromJSONTyped(json: any, ignoreDiscriminat
         'comment': json['comment'] == null ? undefined : json['comment'],
         'date': json['date'] == null ? undefined : (new Date(json['date'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordRulesTrailWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordRulesTrailToJSON(json: any): TgvalidatordRulesTrail {
@@ -100,6 +119,7 @@ export function TgvalidatordRulesTrailFromJSONTyped(json: any, ignoreDiscriminat
         'action': value['action'],
         'comment': value['comment'],
         'date': value['date'] == null ? undefined : ((value['date']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

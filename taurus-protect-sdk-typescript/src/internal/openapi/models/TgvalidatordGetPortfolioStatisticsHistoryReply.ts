@@ -46,7 +46,16 @@ export interface TgvalidatordGetPortfolioStatisticsHistoryReply {
      * @memberof TgvalidatordGetPortfolioStatisticsHistoryReply
      */
     cursor?: TgvalidatordResponseCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetPortfolioStatisticsHistoryReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetPortfolioStatisticsHistoryReplyWireKeys: ReadonlySet<string> = new Set(['result', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetPortfolioStatisticsHistoryReply interface.
@@ -63,11 +72,21 @@ export function TgvalidatordGetPortfolioStatisticsHistoryReplyFromJSONTyped(json
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetPortfolioStatisticsHistoryReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordAggregatedStatsHistoryPointFromJSON)),
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetPortfolioStatisticsHistoryReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetPortfolioStatisticsHistoryReplyToJSON(json: any): TgvalidatordGetPortfolioStatisticsHistoryReply {
@@ -83,6 +102,7 @@ export function TgvalidatordGetPortfolioStatisticsHistoryReplyFromJSONTyped(json
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordAggregatedStatsHistoryPointToJSON)),
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
+        ...value['additionalProperties'],
     };
 }
 

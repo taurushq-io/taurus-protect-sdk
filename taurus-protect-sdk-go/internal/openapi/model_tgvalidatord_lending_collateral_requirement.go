@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordLendingCollateralRequirement{}
 // TgvalidatordLendingCollateralRequirement struct for TgvalidatordLendingCollateralRequirement
 type TgvalidatordLendingCollateralRequirement struct {
 	AcceptedCurrencies []TgvalidatordCurrencyCollateralRequirement `json:"acceptedCurrencies,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordLendingCollateralRequirement TgvalidatordLendingCollateralRequirement
 
 // NewTgvalidatordLendingCollateralRequirement instantiates a new TgvalidatordLendingCollateralRequirement object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordLendingCollateralRequirement) ToMap() (map[string]interface{
 	if !IsNil(o.AcceptedCurrencies) {
 		toSerialize["acceptedCurrencies"] = o.AcceptedCurrencies
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordLendingCollateralRequirement) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordLendingCollateralRequirement := _TgvalidatordLendingCollateralRequirement{}
+
+	err = json.Unmarshal(data, &varTgvalidatordLendingCollateralRequirement)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordLendingCollateralRequirement(varTgvalidatordLendingCollateralRequirement)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "acceptedCurrencies")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordLendingCollateralRequirement struct {

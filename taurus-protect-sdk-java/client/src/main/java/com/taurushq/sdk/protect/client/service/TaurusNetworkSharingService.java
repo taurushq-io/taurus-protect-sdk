@@ -25,7 +25,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * <pre>{@code
  * // List shared addresses
  * SharedAddressResult result = client.taurusNetwork().sharing()
- *     .listSharedAddresses(null, null, null, "ETH", "mainnet", null, null, null);
+ *     .listSharedAddresses(null, null, null, "ETH", "mainnet", null, null, Pagination.page(20, null));
  * }</pre>
  */
 public class TaurusNetworkSharingService {
@@ -51,7 +51,12 @@ public class TaurusNetworkSharingService {
     }
 
     /**
-     * Retrieves shared addresses with optional filtering.
+     * Retrieves a page of shared addresses with optional filtering.
+     * <p>
+     * Seven filters leave no room for separate page-size and cursor parameters (Checkstyle
+     * caps a method at eight), so this list takes the page as one request cursor: pass
+     * {@code Pagination.page(pageSize, cursor)}, with {@code cursor} a previous page's
+     * {@code getPage().getNextCursor()}.
      *
      * @param participantId       filter by participant ID (optional)
      * @param ownerParticipantId  filter by owner participant ID (optional)
@@ -60,8 +65,9 @@ public class TaurusNetworkSharingService {
      * @param network             filter by network (optional)
      * @param ids                 filter by shared address IDs (optional)
      * @param sortOrder           sort order for results (optional, "ASC" or "DESC")
-     * @param cursor              pagination cursor (optional, null for first page)
-     * @return a paginated result containing shared addresses
+     * @param cursor              the page, e.g. {@code Pagination.page(20, next)}; null for the
+     *                            first page with the default size
+     * @return the shared addresses and their page
      * @throws ApiException if the API call fails
      */
     public SharedAddressResult listSharedAddresses(final String participantId, final String ownerParticipantId,
@@ -70,15 +76,7 @@ public class TaurusNetworkSharingService {
                                                    final String sortOrder, final ApiRequestCursor cursor)
             throws ApiException {
 
-        String cursorCurrentPage = null;
-        String cursorPageRequest = null;
-        String cursorPageSize = null;
-
-        if (cursor != null) {
-            cursorCurrentPage = cursor.getCurrentPage();
-            cursorPageRequest = cursor.getPageRequest() != null ? cursor.getPageRequest().name() : null;
-            cursorPageSize = String.valueOf(cursor.getPageSize());
-        }
+        final CursorRequest page = CursorRequest.of(cursor);
 
         try {
             TgvalidatordGetSharedAddressesReply reply = sharedAddressApi.taurusNetworkServiceGetSharedAddresses(
@@ -89,12 +87,12 @@ public class TaurusNetworkSharingService {
                     network,
                     ids,
                     sortOrder,
-                    cursorCurrentPage,
-                    cursorPageRequest,
-                    cursorPageSize,
+                    page.currentPage(),
+                    page.pageRequest(),
+                    page.pageSizeParam(),
                     null  // statuses
             );
-            return mapper.fromSharedAddressesReply(reply);
+            return page.complete(mapper.fromSharedAddressesReply(reply), PagedOperation.SHARED_ADDRESSES);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }

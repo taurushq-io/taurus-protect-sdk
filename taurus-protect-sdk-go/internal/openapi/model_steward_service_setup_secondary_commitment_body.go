@@ -20,7 +20,10 @@ var _ MappedNullable = &StewardServiceSetupSecondaryCommitmentBody{}
 // StewardServiceSetupSecondaryCommitmentBody struct for StewardServiceSetupSecondaryCommitmentBody
 type StewardServiceSetupSecondaryCommitmentBody struct {
 	Enabled *bool `json:"enabled,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _StewardServiceSetupSecondaryCommitmentBody StewardServiceSetupSecondaryCommitmentBody
 
 // NewStewardServiceSetupSecondaryCommitmentBody instantiates a new StewardServiceSetupSecondaryCommitmentBody object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o StewardServiceSetupSecondaryCommitmentBody) ToMap() (map[string]interfac
 	if !IsNil(o.Enabled) {
 		toSerialize["enabled"] = o.Enabled
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *StewardServiceSetupSecondaryCommitmentBody) UnmarshalJSON(data []byte) (err error) {
+	varStewardServiceSetupSecondaryCommitmentBody := _StewardServiceSetupSecondaryCommitmentBody{}
+
+	err = json.Unmarshal(data, &varStewardServiceSetupSecondaryCommitmentBody)
+
+	if err != nil {
+		return err
+	}
+
+	*o = StewardServiceSetupSecondaryCommitmentBody(varStewardServiceSetupSecondaryCommitmentBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "enabled")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableStewardServiceSetupSecondaryCommitmentBody struct {

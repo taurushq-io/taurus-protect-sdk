@@ -39,7 +39,16 @@ export interface TgvalidatordComponentStatus {
      * @memberof TgvalidatordComponentStatus
      */
     groupsStatus?: Array<TgvalidatordGroupStatus>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordComponentStatus
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordComponentStatusWireKeys: ReadonlySet<string> = new Set(['componentStatus', 'groupsStatus']);
 
 /**
  * Check if a given object implements the TgvalidatordComponentStatus interface.
@@ -56,11 +65,21 @@ export function TgvalidatordComponentStatusFromJSONTyped(json: any, ignoreDiscri
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordComponentStatus = {
         
         'componentStatus': json['componentStatus'] == null ? undefined : json['componentStatus'],
         'groupsStatus': json['groupsStatus'] == null ? undefined : ((json['groupsStatus'] as Array<any>).map(TgvalidatordGroupStatusFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordComponentStatusWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordComponentStatusToJSON(json: any): TgvalidatordComponentStatus {
@@ -76,6 +95,7 @@ export function TgvalidatordComponentStatusFromJSONTyped(json: any, ignoreDiscri
         
         'componentStatus': value['componentStatus'],
         'groupsStatus': value['groupsStatus'] == null ? undefined : ((value['groupsStatus'] as Array<any>).map(TgvalidatordGroupStatusToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

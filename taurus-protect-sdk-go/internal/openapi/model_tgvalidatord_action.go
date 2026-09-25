@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordAction{}
 type TgvalidatordAction struct {
 	Trigger *ActionTrigger `json:"trigger,omitempty"`
 	Tasks []ActionTask `json:"tasks,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordAction TgvalidatordAction
 
 // NewTgvalidatordAction instantiates a new TgvalidatordAction object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordAction) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Tasks) {
 		toSerialize["tasks"] = o.Tasks
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordAction) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordAction := _TgvalidatordAction{}
+
+	err = json.Unmarshal(data, &varTgvalidatordAction)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordAction(varTgvalidatordAction)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "trigger")
+		delete(additionalProperties, "tasks")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordAction struct {

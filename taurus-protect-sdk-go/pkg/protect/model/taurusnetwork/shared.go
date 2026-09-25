@@ -1,6 +1,10 @@
 package taurusnetwork
 
-import "time"
+import (
+	"time"
+
+	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/model"
+)
 
 // SharedAddressStatus represents the status of a shared address.
 type SharedAddressStatus string
@@ -172,24 +176,22 @@ type ListSharedAddressesOptions struct {
 	Statuses []string
 	// SortOrder specifies the sort order (ASC or DESC).
 	SortOrder string
-	// CurrentPage is the base64-encoded cursor for the current page.
-	CurrentPage string
-	// PageRequest indicates which page to request (FIRST, PREVIOUS, NEXT, LAST).
-	PageRequest string
-	// PageSize is the number of items per page.
+	// PageSize is the page size: 0 selects model.DefaultPageSize, above model.MaxPageSize is an error.
 	PageSize int64
+	// Cursor is a previous page's Page.NextCursor; the SDK then requests the NEXT page.
+	Cursor string
+	// CurrentPage and PageRequest (FIRST, PREVIOUS, NEXT, LAST) page by hand; neither can be
+	// combined with Cursor.
+	CurrentPage string
+	PageRequest string
 }
 
 // ListSharedAddressesResult contains the result of listing shared addresses.
 type ListSharedAddressesResult struct {
 	// SharedAddresses is the list of shared addresses.
 	SharedAddresses []*SharedAddress `json:"shared_addresses"`
-	// CurrentPage is the base64-encoded cursor for the current page.
-	CurrentPage string `json:"current_page,omitempty"`
-	// HasPrevious indicates if there is a previous page.
-	HasPrevious bool `json:"has_previous"`
-	// HasNext indicates if there is a next page.
-	HasNext bool `json:"has_next"`
+	// Page continues the list: pass Page.NextCursor as the next Cursor until HasMore is false.
+	Page model.CursorPage `json:"page"`
 }
 
 // ListSharedAssetsOptions contains options for listing shared assets.
@@ -210,24 +212,22 @@ type ListSharedAssetsOptions struct {
 	Statuses []string
 	// SortOrder specifies the sort order (ASC or DESC).
 	SortOrder string
-	// CurrentPage is the base64-encoded cursor for the current page.
-	CurrentPage string
-	// PageRequest indicates which page to request (FIRST, PREVIOUS, NEXT, LAST).
-	PageRequest string
-	// PageSize is the number of items per page.
+	// PageSize is the page size: 0 selects model.DefaultPageSize, above model.MaxPageSize is an error.
 	PageSize int64
+	// Cursor is a previous page's Page.NextCursor; the SDK then requests the NEXT page.
+	Cursor string
+	// CurrentPage and PageRequest (FIRST, PREVIOUS, NEXT, LAST) page by hand; neither can be
+	// combined with Cursor.
+	CurrentPage string
+	PageRequest string
 }
 
 // ListSharedAssetsResult contains the result of listing shared assets.
 type ListSharedAssetsResult struct {
 	// SharedAssets is the list of shared assets.
 	SharedAssets []*SharedAsset `json:"shared_assets"`
-	// CurrentPage is the base64-encoded cursor for the current page.
-	CurrentPage string `json:"current_page,omitempty"`
-	// HasPrevious indicates if there is a previous page.
-	HasPrevious bool `json:"has_previous"`
-	// HasNext indicates if there is a next page.
-	HasNext bool `json:"has_next"`
+	// Page continues the list: pass Page.NextCursor as the next Cursor until HasMore is false.
+	Page model.CursorPage `json:"page"`
 }
 
 // ShareAddressRequest contains the request parameters for sharing an address.

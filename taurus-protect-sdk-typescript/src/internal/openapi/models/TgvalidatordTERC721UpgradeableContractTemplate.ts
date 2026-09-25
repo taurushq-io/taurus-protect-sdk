@@ -33,7 +33,16 @@ export interface TgvalidatordTERC721UpgradeableContractTemplate {
      * @memberof TgvalidatordTERC721UpgradeableContractTemplate
      */
     evm?: TgvalidatordEVMContractTemplateParams;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTERC721UpgradeableContractTemplate
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTERC721UpgradeableContractTemplateWireKeys: ReadonlySet<string> = new Set(['evm']);
 
 /**
  * Check if a given object implements the TgvalidatordTERC721UpgradeableContractTemplate interface.
@@ -50,10 +59,20 @@ export function TgvalidatordTERC721UpgradeableContractTemplateFromJSONTyped(json
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTERC721UpgradeableContractTemplate = {
         
         'evm': json['evm'] == null ? undefined : TgvalidatordEVMContractTemplateParamsFromJSON(json['evm']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTERC721UpgradeableContractTemplateWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTERC721UpgradeableContractTemplateToJSON(json: any): TgvalidatordTERC721UpgradeableContractTemplate {
@@ -68,6 +87,7 @@ export function TgvalidatordTERC721UpgradeableContractTemplateFromJSONTyped(json
     return {
         
         'evm': TgvalidatordEVMContractTemplateParamsToJSON(value['evm']),
+        ...value['additionalProperties'],
     };
 }
 

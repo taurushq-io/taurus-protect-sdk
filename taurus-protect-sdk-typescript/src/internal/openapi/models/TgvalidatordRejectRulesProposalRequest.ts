@@ -25,7 +25,16 @@ export interface TgvalidatordRejectRulesProposalRequest {
      * @memberof TgvalidatordRejectRulesProposalRequest
      */
     comment: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordRejectRulesProposalRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordRejectRulesProposalRequestWireKeys: ReadonlySet<string> = new Set(['comment']);
 
 /**
  * Check if a given object implements the TgvalidatordRejectRulesProposalRequest interface.
@@ -43,10 +52,20 @@ export function TgvalidatordRejectRulesProposalRequestFromJSONTyped(json: any, i
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordRejectRulesProposalRequest = {
         
         'comment': json['comment'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordRejectRulesProposalRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordRejectRulesProposalRequestToJSON(json: any): TgvalidatordRejectRulesProposalRequest {
@@ -61,6 +80,7 @@ export function TgvalidatordRejectRulesProposalRequestFromJSONTyped(json: any, i
     return {
         
         'comment': value['comment'],
+        ...value['additionalProperties'],
     };
 }
 

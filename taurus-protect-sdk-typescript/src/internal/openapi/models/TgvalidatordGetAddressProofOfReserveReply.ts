@@ -33,7 +33,16 @@ export interface TgvalidatordGetAddressProofOfReserveReply {
      * @memberof TgvalidatordGetAddressProofOfReserveReply
      */
     result?: TgvalidatordProofOfReserve;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetAddressProofOfReserveReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetAddressProofOfReserveReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetAddressProofOfReserveReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetAddressProofOfReserveReplyFromJSONTyped(json: any
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetAddressProofOfReserveReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordProofOfReserveFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetAddressProofOfReserveReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetAddressProofOfReserveReplyToJSON(json: any): TgvalidatordGetAddressProofOfReserveReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetAddressProofOfReserveReplyFromJSONTyped(json: any
     return {
         
         'result': TgvalidatordProofOfReserveToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

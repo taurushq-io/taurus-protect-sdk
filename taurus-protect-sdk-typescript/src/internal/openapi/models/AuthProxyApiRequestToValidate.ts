@@ -85,7 +85,16 @@ export interface AuthProxyApiRequestToValidate {
      * @memberof AuthProxyApiRequestToValidate
      */
     signature?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof AuthProxyApiRequestToValidate
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const AuthProxyApiRequestToValidateWireKeys: ReadonlySet<string> = new Set(['prefix', 'apiKey', 'nonce', 'timestamp', 'method', 'host', 'path', 'query', 'contentType', 'body', 'signature']);
 
 /**
  * Check if a given object implements the AuthProxyApiRequestToValidate interface.
@@ -102,7 +111,7 @@ export function AuthProxyApiRequestToValidateFromJSONTyped(json: any, ignoreDisc
     if (json == null) {
         return json;
     }
-    return {
+    const result: AuthProxyApiRequestToValidate = {
         
         'prefix': json['prefix'] == null ? undefined : json['prefix'],
         'apiKey': json['apiKey'] == null ? undefined : json['apiKey'],
@@ -116,6 +125,16 @@ export function AuthProxyApiRequestToValidateFromJSONTyped(json: any, ignoreDisc
         'body': json['body'] == null ? undefined : json['body'],
         'signature': json['signature'] == null ? undefined : json['signature'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!AuthProxyApiRequestToValidateWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function AuthProxyApiRequestToValidateToJSON(json: any): AuthProxyApiRequestToValidate {
@@ -140,6 +159,7 @@ export function AuthProxyApiRequestToValidateFromJSONTyped(json: any, ignoreDisc
         'contentType': value['contentType'],
         'body': value['body'],
         'signature': value['signature'],
+        ...value['additionalProperties'],
     };
 }
 

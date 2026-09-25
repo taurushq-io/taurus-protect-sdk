@@ -167,7 +167,16 @@ export interface TgvalidatordLendingAgreement {
      * @memberof TgvalidatordLendingAgreement
      */
     repaymentDueDate?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordLendingAgreement
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordLendingAgreementWireKeys: ReadonlySet<string> = new Set(['id', 'lenderParticipantID', 'borrowerParticipantID', 'lendingOfferID', 'amount', 'currencyID', 'annualYield', 'status', 'duration', 'startLoanDate', 'workflowID', 'borrowerSharedAddressID', 'lenderSharedAddressID', 'lendingAgreementCollaterals', 'lendingAgreementTransactions', 'createdAt', 'updatedAt', 'annualYieldMainUnit', 'currencyInfo', 'amountMainUnit', 'repaymentDueDate']);
 
 /**
  * Check if a given object implements the TgvalidatordLendingAgreement interface.
@@ -184,7 +193,7 @@ export function TgvalidatordLendingAgreementFromJSONTyped(json: any, ignoreDiscr
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordLendingAgreement = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'lenderParticipantID': json['lenderParticipantID'] == null ? undefined : json['lenderParticipantID'],
@@ -208,6 +217,16 @@ export function TgvalidatordLendingAgreementFromJSONTyped(json: any, ignoreDiscr
         'amountMainUnit': json['amountMainUnit'] == null ? undefined : json['amountMainUnit'],
         'repaymentDueDate': json['repaymentDueDate'] == null ? undefined : (new Date(json['repaymentDueDate'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordLendingAgreementWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordLendingAgreementToJSON(json: any): TgvalidatordLendingAgreement {
@@ -242,6 +261,7 @@ export function TgvalidatordLendingAgreementFromJSONTyped(json: any, ignoreDiscr
         'currencyInfo': TgvalidatordCurrencyToJSON(value['currencyInfo']),
         'amountMainUnit': value['amountMainUnit'],
         'repaymentDueDate': value['repaymentDueDate'] == null ? undefined : ((value['repaymentDueDate']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

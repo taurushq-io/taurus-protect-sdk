@@ -27,7 +27,10 @@ type TgvalidatordTnParticipantAttribute struct {
 	Subtype *string `json:"subtype,omitempty"`
 	ContentType *string `json:"contentType,omitempty"`
 	IsTaurusNetworkShared *bool `json:"isTaurusNetworkShared,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTnParticipantAttribute TgvalidatordTnParticipantAttribute
 
 // NewTgvalidatordTnParticipantAttribute instantiates a new TgvalidatordTnParticipantAttribute object
 // This constructor will assign default values to properties that have it defined,
@@ -336,7 +339,40 @@ func (o TgvalidatordTnParticipantAttribute) ToMap() (map[string]interface{}, err
 	if !IsNil(o.IsTaurusNetworkShared) {
 		toSerialize["isTaurusNetworkShared"] = o.IsTaurusNetworkShared
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTnParticipantAttribute) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTnParticipantAttribute := _TgvalidatordTnParticipantAttribute{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTnParticipantAttribute)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTnParticipantAttribute(varTgvalidatordTnParticipantAttribute)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "key")
+		delete(additionalProperties, "value")
+		delete(additionalProperties, "owner")
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "subtype")
+		delete(additionalProperties, "contentType")
+		delete(additionalProperties, "isTaurusNetworkShared")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTnParticipantAttribute struct {

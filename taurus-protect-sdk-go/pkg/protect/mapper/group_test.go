@@ -88,8 +88,8 @@ func TestGroupFromDTO(t *testing.T) {
 			if tt.dto.Description != nil && got.Description != *tt.dto.Description {
 				t.Errorf("Description = %v, want %v", got.Description, *tt.dto.Description)
 			}
-			if tt.dto.EnforcedInRules != nil && got.EnforcedInRules != *tt.dto.EnforcedInRules {
-				t.Errorf("EnforcedInRules = %v, want %v", got.EnforcedInRules, *tt.dto.EnforcedInRules)
+			if !sameBool(got.EnforcedInRules, tt.dto.EnforcedInRules) {
+				t.Errorf("EnforcedInRules = %s, want %s", boolString(got.EnforcedInRules), boolString(tt.dto.EnforcedInRules))
 			}
 			if tt.dto.CreationDate != nil && !got.CreatedAt.Equal(*tt.dto.CreationDate) {
 				t.Errorf("CreatedAt = %v, want %v", got.CreatedAt, *tt.dto.CreationDate)
@@ -184,7 +184,7 @@ func TestGroupUserFromDTO(t *testing.T) {
 			got := GroupUserFromDTO(tt.dto)
 			if tt.dto == nil {
 				// nil input returns empty struct
-				if got.ID != "" || got.ExternalUserID != "" || got.EnforcedInRules != false {
+				if got.ID != "" || got.ExternalUserID != "" || got.EnforcedInRules != nil {
 					t.Errorf("GroupUserFromDTO(nil) should return empty struct, got %+v", got)
 				}
 				return
@@ -196,8 +196,8 @@ func TestGroupUserFromDTO(t *testing.T) {
 			if tt.dto.ExternalUserId != nil && got.ExternalUserID != *tt.dto.ExternalUserId {
 				t.Errorf("ExternalUserID = %v, want %v", got.ExternalUserID, *tt.dto.ExternalUserId)
 			}
-			if tt.dto.EnforcedInRules != nil && got.EnforcedInRules != *tt.dto.EnforcedInRules {
-				t.Errorf("EnforcedInRules = %v, want %v", got.EnforcedInRules, *tt.dto.EnforcedInRules)
+			if !sameBool(got.EnforcedInRules, tt.dto.EnforcedInRules) {
+				t.Errorf("EnforcedInRules = %s, want %s", boolString(got.EnforcedInRules), boolString(tt.dto.EnforcedInRules))
 			}
 		})
 	}
@@ -263,22 +263,22 @@ func TestGroupUserFromDTO_EnforcedInRulesField(t *testing.T) {
 	tests := []struct {
 		name            string
 		enforcedInRules *bool
-		want            bool
+		want            *bool
 	}{
 		{
-			name:            "nil enforcedInRules defaults to false",
+			name:            "absent enforcedInRules stays nil",
 			enforcedInRules: nil,
-			want:            false,
+			want:            nil,
 		},
 		{
 			name:            "true enforcedInRules",
 			enforcedInRules: boolPtr(true),
-			want:            true,
+			want:            boolPtr(true),
 		},
 		{
 			name:            "false enforcedInRules",
 			enforcedInRules: boolPtr(false),
-			want:            false,
+			want:            boolPtr(false),
 		},
 	}
 
@@ -288,8 +288,8 @@ func TestGroupUserFromDTO_EnforcedInRulesField(t *testing.T) {
 				EnforcedInRules: tt.enforcedInRules,
 			}
 			got := GroupUserFromDTO(dto)
-			if got.EnforcedInRules != tt.want {
-				t.Errorf("EnforcedInRules = %v, want %v", got.EnforcedInRules, tt.want)
+			if !sameBool(got.EnforcedInRules, tt.want) {
+				t.Errorf("EnforcedInRules = %s, want %s", boolString(got.EnforcedInRules), boolString(tt.want))
 			}
 		})
 	}

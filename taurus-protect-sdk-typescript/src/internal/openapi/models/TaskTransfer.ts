@@ -71,7 +71,16 @@ export interface TaskTransfer {
      * @memberof TaskTransfer
      */
     useAllFunds?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TaskTransfer
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TaskTransferWireKeys: ReadonlySet<string> = new Set(['from', 'to', 'amount', 'topUp', 'useAllFunds']);
 
 /**
  * Check if a given object implements the TaskTransfer interface.
@@ -88,7 +97,7 @@ export function TaskTransferFromJSONTyped(json: any, ignoreDiscriminator: boolea
     if (json == null) {
         return json;
     }
-    return {
+    const result: TaskTransfer = {
         
         'from': json['from'] == null ? undefined : TgvalidatordActionSourceFromJSON(json['from']),
         'to': json['to'] == null ? undefined : TgvalidatordActionDestinationFromJSON(json['to']),
@@ -96,6 +105,16 @@ export function TaskTransferFromJSONTyped(json: any, ignoreDiscriminator: boolea
         'topUp': json['topUp'] == null ? undefined : json['topUp'],
         'useAllFunds': json['useAllFunds'] == null ? undefined : json['useAllFunds'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TaskTransferWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TaskTransferToJSON(json: any): TaskTransfer {
@@ -114,6 +133,7 @@ export function TaskTransferFromJSONTyped(json: any, ignoreDiscriminator: boolea
         'amount': TgvalidatordActionAmountToJSON(value['amount']),
         'topUp': value['topUp'],
         'useAllFunds': value['useAllFunds'],
+        ...value['additionalProperties'],
     };
 }
 

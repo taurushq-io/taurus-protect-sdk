@@ -33,7 +33,16 @@ export interface TgvalidatordGetFATokenMetadataReply {
      * @memberof TgvalidatordGetFATokenMetadataReply
      */
     result?: TgvalidatordFATokenMetadata;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetFATokenMetadataReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetFATokenMetadataReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetFATokenMetadataReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetFATokenMetadataReplyFromJSONTyped(json: any, igno
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetFATokenMetadataReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordFATokenMetadataFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetFATokenMetadataReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetFATokenMetadataReplyToJSON(json: any): TgvalidatordGetFATokenMetadataReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetFATokenMetadataReplyFromJSONTyped(json: any, igno
     return {
         
         'result': TgvalidatordFATokenMetadataToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

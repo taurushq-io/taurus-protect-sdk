@@ -49,7 +49,16 @@ export interface TgvalidatordCreateOutgoingHederaStakingRequestRequest {
      * @memberof TgvalidatordCreateOutgoingHederaStakingRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingHederaStakingRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingHederaStakingRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'toWhitelistedAddressId', 'feeLimit', 'comment', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingHederaStakingRequestRequest interface.
@@ -68,7 +77,7 @@ export function TgvalidatordCreateOutgoingHederaStakingRequestRequestFromJSONTyp
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingHederaStakingRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'toWhitelistedAddressId': json['toWhitelistedAddressId'],
@@ -76,6 +85,16 @@ export function TgvalidatordCreateOutgoingHederaStakingRequestRequestFromJSONTyp
         'comment': json['comment'] == null ? undefined : json['comment'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingHederaStakingRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingHederaStakingRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingHederaStakingRequestRequest {
@@ -94,6 +113,7 @@ export function TgvalidatordCreateOutgoingHederaStakingRequestRequestFromJSONTyp
         'feeLimit': value['feeLimit'],
         'comment': value['comment'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

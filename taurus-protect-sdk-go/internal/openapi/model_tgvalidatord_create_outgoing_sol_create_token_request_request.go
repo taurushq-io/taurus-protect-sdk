@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -37,6 +36,7 @@ type TgvalidatordCreateOutgoingSOLCreateTokenRequestRequest struct {
 	Comment *string `json:"comment,omitempty"`
 	// Unique identifer for the request to be added in the database. If it already exists, it will return the existing request.
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingSOLCreateTokenRequestRequest TgvalidatordCreateOutgoingSOLCreateTokenRequestRequest
@@ -321,6 +321,11 @@ func (o TgvalidatordCreateOutgoingSOLCreateTokenRequestRequest) ToMap() (map[str
 	if !IsNil(o.ExternalRequestId) {
 		toSerialize["externalRequestId"] = o.ExternalRequestId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -350,15 +355,27 @@ func (o *TgvalidatordCreateOutgoingSOLCreateTokenRequestRequest) UnmarshalJSON(d
 
 	varTgvalidatordCreateOutgoingSOLCreateTokenRequestRequest := _TgvalidatordCreateOutgoingSOLCreateTokenRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingSOLCreateTokenRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingSOLCreateTokenRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingSOLCreateTokenRequestRequest(varTgvalidatordCreateOutgoingSOLCreateTokenRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "decimals")
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "symbol")
+		delete(additionalProperties, "uri")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "externalRequestId")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

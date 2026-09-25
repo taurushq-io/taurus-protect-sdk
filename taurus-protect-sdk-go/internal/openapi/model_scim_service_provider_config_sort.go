@@ -20,7 +20,10 @@ var _ MappedNullable = &ScimServiceProviderConfigSort{}
 // ScimServiceProviderConfigSort struct for ScimServiceProviderConfigSort
 type ScimServiceProviderConfigSort struct {
 	Supported *bool `json:"supported,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _ScimServiceProviderConfigSort ScimServiceProviderConfigSort
 
 // NewScimServiceProviderConfigSort instantiates a new ScimServiceProviderConfigSort object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o ScimServiceProviderConfigSort) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Supported) {
 		toSerialize["supported"] = o.Supported
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *ScimServiceProviderConfigSort) UnmarshalJSON(data []byte) (err error) {
+	varScimServiceProviderConfigSort := _ScimServiceProviderConfigSort{}
+
+	err = json.Unmarshal(data, &varScimServiceProviderConfigSort)
+
+	if err != nil {
+		return err
+	}
+
+	*o = ScimServiceProviderConfigSort(varScimServiceProviderConfigSort)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "supported")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableScimServiceProviderConfigSort struct {

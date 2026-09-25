@@ -61,7 +61,16 @@ export interface TgvalidatordCreateOutgoingSOLDeactivateRequestRequest {
      * @memberof TgvalidatordCreateOutgoingSOLDeactivateRequestRequest
      */
     amount?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingSOLDeactivateRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingSOLDeactivateRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'feeLimit', 'comment', 'useUnconfirmedFunds', 'externalRequestId', 'fromStakeAccountDerivationIndex', 'amount']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingSOLDeactivateRequestRequest interface.
@@ -79,7 +88,7 @@ export function TgvalidatordCreateOutgoingSOLDeactivateRequestRequestFromJSONTyp
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingSOLDeactivateRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'feeLimit': json['feeLimit'] == null ? undefined : json['feeLimit'],
@@ -89,6 +98,16 @@ export function TgvalidatordCreateOutgoingSOLDeactivateRequestRequestFromJSONTyp
         'fromStakeAccountDerivationIndex': json['fromStakeAccountDerivationIndex'] == null ? undefined : json['fromStakeAccountDerivationIndex'],
         'amount': json['amount'] == null ? undefined : json['amount'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingSOLDeactivateRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingSOLDeactivateRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingSOLDeactivateRequestRequest {
@@ -109,6 +128,7 @@ export function TgvalidatordCreateOutgoingSOLDeactivateRequestRequestFromJSONTyp
         'externalRequestId': value['externalRequestId'],
         'fromStakeAccountDerivationIndex': value['fromStakeAccountDerivationIndex'],
         'amount': value['amount'],
+        ...value['additionalProperties'],
     };
 }
 

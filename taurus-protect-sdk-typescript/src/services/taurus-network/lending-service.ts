@@ -12,15 +12,13 @@ import type {
   TgvalidatordLendingAgreementAttachment,
 } from '../../internal/openapi/models/index';
 import { BaseService } from '../base';
-
-/**
- * Cursor-based pagination information.
- */
-export interface CursorPagination {
-  currentPage?: string;
-  hasNext: boolean;
-  hasPrevious: boolean;
-}
+import type {
+  ListLendingOffersOptions,
+  ListLendingAgreementsOptions,
+  ListLendingAgreementsForApprovalOptions,
+} from '../../models/taurus-network/lending';
+import { buildCursorPage, cursorRequest, type CursorPage } from '../../models/pagination';
+import { cursorQuery } from '../paging';
 
 /**
  * Currency information.
@@ -149,30 +147,6 @@ export interface LendingAgreementAttachment {
   fileSize?: string;
   createdAt?: Date;
   updatedAt?: Date;
-}
-
-/**
- * Options for listing lending offers.
- */
-export interface ListLendingOffersOptions {
-  currencyIds?: string[];
-  participantId?: string;
-  duration?: string;
-  sortOrder?: string;
-  pageSize?: number;
-  currentPage?: string;
-  pageRequest?: string;
-}
-
-/**
- * Options for listing lending agreements.
- */
-export interface ListLendingAgreementsOptions {
-  ids?: string[];
-  sortOrder?: string;
-  pageSize?: number;
-  currentPage?: string;
-  pageRequest?: string;
 }
 
 /**
@@ -373,25 +347,6 @@ function lendingAgreementAttachmentFromDto(
 }
 
 /**
- * Extracts cursor pagination from response.
- */
-function extractCursorPagination(cursor?: {
-  currentPage?: string;
-  hasNext?: boolean;
-  hasPrevious?: boolean;
-}): CursorPagination | undefined {
-  if (!cursor) {
-    return undefined;
-  }
-
-  return {
-    currentPage: cursor.currentPage,
-    hasNext: cursor.hasNext ?? false,
-    hasPrevious: cursor.hasPrevious ?? false,
-  };
-}
-
-/**
  * Service for Taurus Network lending operations.
  *
  * Provides methods to manage lending offers and agreements between
@@ -458,22 +413,22 @@ export class LendingService extends BaseService {
   /**
    * Lists lending offers.
    *
-   * @param options - Optional filtering and pagination options
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
    * @returns Offers list and pagination info
    * @throws {@link APIError} If API request fails
    */
   async listLendingOffers(
     options?: ListLendingOffersOptions
-  ): Promise<{ offers: LendingOffer[]; pagination?: CursorPagination }> {
+  ): Promise<{ offers: LendingOffer[]; pagination: CursorPage }> {
+    const page = cursorRequest(options);
+
     return this.execute(async () => {
       const response = await this.lendingApi.taurusNetworkServiceGetLendingOffers({
         currencyIDsCurrencyIDs: options?.currencyIds,
         participantID: options?.participantId,
         duration: options?.duration,
         sortOrder: options?.sortOrder,
-        cursorCurrentPage: options?.currentPage,
-        cursorPageRequest: options?.pageRequest,
-        cursorPageSize: options?.pageSize ? String(options.pageSize) : undefined,
+        ...cursorQuery(page),
       });
 
       const offers: LendingOffer[] = [];
@@ -488,7 +443,7 @@ export class LendingService extends BaseService {
 
       return {
         offers,
-        pagination: extractCursorPagination(response.cursor),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
       };
     });
   }
@@ -601,19 +556,19 @@ export class LendingService extends BaseService {
   /**
    * Lists lending agreements.
    *
-   * @param options - Optional filtering and pagination options
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
    * @returns Agreements list and pagination info
    * @throws {@link APIError} If API request fails
    */
   async listLendingAgreements(
     options?: ListLendingAgreementsOptions
-  ): Promise<{ agreements: LendingAgreement[]; pagination?: CursorPagination }> {
+  ): Promise<{ agreements: LendingAgreement[]; pagination: CursorPage }> {
+    const page = cursorRequest(options);
+
     return this.execute(async () => {
       const response = await this.lendingApi.taurusNetworkServiceGetLendingAgreements({
         sortOrder: options?.sortOrder,
-        cursorCurrentPage: options?.currentPage,
-        cursorPageRequest: options?.pageRequest,
-        cursorPageSize: options?.pageSize ? String(options.pageSize) : undefined,
+        ...cursorQuery(page),
       });
 
       const agreements: LendingAgreement[] = [];
@@ -628,7 +583,7 @@ export class LendingService extends BaseService {
 
       return {
         agreements,
-        pagination: extractCursorPagination(response.cursor),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
       };
     });
   }
@@ -636,20 +591,20 @@ export class LendingService extends BaseService {
   /**
    * Lists lending agreements pending approval.
    *
-   * @param options - Optional filtering and pagination options
+   * @param options - Filters, `pageSize` (1-100, default 20) and `cursor`
    * @returns Agreements list and pagination info
    * @throws {@link APIError} If API request fails
    */
   async listLendingAgreementsForApproval(
-    options?: ListLendingAgreementsOptions
-  ): Promise<{ agreements: LendingAgreement[]; pagination?: CursorPagination }> {
+    options?: ListLendingAgreementsForApprovalOptions
+  ): Promise<{ agreements: LendingAgreement[]; pagination: CursorPage }> {
+    const page = cursorRequest(options);
+
     return this.execute(async () => {
       const response = await this.lendingApi.taurusNetworkServiceGetLendingAgreementsForApproval({
         ids: options?.ids,
         sortOrder: options?.sortOrder,
-        cursorCurrentPage: options?.currentPage,
-        cursorPageRequest: options?.pageRequest,
-        cursorPageSize: options?.pageSize ? String(options.pageSize) : undefined,
+        ...cursorQuery(page),
       });
 
       const agreements: LendingAgreement[] = [];
@@ -664,7 +619,7 @@ export class LendingService extends BaseService {
 
       return {
         agreements,
-        pagination: extractCursorPagination(response.cursor),
+        pagination: buildCursorPage(page.pageSize, response.cursor),
       };
     });
   }

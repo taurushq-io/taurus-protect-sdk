@@ -20,7 +20,10 @@ var _ MappedNullable = &WalletServiceCreateWalletAttributesBody{}
 // WalletServiceCreateWalletAttributesBody struct for WalletServiceCreateWalletAttributesBody
 type WalletServiceCreateWalletAttributesBody struct {
 	Attributes []TgvalidatordCreateWalletAttributeRequest `json:"attributes,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _WalletServiceCreateWalletAttributesBody WalletServiceCreateWalletAttributesBody
 
 // NewWalletServiceCreateWalletAttributesBody instantiates a new WalletServiceCreateWalletAttributesBody object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o WalletServiceCreateWalletAttributesBody) ToMap() (map[string]interface{}
 	if !IsNil(o.Attributes) {
 		toSerialize["attributes"] = o.Attributes
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *WalletServiceCreateWalletAttributesBody) UnmarshalJSON(data []byte) (err error) {
+	varWalletServiceCreateWalletAttributesBody := _WalletServiceCreateWalletAttributesBody{}
+
+	err = json.Unmarshal(data, &varWalletServiceCreateWalletAttributesBody)
+
+	if err != nil {
+		return err
+	}
+
+	*o = WalletServiceCreateWalletAttributesBody(varWalletServiceCreateWalletAttributesBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "attributes")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableWalletServiceCreateWalletAttributesBody struct {

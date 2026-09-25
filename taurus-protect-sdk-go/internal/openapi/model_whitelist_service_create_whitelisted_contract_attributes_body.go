@@ -20,7 +20,10 @@ var _ MappedNullable = &WhitelistServiceCreateWhitelistedContractAttributesBody{
 // WhitelistServiceCreateWhitelistedContractAttributesBody struct for WhitelistServiceCreateWhitelistedContractAttributesBody
 type WhitelistServiceCreateWhitelistedContractAttributesBody struct {
 	Attributes []TgvalidatordCreateWhitelistedContractAddressAttributeRequest `json:"attributes,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _WhitelistServiceCreateWhitelistedContractAttributesBody WhitelistServiceCreateWhitelistedContractAttributesBody
 
 // NewWhitelistServiceCreateWhitelistedContractAttributesBody instantiates a new WhitelistServiceCreateWhitelistedContractAttributesBody object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o WhitelistServiceCreateWhitelistedContractAttributesBody) ToMap() (map[st
 	if !IsNil(o.Attributes) {
 		toSerialize["attributes"] = o.Attributes
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *WhitelistServiceCreateWhitelistedContractAttributesBody) UnmarshalJSON(data []byte) (err error) {
+	varWhitelistServiceCreateWhitelistedContractAttributesBody := _WhitelistServiceCreateWhitelistedContractAttributesBody{}
+
+	err = json.Unmarshal(data, &varWhitelistServiceCreateWhitelistedContractAttributesBody)
+
+	if err != nil {
+		return err
+	}
+
+	*o = WhitelistServiceCreateWhitelistedContractAttributesBody(varWhitelistServiceCreateWhitelistedContractAttributesBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "attributes")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableWhitelistServiceCreateWhitelistedContractAttributesBody struct {

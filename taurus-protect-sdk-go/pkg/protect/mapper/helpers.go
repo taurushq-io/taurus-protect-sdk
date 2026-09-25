@@ -60,6 +60,14 @@ func boolPtr(b bool) *bool {
 	return &b
 }
 
+// optionalBool copies b and keeps nil, which means the server did not send the value.
+func optionalBool(b *bool) *bool {
+	if b == nil {
+		return nil
+	}
+	return boolPtr(*b)
+}
+
 // int64Ptr returns a pointer to the int64.
 func int64Ptr(i int64) *int64 {
 	return &i

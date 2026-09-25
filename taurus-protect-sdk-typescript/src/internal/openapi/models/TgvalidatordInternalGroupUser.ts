@@ -37,7 +37,16 @@ export interface TgvalidatordInternalGroupUser {
      * @memberof TgvalidatordInternalGroupUser
      */
     enforcedInRules?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordInternalGroupUser
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordInternalGroupUserWireKeys: ReadonlySet<string> = new Set(['id', 'externalUserId', 'enforcedInRules']);
 
 /**
  * Check if a given object implements the TgvalidatordInternalGroupUser interface.
@@ -54,12 +63,22 @@ export function TgvalidatordInternalGroupUserFromJSONTyped(json: any, ignoreDisc
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordInternalGroupUser = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'externalUserId': json['externalUserId'] == null ? undefined : json['externalUserId'],
         'enforcedInRules': json['enforcedInRules'] == null ? undefined : json['enforcedInRules'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordInternalGroupUserWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordInternalGroupUserToJSON(json: any): TgvalidatordInternalGroupUser {
@@ -76,6 +95,7 @@ export function TgvalidatordInternalGroupUserFromJSONTyped(json: any, ignoreDisc
         'id': value['id'],
         'externalUserId': value['externalUserId'],
         'enforcedInRules': value['enforcedInRules'],
+        ...value['additionalProperties'],
     };
 }
 

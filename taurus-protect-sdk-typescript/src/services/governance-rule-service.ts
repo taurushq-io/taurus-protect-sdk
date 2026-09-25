@@ -26,6 +26,7 @@ import type {
   ListGovernanceRulesHistoryOptions,
   SuperAdminPublicKey,
 } from "../models/governance-rules";
+import { buildCursorPage, tokenRequest } from "../models/pagination";
 import { BaseService } from "./base";
 
 /**
@@ -121,7 +122,7 @@ export interface GovernanceRuleServiceConfig {
  * const historical = await governanceRuleService.getRulesById("rules-123");
  *
  * // Get rules history
- * const history = await governanceRuleService.getRulesHistory({ limit: 10 });
+ * const history = await governanceRuleService.getRulesHistory({ pageSize: 10 });
  * for (const rules of history.items) {
  *   console.log(`Created: ${rules.creationDate}`);
  * }
@@ -407,14 +408,14 @@ export class GovernanceRuleService extends BaseService {
    * @example
    * ```typescript
    * // Get first page
-   * const page1 = await governanceRuleService.getRulesHistory({ limit: 10 });
-   * console.log(`Found ${page1.items.length} rules`);
+   * const page1 = await governanceRuleService.getRulesHistory({ pageSize: 10 });
+   * console.log(`Found ${page1.items.length} of ${page1.pagination.totalItems} rulesets`);
    *
    * // Get next page
-   * if (page1.nextCursor) {
+   * if (page1.pagination.hasMore) {
    *   const page2 = await governanceRuleService.getRulesHistory({
-   *     limit: 10,
-   *     cursor: page1.nextCursor,
+   *     pageSize: 10,
+   *     cursor: page1.pagination.nextCursor,
    *   });
    * }
    * ```
@@ -422,17 +423,13 @@ export class GovernanceRuleService extends BaseService {
   async getRulesHistory(
     options?: ListGovernanceRulesHistoryOptions
   ): Promise<GovernanceRulesHistoryResult> {
-    const limit = options?.limit ?? 50;
-
-    if (limit <= 0) {
-      throw new ValidationError("limit must be positive");
-    }
+    const page = tokenRequest(options);
 
     return this.execute(async () => {
       const response = await this.governanceRulesApi.ruleServiceGetRulesHistory(
         {
-          limit: String(limit),
-          cursor: options?.cursor,
+          limit: page.limit,
+          cursor: page.cursor,
         }
       );
 
@@ -461,7 +458,10 @@ export class GovernanceRuleService extends BaseService {
       return {
         items: kept,
         excludedUnverified,
-        nextCursor: response.cursor,
+        pagination: buildCursorPage(page.pageSize, response.cursor, {
+          total: response.totalItems,
+          excluded: excludedUnverified.length,
+        }),
       };
     });
   }

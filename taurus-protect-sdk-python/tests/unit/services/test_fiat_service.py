@@ -6,44 +6,81 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from taurus_protect._internal.openapi import CurrenciesApi, FiatApi
+from taurus_protect.models.pagination import CursorPage
 from taurus_protect.services.fiat_service import FiatService
+from tests.unit.transport_stub import StubTransport, api_client
 
 
-class TestFiatServiceList:
-    """Tests for FiatService.list()."""
+class TestFiatServiceListAccounts:
+    """list_fiat_provider_accounts: the accounts list could not run (invalid arguments)."""
 
-    def _make_service(self) -> tuple:
-        api_client = MagicMock()
-        fiat_api = MagicMock()
-        currencies_api = MagicMock()
-        service = FiatService(
-            api_client=api_client, fiat_api=fiat_api, currencies_api=currencies_api
+    def _service(self) -> FiatService:
+        ac = api_client()
+        return FiatService(ac, FiatApi(ac), CurrenciesApi(ac))
+
+    def test_provider_and_label_are_required(self) -> None:
+        with pytest.raises(ValueError, match="provider"):
+            self._service().list_fiat_provider_accounts("", "label")
+        with pytest.raises(ValueError, match="label"):
+            self._service().list_fiat_provider_accounts("provider", "")
+
+    def test_rows_page_and_filters(self) -> None:
+        reply = {
+            "result": [{"id": "acc-1", "accountName": "Main", "totalBalance": "10"}],
+            "cursor": {"currentPage": "n", "hasNext": True},
+        }
+        with StubTransport(reply) as transport:
+            accounts, page = self._service().list_fiat_provider_accounts(
+                "bank", "main", page_size=5, account_type="CURRENT", sort_order="ASC"
+            )
+
+        assert [(a.id, a.name, a.balance) for a in accounts] == [("acc-1", "Main", "10")]
+        assert page == CursorPage(page_size=5, next_cursor="n", has_more=True)
+        assert transport.last.path == "/api/rest/v1/fiat_providers/accounts"
+        assert transport.last.query == sorted(
+            [
+                ("provider", "bank"),
+                ("label", "main"),
+                ("accountType", "CURRENT"),
+                ("sortOrder", "ASC"),
+                ("cursor.pageSize", "5"),
+            ]
         )
-        return service, fiat_api, currencies_api
 
-    def test_raises_on_invalid_limit(self) -> None:
-        service, _, _ = self._make_service()
-        with pytest.raises(ValueError, match="limit must be positive"):
-            service.list(limit=0)
+    def test_continuation(self) -> None:
+        with StubTransport() as transport:
+            self._service().list_fiat_provider_accounts("bank", "main", cursor="n")
 
-    def test_raises_on_negative_offset(self) -> None:
-        service, _, _ = self._make_service()
-        with pytest.raises(ValueError, match="offset cannot be negative"):
-            service.list(offset=-1)
+        assert transport.last.param("cursor.currentPage") == "n"
+        assert transport.last.param("cursor.pageRequest") == "NEXT"
 
-    def test_returns_empty_when_no_results(self) -> None:
-        service, fiat_api, _ = self._make_service()
-        resp = MagicMock()
-        resp.result = None
-        resp.accounts = None
-        resp.total_items = None
-        resp.totalItems = None
-        resp.offset = None
-        fiat_api.fiat_provider_service_get_fiat_provider_accounts.return_value = resp
 
-        accounts, pagination = service.list()
+class TestFiatServiceListEntities:
+    """list_fiat_provider_entities: new cursor list."""
 
-        assert accounts == []
+    def _service(self) -> FiatService:
+        ac = api_client()
+        return FiatService(ac, FiatApi(ac), CurrenciesApi(ac))
+
+    def test_rows_page_and_filters(self) -> None:
+        reply = {"result": [{"id": "e1", "name": "Entity"}], "cursor": {"currentPage": "n"}}
+        with StubTransport(reply) as transport:
+            entities, page = self._service().list_fiat_provider_entities(
+                provider="bank", label="main", sort_order="DESC"
+            )
+
+        assert [(e.id, e.name) for e in entities] == [("e1", "Entity")]
+        assert page == CursorPage(page_size=20)
+        assert transport.last.path == "/api/rest/v1/fiat_providers/entities"
+        assert transport.last.query == sorted(
+            [
+                ("provider", "bank"),
+                ("label", "main"),
+                ("sortOrder", "DESC"),
+                ("cursor.pageSize", "20"),
+            ]
+        )
 
 
 class TestFiatServiceGetAccount:

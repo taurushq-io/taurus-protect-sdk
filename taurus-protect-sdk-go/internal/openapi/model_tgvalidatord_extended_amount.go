@@ -22,7 +22,10 @@ type TgvalidatordExtendedAmount struct {
 	// Kind of extended amount. Valid values: \"\" (empty string) for default, or \"NFT\". If set to \"NFT\", the nft object must be provided.
 	Kind *string `json:"kind,omitempty"`
 	Nft *TgvalidatordExtendedAmountNFT `json:"nft,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordExtendedAmount TgvalidatordExtendedAmount
 
 // NewTgvalidatordExtendedAmount instantiates a new TgvalidatordExtendedAmount object
 // This constructor will assign default values to properties that have it defined,
@@ -121,7 +124,34 @@ func (o TgvalidatordExtendedAmount) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Nft) {
 		toSerialize["nft"] = o.Nft
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordExtendedAmount) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordExtendedAmount := _TgvalidatordExtendedAmount{}
+
+	err = json.Unmarshal(data, &varTgvalidatordExtendedAmount)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordExtendedAmount(varTgvalidatordExtendedAmount)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "kind")
+		delete(additionalProperties, "nft")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordExtendedAmount struct {

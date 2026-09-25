@@ -1,0 +1,58 @@
+[
+  {
+    "name": "get_me_requests_the_flags_and_reads_them",
+    "description": "getMe sends checkEnforcedInRules=true, the only way validatord computes the flags on this endpoint, and reads every flag the reply carries.",
+    "operation": "getMe",
+    "request": {},
+    "reply": {"result": {"id": "8", "externalUserId": "team1@bank.com", "enforcedInRules": true, "publicKeyEnforcedInRules": true, "groups": [{"id": "2", "externalGroupId": "team1", "enforcedInRules": true}]}},
+    "expected": {"query": {"checkEnforcedInRules": "true"}, "users": [{"enforcedInRules": true, "publicKeyEnforcedInRules": true, "groupsEnforcedInRules": [true]}]}
+  },
+  {
+    "name": "get_me_omitted_false_is_false",
+    "description": "validatord omits a bool that is false from the JSON reply. getMe computes the flags, so an absent enforcedInRules reads false. publicKeyEnforcedInRules is a BoolValue, so a computed false is present on the wire.",
+    "operation": "getMe",
+    "request": {},
+    "reply": {"result": {"id": "8", "externalUserId": "team1@bank.com", "publicKeyEnforcedInRules": false, "groups": [{"id": "2", "externalGroupId": "team1"}]}},
+    "expected": {"query": {"checkEnforcedInRules": "true"}, "users": [{"enforcedInRules": false, "publicKeyEnforcedInRules": false, "groupsEnforcedInRules": [false]}]}
+  },
+  {
+    "name": "get_me_absent_public_key_flag_is_unknown",
+    "description": "An absent publicKeyEnforcedInRules means validatord did not compute it, so it reads null (Go nil, Java null, Python None, TypeScript undefined), never false.",
+    "operation": "getMe",
+    "request": {},
+    "reply": {"result": {"id": "8", "externalUserId": "team1@bank.com", "groups": [{"id": "2", "externalGroupId": "team1"}]}},
+    "expected": {"query": {"checkEnforcedInRules": "true"}, "users": [{"enforcedInRules": false, "publicKeyEnforcedInRules": null, "groupsEnforcedInRules": [false]}]}
+  },
+  {
+    "name": "get_user_uncomputed_flags_are_unknown",
+    "description": "validatord never computes the flags on GetUser, so every absent flag reads null rather than false.",
+    "operation": "getUser",
+    "request": {"id": "8"},
+    "reply": {"result": {"id": "8", "externalUserId": "team1@bank.com", "groups": [{"id": "2", "externalGroupId": "team1"}]}},
+    "expected": {"users": [{"enforcedInRules": null, "publicKeyEnforcedInRules": null, "groupsEnforcedInRules": [null]}]}
+  },
+  {
+    "name": "get_user_flags_on_the_wire_are_kept",
+    "description": "A flag present on the wire is read as sent, on every endpoint.",
+    "operation": "getUser",
+    "request": {"id": "8"},
+    "reply": {"result": {"id": "8", "externalUserId": "team1@bank.com", "enforcedInRules": true, "publicKeyEnforcedInRules": false, "groups": [{"id": "2", "externalGroupId": "team1", "enforcedInRules": true}]}},
+    "expected": {"users": [{"enforcedInRules": true, "publicKeyEnforcedInRules": false, "groupsEnforcedInRules": [true]}]}
+  },
+  {
+    "name": "list_users_reads_computed_flags",
+    "description": "GetUsers computes enforcedInRules for each user and group membership, so absent reads false. It never computes publicKeyEnforcedInRules, which stays null.",
+    "operation": "listUsers",
+    "request": {},
+    "reply": {"result": [{"id": "8", "externalUserId": "team1@bank.com", "enforcedInRules": true, "groups": [{"id": "2", "externalGroupId": "team1", "enforcedInRules": true}]}, {"id": "9", "externalUserId": "team9@bank.com", "groups": [{"id": "3", "externalGroupId": "team9"}]}], "totalItems": "2"},
+    "expected": {"users": [{"enforcedInRules": true, "publicKeyEnforcedInRules": null, "groupsEnforcedInRules": [true]}, {"enforcedInRules": false, "publicKeyEnforcedInRules": null, "groupsEnforcedInRules": [false]}]}
+  },
+  {
+    "name": "list_groups_reads_computed_flags",
+    "description": "GetGroups computes enforcedInRules for each group and each of its users, so absent reads false.",
+    "operation": "listGroups",
+    "request": {},
+    "reply": {"result": [{"id": "2", "externalGroupId": "team1", "enforcedInRules": true, "users": [{"id": "8", "externalUserId": "team1@bank.com", "enforcedInRules": true}]}, {"id": "3", "externalGroupId": "team9", "users": [{"id": "9", "externalUserId": "team9@bank.com"}]}], "totalItems": "2"},
+    "expected": {"groups": [{"enforcedInRules": true, "usersEnforcedInRules": [true]}, {"enforcedInRules": false, "usersEnforcedInRules": [false]}]}
+  }
+]

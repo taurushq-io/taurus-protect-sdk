@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordXLMOpts{}
 type TgvalidatordXLMOpts struct {
 	// (XLM Blockchain Field) If set, is the ID of the address who will sponsor the cost of the operation on the minimum balance of the source address
 	SponsoredByAddressID *string `json:"SponsoredByAddressID,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordXLMOpts TgvalidatordXLMOpts
 
 // NewTgvalidatordXLMOpts instantiates a new TgvalidatordXLMOpts object
 // This constructor will assign default values to properties that have it defined,
@@ -85,7 +88,33 @@ func (o TgvalidatordXLMOpts) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.SponsoredByAddressID) {
 		toSerialize["SponsoredByAddressID"] = o.SponsoredByAddressID
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordXLMOpts) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordXLMOpts := _TgvalidatordXLMOpts{}
+
+	err = json.Unmarshal(data, &varTgvalidatordXLMOpts)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordXLMOpts(varTgvalidatordXLMOpts)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "SponsoredByAddressID")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordXLMOpts struct {

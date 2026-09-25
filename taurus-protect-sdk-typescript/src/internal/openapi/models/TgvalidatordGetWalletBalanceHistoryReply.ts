@@ -33,7 +33,16 @@ export interface TgvalidatordGetWalletBalanceHistoryReply {
      * @memberof TgvalidatordGetWalletBalanceHistoryReply
      */
     result?: Array<TgvalidatordBalanceHistoryPoint>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetWalletBalanceHistoryReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetWalletBalanceHistoryReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetWalletBalanceHistoryReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetWalletBalanceHistoryReplyFromJSONTyped(json: any,
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetWalletBalanceHistoryReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordBalanceHistoryPointFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetWalletBalanceHistoryReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetWalletBalanceHistoryReplyToJSON(json: any): TgvalidatordGetWalletBalanceHistoryReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetWalletBalanceHistoryReplyFromJSONTyped(json: any,
     return {
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordBalanceHistoryPointToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

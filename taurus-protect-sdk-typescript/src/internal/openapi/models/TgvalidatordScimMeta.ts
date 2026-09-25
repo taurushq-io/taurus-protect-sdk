@@ -49,7 +49,16 @@ export interface TgvalidatordScimMeta {
      * @memberof TgvalidatordScimMeta
      */
     version?: number;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordScimMeta
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordScimMetaWireKeys: ReadonlySet<string> = new Set(['created', 'lastModified', 'resourceType', 'location', 'version']);
 
 /**
  * Check if a given object implements the TgvalidatordScimMeta interface.
@@ -66,7 +75,7 @@ export function TgvalidatordScimMetaFromJSONTyped(json: any, ignoreDiscriminator
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordScimMeta = {
         
         'created': json['created'] == null ? undefined : json['created'],
         'lastModified': json['lastModified'] == null ? undefined : json['lastModified'],
@@ -74,6 +83,16 @@ export function TgvalidatordScimMetaFromJSONTyped(json: any, ignoreDiscriminator
         'location': json['location'] == null ? undefined : json['location'],
         'version': json['version'] == null ? undefined : json['version'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordScimMetaWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordScimMetaToJSON(json: any): TgvalidatordScimMeta {
@@ -92,6 +111,7 @@ export function TgvalidatordScimMetaFromJSONTyped(json: any, ignoreDiscriminator
         'resourceType': value['resourceType'],
         'location': value['location'],
         'version': value['version'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -79,27 +79,23 @@ func (s *WebhookService) DeleteWebhook(ctx context.Context, id string) error {
 
 // ListWebhooks retrieves a list of webhooks with optional filtering and pagination.
 func (s *WebhookService) ListWebhooks(ctx context.Context, opts *model.ListWebhooksOptions) (*model.ListWebhooksResult, error) {
-	req := s.api.WebhookServiceGetWebhooks(ctx)
+	if opts == nil {
+		opts = &model.ListWebhooksOptions{}
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, opts.CurrentPage, opts.PageRequest)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if opts.Type != "" {
-			req = req.Type_(opts.Type)
-		}
-		if opts.URL != "" {
-			req = req.Url(opts.URL)
-		}
-		if opts.CurrentPage != "" {
-			req = req.CursorCurrentPage(opts.CurrentPage)
-		}
-		if opts.PageRequest != "" {
-			req = req.CursorPageRequest(opts.PageRequest)
-		}
-		if opts.PageSize > 0 {
-			req = req.CursorPageSize(fmt.Sprintf("%d", opts.PageSize))
-		}
-		if opts.SortOrder != "" {
-			req = req.SortOrder(opts.SortOrder)
-		}
+	req := applyCursorQuery(s.api.WebhookServiceGetWebhooks(ctx), window)
+	if opts.Type != "" {
+		req = req.Type_(opts.Type)
+	}
+	if opts.URL != "" {
+		req = req.Url(opts.URL)
+	}
+	if opts.SortOrder != "" {
+		req = req.SortOrder(opts.SortOrder)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -111,18 +107,11 @@ func (s *WebhookService) ListWebhooks(ctx context.Context, opts *model.ListWebho
 		Webhooks: mapper.WebhooksFromDTO(resp.Webhooks),
 	}
 
-	// Parse cursor pagination info
-	if resp.Cursor != nil {
-		if resp.Cursor.CurrentPage != nil {
-			result.CurrentPage = *resp.Cursor.CurrentPage
-		}
-		if resp.Cursor.HasPrevious != nil {
-			result.HasPrevious = *resp.Cursor.HasPrevious
-		}
-		if resp.Cursor.HasNext != nil {
-			result.HasNext = *resp.Cursor.HasNext
-		}
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor})
+	if err != nil {
+		return nil, err
 	}
+	result.Page = page
 
 	return result, nil
 }

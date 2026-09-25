@@ -93,9 +93,18 @@ export interface ETHRemote {
      * @memberof ETHRemote
      */
     domainSeparator?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof ETHRemote
+     */
+    additionalProperties?: { [key: string]: any };
 }
 
 
+
+const ETHRemoteWireKeys: ReadonlySet<string> = new Set(['url', 'username', 'password', 'privateKey', 'fromAddressId', 'forwarderAddress', 'forwarderAddressId', 'creatorAddress', 'creatorAddressId', 'forwarderKind', 'domainSeparator']);
 
 /**
  * Check if a given object implements the ETHRemote interface.
@@ -112,7 +121,7 @@ export function ETHRemoteFromJSONTyped(json: any, ignoreDiscriminator: boolean):
     if (json == null) {
         return json;
     }
-    return {
+    const result: ETHRemote = {
         
         'url': json['url'] == null ? undefined : json['url'],
         'username': json['username'] == null ? undefined : json['username'],
@@ -126,6 +135,16 @@ export function ETHRemoteFromJSONTyped(json: any, ignoreDiscriminator: boolean):
         'forwarderKind': json['forwarderKind'] == null ? undefined : TgvalidatordFeePayerForwarderKindFromJSON(json['forwarderKind']),
         'domainSeparator': json['domainSeparator'] == null ? undefined : json['domainSeparator'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!ETHRemoteWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function ETHRemoteToJSON(json: any): ETHRemote {
@@ -150,6 +169,7 @@ export function ETHRemoteFromJSONTyped(json: any, ignoreDiscriminator: boolean):
         'creatorAddressId': value['creatorAddressId'],
         'forwarderKind': TgvalidatordFeePayerForwarderKindToJSON(value['forwarderKind']),
         'domainSeparator': value['domainSeparator'],
+        ...value['additionalProperties'],
     };
 }
 

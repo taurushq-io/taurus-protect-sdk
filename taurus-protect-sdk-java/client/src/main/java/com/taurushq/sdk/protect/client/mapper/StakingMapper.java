@@ -117,6 +117,7 @@ public interface StakingMapper {
      */
     @Mapping(target = "stakeAccounts", source = "stakeAccounts")
     @Mapping(target = "cursor", source = "cursor")
+    @Mapping(target = "page", ignore = true)
     StakeAccountResult fromStakeAccountsReply(TgvalidatordGetStakeAccountsReply reply);
 
     /**

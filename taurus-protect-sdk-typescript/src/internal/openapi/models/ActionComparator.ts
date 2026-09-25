@@ -25,7 +25,16 @@ export interface ActionComparator {
      * @memberof ActionComparator
      */
     kind?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof ActionComparator
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const ActionComparatorWireKeys: ReadonlySet<string> = new Set(['kind']);
 
 /**
  * Check if a given object implements the ActionComparator interface.
@@ -42,10 +51,20 @@ export function ActionComparatorFromJSONTyped(json: any, ignoreDiscriminator: bo
     if (json == null) {
         return json;
     }
-    return {
+    const result: ActionComparator = {
         
         'kind': json['kind'] == null ? undefined : json['kind'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!ActionComparatorWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function ActionComparatorToJSON(json: any): ActionComparator {
@@ -60,6 +79,7 @@ export function ActionComparatorFromJSONTyped(json: any, ignoreDiscriminator: bo
     return {
         
         'kind': value['kind'],
+        ...value['additionalProperties'],
     };
 }
 

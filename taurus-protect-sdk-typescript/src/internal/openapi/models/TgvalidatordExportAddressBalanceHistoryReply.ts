@@ -31,7 +31,16 @@ export interface TgvalidatordExportAddressBalanceHistoryReply {
      * @memberof TgvalidatordExportAddressBalanceHistoryReply
      */
     totalItems?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordExportAddressBalanceHistoryReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordExportAddressBalanceHistoryReplyWireKeys: ReadonlySet<string> = new Set(['result', 'totalItems']);
 
 /**
  * Check if a given object implements the TgvalidatordExportAddressBalanceHistoryReply interface.
@@ -48,11 +57,21 @@ export function TgvalidatordExportAddressBalanceHistoryReplyFromJSONTyped(json: 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordExportAddressBalanceHistoryReply = {
         
         'result': json['result'] == null ? undefined : json['result'],
         'totalItems': json['totalItems'] == null ? undefined : json['totalItems'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordExportAddressBalanceHistoryReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordExportAddressBalanceHistoryReplyToJSON(json: any): TgvalidatordExportAddressBalanceHistoryReply {
@@ -68,6 +87,7 @@ export function TgvalidatordExportAddressBalanceHistoryReplyFromJSONTyped(json: 
         
         'result': value['result'],
         'totalItems': value['totalItems'],
+        ...value['additionalProperties'],
     };
 }
 

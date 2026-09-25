@@ -25,7 +25,16 @@ export interface TgvalidatordEVMBlockchainInfo {
      * @memberof TgvalidatordEVMBlockchainInfo
      */
     chainId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordEVMBlockchainInfo
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordEVMBlockchainInfoWireKeys: ReadonlySet<string> = new Set(['chainId']);
 
 /**
  * Check if a given object implements the TgvalidatordEVMBlockchainInfo interface.
@@ -42,10 +51,20 @@ export function TgvalidatordEVMBlockchainInfoFromJSONTyped(json: any, ignoreDisc
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordEVMBlockchainInfo = {
         
         'chainId': json['chainId'] == null ? undefined : json['chainId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordEVMBlockchainInfoWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordEVMBlockchainInfoToJSON(json: any): TgvalidatordEVMBlockchainInfo {
@@ -60,6 +79,7 @@ export function TgvalidatordEVMBlockchainInfoFromJSONTyped(json: any, ignoreDisc
     return {
         
         'chainId': value['chainId'],
+        ...value['additionalProperties'],
     };
 }
 

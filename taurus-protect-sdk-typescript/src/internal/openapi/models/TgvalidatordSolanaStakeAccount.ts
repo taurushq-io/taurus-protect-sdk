@@ -63,9 +63,18 @@ export interface TgvalidatordSolanaStakeAccount {
      * @memberof TgvalidatordSolanaStakeAccount
      */
     allowMerge?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordSolanaStakeAccount
+     */
+    additionalProperties?: { [key: string]: any };
 }
 
 
+
+const TgvalidatordSolanaStakeAccountWireKeys: ReadonlySet<string> = new Set(['derivationIndex', 'state', 'validatorAddress', 'activeBalance', 'inactiveBalance', 'allowMerge']);
 
 /**
  * Check if a given object implements the TgvalidatordSolanaStakeAccount interface.
@@ -82,7 +91,7 @@ export function TgvalidatordSolanaStakeAccountFromJSONTyped(json: any, ignoreDis
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordSolanaStakeAccount = {
         
         'derivationIndex': json['derivationIndex'] == null ? undefined : json['derivationIndex'],
         'state': json['state'] == null ? undefined : SolanaStakeAccountStateFromJSON(json['state']),
@@ -91,6 +100,16 @@ export function TgvalidatordSolanaStakeAccountFromJSONTyped(json: any, ignoreDis
         'inactiveBalance': json['inactiveBalance'] == null ? undefined : json['inactiveBalance'],
         'allowMerge': json['allowMerge'] == null ? undefined : json['allowMerge'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordSolanaStakeAccountWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordSolanaStakeAccountToJSON(json: any): TgvalidatordSolanaStakeAccount {
@@ -110,6 +129,7 @@ export function TgvalidatordSolanaStakeAccountFromJSONTyped(json: any, ignoreDis
         'activeBalance': value['activeBalance'],
         'inactiveBalance': value['inactiveBalance'],
         'allowMerge': value['allowMerge'],
+        ...value['additionalProperties'],
     };
 }
 

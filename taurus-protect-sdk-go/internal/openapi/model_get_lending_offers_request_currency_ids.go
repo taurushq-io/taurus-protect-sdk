@@ -21,7 +21,10 @@ var _ MappedNullable = &GetLendingOffersRequestCurrencyIDs{}
 type GetLendingOffersRequestCurrencyIDs struct {
 	// Filter on currency ID
 	CurrencyIDs []string `json:"currencyIDs,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _GetLendingOffersRequestCurrencyIDs GetLendingOffersRequestCurrencyIDs
 
 // NewGetLendingOffersRequestCurrencyIDs instantiates a new GetLendingOffersRequestCurrencyIDs object
 // This constructor will assign default values to properties that have it defined,
@@ -85,7 +88,33 @@ func (o GetLendingOffersRequestCurrencyIDs) ToMap() (map[string]interface{}, err
 	if !IsNil(o.CurrencyIDs) {
 		toSerialize["currencyIDs"] = o.CurrencyIDs
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *GetLendingOffersRequestCurrencyIDs) UnmarshalJSON(data []byte) (err error) {
+	varGetLendingOffersRequestCurrencyIDs := _GetLendingOffersRequestCurrencyIDs{}
+
+	err = json.Unmarshal(data, &varGetLendingOffersRequestCurrencyIDs)
+
+	if err != nil {
+		return err
+	}
+
+	*o = GetLendingOffersRequestCurrencyIDs(varGetLendingOffersRequestCurrencyIDs)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "currencyIDs")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableGetLendingOffersRequestCurrencyIDs struct {

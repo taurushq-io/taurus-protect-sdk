@@ -51,7 +51,16 @@ export interface TgvalidatordCosmosMessageValue {
      * @memberof TgvalidatordCosmosMessageValue
      */
     value?: CosmosMessageValueValue;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCosmosMessageValue
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCosmosMessageValueWireKeys: ReadonlySet<string> = new Set(['kind', 'name', 'fieldId', 'value']);
 
 /**
  * Check if a given object implements the TgvalidatordCosmosMessageValue interface.
@@ -68,13 +77,23 @@ export function TgvalidatordCosmosMessageValueFromJSONTyped(json: any, ignoreDis
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCosmosMessageValue = {
         
         'kind': json['kind'] == null ? undefined : json['kind'],
         'name': json['name'] == null ? undefined : json['name'],
         'fieldId': json['fieldId'] == null ? undefined : json['fieldId'],
         'value': json['value'] == null ? undefined : CosmosMessageValueValueFromJSON(json['value']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCosmosMessageValueWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCosmosMessageValueToJSON(json: any): TgvalidatordCosmosMessageValue {
@@ -92,6 +111,7 @@ export function TgvalidatordCosmosMessageValueFromJSONTyped(json: any, ignoreDis
         'name': value['name'],
         'fieldId': value['fieldId'],
         'value': CosmosMessageValueValueToJSON(value['value']),
+        ...value['additionalProperties'],
     };
 }
 

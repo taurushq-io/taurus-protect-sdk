@@ -10,18 +10,22 @@ import com.taurushq.sdk.protect.client.model.FiatProviderAccount;
 import com.taurushq.sdk.protect.client.model.FiatProviderAccountResult;
 import com.taurushq.sdk.protect.client.model.FiatProviderCounterpartyAccount;
 import com.taurushq.sdk.protect.client.model.FiatProviderCounterpartyAccountResult;
+import com.taurushq.sdk.protect.client.model.FiatProviderEntityResult;
 import com.taurushq.sdk.protect.client.model.FiatProviderOperation;
 import com.taurushq.sdk.protect.client.model.FiatProviderOperationResult;
+import com.taurushq.sdk.protect.client.model.Pagination;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import com.taurushq.sdk.protect.openapi.api.FiatApi;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProviderAccountReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProviderAccountsReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProviderCounterpartyAccountReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProviderCounterpartyAccountsReply;
+import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProviderEntitiesReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProviderOperationReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProviderOperationsReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProvidersReply;
 
+import java.util.Collections;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -42,9 +46,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * FiatProviderAccount account = client.getFiatService()
  *     .getFiatProviderAccount("account-123");
  *
- * // List accounts with pagination
+ * // List a provider's accounts, first page
  * FiatProviderAccountResult result = client.getFiatService()
- *     .getFiatProviderAccounts(null, null, null, null, null);
+ *     .getFiatProviderAccounts("provider", "label", null, null, 20, null);
+ * // next page: pass result.getPage().getNextCursor() while result.getPage().hasMore()
  * }</pre>
  *
  * @see FiatProvider
@@ -117,42 +122,56 @@ public class FiatService {
     }
 
     /**
-     * Retrieves fiat provider accounts with optional filtering.
+     * Retrieves a page of a provider's accounts.
      *
-     * @param provider    filter by provider (optional)
-     * @param label       filter by label (optional)
+     * @param provider    the provider, required
+     * @param label       the provider configuration label, required
      * @param accountType filter by account type (optional)
      * @param sortOrder   sort order for results (optional, "ASC" or "DESC")
-     * @param cursor      pagination cursor (optional, null for first page)
-     * @return a paginated result containing fiat provider accounts
-     * @throws ApiException if the API call fails
+     * @param pageSize    the page size, null or 0 for the default
+     * @param cursor      a previous page's {@code getPage().getNextCursor()}, null for the first page
+     * @return the accounts and their page
+     * @throws ApiException             if the API call fails
+     * @throws IllegalArgumentException if provider or label is empty, or the page size is out of range
+     */
+    public FiatProviderAccountResult getFiatProviderAccounts(final String provider, final String label,
+                                                              final String accountType, final String sortOrder,
+                                                              final Integer pageSize, final String cursor)
+            throws ApiException {
+        return getFiatProviderAccounts(provider, label, accountType, sortOrder, Pagination.page(pageSize, cursor));
+    }
+
+    /**
+     * Retrieves a page of a provider's accounts, with a low-level request cursor.
+     *
+     * @param provider    the provider, required
+     * @param label       the provider configuration label, required
+     * @param accountType filter by account type (optional)
+     * @param sortOrder   sort order for results (optional, "ASC" or "DESC")
+     * @param cursor      the request cursor, null for the first page with the default size
+     * @return the accounts and their page
+     * @throws ApiException             if the API call fails
+     * @throws IllegalArgumentException if provider or label is empty
      */
     public FiatProviderAccountResult getFiatProviderAccounts(final String provider, final String label,
                                                               final String accountType, final String sortOrder,
                                                               final ApiRequestCursor cursor)
             throws ApiException {
-
-        String cursorCurrentPage = null;
-        String cursorPageRequest = null;
-        String cursorPageSize = null;
-
-        if (cursor != null) {
-            cursorCurrentPage = cursor.getCurrentPage();
-            cursorPageRequest = cursor.getPageRequest() != null ? cursor.getPageRequest().name() : null;
-            cursorPageSize = String.valueOf(cursor.getPageSize());
-        }
+        checkArgument(!Strings.isNullOrEmpty(provider), "provider cannot be null or empty");
+        checkArgument(!Strings.isNullOrEmpty(label), "label cannot be null or empty");
+        final CursorRequest page = CursorRequest.of(cursor);
 
         try {
             TgvalidatordGetFiatProviderAccountsReply reply = fiatApi.fiatProviderServiceGetFiatProviderAccounts(
                     provider,
                     label,
                     sortOrder,
-                    cursorCurrentPage,
-                    cursorPageRequest,
-                    cursorPageSize,
+                    page.currentPage(),
+                    page.pageRequest(),
+                    page.pageSizeParam(),
                     accountType
             );
-            return mapper.fromAccountsReply(reply);
+            return page.complete(mapper.fromAccountsReply(reply), PagedOperation.FIAT_PROVIDER_ACCOUNTS);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
@@ -179,30 +198,45 @@ public class FiatService {
     }
 
     /**
-     * Retrieves fiat provider counterparty accounts with optional filtering.
+     * Retrieves a page of a provider's counterparty accounts.
      *
-     * @param provider       filter by provider (optional)
-     * @param label          filter by label (optional)
+     * @param provider       the provider, required
+     * @param label          the provider configuration label, required
      * @param counterpartyId filter by counterparty ID (optional)
      * @param sortOrder      sort order for results (optional, "ASC" or "DESC")
-     * @param cursor         pagination cursor (optional, null for first page)
-     * @return a paginated result containing fiat provider counterparty accounts
-     * @throws ApiException if the API call fails
+     * @param pageSize       the page size, null or 0 for the default
+     * @param cursor         a previous page's {@code getPage().getNextCursor()}, null for the first page
+     * @return the counterparty accounts and their page
+     * @throws ApiException             if the API call fails
+     * @throws IllegalArgumentException if provider or label is empty, or the page size is out of range
+     */
+    public FiatProviderCounterpartyAccountResult getFiatProviderCounterpartyAccounts(
+            final String provider, final String label, final String counterpartyId,
+            final String sortOrder, final Integer pageSize, final String cursor)
+            throws ApiException {
+        return getFiatProviderCounterpartyAccounts(provider, label, counterpartyId, sortOrder,
+                Pagination.page(pageSize, cursor));
+    }
+
+    /**
+     * Retrieves a page of a provider's counterparty accounts, with a low-level request cursor.
+     *
+     * @param provider       the provider, required
+     * @param label          the provider configuration label, required
+     * @param counterpartyId filter by counterparty ID (optional)
+     * @param sortOrder      sort order for results (optional, "ASC" or "DESC")
+     * @param cursor         the request cursor, null for the first page with the default size
+     * @return the counterparty accounts and their page
+     * @throws ApiException             if the API call fails
+     * @throws IllegalArgumentException if provider or label is empty
      */
     public FiatProviderCounterpartyAccountResult getFiatProviderCounterpartyAccounts(
             final String provider, final String label, final String counterpartyId,
             final String sortOrder, final ApiRequestCursor cursor)
             throws ApiException {
-
-        String cursorCurrentPage = null;
-        String cursorPageRequest = null;
-        String cursorPageSize = null;
-
-        if (cursor != null) {
-            cursorCurrentPage = cursor.getCurrentPage();
-            cursorPageRequest = cursor.getPageRequest() != null ? cursor.getPageRequest().name() : null;
-            cursorPageSize = String.valueOf(cursor.getPageSize());
-        }
+        checkArgument(!Strings.isNullOrEmpty(provider), "provider cannot be null or empty");
+        checkArgument(!Strings.isNullOrEmpty(label), "label cannot be null or empty");
+        final CursorRequest page = CursorRequest.of(cursor);
 
         try {
             TgvalidatordGetFiatProviderCounterpartyAccountsReply reply =
@@ -211,11 +245,12 @@ public class FiatService {
                             label,
                             counterpartyId,
                             sortOrder,
-                            cursorCurrentPage,
-                            cursorPageRequest,
-                            cursorPageSize
+                            page.currentPage(),
+                            page.pageRequest(),
+                            page.pageSizeParam()
                     );
-            return mapper.fromCounterpartyAccountsReply(reply);
+            return page.complete(mapper.fromCounterpartyAccountsReply(reply),
+                    PagedOperation.FIAT_PROVIDER_COUNTERPARTY_ACCOUNTS);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }
@@ -242,40 +277,85 @@ public class FiatService {
     }
 
     /**
-     * Retrieves fiat provider operations with optional filtering.
+     * Retrieves a page of fiat provider operations.
      *
      * @param provider  filter by provider (optional)
      * @param label     filter by label (optional)
      * @param sortOrder sort order for results (optional, "ASC" or "DESC")
-     * @param cursor    pagination cursor (optional, null for first page)
-     * @return a paginated result containing fiat provider operations
+     * @param pageSize  the page size, null or 0 for the default
+     * @param cursor    a previous page's {@code getPage().getNextCursor()}, null for the first page
+     * @return the operations and their page
+     * @throws ApiException             if the API call fails
+     * @throws IllegalArgumentException if the page size is out of range
+     */
+    public FiatProviderOperationResult getFiatProviderOperations(final String provider, final String label,
+                                                                  final String sortOrder, final Integer pageSize,
+                                                                  final String cursor)
+            throws ApiException {
+        return getFiatProviderOperations(provider, label, sortOrder, Pagination.page(pageSize, cursor));
+    }
+
+    /**
+     * Retrieves a page of fiat provider operations, with a low-level request cursor.
+     *
+     * @param provider  filter by provider (optional)
+     * @param label     filter by label (optional)
+     * @param sortOrder sort order for results (optional, "ASC" or "DESC")
+     * @param cursor    the request cursor, null for the first page with the default size
+     * @return the operations and their page
      * @throws ApiException if the API call fails
      */
     public FiatProviderOperationResult getFiatProviderOperations(final String provider, final String label,
                                                                   final String sortOrder,
                                                                   final ApiRequestCursor cursor)
             throws ApiException {
-
-        String cursorCurrentPage = null;
-        String cursorPageRequest = null;
-        String cursorPageSize = null;
-
-        if (cursor != null) {
-            cursorCurrentPage = cursor.getCurrentPage();
-            cursorPageRequest = cursor.getPageRequest() != null ? cursor.getPageRequest().name() : null;
-            cursorPageSize = String.valueOf(cursor.getPageSize());
-        }
+        final CursorRequest page = CursorRequest.of(cursor);
 
         try {
             TgvalidatordGetFiatProviderOperationsReply reply = fiatApi.fiatProviderServiceGetFiatProviderOperations(
                     provider,
                     label,
                     sortOrder,
-                    cursorCurrentPage,
-                    cursorPageRequest,
-                    cursorPageSize
+                    page.currentPage(),
+                    page.pageRequest(),
+                    page.pageSizeParam()
             );
-            return mapper.fromOperationsReply(reply);
+            return page.complete(mapper.fromOperationsReply(reply), PagedOperation.FIAT_PROVIDER_OPERATIONS);
+        } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
+            throw apiExceptionMapper.toApiException(e);
+        }
+    }
+
+    /**
+     * Retrieves a page of the entities registered with fiat providers.
+     *
+     * @param provider  filter by provider (optional)
+     * @param label     filter by label (optional)
+     * @param sortOrder sort order for results (optional, "ASC" or "DESC")
+     * @param pageSize  the page size, null or 0 for the default
+     * @param cursor    a previous page's {@code getPage().getNextCursor()}, null for the first page
+     * @return the entities and their page
+     * @throws ApiException             if the API call fails
+     * @throws IllegalArgumentException if the page size is out of range
+     */
+    public FiatProviderEntityResult listFiatProviderEntities(final String provider, final String label,
+                                                             final String sortOrder, final Integer pageSize,
+                                                             final String cursor) throws ApiException {
+        final CursorRequest page = CursorRequest.of(Pagination.page(pageSize, cursor));
+
+        try {
+            TgvalidatordGetFiatProviderEntitiesReply reply = fiatApi.fiatProviderServiceGetFiatProviderEntities(
+                    provider,
+                    label,
+                    sortOrder,
+                    page.currentPage(),
+                    page.pageRequest(),
+                    page.pageSizeParam()
+            );
+            FiatProviderEntityResult result = new FiatProviderEntityResult();
+            result.setEntities(reply.getResult() == null
+                    ? Collections.emptyList() : mapper.fromEntityDTOList(reply.getResult()));
+            return page.complete(result, PagedOperation.FIAT_PROVIDER_ENTITIES, reply.getCursor(), null);
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }

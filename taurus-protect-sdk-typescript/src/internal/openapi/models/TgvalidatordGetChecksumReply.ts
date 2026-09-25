@@ -25,7 +25,16 @@ export interface TgvalidatordGetChecksumReply {
      * @memberof TgvalidatordGetChecksumReply
      */
     checksum?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetChecksumReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetChecksumReplyWireKeys: ReadonlySet<string> = new Set(['checksum']);
 
 /**
  * Check if a given object implements the TgvalidatordGetChecksumReply interface.
@@ -42,10 +51,20 @@ export function TgvalidatordGetChecksumReplyFromJSONTyped(json: any, ignoreDiscr
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetChecksumReply = {
         
         'checksum': json['checksum'] == null ? undefined : json['checksum'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetChecksumReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetChecksumReplyToJSON(json: any): TgvalidatordGetChecksumReply {
@@ -60,6 +79,7 @@ export function TgvalidatordGetChecksumReplyFromJSONTyped(json: any, ignoreDiscr
     return {
         
         'checksum': value['checksum'],
+        ...value['additionalProperties'],
     };
 }
 

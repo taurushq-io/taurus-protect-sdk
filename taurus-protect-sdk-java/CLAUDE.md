@@ -50,7 +50,7 @@ Three modules:
 - Do not use deprecated methods or classes
 - Java 8 target — no `var` keyword (Java 10+), use explicit type declarations
 
-### Available Services (38 + TaurusNetwork namespace)
+### Available Services (39 + TaurusNetwork namespace)
 
 The ProtectClient provides lazy-initialized getters for all services:
 
@@ -62,7 +62,7 @@ The ProtectClient provides lazy-initialized getters for all services:
 
 **Administrative**: `getUserService()`, `getGroupService()`, `getVisibilityGroupService()`, `getConfigService()`, `getWebhookService()`, `getWebhookCallsService()`, `getTagService()`
 
-**Specialized**: `getAssetService()`, `getActionService()`, `getBlockchainService()`, `getExchangeService()`, `getFiatService()`, `getFeePayerService()`, `getHealthService()`, `getJobService()`, `getScoreService()`, `getStatisticsService()`, `getTokenMetadataService()`, `getUserDeviceService()`, `getMultiFactorSignatureService()`
+**Specialized**: `getAssetService()`, `getActionService()`, `getBlockchainService()`, `getEarnService()`, `getExchangeService()`, `getFiatService()`, `getFeePayerService()`, `getHealthService()`, `getJobService()`, `getScoreService()`, `getStatisticsService()`, `getTokenMetadataService()`, `getUserDeviceService()`, `getMultiFactorSignatureService()`
 
 **Taurus Network** (namespace pattern):
 ```java
@@ -79,8 +79,24 @@ client.taurusNetwork().sharing()        // Address/Asset sharing
 - Uses `openapi-generator-cli` JAR (7.9.0) with `-g java`
 - Generated types prefixed with `Tgvalidatord`
 - Requires Java 11+ runtime
-- `scripts/generate-openapi.sh` calls `patch` (BSD/GNU `patch` binary) to apply `scripts/openapi-tpv1.patch` to the regenerated `ApiClient.java`. The patch (1) collapses 4 `auth.*` imports into a wildcard, (2) replaces `new ApiKeyAuth("header","Authorization")` with `new ApiKeyTPV1Auth()` in both constructors, and (3) inserts `setApiKeyTPV1`/`setApiSecretTPV1` helper methods. If `patch` is missing, apply by hand — the diff is tiny.
-- **`auth/ApiKeyTPV1Auth.java` and `auth/ApiKeyTPV1Exception.java` are committed files, not regenerated.** They are referenced by `ApiClientTPV1.java` and by the patched `ApiClient.java` (the `scripts/openapi-tpv1.patch` only renames references — it never recreates the helpers). Treat them as part of the SDK source. They were once deleted in `e4500b2 cleanup` and had to be restored from `873e982`; do not re-delete them under a "looks generated" assumption.
+- **Generated enums are open final classes, not Java enums** (`scripts/resources/templates/java/libraries/
+  okhttp-gson/modelEnum.mustache`, passed with `-t`): `fromValue` returns the known constant, `null` for
+  `null`, else a new instance keeping the raw value — it never throws, so never use it to validate caller
+  input. No `switch`/`name()`/`ordinal()`/`EnumSet` on them; MapStruct cannot map them to `String`
+  implicitly — add a `getValue()` default method (see `FeePayerMapper.forwarderKindToString`). The script
+  aborts if a generated model still contains `Unexpected value`. Cross-SDK contract: repo-root `CLAUDE.md`.
+- Regeneration rewrites the `@Generated(date=…)` line of every file: afterwards restore each file whose only
+  change is that line (`diff -q -I '@javax.annotation.Generated'` against a pre-regen snapshot).
+- `scripts/generate-openapi.sh` post-processes the regenerated `ApiClient.java` with
+  `scripts/tpv1-apiclient.py` (it replaced `openapi-tpv1.patch`, whose context lines no longer matched —
+  the generator now emits "Authorization", not "Authorisation" — and `patch` is not installed
+  everywhere). Every edit is anchored and exits 1 if the generator's output moved: collapse the 4
+  `auth.*` imports into a wildcard, swap both `new ApiKeyAuth("header","Authorization")` for
+  `new ApiKeyTPV1Auth()`, insert `setApiKeyTPV1`/`setApiSecretTPV1`, and base64-encode `byte[]` in
+  `parameterToString`. Without that last branch `String.valueOf(byte[])` sends `[B@1b6d3586` and every
+  bytes cursor (wallet tokens, rules history) is unusable. It reproduces the committed `ApiClient`
+  exactly apart from that branch.
+- **`auth/ApiKeyTPV1Auth.java` and `auth/ApiKeyTPV1Exception.java` are committed files, not regenerated.** They are referenced by `ApiClientTPV1.java` and by the patched `ApiClient.java` (`scripts/tpv1-apiclient.py` only renames references — it never recreates the helpers). Treat them as part of the SDK source. They were once deleted in `e4500b2 cleanup` and had to be restored from `873e982`; do not re-delete them under a "looks generated" assumption.
 
 ### Protobuf
 - Uses `protoc` directly
@@ -125,21 +141,47 @@ violations that nobody saw because the file was untracked.
 
 ## Testing
 
-### Unit test deps are JUnit ONLY — no Mockito, no HTTP stub library
+### Unit test deps are JUnit ONLY — stub the TRANSPORT, never the service
 
 `client/pom.xml` declares `junit-jupiter-engine` and `junit-jupiter` and nothing else for
-test scope. There is no Mockito, no WireMock, no MockWebServer, and no `HttpServer`-based
-stub anywhere in `client/src/test/java`. Consequences when writing a test:
+test scope: no Mockito, no WireMock, no MockWebServer. The one stub is
+**`testutil/StubTransport`**, an OkHttp `Interceptor` installed on a real `ApiClient` through
+`setHttpClient` (okhttp is already a dependency of the generated client). It records every
+request and answers from a queue of canned JSON bodies without touching the network, so the
+GENERATED client runs end to end — its parameter names, query encoding and Gson
+(de)serializers. That is the point: stubbing above the generated layer is how SDKs came to
+read reply fields the generated models do not have.
 
-- **You cannot mock a service or stub the transport.** A test that needs a service to
-  return canned data has to construct the real object and drive the method that takes the
-  data as an argument. Concretely: the rules-container verification gate asserts on
-  `governanceRuleService.getDecodedRulesContainer(rules)` with a hand-built
-  `GovernanceRules`, because `RulesContainerCache` can only be driven through a live
-  `ApiClient`. Say so in the test comment rather than implying full-path coverage.
-- A `GovernanceRuleService` for tests is `new GovernanceRuleService(new ApiClient(), new
-  ApiExceptionMapper(), keys, minValidSignatures)` — see `RulesContainerCacheTest`'s
-  `@BeforeAll`, which generates a real P-256 key via BouncyCastle.
+```java
+StubTransport stub = StubTransport.replying("{\"result\":[],\"totalItems\":\"5\"}", "{}");
+WalletResult page = new WalletService(stub.client(), new ApiExceptionMapper()).getWallets(20, 0);
+stub.only().query();      // decoded pairs, sorted: [[limit, 20]]
+stub.only().rawQuery();   // still percent-encoded: check that + / = in a cursor were escaped
+stub.only().body();       // the JSON body of a POST
+```
+
+- The client authenticates with a placeholder bearer token and base path
+  `https://stub.invalid`; the last reply repeats; `withStatus(code)` answers errors.
+- A call that reads SEVERAL endpoints (a list plus its verified re-reads) routes by path
+  instead of relying on the queue order: `route(path, request -> body)` (or
+  `route(path, status, ...)`) answers from the request itself, e.g. only the ids in
+  `request.values("addressIds")`; `requestsTo(path)` counts the reads per endpoint.
+  `AssetHoldersVerificationTest` is the worked example.
+- **`testutil/SignedWhitelist`** builds whitelisted-address envelopes that pass the real
+  six-step verification (fresh SuperAdmin + approver keys, a signed per-row container);
+  `row(id, true)` fails step 1. Use it instead of hand-built envelopes whenever a test must
+  show a row SURVIVING verification — without one, an exclusion test passes whether or not
+  anything verified.
+- `service/ServicesUnderTest` builds every service on one stub (with a generated P-256
+  SuperAdmin key). A reply without rows needs no rules container, so no fixture key signs
+  anything; tests that need verification still build their own fixtures.
+- **A bare `new ApiClient()` is not a stub.** A call through it fails in the TPV1 signer with
+  an `IllegalArgumentException` (no key) — so an `assertThrows(IllegalArgumentException.class,
+  ...)` written against it passes whether or not the SDK's own validation ran. Pin argument
+  validation through the stub and assert zero requests, as `ListRequestVectorsTest` does.
+- A `GovernanceRuleService` for verification tests is still `new GovernanceRuleService(new
+  ApiClient(), new ApiExceptionMapper(), keys, minValidSignatures)` — see
+  `RulesContainerCacheTest`'s `@BeforeAll`, which generates a real P-256 key via BouncyCastle.
 
 ### Building a rules container in a test
 
@@ -296,8 +338,8 @@ Key model classes and their actual field names (to avoid compilation errors):
 - **BlockchainInfo**: `getSymbol()`, `getNetwork()`, `getName()` (not `getCurrency()`)
 
 **Service Method Signatures:**
-- `RequestService.getRequests(OffsetDateTime, OffsetDateTime, String, List<RequestStatus>, ApiRequestCursor)` - uses cursor pagination
-- `GroupService.getGroups(String limit, String offset, List<String> ids, List<String> externalGroupIds, String query)` - String params
+- `RequestService.getRequests(OffsetDateTime, OffsetDateTime, String, List<RequestStatus>, Integer pageSize, String cursor)` - cursor list; the `ApiRequestCursor` overload is the low-level form
+- `GroupService.getGroups(int limit, long offset, List<String> ids, List<String> externalGroupIds, String query)` - returns `GroupResult`
 - `VisibilityGroupService.getVisibilityGroups()` - no pagination parameters
 - `AuditService.getAuditTrails(...)` - returns `AuditTrailResult`, not `List<AuditTrail>`
 - `ProtectClient.create(...)` - always requires SuperAdmin keys; use `createFromPem()` for PEM-encoded keys
@@ -401,25 +443,62 @@ Cross-SDK rules are in the repo-root `CLAUDE.md`. Java-specific:
   flag in one operation, so the two cannot be separated. A package-private setter was not an
   option — `RequestMetadata` (`…client.model`) and `RequestService` (`…client.service`) are in
   different packages. `RequestService.verifyMetadataHash` is now a one-line delegate.
-- **`helper/PriceVerifier.java`** + `model/PriceSignature.java` + `signatures` on `Price`. Note
-  `PriceMapper` carries `@Mapping(target = "signatures", ignore = true)`: the generated
-  `TgvalidatordCurrencyPrice` has no such field even though `apis.swagger.json` declares it —
-  a stale-snapshot symptom, so populating it needs codegen, not a mapper change.
+- **`helper/PriceVerifier.java`** + `model/PriceSignature.java` + `signatures` on `Price`.
+  `PriceMapper` maps `signatures` by name. It used to `ignore` them on the belief that the
+  generated `TgvalidatordCurrencyPrice` lacked the field — it has it — so every price failed
+  verification once the rules container configured `PRICEUPDATER` keys.
 - **`SignatureVerifier.keyFingerprint` is `public static`**, and both services'
   `verifyGroupThreshold` is package-private so its tests can reach it.
 - **`model/WhitelistedAssetResult`** exists because the asset list had no page total while the
-  contract list did. Its `hasMore(currentOffset, pageSize)` is overflow-safe
-  (`totalItems > currentOffset && totalItems - currentOffset > pageSize`), deliberately unlike
-  the deleted `WhitelistedContractAddressResult`'s `(currentOffset + pageSize) < totalItems`.
+  contract list did. It now carries an `OffsetPagination` (`getPagination()`); the old
+  `hasMore(currentOffset, pageSize)` is gone. The next offset is computed in long arithmetic, so
+  it cannot wrap the way the deleted `WhitelistedContractAddressResult`'s
+  `(currentOffset + pageSize) < totalItems` did.
 - **Ordering matters in `approveRequests`.** Java checks metadata *before* `privateKey`, the
   reverse of Go, so the new hash-verified refusal sits **after** `checkNotNull(privateKey)` —
   otherwise `approveRequests_throwsOnNullPrivateKey` starts failing on the wrong error.
 - **Test-fixture trap:** `requestWith` builds RAW mapped rows, some deliberately tampered.
   Blanket-verifying them at construction breaks the test whose subject is the service dropping
   them. Leave that fixture unverified.
-- Service happy-paths are not unit-testable here (JUnit only, no Mockito or HTTP stub), so this
-  pass's Java coverage is on the models and on argument validation — say so in the test rather
-  than implying full-path coverage.
+- Service happy-paths ARE unit-testable now, through `testutil/StubTransport` (see "Unit test
+  deps" above); older tests from this pass cover the models and argument validation only.
+
+## Pagination (Java implementation of the cross-SDK contract)
+
+The contract is in the repo-root `CLAUDE.md` → "Pagination (cross-SDK)". Where it lives here:
+
+| Piece | Where |
+|---|---|
+| Constants, the one size resolver, `Pagination.page(pageSize, cursor)` | `model/Pagination` (`DEFAULT_PAGE_SIZE` 20, `MAX_PAGE_SIZE` 100, `MAX_PRICE_HISTORY_LIMIT` 365; `resolveSize`/`resolvePageSize`/`resolveOffset`) |
+| Offset value + its ONE builder | `model/OffsetPagination.of(OffsetRule, …)`, `model/OffsetRule` (the five rules) |
+| Cursor value + its ONE builder | `model/CursorPage.fromCursor(…)` / `fromToken(…)` |
+| Which operation uses which rule | `service/PagedOperation` — every call site builds its page through its constant, and `PaginationVectorsTest` holds the table equal to `pagination-vectors.json#operations` |
+| Wire form of a cursor page | `service/CursorRequest.of(ApiRequestCursor)` — page size always, currentPage/pageRequest only when continuing |
+| Result bases | `model/OffsetPagedResult<T>` (`getPagination()`), `model/CursorPagedResult` (`getPage()`, raw `getCursor()`, `hasNext()`, `nextCursor(pageSize)`) |
+
+Rules that are easy to break:
+
+- **Malformed server counts throw `IntegrityException`** (unchecked, like every "reply we will not
+  trust"): only canonical decimals in `[0, 2^53-1]` are counts, and absent means 0.
+- **Offset 0 and a first-page cursor send nothing extra.** The shared request vectors expect
+  exactly `limit=20` / `cursor.pageSize=20` on a default call: no `offset=0`, no
+  `pageRequest=FIRST` (that is only sent by the low-level `Pagination.first`).
+- **Generated models initialise list fields to `[]`,** so a request body built from them
+  serialises `"addresses":[]` unless the field is set to null — do that when the vectors compare
+  bodies structurally (`TgvalidatordGetAssetAddressesRequest.addresses`).
+- **The two token operations (wallet tokens, rules history) have a `byte[]` cursor in the
+  generated client.** `CursorRequest.tokenBytes` decodes the caller's text (standard or URL-safe
+  alphabet) and the patched `ApiClient.parameterToString` re-encodes it as standard base64; the
+  reply's `byte[]` comes back as text through `CursorRequest.tokenText`. Server tokens are
+  canonical, so they round-trip exactly; a non-canonical token (non-zero pad bits) would not,
+  which is why the shared vectors use canonical ones.
+- **`TransactionService.exportTransactions` is limit-only** (no offset, no maximum): validatord's
+  export ignores the offset and always starts from the first row.
+- The list-request vector loader (`service/ListRequestVectorsTest`) maps every operationId to a
+  Java call in an explicit adapter table. An unmapped operation or option fails, except the
+  operations Java does not wrap (`PaginationVectorsTest.NOT_WRAPPED`, with the reason) and options
+  a Java signature cannot take at all (`statuses` on the approval queue), which are accepted only
+  where the vector expects a refusal. `everyAdapterOptionIsExercised` catches a stale mapping.
 
 ## Lessons Learned (Non-Security)
 
@@ -463,10 +542,13 @@ PEM-only fixture user silently contributes nothing to a threshold — set the de
   matched through timing.
 - `BusinessRuleService.updateTransactionsEnabled(boolean)` — the transactions kill switch, previously
   Go-only even though the generated op exists in all four.
-- `TransactionService.getTransactions(...)` / `exportTransactions(...)` gained 8-argument overloads
-  carrying `blockchain` + `network`; the 6-argument forms delegate with nulls, so no caller breaks.
-  **8 params is exactly `ParameterNumber max` in `checkstyle.xml`** — a ninth filter needs an options
-  object, not another parameter.
+- `TransactionService.getTransactions(...)` has an 8-argument overload carrying `blockchain` +
+  `network`; the 6-argument form delegates with nulls. `exportTransactions` is limit-only (the
+  server ignores an export offset): 5- and 7-argument forms plus an 8-argument one carrying
+  `format` (not sent unless asked; the server default is JSON). **8 params is exactly
+  `ParameterNumber max` in `checkstyle.xml`** — a ninth filter needs an options object, not another
+  parameter; `TaurusNetworkSharingService.listSharedAddresses` (seven filters) takes its page only
+  as `Pagination.page(pageSize, cursor)` for that reason.
 - `GovernanceRuleService.verifyGovernanceRules(rules)` — single-argument overload using the configured
   threshold, which is the cross-SDK shape.
 
@@ -571,14 +653,16 @@ Always use stable releases. Current stable: `1.6.3`. Never use `-Beta`, `-RC`, o
 
 **Solution:** Use `String` for all amount fields. Add `jsonValueToString(Object)` helper in `RequestMetadata.java` that handles both `String` and `Number` JSON inputs via `BigDecimal.toPlainString()` for lossless conversion.
 
-### ApiRequestCursor Cannot Be Null
+### A null ApiRequestCursor is the first page
 
-**Problem:** `BusinessRuleService.getBusinessRules(cursor)` and similar methods require a non-null `ApiRequestCursor`. Passing `null` causes `NullPointerException`.
+Cursor lists take `(…, Integer pageSize, String cursor)`; the `ApiRequestCursor` overloads are the
+low-level form. A `null` `ApiRequestCursor` — and one built with the no-argument constructor, whose
+size is unset — sends the first page with `Pagination.DEFAULT_PAGE_SIZE`. It used to throw
+`NullPointerException`. An explicit size is validated at construction (1..100).
 
-**Solution:** Always construct a proper cursor:
 ```java
-ApiRequestCursor cursor = new ApiRequestCursor(PageRequest.FIRST, 50);
-BusinessRuleResult result = client.getBusinessRuleService().getBusinessRules(cursor);
+BusinessRuleResult result = client.getBusinessRuleService().getBusinessRules(20, null);
+result = client.getBusinessRuleService().getBusinessRules(20, result.getPage().getNextCursor());
 ```
 
 ### ProtectClient Secret Cleanup — Validate Reflection Targets

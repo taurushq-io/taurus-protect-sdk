@@ -33,7 +33,16 @@ export interface TgvalidatordGetHealthCheckReply {
      * @memberof TgvalidatordGetHealthCheckReply
      */
     health?: TgvalidatordHealth;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetHealthCheckReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetHealthCheckReplyWireKeys: ReadonlySet<string> = new Set(['health']);
 
 /**
  * Check if a given object implements the TgvalidatordGetHealthCheckReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetHealthCheckReplyFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetHealthCheckReply = {
         
         'health': json['health'] == null ? undefined : TgvalidatordHealthFromJSON(json['health']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetHealthCheckReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetHealthCheckReplyToJSON(json: any): TgvalidatordGetHealthCheckReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetHealthCheckReplyFromJSONTyped(json: any, ignoreDi
     return {
         
         'health': TgvalidatordHealthToJSON(value['health']),
+        ...value['additionalProperties'],
     };
 }
 

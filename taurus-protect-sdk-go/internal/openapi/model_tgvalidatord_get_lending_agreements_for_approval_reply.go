@@ -21,7 +21,10 @@ var _ MappedNullable = &TgvalidatordGetLendingAgreementsForApprovalReply{}
 type TgvalidatordGetLendingAgreementsForApprovalReply struct {
 	Result []TgvalidatordLendingAgreement `json:"result,omitempty"`
 	Cursor *TgvalidatordResponseCursor `json:"cursor,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordGetLendingAgreementsForApprovalReply TgvalidatordGetLendingAgreementsForApprovalReply
 
 // NewTgvalidatordGetLendingAgreementsForApprovalReply instantiates a new TgvalidatordGetLendingAgreementsForApprovalReply object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o TgvalidatordGetLendingAgreementsForApprovalReply) ToMap() (map[string]in
 	if !IsNil(o.Cursor) {
 		toSerialize["cursor"] = o.Cursor
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordGetLendingAgreementsForApprovalReply) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordGetLendingAgreementsForApprovalReply := _TgvalidatordGetLendingAgreementsForApprovalReply{}
+
+	err = json.Unmarshal(data, &varTgvalidatordGetLendingAgreementsForApprovalReply)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordGetLendingAgreementsForApprovalReply(varTgvalidatordGetLendingAgreementsForApprovalReply)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "result")
+		delete(additionalProperties, "cursor")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordGetLendingAgreementsForApprovalReply struct {

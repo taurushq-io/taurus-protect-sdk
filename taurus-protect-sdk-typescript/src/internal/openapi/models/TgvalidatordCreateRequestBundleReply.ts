@@ -33,7 +33,16 @@ export interface TgvalidatordCreateRequestBundleReply {
      * @memberof TgvalidatordCreateRequestBundleReply
      */
     result?: TgvalidatordRequestBundle;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateRequestBundleReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateRequestBundleReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateRequestBundleReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordCreateRequestBundleReplyFromJSONTyped(json: any, ign
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateRequestBundleReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordRequestBundleFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateRequestBundleReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateRequestBundleReplyToJSON(json: any): TgvalidatordCreateRequestBundleReply {
@@ -68,6 +87,7 @@ export function TgvalidatordCreateRequestBundleReplyFromJSONTyped(json: any, ign
     return {
         
         'result': TgvalidatordRequestBundleToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

@@ -33,7 +33,16 @@ export interface WhitelistServiceCreateWhitelistedContractAttributesBody {
      * @memberof WhitelistServiceCreateWhitelistedContractAttributesBody
      */
     attributes?: Array<TgvalidatordCreateWhitelistedContractAddressAttributeRequest>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof WhitelistServiceCreateWhitelistedContractAttributesBody
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const WhitelistServiceCreateWhitelistedContractAttributesBodyWireKeys: ReadonlySet<string> = new Set(['attributes']);
 
 /**
  * Check if a given object implements the WhitelistServiceCreateWhitelistedContractAttributesBody interface.
@@ -50,10 +59,20 @@ export function WhitelistServiceCreateWhitelistedContractAttributesBodyFromJSONT
     if (json == null) {
         return json;
     }
-    return {
+    const result: WhitelistServiceCreateWhitelistedContractAttributesBody = {
         
         'attributes': json['attributes'] == null ? undefined : ((json['attributes'] as Array<any>).map(TgvalidatordCreateWhitelistedContractAddressAttributeRequestFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!WhitelistServiceCreateWhitelistedContractAttributesBodyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function WhitelistServiceCreateWhitelistedContractAttributesBodyToJSON(json: any): WhitelistServiceCreateWhitelistedContractAttributesBody {
@@ -68,6 +87,7 @@ export function WhitelistServiceCreateWhitelistedContractAttributesBodyFromJSONT
     return {
         
         'attributes': value['attributes'] == null ? undefined : ((value['attributes'] as Array<any>).map(TgvalidatordCreateWhitelistedContractAddressAttributeRequestToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

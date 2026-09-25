@@ -31,7 +31,16 @@ export interface TgvalidatordRuleUserSignature {
      * @memberof TgvalidatordRuleUserSignature
      */
     signature?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordRuleUserSignature
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordRuleUserSignatureWireKeys: ReadonlySet<string> = new Set(['userId', 'signature']);
 
 /**
  * Check if a given object implements the TgvalidatordRuleUserSignature interface.
@@ -48,11 +57,21 @@ export function TgvalidatordRuleUserSignatureFromJSONTyped(json: any, ignoreDisc
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordRuleUserSignature = {
         
         'userId': json['userId'] == null ? undefined : json['userId'],
         'signature': json['signature'] == null ? undefined : json['signature'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordRuleUserSignatureWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordRuleUserSignatureToJSON(json: any): TgvalidatordRuleUserSignature {
@@ -68,6 +87,7 @@ export function TgvalidatordRuleUserSignatureFromJSONTyped(json: any, ignoreDisc
         
         'userId': value['userId'],
         'signature': value['signature'],
+        ...value['additionalProperties'],
     };
 }
 

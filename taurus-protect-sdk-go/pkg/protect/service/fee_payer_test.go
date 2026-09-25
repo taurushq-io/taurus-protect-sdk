@@ -283,14 +283,14 @@ func TestListFeePayersResult_Structure(t *testing.T) {
 	// Test that result structure can hold expected data
 	result := &model.ListFeePayersResult{
 		FeePayers:  make([]*model.FeePayer, 0),
-		TotalItems: 100,
+		Pagination: &model.Pagination{TotalItems: 100},
 	}
 
 	if result.FeePayers == nil {
 		t.Error("FeePayers should not be nil")
 	}
-	if result.TotalItems != 100 {
-		t.Errorf("TotalItems = %v, want 100", result.TotalItems)
+	if result.Pagination.TotalItems != 100 {
+		t.Errorf("TotalItems = %v, want 100", result.Pagination.TotalItems)
 	}
 }
 

@@ -5,6 +5,7 @@
  */
 
 import type { Currency } from './currency';
+import type { CursorNavigationOptions, CursorPage } from './pagination';
 
 /**
  * Represents an exchange account in the Taurus-PROTECT system.
@@ -70,9 +71,10 @@ export interface ExchangeWithdrawalFee {
 }
 
 /**
- * Options for listing exchange accounts.
+ * Options for listing exchange accounts. A cursor list: `pageSize` 1-100 (default 20) and
+ * the `cursor` of a previous page.
  */
-export interface ListExchangesOptions {
+export interface ListExchangesOptions extends CursorNavigationOptions {
   /** Filter on currency ID */
   currencyId?: string;
   /** Include base currency valuation in response */
@@ -85,22 +87,16 @@ export interface ListExchangesOptions {
   status?: string;
   /** Exclude exchange accounts with zero balance */
   onlyPositiveBalance?: boolean;
-  /** Page size for pagination */
-  pageSize?: number;
-  /** Current page cursor for pagination */
-  currentPage?: string;
-  /** Page request direction: "FIRST", "PREVIOUS", "NEXT", "LAST" */
-  pageRequest?: 'FIRST' | 'PREVIOUS' | 'NEXT' | 'LAST';
 }
 
 /**
- * Result of listing exchange accounts.
+ * A page of exchange accounts.
  */
 export interface ListExchangesResult {
-  /** List of exchange accounts */
+  /** The exchange accounts of this page */
   items: Exchange[];
-  /** Cursor for next page, if available */
-  nextCursor?: string;
+  /** Cursor pagination: continue with `cursor: pagination.nextCursor` while `hasMore` */
+  pagination: CursorPage;
 }
 
 /**

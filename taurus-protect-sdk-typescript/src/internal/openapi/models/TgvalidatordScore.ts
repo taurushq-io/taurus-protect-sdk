@@ -49,7 +49,16 @@ export interface TgvalidatordScore {
      * @memberof TgvalidatordScore
      */
     updateDate?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordScore
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordScoreWireKeys: ReadonlySet<string> = new Set(['id', 'provider', 'type', 'score', 'updateDate']);
 
 /**
  * Check if a given object implements the TgvalidatordScore interface.
@@ -66,7 +75,7 @@ export function TgvalidatordScoreFromJSONTyped(json: any, ignoreDiscriminator: b
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordScore = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'provider': json['provider'] == null ? undefined : json['provider'],
@@ -74,6 +83,16 @@ export function TgvalidatordScoreFromJSONTyped(json: any, ignoreDiscriminator: b
         'score': json['score'] == null ? undefined : json['score'],
         'updateDate': json['updateDate'] == null ? undefined : (new Date(json['updateDate'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordScoreWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordScoreToJSON(json: any): TgvalidatordScore {
@@ -92,6 +111,7 @@ export function TgvalidatordScoreFromJSONTyped(json: any, ignoreDiscriminator: b
         'type': value['type'],
         'score': value['score'],
         'updateDate': value['updateDate'] == null ? undefined : ((value['updateDate']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

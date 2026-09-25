@@ -94,8 +94,11 @@ def job_from_dto(dto: Any) -> Optional[Job]:
     if dto is None:
         return None
 
+    # The generated job carries its identity as ``name``; it has no ``id`` field.
+    name = safe_string(getattr(dto, "name", None))
     return Job(
-        id=safe_string(getattr(dto, "id", None)),
+        id=safe_string(getattr(dto, "id", None)) or name,
+        name=name,
         type=safe_string(getattr(dto, "type", None)),
         timestamp=safe_datetime(getattr(dto, "timestamp", None)),
         description=safe_string(getattr(dto, "description", None)),

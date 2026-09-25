@@ -20,7 +20,10 @@ var _ MappedNullable = &TgvalidatordAssetNFT{}
 // TgvalidatordAssetNFT struct for TgvalidatordAssetNFT
 type TgvalidatordAssetNFT struct {
 	Tokenid *string `json:"tokenid,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordAssetNFT TgvalidatordAssetNFT
 
 // NewTgvalidatordAssetNFT instantiates a new TgvalidatordAssetNFT object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o TgvalidatordAssetNFT) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.Tokenid) {
 		toSerialize["tokenid"] = o.Tokenid
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordAssetNFT) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordAssetNFT := _TgvalidatordAssetNFT{}
+
+	err = json.Unmarshal(data, &varTgvalidatordAssetNFT)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordAssetNFT(varTgvalidatordAssetNFT)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "tokenid")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordAssetNFT struct {

@@ -25,7 +25,10 @@ type CreateLendingAgreementRequestLoanCollateralRequest struct {
 	CurrencyID *string `json:"currencyID,omitempty"`
 	// numeric; Amount in the smallest currency unit, based on the currency decimals. Example: 1500000000000000000 WEI (smallest ETH unit) corresponds to 1.5 ETH (ETH has 18 decimals places)
 	Amount *string `json:"amount,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _CreateLendingAgreementRequestLoanCollateralRequest CreateLendingAgreementRequestLoanCollateralRequest
 
 // NewCreateLendingAgreementRequestLoanCollateralRequest instantiates a new CreateLendingAgreementRequestLoanCollateralRequest object
 // This constructor will assign default values to properties that have it defined,
@@ -159,7 +162,35 @@ func (o CreateLendingAgreementRequestLoanCollateralRequest) ToMap() (map[string]
 	if !IsNil(o.Amount) {
 		toSerialize["amount"] = o.Amount
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *CreateLendingAgreementRequestLoanCollateralRequest) UnmarshalJSON(data []byte) (err error) {
+	varCreateLendingAgreementRequestLoanCollateralRequest := _CreateLendingAgreementRequestLoanCollateralRequest{}
+
+	err = json.Unmarshal(data, &varCreateLendingAgreementRequestLoanCollateralRequest)
+
+	if err != nil {
+		return err
+	}
+
+	*o = CreateLendingAgreementRequestLoanCollateralRequest(varCreateLendingAgreementRequestLoanCollateralRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "sourceSharedAddressID")
+		delete(additionalProperties, "currencyID")
+		delete(additionalProperties, "amount")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableCreateLendingAgreementRequestLoanCollateralRequest struct {

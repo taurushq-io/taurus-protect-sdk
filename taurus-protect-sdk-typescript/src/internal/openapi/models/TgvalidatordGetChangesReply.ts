@@ -46,7 +46,16 @@ export interface TgvalidatordGetChangesReply {
      * @memberof TgvalidatordGetChangesReply
      */
     cursor?: TgvalidatordResponseCursor;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetChangesReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetChangesReplyWireKeys: ReadonlySet<string> = new Set(['result', 'cursor']);
 
 /**
  * Check if a given object implements the TgvalidatordGetChangesReply interface.
@@ -63,11 +72,21 @@ export function TgvalidatordGetChangesReplyFromJSONTyped(json: any, ignoreDiscri
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetChangesReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordChangeFromJSON)),
         'cursor': json['cursor'] == null ? undefined : TgvalidatordResponseCursorFromJSON(json['cursor']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetChangesReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetChangesReplyToJSON(json: any): TgvalidatordGetChangesReply {
@@ -83,6 +102,7 @@ export function TgvalidatordGetChangesReplyFromJSONTyped(json: any, ignoreDiscri
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordChangeToJSON)),
         'cursor': TgvalidatordResponseCursorToJSON(value['cursor']),
+        ...value['additionalProperties'],
     };
 }
 

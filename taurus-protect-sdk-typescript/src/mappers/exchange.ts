@@ -2,6 +2,7 @@
  * Exchange mapper functions for converting OpenAPI DTOs to domain models.
  */
 
+import type { TgvalidatordGetExchangeWithdrawalFeeReply } from '../internal/openapi/models/TgvalidatordGetExchangeWithdrawalFeeReply';
 import type { Exchange, ExchangeCounterparty, ExchangeWithdrawalFee } from '../models/exchange';
 import { currencyFromDto } from './currency';
 import { safeBool, safeDate, safeMap, safeString } from './base';
@@ -68,16 +69,17 @@ export function exchangeCounterpartiesFromDto(
 /**
  * Maps a withdrawal fee response to an ExchangeWithdrawalFee domain model.
  */
-export function exchangeWithdrawalFeeFromDto(dto: unknown): ExchangeWithdrawalFee | undefined {
+export function exchangeWithdrawalFeeFromDto(
+  dto: TgvalidatordGetExchangeWithdrawalFeeReply | null | undefined
+): ExchangeWithdrawalFee | undefined {
   if (!dto || typeof dto !== 'object') {
     return undefined;
   }
 
-  const d = dto as Record<string, unknown>;
-  // The API returns the fee as 'result' in the reply
-  const fee = safeString(d.result ?? d.fee);
+  // The reply carries the fee as `result`.
+  const fee = dto.result;
 
-  if (fee === undefined) {
+  if (fee === undefined || fee === null) {
     return undefined;
   }
 

@@ -67,7 +67,16 @@ export interface TgvalidatordTnParticipantAttribute {
      * @memberof TgvalidatordTnParticipantAttribute
      */
     isTaurusNetworkShared?: boolean;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordTnParticipantAttribute
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordTnParticipantAttributeWireKeys: ReadonlySet<string> = new Set(['id', 'key', 'value', 'owner', 'type', 'subtype', 'contentType', 'isTaurusNetworkShared']);
 
 /**
  * Check if a given object implements the TgvalidatordTnParticipantAttribute interface.
@@ -84,7 +93,7 @@ export function TgvalidatordTnParticipantAttributeFromJSONTyped(json: any, ignor
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordTnParticipantAttribute = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'key': json['key'] == null ? undefined : json['key'],
@@ -95,6 +104,16 @@ export function TgvalidatordTnParticipantAttributeFromJSONTyped(json: any, ignor
         'contentType': json['contentType'] == null ? undefined : json['contentType'],
         'isTaurusNetworkShared': json['isTaurusNetworkShared'] == null ? undefined : json['isTaurusNetworkShared'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordTnParticipantAttributeWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordTnParticipantAttributeToJSON(json: any): TgvalidatordTnParticipantAttribute {
@@ -116,6 +135,7 @@ export function TgvalidatordTnParticipantAttributeFromJSONTyped(json: any, ignor
         'subtype': value['subtype'],
         'contentType': value['contentType'],
         'isTaurusNetworkShared': value['isTaurusNetworkShared'],
+        ...value['additionalProperties'],
     };
 }
 

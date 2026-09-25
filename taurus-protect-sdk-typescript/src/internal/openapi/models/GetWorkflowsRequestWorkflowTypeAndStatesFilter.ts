@@ -31,7 +31,16 @@ export interface GetWorkflowsRequestWorkflowTypeAndStatesFilter {
      * @memberof GetWorkflowsRequestWorkflowTypeAndStatesFilter
      */
     states?: Array<string>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof GetWorkflowsRequestWorkflowTypeAndStatesFilter
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const GetWorkflowsRequestWorkflowTypeAndStatesFilterWireKeys: ReadonlySet<string> = new Set(['workflowType', 'states']);
 
 /**
  * Check if a given object implements the GetWorkflowsRequestWorkflowTypeAndStatesFilter interface.
@@ -48,11 +57,21 @@ export function GetWorkflowsRequestWorkflowTypeAndStatesFilterFromJSONTyped(json
     if (json == null) {
         return json;
     }
-    return {
+    const result: GetWorkflowsRequestWorkflowTypeAndStatesFilter = {
         
         'workflowType': json['workflowType'] == null ? undefined : json['workflowType'],
         'states': json['states'] == null ? undefined : json['states'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!GetWorkflowsRequestWorkflowTypeAndStatesFilterWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function GetWorkflowsRequestWorkflowTypeAndStatesFilterToJSON(json: any): GetWorkflowsRequestWorkflowTypeAndStatesFilter {
@@ -68,6 +87,7 @@ export function GetWorkflowsRequestWorkflowTypeAndStatesFilterFromJSONTyped(json
         
         'workflowType': value['workflowType'],
         'states': value['states'],
+        ...value['additionalProperties'],
     };
 }
 

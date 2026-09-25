@@ -61,7 +61,16 @@ export interface TgvalidatordCreateOutgoingSOLWithdrawRequestRequest {
      * @memberof TgvalidatordCreateOutgoingSOLWithdrawRequestRequest
      */
     fromStakeAccountDerivationIndex?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingSOLWithdrawRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingSOLWithdrawRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'amount', 'feeLimit', 'comment', 'useUnconfirmedFunds', 'externalRequestId', 'fromStakeAccountDerivationIndex']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingSOLWithdrawRequestRequest interface.
@@ -80,7 +89,7 @@ export function TgvalidatordCreateOutgoingSOLWithdrawRequestRequestFromJSONTyped
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingSOLWithdrawRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'amount': json['amount'],
@@ -90,6 +99,16 @@ export function TgvalidatordCreateOutgoingSOLWithdrawRequestRequestFromJSONTyped
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
         'fromStakeAccountDerivationIndex': json['fromStakeAccountDerivationIndex'] == null ? undefined : json['fromStakeAccountDerivationIndex'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingSOLWithdrawRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingSOLWithdrawRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingSOLWithdrawRequestRequest {
@@ -110,6 +129,7 @@ export function TgvalidatordCreateOutgoingSOLWithdrawRequestRequestFromJSONTyped
         'useUnconfirmedFunds': value['useUnconfirmedFunds'],
         'externalRequestId': value['externalRequestId'],
         'fromStakeAccountDerivationIndex': value['fromStakeAccountDerivationIndex'],
+        ...value['additionalProperties'],
     };
 }
 

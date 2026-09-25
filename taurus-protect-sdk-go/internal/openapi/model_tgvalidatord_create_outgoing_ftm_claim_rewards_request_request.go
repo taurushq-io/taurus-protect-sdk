@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -34,6 +33,7 @@ type TgvalidatordCreateOutgoingFTMClaimRewardsRequestRequest struct {
 	TransactionReference *string `json:"transactionReference,omitempty"`
 	// Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingFTMClaimRewardsRequestRequest TgvalidatordCreateOutgoingFTMClaimRewardsRequestRequest
@@ -327,6 +327,11 @@ func (o TgvalidatordCreateOutgoingFTMClaimRewardsRequestRequest) ToMap() (map[st
 	if !IsNil(o.ExternalRequestId) {
 		toSerialize["externalRequestId"] = o.ExternalRequestId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -355,15 +360,27 @@ func (o *TgvalidatordCreateOutgoingFTMClaimRewardsRequestRequest) UnmarshalJSON(
 
 	varTgvalidatordCreateOutgoingFTMClaimRewardsRequestRequest := _TgvalidatordCreateOutgoingFTMClaimRewardsRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingFTMClaimRewardsRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingFTMClaimRewardsRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingFTMClaimRewardsRequestRequest(varTgvalidatordCreateOutgoingFTMClaimRewardsRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "toValidatorAddressId")
+		delete(additionalProperties, "restake")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "gasLimit")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "transactionReference")
+		delete(additionalProperties, "externalRequestId")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

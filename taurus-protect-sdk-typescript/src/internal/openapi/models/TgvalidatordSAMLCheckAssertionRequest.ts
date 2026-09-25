@@ -31,7 +31,16 @@ export interface TgvalidatordSAMLCheckAssertionRequest {
      * @memberof TgvalidatordSAMLCheckAssertionRequest
      */
     relayState: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordSAMLCheckAssertionRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordSAMLCheckAssertionRequestWireKeys: ReadonlySet<string> = new Set(['SAMLResponse', 'RelayState']);
 
 /**
  * Check if a given object implements the TgvalidatordSAMLCheckAssertionRequest interface.
@@ -50,11 +59,21 @@ export function TgvalidatordSAMLCheckAssertionRequestFromJSONTyped(json: any, ig
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordSAMLCheckAssertionRequest = {
         
         'sAMLResponse': json['SAMLResponse'],
         'relayState': json['RelayState'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordSAMLCheckAssertionRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordSAMLCheckAssertionRequestToJSON(json: any): TgvalidatordSAMLCheckAssertionRequest {
@@ -70,6 +89,7 @@ export function TgvalidatordSAMLCheckAssertionRequestFromJSONTyped(json: any, ig
         
         'SAMLResponse': value['sAMLResponse'],
         'RelayState': value['relayState'],
+        ...value['additionalProperties'],
     };
 }
 

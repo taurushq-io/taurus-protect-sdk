@@ -98,6 +98,7 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.ActionTask.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.ActionTrigger.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.ApiHttpBody.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.AssetServiceV2QueryAssetAddressesV2Body.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.AssetUnknown.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.AuthProxyApiRequestToValidate.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.AuthenticationServiceValidateAuthenticationBody.CustomTypeAdapterFactory());
@@ -182,6 +183,7 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordAddress.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordAddressAttribute.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordAddressInfo.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordAddressTargetV2.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordAggregatedStatsData.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordAggregatedStatsHistoryPoint.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordApiKey.CustomTypeAdapterFactory());
@@ -199,13 +201,18 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordApprovers.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordApproversGroup.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordAsset.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordAssetAddressV2.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordAssetAttribute.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordAssetAttributeV2.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordAssetBalance.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordAssetEvent.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordAssetHolder.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordAssetNFT.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordAssetOperationV2.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordAssetParams.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordAssetParamsV2.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordAssetResource.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordAssetResourceV2.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordAuditTrail.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordAuthenticationReply.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordAutoTransferEventHandler.CustomTypeAdapterFactory());
@@ -215,10 +222,12 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordBalanceHistoryPoint.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordBlockConfirmations.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordBlockchainAsset.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordBlockchainAssetV2.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordBlockchainContractTemplate.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordBlockchainEntity.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordBlockchainEvent.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordBlockchainOpts.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordBurnOperationDetailsV2.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordBusinessRule.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCMTA20KycRuleContractTemplate.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCMTA20RuleEngineContractTemplate.CustomTypeAdapterFactory());
@@ -226,6 +235,10 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCMTATStandaloneContractTemplate.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCMTATTokenContractTemplate.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCMTATUpgradeableContractTemplate.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCantonInstrumentConfigurationV2.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCantonNativeTokenAssetV2.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCantonNativeTokenParamsV2.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCantonUpdateNativeTokenParamsV2.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordChange.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordClientStatus.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCompanyTravelRuleData.CustomTypeAdapterFactory());
@@ -266,6 +279,7 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCreateMeAttributeRequest.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCreateMultiFactorSignaturesReply.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCreateMultiFactorSignaturesRequest.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCreateOperationDetailsV2.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCreateOutgoingADADelegateRequestRequest.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCreateOutgoingADAUndelegateRequestRequest.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCreateOutgoingADAVoteDelegateRequestRequest.CustomTypeAdapterFactory());
@@ -360,10 +374,13 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCurrency.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCurrencyCollateralRequirement.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCurrencyFilter.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCurrencyFromFilter.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCurrencyFromToFilter.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCurrencyPrice.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCurrencyPriceSignature.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCurrencyStatistics.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCurrencyStatisticsHistory.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCurrencyToFilter.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCustomEVMContractTemplate.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordCustomXTZContractTemplate.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordDOTBlockchainInfo.CustomTypeAdapterFactory());
@@ -378,6 +395,8 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordETHValidatorInfo.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordEVMBlockchainInfo.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordEVMContractTemplateParams.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordEarnReward.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordEarnRewardToken.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordEnableTotpRequest.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordExchange.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordExchangeCounterparty.CustomTypeAdapterFactory());
@@ -399,6 +418,7 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordFiatProvider.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordFiatProviderAccount.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordFiatProviderCounterpartyAccount.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordFiatProviderEntity.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordFiatProviderOperation.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordGenericContractCall.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordGenericCreateContract.CustomTypeAdapterFactory());
@@ -426,6 +446,8 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordGetAssetWalletsReply.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordGetAssetWalletsRequest.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordGetAssetsReply.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordGetAssetsReplyV2.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordGetAssetsRequestV2.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordGetAsyncApprovalsReply.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordGetAsyncWhitelistedAddressApprovalsReply.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordGetAuditTrailsReply.CustomTypeAdapterFactory());
@@ -456,6 +478,7 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordGetCurrencyStatisticsRequest.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordGetERCTokenMetadataReply.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordGetETHValidatorsInfoReply.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordGetEarnRewardsReply.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordGetExchangeCounterpartiesReply.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordGetExchangeReply.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordGetExchangeWithdrawalFeeReply.CustomTypeAdapterFactory());
@@ -470,6 +493,7 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProviderAccountsReply.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProviderCounterpartyAccountReply.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProviderCounterpartyAccountsReply.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProviderEntitiesReply.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProviderOperationReply.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProviderOperationsReply.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProvidersReply.CustomTypeAdapterFactory());
@@ -570,6 +594,8 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordHederaNativeTokenTransfer.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordICPKnownNeuronData.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordIDResult.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordImportAssetParamsV2.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordImportOperationDetailsV2.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordInitRemoteFeePayerReply.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordInitRemoteFeePayerRequest.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordInitializeETHContractReply.CustomTypeAdapterFactory());
@@ -596,7 +622,10 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordLendingCollateralRequirement.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordLightAddressInfo.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordListApiKeyReply.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordListAssetOperationsReplyV2.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordMerklTokenReward.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordMetadata.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordMintOperationDetailsV2.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordNFTCollectionBalance.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordOIDCInitiateReply.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordOIDCInitiateRequest.CustomTypeAdapterFactory());
@@ -606,12 +635,16 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordOIDCSessionRequest.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordParallelApproversGroups.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordParticipantAttributeData.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordPauseAccountOperationDetailsV2.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordPersonTravelRuleData.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordPlatformFee.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordPricesHistoryPoint.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordProofOfOwnership.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordProofOfOwnershipPayload.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordProofOfReserve.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordQueryAssetAddressesReplyV2.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordQueryPricesV2Reply.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordQueryPricesV2Request.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordRefreshScoreReply.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordRejectChangesRequest.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordRejectPledgeActionsRequest.CustomTypeAdapterFactory());
@@ -667,6 +700,7 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordScoreFilter.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordSecurityDomain.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordSecurityDomainAttribute.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordSetKYCOperationDetailsV2.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordSetupSecondaryCommitmentReply.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordShareAddressRequest.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordShareWhitelistedAssetRequest.CustomTypeAdapterFactory());
@@ -721,6 +755,7 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordTnSharedAddressTrail.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordTnSharedAsset.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordTnSharedAssetTrail.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordTokenInfo.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordTrail.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordTransaction.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordTransactionAttribute.CustomTypeAdapterFactory());
@@ -733,7 +768,10 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordTriggerExistentialRecomputeReply.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordUTXO.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordUniqueCurrencyFilter.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordUnpauseAccountOperationDetailsV2.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordUnpledgeReply.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordUpdateAssetParamsV2.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordUpdateOperationDetailsV2.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordUpdatePasswordRequest.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordUpdatePricesRequest.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new com.taurushq.sdk.protect.openapi.model.TgvalidatordUpdateRulesProposalRequest.CustomTypeAdapterFactory());

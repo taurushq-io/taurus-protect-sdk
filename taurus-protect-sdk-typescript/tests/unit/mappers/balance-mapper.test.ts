@@ -1,5 +1,10 @@
 /**
  * Unit tests for balance mapper functions.
+ *
+ * The rows are shaped as the generated client delivers them: an asset balance is
+ * `{asset: {currency, currencyInfo, nft}, balance: {totalConfirmed, ...}}` and an NFT
+ * collection balance is `{currencyInfo, balance}`. The flat `currency` / `balance` keys
+ * earlier versions of these tests used do not exist on the wire.
  */
 
 import {
@@ -10,43 +15,42 @@ import {
 } from '../../../src/mappers/balance';
 
 describe('assetBalanceFromDto', () => {
-  it('should map all fields from DTO', () => {
-    const dto = {
-      currencyId: 'BTC',
-      currency: 'BTC',
-      blockchain: 'BTC',
+  it('should map the currency from asset.currencyInfo and the amount from balance', () => {
+    const result = assetBalanceFromDto({
+      asset: {
+        currency: 'USDC',
+        currencyInfo: {
+          id: 'c-usdc',
+          symbol: 'USDC',
+          blockchain: 'ETH',
+          network: 'mainnet',
+          contractAddress: '0xa0b8',
+          tokenID: 'tok-info',
+        },
+        nft: { tokenid: 'tok-1' },
+      },
+      balance: { totalConfirmed: '1000', availableConfirmed: '900' },
+    });
+    expect(result).toEqual({
+      currencyId: 'c-usdc',
+      currency: 'USDC',
+      blockchain: 'ETH',
       network: 'mainnet',
-      contractAddress: '0x123',
+      contractAddress: '0xa0b8',
       tokenId: 'tok-1',
       balance: '1000',
-      fiatValue: '50000',
-      fiatCurrency: 'USD',
-    };
-
-    const result = assetBalanceFromDto(dto);
-    expect(result).toBeDefined();
-    expect(result!.currencyId).toBeDefined();
-    expect(result!.currency).toBeDefined();
-    expect(result!.blockchain).toBeDefined();
-    expect(result!.balance).toBe('1000');
-    expect(result!.fiatValue).toBeDefined();
+      fiatValue: undefined,
+      fiatCurrency: undefined,
+    });
   });
 
-  it('should handle snake_case field names', () => {
-    const dto = {
-      currency_id: 'ETH',
-      contract_address: '0x456',
-      token_id: 'tok-2',
-      total_confirmed: '500',
-      fiat_value: '25000',
-      fiat_currency: 'EUR',
-    };
-
-    const result = assetBalanceFromDto(dto);
-    expect(result).toBeDefined();
-    expect(result!.currencyId).toBeDefined();
-    expect(result!.contractAddress).toBeDefined();
-    expect(result!.balance).toBe('500');
+  it('should fall back to asset.currency and currencyInfo.tokenID', () => {
+    const result = assetBalanceFromDto({
+      asset: { currency: 'ALGO', currencyInfo: { tokenID: 'tok-info' } },
+    });
+    expect(result?.currency).toBe('ALGO');
+    expect(result?.tokenId).toBe('tok-info');
+    expect(result?.balance).toBeUndefined();
   });
 
   it('should return undefined for null input', () => {
@@ -56,21 +60,18 @@ describe('assetBalanceFromDto', () => {
   it('should return undefined for undefined input', () => {
     expect(assetBalanceFromDto(undefined)).toBeUndefined();
   });
-
-  it('should handle empty object', () => {
-    const result = assetBalanceFromDto({});
-    expect(result).toBeDefined();
-  });
 });
 
 describe('assetBalancesFromDto', () => {
-  it('should map array of DTOs', () => {
-    const dtos = [
-      { currency: 'BTC', balance: '100' },
-      { currency: 'ETH', balance: '200' },
-    ];
-    const result = assetBalancesFromDto(dtos);
-    expect(result).toHaveLength(2);
+  it('should map array of rows', () => {
+    const result = assetBalancesFromDto([
+      { asset: { currency: 'BTC' }, balance: { totalConfirmed: '100' } },
+      { asset: { currency: 'ETH' }, balance: { totalConfirmed: '200' } },
+    ]);
+    expect(result.map((b) => [b.currency, b.balance])).toEqual([
+      ['BTC', '100'],
+      ['ETH', '200'],
+    ]);
   });
 
   it('should return empty array for null input', () => {
@@ -83,36 +84,31 @@ describe('assetBalancesFromDto', () => {
 });
 
 describe('nftCollectionBalanceFromDto', () => {
-  it('should map all fields', () => {
-    const dto = {
+  it('should map the collection from currencyInfo and the count from the balance', () => {
+    const result = nftCollectionBalanceFromDto({
+      currencyInfo: {
+        name: 'Bored Apes',
+        symbol: 'BAYC',
+        blockchain: 'ETH',
+        network: 'mainnet',
+        contractAddress: '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D',
+        logo: 'data:image/png;base64,AA==',
+      },
+      balance: { totalConfirmed: '10' },
+    });
+    expect(result).toEqual({
       name: 'Bored Apes',
       symbol: 'BAYC',
       blockchain: 'ETH',
       network: 'mainnet',
       contractAddress: '0xBC4CA0EdA7647A8aB7C2061c2E118A18a936f13D',
       count: 10,
-      logoUrl: 'https://example.com/logo.png',
-    };
-
-    const result = nftCollectionBalanceFromDto(dto);
-    expect(result).toBeDefined();
-    expect(result!.name).toBe('Bored Apes');
-    expect(result!.count).toBe(10);
-    expect(result!.contractAddress).toBeDefined();
+      logoUrl: 'data:image/png;base64,AA==',
+    });
   });
 
-  it('should handle snake_case fallbacks', () => {
-    const dto = {
-      name: 'CryptoPunks',
-      contract_address: '0x1234',
-      logo_url: 'https://example.com/punks.png',
-      balance: 5,
-    };
-
-    const result = nftCollectionBalanceFromDto(dto);
-    expect(result).toBeDefined();
-    expect(result!.contractAddress).toBe('0x1234');
-    expect(result!.count).toBe(5);
+  it('should leave the count undefined without a balance', () => {
+    expect(nftCollectionBalanceFromDto({ currencyInfo: { name: 'X' } })?.count).toBeUndefined();
   });
 
   it('should return undefined for null input', () => {

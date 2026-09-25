@@ -23,7 +23,10 @@ type TgvalidatordSignedRequestAttribute struct {
 	Key *string `json:"key,omitempty"`
 	Value *string `json:"value,omitempty"`
 	ContentType *string `json:"contentType,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordSignedRequestAttribute TgvalidatordSignedRequestAttribute
 
 // NewTgvalidatordSignedRequestAttribute instantiates a new TgvalidatordSignedRequestAttribute object
 // This constructor will assign default values to properties that have it defined,
@@ -192,7 +195,36 @@ func (o TgvalidatordSignedRequestAttribute) ToMap() (map[string]interface{}, err
 	if !IsNil(o.ContentType) {
 		toSerialize["contentType"] = o.ContentType
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordSignedRequestAttribute) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordSignedRequestAttribute := _TgvalidatordSignedRequestAttribute{}
+
+	err = json.Unmarshal(data, &varTgvalidatordSignedRequestAttribute)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordSignedRequestAttribute(varTgvalidatordSignedRequestAttribute)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "key")
+		delete(additionalProperties, "value")
+		delete(additionalProperties, "contentType")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordSignedRequestAttribute struct {

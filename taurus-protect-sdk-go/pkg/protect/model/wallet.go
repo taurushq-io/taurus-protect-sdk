@@ -96,9 +96,9 @@ type CreateWalletRequest struct {
 
 // ListWalletsOptions contains options for listing wallets.
 type ListWalletsOptions struct {
-	// Limit is the maximum number of wallets to return.
+	// Limit is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
 	Limit int64
-	// Offset is the number of wallets to skip.
+	// Offset is the number of wallets to skip; continue with Pagination.NextOffset.
 	Offset int64
 	// Currency filters by currency symbol.
 	Currency string
@@ -107,7 +107,8 @@ type ListWalletsOptions struct {
 	Query string
 	// Name is a partial, case-insensitive match on the wallet name alone.
 	Name string
-	// ExcludeDisabled excludes disabled wallets from results.
+	// ExcludeDisabled hides every disabled wallet. Without it the server still hides wallets
+	// whose currency is disabled, unless a currency is named.
 	ExcludeDisabled bool
 	// IDs filters to specific wallet IDs.
 	IDs []string
@@ -123,18 +124,6 @@ type ListWalletsOptions struct {
 	SortOrder string
 }
 
-// Pagination contains pagination information for list responses.
-type Pagination struct {
-	// Limit is the maximum number of items per page.
-	Limit int64 `json:"limit"`
-	// Offset is the number of items skipped.
-	Offset int64 `json:"offset"`
-	// TotalItems is the total number of items available.
-	TotalItems int64 `json:"total_items"`
-	// HasMore indicates if there are more items to fetch.
-	HasMore bool `json:"has_more"`
-}
-
 // BalanceHistoryPoint represents a balance at a specific point in time.
 type BalanceHistoryPoint struct {
 	// PointDate is the timestamp of this balance snapshot.
@@ -143,9 +132,18 @@ type BalanceHistoryPoint struct {
 	Balance *Balance `json:"balance,omitempty"`
 }
 
-// GetWalletTokensOptions bounds a wallet's token-balance listing. The endpoint is
-// cursor-paginated; Limit bounds one page.
+// GetWalletTokensOptions pages a wallet's token balances.
 type GetWalletTokensOptions struct {
-	Limit  int64
+	// PageSize is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
+	PageSize int64
+	// Cursor is a previous page's Page.NextCursor.
 	Cursor string
+}
+
+// WalletTokensResult is one page of a wallet's token balances.
+type WalletTokensResult struct {
+	// Tokens are the token balances on this page.
+	Tokens []*AssetBalance `json:"tokens"`
+	// Page continues the list; TotalItems is the server's total.
+	Page CursorPage `json:"page"`
 }

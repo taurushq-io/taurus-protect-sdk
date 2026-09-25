@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -36,6 +35,7 @@ type TgvalidatordCreateOutgoingUTXOsRequestRequest struct {
 	TransactionReference *string `json:"transactionReference,omitempty"`
 	// Identifier for the request in the user's system. This must be unique. Attempting to create a request with an existing externalRequestId will do nothing and return the originally created request
 	ExternalRequestId *string `json:"externalRequestId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingUTXOsRequestRequest TgvalidatordCreateOutgoingUTXOsRequestRequest
@@ -390,6 +390,11 @@ func (o TgvalidatordCreateOutgoingUTXOsRequestRequest) ToMap() (map[string]inter
 	if !IsNil(o.ExternalRequestId) {
 		toSerialize["externalRequestId"] = o.ExternalRequestId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -419,15 +424,29 @@ func (o *TgvalidatordCreateOutgoingUTXOsRequestRequest) UnmarshalJSON(data []byt
 
 	varTgvalidatordCreateOutgoingUTXOsRequestRequest := _TgvalidatordCreateOutgoingUTXOsRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingUTXOsRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingUTXOsRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingUTXOsRequestRequest(varTgvalidatordCreateOutgoingUTXOsRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "toAddressId")
+		delete(additionalProperties, "toWhitelistedAddressId")
+		delete(additionalProperties, "utxoIds")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "feePaidByReceiver")
+		delete(additionalProperties, "transactionReference")
+		delete(additionalProperties, "externalRequestId")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

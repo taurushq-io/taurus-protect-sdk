@@ -10,7 +10,6 @@ import com.taurushq.sdk.protect.openapi.api.ContractWhitelistingApi;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordApproveWhitelistedContractAddressRequest;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordCreateWhitelistedContractAddressAttributeRequest;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordCreateWhitelistedContractAddressRequest;
-import com.taurushq.sdk.protect.openapi.model.TgvalidatordDeleteWhitelistedContractAddressRequest;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetWhitelistedContractAddressAttributeReply;
 import com.taurushq.sdk.protect.openapi.model.WhitelistServiceCreateWhitelistedContractAttributesBody;
 import com.taurushq.sdk.protect.openapi.model.WhitelistServiceUpdateWhitelistedContractBody;
@@ -24,7 +23,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /**
  * Service for whitelisted contract WRITE operations (tokens, NFTs) in Taurus Protect.
  * <p>
- * Creating, approving, updating and deleting whitelisted contract addresses such as ERC20
+ * Creating, approving and updating whitelisted contract addresses such as ERC20
  * tokens, NFT collections (ERC721/ERC1155), FA2 tokens on Tezos, and other smart
  * contract-based assets.
  * <p>
@@ -36,7 +35,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *
  * // Read them back through the verified reader
  * WhitelistedAssetResult result = client.getWhitelistedAssetService()
- *     .getWhitelistedAssets(50, 0, "ETH", "mainnet", null, null, null, null);
+ *     .getWhitelistedAssets(20, 0, "ETH", "mainnet", null, null, null, null);
  * }</pre>
  *
  * @see WhitelistedAssetService
@@ -44,7 +43,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 // Reads live on WhitelistedAssetService, which is the same server entity
 // (/api/rest/v1/whitelists/contracts) verified through the six-step chain. The
 // get/getAll/withFilters/forApproval that used to sit here returned the envelope with no
-// verification, which made the verified reader avoidable. Do not re-add them.
+// verification, which made the verified reader avoidable. Do not re-add them. There is no
+// delete: DeleteWhitelistedContract is deprecated with no replacement and cannot succeed.
 public class ContractWhitelistingService {
 
     /**
@@ -194,33 +194,6 @@ public class ContractWhitelistingService {
             body.setDecimals(String.valueOf(decimals));
 
             whitelistApi.whitelistServiceUpdateWhitelistedContract(id, body);
-        } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
-            throw apiExceptionMapper.toApiException(e);
-        }
-    }
-
-    /**
-     * Deletes a whitelisted contract.
-     * <p>
-     * Deletion may require approval depending on governance rules.
-     *
-     * @param id      the contract ID to delete
-     * @param comment the reason for deletion (optional)
-     * @return the ID of the deletion request
-     * @throws ApiException             if the API call fails
-     * @throws IllegalArgumentException if id is null or empty
-     */
-    public String deleteWhitelistedContract(final String id, final String comment)
-            throws ApiException {
-        checkArgument(!Strings.isNullOrEmpty(id), "id cannot be null or empty");
-
-        try {
-            TgvalidatordDeleteWhitelistedContractAddressRequest request =
-                    new TgvalidatordDeleteWhitelistedContractAddressRequest();
-            request.setId(id);
-            request.setComment(comment);
-
-            return whitelistApi.whitelistServiceDeleteWhitelistedContract(request).getResult().getId();
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }

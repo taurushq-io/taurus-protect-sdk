@@ -49,7 +49,16 @@ export interface TgvalidatordCreateOutgoingICPFollowRequestRequest {
      * @memberof TgvalidatordCreateOutgoingICPFollowRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingICPFollowRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingICPFollowRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'neuronWhitelistedAddressIds', 'topic', 'comment', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingICPFollowRequestRequest interface.
@@ -67,7 +76,7 @@ export function TgvalidatordCreateOutgoingICPFollowRequestRequestFromJSONTyped(j
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingICPFollowRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'neuronWhitelistedAddressIds': json['neuronWhitelistedAddressIds'] == null ? undefined : json['neuronWhitelistedAddressIds'],
@@ -75,6 +84,16 @@ export function TgvalidatordCreateOutgoingICPFollowRequestRequestFromJSONTyped(j
         'comment': json['comment'] == null ? undefined : json['comment'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingICPFollowRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingICPFollowRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingICPFollowRequestRequest {
@@ -93,6 +112,7 @@ export function TgvalidatordCreateOutgoingICPFollowRequestRequestFromJSONTyped(j
         'topic': value['topic'],
         'comment': value['comment'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

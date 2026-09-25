@@ -63,10 +63,9 @@ type GovernanceRulesHistoryResult struct {
 	// ruleset unverifiable, so a strict page would deny access to the whole audit
 	// trail permanently after any rotation.
 	ExcludedUnverified []ExcludedRuleset `json:"excluded_unverified,omitempty"`
-	// TotalItems is the total number of items, reduced by the number excluded.
-	TotalItems int64 `json:"total_items"`
-	// Cursor is the pagination cursor for the next page.
-	Cursor string `json:"cursor,omitempty"`
+	// Page continues the history: pass Page.NextCursor as the next Cursor until HasMore is
+	// false. TotalItems is the server's total reduced by the excluded entries (never negative).
+	Page CursorPage `json:"page"`
 }
 
 // ExcludedRuleset names a history entry that did not verify.
@@ -80,8 +79,8 @@ type ExcludedRuleset struct {
 
 // ListRulesHistoryOptions contains options for listing rules history.
 type ListRulesHistoryOptions struct {
-	// Limit is the maximum number of items to return.
-	Limit int64
-	// Cursor is the pagination cursor from a previous request.
+	// PageSize is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
+	PageSize int64
+	// Cursor is a previous page's Page.NextCursor.
 	Cursor string
 }

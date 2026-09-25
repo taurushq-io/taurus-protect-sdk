@@ -31,7 +31,16 @@ export interface TargetAddress {
      * @memberof TargetAddress
      */
     addressID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TargetAddress
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TargetAddressWireKeys: ReadonlySet<string> = new Set(['kind', 'addressID']);
 
 /**
  * Check if a given object implements the TargetAddress interface.
@@ -48,11 +57,21 @@ export function TargetAddressFromJSONTyped(json: any, ignoreDiscriminator: boole
     if (json == null) {
         return json;
     }
-    return {
+    const result: TargetAddress = {
         
         'kind': json['kind'] == null ? undefined : json['kind'],
         'addressID': json['addressID'] == null ? undefined : json['addressID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TargetAddressWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TargetAddressToJSON(json: any): TargetAddress {
@@ -68,6 +87,7 @@ export function TargetAddressFromJSONTyped(json: any, ignoreDiscriminator: boole
         
         'kind': value['kind'],
         'addressID': value['addressID'],
+        ...value['additionalProperties'],
     };
 }
 

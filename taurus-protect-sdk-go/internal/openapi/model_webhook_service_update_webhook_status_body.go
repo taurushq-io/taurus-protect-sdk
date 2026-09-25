@@ -20,7 +20,10 @@ var _ MappedNullable = &WebhookServiceUpdateWebhookStatusBody{}
 // WebhookServiceUpdateWebhookStatusBody struct for WebhookServiceUpdateWebhookStatusBody
 type WebhookServiceUpdateWebhookStatusBody struct {
 	Status *string `json:"status,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _WebhookServiceUpdateWebhookStatusBody WebhookServiceUpdateWebhookStatusBody
 
 // NewWebhookServiceUpdateWebhookStatusBody instantiates a new WebhookServiceUpdateWebhookStatusBody object
 // This constructor will assign default values to properties that have it defined,
@@ -84,7 +87,33 @@ func (o WebhookServiceUpdateWebhookStatusBody) ToMap() (map[string]interface{}, 
 	if !IsNil(o.Status) {
 		toSerialize["status"] = o.Status
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *WebhookServiceUpdateWebhookStatusBody) UnmarshalJSON(data []byte) (err error) {
+	varWebhookServiceUpdateWebhookStatusBody := _WebhookServiceUpdateWebhookStatusBody{}
+
+	err = json.Unmarshal(data, &varWebhookServiceUpdateWebhookStatusBody)
+
+	if err != nil {
+		return err
+	}
+
+	*o = WebhookServiceUpdateWebhookStatusBody(varWebhookServiceUpdateWebhookStatusBody)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "status")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableWebhookServiceUpdateWebhookStatusBody struct {

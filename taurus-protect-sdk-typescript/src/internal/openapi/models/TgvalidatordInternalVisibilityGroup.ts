@@ -75,7 +75,16 @@ export interface TgvalidatordInternalVisibilityGroup {
      * @memberof TgvalidatordInternalVisibilityGroup
      */
     userCount?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordInternalVisibilityGroup
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordInternalVisibilityGroupWireKeys: ReadonlySet<string> = new Set(['id', 'tenantId', 'name', 'description', 'users', 'creationDate', 'updateDate', 'userCount']);
 
 /**
  * Check if a given object implements the TgvalidatordInternalVisibilityGroup interface.
@@ -92,7 +101,7 @@ export function TgvalidatordInternalVisibilityGroupFromJSONTyped(json: any, igno
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordInternalVisibilityGroup = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'tenantId': json['tenantId'] == null ? undefined : json['tenantId'],
@@ -103,6 +112,16 @@ export function TgvalidatordInternalVisibilityGroupFromJSONTyped(json: any, igno
         'updateDate': json['updateDate'] == null ? undefined : (new Date(json['updateDate'])),
         'userCount': json['userCount'] == null ? undefined : json['userCount'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordInternalVisibilityGroupWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordInternalVisibilityGroupToJSON(json: any): TgvalidatordInternalVisibilityGroup {
@@ -124,6 +143,7 @@ export function TgvalidatordInternalVisibilityGroupFromJSONTyped(json: any, igno
         'creationDate': value['creationDate'] == null ? undefined : ((value['creationDate']).toISOString()),
         'updateDate': value['updateDate'] == null ? undefined : ((value['updateDate']).toISOString()),
         'userCount': value['userCount'],
+        ...value['additionalProperties'],
     };
 }
 

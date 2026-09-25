@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -24,6 +23,7 @@ type TgvalidatordUserDevicePairingInfo struct {
 	Status TgvalidatordUserDevicePairingInfoStatus `json:"status"`
 	PairingID string `json:"pairingID"`
 	ApiKey *string `json:"apiKey,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordUserDevicePairingInfo TgvalidatordUserDevicePairingInfo
@@ -142,6 +142,11 @@ func (o TgvalidatordUserDevicePairingInfo) ToMap() (map[string]interface{}, erro
 	if !IsNil(o.ApiKey) {
 		toSerialize["apiKey"] = o.ApiKey
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -170,15 +175,22 @@ func (o *TgvalidatordUserDevicePairingInfo) UnmarshalJSON(data []byte) (err erro
 
 	varTgvalidatordUserDevicePairingInfo := _TgvalidatordUserDevicePairingInfo{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordUserDevicePairingInfo)
+	err = json.Unmarshal(data, &varTgvalidatordUserDevicePairingInfo)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordUserDevicePairingInfo(varTgvalidatordUserDevicePairingInfo)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "status")
+		delete(additionalProperties, "pairingID")
+		delete(additionalProperties, "apiKey")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

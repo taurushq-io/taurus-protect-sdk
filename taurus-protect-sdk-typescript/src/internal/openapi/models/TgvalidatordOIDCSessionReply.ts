@@ -33,7 +33,16 @@ export interface TgvalidatordOIDCSessionReply {
      * @memberof TgvalidatordOIDCSessionReply
      */
     result?: TgvalidatordOIDCSession;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordOIDCSessionReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordOIDCSessionReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordOIDCSessionReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordOIDCSessionReplyFromJSONTyped(json: any, ignoreDiscr
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordOIDCSessionReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordOIDCSessionFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordOIDCSessionReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordOIDCSessionReplyToJSON(json: any): TgvalidatordOIDCSessionReply {
@@ -68,6 +87,7 @@ export function TgvalidatordOIDCSessionReplyFromJSONTyped(json: any, ignoreDiscr
     return {
         
         'result': TgvalidatordOIDCSessionToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

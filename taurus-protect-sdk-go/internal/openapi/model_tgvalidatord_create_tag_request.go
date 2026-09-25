@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -23,6 +22,7 @@ var _ MappedNullable = &TgvalidatordCreateTagRequest{}
 type TgvalidatordCreateTagRequest struct {
 	Value string `json:"value"`
 	Color string `json:"color"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateTagRequest TgvalidatordCreateTagRequest
@@ -106,6 +106,11 @@ func (o TgvalidatordCreateTagRequest) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["value"] = o.Value
 	toSerialize["color"] = o.Color
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -134,15 +139,21 @@ func (o *TgvalidatordCreateTagRequest) UnmarshalJSON(data []byte) (err error) {
 
 	varTgvalidatordCreateTagRequest := _TgvalidatordCreateTagRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateTagRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateTagRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateTagRequest(varTgvalidatordCreateTagRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "value")
+		delete(additionalProperties, "color")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

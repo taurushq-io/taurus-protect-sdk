@@ -1,6 +1,6 @@
 # Services Reference
 
-This document provides comprehensive documentation for all 43 services in the Taurus-PROTECT Go SDK.
+This document provides comprehensive documentation for all 44 services in the Taurus-PROTECT Go SDK.
 
 ## Service Overview
 
@@ -105,13 +105,28 @@ func (s *WalletService) ListWallets(ctx context.Context, opts *model.ListWallets
 **Parameters:**
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| opts.Limit | int64 | Maximum results per page |
-| opts.Offset | int64 | Pagination offset |
+| opts.Limit | int64 | Page size: 0 selects 20, above 100 is an error |
+| opts.Offset | int64 | Pass the previous page's `NextOffset` |
 | opts.Currency | string | Filter by currency symbol |
 | opts.Query | string | Search wallet names |
-| opts.ExcludeDisabled | bool | Exclude disabled wallets |
+| opts.ExcludeDisabled | bool | Hide every disabled wallet (by default the server hides only wallets whose currency is disabled) |
 
-**Returns:** `[]*model.Wallet`, `*model.Pagination`, `error`
+**Returns:** `[]*model.Wallet`, `*model.Pagination` (never nil), `error`. The reply's offset is
+the next page's offset, so continue with `NextOffset` until `HasMore` is false.
+
+#### GetWalletTokens
+
+Lists a wallet's token balances, a page at a time.
+
+```go
+func (s *WalletService) GetWalletTokens(ctx context.Context, walletID string, opts *model.GetWalletTokensOptions) (*model.WalletTokensResult, error)
+```
+
+**Parameters:** `opts.PageSize` (0 selects 20, above 100 is an error), `opts.Cursor` (a previous
+page's `Page.NextCursor`).
+
+**Returns:** `*model.WalletTokensResult` with `Tokens` and `Page`; `Page.TotalItems` is the
+server's total.
 
 #### CreateWallet
 
@@ -262,18 +277,25 @@ func (s *RequestService) GetRequest(ctx context.Context, requestID string) (*mod
 Lists requests with filtering and pagination.
 
 ```go
-func (s *RequestService) ListRequests(ctx context.Context, opts *model.ListRequestsOptions) ([]*model.Request, *model.Pagination, error)
+func (s *RequestService) ListRequests(ctx context.Context, opts *model.ListRequestsOptions) (*model.RequestResult, error)
+func (s *RequestService) ListRequestsForApproval(ctx context.Context, opts *model.ListRequestsOptions) (*model.RequestResult, error)
 ```
 
 **Parameters:**
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| opts.Limit | int64 | Maximum results per page |
-| opts.Offset | int64 | Pagination offset |
-| opts.Status | string | Filter by status |
+| opts.PageSize | int64 | Page size: 0 selects 20, above 100 is an error |
+| opts.Cursor | string | A previous page's `Page.NextCursor` |
+| opts.Statuses | []string | Filter by status |
+| opts.IDs / opts.Types | []string | Filter by id or type |
+| opts.ExternalRequestIDs | []string | Filter by external request id |
 | opts.Currency | string | Filter by currency |
-| opts.From | time.Time | Start date filter |
-| opts.To | time.Time | End date filter |
+| opts.FromDate / opts.ToDate | *time.Time | Creation date range |
+
+**Returns:** `*model.RequestResult` with `Requests`, `Page` and `ExcludedUnverified` (rows whose
+metadata did not verify are named, not returned). `ListRequestsForApproval` accepts `IDs`,
+`Types` and `Currency` only: `Statuses`, `FromDate`, `ToDate` and `ExternalRequestIDs` are
+rejected with an error, because the approval queue cannot apply them.
 
 #### CreateOutgoingRequest
 
@@ -396,12 +418,15 @@ func (s *TransactionService) ListTransactions(ctx context.Context, opts *model.L
 **Parameters:**
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| opts.Limit | int64 | Maximum results per page |
-| opts.Offset | int64 | Pagination offset |
+| opts.Limit | int64 | Page size: 0 selects 20, above 100 is an error |
+| opts.Offset | int64 | Pass the previous page's `NextOffset` |
 | opts.Direction | string | "incoming" or "outgoing" |
 | opts.Currency | string | Currency filter |
-| opts.From | time.Time | Start date |
-| opts.To | time.Time | End date |
+| opts.FromDate | *time.Time | Start date |
+| opts.ToDate | *time.Time | End date |
+
+The total is an upper bound on some filters, so a trailing page can come back empty; `HasMore`
+is false once a page makes no progress.
 
 **Example:**
 ```go
@@ -414,6 +439,18 @@ for _, tx := range txs {
     fmt.Printf("%s: %s -> %s\n", tx.Hash, tx.Amount, tx.Direction)
 }
 ```
+
+#### ExportTransactions
+
+Exports transactions as json (the default), csv or csv_simple.
+
+```go
+func (s *TransactionService) ExportTransactions(ctx context.Context, opts *model.ExportTransactionsOptions) (*model.ExportTransactionsResult, error)
+```
+
+The export cannot page: validatord always exports from the first matching transaction. `Limit`
+(0 selects 20, no SDK maximum) is the only size control, and `TotalItems` above it means the
+export was truncated. **Returns:** `*model.ExportTransactionsResult` with `Data` and `TotalItems`.
 
 ### Key Models
 
@@ -442,37 +479,35 @@ func (s *BalanceService) GetBalances(ctx context.Context, opts *model.GetBalance
 |-----------|------|-------------|
 | opts.Currency | string | Filter by currency ID or symbol |
 | opts.TokenID | string | Filter by token ID |
-| opts.Limit | int64 | Maximum results per page |
-| opts.Cursor | string | Pagination cursor for next page |
+| opts.PageSize | int64 | Page size: 0 selects 20, above 100 is an error |
+| opts.Cursor | string | A previous page's `Page.NextCursor` |
 
-**Returns:** `*model.GetBalancesResult`, `error`
+Pages through `requestCursor` only; the legacy `limit` + bytes `cursor` pair is never sent.
+
+**Returns:** `*model.GetBalancesResult` (`Balances`, `Page`; `Page.TotalItems` is the server's total), `error`
 
 **Example:**
 ```go
-result, err := client.Balances().GetBalances(ctx, &model.GetBalancesOptions{
-    Currency: "ETH",
-    Limit:    100,
-})
-if err != nil {
-    return err
-}
-
-for _, balance := range result.Balances {
-    fmt.Printf("%s: %s available\n", balance.Asset.Currency, balance.Balance.AvailableConfirmed)
-}
-
-// Paginate with cursor
-if result.NextCursor != "" {
-    nextResult, err := client.Balances().GetBalances(ctx, &model.GetBalancesOptions{
-        Cursor: result.NextCursor,
-    })
+opts := &model.GetBalancesOptions{Currency: "ETH", PageSize: 100}
+for {
+    result, err := client.Balances().GetBalances(ctx, opts)
+    if err != nil {
+        return err
+    }
+    for _, balance := range result.Balances {
+        fmt.Printf("%s: %s available\n", balance.Asset.Currency, balance.Balance.AvailableConfirmed)
+    }
+    if !result.Page.HasMore {
+        break
+    }
+    opts.Cursor = result.Page.NextCursor
 }
 ```
 
 ### Key Models
 
-- `model.GetBalancesOptions` - Currency, TokenID, Limit, Cursor
-- `model.GetBalancesResult` - Balances, Total, NextCursor
+- `model.GetBalancesOptions` - Currency, TokenID, PageSize, Cursor
+- `model.GetBalancesResult` - Balances, Page (`model.CursorPage`)
 - `model.AssetBalance` - Asset, Balance
 - `model.Balance` - TotalConfirmed, TotalUnconfirmed, AvailableConfirmed, AvailableUnconfirmed, ReservedConfirmed, ReservedUnconfirmed
 
@@ -533,10 +568,12 @@ func (s *GovernanceRuleService) GetRulesHistory(ctx context.Context, opts *model
 **Parameters:**
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| opts.Limit | int64 | Maximum results per page |
-| opts.Cursor | string | Pagination cursor from previous request |
+| opts.PageSize | int64 | Page size: 0 selects 20, above 100 is an error |
+| opts.Cursor | string | A previous page's `Page.NextCursor` |
 
-**Returns:** `*model.GovernanceRulesHistoryResult` with `Rules`, `TotalItems`, `Cursor`
+**Returns:** `*model.GovernanceRulesHistoryResult` with `Rules`, `ExcludedUnverified` and `Page`.
+Entries whose SuperAdmin signatures do not verify are excluded and named, not fatal;
+`Page.TotalItems` is the server's total reduced by them (never below 0).
 
 #### GetRulesProposal
 
@@ -709,8 +746,16 @@ hashes nothing verified — is deprecated in its favour.
 ```go
 func (s *UserService) GetMe(ctx context.Context) (*model.User, error)
 func (s *UserService) GetUser(ctx context.Context, userID string) (*model.User, error)
-func (s *UserService) ListUsers(ctx context.Context, opts *model.ListUsersOptions) ([]*model.User, *model.Pagination, error)
+func (s *UserService) ListUsers(ctx context.Context, opts *model.ListUsersOptions) (*model.ListUsersResult, error)
+func (s *UserService) GetUsersByEmail(ctx context.Context, emails []string) ([]*model.User, error)
 ```
+
+`ListUsersResult.Pagination` is never nil. validatord can append a synthetic daemon user beyond
+the limit, so the next page starts at `NextOffset`, not at `Offset + len(Users)`.
+`GetUsersByEmail` reads in batches of at most 100 emails.
+`GetMe`, `ListUsers` and `GetUsersByEmail` compute `EnforcedInRules` (user and group memberships);
+only `GetMe` computes `PublicKeyEnforcedInRules`. A flag the endpoint does not compute, such as
+every flag on `GetUser` or `GetUsersByVisibilityGroupID`, is nil, not false.
 
 ### Key Models
 
@@ -727,8 +772,12 @@ func (s *UserService) ListUsers(ctx context.Context, opts *model.ListUsersOption
 ### Methods
 
 ```go
-func (s *GroupService) ListGroups(ctx context.Context, opts *model.ListGroupsOptions) ([]*model.Group, *model.Pagination, error)
+func (s *GroupService) ListGroups(ctx context.Context, opts *model.ListGroupsOptions) (*model.ListGroupsResult, error)
 ```
+
+`ListGroupsResult.Pagination` is never nil; a technical group may be appended beyond the limit,
+so continue with `NextOffset`.
+`ListGroups` computes `EnforcedInRules` for each group and each of its users.
 
 ### Key Models
 
@@ -745,16 +794,17 @@ func (s *GroupService) ListGroups(ctx context.Context, opts *model.ListGroupsOpt
 ### Methods
 
 ```go
-func (s *AuditService) ListAuditTrails(ctx context.Context, opts *model.ListAuditsOptions) ([]*model.Audit, *model.Pagination, error)
+func (s *AuditService) ListAuditTrails(ctx context.Context, opts *model.ListAuditTrailsOptions) (*model.ListAuditTrailsResult, error)
 ```
 
 **Parameters:**
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| opts.Entity | string | Entity type filter |
-| opts.Action | string | Action filter |
-| opts.From | time.Time | Start date |
-| opts.To | time.Time | End date |
+| opts.Entities | []string | Entity type filter |
+| opts.Actions | []string | Action filter |
+| opts.CreationDateFrom / opts.CreationDateTo | *time.Time | Date range |
+| opts.PageSize | int64 | Page size: 0 selects 20, above 100 is an error |
+| opts.Cursor | string | A previous page's `Page.NextCursor` |
 
 ---
 
@@ -768,7 +818,8 @@ func (s *AuditService) ListAuditTrails(ctx context.Context, opts *model.ListAudi
 
 ```go
 func (s *ChangeService) GetChange(ctx context.Context, changeID string) (*model.Change, error)
-func (s *ChangeService) ListChanges(ctx context.Context, opts *model.ListChangesOptions) ([]*model.Change, *model.Pagination, error)
+func (s *ChangeService) ListChanges(ctx context.Context, opts *model.ListChangesOptions) (*model.ListChangesResult, error)
+func (s *ChangeService) ListChangesForApproval(ctx context.Context, opts *model.ListChangesForApprovalOptions) (*model.ListChangesResult, error)
 func (s *ChangeService) ApproveChange(ctx context.Context, changeID string) error
 func (s *ChangeService) RejectChange(ctx context.Context, changeID string, comment string) error
 ```
@@ -795,11 +846,21 @@ configured means this tenant does not sign prices and the price passes through; 
 ### Methods
 
 ```go
-func (s *PriceService) Convert(ctx context.Context, currency string, amount string, targets []string) ([]*model.ConversionResult, error)
+func (s *PriceService) ListPrices(ctx context.Context, opts *model.ListPricesOptions) (*model.ListPricesResult, error)
+func (s *PriceService) GetPriceHistory(ctx context.Context, opts *model.GetPriceHistoryOptions) (*model.GetPriceHistoryResult, error)
+func (s *PriceService) ExportPriceHistory(ctx context.Context, opts *model.ExportPriceHistoryOptions) (*model.ExportPriceHistoryResult, error)
+func (s *PriceService) Convert(ctx context.Context, opts *model.ConvertOptions) (*model.ConversionResult, error)
 ```
+
+`ListPrices` reads `PriceService_QueryPricesV2` a page at a time (`PageSize`, `Cursor`) and
+verifies every row. `OnlyPrimary` and `SortOrder` filter and order it; the currency filter is one
+of three shapes chosen by the fields set — `FromCurrencyID` alone, `FromCurrencyID` with
+`ToCurrencyIDs`, or `ToCurrencyIDs` alone. Price history cannot page: `Limit` is the number of
+newest daily points (0 selects 20, at most 365); the history export has no SDK maximum.
 
 ### Key Models
 
+- `model.ListPricesResult` - BaseCurrency, Prices, Page
 - `model.Conversion` - Currency pair, rate, timestamp
 - `model.ConversionResult` - Target currency, converted amount
 - `model.Price` - Blockchain, CurrencyFrom, CurrencyTo, Decimals, Rate, Signatures
@@ -816,7 +877,7 @@ func (s *PriceService) Convert(ctx context.Context, currency string, amount stri
 
 ```go
 func (s *WebhookService) CreateWebhook(ctx context.Context, req *model.CreateWebhookRequest) (*model.Webhook, error)
-func (s *WebhookService) ListWebhooks(ctx context.Context, opts *model.ListWebhooksOptions) ([]*model.Webhook, *model.Pagination, error)
+func (s *WebhookService) ListWebhooks(ctx context.Context, opts *model.ListWebhooksOptions) (*model.ListWebhooksResult, error)
 func (s *WebhookService) DeleteWebhook(ctx context.Context, webhookID string) error
 func (s *WebhookService) UpdateWebhookStatus(ctx context.Context, webhookID string, status string) (*model.Webhook, error)
 ```
@@ -845,7 +906,7 @@ webhook, err := client.Webhooks().CreateWebhook(ctx, &model.CreateWebhookRequest
 ### Methods
 
 ```go
-func (s *StakingService) ListStakeAccounts(ctx context.Context, opts *model.GetStakeAccountsOptions) ([]*model.StakeAccount, *model.Pagination, error)
+func (s *StakingService) ListStakeAccounts(ctx context.Context, opts *model.ListStakeAccountsOptions) (*model.ListStakeAccountsResult, error)
 ```
 
 ### Key Models
@@ -863,12 +924,14 @@ func (s *StakingService) ListStakeAccounts(ctx context.Context, opts *model.GetS
 ### Methods
 
 ```go
-func (s *FeeService) GetFees(ctx context.Context, currency string) ([]*model.Fee, error)
+func (s *FeeService) GetFeesV2(ctx context.Context) (*model.GetFeesV2Result, error)
 ```
+
+Backed by `FeeService_GetFeesV2`; the deprecated v1 endpoint is not wrapped.
 
 ### Key Models
 
-- `model.Fee` - Currency, FeeType, Amount, Unit
+- `model.FeeV2` - CurrencyID, Value, Denom, CurrencyInfo, UpdateDate
 
 ---
 
@@ -956,16 +1019,16 @@ func (s *WebhookCallService) ListWebhookCalls(ctx context.Context, opts *model.L
 | opts.EventID | string | Filter by event ID |
 | opts.WebhookID | string | Filter by webhook ID |
 | opts.Status | string | Filter by call status |
-| opts.CurrentPage | string | Current page cursor |
-| opts.PageRequest | string | Page request cursor |
-| opts.PageSize | int64 | Page size |
+| opts.PageSize | int64 | Page size: 0 selects 20, above 100 is an error |
+| opts.Cursor | string | A previous page's `Page.NextCursor` |
+| opts.CurrentPage / opts.PageRequest | string | Manual paging; cannot be combined with `Cursor` |
 | opts.SortOrder | string | Sort order |
 
 **Returns:** `*model.ListWebhookCallsResult`, `error`
 
 ### Key Models
 
-- `model.ListWebhookCallsResult` - WebhookCalls, CurrentPage, HasPrevious, HasNext
+- `model.ListWebhookCallsResult` - WebhookCalls, Page
 
 ---
 
@@ -983,11 +1046,32 @@ therefore takes the rules cache as a mandatory parameter and panics on a nil one
 ### Methods
 
 ```go
+func (s *AssetService) GetAssetAddresses(ctx context.Context, req *model.GetAssetAddressesRequest) (*model.GetAssetAddressesResult, error)
+func (s *AssetService) GetAssetWallets(ctx context.Context, req *model.GetAssetWalletsRequest) (*model.GetAssetWalletsResult, error)
+func (s *AssetService) QueryAssets(ctx context.Context, opts *model.QueryAssetsOptions) (*model.QueryAssetsResult, error)
+func (s *AssetService) QueryAssetAddresses(ctx context.Context, assetID string, opts *model.QueryAssetAddressesOptions) (*model.QueryAssetAddressesResult, error)
+func (s *AssetService) ListAssetOperations(ctx context.Context, assetID string, opts *model.ListAssetOperationsOptions) (*model.ListAssetOperationsResult, error)
 ```
+
+`GetAssetAddresses` / `GetAssetWallets` page through `requestCursor` only (`PageSize`, `Cursor`);
+their `Page.TotalItems` is the server's total. `QueryAssets`, `QueryAssetAddresses` and
+`ListAssetOperations` read the v2 asset registry (`AssetServiceV2_*`), a page at a time.
+
+`QueryAssetAddresses` rows carry no signature, so each is confirmed before it is returned as a
+Taurus-PROTECT address. An `ADDRESS_TYPE_V2_INTERNAL` row is re-read by its `AddressID` through the
+HSM-verified managed-address list (50 ids per request), an `ADDRESS_TYPE_V2_WHITELISTED` row by its
+`WhitelistedAddressID` through the verified whitelisted-address list (100 ids per request); the row
+is kept with `Verified = true` only when the verified address exists and carries the same address,
+which is the address returned. Any other row (`EXTERNAL`, or untyped) comes back with
+`Verified = false`: on-chain data, never a Taurus-PROTECT address. Rows that cannot be confirmed are
+withheld and named in `ExcludedUnverified` (by id, else by address) without moving the cursor; a
+page where nothing survives is an error, and a verified reader that fails aborts the call.
 
 ### Key Models
 
-- `model.Asset` - ID, Symbol, Name, Blockchain, Network, ContractAddress, Decimals
+- `model.AssetResource` - ID, Label, Status, Blockchain, Network, Symbol, Decimals, ContractAddress, CantonInstrument
+- `model.AssetAddress` - Address, KYCStatus, Balance, AddressType, AddressID, WhitelistedAddressID, Verified
+- `model.AssetOperation` - ID, Type, Status, Amount, Target, failure and blocking reasons
 
 ---
 
@@ -1000,8 +1084,10 @@ therefore takes the rules cache as a mandatory parameter and panics on a nil one
 ### Methods
 
 ```go
-func (s *ActionService) ListActions(ctx context.Context, opts *model.ListActionsOptions) ([]*model.Action, *model.Pagination, error)
+func (s *ActionService) ListActions(ctx context.Context, opts *model.ListActionsOptions) (*model.ListActionsResult, error)
 ```
+
+`ListActionsResult.Pagination` is never nil.
 
 ---
 
@@ -1032,7 +1118,7 @@ func (s *BlockchainService) ListBlockchains(ctx context.Context) ([]*model.Block
 ### Methods
 
 ```go
-func (s *ExchangeService) ListExchanges(ctx context.Context) ([]*model.Exchange, error)
+func (s *ExchangeService) ListExchanges(ctx context.Context, opts *model.ListExchangesOptions) (*model.ListExchangesResult, error)
 ```
 
 ### Key Models
@@ -1050,8 +1136,30 @@ func (s *ExchangeService) ListExchanges(ctx context.Context) ([]*model.Exchange,
 ### Methods
 
 ```go
-func (s *FiatService) ListFiatProviders(ctx context.Context) ([]*model.FiatCurrency, error)
+func (s *FiatService) ListFiatProviders(ctx context.Context) (*model.ListFiatProvidersResult, error)
+func (s *FiatService) ListFiatProviderAccounts(ctx context.Context, opts *model.ListFiatProviderAccountsOptions) (*model.ListFiatProviderAccountsResult, error)
+func (s *FiatService) ListFiatProviderEntities(ctx context.Context, opts *model.ListFiatProviderEntitiesOptions) (*model.ListFiatProviderEntitiesResult, error)
 ```
+
+---
+
+## EarnService
+
+**Purpose:** Reads Earn rewards.
+
+**Access:** `client.Earn()`
+
+### Methods
+
+```go
+func (s *EarnService) ListRewards(ctx context.Context, opts *model.ListEarnRewardsOptions) (*model.ListEarnRewardsResult, error)
+```
+
+A page at a time (`PageSize`, `Cursor`), optionally for one `RecipientAddressID`.
+
+### Key Models
+
+- `model.EarnReward` - ID, RecipientAddressID, RecipientAddress, RewardType, MerklToken
 
 ---
 
@@ -1064,8 +1172,10 @@ func (s *FiatService) ListFiatProviders(ctx context.Context) ([]*model.FiatCurre
 ### Methods
 
 ```go
-func (s *FeePayerService) ListFeePayers(ctx context.Context, blockchain string, network string) ([]*model.FeePayer, error)
+func (s *FeePayerService) ListFeePayers(ctx context.Context, opts *model.ListFeePayersOptions) (*model.ListFeePayersResult, error)
 ```
+
+`ListFeePayersResult.Pagination` is never nil.
 
 ---
 
@@ -1212,10 +1322,11 @@ fmt.Printf("My participant ID: %s\n", me.ID)
 
 ```go
 func (s *TaurusNetworkPledgeService) GetPledge(ctx context.Context, pledgeID string) (*model.Pledge, error)
-func (s *TaurusNetworkPledgeService) ListPledges(ctx context.Context, opts *model.ListPledgesOptions) ([]*model.Pledge, *model.CursorPagination, error)
+func (s *TaurusNetworkPledgeService) ListPledges(ctx context.Context, opts *taurusnetwork.ListPledgesOptions) ([]*taurusnetwork.Pledge, *model.CursorPage, error)
 func (s *TaurusNetworkPledgeService) CreatePledge(ctx context.Context, req *model.CreatePledgeRequest) (*model.Pledge, *model.PledgeAction, error)
-func (s *TaurusNetworkPledgeService) ListPledgeWithdrawals(ctx context.Context, pledgeID string, opts *model.ListPledgeWithdrawalsOptions) ([]*model.PledgeWithdrawal, *model.CursorPagination, error)
-func (s *TaurusNetworkPledgeService) ListPledgeActionsForApproval(ctx context.Context, opts *model.ListPledgeActionsOptions) ([]*model.PledgeAction, *model.CursorPagination, error)
+func (s *TaurusNetworkPledgeService) ListPledgeWithdrawals(ctx context.Context, opts *taurusnetwork.ListPledgeWithdrawalsOptions) ([]taurusnetwork.PledgeWithdrawal, *model.CursorPage, error)
+func (s *TaurusNetworkPledgeService) ListPledgeActions(ctx context.Context, opts *taurusnetwork.ListPledgeActionsOptions) ([]taurusnetwork.PledgeAction, *model.CursorPage, error)
+func (s *TaurusNetworkPledgeService) ListPledgeActionsForApproval(ctx context.Context, opts *taurusnetwork.ListPledgeActionsForApprovalOptions) ([]taurusnetwork.PledgeAction, *model.CursorPage, error)
 func (s *TaurusNetworkPledgeService) ApprovePledgeActions(ctx context.Context, actions []taurusnetwork.PledgeAction, privateKey *ecdsa.PrivateKey, comment string) (*taurusnetwork.ApprovePledgeActionsResponse, error)
 ```
 
@@ -1248,11 +1359,12 @@ an action displayed for review carries a payload the hash actually commits to.
 
 ```go
 func (s *TaurusNetworkLendingService) GetLendingOffer(ctx context.Context, offerID string) (*model.LendingOffer, error)
-func (s *TaurusNetworkLendingService) ListLendingOffers(ctx context.Context, opts *model.ListLendingOffersOptions) ([]*model.LendingOffer, *model.CursorPagination, error)
+func (s *TaurusNetworkLendingService) ListLendingOffers(ctx context.Context, opts *taurusnetwork.ListLendingOffersOptions) (*taurusnetwork.ListLendingOffersResult, error)
 func (s *TaurusNetworkLendingService) CreateLendingOffer(ctx context.Context, req *model.CreateLendingOfferRequest) (*model.LendingOffer, error)
 func (s *TaurusNetworkLendingService) DeleteLendingOffer(ctx context.Context, offerID string) (*model.LendingOffer, error)
 func (s *TaurusNetworkLendingService) GetLendingAgreement(ctx context.Context, agreementID string) (*model.LendingAgreement, error)
-func (s *TaurusNetworkLendingService) ListLendingAgreements(ctx context.Context, opts *model.ListLendingAgreementsOptions) ([]*model.LendingAgreement, *model.CursorPagination, error)
+func (s *TaurusNetworkLendingService) ListLendingAgreements(ctx context.Context, opts *taurusnetwork.ListLendingAgreementsOptions) (*taurusnetwork.ListLendingAgreementsResult, error)
+func (s *TaurusNetworkLendingService) ListLendingAgreementsForApproval(ctx context.Context, opts *taurusnetwork.ListLendingAgreementsForApprovalOptions) (*taurusnetwork.ListLendingAgreementsForApprovalResult, error)
 ```
 
 ### Key Models
@@ -1272,7 +1384,8 @@ func (s *TaurusNetworkLendingService) ListLendingAgreements(ctx context.Context,
 
 ```go
 func (s *TaurusNetworkSettlementService) GetSettlement(ctx context.Context, settlementID string) (*model.Settlement, error)
-func (s *TaurusNetworkSettlementService) ListSettlements(ctx context.Context, opts *model.ListSettlementsOptions) ([]*model.Settlement, *model.CursorPagination, error)
+func (s *TaurusNetworkSettlementService) ListSettlements(ctx context.Context, opts *taurusnetwork.ListSettlementsOptions) (*taurusnetwork.ListSettlementsResult, error)
+func (s *TaurusNetworkSettlementService) ListSettlementsForApproval(ctx context.Context, opts *taurusnetwork.ListSettlementsForApprovalOptions) (*taurusnetwork.ListSettlementsForApprovalResult, error)
 func (s *TaurusNetworkSettlementService) CreateSettlement(ctx context.Context, req *model.CreateSettlementRequest) (*model.Settlement, error)
 ```
 
@@ -1291,10 +1404,10 @@ func (s *TaurusNetworkSettlementService) CreateSettlement(ctx context.Context, r
 ### Methods
 
 ```go
-func (s *TaurusNetworkSharingService) ListSharedAddresses(ctx context.Context, opts *model.ListSharedAddressesOptions) ([]*model.SharedAddress, *model.CursorPagination, error)
+func (s *TaurusNetworkSharingService) ListSharedAddresses(ctx context.Context, opts *taurusnetwork.ListSharedAddressesOptions) (*taurusnetwork.ListSharedAddressesResult, error)
 func (s *TaurusNetworkSharingService) ShareAddress(ctx context.Context, req *model.CreateSharedAddressRequest) (*model.SharedAddress, error)
 func (s *TaurusNetworkSharingService) UnshareAddress(ctx context.Context, sharedAddressID string) error
-func (s *TaurusNetworkSharingService) ListSharedAssets(ctx context.Context, opts *model.ListSharedAssetsOptions) ([]*model.SharedAsset, *model.CursorPagination, error)
+func (s *TaurusNetworkSharingService) ListSharedAssets(ctx context.Context, opts *taurusnetwork.ListSharedAssetsOptions) (*taurusnetwork.ListSharedAssetsResult, error)
 func (s *TaurusNetworkSharingService) ShareWhitelistedAsset(ctx context.Context, req *model.CreateSharedAssetRequest) (*model.SharedAsset, error)
 func (s *TaurusNetworkSharingService) UnshareWhitelistedAsset(ctx context.Context, sharedAssetID string) error
 ```
@@ -1349,11 +1462,18 @@ errors.Is(err, protect.ErrServer)          // 500
 
 ## Pagination Patterns
 
-### Standard Pattern
+Offset lists (wallets, addresses, transactions, users, groups, fee payers, actions, the
+whitelists) return a `*model.Pagination` that is never nil; every other list returns a
+`model.CursorPage` in its result's `Page` field. Continue with `NextOffset` / `NextCursor` until
+`HasMore` is false — never with `Offset + Limit`. Page sizes: 0 selects `model.DefaultPageSize`
+(20), above `model.MaxPageSize` (100) or negative is an error. See
+[CONCEPTS.md](CONCEPTS.md#pagination).
+
+### Offset Lists
 
 ```go
 var allWallets []*model.Wallet
-opts := &model.ListWalletsOptions{Limit: 100, Offset: 0}
+opts := &model.ListWalletsOptions{Limit: 100}
 
 for {
     wallets, pagination, err := client.Wallets().ListWallets(ctx, opts)
@@ -1366,18 +1486,43 @@ for {
     if !pagination.HasMore {
         break
     }
-    opts.Offset = pagination.Offset + pagination.Limit
+    opts.Offset = pagination.NextOffset
 }
 ```
 
-### Pagination Model
+### Cursor Lists
+
+```go
+opts := &model.ListChangesOptions{PageSize: 100}
+for {
+    result, err := client.Changes().ListChanges(ctx, opts)
+    if err != nil {
+        return err
+    }
+    process(result.Changes)
+    if !result.Page.HasMore {
+        break
+    }
+    opts.Cursor = result.Page.NextCursor
+}
+```
+
+### Page Models
 
 ```go
 type Pagination struct {
-    Limit      int64  // Items per page
-    Offset     int64  // Current offset
-    TotalItems int64  // Total available items
-    HasMore    bool   // More items available
+    Limit      int64 // the page size that was sent
+    Offset     int64 // the offset that was sent
+    TotalItems int64 // the server's total, reduced by rows the SDK withheld
+    NextOffset int64 // where the next page starts
+    HasMore    bool
+}
+
+type CursorPage struct {
+    PageSize   int64
+    NextCursor string // empty when HasMore is false
+    HasMore    bool
+    TotalItems *int64 // only for lists whose reply carries a total
 }
 ```
 
@@ -1422,12 +1567,12 @@ Generated from the go source by `scripts/api-surface/docs.py`; regenerate with
 `./build.sh docs`. Every method below exists in the SDK, and `./build.sh docs --check`
 fails if this list drifts or if the prose above documents a method that does not.
 
-43 services, 194 public methods.
+44 services, 197 public methods.
 
 ### ActionService
 
 - `GetAction(ctx context.Context, id string) (*model.Action, error)` — GetAction retrieves a single action by ID.
-- `ListActions(ctx context.Context, opts *model.ListActionsOptions) (*model.ListActionsResult, error)` — ListActions retrieves a list of actions with optional filtering and pagination.
+- `ListActions(ctx context.Context, opts *model.ListActionsOptions) (*model.ListActionsResult, error)` — ListActions retrieves one page of actions. Result.Pagination is never nil; continue with its
 
 ### AddressService
 
@@ -1436,7 +1581,7 @@ fails if this list drifts or if the prose above documents a method that does not
 - `DeleteAddressAttribute(ctx context.Context, addressID string, attributeID string) error` — DeleteAddressAttribute deletes an attribute from an address.
 - `GetAddress(ctx context.Context, addressID string) (*model.Address, error)` — GetAddress retrieves an address by ID with mandatory signature verification.
 - `GetAddressProofOfReserve(ctx context.Context, addressID string, challenge string) (*model.ProofOfReserve, error)` — GetAddressProofOfReserve retrieves the proof of reserve for an address.
-- `ListAddresses(ctx context.Context, opts *model.ListAddressesOptions) ([]*model.Address, *model.Pagination, error)` — ListAddresses retrieves a list of addresses with mandatory signature verification.
+- `ListAddresses(ctx context.Context, opts *model.ListAddressesOptions) ([]*model.Address, *model.Pagination, error)` — ListAddresses retrieves one page of addresses with mandatory signature verification.
 
 ### AirGapService
 
@@ -1445,8 +1590,11 @@ fails if this list drifts or if the prose above documents a method that does not
 
 ### AssetService
 
-- `GetAssetAddresses(ctx context.Context, req *model.GetAssetAddressesRequest) (*model.GetAssetAddressesResult, error)` — GetAssetAddresses retrieves address-level balances for a specific asset.
-- `GetAssetWallets(ctx context.Context, req *model.GetAssetWalletsRequest) (*model.GetAssetWalletsResult, error)` — GetAssetWallets retrieves wallet-level balances for a specific asset.
+- `GetAssetAddresses(ctx context.Context, req *model.GetAssetAddressesRequest) (*model.GetAssetAddressesResult, error)` — GetAssetAddresses retrieves one page of address-level balances for a specific asset, each
+- `GetAssetWallets(ctx context.Context, req *model.GetAssetWalletsRequest) (*model.GetAssetWalletsResult, error)` — GetAssetWallets retrieves one page of wallet-level balances for a specific asset. Continue
+- `ListAssetOperations(ctx context.Context, assetID string, opts *model.ListAssetOperationsOptions) (*model.ListAssetOperationsResult, error)` — ListAssetOperations retrieves one page of the operations on a v2 asset. Continue with
+- `QueryAssetAddresses(ctx context.Context, assetID string, opts *model.QueryAssetAddressesOptions) (*model.QueryAssetAddressesResult, error)` — QueryAssetAddresses retrieves one page of the addresses holding a v2 asset, with their KYC
+- `QueryAssets(ctx context.Context, opts *model.QueryAssetsOptions) (*model.QueryAssetsResult, error)` — QueryAssets retrieves one page of the v2 asset registry (AssetServiceV2_QueryAssetsV2, which
 
 ### AuditService
 
@@ -1455,7 +1603,7 @@ fails if this list drifts or if the prose above documents a method that does not
 
 ### BalanceService
 
-- `GetBalances(ctx context.Context, opts *model.GetBalancesOptions) (*model.GetBalancesResult, error)` — GetBalances retrieves the total balances for the tenant, for each asset.
+- `GetBalances(ctx context.Context, opts *model.GetBalancesOptions) (*model.GetBalancesResult, error)` — GetBalances retrieves one page of the tenant's total balances, one per asset. An asset is
 
 ### BlockchainService
 
@@ -1472,8 +1620,8 @@ fails if this list drifts or if the prose above documents a method that does not
 - `ApproveChanges(ctx context.Context, changeIDs []string) error` — ApproveChanges approves multiple changes by their IDs.
 - `CreateChange(ctx context.Context, req *model.CreateChangeRequest) (*model.CreateChangeResult, error)` — CreateChange creates a new change request.
 - `GetChange(ctx context.Context, changeID string) (*model.Change, error)` — GetChange retrieves a change by ID.
-- `ListChanges(ctx context.Context, opts *model.ListChangesOptions) (*model.ListChangesResult, error)` — ListChanges retrieves a list of changes.
-- `ListChangesForApproval(ctx context.Context, opts *model.ListChangesForApprovalOptions) (*model.ListChangesResult, error)` — ListChangesForApproval retrieves a list of changes pending approval for the current user.
+- `ListChanges(ctx context.Context, opts *model.ListChangesOptions) (*model.ListChangesResult, error)` — ListChanges retrieves one page of changes. Continue with Page.NextCursor until
+- `ListChangesForApproval(ctx context.Context, opts *model.ListChangesForApprovalOptions) (*model.ListChangesResult, error)` — ListChangesForApproval retrieves one page of the changes awaiting the current user's
 - `RejectChange(ctx context.Context, changeID string) error` — RejectChange rejects a single change by ID.
 - `RejectChanges(ctx context.Context, changeIDs []string) error` — RejectChanges rejects multiple changes by their IDs.
 
@@ -1486,6 +1634,10 @@ fails if this list drifts or if the prose above documents a method that does not
 - `GetCurrencies(ctx context.Context, opts *model.ListCurrenciesOptions) ([]*model.Currency, error)` — GetCurrencies retrieves a list of all currencies.
 - `GetCurrency(ctx context.Context, opts *model.GetCurrencyOptions) (*model.Currency, error)` — GetCurrency retrieves a single currency by its filter criteria.
 
+### EarnService
+
+- `ListRewards(ctx context.Context, opts *model.ListEarnRewardsOptions) (*model.ListEarnRewardsResult, error)` — ListRewards retrieves one page of rewards (EarnService_GetRewards). Continue with
+
 ### ExchangeService
 
 - `ExportExchanges(ctx context.Context, opts *model.ExportExchangesOptions) (*model.ExportExchangesResult, error)` — ExportExchanges exports exchange accounts in the specified format (CSV or JSON).
@@ -1497,17 +1649,17 @@ fails if this list drifts or if the prose above documents a method that does not
 
 - `GetChecksum(ctx context.Context, req *model.ChecksumRequest) (*model.ChecksumResult, error)` — GetChecksum computes a checksum for the provided data.
 - `GetFeePayer(ctx context.Context, id string) (*model.FeePayer, error)` — GetFeePayer retrieves a single fee payer by ID.
-- `ListFeePayers(ctx context.Context, opts *model.ListFeePayersOptions) (*model.ListFeePayersResult, error)` — ListFeePayers retrieves a list of fee payers with optional filtering.
+- `ListFeePayers(ctx context.Context, opts *model.ListFeePayersOptions) (*model.ListFeePayersResult, error)` — ListFeePayers retrieves one page of fee payers. Result.Pagination is never nil; continue with
 
 ### FeeService
 
-- `GetFees(ctx context.Context) (*model.GetFeesResult, error)` — GetFees retrieves a list of fee estimates.
-- `GetFeesV2(ctx context.Context) (*model.GetFeesV2Result, error)` — GetFeesV2 retrieves a list of native currency fee estimates.
+- `GetFeesV2(ctx context.Context) (*model.GetFeesV2Result, error)` — GetFeesV2 retrieves the native currency fee estimates (FeeService_GetFeesV2). The deprecated
 
 ### FiatService
 
 - `GetFiatProviderAccount(ctx context.Context, id string) (*model.FiatProviderAccount, error)` — GetFiatProviderAccount retrieves a fiat provider account by ID.
-- `ListFiatProviderAccounts(ctx context.Context, opts *model.ListFiatProviderAccountsOptions) (*model.ListFiatProviderAccountsResult, error)` — ListFiatProviderAccounts retrieves a list of fiat provider accounts with optional filtering and pagination.
+- `ListFiatProviderAccounts(ctx context.Context, opts *model.ListFiatProviderAccountsOptions) (*model.ListFiatProviderAccountsResult, error)` — ListFiatProviderAccounts retrieves one page of fiat provider accounts. Provider and Label are
+- `ListFiatProviderEntities(ctx context.Context, opts *model.ListFiatProviderEntitiesOptions) (*model.ListFiatProviderEntitiesResult, error)` — ListFiatProviderEntities retrieves one page of the entities registered with fiat providers.
 - `ListFiatProviders(ctx context.Context) (*model.ListFiatProvidersResult, error)` — ListFiatProviders retrieves a list of all enabled fiat providers and their valuations.
 
 ### GovernanceRuleService
@@ -1529,7 +1681,7 @@ fails if this list drifts or if the prose above documents a method that does not
 
 ### GroupService
 
-- `ListGroups(ctx context.Context, opts *model.ListGroupsOptions) (*model.ListGroupsResult, error)` — ListGroups retrieves a list of groups with optional filtering and pagination.
+- `ListGroups(ctx context.Context, opts *model.ListGroupsOptions) (*model.ListGroupsResult, error)` — ListGroups retrieves one page of groups. Result.Pagination is never nil; continue with its
 
 ### HealthService
 
@@ -1553,7 +1705,7 @@ fails if this list drifts or if the prose above documents a method that does not
 - `Convert(ctx context.Context, opts *model.ConvertOptions) (*model.ConversionResult, error)` — Convert converts an amount from one currency to other currencies.
 - `ExportPriceHistory(ctx context.Context, opts *model.ExportPriceHistoryOptions) (*model.ExportPriceHistoryResult, error)` — ExportPriceHistory exports the price history in a specified format.
 - `GetPriceHistory(ctx context.Context, opts *model.GetPriceHistoryOptions) (*model.GetPriceHistoryResult, error)` — GetPriceHistory retrieves the price history for a currency pair.
-- `GetPrices(ctx context.Context) (*model.GetPricesResult, error)` — GetPrices retrieves all available currency prices.
+- `ListPrices(ctx context.Context, opts *model.ListPricesOptions) (*model.ListPricesResult, error)` — ListPrices retrieves one page of currency prices (PriceService_QueryPricesV2), each verified
 
 ### RequestService
 
@@ -1567,8 +1719,8 @@ fails if this list drifts or if the prose above documents a method that does not
 - `CreateInternalTransferRequest(ctx context.Context, fromAddressID, toAddressID, amount string) (*model.Request, error)` — CreateInternalTransferRequest creates an internal transfer request from one address to another.
 - `CreateOutgoingRequest(ctx context.Context, req *model.CreateOutgoingRequest) (*model.Request, error)` — CreateOutgoingRequest creates a new outgoing (withdrawal) request.
 - `GetRequest(ctx context.Context, requestID string) (*model.Request, error)` — GetRequest retrieves a request by ID with hash verification.
-- `ListRequests(ctx context.Context, opts *model.ListRequestsOptions) (*model.RequestResult, error)` — ListRequests retrieves a list of requests using cursor-based pagination.
-- `ListRequestsForApproval(ctx context.Context, opts *model.ListRequestsOptions) (*model.RequestResult, error)` — ListRequestsForApproval retrieves requests pending approval for the current user.
+- `ListRequests(ctx context.Context, opts *model.ListRequestsOptions) (*model.RequestResult, error)` — ListRequests retrieves one page of requests. Continue with Page.NextCursor until
+- `ListRequestsForApproval(ctx context.Context, opts *model.ListRequestsOptions) (*model.RequestResult, error)` — ListRequestsForApproval retrieves one page of the requests awaiting the current user's
 - `RejectRequest(ctx context.Context, requestID string, comment string) error` — RejectRequest rejects a single request with a comment.
 - `RejectRequests(ctx context.Context, requestIDs []string, comment string) error` — RejectRequests rejects multiple requests with a comment.
 
@@ -1637,10 +1789,10 @@ fails if this list drifts or if the prose above documents a method that does not
 - `CreatePledge(ctx context.Context, req *taurusnetwork.CreatePledgeRequest) (*taurusnetwork.CreatePledgeResponse, error)` — CreatePledge creates a new pledge.
 - `GetPledge(ctx context.Context, pledgeID string) (*taurusnetwork.Pledge, error)` — GetPledge retrieves a pledge by ID.
 - `InitiateWithdrawPledge(ctx context.Context, pledgeID string, req *taurusnetwork.InitiateWithdrawPledgeRequest) (*taurusnetwork.InitiateWithdrawPledgeResponse, error)` — InitiateWithdrawPledge initiates a withdrawal from a pledge (pledgor initiates).
-- `ListPledgeActions(ctx context.Context, opts *taurusnetwork.ListPledgeActionsOptions) ([]taurusnetwork.PledgeAction, *model.CursorPagination, error)` — ListPledgeActions retrieves a list of pledge actions.
-- `ListPledgeActionsForApproval(ctx context.Context, opts *taurusnetwork.ListPledgeActionsForApprovalOptions) ([]taurusnetwork.PledgeAction, *model.CursorPagination, error)` — ListPledgeActionsForApproval retrieves a list of pledge actions pending approval.
-- `ListPledgeWithdrawals(ctx context.Context, opts *taurusnetwork.ListPledgeWithdrawalsOptions) ([]taurusnetwork.PledgeWithdrawal, *model.CursorPagination, error)` — ListPledgeWithdrawals retrieves a list of pledge withdrawals.
-- `ListPledges(ctx context.Context, opts *taurusnetwork.ListPledgesOptions) ([]*taurusnetwork.Pledge, *model.CursorPagination, error)` — ListPledges retrieves a list of pledges with optional filters.
+- `ListPledgeActions(ctx context.Context, opts *taurusnetwork.ListPledgeActionsOptions) ([]taurusnetwork.PledgeAction, *model.CursorPage, error)` — ListPledgeActions retrieves a list of pledge actions.
+- `ListPledgeActionsForApproval(ctx context.Context, opts *taurusnetwork.ListPledgeActionsForApprovalOptions) ([]taurusnetwork.PledgeAction, *model.CursorPage, error)` — ListPledgeActionsForApproval retrieves a list of pledge actions pending approval.
+- `ListPledgeWithdrawals(ctx context.Context, opts *taurusnetwork.ListPledgeWithdrawalsOptions) ([]taurusnetwork.PledgeWithdrawal, *model.CursorPage, error)` — ListPledgeWithdrawals retrieves a list of pledge withdrawals.
+- `ListPledges(ctx context.Context, opts *taurusnetwork.ListPledgesOptions) ([]*taurusnetwork.Pledge, *model.CursorPage, error)` — ListPledges retrieves a list of pledges with optional filters.
 - `RejectPledge(ctx context.Context, pledgeID string, req *taurusnetwork.RejectPledgeRequest) error` — RejectPledge rejects a pledge.
 - `RejectPledgeActions(ctx context.Context, req *taurusnetwork.RejectPledgeActionsRequest) error` — RejectPledgeActions rejects one or more pledge actions.
 - `Unpledge(ctx context.Context, pledgeID string) (*taurusnetwork.UnpledgeResponse, error)` — Unpledge unpledges funds from a pledge.
@@ -1672,11 +1824,11 @@ fails if this list drifts or if the prose above documents a method that does not
 
 ### TransactionService
 
-- `ExportTransactions(ctx context.Context, opts *model.ExportTransactionsOptions) (string, error)` — ExportTransactions exports transactions in the specified format.
+- `ExportTransactions(ctx context.Context, opts *model.ExportTransactionsOptions) (*model.ExportTransactionsResult, error)` — ExportTransactions exports transactions as text: json (the server's default when Format is
 - `GetTransaction(ctx context.Context, txID string) (*model.Transaction, error)` — GetTransaction retrieves a transaction by ID.
 - `GetTransactionByHash(ctx context.Context, hash string) (*model.Transaction, error)` — GetTransactionByHash retrieves a transaction by its blockchain hash.
-- `ListTransactions(ctx context.Context, opts *model.ListTransactionsOptions) ([]*model.Transaction, *model.Pagination, error)` — ListTransactions retrieves a list of transactions.
-- `ListTransactionsByAddress(ctx context.Context, address string, opts *model.ListTransactionsByAddressOptions) ([]*model.Transaction, *model.Pagination, error)` — ListTransactionsByAddress retrieves a list of transactions for a specific address.
+- `ListTransactions(ctx context.Context, opts *model.ListTransactionsOptions) ([]*model.Transaction, *model.Pagination, error)` — ListTransactions retrieves one page of transactions. The returned pagination is never nil;
+- `ListTransactionsByAddress(ctx context.Context, address string, opts *model.ListTransactionsByAddressOptions) ([]*model.Transaction, *model.Pagination, error)` — ListTransactionsByAddress retrieves one page of transactions for a specific address. The
 
 ### UserDeviceService
 
@@ -1688,10 +1840,10 @@ fails if this list drifts or if the prose above documents a method that does not
 ### UserService
 
 - `CreateUserAttribute(ctx context.Context, userID, key, value string) error` — CreateUserAttribute creates an attribute for a user.
-- `GetMe(ctx context.Context) (*model.User, error)` — GetMe retrieves the currently authenticated user.
+- `GetMe(ctx context.Context) (*model.User, error)` — GetMe retrieves the currently authenticated user, with the enforced-in-rules flags computed.
 - `GetUser(ctx context.Context, id string) (*model.User, error)` — GetUser retrieves a user by ID.
-- `GetUsersByEmail(ctx context.Context, emails []string) ([]*model.User, error)` — GetUsersByEmail retrieves users by their email addresses.
-- `ListUsers(ctx context.Context, opts *model.ListUsersOptions) (*model.ListUsersResult, error)` — ListUsers retrieves a list of users with optional filtering.
+- `GetUsersByEmail(ctx context.Context, emails []string) ([]*model.User, error)` — GetUsersByEmail retrieves the users with these email addresses. The emails are sent in
+- `ListUsers(ctx context.Context, opts *model.ListUsersOptions) (*model.ListUsersResult, error)` — ListUsers retrieves one page of users. Result.Pagination is never nil; continue with its
 
 ### VisibilityGroupService
 
@@ -1705,8 +1857,8 @@ fails if this list drifts or if the prose above documents a method that does not
 - `DeleteWalletAttribute(ctx context.Context, walletID, attributeID string) error` — DeleteWalletAttribute deletes a custom attribute from a wallet.
 - `GetWallet(ctx context.Context, walletID string) (*model.Wallet, error)` — GetWallet retrieves a wallet by ID.
 - `GetWalletBalanceHistory(ctx context.Context, walletID string, intervalHours int) ([]*model.BalanceHistoryPoint, error)` — GetWalletBalanceHistory retrieves balance history for a wallet.
-- `GetWalletTokens(ctx context.Context, walletID string, opts *model.GetWalletTokensOptions) ([]*model.AssetBalance, error)` — GetWalletTokens retrieves token balances for a wallet.
-- `ListWallets(ctx context.Context, opts *model.ListWalletsOptions) ([]*model.Wallet, *model.Pagination, error)` — ListWallets retrieves a list of wallets.
+- `GetWalletTokens(ctx context.Context, walletID string, opts *model.GetWalletTokensOptions) (*model.WalletTokensResult, error)` — GetWalletTokens retrieves one page of a wallet's token balances. Continue with
+- `ListWallets(ctx context.Context, opts *model.ListWalletsOptions) ([]*model.Wallet, *model.Pagination, error)` — ListWallets retrieves one page of wallets. The returned pagination is never nil; continue
 
 ### WebhookCallService
 
@@ -1732,7 +1884,7 @@ fails if this list drifts or if the prose above documents a method that does not
 - `ApproveWhitelistedAssets(ctx context.Context, selection *model.WhitelistedAssetApproval, privateKey *ecdsa.PrivateKey, comment string) error` — ApproveWhitelistedAssets signs and submits an approval for the reviewed whitelisted
 - `GetWhitelistedAsset(ctx context.Context, id string) (*model.WhitelistedAsset, error)` — GetWhitelistedAsset retrieves a whitelisted asset by ID.
 - `GetWhitelistedAssetEnvelope(ctx context.Context, id string) (*model.WhitelistedAssetEnvelope, error)` — GetWhitelistedAssetEnvelope retrieves a whitelisted asset envelope by ID and performs
-- `ListWhitelistedAssets(ctx context.Context, opts *model.ListWhitelistedAssetsOptions) (*model.WhitelistedAssetResult, error)` — ListWhitelistedAssets retrieves a list of whitelisted assets.
+- `ListWhitelistedAssets(ctx context.Context, opts *model.ListWhitelistedAssetsOptions) (*model.WhitelistedAssetResult, error)` — ListWhitelistedAssets retrieves one page of whitelisted assets, verifying every row.
 - `ListWhitelistedAssetsForApproval(ctx context.Context, opts *model.ListWhitelistedAssetsForApprovalOptions) (*model.WhitelistedAssetResult, error)` — ListWhitelistedAssetsForApproval retrieves assets awaiting approval, verified the same
 
 ### WhitelistedContractService
@@ -1741,7 +1893,6 @@ fails if this list drifts or if the prose above documents a method that does not
 - `CreateWhitelistedContract(ctx context.Context, req *model.CreateWhitelistedContractRequest) (string, error)` — CreateWhitelistedContract creates a new whitelisted contract.
 - `CreateWhitelistedContractAttribute(ctx context.Context, contractID string, req *model.CreateWhitelistedContractAttributeRequest) ([]model.WhitelistedContractAttribute, error)` — CreateWhitelistedContractAttribute creates an attribute on a whitelisted contract.
 - `CreateWhitelistedContractAttributes(ctx context.Context, contractID string, reqs []model.CreateWhitelistedContractAttributeRequest) ([]model.WhitelistedContractAttribute, error)` — CreateWhitelistedContractAttributes creates multiple attributes on a whitelisted contract.
-- `DeleteWhitelistedContract(ctx context.Context, id string, comment string) (string, error)` — DeleteWhitelistedContract deletes a whitelisted contract.
 - `DeleteWhitelistedContractAttribute(ctx context.Context, contractID string, attributeID string) error` — DeleteWhitelistedContractAttribute deletes an attribute from a whitelisted contract.
 - `GetWhitelistedContractAttribute(ctx context.Context, contractID string, attributeID string) (*model.WhitelistedContractAttribute, error)` — GetWhitelistedContractAttribute retrieves an attribute from a whitelisted contract.
 - `RejectWhitelistedContract(ctx context.Context, ids []string, comment string) error` — RejectWhitelistedContract rejects whitelisted contracts.

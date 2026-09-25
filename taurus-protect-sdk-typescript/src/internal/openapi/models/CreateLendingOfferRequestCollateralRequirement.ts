@@ -31,7 +31,16 @@ export interface CreateLendingOfferRequestCollateralRequirement {
      * @memberof CreateLendingOfferRequestCollateralRequirement
      */
     currencyID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof CreateLendingOfferRequestCollateralRequirement
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const CreateLendingOfferRequestCollateralRequirementWireKeys: ReadonlySet<string> = new Set(['ratio', 'currencyID']);
 
 /**
  * Check if a given object implements the CreateLendingOfferRequestCollateralRequirement interface.
@@ -48,11 +57,21 @@ export function CreateLendingOfferRequestCollateralRequirementFromJSONTyped(json
     if (json == null) {
         return json;
     }
-    return {
+    const result: CreateLendingOfferRequestCollateralRequirement = {
         
         'ratio': json['ratio'] == null ? undefined : json['ratio'],
         'currencyID': json['currencyID'] == null ? undefined : json['currencyID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!CreateLendingOfferRequestCollateralRequirementWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function CreateLendingOfferRequestCollateralRequirementToJSON(json: any): CreateLendingOfferRequestCollateralRequirement {
@@ -68,6 +87,7 @@ export function CreateLendingOfferRequestCollateralRequirementFromJSONTyped(json
         
         'ratio': value['ratio'],
         'currencyID': value['currencyID'],
+        ...value['additionalProperties'],
     };
 }
 

@@ -57,7 +57,16 @@ export interface TgvalidatordScimGroupsList {
      * @memberof TgvalidatordScimGroupsList
      */
     startIndex?: number;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordScimGroupsList
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordScimGroupsListWireKeys: ReadonlySet<string> = new Set(['schemas', 'totalResults', 'Resources', 'itemsPerPage', 'startIndex']);
 
 /**
  * Check if a given object implements the TgvalidatordScimGroupsList interface.
@@ -74,7 +83,7 @@ export function TgvalidatordScimGroupsListFromJSONTyped(json: any, ignoreDiscrim
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordScimGroupsList = {
         
         'schemas': json['schemas'] == null ? undefined : json['schemas'],
         'totalResults': json['totalResults'] == null ? undefined : json['totalResults'],
@@ -82,6 +91,16 @@ export function TgvalidatordScimGroupsListFromJSONTyped(json: any, ignoreDiscrim
         'itemsPerPage': json['itemsPerPage'] == null ? undefined : json['itemsPerPage'],
         'startIndex': json['startIndex'] == null ? undefined : json['startIndex'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordScimGroupsListWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordScimGroupsListToJSON(json: any): TgvalidatordScimGroupsList {
@@ -100,6 +119,7 @@ export function TgvalidatordScimGroupsListFromJSONTyped(json: any, ignoreDiscrim
         'Resources': value['resources'] == null ? undefined : ((value['resources'] as Array<any>).map(TgvalidatordScimGroupToJSON)),
         'itemsPerPage': value['itemsPerPage'],
         'startIndex': value['startIndex'],
+        ...value['additionalProperties'],
     };
 }
 

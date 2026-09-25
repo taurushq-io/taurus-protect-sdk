@@ -21,7 +21,10 @@ var _ MappedNullable = &ScimPutUserRequestScimNamePut{}
 type ScimPutUserRequestScimNamePut struct {
 	FamilyName *string `json:"familyName,omitempty"`
 	GivenName *string `json:"givenName,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _ScimPutUserRequestScimNamePut ScimPutUserRequestScimNamePut
 
 // NewScimPutUserRequestScimNamePut instantiates a new ScimPutUserRequestScimNamePut object
 // This constructor will assign default values to properties that have it defined,
@@ -120,7 +123,34 @@ func (o ScimPutUserRequestScimNamePut) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.GivenName) {
 		toSerialize["givenName"] = o.GivenName
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *ScimPutUserRequestScimNamePut) UnmarshalJSON(data []byte) (err error) {
+	varScimPutUserRequestScimNamePut := _ScimPutUserRequestScimNamePut{}
+
+	err = json.Unmarshal(data, &varScimPutUserRequestScimNamePut)
+
+	if err != nil {
+		return err
+	}
+
+	*o = ScimPutUserRequestScimNamePut(varScimPutUserRequestScimNamePut)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "familyName")
+		delete(additionalProperties, "givenName")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableScimPutUserRequestScimNamePut struct {

@@ -85,7 +85,16 @@ export interface TgvalidatordInitRemoteFeePayerRequest {
      * @memberof TgvalidatordInitRemoteFeePayerRequest
      */
     domainSeparator?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordInitRemoteFeePayerRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordInitRemoteFeePayerRequestWireKeys: ReadonlySet<string> = new Set(['tenantId', 'url', 'email', 'externalGroupId', 'password', 'userKey', 'encryptionKey', 'forwarderId', 'creatorId', 'feePayerAddressId', 'domainSeparator']);
 
 /**
  * Check if a given object implements the TgvalidatordInitRemoteFeePayerRequest interface.
@@ -102,7 +111,7 @@ export function TgvalidatordInitRemoteFeePayerRequestFromJSONTyped(json: any, ig
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordInitRemoteFeePayerRequest = {
         
         'tenantId': json['tenantId'] == null ? undefined : json['tenantId'],
         'url': json['url'] == null ? undefined : json['url'],
@@ -116,6 +125,16 @@ export function TgvalidatordInitRemoteFeePayerRequestFromJSONTyped(json: any, ig
         'feePayerAddressId': json['feePayerAddressId'] == null ? undefined : json['feePayerAddressId'],
         'domainSeparator': json['domainSeparator'] == null ? undefined : json['domainSeparator'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordInitRemoteFeePayerRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordInitRemoteFeePayerRequestToJSON(json: any): TgvalidatordInitRemoteFeePayerRequest {
@@ -140,6 +159,7 @@ export function TgvalidatordInitRemoteFeePayerRequestFromJSONTyped(json: any, ig
         'creatorId': value['creatorId'],
         'feePayerAddressId': value['feePayerAddressId'],
         'domainSeparator': value['domainSeparator'],
+        ...value['additionalProperties'],
     };
 }
 

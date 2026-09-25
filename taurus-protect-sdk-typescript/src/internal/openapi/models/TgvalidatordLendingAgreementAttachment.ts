@@ -79,7 +79,16 @@ export interface TgvalidatordLendingAgreementAttachment {
      * @memberof TgvalidatordLendingAgreementAttachment
      */
     updatedAt?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordLendingAgreementAttachment
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordLendingAgreementAttachmentWireKeys: ReadonlySet<string> = new Set(['id', 'lendingAgreementID', 'uploaderParticipantID', 'name', 'type', 'contentType', 'value', 'fileSize', 'createdAt', 'updatedAt']);
 
 /**
  * Check if a given object implements the TgvalidatordLendingAgreementAttachment interface.
@@ -96,7 +105,7 @@ export function TgvalidatordLendingAgreementAttachmentFromJSONTyped(json: any, i
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordLendingAgreementAttachment = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'lendingAgreementID': json['lendingAgreementID'] == null ? undefined : json['lendingAgreementID'],
@@ -109,6 +118,16 @@ export function TgvalidatordLendingAgreementAttachmentFromJSONTyped(json: any, i
         'createdAt': json['createdAt'] == null ? undefined : (new Date(json['createdAt'])),
         'updatedAt': json['updatedAt'] == null ? undefined : (new Date(json['updatedAt'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordLendingAgreementAttachmentWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordLendingAgreementAttachmentToJSON(json: any): TgvalidatordLendingAgreementAttachment {
@@ -132,6 +151,7 @@ export function TgvalidatordLendingAgreementAttachmentFromJSONTyped(json: any, i
         'fileSize': value['fileSize'],
         'createdAt': value['createdAt'] == null ? undefined : ((value['createdAt']).toISOString()),
         'updatedAt': value['updatedAt'] == null ? undefined : ((value['updatedAt']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

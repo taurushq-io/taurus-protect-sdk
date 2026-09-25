@@ -25,7 +25,10 @@ type ScimServiceProviderConfigAuthenticationScheme struct {
 	DocumentationUri *string `json:"documentationUri,omitempty"`
 	Type *string `json:"type,omitempty"`
 	Primary *bool `json:"primary,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _ScimServiceProviderConfigAuthenticationScheme ScimServiceProviderConfigAuthenticationScheme
 
 // NewScimServiceProviderConfigAuthenticationScheme instantiates a new ScimServiceProviderConfigAuthenticationScheme object
 // This constructor will assign default values to properties that have it defined,
@@ -264,7 +267,38 @@ func (o ScimServiceProviderConfigAuthenticationScheme) ToMap() (map[string]inter
 	if !IsNil(o.Primary) {
 		toSerialize["primary"] = o.Primary
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *ScimServiceProviderConfigAuthenticationScheme) UnmarshalJSON(data []byte) (err error) {
+	varScimServiceProviderConfigAuthenticationScheme := _ScimServiceProviderConfigAuthenticationScheme{}
+
+	err = json.Unmarshal(data, &varScimServiceProviderConfigAuthenticationScheme)
+
+	if err != nil {
+		return err
+	}
+
+	*o = ScimServiceProviderConfigAuthenticationScheme(varScimServiceProviderConfigAuthenticationScheme)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "name")
+		delete(additionalProperties, "description")
+		delete(additionalProperties, "specUri")
+		delete(additionalProperties, "documentationUri")
+		delete(additionalProperties, "type")
+		delete(additionalProperties, "primary")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableScimServiceProviderConfigAuthenticationScheme struct {

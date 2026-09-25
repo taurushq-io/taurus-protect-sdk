@@ -61,7 +61,16 @@ export interface TgvalidatordCreateOutgoingXLMManageDataRequestRequest {
      * @memberof TgvalidatordCreateOutgoingXLMManageDataRequestRequest
      */
     sponsoredByAddressId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingXLMManageDataRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingXLMManageDataRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'dataName', 'dataValue', 'feeLimit', 'comment', 'externalRequestId', 'sponsoredByAddressId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingXLMManageDataRequestRequest interface.
@@ -80,7 +89,7 @@ export function TgvalidatordCreateOutgoingXLMManageDataRequestRequestFromJSONTyp
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingXLMManageDataRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'dataName': json['dataName'],
@@ -90,6 +99,16 @@ export function TgvalidatordCreateOutgoingXLMManageDataRequestRequestFromJSONTyp
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
         'sponsoredByAddressId': json['sponsoredByAddressId'] == null ? undefined : json['sponsoredByAddressId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingXLMManageDataRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingXLMManageDataRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingXLMManageDataRequestRequest {
@@ -110,6 +129,7 @@ export function TgvalidatordCreateOutgoingXLMManageDataRequestRequestFromJSONTyp
         'comment': value['comment'],
         'externalRequestId': value['externalRequestId'],
         'sponsoredByAddressId': value['sponsoredByAddressId'],
+        ...value['additionalProperties'],
     };
 }
 

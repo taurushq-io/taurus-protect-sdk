@@ -8,8 +8,16 @@ from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 from taurus_protect._internal.openapi.exceptions import ApiException
 from taurus_protect.errors import NotFoundError
 from taurus_protect.mappers.transaction import map_transaction, map_transactions
-from taurus_protect.models.pagination import Pagination
-from taurus_protect.models.transaction import Transaction
+from taurus_protect.models.pagination import (
+    PLUS_ROWS,
+    Pagination,
+    offset_pagination,
+    offset_query,
+    parse_count,
+    resolve_offset,
+    resolve_page_size,
+)
+from taurus_protect.models.transaction import Transaction, TransactionExport
 from taurus_protect.services._base import BaseService
 
 if TYPE_CHECKING:
@@ -25,7 +33,7 @@ class TransactionService(BaseService):
 
     Example:
         >>> # Get recent transactions
-        >>> transactions, _ = client.transactions.list(currency="ETH", limit=50)
+        >>> transactions, pagination = client.transactions.list(currency="ETH", limit=100)
         >>> for tx in transactions:
         ...     print(f"{tx.tx_hash}: {tx.amount} {tx.currency}")
         ...
@@ -161,65 +169,87 @@ class TransactionService(BaseService):
         to_date: Optional[datetime] = None,
         currency: Optional[str] = None,
         direction: Optional[str] = None,
-        limit: int = 50,
-        offset: int = 0,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
         blockchain: Optional[str] = None,
         network: Optional[str] = None,
-    ) -> Tuple[List[Transaction], Optional[Pagination]]:
+    ) -> Tuple[List[Transaction], Pagination]:
         """
-        List transactions with filtering.
+        List transactions with filtering, one page at a time.
 
         Args:
             from_date: Filter transactions after this date.
             to_date: Filter transactions before this date.
             currency: Filter by currency ID or symbol.
             direction: Filter by direction ("incoming" or "outgoing").
-            limit: Maximum number of transactions to return.
-            offset: Offset for pagination.
+            limit: Page size (default 20, max 100).
+            offset: Number of transactions to skip; pass ``pagination.next_offset``.
             blockchain: Filter by blockchain (e.g. "ETH").
             network: Filter by network (e.g. "mainnet").
 
         Returns:
-            Tuple of (transactions list, pagination info).
+            Tuple of (transactions, pagination). The server's total can be an upper
+            bound, so a trailing page may come back empty with ``has_more`` false.
 
         Raises:
+            ValueError: If limit or offset are invalid.
             APIError: If the API call fails.
         """
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
+        return self._list(
+            limit,
+            offset,
+            currency=currency,
+            direction=direction,
+            var_from=from_date,
+            to=to_date,
+            blockchain=blockchain,
+            network=network,
+        )
+
+    def list_by_address(
+        self,
+        address: str,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ) -> Tuple[List[Transaction], Pagination]:
+        """
+        List transactions for a specific blockchain address, one page at a time.
+
+        Args:
+            address: The blockchain address.
+            limit: Page size (default 20, max 100).
+            offset: Number of transactions to skip; pass ``pagination.next_offset``.
+
+        Returns:
+            Tuple of (transactions, pagination).
+
+        Raises:
+            ValueError: If address is empty or limit/offset are invalid.
+            APIError: If the API call fails.
+        """
+        self._validate_required(address, "address")
+        return self._list(limit, offset, address=address)
+
+    def _list(
+        self, limit: Optional[int], offset: Optional[int], **filters: Any
+    ) -> Tuple[List[Transaction], Pagination]:
+        page_size = resolve_page_size(limit, "limit")
+        start = resolve_offset(offset)
 
         try:
             reply = self._api.transaction_service_get_transactions(
-                currency=currency,
-                direction=direction,
-                query=None,
-                limit=str(limit),
-                offset=str(offset),
-                var_from=from_date,
-                to=to_date,
-                transaction_ids=None,
-                type=None,
-                source=None,
-                destination=None,
-                ids=None,
-                blockchain=blockchain,
-                network=network,
-                from_block_number=None,
-                to_block_number=None,
-                hashes=None,
-                address=None,
-                amount_above=None,
-                exclude_unknown_source_destination=None,
-                customer_id=None,
+                **offset_query(page_size, start), **filters
             )
 
-            transactions = map_transactions(reply.result)
-            pagination = self._extract_pagination(
-                getattr(reply, "total_items", None),
-                offset,
-                limit,
+            rows = reply.result or []
+            transactions = map_transactions(rows)
+            pagination = offset_pagination(
+                PLUS_ROWS,
+                limit=page_size,
+                offset=start,
+                served_rows=len(rows),
+                total_items=reply.total_items,
+                excluded=len(rows) - len(transactions),
             )
             return transactions, pagination
         except Exception as e:
@@ -227,64 +257,60 @@ class TransactionService(BaseService):
                 raise self._handle_error(e)
             raise
 
-    def list_by_address(
+    def export(
         self,
-        address: str,
-        limit: int = 50,
-        offset: int = 0,
-    ) -> Tuple[List[Transaction], Optional[Pagination]]:
+        from_date: Optional[datetime] = None,
+        to_date: Optional[datetime] = None,
+        currency: Optional[str] = None,
+        direction: Optional[str] = None,
+        limit: Optional[int] = None,
+        blockchain: Optional[str] = None,
+        network: Optional[str] = None,
+        format: Optional[str] = None,
+    ) -> TransactionExport:
         """
-        List transactions for a specific blockchain address.
+        Export transactions in one reply.
+
+        The export cannot page: the server always exports from the first matching row,
+        so there is no offset. When ``total_items`` exceeds the rows exported, raise the
+        limit or narrow the filters.
 
         Args:
-            address: The blockchain address.
-            limit: Maximum number of transactions to return.
-            offset: Offset for pagination.
+            from_date: Filter transactions after this date.
+            to_date: Filter transactions before this date.
+            currency: Filter by currency ID or symbol.
+            direction: Filter by direction ("incoming" or "outgoing").
+            limit: Maximum rows to export (default 20, no SDK maximum).
+            blockchain: Filter by blockchain (e.g. "ETH").
+            network: Filter by network (e.g. "mainnet").
+            format: Export format ("json", "csv", "csv_simple"); the server defaults
+                to JSON.
 
         Returns:
-            Tuple of (transactions list, pagination info).
+            The exported text and the server's count of matching transactions.
 
         Raises:
+            ValueError: If limit is negative.
             APIError: If the API call fails.
         """
-        self._validate_required(address, "address")
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
+        size = resolve_page_size(limit, "limit", maximum=None)
 
         try:
-            reply = self._api.transaction_service_get_transactions(
-                currency=None,
-                direction=None,
-                query=None,
-                limit=str(limit),
-                offset=str(offset),
-                var_from=None,
-                to=None,
-                transaction_ids=None,
-                type=None,
-                source=None,
-                destination=None,
-                ids=None,
-                blockchain=None,
-                network=None,
-                from_block_number=None,
-                to_block_number=None,
-                hashes=None,
-                address=address,
-                amount_above=None,
-                exclude_unknown_source_destination=None,
-                customer_id=None,
+            reply = self._api.transaction_service_export_transactions(
+                currency=currency,
+                direction=direction,
+                var_from=from_date,
+                to=to_date,
+                format=format,
+                blockchain=blockchain,
+                network=network,
+                limit=str(size),
             )
 
-            transactions = map_transactions(reply.result)
-            pagination = self._extract_pagination(
-                getattr(reply, "total_items", None),
-                offset,
-                limit,
+            return TransactionExport(
+                content=reply.result or "",
+                total_items=parse_count(reply.total_items, "totalItems"),
             )
-            return transactions, pagination
         except Exception as e:
             if isinstance(e, ApiException):
                 raise self._handle_error(e)
@@ -296,62 +322,36 @@ class TransactionService(BaseService):
         to_date: Optional[datetime] = None,
         currency: Optional[str] = None,
         direction: Optional[str] = None,
-        limit: int = 1000,
-        offset: int = 0,
+        limit: Optional[int] = None,
         blockchain: Optional[str] = None,
         network: Optional[str] = None,
-    ) -> str:
+    ) -> TransactionExport:
         """
-        Export transactions to CSV format.
+        Export transactions as CSV: :meth:`export` with ``format="csv"``.
 
         Args:
             from_date: Filter transactions after this date.
             to_date: Filter transactions before this date.
             currency: Filter by currency ID or symbol.
             direction: Filter by direction ("incoming" or "outgoing").
-            limit: Maximum number of transactions to export.
-            offset: Offset for pagination.
+            limit: Maximum rows to export (default 20, no SDK maximum).
             blockchain: Filter by blockchain (e.g. "ETH").
             network: Filter by network (e.g. "mainnet").
 
         Returns:
-            CSV content as a string.
+            The CSV text and the server's count of matching transactions.
 
         Raises:
+            ValueError: If limit is negative.
             APIError: If the API call fails.
         """
-        if limit <= 0:
-            raise ValueError("limit must be positive")
-        if offset < 0:
-            raise ValueError("offset cannot be negative")
-
-        try:
-            reply = self._api.transaction_service_export_transactions(
-                currency=currency,
-                direction=direction,
-                query=None,
-                limit=str(limit),
-                offset=str(offset),
-                var_from=from_date,
-                to=to_date,
-                transaction_ids=None,
-                format="csv",
-                type=None,
-                source=None,
-                destination=None,
-                ids=None,
-                blockchain=blockchain,
-                network=network,
-                from_block_number=None,
-                to_block_number=None,
-                amount_above=None,
-                exclude_unknown_source_destination=None,
-                hashes=None,
-                address=None,
-            )
-
-            return reply.result or ""
-        except Exception as e:
-            if isinstance(e, ApiException):
-                raise self._handle_error(e)
-            raise
+        return self.export(
+            from_date=from_date,
+            to_date=to_date,
+            currency=currency,
+            direction=direction,
+            limit=limit,
+            blockchain=blockchain,
+            network=network,
+            format="csv",
+        )

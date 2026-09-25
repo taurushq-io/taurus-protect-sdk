@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/internal/openapi"
@@ -26,39 +25,35 @@ func NewAuditService(client *openapi.APIClient) *AuditService {
 
 // ListAuditTrails retrieves a list of audit trails with optional filtering and pagination.
 func (s *AuditService) ListAuditTrails(ctx context.Context, opts *model.ListAuditTrailsOptions) (*model.ListAuditTrailsResult, error) {
-	req := s.api.AuditServiceGetAuditTrails(ctx)
+	if opts == nil {
+		opts = &model.ListAuditTrailsOptions{}
+	}
+	window, err := resolveCursorWindow(opts.PageSize, opts.Cursor, opts.CurrentPage, opts.PageRequest)
+	if err != nil {
+		return nil, err
+	}
 
-	if opts != nil {
-		if opts.ExternalUserID != "" {
-			req = req.ExternalUserId(opts.ExternalUserID)
-		}
-		if len(opts.Entities) > 0 {
-			req = req.Entities(opts.Entities)
-		}
-		if len(opts.Actions) > 0 {
-			req = req.Actions(opts.Actions)
-		}
-		if opts.CreationDateFrom != nil {
-			req = req.CreationDateFrom(*opts.CreationDateFrom)
-		}
-		if opts.CreationDateTo != nil {
-			req = req.CreationDateTo(*opts.CreationDateTo)
-		}
-		if opts.CurrentPage != "" {
-			req = req.CursorCurrentPage(opts.CurrentPage)
-		}
-		if opts.PageRequest != "" {
-			req = req.CursorPageRequest(opts.PageRequest)
-		}
-		if opts.PageSize > 0 {
-			req = req.CursorPageSize(fmt.Sprintf("%d", opts.PageSize))
-		}
-		if len(opts.SortBy) > 0 {
-			req = req.SortingSortBy(opts.SortBy)
-		}
-		if opts.SortOrder != "" {
-			req = req.SortingSortOrder(opts.SortOrder)
-		}
+	req := applyCursorQuery(s.api.AuditServiceGetAuditTrails(ctx), window)
+	if opts.ExternalUserID != "" {
+		req = req.ExternalUserId(opts.ExternalUserID)
+	}
+	if len(opts.Entities) > 0 {
+		req = req.Entities(opts.Entities)
+	}
+	if len(opts.Actions) > 0 {
+		req = req.Actions(opts.Actions)
+	}
+	if opts.CreationDateFrom != nil {
+		req = req.CreationDateFrom(*opts.CreationDateFrom)
+	}
+	if opts.CreationDateTo != nil {
+		req = req.CreationDateTo(*opts.CreationDateTo)
+	}
+	if len(opts.SortBy) > 0 {
+		req = req.SortingSortBy(opts.SortBy)
+	}
+	if opts.SortOrder != "" {
+		req = req.SortingSortOrder(opts.SortOrder)
 	}
 
 	resp, httpResp, err := req.Execute()
@@ -70,18 +65,11 @@ func (s *AuditService) ListAuditTrails(ctx context.Context, opts *model.ListAudi
 		AuditTrails: mapper.AuditTrailsFromDTO(resp.Result),
 	}
 
-	// Parse cursor pagination info
-	if resp.Cursor != nil {
-		if resp.Cursor.CurrentPage != nil {
-			result.CurrentPage = *resp.Cursor.CurrentPage
-		}
-		if resp.Cursor.HasPrevious != nil {
-			result.HasPrevious = *resp.Cursor.HasPrevious
-		}
-		if resp.Cursor.HasNext != nil {
-			result.HasNext = *resp.Cursor.HasNext
-		}
+	page, err := cursorPage(window.pageSize, cursorReply{Cursor: resp.Cursor})
+	if err != nil {
+		return nil, err
 	}
+	result.Page = page
 
 	return result, nil
 }

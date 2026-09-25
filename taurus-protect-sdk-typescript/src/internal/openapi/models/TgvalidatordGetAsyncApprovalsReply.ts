@@ -33,7 +33,16 @@ export interface TgvalidatordGetAsyncApprovalsReply {
      * @memberof TgvalidatordGetAsyncApprovalsReply
      */
     result?: Array<TgvalidatordRequestBatchSignature>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetAsyncApprovalsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetAsyncApprovalsReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetAsyncApprovalsReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetAsyncApprovalsReplyFromJSONTyped(json: any, ignor
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetAsyncApprovalsReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordRequestBatchSignatureFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetAsyncApprovalsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetAsyncApprovalsReplyToJSON(json: any): TgvalidatordGetAsyncApprovalsReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetAsyncApprovalsReplyFromJSONTyped(json: any, ignor
     return {
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordRequestBatchSignatureToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

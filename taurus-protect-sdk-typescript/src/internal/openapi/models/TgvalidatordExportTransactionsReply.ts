@@ -31,7 +31,16 @@ export interface TgvalidatordExportTransactionsReply {
      * @memberof TgvalidatordExportTransactionsReply
      */
     totalItems?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordExportTransactionsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordExportTransactionsReplyWireKeys: ReadonlySet<string> = new Set(['result', 'totalItems']);
 
 /**
  * Check if a given object implements the TgvalidatordExportTransactionsReply interface.
@@ -48,11 +57,21 @@ export function TgvalidatordExportTransactionsReplyFromJSONTyped(json: any, igno
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordExportTransactionsReply = {
         
         'result': json['result'] == null ? undefined : json['result'],
         'totalItems': json['totalItems'] == null ? undefined : json['totalItems'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordExportTransactionsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordExportTransactionsReplyToJSON(json: any): TgvalidatordExportTransactionsReply {
@@ -68,6 +87,7 @@ export function TgvalidatordExportTransactionsReplyFromJSONTyped(json: any, igno
         
         'result': value['result'],
         'totalItems': value['totalItems'],
+        ...value['additionalProperties'],
     };
 }
 

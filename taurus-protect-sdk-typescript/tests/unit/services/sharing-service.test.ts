@@ -62,9 +62,7 @@ describe("SharingService", () => {
       expect(result.sharedAddresses[0].blockchain).toBe("ETH");
       expect(result.sharedAddresses[0].address).toBe("0xabc123");
       expect(result.sharedAddresses[0].ownerParticipantId).toBe("part-owner");
-      expect(result.pagination).toBeDefined();
-      expect(result.pagination?.hasNext).toBe(true);
-      expect(result.pagination?.hasPrevious).toBe(false);
+      expect(result.pagination).toEqual({ pageSize: 20, nextCursor: "1", hasMore: true });
     });
 
     it("should return empty list when no shared addresses", async () => {
@@ -75,7 +73,7 @@ describe("SharingService", () => {
       const result = await service.listSharedAddresses();
 
       expect(result.sharedAddresses).toHaveLength(0);
-      expect(result.pagination).toBeUndefined();
+      expect(result.pagination).toEqual({ pageSize: 20, nextCursor: "", hasMore: false });
     });
 
     it("should pass filter options to API", async () => {
@@ -337,8 +335,8 @@ describe("SharingService", () => {
       expect(result.sharedAssets[0].decimals).toBe("6");
       expect(result.sharedAssets[0].contractAddress).toBe("0xA0b8...");
       expect(result.sharedAssets[0].kind).toBe("ERC20");
-      expect(result.pagination?.hasNext).toBe(false);
-      expect(result.pagination?.hasPrevious).toBe(true);
+      // hasPrevious is irrelevant to a forward walk; only hasNext decides.
+      expect(result.pagination).toEqual({ pageSize: 20, nextCursor: "", hasMore: false });
     });
 
     it("should return empty list when no shared assets", async () => {

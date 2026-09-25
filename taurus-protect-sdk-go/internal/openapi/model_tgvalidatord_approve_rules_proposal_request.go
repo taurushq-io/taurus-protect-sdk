@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -23,6 +22,7 @@ var _ MappedNullable = &TgvalidatordApproveRulesProposalRequest{}
 type TgvalidatordApproveRulesProposalRequest struct {
 	Signature string `json:"signature"`
 	Comment string `json:"comment"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordApproveRulesProposalRequest TgvalidatordApproveRulesProposalRequest
@@ -106,6 +106,11 @@ func (o TgvalidatordApproveRulesProposalRequest) ToMap() (map[string]interface{}
 	toSerialize := map[string]interface{}{}
 	toSerialize["signature"] = o.Signature
 	toSerialize["comment"] = o.Comment
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -134,15 +139,21 @@ func (o *TgvalidatordApproveRulesProposalRequest) UnmarshalJSON(data []byte) (er
 
 	varTgvalidatordApproveRulesProposalRequest := _TgvalidatordApproveRulesProposalRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordApproveRulesProposalRequest)
+	err = json.Unmarshal(data, &varTgvalidatordApproveRulesProposalRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordApproveRulesProposalRequest(varTgvalidatordApproveRulesProposalRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "signature")
+		delete(additionalProperties, "comment")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

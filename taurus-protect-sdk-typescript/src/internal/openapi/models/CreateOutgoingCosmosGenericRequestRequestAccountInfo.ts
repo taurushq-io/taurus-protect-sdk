@@ -31,7 +31,16 @@ export interface CreateOutgoingCosmosGenericRequestRequestAccountInfo {
      * @memberof CreateOutgoingCosmosGenericRequestRequestAccountInfo
      */
     accountNumber?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof CreateOutgoingCosmosGenericRequestRequestAccountInfo
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const CreateOutgoingCosmosGenericRequestRequestAccountInfoWireKeys: ReadonlySet<string> = new Set(['sequence', 'accountNumber']);
 
 /**
  * Check if a given object implements the CreateOutgoingCosmosGenericRequestRequestAccountInfo interface.
@@ -48,11 +57,21 @@ export function CreateOutgoingCosmosGenericRequestRequestAccountInfoFromJSONType
     if (json == null) {
         return json;
     }
-    return {
+    const result: CreateOutgoingCosmosGenericRequestRequestAccountInfo = {
         
         'sequence': json['sequence'] == null ? undefined : json['sequence'],
         'accountNumber': json['accountNumber'] == null ? undefined : json['accountNumber'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!CreateOutgoingCosmosGenericRequestRequestAccountInfoWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function CreateOutgoingCosmosGenericRequestRequestAccountInfoToJSON(json: any): CreateOutgoingCosmosGenericRequestRequestAccountInfo {
@@ -68,6 +87,7 @@ export function CreateOutgoingCosmosGenericRequestRequestAccountInfoFromJSONType
         
         'sequence': value['sequence'],
         'accountNumber': value['accountNumber'],
+        ...value['additionalProperties'],
     };
 }
 

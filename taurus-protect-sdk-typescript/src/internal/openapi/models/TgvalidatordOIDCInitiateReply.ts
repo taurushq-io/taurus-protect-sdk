@@ -33,7 +33,16 @@ export interface TgvalidatordOIDCInitiateReply {
      * @memberof TgvalidatordOIDCInitiateReply
      */
     result?: TgvalidatordOIDCLocation;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordOIDCInitiateReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordOIDCInitiateReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordOIDCInitiateReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordOIDCInitiateReplyFromJSONTyped(json: any, ignoreDisc
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordOIDCInitiateReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordOIDCLocationFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordOIDCInitiateReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordOIDCInitiateReplyToJSON(json: any): TgvalidatordOIDCInitiateReply {
@@ -68,6 +87,7 @@ export function TgvalidatordOIDCInitiateReplyFromJSONTyped(json: any, ignoreDisc
     return {
         
         'result': TgvalidatordOIDCLocationToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

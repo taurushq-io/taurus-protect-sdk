@@ -58,9 +58,9 @@ type GetBalancesOptions struct {
 	Currency string
 	// TokenID filters by token ID.
 	TokenID string
-	// Limit is the maximum number of balances to return.
-	Limit int64
-	// Cursor is the pagination cursor for fetching the next page.
+	// PageSize is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
+	PageSize int64
+	// Cursor is a previous page's Page.NextCursor; the SDK then requests the NEXT page.
 	Cursor string
 }
 
@@ -68,8 +68,6 @@ type GetBalancesOptions struct {
 type GetBalancesResult struct {
 	// Balances is the list of asset balances.
 	Balances []*AssetBalance `json:"balances"`
-	// Total is the total number of balances available.
-	Total int64 `json:"total"`
-	// NextCursor is the cursor for fetching the next page.
-	NextCursor string `json:"next_cursor,omitempty"`
+	// Page continues the list; TotalItems is the server's total.
+	Page CursorPage `json:"page"`
 }

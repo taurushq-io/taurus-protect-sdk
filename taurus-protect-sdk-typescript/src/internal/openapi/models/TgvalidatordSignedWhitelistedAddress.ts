@@ -39,7 +39,16 @@ export interface TgvalidatordSignedWhitelistedAddress {
      * @memberof TgvalidatordSignedWhitelistedAddress
      */
     payload?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordSignedWhitelistedAddress
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordSignedWhitelistedAddressWireKeys: ReadonlySet<string> = new Set(['signatures', 'payload']);
 
 /**
  * Check if a given object implements the TgvalidatordSignedWhitelistedAddress interface.
@@ -56,11 +65,21 @@ export function TgvalidatordSignedWhitelistedAddressFromJSONTyped(json: any, ign
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordSignedWhitelistedAddress = {
         
         'signatures': json['signatures'] == null ? undefined : ((json['signatures'] as Array<any>).map(TgvalidatordWhitelistSignatureFromJSON)),
         'payload': json['payload'] == null ? undefined : json['payload'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordSignedWhitelistedAddressWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordSignedWhitelistedAddressToJSON(json: any): TgvalidatordSignedWhitelistedAddress {
@@ -76,6 +95,7 @@ export function TgvalidatordSignedWhitelistedAddressFromJSONTyped(json: any, ign
         
         'signatures': value['signatures'] == null ? undefined : ((value['signatures'] as Array<any>).map(TgvalidatordWhitelistSignatureToJSON)),
         'payload': value['payload'],
+        ...value['additionalProperties'],
     };
 }
 

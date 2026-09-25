@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -33,6 +32,7 @@ type TgvalidatordCreateOutgoingNEARWithdrawRequestRequest struct {
 	Comment *string `json:"comment,omitempty"`
 	// A client's reference that can then be used for reconciliation in the client's systems later
 	TransactionReference *string `json:"transactionReference,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordCreateOutgoingNEARWithdrawRequestRequest TgvalidatordCreateOutgoingNEARWithdrawRequestRequest
@@ -247,6 +247,11 @@ func (o TgvalidatordCreateOutgoingNEARWithdrawRequestRequest) ToMap() (map[strin
 	if !IsNil(o.TransactionReference) {
 		toSerialize["transactionReference"] = o.TransactionReference
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -276,15 +281,25 @@ func (o *TgvalidatordCreateOutgoingNEARWithdrawRequestRequest) UnmarshalJSON(dat
 
 	varTgvalidatordCreateOutgoingNEARWithdrawRequestRequest := _TgvalidatordCreateOutgoingNEARWithdrawRequestRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordCreateOutgoingNEARWithdrawRequestRequest)
+	err = json.Unmarshal(data, &varTgvalidatordCreateOutgoingNEARWithdrawRequestRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordCreateOutgoingNEARWithdrawRequestRequest(varTgvalidatordCreateOutgoingNEARWithdrawRequestRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "fromAddressId")
+		delete(additionalProperties, "toValidatorAddressId")
+		delete(additionalProperties, "amount")
+		delete(additionalProperties, "feeLimit")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "transactionReference")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

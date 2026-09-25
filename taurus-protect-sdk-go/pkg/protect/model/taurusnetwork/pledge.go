@@ -212,31 +212,49 @@ type ListPledgesOptions struct {
 	CurrencyID               string
 	Statuses                 []string
 	SortOrder                string
-	CurrentPage              string
-	PageRequest              string
-	PageSize                 int32
 	AttributeFiltersJSON     string
 	AttributeFiltersOperator string
+	// PageSize is the page size: 0 selects model.DefaultPageSize, above model.MaxPageSize is an
+	// error.
+	PageSize int64
+	// Cursor is a previous page's NextCursor; the SDK then requests the NEXT page.
+	Cursor string
+	// CurrentPage and PageRequest (FIRST, PREVIOUS, NEXT, LAST) page by hand; neither can be
+	// combined with Cursor.
+	CurrentPage string
+	PageRequest string
 }
 
 // ListPledgeActionsOptions represents options for listing pledge actions.
 type ListPledgeActionsOptions struct {
-	PledgeID    string
-	ActionIDs   []string
-	SortOrder   string
+	PledgeID  string
+	ActionIDs []string
+	SortOrder string
+	// PageSize is the page size: 0 selects model.DefaultPageSize, above model.MaxPageSize is an
+	// error.
+	PageSize int64
+	// Cursor is a previous page's NextCursor; the SDK then requests the NEXT page.
+	Cursor string
+	// CurrentPage and PageRequest (FIRST, PREVIOUS, NEXT, LAST) page by hand; neither can be
+	// combined with Cursor.
 	CurrentPage string
 	PageRequest string
-	PageSize    int32
 }
 
 // ListPledgeActionsForApprovalOptions represents options for listing pledge actions for approval.
 type ListPledgeActionsForApprovalOptions struct {
-	ActionIDs   []string
-	Types       []string
-	SortOrder   string
+	ActionIDs []string
+	Types     []string
+	SortOrder string
+	// PageSize is the page size: 0 selects model.DefaultPageSize, above model.MaxPageSize is an
+	// error.
+	PageSize int64
+	// Cursor is a previous page's NextCursor; the SDK then requests the NEXT page.
+	Cursor string
+	// CurrentPage and PageRequest (FIRST, PREVIOUS, NEXT, LAST) page by hand; neither can be
+	// combined with Cursor.
 	CurrentPage string
 	PageRequest string
-	PageSize    int32
 }
 
 // ListPledgeWithdrawalsOptions represents options for listing pledge withdrawals.
@@ -244,9 +262,15 @@ type ListPledgeWithdrawalsOptions struct {
 	PledgeID         string
 	WithdrawalStatus string
 	SortOrder        string
-	CurrentPage      string
-	PageRequest      string
-	PageSize         int32
+	// PageSize is the page size: 0 selects model.DefaultPageSize, above model.MaxPageSize is an
+	// error.
+	PageSize int64
+	// Cursor is a previous page's NextCursor; the SDK then requests the NEXT page.
+	Cursor string
+	// CurrentPage and PageRequest (FIRST, PREVIOUS, NEXT, LAST) page by hand; neither can be
+	// combined with Cursor.
+	CurrentPage string
+	PageRequest string
 }
 
 // ApprovePledgeActionsRequest represents a request to approve pledge actions.

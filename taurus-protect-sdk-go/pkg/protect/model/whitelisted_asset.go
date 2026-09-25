@@ -211,9 +211,9 @@ func (e *WhitelistedAssetEnvelope) SetVerified(asset *WhitelistedAsset, rules *D
 
 // ListWhitelistedAssetsOptions contains options for listing whitelisted assets.
 type ListWhitelistedAssetsOptions struct {
-	// Limit is the maximum number of assets to return (max 100).
+	// Limit is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
 	Limit int64
-	// Offset is the number of assets to skip.
+	// Offset is the number of assets to skip; continue with Pagination.NextOffset.
 	Offset int64
 	// Query searches across multiple fields (address, blockchain, label, etc.).
 	Query string
@@ -232,9 +232,9 @@ type ListWhitelistedAssetsOptions struct {
 // ListWhitelistedAssetsForApprovalOptions holds filters for listing assets awaiting
 // approval. The endpoint accepts only these three.
 type ListWhitelistedAssetsForApprovalOptions struct {
-	// Limit is the maximum number of assets to return (max 100).
+	// Limit is the page size: 0 selects DefaultPageSize, above MaxPageSize is an error.
 	Limit int64
-	// Offset is the number of assets to skip.
+	// Offset is the number of assets to skip; continue with Pagination.NextOffset.
 	Offset int64
 	// IDs filters by specific whitelisted asset IDs.
 	IDs []string
@@ -250,7 +250,8 @@ type ListWhitelistedAssetsForApprovalOptions struct {
 type WhitelistedAssetResult struct {
 	// Assets is the list of verified whitelisted assets in the current page.
 	Assets []*WhitelistedAsset
-	// Pagination carries the page window.
+	// Pagination is never nil. NextOffset is Offset + Limit: rows the server skips keep
+	// their slot, so a short page is not the end of the list.
 	Pagination *Pagination
 }
 

@@ -49,7 +49,16 @@ export interface TgvalidatordCreateOutgoingDOTWithdrawUnbondedRequestRequest {
      * @memberof TgvalidatordCreateOutgoingDOTWithdrawUnbondedRequestRequest
      */
     externalRequestId?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateOutgoingDOTWithdrawUnbondedRequestRequest
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateOutgoingDOTWithdrawUnbondedRequestRequestWireKeys: ReadonlySet<string> = new Set(['fromAddressId', 'feeLimit', 'comment', 'transactionReference', 'externalRequestId']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateOutgoingDOTWithdrawUnbondedRequestRequest interface.
@@ -67,7 +76,7 @@ export function TgvalidatordCreateOutgoingDOTWithdrawUnbondedRequestRequestFromJ
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateOutgoingDOTWithdrawUnbondedRequestRequest = {
         
         'fromAddressId': json['fromAddressId'],
         'feeLimit': json['feeLimit'] == null ? undefined : json['feeLimit'],
@@ -75,6 +84,16 @@ export function TgvalidatordCreateOutgoingDOTWithdrawUnbondedRequestRequestFromJ
         'transactionReference': json['transactionReference'] == null ? undefined : json['transactionReference'],
         'externalRequestId': json['externalRequestId'] == null ? undefined : json['externalRequestId'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateOutgoingDOTWithdrawUnbondedRequestRequestWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateOutgoingDOTWithdrawUnbondedRequestRequestToJSON(json: any): TgvalidatordCreateOutgoingDOTWithdrawUnbondedRequestRequest {
@@ -93,6 +112,7 @@ export function TgvalidatordCreateOutgoingDOTWithdrawUnbondedRequestRequestFromJ
         'comment': value['comment'],
         'transactionReference': value['transactionReference'],
         'externalRequestId': value['externalRequestId'],
+        ...value['additionalProperties'],
     };
 }
 

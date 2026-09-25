@@ -46,7 +46,16 @@ export interface TgvalidatordAction {
      * @memberof TgvalidatordAction
      */
     tasks?: Array<ActionTask>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordAction
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordActionWireKeys: ReadonlySet<string> = new Set(['trigger', 'tasks']);
 
 /**
  * Check if a given object implements the TgvalidatordAction interface.
@@ -63,11 +72,21 @@ export function TgvalidatordActionFromJSONTyped(json: any, ignoreDiscriminator: 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordAction = {
         
         'trigger': json['trigger'] == null ? undefined : ActionTriggerFromJSON(json['trigger']),
         'tasks': json['tasks'] == null ? undefined : ((json['tasks'] as Array<any>).map(ActionTaskFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordActionWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordActionToJSON(json: any): TgvalidatordAction {
@@ -83,6 +102,7 @@ export function TgvalidatordActionFromJSONTyped(json: any, ignoreDiscriminator: 
         
         'trigger': ActionTriggerToJSON(value['trigger']),
         'tasks': value['tasks'] == null ? undefined : ((value['tasks'] as Array<any>).map(ActionTaskToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

@@ -37,7 +37,10 @@ type TgvalidatordChange struct {
 	EntityUUID *string `json:"entityUUID,omitempty"`
 	// The externalUserID of the user that created the change.
 	CreatorExternalId *string `json:"creatorExternalId,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordChange TgvalidatordChange
 
 // NewTgvalidatordChange instantiates a new TgvalidatordChange object
 // This constructor will assign default values to properties that have it defined,
@@ -451,7 +454,43 @@ func (o TgvalidatordChange) ToMap() (map[string]interface{}, error) {
 	if !IsNil(o.CreatorExternalId) {
 		toSerialize["creatorExternalId"] = o.CreatorExternalId
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordChange) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordChange := _TgvalidatordChange{}
+
+	err = json.Unmarshal(data, &varTgvalidatordChange)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordChange(varTgvalidatordChange)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "id")
+		delete(additionalProperties, "tenantId")
+		delete(additionalProperties, "creatorId")
+		delete(additionalProperties, "action")
+		delete(additionalProperties, "entityId")
+		delete(additionalProperties, "entity")
+		delete(additionalProperties, "changes")
+		delete(additionalProperties, "creationDate")
+		delete(additionalProperties, "comment")
+		delete(additionalProperties, "entityUUID")
+		delete(additionalProperties, "creatorExternalId")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordChange struct {

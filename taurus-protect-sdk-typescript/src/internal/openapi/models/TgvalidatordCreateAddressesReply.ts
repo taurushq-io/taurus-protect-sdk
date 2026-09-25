@@ -33,7 +33,16 @@ export interface TgvalidatordCreateAddressesReply {
      * @memberof TgvalidatordCreateAddressesReply
      */
     result?: Array<TgvalidatordLightAddressInfo>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordCreateAddressesReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordCreateAddressesReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordCreateAddressesReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordCreateAddressesReplyFromJSONTyped(json: any, ignoreD
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordCreateAddressesReply = {
         
         'result': json['result'] == null ? undefined : ((json['result'] as Array<any>).map(TgvalidatordLightAddressInfoFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordCreateAddressesReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordCreateAddressesReplyToJSON(json: any): TgvalidatordCreateAddressesReply {
@@ -68,6 +87,7 @@ export function TgvalidatordCreateAddressesReplyFromJSONTyped(json: any, ignoreD
     return {
         
         'result': value['result'] == null ? undefined : ((value['result'] as Array<any>).map(TgvalidatordLightAddressInfoToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

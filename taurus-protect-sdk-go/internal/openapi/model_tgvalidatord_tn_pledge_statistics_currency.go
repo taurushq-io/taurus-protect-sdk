@@ -24,7 +24,10 @@ type TgvalidatordTnPledgeStatisticsCurrency struct {
 	OutgoingPledgesValuationBaseCurrency *string `json:"outgoingPledgesValuationBaseCurrency,omitempty"`
 	IncomingPledgesAmount *string `json:"incomingPledgesAmount,omitempty"`
 	IncomingPledgesValuationBaseCurrency *string `json:"incomingPledgesValuationBaseCurrency,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
+
+type _TgvalidatordTnPledgeStatisticsCurrency TgvalidatordTnPledgeStatisticsCurrency
 
 // NewTgvalidatordTnPledgeStatisticsCurrency instantiates a new TgvalidatordTnPledgeStatisticsCurrency object
 // This constructor will assign default values to properties that have it defined,
@@ -228,7 +231,37 @@ func (o TgvalidatordTnPledgeStatisticsCurrency) ToMap() (map[string]interface{},
 	if !IsNil(o.IncomingPledgesValuationBaseCurrency) {
 		toSerialize["incomingPledgesValuationBaseCurrency"] = o.IncomingPledgesValuationBaseCurrency
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
+}
+
+func (o *TgvalidatordTnPledgeStatisticsCurrency) UnmarshalJSON(data []byte) (err error) {
+	varTgvalidatordTnPledgeStatisticsCurrency := _TgvalidatordTnPledgeStatisticsCurrency{}
+
+	err = json.Unmarshal(data, &varTgvalidatordTnPledgeStatisticsCurrency)
+
+	if err != nil {
+		return err
+	}
+
+	*o = TgvalidatordTnPledgeStatisticsCurrency(varTgvalidatordTnPledgeStatisticsCurrency)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "currencyID")
+		delete(additionalProperties, "outgoingPledgesAmount")
+		delete(additionalProperties, "outgoingPledgesValuationBaseCurrency")
+		delete(additionalProperties, "incomingPledgesAmount")
+		delete(additionalProperties, "incomingPledgesValuationBaseCurrency")
+		o.AdditionalProperties = additionalProperties
+	}
+
+	return err
 }
 
 type NullableTgvalidatordTnPledgeStatisticsCurrency struct {

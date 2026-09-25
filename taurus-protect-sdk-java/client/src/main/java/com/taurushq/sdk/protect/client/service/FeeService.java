@@ -6,8 +6,9 @@ import com.taurushq.sdk.protect.client.model.ApiException;
 import com.taurushq.sdk.protect.client.model.Fee;
 import com.taurushq.sdk.protect.openapi.ApiClient;
 import com.taurushq.sdk.protect.openapi.api.FeeApi;
-import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFeesReply;
+import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFeesV2Reply;
 
+import java.util.Collections;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -23,7 +24,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * // Get all current network fees
  * List<Fee> fees = client.getFeeService().getFees();
  * for (Fee fee : fees) {
- *     System.out.println(fee.getKey() + ": " + fee.getValue());
+ *     System.out.println(fee.getCurrencyId() + ": " + fee.getValue() + " " + fee.getDenom());
  * }
  * }</pre>
  *
@@ -51,15 +52,17 @@ public class FeeService {
     }
 
     /**
-     * Retrieves current network fees for all supported blockchains.
+     * Retrieves the current network fee of every currency (the V2 endpoint; the V1 one is
+     * deprecated).
      *
      * @return the list of fees
      * @throws ApiException if the API call fails
      */
     public List<Fee> getFees() throws ApiException {
         try {
-            TgvalidatordGetFeesReply reply = feeApi.feeServiceGetFees();
-            return feeMapper.fromDTOList(reply.getResult());
+            TgvalidatordGetFeesV2Reply reply = feeApi.feeServiceGetFeesV2();
+            return reply.getResult() == null
+                    ? Collections.emptyList() : feeMapper.fromDTOList(reply.getResult());
         } catch (com.taurushq.sdk.protect.openapi.ApiException e) {
             throw apiExceptionMapper.toApiException(e);
         }

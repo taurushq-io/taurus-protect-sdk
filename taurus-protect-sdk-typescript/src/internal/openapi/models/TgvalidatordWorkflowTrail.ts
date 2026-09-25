@@ -93,7 +93,16 @@ export interface TgvalidatordWorkflowTrail {
      * @memberof TgvalidatordWorkflowTrail
      */
     createdAt?: Date;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordWorkflowTrail
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordWorkflowTrailWireKeys: ReadonlySet<string> = new Set(['id', 'tenantID', 'workflowID', 'eventID', 'workflowAction', 'emittedEventsIDs', 'createdWorkflowsIDs', 'workflowActionResult', 'workflowStateLabelBefore', 'workflowStateLabelAfter', 'createdAt']);
 
 /**
  * Check if a given object implements the TgvalidatordWorkflowTrail interface.
@@ -110,7 +119,7 @@ export function TgvalidatordWorkflowTrailFromJSONTyped(json: any, ignoreDiscrimi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordWorkflowTrail = {
         
         'id': json['id'] == null ? undefined : json['id'],
         'tenantID': json['tenantID'] == null ? undefined : json['tenantID'],
@@ -124,6 +133,16 @@ export function TgvalidatordWorkflowTrailFromJSONTyped(json: any, ignoreDiscrimi
         'workflowStateLabelAfter': json['workflowStateLabelAfter'] == null ? undefined : json['workflowStateLabelAfter'],
         'createdAt': json['createdAt'] == null ? undefined : (new Date(json['createdAt'])),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordWorkflowTrailWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordWorkflowTrailToJSON(json: any): TgvalidatordWorkflowTrail {
@@ -148,6 +167,7 @@ export function TgvalidatordWorkflowTrailFromJSONTyped(json: any, ignoreDiscrimi
         'workflowStateLabelBefore': value['workflowStateLabelBefore'],
         'workflowStateLabelAfter': value['workflowStateLabelAfter'],
         'createdAt': value['createdAt'] == null ? undefined : ((value['createdAt']).toISOString()),
+        ...value['additionalProperties'],
     };
 }
 

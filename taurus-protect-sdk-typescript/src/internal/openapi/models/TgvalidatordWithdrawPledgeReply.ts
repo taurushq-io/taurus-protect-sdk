@@ -31,7 +31,16 @@ export interface TgvalidatordWithdrawPledgeReply {
      * @memberof TgvalidatordWithdrawPledgeReply
      */
     pledgeActionID?: string;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordWithdrawPledgeReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordWithdrawPledgeReplyWireKeys: ReadonlySet<string> = new Set(['pledgeWithdrawalID', 'pledgeActionID']);
 
 /**
  * Check if a given object implements the TgvalidatordWithdrawPledgeReply interface.
@@ -48,11 +57,21 @@ export function TgvalidatordWithdrawPledgeReplyFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordWithdrawPledgeReply = {
         
         'pledgeWithdrawalID': json['pledgeWithdrawalID'] == null ? undefined : json['pledgeWithdrawalID'],
         'pledgeActionID': json['pledgeActionID'] == null ? undefined : json['pledgeActionID'],
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordWithdrawPledgeReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordWithdrawPledgeReplyToJSON(json: any): TgvalidatordWithdrawPledgeReply {
@@ -68,6 +87,7 @@ export function TgvalidatordWithdrawPledgeReplyFromJSONTyped(json: any, ignoreDi
         
         'pledgeWithdrawalID': value['pledgeWithdrawalID'],
         'pledgeActionID': value['pledgeActionID'],
+        ...value['additionalProperties'],
     };
 }
 

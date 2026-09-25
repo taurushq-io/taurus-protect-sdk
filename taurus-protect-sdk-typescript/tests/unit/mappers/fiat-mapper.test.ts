@@ -8,10 +8,8 @@ import {
   fiatProviderAccountFromDto,
   fiatProviderCounterpartyAccountFromDto,
   fiatProviderOperationFromDto,
-  fiatResponseCursorFromDto,
-  fiatProviderAccountResultFromDto,
-  fiatProviderCounterpartyAccountResultFromDto,
-  fiatProviderOperationResultFromDto,
+  fiatProviderEntityFromDto,
+  fiatProviderEntitiesFromDto,
 } from '../../../src/mappers/fiat';
 
 describe('fiatProviderFromDto', () => {
@@ -172,88 +170,42 @@ describe('fiatProviderOperationFromDto', () => {
   });
 });
 
-describe('fiatResponseCursorFromDto', () => {
-  it('should map cursor fields', () => {
-    const dto = {
-      currentPage: 'page-1',
-      nextPage: 'page-2',
-    };
-
-    const result = fiatResponseCursorFromDto(dto);
-
-    expect(result).toBeDefined();
-    expect(result!.currentPage).toBe('page-1');
-    expect(result!.nextPage).toBe('page-2');
-    expect(result!.hasMore).toBe(true);
-  });
-
-  it('should set hasMore to false when no nextPage', () => {
-    const dto = { currentPage: 'page-1' };
-
-    const result = fiatResponseCursorFromDto(dto);
-
-    expect(result!.hasMore).toBe(false);
+describe('fiatProviderEntityFromDto', () => {
+  it('should map every field of the generated entity row', () => {
+    const creationDate = new Date('2026-01-02T03:04:05Z');
+    const updateDate = new Date('2026-02-03T04:05:06Z');
+    expect(
+      fiatProviderEntityFromDto({
+        id: 'e1',
+        provider: 'bank',
+        label: 'main',
+        accountIdentifier: 'CH00',
+        name: 'Entity One',
+        details: '{"k":"v"}',
+        creationDate,
+        updateDate,
+      })
+    ).toEqual({
+      id: 'e1',
+      provider: 'bank',
+      label: 'main',
+      accountIdentifier: 'CH00',
+      name: 'Entity One',
+      details: '{"k":"v"}',
+      creationDate,
+      updateDate,
+    });
   });
 
   it('should return undefined for null input', () => {
-    expect(fiatResponseCursorFromDto(null)).toBeUndefined();
-  });
-});
-
-describe('fiatProviderAccountResultFromDto', () => {
-  it('should map result with accounts and cursor', () => {
-    const dto = {
-      result: [{ id: 'acc-1', provider: 'bank-a' }],
-      cursor: { currentPage: 'p1', nextPage: 'p2' },
-    };
-
-    const result = fiatProviderAccountResultFromDto(dto);
-
-    expect(result.accounts).toHaveLength(1);
-    expect(result.cursor).toBeDefined();
+    expect(fiatProviderEntityFromDto(null)).toBeUndefined();
   });
 
-  it('should return default for null input', () => {
-    const result = fiatProviderAccountResultFromDto(null);
-
-    expect(result.accounts).toEqual([]);
-  });
-});
-
-describe('fiatProviderCounterpartyAccountResultFromDto', () => {
-  it('should map result with accounts', () => {
-    const dto = {
-      result: [{ id: 'cp-1' }],
-    };
-
-    const result = fiatProviderCounterpartyAccountResultFromDto(dto);
-
-    expect(result.accounts).toHaveLength(1);
-  });
-
-  it('should return default for null input', () => {
-    const result = fiatProviderCounterpartyAccountResultFromDto(null);
-
-    expect(result.accounts).toEqual([]);
-  });
-});
-
-describe('fiatProviderOperationResultFromDto', () => {
-  it('should map result with operations', () => {
-    const dto = {
-      result: [{ id: 'op-1', status: 'completed' }],
-      cursor: { currentPage: 'p1' },
-    };
-
-    const result = fiatProviderOperationResultFromDto(dto);
-
-    expect(result.operations).toHaveLength(1);
-    expect(result.cursor).toBeDefined();
-  });
-
-  it('should return default for null input', () => {
-    const result = fiatProviderOperationResultFromDto(null);
-
-    expect(result.operations).toEqual([]);
+  it('should map an array and an absent array', () => {
+    expect(fiatProviderEntitiesFromDto([{ id: 'a' }, { id: 'b' }]).map((e) => e.id)).toEqual([
+      'a',
+      'b',
+    ]);
+    expect(fiatProviderEntitiesFromDto(undefined)).toEqual([]);
   });
 });

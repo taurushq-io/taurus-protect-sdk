@@ -12,7 +12,6 @@ package openapi
 
 import (
 	"encoding/json"
-	"bytes"
 	"fmt"
 )
 
@@ -32,6 +31,7 @@ type TgvalidatordGetAssetAddressesRequest struct {
 	AddressId *string `json:"addressId,omitempty"`
 	// Filter on the asset addresses to return
 	Addresses []string `json:"addresses,omitempty"`
+	AdditionalProperties map[string]interface{}
 }
 
 type _TgvalidatordGetAssetAddressesRequest TgvalidatordGetAssetAddressesRequest
@@ -334,6 +334,11 @@ func (o TgvalidatordGetAssetAddressesRequest) ToMap() (map[string]interface{}, e
 	if !IsNil(o.Addresses) {
 		toSerialize["addresses"] = o.Addresses
 	}
+
+	for key, value := range o.AdditionalProperties {
+		toSerialize[key] = value
+	}
+
 	return toSerialize, nil
 }
 
@@ -361,15 +366,27 @@ func (o *TgvalidatordGetAssetAddressesRequest) UnmarshalJSON(data []byte) (err e
 
 	varTgvalidatordGetAssetAddressesRequest := _TgvalidatordGetAssetAddressesRequest{}
 
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&varTgvalidatordGetAssetAddressesRequest)
+	err = json.Unmarshal(data, &varTgvalidatordGetAssetAddressesRequest)
 
 	if err != nil {
 		return err
 	}
 
 	*o = TgvalidatordGetAssetAddressesRequest(varTgvalidatordGetAssetAddressesRequest)
+
+	additionalProperties := make(map[string]interface{})
+
+	if err = json.Unmarshal(data, &additionalProperties); err == nil {
+		delete(additionalProperties, "asset")
+		delete(additionalProperties, "limit")
+		delete(additionalProperties, "cursor")
+		delete(additionalProperties, "sorting")
+		delete(additionalProperties, "requestCursor")
+		delete(additionalProperties, "walletId")
+		delete(additionalProperties, "addressId")
+		delete(additionalProperties, "addresses")
+		o.AdditionalProperties = additionalProperties
+	}
 
 	return err
 }

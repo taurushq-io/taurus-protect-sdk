@@ -33,7 +33,16 @@ export interface TgvalidatordGetParticipantReply {
      * @memberof TgvalidatordGetParticipantReply
      */
     result?: TgvalidatordTnParticipant;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetParticipantReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetParticipantReplyWireKeys: ReadonlySet<string> = new Set(['result']);
 
 /**
  * Check if a given object implements the TgvalidatordGetParticipantReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetParticipantReplyFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetParticipantReply = {
         
         'result': json['result'] == null ? undefined : TgvalidatordTnParticipantFromJSON(json['result']),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetParticipantReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetParticipantReplyToJSON(json: any): TgvalidatordGetParticipantReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetParticipantReplyFromJSONTyped(json: any, ignoreDi
     return {
         
         'result': TgvalidatordTnParticipantToJSON(value['result']),
+        ...value['additionalProperties'],
     };
 }
 

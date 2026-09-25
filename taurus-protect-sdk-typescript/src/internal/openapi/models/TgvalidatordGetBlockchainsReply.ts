@@ -33,7 +33,16 @@ export interface TgvalidatordGetBlockchainsReply {
      * @memberof TgvalidatordGetBlockchainsReply
      */
     blockchains?: Array<TgvalidatordBlockchainEntity>;
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetBlockchainsReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetBlockchainsReplyWireKeys: ReadonlySet<string> = new Set(['blockchains']);
 
 /**
  * Check if a given object implements the TgvalidatordGetBlockchainsReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetBlockchainsReplyFromJSONTyped(json: any, ignoreDi
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetBlockchainsReply = {
         
         'blockchains': json['blockchains'] == null ? undefined : ((json['blockchains'] as Array<any>).map(TgvalidatordBlockchainEntityFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetBlockchainsReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetBlockchainsReplyToJSON(json: any): TgvalidatordGetBlockchainsReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetBlockchainsReplyFromJSONTyped(json: any, ignoreDi
     return {
         
         'blockchains': value['blockchains'] == null ? undefined : ((value['blockchains'] as Array<any>).map(TgvalidatordBlockchainEntityToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

@@ -32,6 +32,7 @@ import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProviderAccount
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProviderAccountsReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProviderCounterpartyAccountReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProviderCounterpartyAccountsReply;
+import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProviderEntitiesReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProviderOperationReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProviderOperationsReply;
 import com.taurushq.sdk.protect.openapi.model.TgvalidatordGetFiatProvidersReply;
@@ -792,6 +793,195 @@ public class FiatApi {
 
         okhttp3.Call localVarCall = fiatProviderServiceGetFiatProviderCounterpartyAccountsValidateBeforeCall(provider, label, counterpartyID, sortOrder, cursorCurrentPage, cursorPageRequest, cursorPageSize, _callback);
         Type localVarReturnType = new TypeToken<TgvalidatordGetFiatProviderCounterpartyAccountsReply>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for fiatProviderServiceGetFiatProviderEntities
+     * @param provider Optional. Filter entities by fiat provider. Example: &#39;circle&#39; (optional)
+     * @param label Optional. Filter entities by the label of the fiat provider set in the config (optional)
+     * @param sortOrder Set this parameter to ASC to get the id sorted in ASC order or DESC to get them in descending order. By default, the order is DESC. (optional)
+     * @param cursorCurrentPage Base64-encoded string representing the current window of data (optional)
+     * @param cursorPageRequest The page to request, w.r.t the current page. Can be one of &#x60;FIRST&#x60;, &#x60;PREVIOUS&#x60;, &#x60;NEXT&#x60;, &#x60;LAST&#x60; (optional)
+     * @param cursorPageSize The size of the page requested. The handling service should impose a hard limit on this (optional)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> A successful response. </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request: indicates that the server cannot or will not process the request due to something that is perceived to be a client error (for example, malformed request syntax, invalid request message framing, or deceptive request routing) </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized: indicates that the client request has not been completed because it lacks valid authentication credentials for the requested resource </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden: indicates that the server understands the request but refuses to authorize it </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Not Found: indicates that the server cannot find the requested resource </td><td>  -  </td></tr>
+        <tr><td> 500 </td><td> Internal Server Error: indicates that the server encountered an unexpected condition that prevented it from fulfilling the request </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> Service Unavailable: indicates that the server is not ready to handle the request. </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> An unexpected error response. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call fiatProviderServiceGetFiatProviderEntitiesCall(String provider, String label, String sortOrder, String cursorCurrentPage, String cursorPageRequest, String cursorPageSize, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/api/rest/v1/fiat_providers/entities";
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        if (provider != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("provider", provider));
+        }
+
+        if (label != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("label", label));
+        }
+
+        if (sortOrder != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("sortOrder", sortOrder));
+        }
+
+        if (cursorCurrentPage != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("cursor.currentPage", cursorCurrentPage));
+        }
+
+        if (cursorPageRequest != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("cursor.pageRequest", cursorPageRequest));
+        }
+
+        if (cursorPageSize != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("cursor.pageSize", cursorPageSize));
+        }
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "ApiKeyTPV1" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call fiatProviderServiceGetFiatProviderEntitiesValidateBeforeCall(String provider, String label, String sortOrder, String cursorCurrentPage, String cursorPageRequest, String cursorPageSize, final ApiCallback _callback) throws ApiException {
+        return fiatProviderServiceGetFiatProviderEntitiesCall(provider, label, sortOrder, cursorCurrentPage, cursorPageRequest, cursorPageSize, _callback);
+
+    }
+
+    /**
+     * List fiat provider entities
+     * This endpoint returns a list of fiat provider account entities (Circle wallets / Paxos profiles), optionally filtered by provider and label
+     * @param provider Optional. Filter entities by fiat provider. Example: &#39;circle&#39; (optional)
+     * @param label Optional. Filter entities by the label of the fiat provider set in the config (optional)
+     * @param sortOrder Set this parameter to ASC to get the id sorted in ASC order or DESC to get them in descending order. By default, the order is DESC. (optional)
+     * @param cursorCurrentPage Base64-encoded string representing the current window of data (optional)
+     * @param cursorPageRequest The page to request, w.r.t the current page. Can be one of &#x60;FIRST&#x60;, &#x60;PREVIOUS&#x60;, &#x60;NEXT&#x60;, &#x60;LAST&#x60; (optional)
+     * @param cursorPageSize The size of the page requested. The handling service should impose a hard limit on this (optional)
+     * @return TgvalidatordGetFiatProviderEntitiesReply
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> A successful response. </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request: indicates that the server cannot or will not process the request due to something that is perceived to be a client error (for example, malformed request syntax, invalid request message framing, or deceptive request routing) </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized: indicates that the client request has not been completed because it lacks valid authentication credentials for the requested resource </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden: indicates that the server understands the request but refuses to authorize it </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Not Found: indicates that the server cannot find the requested resource </td><td>  -  </td></tr>
+        <tr><td> 500 </td><td> Internal Server Error: indicates that the server encountered an unexpected condition that prevented it from fulfilling the request </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> Service Unavailable: indicates that the server is not ready to handle the request. </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> An unexpected error response. </td><td>  -  </td></tr>
+     </table>
+     */
+    public TgvalidatordGetFiatProviderEntitiesReply fiatProviderServiceGetFiatProviderEntities(String provider, String label, String sortOrder, String cursorCurrentPage, String cursorPageRequest, String cursorPageSize) throws ApiException {
+        ApiResponse<TgvalidatordGetFiatProviderEntitiesReply> localVarResp = fiatProviderServiceGetFiatProviderEntitiesWithHttpInfo(provider, label, sortOrder, cursorCurrentPage, cursorPageRequest, cursorPageSize);
+        return localVarResp.getData();
+    }
+
+    /**
+     * List fiat provider entities
+     * This endpoint returns a list of fiat provider account entities (Circle wallets / Paxos profiles), optionally filtered by provider and label
+     * @param provider Optional. Filter entities by fiat provider. Example: &#39;circle&#39; (optional)
+     * @param label Optional. Filter entities by the label of the fiat provider set in the config (optional)
+     * @param sortOrder Set this parameter to ASC to get the id sorted in ASC order or DESC to get them in descending order. By default, the order is DESC. (optional)
+     * @param cursorCurrentPage Base64-encoded string representing the current window of data (optional)
+     * @param cursorPageRequest The page to request, w.r.t the current page. Can be one of &#x60;FIRST&#x60;, &#x60;PREVIOUS&#x60;, &#x60;NEXT&#x60;, &#x60;LAST&#x60; (optional)
+     * @param cursorPageSize The size of the page requested. The handling service should impose a hard limit on this (optional)
+     * @return ApiResponse&lt;TgvalidatordGetFiatProviderEntitiesReply&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> A successful response. </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request: indicates that the server cannot or will not process the request due to something that is perceived to be a client error (for example, malformed request syntax, invalid request message framing, or deceptive request routing) </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized: indicates that the client request has not been completed because it lacks valid authentication credentials for the requested resource </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden: indicates that the server understands the request but refuses to authorize it </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Not Found: indicates that the server cannot find the requested resource </td><td>  -  </td></tr>
+        <tr><td> 500 </td><td> Internal Server Error: indicates that the server encountered an unexpected condition that prevented it from fulfilling the request </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> Service Unavailable: indicates that the server is not ready to handle the request. </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> An unexpected error response. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<TgvalidatordGetFiatProviderEntitiesReply> fiatProviderServiceGetFiatProviderEntitiesWithHttpInfo(String provider, String label, String sortOrder, String cursorCurrentPage, String cursorPageRequest, String cursorPageSize) throws ApiException {
+        okhttp3.Call localVarCall = fiatProviderServiceGetFiatProviderEntitiesValidateBeforeCall(provider, label, sortOrder, cursorCurrentPage, cursorPageRequest, cursorPageSize, null);
+        Type localVarReturnType = new TypeToken<TgvalidatordGetFiatProviderEntitiesReply>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * List fiat provider entities (asynchronously)
+     * This endpoint returns a list of fiat provider account entities (Circle wallets / Paxos profiles), optionally filtered by provider and label
+     * @param provider Optional. Filter entities by fiat provider. Example: &#39;circle&#39; (optional)
+     * @param label Optional. Filter entities by the label of the fiat provider set in the config (optional)
+     * @param sortOrder Set this parameter to ASC to get the id sorted in ASC order or DESC to get them in descending order. By default, the order is DESC. (optional)
+     * @param cursorCurrentPage Base64-encoded string representing the current window of data (optional)
+     * @param cursorPageRequest The page to request, w.r.t the current page. Can be one of &#x60;FIRST&#x60;, &#x60;PREVIOUS&#x60;, &#x60;NEXT&#x60;, &#x60;LAST&#x60; (optional)
+     * @param cursorPageSize The size of the page requested. The handling service should impose a hard limit on this (optional)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table summary="Response Details" border="1">
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> A successful response. </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> Bad Request: indicates that the server cannot or will not process the request due to something that is perceived to be a client error (for example, malformed request syntax, invalid request message framing, or deceptive request routing) </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Unauthorized: indicates that the client request has not been completed because it lacks valid authentication credentials for the requested resource </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> Forbidden: indicates that the server understands the request but refuses to authorize it </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> Not Found: indicates that the server cannot find the requested resource </td><td>  -  </td></tr>
+        <tr><td> 500 </td><td> Internal Server Error: indicates that the server encountered an unexpected condition that prevented it from fulfilling the request </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> Service Unavailable: indicates that the server is not ready to handle the request. </td><td>  -  </td></tr>
+        <tr><td> 0 </td><td> An unexpected error response. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call fiatProviderServiceGetFiatProviderEntitiesAsync(String provider, String label, String sortOrder, String cursorCurrentPage, String cursorPageRequest, String cursorPageSize, final ApiCallback<TgvalidatordGetFiatProviderEntitiesReply> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = fiatProviderServiceGetFiatProviderEntitiesValidateBeforeCall(provider, label, sortOrder, cursorCurrentPage, cursorPageRequest, cursorPageSize, _callback);
+        Type localVarReturnType = new TypeToken<TgvalidatordGetFiatProviderEntitiesReply>(){}.getType();
         localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
         return localVarCall;
     }

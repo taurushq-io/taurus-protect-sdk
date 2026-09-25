@@ -33,7 +33,16 @@ export interface TgvalidatordGetAllComponentsStatusReply {
      * @memberof TgvalidatordGetAllComponentsStatusReply
      */
     status?: { [key: string]: TgvalidatordComponentStatus; };
+    /**
+     * Fields the server sent that this client does not know, kept so that decoding never fails
+     * on them and serializing writes them back.
+     * @type {object}
+     * @memberof TgvalidatordGetAllComponentsStatusReply
+     */
+    additionalProperties?: { [key: string]: any };
 }
+
+const TgvalidatordGetAllComponentsStatusReplyWireKeys: ReadonlySet<string> = new Set(['status']);
 
 /**
  * Check if a given object implements the TgvalidatordGetAllComponentsStatusReply interface.
@@ -50,10 +59,20 @@ export function TgvalidatordGetAllComponentsStatusReplyFromJSONTyped(json: any, 
     if (json == null) {
         return json;
     }
-    return {
+    const result: TgvalidatordGetAllComponentsStatusReply = {
         
         'status': json['status'] == null ? undefined : (mapValues(json['status'], TgvalidatordComponentStatusFromJSON)),
     };
+    const additionalProperties: { [key: string]: any } = {};
+    for (const key of Object.keys(json)) {
+        if (!TgvalidatordGetAllComponentsStatusReplyWireKeys.has(key)) {
+            additionalProperties[key] = json[key];
+        }
+    }
+    if (Object.keys(additionalProperties).length > 0) {
+        result.additionalProperties = additionalProperties;
+    }
+    return result;
 }
 
   export function TgvalidatordGetAllComponentsStatusReplyToJSON(json: any): TgvalidatordGetAllComponentsStatusReply {
@@ -68,6 +87,7 @@ export function TgvalidatordGetAllComponentsStatusReplyFromJSONTyped(json: any, 
     return {
         
         'status': value['status'] == null ? undefined : (mapValues(value['status'], TgvalidatordComponentStatusToJSON)),
+        ...value['additionalProperties'],
     };
 }
 

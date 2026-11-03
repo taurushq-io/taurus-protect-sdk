@@ -210,6 +210,20 @@ type SignedRequest struct {
 	BroadcastDate time.Time `json:"broadcast_date"`
 	// ConfirmationDate is when the signed request was confirmed.
 	ConfirmationDate time.Time `json:"confirmation_date"`
+	// Attributes are custom key-value attributes.
+	Attributes []SignedRequestAttribute `json:"attributes,omitempty"`
+}
+
+// SignedRequestAttribute represents a custom attribute on a signed request.
+type SignedRequestAttribute struct {
+	// ID is the attribute identifier.
+	ID string `json:"id"`
+	// Key is the attribute name.
+	Key string `json:"key"`
+	// Value is the attribute value.
+	Value string `json:"value"`
+	// ContentType is the content type for file attributes.
+	ContentType string `json:"content_type,omitempty"`
 }
 
 // Request represents a transaction request (withdrawal, transfer, etc.).

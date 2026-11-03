@@ -512,6 +512,15 @@ server-side answer about which values `RequestStatus` can actually take. Earlier
 this report claimed "43 values matching the Java source of truth" in all four, and listed 38
 names, 23 of which were not in `RequestStatus.java`.
 
+**`SignedRequest.attributes` is dropped in Python and TypeScript.** The spec and all four
+generated clients carry `attributes` (`id`, `key`, `value`, `contentType`) on each signed
+request, and Java and Go map them (Go since 2026-11-03). Some chains put the on-chain hash
+there as `transaction_hash` (Canton, ICP). Python's
+`SignedRequest` (`taurus_protect/models/request.py`) and TypeScript's
+(`src/models/request.ts`) have no such field, and `signed_request_from_dto` /
+`signedRequestFromDto` never read it, so a caller cannot reach it at all. Unlike the
+divergence above, the target is known: add the field and map it, following Java and Go.
+
 ## Deferred work
 
 Captured with full context in [`TODOS.md`](../TODOS.md):

@@ -95,7 +95,24 @@ func SignedRequestFromDTO(dto openapi.RequestSignedRequest) model.SignedRequest 
 		UpdateDate:       safeTime(dto.UpdateDate),
 		BroadcastDate:    safeTime(dto.BroadcastDate),
 		ConfirmationDate: safeTime(dto.ConfirmationDate),
+		Attributes:       signedRequestAttributesFromDTO(dto.Attributes),
 	}
+}
+
+func signedRequestAttributesFromDTO(dtos []openapi.TgvalidatordSignedRequestAttribute) []model.SignedRequestAttribute {
+	if len(dtos) == 0 {
+		return nil
+	}
+	result := make([]model.SignedRequestAttribute, len(dtos))
+	for i, dto := range dtos {
+		result[i] = model.SignedRequestAttribute{
+			ID:          safeString(dto.Id),
+			Key:         safeString(dto.Key),
+			Value:       safeString(dto.Value),
+			ContentType: safeString(dto.ContentType),
+		}
+	}
+	return result
 }
 
 // SignedRequestsFromDTO maps a slice of OpenAPI RequestSignedRequest to domain SignedRequests.

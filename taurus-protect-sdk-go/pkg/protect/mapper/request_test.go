@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/internal/openapi"
+	"github.com/taurushq-io/taurus-protect-sdk/taurus-protect-sdk-go/pkg/protect/model"
 )
 
 func TestRequestFromDTO(t *testing.T) {
@@ -112,6 +113,36 @@ func TestRequestFromDTO_WithAttributes(t *testing.T) {
 	}
 	if got.Attributes[0].ID != attrId {
 		t.Errorf("Attribute ID = %v, want %v", got.Attributes[0].ID, attrId)
+	}
+}
+
+func TestSignedRequestFromDTO_WithAttributes(t *testing.T) {
+	attrId := "attr-1"
+	attrKey := "transaction_hash"
+	attrValue := "0xabc123"
+	attrContentType := "text/plain"
+	dto := openapi.RequestSignedRequest{
+		Attributes: []openapi.TgvalidatordSignedRequestAttribute{
+			{Id: &attrId, Key: &attrKey, Value: &attrValue, ContentType: &attrContentType},
+		},
+	}
+
+	got := SignedRequestFromDTO(dto)
+
+	if len(got.Attributes) != 1 {
+		t.Fatalf("Attributes length = %v, want 1", len(got.Attributes))
+	}
+	want := model.SignedRequestAttribute{ID: attrId, Key: attrKey, Value: attrValue, ContentType: attrContentType}
+	if got.Attributes[0] != want {
+		t.Errorf("Attribute = %+v, want %+v", got.Attributes[0], want)
+	}
+}
+
+func TestSignedRequestFromDTO_WithoutAttributes(t *testing.T) {
+	got := SignedRequestFromDTO(openapi.RequestSignedRequest{})
+
+	if got.Attributes != nil {
+		t.Errorf("Attributes = %+v, want nil", got.Attributes)
 	}
 }
 
